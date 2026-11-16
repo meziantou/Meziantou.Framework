@@ -34,10 +34,15 @@ public abstract class ImageEncoder
     private MetadataHandling _metadataHandling;
 
     /// <summary>
-    /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
-    /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them.
-    /// It only applies to the outputs that do not store floating-point samples: every format but OpenEXR and TIFF, and the
-    /// TIFF settings that cannot (<see cref="TiffEncoder"/>). <see cref="OpenExrEncoder"/> always stores them.
+    /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>, and the gray
+    /// formats <see cref="GrayFloat"/>, <see cref="GrayHalf"/>, <see cref="LaFloat"/>, <see cref="LaHalf"/>) to 16-bit integer
+    /// ones (<see cref="Rgba64"/>, or <see cref="Gray16"/> and <see cref="La32"/> for gray pixels, widened to
+    /// <see cref="Rgba64"/> for an encoder that does not store them) before they are encoded, or <see langword="null"/> (the
+    /// default) to reject them.
+    /// It only applies to the outputs that do not store floating-point samples: every format but OpenEXR, Radiance HDR, PSD,
+    /// DNG, DPX, TIFF, DDS and KTX 2.0, and the DPX, TIFF, DDS and KTX 2.0 settings that cannot (<see cref="DpxEncoder"/>,
+    /// <see cref="TiffEncoder"/>, <see cref="DdsEncoder"/>, <see cref="Ktx2Encoder"/>). <see cref="OpenExrEncoder"/> always
+    /// stores them.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -46,7 +51,7 @@ public abstract class ImageEncoder
     /// <see cref="PixelConversionOptions.OutOfRangeSamples"/> clips them or <see cref="PixelConversionOptions.ToneMapping"/>
     /// compresses the highlights first. The peak of the tone mapping of an eager save is the one of all its frames; a
     /// sequential writer takes the one of each frame, unless the options give it. The reduced pixels are then encoded like
-    /// any <see cref="Rgba64"/> pixels, with the rules of the encoder (an 8-bit format also needs its
+    /// any 16-bit integer pixels, with the rules of the encoder (an 8-bit format also needs its
     /// <c>AllowBitDepthReduction</c>), and the labels of the image (such as
     /// <see cref="Metadata.ColorTransferFunction.Linear"/>) follow <see cref="MetadataHandling"/>.
     /// </para>
@@ -131,6 +136,12 @@ public abstract class ImageEncoder
         ImageFormat.Jpeg2000 => new Jpeg2000Encoder(),
         ImageFormat.OpenExr => new OpenExrEncoder(),
         ImageFormat.Radiance => new RadianceEncoder(),
+        ImageFormat.Psd => new PsdEncoder(),
+        ImageFormat.Dng => new DngEncoder(),
+        ImageFormat.Dds => new DdsEncoder(),
+        ImageFormat.Dpx => new DpxEncoder(),
+        ImageFormat.Cineon => new CineonEncoder(),
+        ImageFormat.Ktx2 => new Ktx2Encoder(),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
     };
 
@@ -148,14 +159,16 @@ public abstract class ImageEncoder
     /// <see cref="PnmPixelLayout.Bitmap"/> pixels, <c>.j2k</c>, <c>.j2c</c> and <c>.jpc</c> a <see cref="Jpeg2000Encoder"/>
     /// of a bare codestream (<see cref="Jpeg2000Container.Codestream"/>), and <c>.jph</c> and <c>.jhc</c> a
     /// <see cref="Jpeg2000Encoder"/> of the high-throughput block coder (<see cref="Jpeg2000BlockCoder.HighThroughput"/>),
-    /// which writes a JPH file or a bare codestream.
+    /// which writes a JPH file or a bare codestream, and <c>.psb</c> a <see cref="PsdEncoder"/> of the large document format
+    /// (<see cref="PsdEncoder.LargeDocument"/>).
     /// </returns>
     /// <remarks>
     /// The extensions are those of <see cref="ImageFormatInfo.FileExtensions"/>. This method is thread-safe.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="extension"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
-    /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>).
+    /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>,
+    /// <c>.jpx</c>, <c>.jpf</c>).
     /// </exception>
     public static ImageEncoder FromFileExtension(string extension)
     {
@@ -215,6 +228,9 @@ public abstract class ImageEncoder
         // The files of these extensions are read, never written: the extended file format
         if (extension.Equals(".jpx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpf", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"JPEG 2000 files of the extended format ('{extension}') can be read but not written. Use the extension '.jp2', or specify an encoder explicitly.", parameterName);
+
+        if (extension.Equals(".psb", StringComparison.OrdinalIgnoreCase))
+            return new PsdEncoder { LargeDocument = true };
 
         if (extension.Length > 1 && ImageFormatInfo.TryGetByFileExtension(extension, out var info))
             return Create(info.Format);

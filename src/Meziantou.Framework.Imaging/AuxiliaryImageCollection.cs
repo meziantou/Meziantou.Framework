@@ -5,8 +5,9 @@ namespace Meziantou.Framework.Imaging;
 
 /// <summary>
 /// The images that a file stores next to its primary image without presenting them: the thumbnails, depth maps, gain maps
-/// and mattes of HEIC and AVIF files, and the images that follow the primary image of a JPEG Multi-Picture Format file
-/// (the gain map of an Ultra HDR photo). <see cref="Image.Load(string, ImageDecodeOptions?)"/> never reads them.
+/// and mattes of HEIC and AVIF files, the images that follow the primary image of a JPEG Multi-Picture Format file (the
+/// gain map of an Ultra HDR photo), the preview image and the lower resolution levels (mipmaps, ripmaps) of an OpenEXR
+/// file, and the previews, transparency masks, depth maps and semantic masks of a DNG file. <see cref="Image.Load(string, ImageDecodeOptions?)"/> never reads them.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -37,6 +38,8 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
             ImageFormat.Heic => HeifAuxiliaryScanner.Scan(this, data, HeicBinding.Instance, cancellationToken),
             ImageFormat.Avif => HeifAuxiliaryScanner.Scan(this, data, AvifBinding.Instance, cancellationToken),
             ImageFormat.Jpeg => JpegAuxiliaryScanner.Scan(this, data),
+            ImageFormat.OpenExr => ExrAuxiliaryScanner.Scan(this, data, configuration, cancellationToken),
+            ImageFormat.Dng => DngAuxiliaryScanner.Scan(this, data, configuration, cancellationToken),
             _ => [],
         };
     }
@@ -67,7 +70,7 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
     /// <returns>The images.</returns>
     /// <exception cref="ArgumentException"><paramref name="path"/> is <see langword="null"/> or empty.</exception>
     /// <exception cref="UnknownImageFormatException">The format of the file is not recognized.</exception>
-    /// <exception cref="InvalidImageContentException">The structure of a HEIC or AVIF file is malformed.</exception>
+    /// <exception cref="InvalidImageContentException">The structure of a HEIC or AVIF file, or the header of an OpenEXR file, is malformed.</exception>
     /// <exception cref="ImageResourceLimitException">The file is larger than <see cref="ImageResourceLimits.MaxEncodedBytes"/>.</exception>
     /// <exception cref="IOException">The file cannot be read.</exception>
     public static AuxiliaryImageCollection Load(string path, ImageConfiguration? configuration = null)
@@ -85,7 +88,7 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
     /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="stream"/> is not readable.</exception>
     /// <exception cref="UnknownImageFormatException">The format of the data is not recognized.</exception>
-    /// <exception cref="InvalidImageContentException">The structure of a HEIC or AVIF file is malformed.</exception>
+    /// <exception cref="InvalidImageContentException">The structure of a HEIC or AVIF file, or the header of an OpenEXR file, is malformed.</exception>
     /// <exception cref="ImageResourceLimitException">The stream has more than <see cref="ImageResourceLimits.MaxEncodedBytes"/> bytes.</exception>
     public static AuxiliaryImageCollection Load(Stream stream, ImageConfiguration? configuration = null)
     {
@@ -102,7 +105,7 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
     /// <param name="configuration">The configuration, or <see langword="null"/> for <see cref="ImageConfiguration.Default"/>.</param>
     /// <returns>The images.</returns>
     /// <exception cref="UnknownImageFormatException">The format of the data is not recognized.</exception>
-    /// <exception cref="InvalidImageContentException">The structure of a HEIC or AVIF file is malformed.</exception>
+    /// <exception cref="InvalidImageContentException">The structure of a HEIC or AVIF file, or the header of an OpenEXR file, is malformed.</exception>
     /// <exception cref="ImageResourceLimitException">The data is larger than <see cref="ImageResourceLimits.MaxEncodedBytes"/>.</exception>
     public static AuxiliaryImageCollection Load(ReadOnlySpan<byte> data, ImageConfiguration? configuration = null)
     {
@@ -170,10 +173,13 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
         if (image.JpegRange is var (offset, length))
             return ImageIO.Load(_data.AsSpan(offset, length), options, pixelFormat, cancellationToken);
 
+        if (image.OpenExrPreview is { } preview)
+            return ExrAuxiliaryScanner.DecodePreview(image, preview, options, pixelFormat);
+
         // A HEIF item is decoded as the primary item would be, by the decoder of the file
         var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, _data, context);
-        var request = ImageDecodeRequest.Create(options, pixelFormat) with { HeifItemId = image.HeifItemId };
+        var request = ImageDecodeRequest.Create(options, pixelFormat) with { HeifItemId = image.HeifItemId, OpenExrLevel = image.Level is { } level ? (level.X, level.Y) : null, DngDirectoryIndex = image.DngDirectoryIndex };
         using var parser = codec.CreateDecodeParser(request, context);
         return ImageInputPump.Run(_data, parser, context);
     }
@@ -182,7 +188,7 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
     {
         var context = new ImageCodecContext(configuration, "AuxiliaryImages", CancellationToken.None);
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, data, context);
-        return new AuxiliaryImageCollection(data, codec.Format, configuration, CancellationToken.None);
+        return new AuxiliaryImageCollection(data, codec.GetDetectedFormat(data), configuration, CancellationToken.None);
     }
 
     private static byte[] ReadAll(Stream stream, ImageConfiguration configuration)

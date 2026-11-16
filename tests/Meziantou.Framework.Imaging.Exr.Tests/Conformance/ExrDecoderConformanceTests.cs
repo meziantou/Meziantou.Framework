@@ -48,8 +48,20 @@ public sealed class ExrDecoderConformanceTests
     }
 
     [Theory]
-    [InlineData("invalid/exr/compression-htj2k256")]
-    [InlineData("invalid/exr/compression-htj2k32")]
+    [InlineData("htj2k256")]
+    [InlineData("htj2k32")]
+    public void EveryHighThroughputCompressionHasValidFixtures(string compression)
+    {
+        // The 32-bit channels are rejected with these compressions: their fixtures are HALF only
+        var fixtures = GetValidFixtures().Where(fixture => fixture.Entry.HasFeature("exr.compression=" + compression)).ToList();
+        Assert.NotEmpty(fixtures);
+        Assert.All(fixtures, fixture => Assert.True(fixture.Entry.HasFeature("exr.type=half")));
+    }
+
+    [Theory]
+    [InlineData("invalid/exr/compression-lj2k")]
+    [InlineData("invalid/exr/htj2k256-float")]
+    [InlineData("invalid/exr/htj2k32-uint")]
     public void RejectedCompressionsHaveFixtures(string id)
     {
         var fixture = GoldenCorpus.Default.Get(id);
@@ -60,7 +72,7 @@ public sealed class ExrDecoderConformanceTests
 
     public static TheoryData<string> DecodingFixtures => [.. DecodingIds];
 
-    private static IEnumerable<string> DecodingIds => GoldenCorpus.Default.GetIds(format: "exr", kind: FixtureKinds.Unsupported).Where(id => GoldenCorpus.Default.Get(id).Entry.ExrDecodings is not null);
+    private static IEnumerable<string> DecodingIds => GoldenCorpus.Default.GetIds(format: "exr", kind: FixtureKinds.Unsupported).Concat(GoldenCorpus.Default.GetIds(format: "exr", kind: FixtureKinds.Valid)).Where(id => GoldenCorpus.Default.Get(id).Entry.ExrDecodings is not null);
 
     [Theory]
     [MemberData(nameof(DecodingFixtures))]
@@ -68,7 +80,11 @@ public sealed class ExrDecoderConformanceTests
     {
         var fixture = GoldenCorpus.Default.Get(id);
         var data = fixture.ReadInput();
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+        if (fixture.Entry.Kind == FixtureKinds.Unsupported)
+        {
+            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+        }
+
         foreach (var decoding in fixture.ExrDecodings)
         {
             var options = new OpenExrDecodingOptions
@@ -77,9 +93,11 @@ public sealed class ExrDecoderConformanceTests
                 DeepData = Enum.Parse<OpenExrDeepDataMode>(decoding.DeepData ?? "Reject"),
                 Layer = decoding.Layer,
                 WindowMode = Enum.Parse<OpenExrWindowMode>(decoding.WindowMode),
+                LevelX = decoding.LevelX ?? 0,
+                LevelY = decoding.LevelY ?? 0,
             };
             var configuration = new ImageConfiguration { OpenExrDecoding = options };
-            var description = $"{id}, part {decoding.Part ?? "(single)"}, deep data {decoding.DeepData ?? "Reject"}, layer {decoding.Layer ?? "(every channel)"}, {decoding.WindowMode}";
+            var description = $"{id}, part {decoding.Part ?? "(single)"}, deep data {decoding.DeepData ?? "Reject"}, layer {decoding.Layer ?? "(every channel)"}, {decoding.WindowMode}, level ({options.LevelX}, {options.LevelY})";
             if (decoding.ExpectedError is { } error)
             {
                 Assert.Equal(error.Feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = configuration })).Feature);
@@ -111,6 +129,18 @@ public sealed class ExrDecoderConformanceTests
             using var frame = reader.ReadFrame();
             Assert.NotNull(frame);
             Assert.True(expected.Span.SequenceEqual(GetBytes(frame)), $"The pixels of {description} read by a reader differ from those of OpenEXR.");
+
+            if (decoding.HasLevel)
+            {
+                // The auxiliary images of the file list its levels, decoded with the other options
+                var levelOptions = new OpenExrDecodingOptions { Part = options.Part, DeepData = options.DeepData, Layer = options.Layer, WindowMode = options.WindowMode };
+                var collection = AuxiliaryImageCollection.Load(data, new ImageConfiguration { OpenExrDecoding = levelOptions });
+                var level = Assert.Single(collection, image => image.Level == new Point(options.LevelX, options.LevelY));
+                Assert.Equal(AuxiliaryImageKind.ResolutionLevel, level.Kind);
+                Assert.Equal(info.Size, level.Size);
+                using var auxiliary = level.Decode<RgbaFloat>();
+                Assert.True(expected.Span.SequenceEqual(GetBytes(auxiliary)), $"The pixels of {description} decoded as an auxiliary image differ from those of OpenEXR.");
+            }
         }
 
         static byte[] GetBytes(Image<RgbaFloat> image)
@@ -157,7 +187,10 @@ public sealed class ExrDecoderConformanceTests
         Assert.Contains(decoded, item => item.Decoding.ColorModel == "Rgba");
         Assert.Contains(decoded, item => item.Decoding.WindowMode == "CropToDisplayWindow");
         Assert.Contains(decoded, item => item.Decoding.WindowMode == "DataWindow");
-        foreach (var feature in new[] { "Missing layer", "Ambiguous layer", "Luminance-chroma channels", "Pixels outside the display window", "Missing part", "Deep data without depth or alpha" })
+        // The levels of mipmaps and ripmaps, and the levels the files do not have
+        Assert.Contains(decoded, item => item.Fixture.Entry.HasFeature("exr.levels=mipmap") && item.Decoding.HasLevel);
+        Assert.Contains(decoded, item => item.Fixture.Entry.HasFeature("exr.levels=ripmap") && item.Decoding.LevelX != item.Decoding.LevelY);
+        foreach (var feature in new[] { "Missing layer", "Ambiguous layer", "Luminance-chroma channels", "Pixels outside the display window", "Missing part", "Deep data without depth or alpha", "Missing level" })
         {
             Assert.Contains(decodings, item => item.Decoding.ExpectedError?.Feature == feature);
         }
@@ -167,7 +200,11 @@ public sealed class ExrDecoderConformanceTests
             .Select(GoldenCorpus.Default.Get)
             .Where(fixture => fixture.Entry.ExpectedError?.Feature is "Multi-part file" or "Deep data" or "Extra channels" or "Pixels outside the display window")
             .Select(fixture => fixture.Id);
-        Assert.Equal(rejected.Order(StringComparer.Ordinal), DecodingIds.Order(StringComparer.Ordinal));
+        Assert.Equal(rejected.Order(StringComparer.Ordinal), DecodingIds.Where(id => GoldenCorpus.Default.Get(id).Entry.Kind == FixtureKinds.Unsupported).Order(StringComparer.Ordinal));
+
+        // Every valid file of several levels declares the decodings of its other levels
+        var leveled = GetValidFixtures().Where(fixture => fixture.Entry.HasFeature("exr.levels=mipmap") || fixture.Entry.HasFeature("exr.levels=ripmap")).Where(fixture => fixture.Entry.Provenance.Origin != "external").Select(fixture => fixture.Id);
+        Assert.Equal(leveled.Order(StringComparer.Ordinal), DecodingIds.Where(id => GoldenCorpus.Default.Get(id).Entry.Kind == FixtureKinds.Valid).Order(StringComparer.Ordinal));
     }
 
     private static IEnumerable<GoldenFixture> GetValidFixtures() => GoldenCorpus.Default.Fixtures.Where(fixture => fixture.Entry.Format == "exr" && fixture.IsValid);

@@ -76,9 +76,10 @@ internal sealed class TiffPage
 
     /// <summary>
     /// Gets the number of bits of one sample of a decoded block: <see cref="BitsPerSample"/>, or 16 for the samples of 9
-    /// to 15 bits of a JPEG datastream, which its decoder scales to 16 bits.
+    /// to 15 bits of a JPEG datastream, which its decoder scales to 16 bits (or gives as they are stored, in 16 bits, for
+    /// a DNG raw image). The other samples of 9 to 15 bits of a DNG raw image stay packed.
     /// </summary>
-    public int DecodedBitsPerSample => BitsPerSample is > 8 and < 16 ? 16 : BitsPerSample;
+    public int DecodedBitsPerSample => IsJpeg && BitsPerSample is > 8 and < 16 ? 16 : BitsPerSample;
 
     /// <summary>
     /// Gets the format of the samples: <see cref="TiffFormat.SampleFormatUnsignedInteger"/> (also for an undefined
@@ -166,7 +167,25 @@ internal sealed class TiffPage
     public bool IsCcitt => Compression is TiffFormat.CompressionCcittRle or TiffFormat.CompressionCcittFax3 or TiffFormat.CompressionCcittFax4;
 
     /// <summary>Gets a value indicating whether each strip or tile is a JPEG datastream.</summary>
-    public bool IsJpeg => Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg;
+    public bool IsJpeg => Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg or TiffFormat.CompressionDngLossyJpeg;
+
+    /// <summary>
+    /// Gets a value indicating whether the page is the raw image of a DNG file (<see cref="ResolveDngRaw"/>): its samples
+    /// are the values of the sensor, which only the DNG pipeline interprets; nothing expands them into pixels.
+    /// </summary>
+    public bool IsDngRaw { get; private set; }
+
+    /// <summary>
+    /// Gets the distance, in pixels, of the sample a predictor of the page differences with: 1, or 2 and 4 for the
+    /// predictors of DNG (<c>Horizontal Difference X2</c> and <c>X4</c>, <c>Floating Point X2</c> and <c>X4</c>).
+    /// </summary>
+    public int PredictorDistance { get; private set; } = 1;
+
+    /// <summary>Gets a value indicating whether the page uses a horizontal differencing predictor.</summary>
+    public bool HasHorizontalDifferencing => Predictor is TiffFormat.PredictorHorizontalDifferencing or TiffFormat.PredictorHorizontalDifferencingX2 or TiffFormat.PredictorHorizontalDifferencingX4;
+
+    /// <summary>Gets a value indicating whether the page uses a floating-point predictor.</summary>
+    public bool HasFloatingPointPredictor => Predictor is TiffFormat.PredictorFloatingPoint or TiffFormat.PredictorFloatingPointX2 or TiffFormat.PredictorFloatingPointX4;
 
     /// <summary>Gets a value indicating whether the page uses the old-style JPEG compression of TIFF 6.0 (<see cref="OldJpeg"/>).</summary>
     public bool IsOldJpeg => Compression == TiffFormat.CompressionOldJpeg;
@@ -243,11 +262,15 @@ internal sealed class TiffPage
     {
         get
         {
+            // The raw samples of a DNG file become pixels in the DNG pipeline only
+            if (IsDngRaw)
+                return PixelFormat.RgbaFloat;
+
             if (IsPalette)
                 return HasSixteenBitColorMap ? PixelFormat.Rgb48 : PixelFormat.Rgb24;
 
             if (IsFloatingPoint)
-                return DefaultPixelFormats.ForTiffFloatingPoint(BitsPerSample);
+                return DefaultPixelFormats.ForTiffFloatingPoint(IsGrayscale, HasAlpha, BitsPerSample);
 
             return DefaultPixelFormats.ForTiff(IsGrayscale, HasAlpha, DecodedBitsPerSample == 16);
         }
@@ -291,6 +314,34 @@ internal sealed class TiffPage
             page.ResolveMetadata(context);
         }
 
+        return page;
+    }
+
+    /// <summary>
+    /// Resolves and validates the raw image of a DNG file: its geometry, its strips or tiles and how they are stored, as
+    /// the DNG specification 1.7.1 restricts and extends the TIFF tags (chapter 3). The samples are those of a color filter
+    /// array (<c>CFA</c>, one per pixel) or of linear raw data (<c>LinearRaw</c>, one to four per pixel): unsigned integers
+    /// of 8 to 16 bits (packed most significant bit first when they are not 8 or 16 bits) or floating-point numbers of 16,
+    /// 24 or 32 bits; uncompressed, Deflate (with the predictors of DNG), lossless JPEG (whose frames only need to hold as
+    /// many samples as the block), or lossy JPEG of 8-bit linear raw data. The metadata is the one of the DNG file, which
+    /// the DNG decoder reads: the page has none.
+    /// </summary>
+    /// <param name="directory">The raw IFD.</param>
+    /// <param name="index">The index of the page, for messages.</param>
+    /// <param name="context">The operation context.</param>
+    /// <returns>The page.</returns>
+    /// <exception cref="InvalidImageContentException">A required tag is missing, or a tag is inconsistent with the rest of the image.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The raw image uses a recognized but unsupported variant.</exception>
+    /// <exception cref="ImageResourceLimitException">The raw image exceeds a configured limit.</exception>
+    public static TiffPage ResolveDngRaw(TiffDirectory directory, int index, ImageCodecContext context)
+    {
+        ArgumentNullException.ThrowIfNull(directory);
+        ArgumentNullException.ThrowIfNull(context);
+        var page = new TiffPage(directory, index, context.IsLenient) { IsDngRaw = true };
+        page.ResolveGeometry(context);
+        page.ResolveRawSamples();
+        page.ResolveRawCompression();
+        page.ResolveBlocks(context);
         return page;
     }
 
@@ -457,6 +508,131 @@ internal sealed class TiffPage
                 break;
         }
     }
+
+    /// <summary>
+    /// Resolves the samples of a DNG raw image (DNG specification 1.7.1, chapter 3): a color filter array of one sample per
+    /// pixel, or linear raw data of one to four samples per pixel; unsigned integers of 8 to 16 bits, or floating-point
+    /// numbers of 16, 24 or 32 bits.
+    /// </summary>
+    private void ResolveRawSamples()
+    {
+        if (!Directory.TryGetUnsigned(TiffFormat.PhotometricInterpretationTag, out var photometric))
+            throw DngRawInvalid("has no PhotometricInterpretation tag, which is required");
+
+        if (photometric is not (TiffFormat.PhotometricCfa or TiffFormat.PhotometricLinearRaw))
+            throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; CFA and LinearRaw raw data are supported."), string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric} in a raw IFD"));
+
+        Photometric = (int)photometric;
+        var samplesPerPixel = Directory.TryGetUnsigned(TiffFormat.SamplesPerPixelTag, out var samples) ? samples : 1;
+        if (Photometric == TiffFormat.PhotometricCfa && samplesPerPixel != 1)
+            throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file stores {samplesPerPixel} samples per pixel of a color filter array; a color filter array of one sample per pixel is supported."), "SamplesPerPixel: several samples of a color filter array");
+
+        if (samplesPerPixel is 0 or > 4)
+            throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file stores {samplesPerPixel} samples per pixel; linear raw data of 1 to 4 samples are supported."), string.Create(CultureInfo.InvariantCulture, $"SamplesPerPixel: {samplesPerPixel} in a raw IFD"));
+
+        SamplesPerPixel = (int)samplesPerPixel;
+        var bits = TryReadPerSampleValues(TiffFormat.BitsPerSampleTag) ?? [.. Enumerable.Repeat(1UL, SamplesPerPixel)];
+        if (_isLenient && bits.Length == 1 && SamplesPerPixel > 1)
+        {
+            bits = [.. Enumerable.Repeat(bits[0], SamplesPerPixel)];
+        }
+
+        if (bits.Length != SamplesPerPixel)
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"declares {bits.Length} BitsPerSample values for {SamplesPerPixel} samples per pixel"));
+
+        // DNG requires the same depth for every sample (chapter 3, BitsPerSample)
+        foreach (var value in bits)
+        {
+            if (value != bits[0])
+                throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"mixes sample widths ({string.Join(", ", bits)} bits), which DNG does not allow"));
+        }
+
+        SampleFormat = ResolveSampleFormat();
+        switch (SampleFormat)
+        {
+            case TiffFormat.SampleFormatFloat when bits[0] is not (16 or 24 or 32):
+                throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"stores {bits[0]}-bit floating-point samples; DNG allows 16, 24 and 32 bits"));
+
+            case TiffFormat.SampleFormatSignedInteger:
+                throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file stores signed integer samples; DNG stores unsigned integer and floating-point samples."), "SampleFormat: signed integers in a raw IFD");
+
+            case TiffFormat.SampleFormatUnsignedInteger when bits[0] is < 8 or > 16:
+                throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file stores {bits[0]}-bit integer samples; samples of 8 to 16 bits are supported."), string.Create(CultureInfo.InvariantCulture, $"BitsPerSample: {bits[0]} in a raw IFD"));
+        }
+
+        BitsPerSample = (int)bits[0];
+    }
+
+    /// <summary>
+    /// Resolves how the blocks of a DNG raw image are stored (DNG specification 1.7.1, chapter 3, Compression and Predictor):
+    /// uncompressed, lossless JPEG (7), Deflate (8, with the predictors of TIFF and DNG) or lossy JPEG (34892, 8-bit linear
+    /// raw data); one plane.
+    /// </summary>
+    private void ResolveRawCompression()
+    {
+        var compression = Directory.TryGetUnsigned(TiffFormat.CompressionTag, out var value) ? value : TiffFormat.CompressionNone;
+        if (compression is not (TiffFormat.CompressionNone or TiffFormat.CompressionJpeg or TiffFormat.CompressionAdobeDeflate or TiffFormat.CompressionDeflate or TiffFormat.CompressionDngLossyJpeg or TiffFormat.CompressionJpegXl))
+            throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file uses {TiffFormat.GetCompressionName((long)compression)} compression; uncompressed, lossless JPEG, Deflate, lossy JPEG and JPEG XL raw data are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: {compression} in a raw IFD"));
+
+        // JPEG XL codes one or three planes of integers of 8 to 16 bits, or of 16-bit floating-point numbers (chapter 3)
+        if (compression == TiffFormat.CompressionJpegXl && (SamplesPerPixel is not (1 or 3) || (IsFloatingPoint && BitsPerSample != 16)))
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"uses JPEG XL compression with {SamplesPerPixel} samples of {BitsPerSample} bits; DNG allows one or three planes of integers or of 16-bit floating-point numbers"));
+
+        Compression = (int)compression;
+        var planar = Directory.TryGetUnsigned(TiffFormat.PlanarConfigurationTag, out var planarValue) ? planarValue : TiffFormat.PlanarChunky;
+        if (planar is not (TiffFormat.PlanarChunky or TiffFormat.PlanarSeparate))
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"uses the planar configuration {planar}"));
+
+        if (planar == TiffFormat.PlanarSeparate && SamplesPerPixel > 1)
+            throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file stores its {SamplesPerPixel} samples in separate planes; chunky samples are supported."), "PlanarConfiguration: 2 in a raw IFD");
+
+        // Packed samples are stored most significant bit first, even in a little-endian file (chapter 3, BitsPerSample)
+        var fillOrder = Directory.TryGetUnsigned(TiffFormat.FillOrderTag, out var fillOrderValue) ? fillOrderValue : TiffFormat.FillOrderMostSignificantBitFirst;
+        if (fillOrder != TiffFormat.FillOrderMostSignificantBitFirst)
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"uses the fill order {fillOrder}; DNG requires the default fill order"));
+
+        if (IsFloatingPoint && (IsJpeg || Compression is TiffFormat.CompressionDngLossyJpeg))
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"uses {TiffFormat.GetCompressionName(Compression)} compression with floating-point samples, which DNG compresses with Deflate"));
+
+        if (Compression == TiffFormat.CompressionDngLossyJpeg && (BitsPerSample != 8 || Photometric != TiffFormat.PhotometricLinearRaw))
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"uses lossy JPEG compression with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data; DNG allows it for 8-bit LinearRaw data"));
+
+        var predictor = Directory.TryGetUnsigned(TiffFormat.PredictorTag, out var predictorValue) ? predictorValue : TiffFormat.PredictorNone;
+        PredictorDistance = predictor switch
+        {
+            TiffFormat.PredictorNone or TiffFormat.PredictorHorizontalDifferencing or TiffFormat.PredictorFloatingPoint => 1,
+            TiffFormat.PredictorHorizontalDifferencingX2 or TiffFormat.PredictorFloatingPointX2 => 2,
+            TiffFormat.PredictorHorizontalDifferencingX4 or TiffFormat.PredictorFloatingPointX4 => 4,
+            _ => throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file uses predictor {predictor}; no predictor, horizontal differencing and the floating-point predictor (with the X2 and X4 variants of DNG) are supported."), string.Create(CultureInfo.InvariantCulture, $"Predictor: {predictor} in a raw IFD")),
+        };
+
+        Predictor = (int)predictor;
+
+        // DNG allows the predictors with Deflate compression only; the lossless JPEG datastream has its own
+        if (Predictor != TiffFormat.PredictorNone && !IsDeflate)
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"uses predictor {Predictor} with {TiffFormat.GetCompressionName(Compression)} compression; DNG allows predictors with Deflate compression only"));
+
+        if (HasHorizontalDifferencing && (IsFloatingPoint || BitsPerSample is not (8 or 16)))
+            throw DngRawUnsupported(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file uses horizontal differencing with {BitsPerSample}-bit {GetSampleFormatName()} samples; it is supported with 8- and 16-bit integer samples."), "Predictor: horizontal differencing with this sample layout");
+
+        if (HasFloatingPointPredictor && !IsFloatingPoint)
+            throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"uses the floating-point predictor {Predictor} with integer samples"));
+
+        if (IsJpeg && Directory.Find(TiffFormat.JpegTablesTag) is { } field)
+        {
+            var length = TiffDirectory.GetValueLength(field);
+            if (field.Type is not (TiffFieldType.Undefined or TiffFieldType.Byte) || length > TiffFormat.MaxJpegTablesLength)
+                throw DngRawInvalid(string.Create(CultureInfo.InvariantCulture, $"declares a JPEGTables tag of {field.Count} values of {TiffFieldTypes.GetName(field.Type)}"));
+
+            using var buffer = Directory.ReadValues(field);
+            JpegTables = buffer.Span.ToArray();
+        }
+    }
+
+    private InvalidImageContentException DngRawInvalid(string problem)
+        => new(string.Create(CultureInfo.InvariantCulture, $"The raw image (IFD {Index}) of the DNG file {problem}."), ImageFormat.Dng);
+
+    private static UnsupportedImageFeatureException DngRawUnsupported(string message, string feature) => new(message, ImageFormat.Dng, feature);
 
     /// <summary>Reads the format of the samples, which must be the same for every sample of a pixel.</summary>
     private int ResolveSampleFormat()
@@ -724,7 +900,8 @@ internal sealed class TiffPage
             if (tileWidth == 0 || tileLength == 0 || tileWidth > int.MaxValue || tileLength > int.MaxValue)
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares {tileWidth}x{tileLength} tiles; both dimensions must be positive and representable."));
 
-            if (tileWidth % 16 != 0 || tileLength % 16 != 0)
+            // DNG writers (the DNG SDK among them) size tiles to the image, whatever TIFF requires
+            if (!IsDngRaw && (tileWidth % 16 != 0 || tileLength % 16 != 0))
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares {tileWidth}x{tileLength} tiles; TIFF requires both to be multiples of 16."));
 
             BlockWidth = (int)tileWidth;

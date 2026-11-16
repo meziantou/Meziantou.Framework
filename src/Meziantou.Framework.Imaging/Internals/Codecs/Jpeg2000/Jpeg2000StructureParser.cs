@@ -39,6 +39,7 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
     private readonly DecodedMetadataBuilder _metadata;
     private readonly Jpeg2000CodestreamWalker _walker;
     private readonly bool _isEmbedded;
+    private readonly bool _allowNonLinearity;
 
     private State _state;
     private bool _isFile;
@@ -67,7 +68,11 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
     /// page), which says what its components are: the boxes of a file are then not interpreted, no channel layout is
     /// resolved and the observer receives the components as they are.
     /// </param>
-    public Jpeg2000StructureParser(ImageCodecContext context, StructureWalk walk, Jpeg2000DecodeObserver? observer = null, bool isEmbedded = false)
+    /// <param name="allowNonLinearity">
+    /// <see langword="true"/> when the embedding format applies the non-linearity point transformations of the codestream
+    /// (<see cref="GetNonLinearity"/>), the one extension of ISO/IEC 15444-2 that is then accepted.
+    /// </param>
+    public Jpeg2000StructureParser(ImageCodecContext context, StructureWalk walk, Jpeg2000DecodeObserver? observer = null, bool isEmbedded = false, bool allowNonLinearity = false)
         : base(ImageFormat.Jpeg2000)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -82,7 +87,14 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
         _metadata = new DecodedMetadataBuilder(context.Tracker, ImageFormat.Jpeg2000);
         _walker = new Jpeg2000CodestreamWalker(context.Scope, collect: walk == StructureWalk.Decode);
         _isEmbedded = isEmbedded;
+        _allowNonLinearity = isEmbedded && allowNonLinearity;
     }
+
+    /// <summary>Gets a value indicating whether a tile-part header has an NLT marker segment.</summary>
+    public bool HasTileNonLinearity => _walker.HasTileNonLinearity;
+
+    /// <summary>Gets the non-linearity point transformation the main header gives a component, or <see langword="null"/>.</summary>
+    public Jpeg2000NonLinearity? GetNonLinearity(int component) => _walker.GetNonLinearity(component);
 
     private enum State
     {
@@ -545,7 +557,7 @@ internal sealed class Jpeg2000StructureParser : ImageParser<ImageInfo>
     {
         var siz = Siz;
         _context.Limits.EnsureCanvasWithinLimits(siz.Width, siz.Height);
-        Jpeg2000FeaturePolicy.EnsureSupported(siz);
+        Jpeg2000FeaturePolicy.EnsureSupported(siz, _allowNonLinearity);
     }
 
     private ParseStatus? OnMainHeader()

@@ -56,6 +56,15 @@ internal sealed class TiffDirectory
     /// <summary>Gets the entries, in file order.</summary>
     public ReadOnlySpan<TiffField> Fields => _fields;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the values of a tag are charged to the encoded-byte limit only the first time
+    /// they are read: the DNG decoder reads some tags of IFD 0 for several purposes (the camera profile, the properties, the
+    /// EXIF profile). A value read again is read again, into a buffer of the scope; no copy of it is kept.
+    /// </summary>
+    public bool CachesValues { get; set; }
+
+    private HashSet<ushort>? _readTags;
+
     /// <summary>Reads the directory at an offset.</summary>
     /// <param name="source">The input.</param>
     /// <param name="header">The file header.</param>
@@ -161,7 +170,12 @@ internal sealed class TiffDirectory
         }
 
         var offset = GetValueOffset(field);
-        return _source.ReadToBuffer(offset, length);
+        if (!CachesValues)
+            return _source.ReadToBuffer(offset, length);
+
+        // A value read again is not charged to the encoded-byte limit again: the set of the tags read keeps no bytes alive
+        _readTags ??= [];
+        return _source.ReadToBuffer(offset, length, charge: _readTags.Add(field.Tag));
     }
 
     /// <summary>Gets the offset of the out-of-line values of an entry.</summary>

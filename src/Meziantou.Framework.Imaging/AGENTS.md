@@ -2,7 +2,10 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive), JPEG 2000, OpenEXR and Radiance HDR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+progressive), JPEG 2000, OpenEXR, Radiance HDR, DPX and Kodak Cineon decoding and encoding, PSD decoding (the
+composite image) and encoding (flat documents), DNG decoding and encoding (linear raw data), DDS and KTX 2.0 decoding
+and encoding (BC1 to BC7, ETC2, EAC, ASTC), lossless JPEG recompression
+(`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2, PostScript Type 1), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -50,8 +53,11 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   processors that replace every frame through the geometry transaction; the built-in seam carving and inpainting use the
   same path and implement the internal `INativePixelCopier` so that the pixels they keep are copied, not converted),
   `Image.WrapMemory` (caller-owned
-  pixel memory) and `ImageBufferPool` (the retention of the pool). No public allocator and no custom pixel type: the
-  pixel formats are a closed set that every kernel, converter and codec switches over. Implementation types are
+  pixel memory), `ImageBufferPool` (the retention of the pool), `ImageBufferAllocator` (`ImageConfiguration.BufferAllocator`,
+  the arrays of the scopes of a configuration, see Memory) and `ICustomPixel<TSelf>` (a pixel type of the caller that
+  converts rows from and to a built-in storage format: import, copy and row editing only). The pixel formats stay a
+  closed set that every kernel, converter and codec switches over: a custom pixel type never reaches them, and
+  `Image<TPixel>` takes the built-in types only. Implementation types are
   `internal` and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
   pens, paths, the canvas) and `.Typography` (fonts). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
@@ -175,6 +181,19 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
   decoders are the ones that produce them. TIFF floating-point pages are linear light unless an ICC profile describes
   them: `MetadataWritePlan` gives them the linear label (`FormatCapabilities.TiffFloatingPoint`) and rejects sRGB-labeled
   floats without profile, which would be relabeled.
+- `GrayFloat`, `GrayHalf`, `LaFloat` and `LaHalf` are the floating-point gray formats (`PixelConverter.IsFloatGray`).
+  Their conversions are in `PixelConverter.Float.cs` too: a color becomes its luma in double precision without
+  clipping, but a gray color keeps its level (`PixelConverter.GetGrayLevel`), and an integer gray sample is the same
+  fraction as in the color format of the precision, so that gray goes back and forth exactly. They widen to `RgbaFloat`
+  or `RgbaHalf` (`PixelFormatWidening`, which is also the layout their decoders write: keep the decoder rows RGBA), the
+  processing kernels run them through `ProcessingBridge` in that format, the tone operations (`ToneSamples`,
+  `ColorLookup.ApplyFloatGray`) read them natively, and drawing composites them in `FloatDrawingKernels` (the gray
+  level of the result; the colors over black for `GrayFloat` and `GrayHalf`, which have no alpha). The encoders that do
+  not store floats reduce them to `Gray16` or `La32` (`PixelFormatWidening.GetReducedFloatingPointFormat`).
+  `OpenExrEncoder` and `DpxEncoder` store them (`StoresPixelFormat`); TIFF gets the widened format and writes one or two
+  samples when the pixels are gray. DDS loads its single-channel floating-point textures (R16_FLOAT, R32_FLOAT, signed
+  BC4) as `GrayHalf` or `GrayFloat`; its corpus is generated on Windows, so the expected formats of those fixtures were
+  changed in `DdsCorpus` and in the manifest together (the references stay `rgbaf32le`).
 - Drawing (`FloatDrawingKernels`): paints keep 16-bit samples (`DrawingKernels.GetPaintMax`), are composited in double
   precision over the stored values without clipping the colors, and color matrices are applied in place. Layers,
   patterns, groups and filter surfaces stay `Rgba64`, so what goes through them must be in [0, 1].
@@ -182,8 +201,13 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
 ## Memory
 
 - Every library-controlled buffer (pixels, decoder and compositor state, input buffers, scratch, encoder state) is rented
-  from `SlabPool` and charged at its actual rented capacity to an `AllocationScope`, which is bounded by
-  `MaxLiveAllocationBytes`. Never allocate a large buffer outside a scope; charge before renting.
+  from the `IBufferPool` of its `AllocationScope` and charged at its actual rented capacity to it, which is bounded by
+  `MaxLiveAllocationBytes`. Never allocate a large buffer outside a scope; charge before renting. The pool is `SlabPool`
+  (`SlabPool.Shared`), or `AllocatorBufferPool` when the configuration has an `ImageBufferAllocator`
+  (`AllocationScope.Create` takes `ImageConfiguration.BufferPool`): the capacity it charges is the
+  `GetBufferLength` the allocator declares, and an array of another length is returned to it and rejected, so that the
+  charged bytes stay the bytes in use. Every scope of an operation must come from `AllocationScope.Create` with the
+  configuration of the image, or the allocator of the caller is bypassed.
 - Pixel storage is made of row-aligned slabs: rows are contiguous, the whole image is not. All size arithmetic is checked
   (`CheckedSizes`). Newly visible pixels are cleared; padding and scratch data are never exposed.
 - Pixel access goes through exclusive scoped leases (`ProcessPixelRows`, `ProcessPixelBytes`, `CopyPixel*To`). Cross-image
@@ -229,8 +253,9 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
-  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (none
-  today) makes `ImageEncoder.FromPath` reject its extensions with a message that says so.
+  public `ImageEncoder` in `Formats/` and its extensions in `ImageEncoder.FromPath`. A format that is only read (DDS,
+  KTX 2.0) makes `ImageEncoder.FromPath` reject its extensions with a message that says so, and `ImageEncoder.Create` reject
+  its `ImageFormat` member.
 - **PNG `MinimumSize`** (`PngOptimizedEncoderSession`, a session of its own): the default session must keep writing the
   same bytes, so the search never goes through it. Candidates are compressed to a byte counter
   (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
@@ -994,8 +1019,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   bit-exact with the scalar build of OpenEXR (the reference tools are built that way); their perceptual table is pinned by
   a hash. ZSTD (`ExrZstd`, section 13) wraps a fully managed Zstandard decoder written from RFC 8878
   (`Internals/Compression/ZstdDecoder`, with the XXH64 checksum). Meziantou.Framework.Geo.GeoParquet compiles these two
-  files too, before .NET 11 (`MEZIANTOU_FRAMEWORK_IMAGING` picks the namespace): keep them free of Imaging types. HTJ2K and LJ2K (section 14) are not decoded: the JPEG
-  2000 decoder has no signed components, no 32-bit components and no NLT marker.
+  files too, before .NET 11 (`MEZIANTOU_FRAMEWORK_IMAGING` picks the namespace): keep them free of Imaging types. HTJ2K256 and HTJ2K32 (section 14) are decoded by `ExrHtj2k`, a
+  `Jpeg2000DecodeObserver` of embedded codestreams (`allowNonLinearity`: the Part 2 capability bit is accepted when NLT is
+  its only extension) that applies the type 3 NLT (binary complement) to 16-bit signed components and writes the chunk
+  layout; FLOAT and UINT channels are rejected with the header (32-bit components need a 64-bit block decoder path), and
+  LJ2K too (irreversible colors and OpenJPH's type 4 NLT table, not bit-exact).
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.
 - **Radiance HDR** (`Internals/Codecs/Radiance`). Written from the Radiance file format documentation ("Picture File
@@ -1010,6 +1038,140 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   SharpFuzz target checks it). Header variables are metadata: one that cannot be read is skipped, never an error.
   XYZE is identified and rejected by a load, since converting XYZ to RGB would be an implicit color conversion.
   `MetadataWritePlan` treats it as linear light only, like OpenEXR.
+- **PSD** (`Internals/Codecs/Psd`). Written from the Adobe Photoshop File Formats Specification. Only the composite image (the image data section, written with "Maximize Compatibility") is decoded; the layer
+  section is skipped, and a version info resource (1057) without real merged data is `UnsupportedImageFeatureException`
+  (`No composite image`) from a load. `PsdStructureParser` walks the header, the color mode data (the color table of an
+  indexed image; the duotone specification is skipped), the image resources (1005, 1039, 1047, 1057, 1058, 1060 read,
+  their bytes charged to `MaxMetadataBytes` first; the others skipped), the layer and mask information up to the layer
+  count, then the image data, raw or PackBits (strict: a row gives exactly its bytes from exactly its stored count).
+  Version 2 (PSB) has 8-byte section lengths, 4-byte row counts and 8-byte lengths for the tagged blocks of
+  `PsdFormat.HasLargeLength`. The header walk stops at the layer count; a full scan decompresses every row; ZIP image
+  data stops a full scan at the compression field and is rejected by a load. A negative layer count, in the layer info
+  or in the `Lr16`/`Lr32`/`Layr` block after the global layer mask info (16 and 32-bit documents), makes the first channel
+  after the color channels the alpha of the composite ("merged alpha"); the other extra channels (selections, spot
+  colors) are skipped. The channels are stored one after the other, so `PsdDecoder` gathers them into a staging image of
+  the stored samples (about one extra copy of the image, charged to the allocation scope) and converts the rows at the
+  end. With alpha, the colors are stored matted over white: the decoder un-mattes them,
+  `round((s × max − w × (max − α)) / α)` clipped to [0, max] (the stored samples where α is 0, as ImageMagick keeps them; floats `(s − (1 − α)) / α`, not clipped),
+  `w` being the largest sample (no ink for the inverted CMYK samples), 128 for a* and b*. CMYK is loaded as inks
+  (`Cmyk32`/`Cmyk64`) or through `CmykConversion`, Lab (8 bits) only through `CieLabConversion`, as for TIFF.
+  Multichannel, 32-bit CMYK, 16 and 32-bit Lab and 32-bit duotone are rejected from the header, `Identify` included.
+  `PsdEncoderCodec` writes flat documents (gray, RGB, CMYK inverted; 8, 16, 32 bits; raw or PackBits through
+  `TiffPackBits`, PSB on request or above 30,000 pixels). An image with transparency needs a layer: the negative layer
+  count is the only flag of the merged alpha, so one layer holds the image (in `Lr16`/`Lr32` for 16/32 bits, as
+  Photoshop), the composite matted over white, the layer exact. `ValidateFrame` compresses every row of every plane once
+  to know the lengths the row tables and the layer record give first (no seekable destination, no copy of the image).
+  Oracles: `psd-tools dump` (composite and layer samples) and ImageMagick (composite and layer; it does not un-matte gray
+  composites).
+- **DNG** (`Internals/Codecs/Dng`). Written from the DNG specification 1.7.1.0, never from LibRaw, dcraw, rawspeed or
+  the DNG SDK. DNG shares the signature of TIFF, so it has no codec of its own: `TiffCodec` reads the first directory and
+  hands a file with `DNGVersion` to `DngDecoder` (results of `ImageFormat.Dng`; `GetDetectedFormat` tells DNG when the
+  prefix holds that directory). The TIFF reader is reused, never duplicated: `TiffPage.ResolveDngRaw` resolves the raw
+  IFD (CFA and LinearRaw, packed 9 to 15-bit samples, the X2/X4 predictors, tiles of any size, compressions 34892 and
+  52546), `TiffBlockReader` decompresses its blocks, and a lossless JPEG block whose frame has another shape or two
+  components is read as a sequence of samples (`JpegSampleReceiver.ReceivesStoredSamples`: unscaled, never color
+  converted). JPEG XL tiles go through `JpegXlCodec` with `ImageCodecContext.ForEmbeddedDatastream` (the scope of the
+  file, a tracker of their own). `DngPipeline` holds the stages (stored values, linear values, demosaicing) as
+  `DngPlanes`, single precision computed in double; `DngOpcodeList` and `DngColorProfile` document the choices the
+  specification leaves open, and `ReferenceDng` of the test harness mirrors them: the corpus compares the two exactly,
+  so a change of a stage changes both, and the generator (`DngCorpus.cs`) is rerun. A directory or a tag value is never
+  charged twice (`TiffDirectory.CachesValues`): reads of a seekable stream are charged to the encoded-byte limit one by
+  one, and a tag read again is read without a charge, into a buffer of the scope (no copy is kept). The canvas limits apply to the stored raw image, which the default crop makes smaller. Oracles: `dng_validate`
+  of the DNG SDK (stages 1 and 2 exact; its rendering, with the identity `ProfileToneCurve` and `DefaultBlackRender` 1
+  of the scenes, within a tolerance, the demosaicing differing) and LibRaw `unprocessed_raw` (stored samples).
+  `DngEncoderCodec` writes linear raw data only: `DngRawImage` gives no camera profile, so a CFA mosaic cannot be written
+  back faithfully. The camera space is linear BT.709 (`ColorMatrix1` and `ForwardMatrix1` from `DngColorProfile`'s own
+  matrices, so the decoder renders the image back), sRGB samples are stored as they are with a `LinearizationTable`,
+  floats above 1 get an integer `WhiteLevel` and the matching `BaselineExposure`, and lossless JPEG tiles go through
+  `JpegEncoderCodec` (one tile image, never larger than the image: LibRaw misreads wider tiles). The directory follows the
+  data (seekable destination). Oracles: `dng_validate` (no warning, stages 1 and 2, its rendering within 0.003 of sRGB)
+  and LibRaw `dcraw_emu -4 -o 0` (linear values; no float DNG, a gain of its own on monochrome data).
+- **DDS** (`Internals/Codecs/Dds`, read only). `DdsHeader` validates the headers and computes the size and the offset of
+  every surface (never from `dwPitchOrLinearSize`, which strict mode only checks against them); `DdsPixelLayout` resolves
+  the pixel format to the lossless representation it decodes to; `DdsRowDecoder` turns a stored row (of pixels or of
+  4x4 blocks) into rows of `DdsPixelLayout.SourcePixelFormat`. A load and a full identification read the headers and the
+  first surface only; `DdsCollectionReader` lists every surface (`ImageCollectionKind.TextureSurfaces`) and decodes one
+  by giving the parser the headers followed by that surface. The block decoders (`Internals/Codecs/BlockCompression`:
+  `BlockDecoder`, `BptcTables`) are independent of the container: DDS and KTX 2.0 (`Ktx2BcnBlocks`) use them. They
+  follow the Khronos Data Format Specification 1.3.1; the BPTC tables were extracted from its text by a script and checked against each other
+  (the bit layouts of the BC6H modes against Tables 123 and 124). BC7 and BC6H are exact; BC1 to BC5 are rounded once
+  from the real numbers of the specification (8 bits, halves up; multiples of 1/127 for the signed formats, as
+  DirectXTex rounds them). Writing: see "Texture encoders" below.
+- **Texture encoders** (`DdsEncoder`, `Ktx2Encoder`; `Internals/Codecs/Textures`, `DdsTextureWriter`,
+  `Ktx2TextureWriter`; block encoders in `Internals/Codecs/BlockCompression`: `S3tcBlockEncoder`, `Bc7BlockEncoder`,
+  `Bc6HBlockEncoder`, `Etc2BlockEncoder`/`EacBlockEncoder`, `AstcBlockEncoder`). Written from the specifications (the
+  same sections as the decoders), never from DirectXTex, bc7enc, etcpak, astcenc or basisu. Decisions to keep:
+  - The block encoders are deterministic (CI pins the SHA-256 of their output per format and level): integer decisions,
+    scalar IEEE arithmetic, no `Math.Pow`/`Exp`/`Log`, no width-dependent vector reductions, deterministic ties. Every
+    candidate is scored by decoding it as the decoder of the library does. Two levels (`TextureCompressionQuality`):
+    keep `Fast` a single good attempt and `Thorough` bounded (seconds for 1024x1024, not minutes).
+  - The containers encode every surface into buffers charged to the scope before writing (DDS and KTX 2.0 give the
+    sizes of every level first, KTX stores the levels from the smallest); `TextureSurfaceEncoder` encodes one row of
+    blocks per step, generating each mip level from the previous one (`TextureMipmaps`: exact-area box, alpha-weighted,
+    linear light for sRGB integer samples, with the rational sRGB function of `LinearRgbLoader` and a search for the
+    inverse, so no libm). Edge blocks repeat the last row and column.
+  - Losses need settings, checked before anything is written (`TextureValidation`): `AllowBitDepthReduction` when the
+    pixels have more bits than the format (halves keep 11 bits of integers), `AllowChannelReduction` for the channels the
+    format lacks, and values outside the range of a floating-point or signed format are rejected, never clamped. The
+    block encoders themselves clamp anything (NaN, infinities) so that the fuzz target can feed them any bytes.
+  - KTX 2.0 picks `_SRGB` or `_UNORM` from the transfer function of the image; DDS exposes the DXGI formats (`_SRGB`
+    explicit). The DFD bounds are those of KTX-Software 4.4 (`ktx create --raw` dumps: unsigned 0..2^n-1 or all ones,
+    signed 0x80000000..0x7FFFFFFF, floats -1.0..1.0, BC6H UF 0..1.0); `bytesPlane0` stays the block size under
+    supercompression. One-channel KTX formats get `KTXswizzle` `rrr1`.
+  - Oracles (`TextureEncoderInteropTests`): `ktx validate --warnings-as-errors` for every KTX format, `ktx extract` and
+    `astcenc -dh` for ASTC, Apple ImageIO for ETC2/EAC (it ignores `KTXswizzle`), `oiiotool --dumpdata` for DDS. OpenImageIO
+    3.2 reads neither R16G16B16A16, R32G32B32A32_FLOAT (in either header) nor the BC4S/BC5S FourCCs or DXGI codes, and
+    prints 8-bit codes (R16 reduced to 8 bits); those formats are checked against the decoder only.
+- **DPX and Cineon** (`Internals/Codecs/Dpx`, `Internals/Codecs/Cineon`, `RawRowDecoder`). Written from SMPTE ST 268:2014
+  (a free PDF of SMPTE's document library) and the Cineon 4.5 draft. Both are a fixed header then raw lines: the
+  structure parsers read the header (DPX: 1,664 bytes, then the industry-specific headers when the data start after byte
+  2,048; Cineon: 1,024 bytes, then the motion-picture section), skip to the data and read one stored line at a time;
+  `DpxRowReader`/`CineonRowReader` unpack it into the source layout, and `RawRowDecoder` hands it to the sink (floats
+  through a staging image converted at the end, so that truncation is reported before a conversion rejects a sample).
+  The standard leaves the layout of components in words ambiguous (its figures put datum 0 in the low bits, Table 1 says
+  blue comes first, every writer stores red first): the rules are what FFmpeg, ImageMagick and OpenImageIO agree on, and
+  each one is a fixture cross-checked with the three tools (see the generator below). Keep these findings:
+  - Lines start on a 32-bit word at every depth (Table 3C); OpenImageIO pads no 8/12/16-bit line, ImageMagick no 12/16-bit
+    one, FFmpeg pads them all. 10-bit filled words put the first component at the top for multi-component elements and at
+    the bottom for single-component ones; packed 10/12-bit and 1-bit data are LSB-first bit streams (ImageMagick reads
+    1-bit MSB-first, against the standard). No tool reads run-length encoding: it is rejected, not implemented.
+  - Samples load as stored, scaled with `(v × 65535 + max / 2) / max` (OpenImageIO uses bit replication, which differs by
+    one at most: the generator recovers its codes with a shift). The transfer is a label: only linear (2) and the
+    BT.709/BT.601 pairs of Tables 5A/5B map to `ColorTransferFunction.Linear` or a CICP description; printing density is
+    never converted (no log-to-linear helper exists).
+  - Cineon 8/16-bit samples are streams whatever the cell (ImageMagick and OpenImageIO), but lines end on a cell boundary
+    (ImageMagick writes it; OpenImageIO does not skip it).
+  - Only the first DPX image element is decoded. The encoder writes one element at offset 8,192, 10/12 bits filled with
+    method A, and ignores `DpxHeader`.
+  - `CineonEncoderCodec` writes big-endian packing 5 (10-bit RGB one pixel per left-justified word, gray three per word
+    from the top; 8/16 bits as streams padded to a word, as ImageMagick) and copies `CineonHeader` (carried by
+    `MetadataWritePlan.CineonHeader`). ImageMagick reads gray 10-bit words from the bottom and converts Cineon from log
+    unless the colorspace is set (`sRGB`, `Gray` for one channel); FFmpeg has no Cineon decoder (its `.cin` is Delphine
+    CIN). Encoders that store separate components share `ComponentRowReader`.
+- **KTX 2.0** (`Internals/Codecs/Ktx2`). Written from the KTX File Format Specification 2.0 (revision 4), the
+  Khronos Data Format Specification 1.4 (sections 5, 21 to 23 and 25) and Appendices C and D of the KTX specification
+  (BasisLZ), never from KTX-Software, astcenc or basisu. A random-access container, like TIFF and ICO
+  (`RequiresRandomAccess`): `Ktx2Texture.Read` validates the whole structure (sections located by the index and checked
+  against each other, the levels from the smallest one, the data format descriptor against the samples of
+  `Ktx2VkFormats`, the key/value data) before any texel is read; `Ktx2CollectionReader` gives the subresources
+  (`ImageCollectionKind.TextureSurfaces`, ordered layer, face, level, slice) and `Image.Load` the first one, or the layers of a
+  `KTXanimData` animation. The block decoders are per format (`Etc2BlockDecoder`, `AstcBlockDecoder`,
+  `UastcBlockDecoder`, `Etc1SIndices`); BC1 to BC7 reuse the `BlockDecoder` of DDS through `Ktx2BcnBlocks`, which only
+  lays the texels out by the rules of KTX (BC4 red, BC5 red and green, `BC1_RGB` opaque). Decisions to keep:
+  - The channels a format lacks are 0 and alpha 1, then `KTXswizzle` applies (section 5.4): an `R8` texture is red, a
+    luminance texture is gray only with `rrr1`. `Ktx2Output` folds the green channel that UASTC RRRG and ETC1S RRR+GGG
+    store in alpha into the mapping.
+  - ASTC UNORM decodes to halves (decode_float16, the default of KTX section 5.7), to 8 bits with `KTXastcDecodeMode`
+    `unorm8`; sRGB to 8 bits; SFLOAT to halves. The error color (illegal blocks, HDR data in an LDR format) and the
+    reserved UASTC mode are `InvalidImageContentException`.
+  - UASTC with the sRGB transfer function expands its endpoints with 0x80 (section 25.7.2.8). KTX-Software and basisu
+    always use the linear expansion (basisu says so in its log): they differ by 1. The exact oracle is basisu's
+    lossless transcoding to ASTC 4x4, decoded as ASTC sRGB by `ktx extract`.
+  - ETC1S blocks are ETC1 blocks (section 21.1): their texels are computed from the codebooks directly, the selector
+    value indexing the modifiers in the order -b, -a, +a, +b. P-frames of a video need the indices of the previous
+    frame: a collection entry decodes the frames before it without pixels (charged as hidden pixels).
+  - Premultiplied alpha is rejected, never un-premultiplied. The color model 167 that basisu 2 writes for UASTC HDR
+    (not in the specification) is `UnsupportedImageFeatureException`.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -1819,7 +1981,7 @@ thin public types over its `FontFace`.
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`, `Radiance`, `Psd`, `Dng`, `Dds` with the block decoders, `Dpx` with Cineon, `Ktx2`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |
@@ -1863,6 +2025,20 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   `ArabicPresentationForms.g.cs` (`arabic-forms`) are written by commands of the corpus generator from sources that
   are not committed and are pinned by a hash: run the command without `--write` to check that a table is what its
   sources give, after downloading them from the addresses the command names.
+- **DNG fixtures are random-access inputs.** They are the first format of the corpus that a sequential `ImageReader`
+  rejects: `FixtureTraits.IsReadByRandomAccessOnly` removes the reader cases of the shared suites for them, a DNG file
+  with a preview may end with bytes a load never reads (`FixtureTraits.HasPreview`), and its header identification
+  reads the whole input (the first directory follows the samples).
+- **KTX 2.0 has no corpus** (a random-access container: the corpus suites read every fixture sequentially).
+  `tests/Meziantou.Framework.Imaging.Ktx2.Tests/Files` holds files written by KTX-Software, astcenc and basisu, with the
+  SHA-256 of the reference image of every subresource in `files.json`; the `ktx2` command of the corpus generator
+  (`Ktx2Corpus.cs`, macOS only) writes them and asserts the cross-checks. The references: uncompressed patterns (and
+  `ktx extract --raw`), the references of the DDS fixtures for BCn (the generator wraps their blocks with `ktx create
+  --raw`), Apple ImageIO for ETC2 and EAC (it ignores the punchthrough bit and reads signed EAC as
+  unsigned: those are covered by the spec examples of `Ktx2DecoderTests`), `ktx extract` and astcenc (`-ds`, `-dh` to
+  a KTX 1 file of halves: its EXR output is premultiplied, and an RGB file when every alpha is 1) for ASTC, `ktx
+  extract --transcode rgba8` and `basisu -unpack` for ETC1S and linear UASTC. `Ktx2DecoderTests` builds the other
+  files with `TestHarness/Ktx2/Ktx2FileBuilder`. The fuzz target `imaging-ktx2` is seeded with `Files/`.
 - **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
   the library: the reference encoders of the tests (`TiffReferenceCodecs`, the floating-point predictor included), the
   examples of the specifications, fax strips written by libtiff and kept as literals, whole signed and floating-point
@@ -1950,7 +2126,7 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   (`MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_SEED`, `MEZIANTOU_FRAMEWORK_IMAGING_HEVC_DIFF_CASES`).
 - Interop tests download ffmpeg (with x265 and kvazaar), libwebp, libavif, libjxl (`cjxl`, `djxl`, `jxlinfo`,
   `jxl_from_tree`), jxl-oxide, libde265 (`dec265`), libheif (`heif-enc`, `heif-dec`, `heif-info`), HM (`TAppEncoder`,
-  `TAppDecoder`), OpenJPEG (`opj_compress`, `opj_decompress`, `opj_dump`) and OpenJPH (`ojph_compress`, `ojph_expand`) from the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
+  `TAppDecoder`), OpenJPEG (`opj_compress`, `opj_decompress`, `opj_dump`), OpenJPH (`ojph_compress`, `ojph_expand`) and `opencv-oracle` (OpenCV, the oracle of the line, corner, homography, inpainting and deskew comparisons of `OpenCvProcessingInteropTests`) from the release pinned by the `Meziantou.Prebuilt` package (same version in the test harness and the corpus generator). A download failure, an unexpected version or a missing
   capability fails the test; it is never skipped. The Apple ImageIO cases need `swift` and only run on macOS.
 - Interop tests start every tool through `ProcessRunner` (test harness), never through `System.Diagnostics.Process`
   directly: on macOS, `Process` forks before .NET 11, which makes the thousands of tool runs of a test process wait on
@@ -1990,6 +2166,34 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   file order) and rejects the invalid ones except those `RadianceCorpus.ToleratedByRadiance` lists. `RadianceInteropTests`
   also writes files with `pvalue -r` in the eight orientations, and rewrites them with `pflip` and `protate` (without
   `-c`, the picture stays the same): `TestHarness/ExternalTools/RadianceTool` wraps the tools.
+
+- **PSD fixtures** (`psd` generator, `PsdCorpus.cs`). Files written by `psd-tools write` 1.26.1 (every color mode,
+  depth and compression, merged alpha, layers in the layer info or in the `Lr16`/`Lr32` blocks, PSB) and ImageMagick
+  7.1.2-35 (RGB, grayscale and bitmap documents, with a layer or flat, PSB), both from Meziantou.Prebuilt 3.15.0, and
+  files assembled by `TestHarness/Psd/PsdFileBuilder` (the image resources, the unsupported and malformed files). A
+  fixture expects its pattern, hand-computed into RGBA (a bitmap 1 is black, an index its color, the colors of a
+  composite with alpha un-matted), and `TestHarness/Psd/ReferencePsd`, an independent strict reader, must give it back
+  from the file. `psd-tools dump` checks the stored samples, ImageMagick (which un-mattes the same way, in floating
+  point) and FFmpeg (which does not un-matte) cross-check the decoded composite, and their differences are recorded
+  with their measured errors. `PsdInteropTests` decodes files `magick` and `psd-tools write` write (`TestHarness/ExternalTools/PsdTools`), and compares the fixtures with `oiiotool`.
+
+- **DDS fixtures** (`dds` generator, `DdsCorpus.cs`). The generator runs on Windows only (`texconv` and `texassemble` of
+  DirectXTex are Windows-only): sync the repository to a Windows machine, run it there with `--write`, and copy back
+  `manifest.json`, `dds/`, `invalid/dds/` and `limit/dds/`. The uncompressed references are hand-computed by
+  `TestHarness/Dds/ReferenceDds`, BC1 to BC5 by `ReferenceS3tc` (exact rationals), BC6H and BC7 are what `texconv`
+  decodes, cross-checked with `oiiotool --dumpdata` (the raw samples: OpenImageIO's image outputs treat DDS alpha as
+  premultiplied). Compare with `texconv` through 32-bit floats (its 8-bit conversion replicates the bits of 5-bit and
+  6-bit channels), pass `-tu` for typeless formats, and expect the DirectXTex deviations the generator records (BC1
+  midpoints, signed BC5 within 1 ulp, swapped 10:10:10:2 legacy masks, 3:3:2 and luminance-alpha layouts). A fixture of
+  several surfaces lists them in `ddsSurfaces` and has the feature `dds.trailingSurfaces`
+  (`FixtureTraits.HasUnreadTrailingBytes`: a load reads the first surface only).
+
+- **DPX and Cineon fixtures** (`dpx` generator, `DpxCorpus.cs`). Files assembled by `TestHarness/Dpx/DpxFileBuilder` and
+  `CineonFileBuilder` from patterns of code values expect the pattern scaled to the pixel format (Cb, Y, Cr converted by
+  the generator's own formula); files of FFmpeg, ImageMagick and OpenImageIO expect the code values the builders' packing
+  rules read back (they must repack to the same bytes). Every valid fixture declares what each tool gives (`Expectations`:
+  exact, a documented difference or a rejection, with a note); `DPX_CORPUS_DISCOVER=1` lists every mismatch at once when
+  a tool or a fixture changes. `DpxInteropTests` reads the encoder output with the three tools (`TestHarness/ExternalTools/DpxTool`).
 
 - **JPEG 2000 fixtures** (`jp2` generator, `Jp2Corpus.cs` and its partial files). A fixture of the reversible
   transformations expects the pattern given to `opj_compress` or `ojph_compress`; a fixture of the irreversible ones

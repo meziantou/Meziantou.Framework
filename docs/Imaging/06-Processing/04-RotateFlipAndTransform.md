@@ -221,6 +221,9 @@ public static HomographyEstimate AlignToReference(string photoPath, string outpu
 - **Warp.** Pass the homography to [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) with
   [TransformCanvasMode.Explicit](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Explicit): the canvas then has the
   coordinates of the destination points.
+- **Matrix layout.** The matrix maps row vectors (`[x, y, 1]` on the left, the offsets in `M31` and `M32`). Transpose it
+  for an API that maps column vectors. The estimate is the least-squares solution over the inliers, without a further refinement of the distances
+  between the points and their images.
 
 ## Transform options
 

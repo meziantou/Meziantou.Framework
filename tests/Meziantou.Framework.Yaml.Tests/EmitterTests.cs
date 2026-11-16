@@ -491,4 +491,45 @@ public class EmitterTests : YamlTest
         Assert.Equal("name: api\nports: [80, 443]\n", writer.ToString());
         #endregion
     }
+
+    public static TheoryData<string> ValidYamlTestSuiteCases() => YamlTestSuite.Ids(testCase => !testCase.Error);
+
+    [Theory]
+    [MemberData(nameof(ValidYamlTestSuiteCases))]
+    public void YamlTestSuite_RoundTrip(string id)
+    {
+        // The emitter may change the presentation (document markers, styles), not the data. Emitting its own output
+        // again gives the same text.
+        var testCase = YamlTestSuite.Get(id);
+        var emitted = EmitParsedEvents(testCase.Yaml);
+        Assert.Equal(YamlTestSuite.ReadRepresentation(testCase.Yaml), YamlTestSuite.ReadRepresentation(emitted));
+        Assert.Equal(emitted, EmitParsedEvents(emitted));
+    }
+
+    [Theory]
+    [InlineData(": a\n", "? \n: a\n")]
+    [InlineData("? &k\n: a\n", "? &k \n: a\n")]
+    [InlineData("!!str : a\n", "? !!str \n: a\n")]
+    [InlineData("'': a\n", "'': a\n")]
+    [InlineData("{a: , : b}\n", "{a: , ? : b}\n")]
+    [InlineData("{a: '', '': b}\n", "{a: '', '': b}\n")]
+    [InlineData("[&a , !!str , '']\n", "[&a , !!str , '']\n")]
+    [InlineData("- [ : a ]\n", "- [{? : a}]\n")]
+    public void EmitEmptyPlainScalar_KeepsTheNull(string yaml, string expected)
+    {
+        Assert.Equal(expected, EmitParsedEvents(yaml));
+    }
+
+    private static string EmitParsedEvents(string yaml)
+    {
+        using var writer = new StringWriter { NewLine = "\n" };
+        var emitter = new Emitter(writer);
+        var parser = Parser.CreateParser(new StringReader(yaml));
+        while (parser.MoveNext())
+        {
+            emitter.Emit(parser.Current!);
+        }
+
+        return writer.ToString();
+    }
 }

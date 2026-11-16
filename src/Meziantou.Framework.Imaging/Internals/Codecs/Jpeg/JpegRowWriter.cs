@@ -134,7 +134,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
             }
 
             // A sink that stores the rows as they are is written in place; a receiver is given a row of its own
-            if (sink is null ? components.Length == 3 : !sink.Plan.IsIdentity && components.Length > 1)
+            if (sink is null ? components.Length is 2 or 3 : !sink.Plan.IsIdentity && components.Length > 1)
             {
                 _sourceRow = scope.Rent(width * (_opaqueRgba || _nativeInks ? 4 : 3), AllocationKind.DecoderState, clear: false);
             }
@@ -211,6 +211,22 @@ internal sealed class JpegRowWriter : JpegBandWriter
         if (_components.Length == 1)
         {
             receiver.OnRow(y, _components[0].GetRow(y)[.._width]);
+            return;
+        }
+
+        if (_components.Length == 2)
+        {
+            // A lossless frame of two components, whose container takes the samples as they are stored (DNG)
+            var pairs = _sourceRow!.RawBuffer.AsSpan(0, _width * 2);
+            var first = GetSamples(_components[0], y);
+            var second = GetSamples(_components[1], y);
+            for (var x = 0; x < first.Length; x++)
+            {
+                pairs[2 * x] = first[x];
+                pairs[(2 * x) + 1] = second[x];
+            }
+
+            receiver.OnRow(y, pairs);
             return;
         }
 

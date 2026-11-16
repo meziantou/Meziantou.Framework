@@ -28,7 +28,9 @@ public static class ImageSnapshots
     /// <c>rgba16le</c>: the gray level in the three colors, an opaque alpha, black for an alpha mask (the layouts of the
     /// references of the corpus, which the default formats of the decoders used before these formats existed).
     /// <c>Argb32</c> and <c>Abgr32</c> are captured as <c>rgba8</c> (channels reordered), and the packed formats as the
-    /// nearest samples of their components: <c>Bgr565</c> as <c>rgb8</c>, <c>Rgba1010102</c> as <c>rgba16le</c>.
+    /// nearest samples of their components: <c>Bgr565</c> as <c>rgb8</c>, <c>Rgba1010102</c> as <c>rgba16le</c>. The
+    /// floating-point formats are captured as <c>rgbaf32le</c>, the gray ones with their level in the three colors and an
+    /// opaque alpha when they have none.
     /// </returns>
     public static RawPixelLayout GetLayout(PixelFormat format) => format switch
     {
@@ -37,7 +39,7 @@ public static class ImageSnapshots
         PixelFormat.Rgba64 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba1010102 => RawPixelLayout.Rgba16Le,
         PixelFormat.Gray8 => RawPixelLayout.Gray8,
         PixelFormat.Gray16 => RawPixelLayout.Gray16Le,
-        PixelFormat.RgbaHalf or PixelFormat.RgbaFloat => RawPixelLayout.RgbaF32Le,
+        PixelFormat.RgbaHalf or PixelFormat.RgbaFloat or PixelFormat.GrayFloat or PixelFormat.GrayHalf or PixelFormat.LaFloat or PixelFormat.LaHalf => RawPixelLayout.RgbaF32Le,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown pixel format."),
     };
 
@@ -332,6 +334,38 @@ public static class ImageSnapshots
                 break;
             }
 
+            case PixelFormat.GrayFloat:
+                foreach (var (x, value) in unsafe(MemoryMarshal.Cast<byte, float>(row)).ToArray().Index())
+                {
+                    SetSamples(builder, x, y, Bits(value), Bits(value), Bits(value), Bits(1f));
+                }
+
+                break;
+
+            case PixelFormat.GrayHalf:
+                foreach (var (x, value) in unsafe(MemoryMarshal.Cast<byte, Half>(row)).ToArray().Index())
+                {
+                    SetSamples(builder, x, y, Bits((float)value), Bits((float)value), Bits((float)value), Bits(1f));
+                }
+
+                break;
+
+            case PixelFormat.LaFloat:
+                foreach (var (x, value) in unsafe(MemoryMarshal.Cast<byte, LaFloat>(row)).ToArray().Index())
+                {
+                    SetPixel(builder, x, y, value);
+                }
+
+                break;
+
+            case PixelFormat.LaHalf:
+                foreach (var (x, value) in unsafe(MemoryMarshal.Cast<byte, LaHalf>(row)).ToArray().Index())
+                {
+                    SetPixel(builder, x, y, value);
+                }
+
+                break;
+
             default:
                 builder.SetRow(y, row);
                 break;
@@ -362,6 +396,18 @@ public static class ImageSnapshots
                 break;
             case RgbaFloat p:
                 SetSamples(builder, x, y, Bits(p.R), Bits(p.G), Bits(p.B), Bits(p.A));
+                break;
+            case GrayFloat p:
+                SetSamples(builder, x, y, Bits(p.Value), Bits(p.Value), Bits(p.Value), Bits(1f));
+                break;
+            case GrayHalf p:
+                SetSamples(builder, x, y, Bits((float)p.Value), Bits((float)p.Value), Bits((float)p.Value), Bits(1f));
+                break;
+            case LaFloat p:
+                SetSamples(builder, x, y, Bits(p.L), Bits(p.L), Bits(p.L), Bits(p.A));
+                break;
+            case LaHalf p:
+                SetSamples(builder, x, y, Bits((float)p.L), Bits((float)p.L), Bits((float)p.L), Bits((float)p.A));
                 break;
             case Gray8 p:
                 builder.SetSample(x, y, 0, p.Value);

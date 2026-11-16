@@ -62,8 +62,8 @@ internal sealed class PixelConversionPlan
     // The layout conversion of the source to RGB rows validates the source of a conversion to CMYK
     private PixelConversionPlan? SourceLayout => _cmyk is { FromCmyk: false } cmyk ? cmyk.Layout : null;
 
-    /// <summary>Gets a value indicating whether floating-point samples are converted to a format that cannot store all of them (an integer format, or <see cref="PixelFormat.RgbaFloat"/> to <see cref="PixelFormat.RgbaHalf"/>).</summary>
-    public bool ChecksFloatSamples => SourceLayout is { } layout ? layout.ChecksFloatSamples : PixelFormats.IsFloatingPoint(SourceFormat) && (!PixelFormats.IsFloatingPoint(DestinationFormat) || (SourceFormat == PixelFormat.RgbaFloat && DestinationFormat == PixelFormat.RgbaHalf));
+    /// <summary>Gets a value indicating whether floating-point samples are converted to a format that cannot store all of them (an integer format, or a single-precision format to a half-precision one).</summary>
+    public bool ChecksFloatSamples => SourceLayout is { } layout ? layout.ChecksFloatSamples : PixelFormats.IsFloatingPoint(SourceFormat) && (!PixelFormats.IsFloatingPoint(DestinationFormat) || (PixelFormats.GetBitsPerComponent(SourceFormat) == 32 && PixelFormats.GetBitsPerComponent(DestinationFormat) == 16));
 
     /// <summary>Gets a value indicating whether a source row can be rejected: <see cref="RequiresOpaqueSource"/> or <see cref="ChecksFloatSamples"/>.</summary>
     public bool RequiresValidation => RequiresOpaqueSource || ChecksFloatSamples;

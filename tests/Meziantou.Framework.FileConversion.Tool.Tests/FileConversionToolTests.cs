@@ -702,6 +702,32 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Contains("--html-root", console.Error);
     }
 
+    [Fact]
+    public async Task HtmlRoot_DoesNotFollowLinksOutOfTheRoot()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        await WriteFileAsync(temp, "private/secret.png", TestFiles.CreateImage(40, 20, ImageFormat.Png));
+        var input = await WriteFileAsync(temp, "site/page.html", Encoding.UTF8.GetBytes("<p>Text</p><img src=\"assets/secret.png\"><img src=\"secret-file.png\">"));
+        Directory.CreateSymbolicLink(temp.GetFullPath("site/assets"), temp.GetFullPath("private"));
+        File.CreateSymbolicLink(temp.GetFullPath("site/secret-file.png"), temp.GetFullPath("private/secret.png"));
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("out.pdf"))).ExitCode);
+
+        Assert.Empty(PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("out.pdf"))).Pages[0].GetImages());
+    }
+
+    [Fact]
+    public async Task HtmlToPdf_TitleUsesTheEncodingOfTheDocument()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var html = "<!DOCTYPE html><html><head><meta charset=\"windows-1252\"><title>Caf\u00e9 cr\u00e8me</title></head><body><p>Text</p></body></html>";
+        var input = await WriteFileAsync(temp, "page.html", Encoding.Latin1.GetBytes(html));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "pdf")).ExitCode);
+
+        Assert.Equal("Caf\u00e9 cr\u00e8me", PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("page.pdf"))).Information.Title);
+    }
+
     [Theory]
     [InlineData("https://local.invalid/a/b.png", "a/b.png")]
     [InlineData("https://local.invalid/a/./b.css?v=1#top", "a/b.css")]

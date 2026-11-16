@@ -85,7 +85,8 @@ internal sealed class HtmlInputDocument : InputDocument
 
     private static string? GetTitle(byte[] content)
     {
-        var title = HtmlDocumentParser.ParseDocument(Encoding.UTF8.GetString(content)).Title.Trim();
+        // The bytes are decoded as the renderer decodes them: from the byte order mark, the <meta charset>, or as UTF-8
+        var title = new HtmlDocumentParser().Parse(content.AsSpan()).Title.Trim();
         return title.Length > 0 ? title : null;
     }
 }

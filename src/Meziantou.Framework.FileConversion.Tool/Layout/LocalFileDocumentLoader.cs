@@ -4,8 +4,9 @@ namespace Meziantou.Framework.FileConversionTool.Layout;
 
 /// <summary>
 /// Serves a document and the local files it loads (images, style sheets, fonts) to the browsing context that lays it out,
-/// from the URLs of <see cref="BaseUrl"/>. Only the files of the root folder and its subfolders are served; every other URL,
-/// such as a URL of the network, is a network error.
+/// from the URLs of <see cref="BaseUrl"/>. Only the files of the root folder and its subfolders are served, after resolving
+/// the links of their paths: a link to a file or a folder outside of the root folder is not followed. Every other URL, such
+/// as a URL of the network, is a network error.
 /// </summary>
 /// <param name="root">The folder whose files the document can load.</param>
 /// <param name="documentPath">The path of the document, in <paramref name="root"/>.</param>
@@ -17,6 +18,8 @@ internal sealed class LocalFileDocumentLoader(FullPath root, FullPath documentPa
 
     // The resources of a document are images, style sheets and fonts: a larger file is not loaded
     private const long MaxFileLength = 256L * 1024 * 1024;
+
+    private readonly FullPath _resolvedRoot = FileLinks.GetComparisonKey(root);
 
     /// <summary>Gets the URL of a file of the root folder.</summary>
     public string GetUrl(FullPath path) => BaseUrl + string.Join('/', path.MakePathRelativeTo(root).Replace('\\', '/').Split('/').Select(Uri.EscapeDataString));
@@ -91,7 +94,12 @@ internal sealed class LocalFileDocumentLoader(FullPath root, FullPath documentPa
         if (path == documentPath)
             return new DocumentResource(documentContent) { Headers = [new("Content-Type", documentMediaType)] };
 
-        var file = new FileInfo(path);
+        // A link of the path can point outside of the root folder: the file is read from its resolved path
+        var resolvedPath = FileLinks.Resolve(path);
+        if (!FileLinks.GetComparisonKey(resolvedPath).IsChildOf(_resolvedRoot))
+            return null;
+
+        var file = new FileInfo(resolvedPath);
         if (!file.Exists)
             return new DocumentResource("Not found") { StatusCode = 404, Headers = [new("Content-Type", "text/plain")] };
 
@@ -101,7 +109,7 @@ internal sealed class LocalFileDocumentLoader(FullPath root, FullPath documentPa
         byte[] data;
         try
         {
-            data = File.ReadAllBytes(path);
+            data = File.ReadAllBytes(resolvedPath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

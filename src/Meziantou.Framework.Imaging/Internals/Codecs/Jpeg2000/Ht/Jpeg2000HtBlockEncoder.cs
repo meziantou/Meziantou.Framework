@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -78,8 +79,8 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
     // The MagSgn values, then the exponents, of the samples of a row of quads (ReadQuadRow)
     private readonly Av1PooledArray<uint> _quadSamples;
 
-    // The HT refinement passes: the SigProp and MagRef bit-streams and the significance of the samples, rented when a
-    // refinement pass is first coded
+    // The HT refinement passes: the SigProp and MagRef bit-streams and the significance of the samples, rented by
+    // RentRefinementBuffers before the work starts, or else when a refinement pass is first coded
     private readonly AllocationScope _scope;
     private Av1PooledArray<byte>? _sigProp;
     private Av1PooledArray<byte>? _magRef;
@@ -295,6 +296,19 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
     }
 
     /// <summary>
+    /// Rents the buffers of the HT refinement passes now, so that no code-block rents them later: a worker has all its
+    /// memory before the work starts (<see cref="Jpeg2000Workers"/>).
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
+    [MemberNotNull(nameof(_sigProp), nameof(_magRef), nameof(_significance))]
+    public void RentRefinementBuffers()
+    {
+        _sigProp ??= Av1PooledArray<byte>.Rent(_scope, MaxRefinementLength + 16, clear: false, AllocationKind.Temporary);
+        _magRef ??= Av1PooledArray<byte>.Rent(_scope, MaxRefinementLength + 16, clear: false, AllocationKind.Temporary);
+        _significance ??= Av1PooledArray<byte>.Rent(_scope, SignificanceLength, clear: false, AllocationKind.Temporary);
+    }
+
+    /// <summary>
     /// Encodes the HT SigProp and HT MagRef passes (7.4 and 7.5) that refine the bit-plane below the lowest one of an HT
     /// cleanup pass, and appends the HT refinement segment: the SigProp bytes, then the MagRef bytes.
     /// </summary>
@@ -311,9 +325,7 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
     /// <exception cref="InvalidOperationException">The segment would exceed the length of T.814.</exception>
     public void EncodeRefinement(ReadOnlySpan<int> samples, int width, int height, int plane, double offset, PooledPayloadWriter output, out int sigPropLength, out int magRefLength, out double sigPropReduction, out double magRefReduction)
     {
-        _sigProp ??= Av1PooledArray<byte>.Rent(_scope, MaxRefinementLength + 16, clear: false, AllocationKind.Temporary);
-        _magRef ??= Av1PooledArray<byte>.Rent(_scope, MaxRefinementLength + 16, clear: false, AllocationKind.Temporary);
-        _significance ??= Av1PooledArray<byte>.Rent(_scope, SignificanceLength, clear: false, AllocationKind.Temporary);
+        RentRefinementBuffers();
         var refined = plane - 1;
         var stride = width + 3;
         var significance = _significance.Span[..(stride * (height + 2))];

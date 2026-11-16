@@ -381,6 +381,11 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 if (_isHighThroughput)
                 {
                     highThroughputEncoder = new Jpeg2000HtBlockEncoder(_scope);
+                    if (_tracksPasses)
+                    {
+                        // The rate control codes the refinement passes: their buffers are rented before any worker starts
+                        highThroughputEncoder.RentRefinementBuffers();
+                    }
                 }
 
                 head = new PooledPayloadWriter(_scope);
@@ -407,7 +412,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     coders[0] = new BlockCoder(_scope, blockEncoder, highThroughputEncoder, blockSamples, scratch);
                     for (var w = 1; w < workers; w++)
                     {
-                        coders[w] = BlockCoder.Create(_scope, scratch.Length, _isHighThroughput);
+                        coders[w] = BlockCoder.Create(_scope, scratch.Length, _isHighThroughput, _tracksPasses);
                     }
 
                     batch = Av1PooledArray<int>.Rent(_scope, 2L * BlocksPerCall * workers, clear: false, AllocationKind.Temporary);
@@ -2552,7 +2557,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             public PooledPayloadWriter Output { get; }
 
             /// <summary>Creates a worker with coders, coefficients and a scratch of its own.</summary>
-            public static BlockCoder Create(AllocationScope scope, long scratchLength, bool isHighThroughput)
+            public static BlockCoder Create(AllocationScope scope, long scratchLength, bool isHighThroughput, bool codesRefinementPasses)
             {
                 Jpeg2000Tier1Encoder? encoder = null;
                 Jpeg2000HtBlockEncoder? highThroughputEncoder = null;
@@ -2564,6 +2569,10 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     if (isHighThroughput)
                     {
                         highThroughputEncoder = new Jpeg2000HtBlockEncoder(scope);
+                        if (codesRefinementPasses)
+                        {
+                            highThroughputEncoder.RentRefinementBuffers();
+                        }
                     }
 
                     samples = Av1PooledArray<int>.Rent(scope, Jpeg2000Tier1Tables.MaxSamples, clear: false, AllocationKind.Temporary);

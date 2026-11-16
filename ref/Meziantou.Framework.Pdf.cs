@@ -444,6 +444,7 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfDocumentInformation Information { get => throw null; }
         public bool IsEncrypted { get => throw null; }
         public bool IsRepaired { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> JavaScripts { get => throw null; }
         public string? Language { get => throw null; set { } }
         public Meziantou.Framework.Pdf.Objects.PdfIndirectObjectCollection Objects { get => throw null; }
         public Meziantou.Framework.Pdf.PdfOutlineCollection Outlines { get => throw null; }
@@ -621,6 +622,14 @@ namespace Meziantou.Framework.Pdf
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string>> Rows { get => throw null; }
     }
 
+    public sealed class PdfFieldActions
+    {
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Calculate { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Format { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Keystroke { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfJavaScriptAction? Validate { get => throw null; }
+    }
+
     public sealed class PdfFileAttachmentAnnotation : Meziantou.Framework.Pdf.PdfAnnotation
     {
         public Meziantou.Framework.Pdf.PdfEmbeddedFile? File { get => throw null; }
@@ -689,6 +698,7 @@ namespace Meziantou.Framework.Pdf
 
     public class PdfFormField
     {
+        public Meziantou.Framework.Pdf.PdfFieldActions Actions { get => throw null; }
         public string? AlternateName { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> Children { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Dictionary { get => throw null; }
@@ -837,6 +847,7 @@ namespace Meziantou.Framework.Pdf
 
     public sealed class PdfInteractiveForm
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> CalculationOrder { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary? Dictionary { get => throw null; }
         public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
         public bool Exists { get => throw null; }
@@ -854,6 +865,12 @@ namespace Meziantou.Framework.Pdf
         public void Flatten() { }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfFormField> GetFields() => throw null;
         public Meziantou.Framework.Pdf.PdfFormImportResult ImportData(Meziantou.Framework.Pdf.PdfFormData data) => throw null;
+    }
+
+    public sealed class PdfJavaScriptAction
+    {
+        public Meziantou.Framework.Pdf.Objects.PdfDictionary Dictionary { get => throw null; }
+        public string Script { get => throw null; }
     }
 
     public enum PdfLineCap
@@ -1731,6 +1748,7 @@ namespace Meziantou.Framework.Pdf
         public bool IsPassword { get => throw null; }
         public int? MaxLength { get => throw null; }
         public override string? Value { get => throw null; set { } }
+        public void SetValue(string? value, string? displayText) { }
     }
 
     public sealed class PdfTextFieldOptions : Meziantou.Framework.Pdf.PdfFormFieldOptions

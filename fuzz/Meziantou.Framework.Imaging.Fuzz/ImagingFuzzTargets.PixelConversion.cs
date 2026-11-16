@@ -67,6 +67,49 @@ public static partial class ImagingFuzzTargets
         static bool HasNaN(RgbaFloat[] pixels) => pixels.Any(pixel => float.IsNaN(pixel.R) || float.IsNaN(pixel.A));
     }
 
+    /// <summary>
+    /// Converts CMYK inks of any bytes to RGB with the device formulas (a byte of width, 1 to 64, a byte of height, 1 to 3,
+    /// then the inks, repeated when the input is shorter): every color is the one of <see cref="Cmyk.ToRgba32"/>, which
+    /// evaluates the formulas in double precision. The inks also check the copies of the pixels: a clone has the bytes of
+    /// the image, and a vertical flip puts each row at the mirrored row.
+    /// </summary>
+    private static void DeviceCmykTarget(ReadOnlySpan<byte> data)
+    {
+        var width = 1 + (FuzzInput.ReadByte(ref data) % 64);
+        var height = 1 + (FuzzInput.ReadByte(ref data) % 3);
+        using var inks = Create<Cmyk32>(data, width, height);
+        using var colors = inks.CloneAs<Rgb24>(new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default });
+        var source = new Cmyk32[width * height];
+        var converted = new Rgb24[width * height];
+        inks.Frames[0].CopyPixelDataTo(source);
+        colors.Frames[0].CopyPixelDataTo(converted);
+        for (var i = 0; i < source.Length; i++)
+        {
+            var ink = source[i];
+            var expected = new Cmyk(ink.C / 255.0, ink.M / 255.0, ink.Y / 255.0, ink.K / 255.0).ToRgba32();
+            FuzzAssert.True(converted[i].R == expected.R && converted[i].G == expected.G && converted[i].B == expected.B, $"The inks {ink.C}, {ink.M}, {ink.Y}, {ink.K} give the color of the device formulas.");
+        }
+
+        using var clone = inks.Clone();
+        var bytes = GetFrameBytes(inks);
+        FuzzAssert.True(bytes.AsSpan().SequenceEqual(GetFrameBytes(clone)), "A clone has the bytes of the image.");
+        clone.Flip(FlipMode.Vertical);
+        var flipped = GetFrameBytes(clone);
+        var rowLength = width * 4;
+        for (var y = 0; y < height; y++)
+        {
+            FuzzAssert.True(bytes.AsSpan(y * rowLength, rowLength).SequenceEqual(flipped.AsSpan((height - 1 - y) * rowLength, rowLength)), $"The row {y} is at the mirrored row after a vertical flip.");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetDeviceCmykSeeds()
+    {
+        yield return new FuzzSeed("one-pixel", (byte[])[0, 0, 10, 20, 30, 40]);
+        yield return new FuzzSeed("paper-and-full-black", (byte[])[1, 0, 0, 0, 0, 0, 255, 255, 255, 255]);
+        yield return new FuzzSeed("vector-and-tail", (byte[])[16, 2, 0, 1, 2, 3, 127, 128, 129, 255, 7, 99, 200, 13, 254, 1, 64, 191]);
+        yield return new FuzzSeed("wide-rows", (byte[])[63, 2, 255, 0, 128, 77, 3, 250, 6, 9, 12, 15, 18, 21, 24, 27]);
+    }
+
     private static byte[] GetFrameBytes(Image image)
     {
         var frame = image.Frames[0];

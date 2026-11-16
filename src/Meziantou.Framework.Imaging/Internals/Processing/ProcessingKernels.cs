@@ -908,19 +908,59 @@ internal static class ProcessingKernels
         return i;
     }
 
-    private static void SwapRows(Span<byte> first, Span<byte> second)
+    /// <summary>Exchanges the bytes of two rows of the same length that do not overlap, with vector loads and stores of both rows (no temporary copy).</summary>
+    internal static void SwapRows(Span<byte> first, Span<byte> second)
     {
         Debug.Assert(first.Length == second.Length);
-        Span<byte> buffer = stackalloc byte[256];
-        for (var offset = 0; offset < first.Length; offset += buffer.Length)
+        ref var a = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var b = ref unsafe(MemoryMarshal.GetReference(second));
+        var length = (nuint)first.Length;
+        nuint offset = 0;
+        if (Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
         {
-            var length = Math.Min(buffer.Length, first.Length - offset);
-            var a = first.Slice(offset, length);
-            var b = second.Slice(offset, length);
-            var temp = buffer[..length];
-            a.CopyTo(temp);
-            b.CopyTo(a);
-            temp.CopyTo(b);
+            for (; offset + 64 <= length; offset += 64)
+            {
+                Vector128<byte> a0, a1, a2, a3, b0, b1, b2, b3;
+                unsafe
+                {
+                    a0 = Vector128.LoadUnsafe(ref a, offset);
+                    a1 = Vector128.LoadUnsafe(ref a, offset + 16);
+                    a2 = Vector128.LoadUnsafe(ref a, offset + 32);
+                    a3 = Vector128.LoadUnsafe(ref a, offset + 48);
+                    b0 = Vector128.LoadUnsafe(ref b, offset);
+                    b1 = Vector128.LoadUnsafe(ref b, offset + 16);
+                    b2 = Vector128.LoadUnsafe(ref b, offset + 32);
+                    b3 = Vector128.LoadUnsafe(ref b, offset + 48);
+                    b0.StoreUnsafe(ref a, offset);
+                    b1.StoreUnsafe(ref a, offset + 16);
+                    b2.StoreUnsafe(ref a, offset + 32);
+                    b3.StoreUnsafe(ref a, offset + 48);
+                    a0.StoreUnsafe(ref b, offset);
+                    a1.StoreUnsafe(ref b, offset + 16);
+                    a2.StoreUnsafe(ref b, offset + 32);
+                    a3.StoreUnsafe(ref b, offset + 48);
+                }
+            }
+
+            for (; offset + 16 <= length; offset += 16)
+            {
+                unsafe
+                {
+                    var a0 = Vector128.LoadUnsafe(ref a, offset);
+                    Vector128.LoadUnsafe(ref b, offset).StoreUnsafe(ref a, offset);
+                    a0.StoreUnsafe(ref b, offset);
+                }
+            }
+        }
+
+        for (; offset < length; offset++)
+        {
+            unsafe
+            {
+                ref var x = ref Unsafe.Add(ref a, offset);
+                ref var y = ref Unsafe.Add(ref b, offset);
+                (x, y) = (y, x);
+            }
         }
     }
 }

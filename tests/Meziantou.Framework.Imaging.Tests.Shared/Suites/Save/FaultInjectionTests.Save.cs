@@ -80,10 +80,11 @@ public sealed partial class FaultInjectionTests
 
                 audit.FailureInjector = null;
 
-                // Output failures at many positions of a non-seekable stream (a seekable stream for WebP animations, which
-                // patch their RIFF size, for AVIF and HEIC image sequences, which write their moov box last, and for compressed
-                // OpenEXR files, which patch the offsets of their chunks: they reject non-seekable output before writing anything)
-                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None };
+                // Output failures at many positions of a non-seekable stream (a seekable stream for AVIF and HEIC image sequences,
+                // which write their moov box last, and for compressed OpenEXR files, which patch the offsets of their chunks:
+                // they reject non-seekable output before writing anything). WebP animations, which patch their RIFF size, keep
+                // their whole output in memory for a non-seekable stream and write it at completion: the failures happen there
+                var patched = (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None };
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();
@@ -152,7 +153,7 @@ public sealed partial class FaultInjectionTests
         // The integer encoders reject floating-point pixels: an OpenEXR source is reduced to 16-bit integers first, its
         // samples clipped to [0, 1] (no conversion gives a value to a NaN sample: such a source is skipped)
         Image image;
-        if (encoderName is not ("exr" or "hdr") && SuiteReaders.ReadsFloats(data))
+        if (encoderName is not ("exr" or "exr-tiled" or "exr-dwa" or "hdr") && SuiteReaders.ReadsFloats(data))
         {
             using var floats = Image.Load<RgbaFloat>(data, new ImageDecodeOptions { Conversion = Conversion });
             if (!HasOnlyNumbers(floats))
@@ -267,8 +268,19 @@ public sealed partial class FaultInjectionTests
                 image.Dispose();
                 return null;
             case "exr":
-                // PIZ runs every stage of the encoder: range compression, wavelet and Huffman coding
-                encoder = new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip, Compression = OpenExrCompression.Piz };
+            case "exr-tiled":
+            case "exr-dwa":
+                encoder = encoderName switch
+                {
+                    // PIZ runs every stage of the encoder: range compression, wavelet and Huffman coding
+                    "exr" => new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip, Compression = OpenExrCompression.Piz },
+
+                    // Tiles, and the buffers of the generated levels of a ripmap
+                    "exr-tiled" => new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip, Tiling = new OpenExrTiling { TileWidth = 16, TileHeight = 8, LevelMode = OpenExrLevelMode.RipmapLevels } },
+
+                    // The lossy coder: DCT blocks, Huffman coded AC symbols, zlib sections and the run-length coded alpha
+                    _ => new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip, Compression = OpenExrCompression.Dwab },
+                };
                 if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
                     return image;
 

@@ -25,7 +25,7 @@ is read, what is written, how to save with its encoder and its options, and the 
 | [HEIC](14-Heic.md) | 8 to 12 bits, alpha, grids, photos of phones and cameras | Lossless (default) or lossy, 8 to 12 bits, alpha, grids | Read and written |
 | [JPEG XL](15-JpegXl.md) | Lossless and lossy, up to 16 bits, recompressed JPEG files, progressive renderings | Lossless (default) or lossy, up to 16 bits; JPEG files recompressed without loss | Read and written |
 | [JPEG 2000](16-Jpeg2000.md) | JP2 files and codestreams, up to 16 bits, HTJ2K | Lossless (default) or lossy, up to 16 bits | No |
-| [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Lossless half or float samples | No |
+| [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Half or float samples, scan lines or tiles with mipmaps, lossless by default or lossy (PXR24, B44, DWA) | No |
 | [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without

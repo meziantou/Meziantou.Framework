@@ -1437,6 +1437,61 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveWebPWithOptionsWritesSharpLossyDitheredAndNonSeekableOutputs()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var chart = GetPath("chart.png");
+        using (var source = new Image<Rgba32>(32, 16, new Rgba32(0, 0, 255)))
+        {
+            source.Frames[0][10, 8] = new Rgba32(255, 0, 0);
+            source.Save(chart);
+        }
+
+        var gradientPath = GetPath("gradient.png");
+        using (var gradient = new Image<Rgba64>(64, 8))
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                for (var y = 0; y < 8; y++)
+                {
+                    gradient.Frames[0][x, y] = new Rgba64((ushort)(30000 + (x * 3)), 30000, 30000, 65535);
+                }
+            }
+
+            gradient.Save(gradientPath);
+        }
+
+        var chartWebP = GetPath("chart.webp");
+        var gradientWebP = GetPath("gradient.webp");
+        using var response = new NonSeekableMemoryStream();
+        Examples.SaveWebPWithOptions(chart, chartWebP, gradientPath, gradientWebP, apngPath, response);
+
+        using (var image = Image.Load<Rgb24>(chartWebP))
+        {
+            Assert.InRange(image.Frames[0][2, 2].B, 230, 255); // lossy, close to the blue background
+        }
+
+        using (var image = Image.Load<Rgb24>(gradientWebP))
+        {
+            // Lossless: each sample within one 8-bit step of its 16-bit value
+            for (var x = 0; x < 64; x++)
+            {
+                Assert.InRange((image.Frames[0][x, 4].R * 257) - (30000 + (x * 3)), -257, 257);
+            }
+        }
+
+        // The animation reached the non-seekable stream at completion
+        using var animation = Image.Load<Rgba32>(response.ToArray());
+        Assert.Equal(2, animation.Frames.Count);
+    }
+
+    /// <summary>A memory stream that reports it cannot seek, like an HTTP response.</summary>
+    private sealed class NonSeekableMemoryStream : MemoryStream
+    {
+        public override bool CanSeek => false;
+    }
+
+    [Fact]
     public void SaveAvifWritesALossyPhotoALosslessImageAndAnImageSequence()
     {
         var (apngPath, _) = BuildAnimation();
@@ -1498,6 +1553,39 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(255, pixel.R);
         Assert.InRange(pixel.G, 120, 135);
         Assert.True(toneMapped.Frames[0][0, 0].B < 255);
+    }
+
+    [Fact]
+    public void SaveOpenExrTextureAndPreviewWritesATiledMipmapAndALossyFile()
+    {
+        var texturePath = GetPath("texture.exr");
+        var reviewPath = GetPath("review.exr");
+        using (var hdr = new Image<RgbaHalf>(80, 40, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f)))
+        {
+            hdr.Frames[0][3, 2] = new RgbaHalf((Half)12f, (Half)6f, (Half)3f);
+            Examples.SaveOpenExrTextureAndPreview(hdr, texturePath, reviewPath);
+        }
+
+        // The tiled file keeps every sample; its header declares 64x64 tiles with mipmap levels
+        var texture = File.ReadAllBytes(texturePath);
+        Assert.Equal(0x02, texture[5] & 0x02);
+        Assert.True(texture.AsSpan().IndexOf("tiledesc\0"u8) > 0);
+        using (var decoded = Image.Load<RgbaHalf>(texture))
+        {
+            Assert.Equal(new RgbaHalf((Half)12f, (Half)6f, (Half)3f), decoded.Frames[0][3, 2]);
+            Assert.Equal(new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f), decoded.Frames[0][70, 30]);
+        }
+
+        // The review file declares DWAB (compression 9) and is close to the source away from the highlight
+        var review = File.ReadAllBytes(reviewPath);
+        var compression = review.AsSpan().IndexOf("compression\0compression\0"u8);
+        Assert.Equal(9, review[compression + 28]);
+        using (var decoded = Image.Load<RgbaFloat>(review))
+        {
+            Assert.Equal((80, 40), (decoded.Width, decoded.Height));
+            Assert.InRange(decoded.Frames[0][70, 30].B, 1.9f, 2.1f);
+            Assert.InRange(decoded.Frames[0][70, 30].R, 0.24f, 0.26f);
+        }
     }
 
     [Fact]

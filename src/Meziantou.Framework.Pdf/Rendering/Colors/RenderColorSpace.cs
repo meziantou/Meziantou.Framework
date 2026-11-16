@@ -62,19 +62,24 @@ internal abstract class RenderColorSpace
         return TryGetProcessTint(rgb, colorant, out tint);
     }
 
-    /// <summary>Separates an RGB color into the process colorants, with a full gray component replacement.</summary>
+    /// <summary>
+    /// Separates an RGB color into the process colorants, with a full gray component replacement. The inks multiply: the
+    /// other components are divided by <c>1 - k</c>, so that the inks printed together give the color back.
+    /// </summary>
     public static bool TryGetProcessTint(RgbColor rgb, string colorant, out double tint)
     {
         var c = 1 - Math.Clamp(rgb.R, 0, 1);
         var m = 1 - Math.Clamp(rgb.G, 0, 1);
         var y = 1 - Math.Clamp(rgb.B, 0, 1);
         var k = Math.Min(c, Math.Min(m, y));
+        var white = 1 - k;
         tint = colorant switch
         {
-            "Cyan" => c - k,
-            "Magenta" => m - k,
-            "Yellow" => y - k,
             "Black" => k,
+            _ when white <= 0 => 0, // Black only
+            "Cyan" => (c - k) / white,
+            "Magenta" => (m - k) / white,
+            "Yellow" => (y - k) / white,
             _ => 0,
         };
         return Array.IndexOf(ProcessColorants, colorant) >= 0;

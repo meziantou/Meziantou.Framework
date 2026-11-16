@@ -45,7 +45,7 @@ internal static class ContentResourceUsage
                 {
                     case "Tf" when operands is [PdfName font, ..]:
                         used.Add((FontName, font));
-                        if (GetResource(resources, FontName, font) is PdfDictionary fontDictionary && fontDictionary.GetName(PdfNames.Subtype)?.Value == "Type3" && !fontDictionary.ContainsKey(PdfNames.Resources))
+                        if (IsType3WithoutResources(GetResource(resources, FontName, font)))
                             return false;
 
                         break;
@@ -62,6 +62,11 @@ internal static class ContentResourceUsage
 
                     case "gs" when operands is [PdfName state, ..]:
                         used.Add((PdfNames.ExtGState, state));
+
+                        // A graphics state can select a font (8.4.5): a Type 3 font without resources uses those of the content
+                        if (GetResource(resources, PdfNames.ExtGState, state) is PdfDictionary stateDictionary && IsType3WithoutResources(Resolve(stateDictionary, PdfNames.Font) is PdfArray { Count: > 0 } fontEntry ? Resolve(fontEntry[0]) : null))
+                            return false;
+
                         break;
 
                     case "cs" or "CS" when operands is [PdfName colorSpace, ..]:
@@ -96,6 +101,32 @@ internal static class ContentResourceUsage
         }
 
         return true;
+    }
+
+    private static bool IsType3WithoutResources(PdfObject? font) => font is PdfDictionary dictionary && dictionary.GetName(PdfNames.Subtype)?.Value == "Type3" && !dictionary.ContainsKey(PdfNames.Resources);
+
+    private static PdfObject? Resolve(PdfDictionary dictionary, PdfName key)
+    {
+        try
+        {
+            return dictionary.GetResolved(key);
+        }
+        catch (PdfException)
+        {
+            return null;
+        }
+    }
+
+    private static PdfObject? Resolve(PdfObject value)
+    {
+        try
+        {
+            return value is PdfReference reference ? reference.Resolve() : value;
+        }
+        catch (PdfException)
+        {
+            return null;
+        }
     }
 
     private static PdfObject? GetResource(PdfDictionary? resources, PdfName category, PdfName name)

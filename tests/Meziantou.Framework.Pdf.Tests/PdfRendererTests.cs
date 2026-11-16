@@ -1317,6 +1317,21 @@ public sealed class PdfRendererTests
     }
 
     [Fact]
+    public void OverprintSimulationKeepsTheRgbColors()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(100, 100)).CreateContentBuilder().AppendRawContent("0.5 0 0 rg 0 0 50 100 re f 0.2 0.6 0.4 rg 50 0 50 100 re f"u8);
+
+        using var preview = PdfRenderer.RenderPage(PdfDocument.Open(document.ToByteArray()).Pages[0], new PdfRenderOptions { SimulateOverprint = true, UseSystemFonts = false });
+
+        // The inks printed together give the color back: the black is not added to the other inks
+        var red = Pixel(preview, 25, 50);
+        Assert.True(Math.Abs(red.R - 128) <= 2 && red.G <= 2 && red.B <= 2, red.ToString());
+        var other = Pixel(preview, 75, 50);
+        Assert.True(Math.Abs(other.R - 51) <= 2 && Math.Abs(other.G - 153) <= 2 && Math.Abs(other.B - 102) <= 2, other.ToString());
+    }
+
+    [Fact]
     public void ColorantsAreListed()
     {
         var page = CreateOverprintDocument("/op true").Pages[0];

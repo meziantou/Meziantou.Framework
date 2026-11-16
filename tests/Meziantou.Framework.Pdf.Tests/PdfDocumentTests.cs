@@ -3458,6 +3458,25 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void FormsInheritTheColorsOfTheirCaller()
+    {
+        static PdfPageElements Create(double red)
+        {
+            var document = new PdfDocument();
+            var page = document.Pages.Add(new PdfSize(200, 200));
+            var form = document.CreateForm(new PdfRectangle(0, 0, 10, 10));
+            form.CreateContentBuilder().Rectangle(0, 0, 10, 10).Fill();
+            page.CreateContentBuilder().SetFillRgb(red, 0, 1 - red).DrawForm(form);
+            return PdfPageElements.Create(PdfDocument.Open(document.ToByteArray()).Pages[0]);
+        }
+
+        var red = Create(1);
+
+        Assert.Equal("1 0 0 rg", Assert.Single(red.Paths).FillColor);
+        Assert.Equal(PdfPageChangeKinds.Paths, PdfDocumentComparer.Compare(red, Create(0)).Changes);
+    }
+
+    [Fact]
     public void PageElementsFollowTheTransformations()
     {
         var document = new PdfDocument();
@@ -3543,6 +3562,28 @@ public sealed class PdfDocumentTests
         Assert.Equal(43, ranges[1].FirstNumber);
         Assert.Equal("ABC000042", PdfDocument.Open(first.ToByteArray()).Pages[1].ExtractText());
         Assert.Equal("ABC000043", PdfDocument.Open(second.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void BatesNumbersCountTheStampedPagesOnly()
+    {
+        static PdfDocument Create()
+        {
+            var document = new PdfDocument();
+            document.Pages.Add(PdfSize.A4);
+            document.Pages.Add(PdfSize.A4);
+            document.Pages.Add(PdfSize.A4);
+            return document;
+        }
+
+        var first = Create();
+        var second = Create();
+
+        var ranges = PdfBates.Apply([first, second], new PdfHeaderFooterOptions { FooterRight = "{bates}", FirstPageIndex = 1, Bates = new PdfBatesNumbering() });
+
+        Assert.Equal([(1L, 2L), (3L, 4L)], ranges.Select(range => (range.FirstNumber, range.LastNumber)));
+        Assert.Equal("", PdfDocument.Open(second.ToByteArray()).Pages[0].ExtractText());
+        Assert.Equal("000003", PdfDocument.Open(second.ToByteArray()).Pages[1].ExtractText());
     }
 
     [Theory]
@@ -3810,6 +3851,83 @@ public sealed class PdfDocumentTests
         plan.Actions.Single(action => action.Kind == PdfOptimizationActionKind.FlattenOptionalContent).IsEnabled = false;
         Assert.Empty(PdfOptimizer.Apply(plan));
         Assert.True(disabled.Catalog.ContainsKey(PdfName.Create("OCProperties")));
+    }
+
+    [Fact]
+    public void FlatteningOptionalContentRewritesAppearancesAndPatterns()
+    {
+        var document = CreateDocumentWithHiddenLayer("/Pattern cs /P1 scn 0 0 100 100 re f");
+        var page = document.Pages[0];
+        var hidden = ((PdfDictionary)page.Resources!.GetResolved(PdfNames.Properties)!)[PdfName.Create("H")]!;
+        var cell = new PdfStream(
+            new PdfDictionary
+            {
+                [PdfName.Create("PatternType")] = PdfInteger.Get(1),
+                [PdfName.Create("PaintType")] = PdfInteger.Get(1),
+                [PdfName.Create("TilingType")] = PdfInteger.Get(1),
+                [PdfNames.BBox] = PdfArray.FromNumbers(0, 0, 10, 10),
+                [PdfName.Create("XStep")] = PdfInteger.Get(10),
+                [PdfName.Create("YStep")] = PdfInteger.Get(10),
+                [PdfNames.Resources] = new PdfDictionary { [PdfNames.Properties] = new PdfDictionary { [PdfName.Create("H")] = hidden } },
+            },
+            "/OC /H BDC 1 0 0 rg 0 0 5 5 re f EMC"u8.ToArray());
+        page.Resources[PdfNames.Pattern] = new PdfDictionary { [PdfName.Create("P1")] = document.Objects.Add(cell) };
+        var appearance = new PdfStream(
+            new PdfDictionary
+            {
+                [PdfNames.Type] = PdfNames.XObject,
+                [PdfNames.Subtype] = PdfName.Create("Form"),
+                [PdfNames.BBox] = PdfArray.FromNumbers(0, 0, 10, 10),
+                [PdfNames.Resources] = new PdfDictionary { [PdfNames.Properties] = new PdfDictionary { [PdfName.Create("H")] = hidden } },
+            },
+            "/OC /H BDC 0 0 1 rg 0 0 10 10 re f EMC"u8.ToArray());
+        var annotation = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfName.Create("Annot"),
+            [PdfNames.Subtype] = PdfName.Create("Square"),
+            [PdfName.Create("Rect")] = PdfArray.FromNumbers(10, 10, 20, 20),
+            [PdfName.Create("AP")] = new PdfDictionary { [PdfName.Create("N")] = document.Objects.Add(appearance) },
+        };
+        page.Dictionary[PdfName.Create("Annots")] = new PdfArray(document.Objects.Add(annotation));
+
+        var applied = PdfOptimizer.Apply(PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { FlattenOptionalContent = true }));
+
+        Assert.Contains(applied, action => action.Kind == PdfOptimizationActionKind.RemoveOptionalContentProperties);
+        Assert.Equal("1 0 0 rg 0 0 5 5 re n", NormalizeContent(cell.GetDecodedData()));
+        Assert.Equal("0 0 1 rg 0 0 10 10 re n", NormalizeContent(appearance.GetDecodedData()));
+    }
+
+    private static string NormalizeContent(ReadOnlyMemory<byte> content) => string.Join(' ', Encoding.Latin1.GetString(content.Span).Split((char[])[' ', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries));
+
+    [Fact]
+    public void OptimizerKeepsTheResourcesOfType3FontsSelectedByAGraphicsState()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A5);
+        page.CreateContentBuilder().AppendRawContent("/GS1 gs BT 10 10 Td (a) Tj ET"u8);
+        var glyph = document.Objects.Add(new PdfStream(new PdfDictionary(), "10 0 d0 /Im1 Do"u8.ToArray()));
+        var font = document.Objects.Add(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Font,
+            [PdfNames.Subtype] = PdfName.Create("Type3"),
+            [PdfName.Create("FontBBox")] = PdfArray.FromNumbers(0, 0, 10, 10),
+            [PdfName.Create("FontMatrix")] = PdfArray.FromNumbers(0.1, 0, 0, 0.1, 0, 0),
+            [PdfName.Create("CharProcs")] = new PdfDictionary { [PdfName.Create("a")] = glyph },
+            [PdfName.Create("Encoding")] = new PdfDictionary { [PdfName.Create("Differences")] = new PdfArray(PdfInteger.Get(97), PdfName.Create("a")) },
+            [PdfName.Create("FirstChar")] = PdfInteger.Get(97),
+            [PdfName.Create("LastChar")] = PdfInteger.Get(97),
+            [PdfName.Create("Widths")] = PdfArray.FromNumbers(10),
+        });
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary
+        {
+            [PdfNames.ExtGState] = new PdfDictionary { [PdfName.Create("GS1")] = new PdfDictionary { [PdfNames.Font] = new PdfArray(font, PdfInteger.Get(12)) } },
+            [PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im1")] = document.Objects.Add(new PdfStream(new PdfDictionary { [PdfNames.Subtype] = PdfName.Create("Form"), [PdfNames.BBox] = PdfArray.FromNumbers(0, 0, 1, 1) }, [])) },
+        };
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var plan = PdfOptimizer.CreatePlan(read, new PdfOptimizationOptions { PruneUnusedResources = true });
+
+        Assert.Empty(plan.Actions);
     }
 
     [Fact]

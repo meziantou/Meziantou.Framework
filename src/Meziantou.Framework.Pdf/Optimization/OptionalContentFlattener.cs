@@ -23,6 +23,7 @@ internal sealed class OptionalContentFlattener
     private static readonly PdfName OffName = PdfName.Create("OFF");
     private static readonly PdfName DName = PdfName.Create("D");
     private static readonly PdfName PName = PdfName.Create("P");
+    private static readonly PdfName APName = PdfName.Create("AP");
 
     private readonly HashSet<PdfObject> _hidden = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<PdfObject> _processedForms = new(ReferenceEqualityComparer.Instance);
@@ -60,7 +61,7 @@ internal sealed class OptionalContentFlattener
 
     public static void RemoveProperties(PdfDocument document) => document.Catalog.Remove(OCPropertiesName);
 
-    /// <summary>Flattens a page: its content, its forms and its annotations.</summary>
+    /// <summary>Flattens a page: its content, its forms, its patterns and its annotations, with their appearances.</summary>
     /// <returns><see langword="true"/> when the page changed.</returns>
     public bool FlattenPage(PdfPage page)
     {
@@ -78,7 +79,11 @@ internal sealed class OptionalContentFlattener
         {
             var group = annotation.Dictionary.GetResolved(OCName);
             if (group is null)
+            {
+                // The appearances of an annotation can have optional content of their own
+                changed |= FlattenAppearances(annotation);
                 continue;
+            }
 
             if (IsHidden(group))
             {
@@ -87,6 +92,7 @@ internal sealed class OptionalContentFlattener
             else
             {
                 annotation.Dictionary.Remove(OCName);
+                changed |= FlattenAppearances(annotation);
             }
 
             changed = true;
@@ -95,61 +101,148 @@ internal sealed class OptionalContentFlattener
         return changed;
     }
 
+    /// <summary>Flattens the forms and the tiling patterns of resources, and those they use.</summary>
     private bool FlattenForms(PdfDictionary? resources, int depth)
     {
-        if (depth > MaxFormDepth || resources?.GetResolved(PdfNames.XObject) is not PdfDictionary xobjects)
+        if (depth > MaxFormDepth || resources is null)
             return false;
 
         var changed = false;
-        foreach (var name in xobjects.Keys.ToList())
+        if (resources.GetResolved(PdfNames.XObject) is PdfDictionary xobjects)
         {
-            if (xobjects.GetResolved(name) is not PdfStream xobject || !_processedForms.Add(xobject))
-                continue;
-
-            var dictionary = xobject.Dictionary;
-            if (dictionary.GetResolved(OCName) is { } group)
+            foreach (var name in xobjects.Keys.ToList())
             {
-                dictionary.Remove(OCName);
-                changed = true;
-                if (IsHidden(group))
-                {
-                    // An empty form draws nothing: the operators that paint it stay valid
-                    var empty = new PdfStream(new PdfDictionary
-                    {
-                        [PdfNames.Type] = PdfNames.XObject,
-                        [PdfNames.Subtype] = PdfName.Create("Form"),
-                        [PdfNames.BBox] = PdfArray.FromNumbers(0, 0, 0, 0),
-                    });
-                    if (xobjects[name] is PdfReference reference)
-                    {
-                        _document.Objects.Set(reference, empty);
-                    }
-                    else
-                    {
-                        xobjects[name] = empty;
-                    }
-
+                if (xobjects.GetResolved(name) is not PdfStream xobject || !_processedForms.Add(xobject))
                     continue;
+
+                var dictionary = xobject.Dictionary;
+                if (dictionary.GetResolved(OCName) is { } group)
+                {
+                    dictionary.Remove(OCName);
+                    changed = true;
+                    if (IsHidden(group))
+                    {
+                        // An empty form draws nothing: the operators that paint it stay valid
+                        var empty = CreateEmptyForm();
+                        if (xobjects[name] is PdfReference reference)
+                        {
+                            _document.Objects.Set(reference, empty);
+                        }
+                        else
+                        {
+                            xobjects[name] = empty;
+                        }
+
+                        continue;
+                    }
+                }
+
+                if (dictionary.GetName(PdfNames.Subtype)?.Value != "Form")
+                    continue;
+
+                changed |= FlattenContentStream(xobject, resources, depth);
+            }
+        }
+
+        // The cells of the tiling patterns are contents too (8.7.3.1)
+        if (resources.GetResolved(PdfNames.Pattern) is PdfDictionary patterns)
+        {
+            foreach (var name in patterns.Keys.ToList())
+            {
+                if (patterns.GetResolved(name) is PdfStream pattern && _processedForms.Add(pattern))
+                {
+                    changed |= FlattenContentStream(pattern, resources, depth);
                 }
             }
-
-            if (dictionary.GetName(PdfNames.Subtype)?.Value != "Form")
-                continue;
-
-            var formResources = dictionary.GetResolved(PdfNames.Resources) as PdfDictionary ?? resources;
-            if (TryRewrite(xobject.GetDecodedData(), formResources, out var content))
-            {
-                xobject.SetData(content);
-                dictionary.Remove(PdfNames.Filter);
-                dictionary.Remove(PdfNames.DecodeParms);
-                changed = true;
-            }
-
-            changed |= FlattenForms(formResources, depth + 1);
         }
 
         return changed;
     }
+
+    /// <summary>Flattens a content stream (a form, a pattern cell, an appearance) and the forms and patterns it uses.</summary>
+    private bool FlattenContentStream(PdfStream stream, PdfDictionary? parentResources, int depth)
+    {
+        var changed = false;
+        var dictionary = stream.Dictionary;
+        var streamResources = dictionary.GetResolved(PdfNames.Resources) as PdfDictionary ?? parentResources;
+        if (TryRewrite(stream.GetDecodedData(), streamResources, out var content))
+        {
+            stream.SetData(content);
+            dictionary.Remove(PdfNames.Filter);
+            dictionary.Remove(PdfNames.DecodeParms);
+            changed = true;
+        }
+
+        changed |= FlattenForms(streamResources, depth + 1);
+        return changed;
+    }
+
+    /// <summary>Flattens the appearance streams of an annotation (12.5.5): each appearance, and each state of an appearance.</summary>
+    private bool FlattenAppearances(PdfAnnotation annotation)
+    {
+        if (annotation.Dictionary.GetResolved(APName) is not PdfDictionary appearances)
+            return false;
+
+        var changed = false;
+        foreach (var key in appearances.Keys.ToList())
+        {
+            switch (appearances.GetResolved(key))
+            {
+                case PdfStream stream:
+                    changed |= FlattenAppearance(appearances, key, stream);
+                    break;
+
+                case PdfDictionary states:
+                    foreach (var state in states.Keys.ToList())
+                    {
+                        if (states.GetResolved(state) is PdfStream stateStream)
+                        {
+                            changed |= FlattenAppearance(states, state, stateStream);
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        return changed;
+    }
+
+    private bool FlattenAppearance(PdfDictionary parent, PdfName key, PdfStream stream)
+    {
+        if (!_processedForms.Add(stream))
+            return false;
+
+        if (stream.Dictionary.GetResolved(OCName) is { } group)
+        {
+            stream.Dictionary.Remove(OCName);
+            if (IsHidden(group))
+            {
+                if (parent[key] is PdfReference reference)
+                {
+                    _document.Objects.Set(reference, CreateEmptyForm());
+                }
+                else
+                {
+                    parent[key] = CreateEmptyForm();
+                }
+
+                return true;
+            }
+
+            FlattenContentStream(stream, parentResources: null, depth: 0);
+            return true;
+        }
+
+        return FlattenContentStream(stream, parentResources: null, depth: 0);
+    }
+
+    private static PdfStream CreateEmptyForm() => new(new PdfDictionary
+    {
+        [PdfNames.Type] = PdfNames.XObject,
+        [PdfNames.Subtype] = PdfName.Create("Form"),
+        [PdfNames.BBox] = PdfArray.FromNumbers(0, 0, 0, 0),
+    });
 
     /// <summary>
     /// Removes the painting of the hidden marked-content sequences of a content, and turns the visible ones into

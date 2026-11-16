@@ -155,14 +155,12 @@ public sealed class PdfPageElements
 
         public List<PdfShadingElement> Shadings { get; } = [];
 
-        public void Walk(ReadOnlyMemory<byte> content, PdfDictionary? resources, PdfMatrix ctm, int depth)
+        /// <summary>Walks a content. A form inherits the colors of the content that paints it (8.10.1).</summary>
+        public void Walk(ReadOnlyMemory<byte> content, PdfDictionary? resources, PdfMatrix ctm, int depth, string? fill = null, string? stroke = null, PdfObject? fillPattern = null)
         {
             var reader = new ContentStreamReader(content);
             var operands = new List<PdfObject>();
             var stack = new Stack<(PdfMatrix Ctm, string? Fill, string? Stroke, PdfObject? FillPattern)>();
-            string? fill = null;
-            string? stroke = null;
-            PdfObject? fillPattern = null;
             var points = new List<(double X, double Y)>();
             while (reader.TryRead(operands, out var name) && _operations++ < MaxOperations)
             {
@@ -295,7 +293,7 @@ public sealed class PdfPageElements
                             var matrix = form.Dictionary.GetResolved(PdfNames.Matrix) is PdfArray array && array.Count == 6
                                 ? new PdfMatrix(array.GetNumber(0), array.GetNumber(1), array.GetNumber(2), array.GetNumber(3), array.GetNumber(4), array.GetNumber(5))
                                 : PdfMatrix.Identity;
-                            Walk(form.GetDecodedData(), form.Dictionary.GetResolved(PdfNames.Resources) as PdfDictionary ?? resources, matrix * ctm, depth + 1);
+                            Walk(form.GetDecodedData(), form.Dictionary.GetResolved(PdfNames.Resources) as PdfDictionary ?? resources, matrix * ctm, depth + 1, fill, stroke, fillPattern);
                         }
                         catch (PdfException)
                         {

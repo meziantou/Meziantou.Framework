@@ -223,9 +223,17 @@ internal static class ImageCollectionWriterCore
         }
     }
 
-    /// <summary>Determines whether two surfaces have the labels a texture stores once: the color description and the orientation.</summary>
-    private static bool HasSameLabels(MetadataWritePlan first, MetadataWritePlan other)
-        => first.TransferFunction == other.TransferFunction && Equals(first.Cicp, other.Cicp) && first.Orientation == other.Orientation;
+    /// <summary>
+    /// Determines whether two surfaces have the labels a KTX 2.0 file writes once, as it writes them: the transfer function
+    /// (sRGB or linear), the primaries (BT.709 by default) and <c>KTXorientation</c>. Two descriptions of the same label (a
+    /// linear transfer function, with or without a CICP description of BT.709 and linear light) are the same label.
+    /// </summary>
+    private static bool HasSameKtx2Labels(MetadataWritePlan first, MetadataWritePlan other, bool floatingPoint)
+        => Ktx2TextureWriter.IsSrgbTransfer(first, floatingPoint) == Ktx2TextureWriter.IsSrgbTransfer(other, floatingPoint)
+            && GetKtx2Primaries(first) == GetKtx2Primaries(other)
+            && Ktx2TextureWriter.GetOrientation(first.Orientation) == Ktx2TextureWriter.GetOrientation(other.Orientation);
+
+    private static int GetKtx2Primaries(MetadataWritePlan plan) => plan.Cicp is { } cicp ? Ktx2TextureWriter.GetPrimaries(cicp) ?? Ktx2Format.PrimariesBt709 : Ktx2Format.PrimariesBt709;
 
     private static bool GenerateMipmaps(ImageEncoder encoder) => encoder is DdsEncoder { GenerateMipmaps: true } or Ktx2Encoder { GenerateMipmaps: true };
 
@@ -280,10 +288,11 @@ internal static class ImageCollectionWriterCore
 
                             texture = new EncodedTexture(target, layout.Width, layout.Height, levelCount, layout.LayerCount, layout.FaceCount, isArray: layout.LayerCount > 1);
                         }
-                        else if (!HasSameLabels(plan!, entryPlan) && encoder.MetadataHandling == MetadataHandling.Strict)
+                        else if (encoder is Ktx2Encoder && !HasSameKtx2Labels(plan!, entryPlan, Ktx2TextureWriter.IsFloatingPoint(ktx2Format)) && encoder.MetadataHandling == MetadataHandling.Strict)
                         {
-                            // A texture has one color label and one orientation: those of the first surface. A surface whose own
-                            // differ would be labeled (and its mipmap levels filtered) as the first one
+                            // A KTX 2.0 texture has one color label and one orientation: those of the first surface. A surface whose
+                            // own differ would be labeled (and its mipmap levels filtered) as the first one. DDS stores no label: its
+                            // format alone says whether the texels are sRGB
                             throw new UnsupportedImageFeatureException($"The surface ({entry.TextureSurface}) has another color label (transfer function, CICP description) or orientation than the first surface, and a {ImageFormatNames.Get(encoder.Format)} texture stores one for all its surfaces. Give every surface the same labels, or set the encoder's MetadataHandling to DiscardUnsupported or Strip to label them all as the first one.", encoder.Format, "Metadata: labels of a surface");
                         }
 

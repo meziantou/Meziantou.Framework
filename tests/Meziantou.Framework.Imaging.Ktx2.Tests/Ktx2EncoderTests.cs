@@ -243,6 +243,20 @@ public sealed class Ktx2EncoderTests
     }
 
     [Fact]
+    public void SurfacesThatDescribeTheSameLabelDifferentlyAreSaved()
+    {
+        // Linear light, with and without the CICP description of BT.709 and linear light: one label in a KTX 2.0 file
+        using var described = new Image<RgbaFloat>(4, 4, new RgbaFloat(0.25f, 0.5f, 0.75f, 1f));
+        using var plain = new Image<RgbaFloat>(4, 4, new RgbaFloat(0.5f, 0.25f, 0.125f, 1f));
+        described.Metadata.Cicp = new CicpColorDescription(1, 8, 0, fullRange: true);
+        using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        collection.Add(described, new TextureSurface(0));
+        collection.Add(plain, new TextureSurface(1));
+        using var loaded = ImageCollection.Load(SaveCollection(collection, new Ktx2Encoder()));
+        Assert.Equal(2, loaded.Count);
+    }
+
+    [Fact]
     public void ASparseArrayIndexIsRejectedBeforeItsSurfaceTableIsAllocated()
     {
         // One surface at the array index 10^8: a texture of 10^8 elements, of which the collection holds one

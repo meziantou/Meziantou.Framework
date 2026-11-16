@@ -20,7 +20,7 @@ internal sealed class RarForwardReader : ArchiveReader
 
     // The decoder of the solid stream, or null; broken when an entry of the solid stream could not be decoded
     private RarUnpacker? _unpacker;
-    private bool _solidBroken;
+    private Exception? _solidError;
 
     private RarEntryData? _current;
     private PackedStream? _currentPacked;
@@ -166,8 +166,16 @@ internal sealed class RarForwardReader : ArchiveReader
         {
             if (header.IsSolid && _isSolid)
             {
-                if (_solidBroken)
-                    throw new InvalidDataException($"The entry '{header.Name}' cannot be decoded: a previous entry of the solid archive could not be decoded.");
+                if (_solidError is not null)
+                {
+                    var message = $"The entry '{header.Name}' cannot be decoded: a previous entry of the solid archive could not be decoded. {_solidError.Message}";
+                    throw _solidError switch
+                    {
+                        NotSupportedException => new NotSupportedException(message, _solidError),
+                        ArchivePasswordException => new ArchivePasswordException(message, _solidError),
+                        _ => new InvalidDataException(message, _solidError),
+                    };
+                }
 
                 if (_unpacker is not null && RarDecoding.IsCompatible(_unpacker, header) && !_unpacker.IsBroken && _unpacker.IsFileFinished)
                 {
@@ -193,7 +201,7 @@ internal sealed class RarForwardReader : ArchiveReader
         _current = null;
         try
         {
-            if (_isSolid && data.IsCompressed && !_solidBroken)
+            if (_isSolid && data.IsCompressed && _solidError is null)
             {
                 try
                 {
@@ -206,12 +214,15 @@ internal sealed class RarForwardReader : ArchiveReader
                     if (_currentDecoded is RarUnpackStream unpack)
                     {
                         unpack.Drain();
-                        _solidBroken = !unpack.IsCompleted || unpack.Unpacker.IsBroken;
+                        if (!unpack.IsCompleted || unpack.Unpacker.IsBroken)
+                        {
+                            _solidError = new InvalidDataException($"The data of the entry '{data.Header.Name}' are corrupted.");
+                        }
                     }
                 }
                 catch (Exception ex) when (ex is InvalidDataException or ArchivePasswordException or NotSupportedException)
                 {
-                    _solidBroken = true;
+                    _solidError = ex;
                 }
             }
 

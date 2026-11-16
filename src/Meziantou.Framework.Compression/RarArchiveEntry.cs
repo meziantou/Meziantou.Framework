@@ -64,15 +64,17 @@ public sealed class RarArchiveEntry : ArchiveEntry
 
     /// <summary>
     /// Gets the CRC-32 of the content of the entry, or <see langword="null"/> when the archive does not store it (a RAR5
-    /// archive may store a BLAKE2sp hash instead), or when it stores a CRC that depends on the encryption key.
+    /// archive may store a BLAKE2sp hash instead), when it stores a CRC that depends on the encryption key, or when the
+    /// header of the last part of an entry split between volumes is not read yet (in the forward-only reader).
     /// </summary>
-    public override uint? Crc32 => Header.Encryption?.UseMac is true ? null : Data.Crc32;
+    public override uint? Crc32 => Header.Encryption?.UseMac is true || Data.IsSplitAfter ? null : Data.Crc32;
 
     /// <summary>
     /// Gets the BLAKE2sp hash (32 bytes) of the content of the entry, or an empty value when the archive does not store
-    /// it, or when it stores a hash that depends on the encryption key.
+    /// it, when it stores a hash that depends on the encryption key, or when the header of the last part of an entry
+    /// split between volumes is not read yet (in the forward-only reader).
     /// </summary>
-    public ReadOnlyMemory<byte> Blake2spHash => Header.Encryption?.UseMac is true || Data.Blake2 is null ? ReadOnlyMemory<byte>.Empty : Data.Blake2;
+    public ReadOnlyMemory<byte> Blake2spHash => Header.Encryption?.UseMac is true || Data.IsSplitAfter || Data.Blake2 is null ? ReadOnlyMemory<byte>.Empty : Data.Blake2;
 
     /// <summary>Gets the Windows attributes of the entry, for an entry created on Windows, MS-DOS or OS/2.</summary>
     public override FileAttributes? Attributes => Header.HostOperatingSystem is RarHostOperatingSystem.Windows or RarHostOperatingSystem.MSDos or RarHostOperatingSystem.OS2 ? (FileAttributes)Header.Attributes : null;

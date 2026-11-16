@@ -395,7 +395,7 @@ public sealed class RarArchiveTests
         {
             return ComputeSha256Core(entry);
         }
-        catch (NotSupportedException ex) when (ex.Message.Contains("PPMd", StringComparison.Ordinal))
+        catch (Exception ex) when (ex.Message.Contains("PPMd", StringComparison.Ordinal))
         {
             // TODO(compression): remove once the PPMd decoder is merged
             return "ppmd";

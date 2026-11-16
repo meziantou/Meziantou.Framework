@@ -61,7 +61,9 @@ internal abstract class RarUnpacker
     private protected RarBitReader Input { get; } = new();
 
     /// <summary>Gets a value indicating whether an error left the decoder in a state that cannot continue a solid stream.</summary>
-    public bool IsBroken { get; private set; }
+    public bool IsBroken => _error is not null;
+
+    private Exception? _error;
 
     /// <summary>Gets a value indicating whether the current file was decoded to its end (<see cref="FinishFile"/> succeeded).</summary>
     public bool IsFileFinished { get; private set; }
@@ -73,8 +75,7 @@ internal abstract class RarUnpacker
     /// <param name="solid">Whether the file continues the solid stream of the previous file.</param>
     public void StartFile(Stream input, long size, long dictionarySize, bool solid)
     {
-        if (IsBroken)
-            throw new InvalidDataException("The solid stream cannot be decoded: the data of a previous file are corrupted.");
+        ThrowIfBroken();
 
         if (!solid || !_started)
         {
@@ -118,6 +119,7 @@ internal abstract class RarUnpacker
         if (buffer.IsEmpty)
             return 0;
 
+        ThrowIfBroken();
         if (_fileSize >= 0)
         {
             var remaining = _fileSize - _fileOutput;
@@ -183,11 +185,24 @@ internal abstract class RarUnpacker
                 DecodeMore();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            IsBroken = true;
+            _error = ex;
             throw;
         }
+    }
+
+    private void ThrowIfBroken()
+    {
+        if (_error is null)
+            return;
+
+        var message = "The data cannot be decoded after a previous error: " + _error.Message;
+        throw _error switch
+        {
+            NotSupportedException => new NotSupportedException(message, _error),
+            _ => new InvalidDataException(message, _error),
+        };
     }
 
     /// <summary>
@@ -210,7 +225,7 @@ internal abstract class RarUnpacker
                 budget -= DecodedPosition - before;
                 if (budget < 0)
                 {
-                    IsBroken = true;
+                    _error = new InvalidDataException("The compressed data of the file are longer than its size.");
                     return;
                 }
             }
@@ -218,13 +233,9 @@ internal abstract class RarUnpacker
             DiscardPending();
             IsFileFinished = true;
         }
-        catch (InvalidDataException)
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
         {
-            IsBroken = true;
-        }
-        catch (NotSupportedException)
-        {
-            IsBroken = true;
+            _error = ex;
         }
     }
 

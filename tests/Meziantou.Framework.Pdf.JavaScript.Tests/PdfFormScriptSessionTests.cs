@@ -101,12 +101,14 @@ public sealed class PdfFormScriptSessionTests
         using var scripts = document.Form.CreateScriptSession();
 
         var notANumber = scripts.SetValue("Quantity", "three");
+        var malformed = scripts.SetValue("Quantity", "1.2.3");
         var outOfRange = scripts.SetValue("Quantity", "500");
         var badDate = scripts.SetValue("Date", "2026-02-30");
 
         Assert.False(notANumber.IsAccepted);
         Assert.Empty(notANumber.Changes);
         Assert.Equal(PdfFormScriptDiagnosticKind.Alert, Assert.Single(notANumber.Diagnostics).Kind);
+        Assert.False(malformed.IsAccepted);
         Assert.False(outOfRange.IsAccepted);
         Assert.False(badDate.IsAccepted);
         Assert.Null(document.Form.FindField("Quantity")!.Value);
@@ -128,6 +130,36 @@ public sealed class PdfFormScriptSessionTests
         Assert.Equal(["Price", "Quantity", "Total", "Tax"], result.Changes.Select(change => change.Field.FullName));
         Assert.Equal("20", document.Form.FindField("Total")!.Value);
         Assert.Equal("$10.00", result.Changes[0].DisplayText);
+    }
+
+    [Fact]
+    public void SettingTheSameValueKeepsTheFormattedAppearance()
+    {
+        var document = CreateOrderForm();
+        using var scripts = document.Form.CreateScriptSession();
+        scripts.SetValue("Price", "12.5");
+
+        var result = scripts.SetValue("Price", "12.5");
+
+        Assert.True(result.IsAccepted);
+        Assert.Empty(result.Changes);
+        var appearance = document.Form.FindField("Price")!.Dictionary.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfName.Create("N"))!;
+        Assert.Contains("($12.50) Tj", System.Text.Encoding.Latin1.GetString(appearance.GetDecodedData()), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DocumentAndFieldScriptsShareTheDocument()
+    {
+        var document = CreateOrderForm();
+        var names = (PdfArray)((PdfDictionary)((PdfDictionary)document.Catalog.GetResolved(PdfName.Create("Names"))!).GetResolved(PdfName.Create("JavaScript"))!).GetResolved(PdfName.Create("Names"))!;
+        names.Add(PdfString.FromText("settings"));
+        names.Add(JavaScriptAction("this.multiplier = 3;"));
+        SetActions(document.Form.FindField("Tax")!, calculate: "event.value = this.multiplier * this.getField(\"Total\").value;");
+        using var scripts = document.Form.CreateScriptSession();
+
+        scripts.SetValues(new Dictionary<string, string?>(StringComparer.Ordinal) { ["Price"] = "10", ["Quantity"] = "2" });
+
+        Assert.Equal("60", document.Form.FindField("Tax")!.Value);
     }
 
     [Fact]
@@ -173,6 +205,11 @@ public sealed class PdfFormScriptSessionTests
     [InlineData("util.printd('dddd d mmmm yy, h tt', new Date(2026, 2, 1, 14, 5))", "Sunday 1 March 26, 2 pm")]
     [InlineData("util.printd('mm/dd/yyyy', util.scand('mm/dd/yyyy', '03/01/2026'))", "03/01/2026")]
     [InlineData("String(util.scand('yyyy-mm-dd', '2026-02-30'))", "null")]
+    [InlineData("util.printd('HH:MM', util.scand('h:MM tt', '12:30 am'))", "00:30")]
+    [InlineData("util.printd('HH:MM', util.scand('h:MM tt', '12:30 pm'))", "12:30")]
+    [InlineData("util.printd('HH:MM', util.scand('h:MM tt', '1:30 pm'))", "13:30")]
+    [InlineData("String(AFMakeNumber('1.2.3'))", "null")]
+    [InlineData("String(AFMakeNumber('(1,234.5)'))", "-1234.5")]
     [InlineData("var event = { value: -1234.5 }; AFNumber_Format(1, 2, 2, 0, ' €', false); event.value", "(1.234,5 €)")]
     [InlineData("var event = { value: '5551234567' }; AFSpecial_Format(2); event.value", "(555) 123-4567")]
     [InlineData("var event = { value: 0.125 }; AFPercent_Format(2, 0); event.value", "12.50%")]

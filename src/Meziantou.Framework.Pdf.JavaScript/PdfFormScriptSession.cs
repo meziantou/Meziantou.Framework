@@ -341,6 +341,16 @@ public sealed class PdfFormScriptSession : IDisposable
     private void Commit(PdfFormField field, string? value, string? displayText, bool fromScript)
     {
         var old = GetValue(field);
+        var normalized = field switch
+        {
+            PdfCheckBoxField or PdfRadioButtonField => value is null or "" or "Off" ? "Off" : value,
+            _ => value,
+        };
+
+        // The same value: the appearance, which the format script may have written, is kept
+        if (displayText is null && string.Equals(old, normalized, StringComparison.Ordinal))
+            return;
+
         try
         {
             void Apply()

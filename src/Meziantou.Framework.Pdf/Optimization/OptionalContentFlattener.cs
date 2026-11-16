@@ -53,6 +53,9 @@ internal sealed class OptionalContentFlattener
         }
     }
 
+    /// <summary>Gets a value indicating whether a content could not be flattened: visible text continues hidden text on the same line. The optional content properties must then be kept.</summary>
+    public bool IsIncomplete { get; private set; }
+
     public static bool HasOptionalContent(PdfDocument document) => document.Catalog.ContainsKey(OCPropertiesName);
 
     public static void RemoveProperties(PdfDocument document) => document.Catalog.Remove(OCPropertiesName);
@@ -148,15 +151,26 @@ internal sealed class OptionalContentFlattener
         return changed;
     }
 
-    /// <summary>Removes the hidden marked-content sequences of a content, and turns the visible ones into <c>/OC BMC</c>.</summary>
-    /// <returns><see langword="true"/> when the content has optional content.</returns>
+    /// <summary>
+    /// Removes the painting of the hidden marked-content sequences of a content, and turns the visible ones into
+    /// <c>/OC BMC</c>. A hidden sequence still changes the graphics and text state (8.11.3.3): its state operators are
+    /// kept, and its paths are ended without painting (<c>n</c>, which keeps the clipping). Its text is removed, but not
+    /// the moves to the next line of <c>'</c> and <c>"</c>: the text position after it is unknown until a new line
+    /// (<c>Td</c>, <c>TD</c>, <c>T*</c>, <c>Tm</c>) or a new text object.
+    /// </summary>
+    /// <param name="data">The content.</param>
+    /// <param name="resources">The resources of the content.</param>
+    /// <param name="content">The new content.</param>
+    /// <returns><see langword="true"/> when the content has optional content and was rewritten. <see langword="false"/> when it has none, or when visible text continues hidden text on the same line, whose position would change (<see cref="IsIncomplete"/> is then set).</returns>
     private bool TryRewrite(ReadOnlyMemory<byte> data, PdfDictionary? resources, out byte[] content)
     {
         var reader = new ContentStreamReader(data);
         var writer = new PdfByteWriter(Math.Max(256, data.Length));
         var operands = new List<PdfObject>();
         var stack = new Stack<bool>();
+        var unknownTextPosition = false;
         var changed = false;
+        content = [];
         while (reader.TryRead(operands, out var name))
         {
             var hidden = stack.Count > 0 && stack.Peek();
@@ -191,10 +205,47 @@ internal sealed class OptionalContentFlattener
                     }
 
                     break;
+
+                case "BT" or "Td" or "TD" or "T*" or "Tm" or "'" or "\"":
+                    unknownTextPosition = false;
+                    break;
+
+                case "Tj" or "TJ" when !hidden && unknownTextPosition:
+                    IsIncomplete = true;
+                    return false;
             }
 
             if (hidden)
-                continue;
+            {
+                switch (name)
+                {
+                    // Painting: nothing is drawn, the state does not change
+                    case "BMC" or "BDC" or "EMC" or "MP" or "DP" or "sh" or "Do" or "BI":
+                        continue;
+
+                    // The path is ended without painting: a clipping (W, W*) still applies
+                    case "S" or "s" or "f" or "F" or "f*" or "B" or "B*" or "b" or "b*":
+                        ContentStreamWriter.Write(writer, "n", []);
+                        continue;
+
+                    // The text is removed: the position after it is unknown
+                    case "Tj" or "TJ":
+                        unknownTextPosition = true;
+                        continue;
+
+                    case "'":
+                        ContentStreamWriter.Write(writer, "T*", []);
+                        unknownTextPosition = true;
+                        continue;
+
+                    case "\"" when operands is [var wordSpacing, var characterSpacing, ..]:
+                        ContentStreamWriter.Write(writer, "Tw", [wordSpacing]);
+                        ContentStreamWriter.Write(writer, "Tc", [characterSpacing]);
+                        ContentStreamWriter.Write(writer, "T*", []);
+                        unknownTextPosition = true;
+                        continue;
+                }
+            }
 
             if (name == "BI" && operands is [PdfDictionary image, PdfString imageData, ..])
             {
@@ -206,7 +257,11 @@ internal sealed class OptionalContentFlattener
             }
         }
 
-        content = changed ? writer.ToArray() : [];
+        if (changed)
+        {
+            content = writer.ToArray();
+        }
+
         return changed;
     }
 

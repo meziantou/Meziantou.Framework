@@ -108,5 +108,9 @@
     };
   }
 
-  return { doc: doc, makeEvent: makeEvent };
+  // The document is the global object: the document-level scripts run on it, and what they set on this (or declare)
+  // is seen by the field scripts, whose this is the document too
+  Object.keys(doc).forEach(function (name) { global[name] = doc[name]; });
+
+  return { doc: global, makeEvent: makeEvent };
 })(globalThis);

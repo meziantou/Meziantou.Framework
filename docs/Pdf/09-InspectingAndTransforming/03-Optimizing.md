@@ -70,7 +70,12 @@ Every option of [PdfOptimizationOptions](cref:Meziantou.Framework.Pdf.PdfOptimiz
   gray or RGB (device or ICC-based color spaces) are resampled; the others (CMYK, indexed, masks, decode arrays) are
   kept. A JPEG image is compressed as JPEG again, the others without loss. A resampled image is stored in sRGB.
 - The optional content is evaluated with the default configuration of the document, without its visibility
-  expressions.
+  expressions. The hidden content still changes the graphics state (a transformation, a clipping, a color): only its
+  painting is removed. The layers of the document are removed only when the optional content of every page was
+  flattened: not when a page action is disabled, or when visible text continues hidden text on the same line, whose
+  position would change.
+- The default color spaces (`DefaultGray`, `DefaultRGB`, `DefaultCMYK`) are always kept: the content uses them
+  without naming them.
 
 ## Signed documents
 

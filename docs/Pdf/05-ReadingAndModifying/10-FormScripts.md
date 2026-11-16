@@ -60,7 +60,10 @@ calculations alone. Save the document to keep the values.
 ## What the scripts can do
 
 - The scripts never run by themselves: opening a document or setting [Value](cref:Meziantou.Framework.Pdf.PdfFormField.Value) runs none. The document-level
-  scripts run once, when the session is created; the open action never runs.
+  scripts run once, when the session is created; the open action never runs. The document-level scripts and the field
+  scripts share the document object (`this`): what a document-level script declares or sets on `this` is seen by the
+  field scripts.
+- Setting a field to the value it already has changes nothing: its appearance, written by its format script, is kept.
 - They see the `event` object, the fields (`this.getField`, with `value`, `valueAsString`, `type`, `readonly`...), the
   AF functions of the viewers (`AFSimple_Calculate`, `AFNumber_Format`, `AFNumber_Keystroke`, `AFPercent_*`,
   `AFDate_*`, `AFTime_*`, `AFSpecial_*`, `AFRange_Validate`, `AFMergeChange`), `util.printf`, `util.printd`,

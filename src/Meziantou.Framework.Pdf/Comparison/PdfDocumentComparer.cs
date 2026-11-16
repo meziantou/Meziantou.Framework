@@ -81,7 +81,7 @@ public static class PdfDocumentComparer
         changes |= CompareText(expected.Text, actual.Text, tolerance, options.MaxDetails, details);
         changes |= CompareElements(expected.Images, actual.Images, image => (image.Width, image.Height, image.Digest), image => image.Bounds, tolerance, options.MaxDetails, details, PdfPageChangeKinds.Images, PdfPageChangeKinds.ImagePlacements);
         changes |= CompareElements(expected.Paths, actual.Paths, path => (path.Paint, path.FillColor, path.StrokeColor), path => path.Bounds, tolerance, options.MaxDetails, details, PdfPageChangeKinds.Paths, PdfPageChangeKinds.Paths);
-        changes |= CompareElements(expected.Shadings, actual.Shadings, shading => (shading.ShadingType, shading.Digest), shading => new PdfRectangle(shading.Matrix.E, shading.Matrix.F, shading.Matrix.E + shading.Matrix.A, shading.Matrix.F + shading.Matrix.D), tolerance, options.MaxDetails, details, PdfPageChangeKinds.Shadings, PdfPageChangeKinds.Shadings);
+        changes |= CompareElements(expected.Shadings, actual.Shadings, shading => (shading.ShadingType, shading.Digest), (e, a) => AreClose(e.Matrix, a.Matrix, tolerance), shading => shading.Matrix.ToString(), options.MaxDetails, details, PdfPageChangeKinds.Shadings, PdfPageChangeKinds.Shadings);
         return new PdfPageComparison(expectedIndex, actualIndex, changes, details);
     }
 
@@ -228,6 +228,14 @@ public static class PdfDocumentComparer
         where T : notnull
         where TKey : notnull
     {
+        return CompareElements(expected, actual, getKey, (e, a) => AreClose(getBounds(e), getBounds(a), tolerance), item => getBounds(item).ToString(), maxDetails, details, contentChange, placementChange);
+    }
+
+    /// <summary>Matches the elements of the same key, at the same place first.</summary>
+    private static PdfPageChangeKinds CompareElements<T, TKey>(IReadOnlyList<T> expected, IReadOnlyList<T> actual, Func<T, TKey> getKey, Func<T, T, bool> isAtSamePlace, Func<T, string> getPlacement, int maxDetails, List<string> details, PdfPageChangeKinds contentChange, PdfPageChangeKinds placementChange)
+        where T : notnull
+        where TKey : notnull
+    {
         var remaining = new Dictionary<TKey, List<T>>();
         foreach (var item in actual)
         {
@@ -245,7 +253,7 @@ public static class PdfDocumentComparer
         var unmatched = new List<T>();
         foreach (var item in expected)
         {
-            if (remaining.TryGetValue(getKey(item), out var candidates) && candidates.FindIndex(candidate => AreClose(getBounds(item), getBounds(candidate), tolerance)) is >= 0 and var index)
+            if (remaining.TryGetValue(getKey(item), out var candidates) && candidates.FindIndex(candidate => isAtSamePlace(item, candidate)) is >= 0 and var index)
             {
                 candidates.RemoveAt(index);
             }
@@ -263,7 +271,7 @@ public static class PdfDocumentComparer
             {
                 var candidate = candidates[0];
                 candidates.RemoveAt(0);
-                moved.Add($"~ {item} -> {getBounds(candidate)}");
+                moved.Add($"~ {item} -> {getPlacement(candidate)}");
             }
             else
             {
@@ -296,6 +304,12 @@ public static class PdfDocumentComparer
         {
             details.Add(string.Create(CultureInfo.InvariantCulture, $"  ... and {items.Count - maxDetails} more"));
         }
+    }
+
+    private static bool AreClose(PdfMatrix expected, PdfMatrix actual, double tolerance)
+    {
+        return Math.Abs(expected.A - actual.A) <= tolerance && Math.Abs(expected.B - actual.B) <= tolerance && Math.Abs(expected.C - actual.C) <= tolerance
+            && Math.Abs(expected.D - actual.D) <= tolerance && Math.Abs(expected.E - actual.E) <= tolerance && Math.Abs(expected.F - actual.F) <= tolerance;
     }
 
     private static bool AreClose(PdfRectangle left, PdfRectangle right, double tolerance)

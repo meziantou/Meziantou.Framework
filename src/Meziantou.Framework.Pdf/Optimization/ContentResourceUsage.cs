@@ -13,6 +13,9 @@ internal static class ContentResourceUsage
     private static readonly PdfName ShadingName = PdfNames.Shading;
     private static readonly PdfName PropertiesName = PdfNames.Properties;
     private static readonly PdfName CsName = PdfName.Create("CS");
+    private static readonly PdfName DefaultGrayName = PdfName.Create("DefaultGray");
+    private static readonly PdfName DefaultRgbName = PdfName.Create("DefaultRGB");
+    private static readonly PdfName DefaultCmykName = PdfName.Create("DefaultCMYK");
 
     /// <summary>
     /// Collects the names a content uses. The forms painted that have no resources of their own use the resources of
@@ -26,6 +29,12 @@ internal static class ContentResourceUsage
 
     private static bool TryCollect(ReadOnlyMemory<byte> content, PdfDictionary? resources, HashSet<(PdfName Category, PdfName Name)> used, int depth)
     {
+        // The default color spaces (8.6.5.6) replace the device color spaces without being named by the content:
+        // the color operators (rg, k, g...), the images and the shadings use them
+        used.Add((PdfNames.ColorSpace, DefaultGrayName));
+        used.Add((PdfNames.ColorSpace, DefaultRgbName));
+        used.Add((PdfNames.ColorSpace, DefaultCmykName));
+
         var reader = new ContentStreamReader(content);
         var operands = new List<PdfObject>();
         try

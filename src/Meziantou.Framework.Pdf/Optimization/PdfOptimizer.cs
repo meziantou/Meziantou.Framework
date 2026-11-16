@@ -133,9 +133,15 @@ public static class PdfOptimizer
         if (options.FlattenOptionalContent && OptionalContentFlattener.HasOptionalContent(document))
         {
             var flattener = new OptionalContentFlattener(document);
-            ForEachPage(document, (page, index) => actions.Add(new PdfOptimizationAction(PdfOptimizationActionKind.FlattenOptionalContent, $"Flatten the optional content of the page {index + 1}", () => flattener.FlattenPage(page), index)));
-            actions.Add(new PdfOptimizationAction(PdfOptimizationActionKind.RemoveOptionalContentProperties, "Remove the optional content properties (layers) of the document", () =>
+            var pageActions = new List<PdfOptimizationAction>();
+            ForEachPage(document, (page, index) => pageActions.Add(new PdfOptimizationAction(PdfOptimizationActionKind.FlattenOptionalContent, $"Flatten the optional content of the page {index + 1}", () => flattener.FlattenPage(page), index)));
+            actions.AddRange(pageActions);
+            actions.Add(new PdfOptimizationAction(PdfOptimizationActionKind.RemoveOptionalContentProperties, "Remove the optional content properties (layers) of the document, when the optional content of every page was flattened", () =>
             {
+                // A page left unflattened still refers to its groups: without the properties, its hidden content would show
+                if (flattener.IsIncomplete || !pageActions.TrueForAll(action => action.IsEnabled))
+                    return false;
+
                 OptionalContentFlattener.RemoveProperties(document);
                 return true;
             }));

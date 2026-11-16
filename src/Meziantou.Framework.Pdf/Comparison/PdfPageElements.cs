@@ -74,7 +74,7 @@ public sealed class PdfPageElements
         {
             foreach (var image in page.GetImages())
             {
-                images.Add(new PdfImageElement(image.Bounds, image.Width, image.Height, Convert.ToHexStringLower(SHA256.HashData(image.EncodedData.Span))));
+                images.Add(new PdfImageElement(image.Bounds, image.Width, image.Height, GetImageDigest(image)));
             }
         }
         catch (PdfException)
@@ -91,6 +91,15 @@ public sealed class PdfPageElements
         }
 
         return new PdfPageElements(crop.Width, crop.Height, page.Rotation, text, images, walker.Paths, walker.Shadings);
+    }
+
+    /// <summary>The digest of the data of an image and of its dictionary, with the objects it refers to: the decode array, the masks, the color space change what it shows.</summary>
+    private static string GetImageDigest(PdfImageOccurrence image)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        hash.AppendData(image.EncodedData.Span);
+        hash.AppendData(Encoding.ASCII.GetBytes(ObjectDigest.Compute(image.Dictionary)));
+        return Convert.ToHexStringLower(hash.GetHashAndReset());
     }
 
     /// <summary>

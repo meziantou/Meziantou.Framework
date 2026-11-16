@@ -3,21 +3,26 @@
 (function (global) {
   "use strict";
 
-  function toNumber(value) {
+  // NaN when the text is not a number
+  function parseNumber(value) {
     if (typeof value === "number") return value;
     var text = String(value === undefined || value === null ? "" : value).trim();
     if (text === "") return 0;
     // A comma decimal separator is accepted when there is no period
     if (text.indexOf(".") < 0 && /^-?[\d\s]*,\d+$/.test(text)) text = text.replace(",", ".");
     text = text.replace(/[\s,]/g, "").replace(/^\((.*)\)$/, "-$1").replace(/[^\d.eE+\-]/g, "");
-    var number = Number(text);
+    return Number(text);
+  }
+
+  function toNumber(value) {
+    var number = parseNumber(value);
     return isNaN(number) ? 0 : number;
   }
 
   function AFMakeNumber(value) {
     var text = String(value === undefined || value === null ? "" : value).trim();
     if (text === "") return null;
-    var number = toNumber(text);
+    var number = parseNumber(text);
     return isFinite(number) ? number : null;
   }
 
@@ -199,7 +204,9 @@
         case "ss": case "s": seconds = number; break;
       }
     }
-    if (/pm/i.test(value) && hours < 12) hours += 12;
+    // 12 am is midnight, 12 pm is noon
+    if (/(^|[^a-z])am([^a-z]|$)/i.test(value) && hours === 12) hours = 0;
+    else if (/(^|[^a-z])pm([^a-z]|$)/i.test(value) && hours < 12) hours += 12;
     var date = new Date(year, month, day, hours, minutes, seconds);
     if (date.getMonth() !== month || date.getDate() !== day) return null;
     return date;

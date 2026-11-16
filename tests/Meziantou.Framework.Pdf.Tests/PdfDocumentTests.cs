@@ -3408,6 +3408,37 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void ComparisonSeesTheDisplayOfImagesAndTheMatrixOfShadings()
+    {
+        using var pixels = new Image<Rgba32>(4, 4);
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        page.CreateContentBuilder()
+            .DrawImage(PdfImage.FromImage(pixels), 100, 100, 20, 20)
+            .SaveGraphicsState()
+            .PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 100, 0, PdfFunction.Exponential(PdfColor.FromRgb(0, 0, 0), PdfColor.FromRgb(1, 1, 1))))
+            .RestoreGraphicsState();
+        var bytes = document.ToByteArray();
+        var expected = PdfPageElements.Create(PdfDocument.Open(bytes).Pages[0]);
+
+        // The same image data, inverted by its decode array
+        var inverted = PdfDocument.Open(bytes);
+        inverted.Pages[0].GetImages()[0].Dictionary[PdfName.Create("Decode")] = PdfArray.FromNumbers(1, 0, 1, 0, 1, 0);
+        Assert.Equal(PdfPageChangeKinds.Images, PdfDocumentComparer.Compare(expected, PdfPageElements.Create(inverted.Pages[0])).Changes);
+
+        // The same shading, sheared: the bounds of the unit square do not show it
+        var sheared = new PdfDocument();
+        sheared.Pages.Add(new PdfSize(200, 200)).CreateContentBuilder()
+            .DrawImage(PdfImage.FromImage(pixels), 100, 100, 20, 20)
+            .SaveGraphicsState()
+            .Transform(new PdfMatrix(1, 0, 1, 1, 0, 0))
+            .PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 100, 0, PdfFunction.Exponential(PdfColor.FromRgb(0, 0, 0), PdfColor.FromRgb(1, 1, 1))))
+            .RestoreGraphicsState();
+        Assert.Equal(PdfPageChangeKinds.Shadings, PdfDocumentComparer.Compare(expected, PdfPageElements.Create(PdfDocument.Open(sheared.ToByteArray()).Pages[0])).Changes);
+        Assert.Equal(PdfPageChangeKinds.None, PdfDocumentComparer.Compare(expected, PdfPageElements.Create(PdfDocument.Open(bytes).Pages[0])).Changes);
+    }
+
+    [Fact]
     public void PageElementsFollowTheTransformations()
     {
         var document = new PdfDocument();
@@ -3697,11 +3728,88 @@ public sealed class PdfDocumentTests
         var applied = PdfOptimizer.Apply(PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { FlattenOptionalContent = true }));
 
         Assert.Equal([PdfOptimizationActionKind.FlattenOptionalContent, PdfOptimizationActionKind.RemoveOptionalContentProperties], applied.Select(action => action.Kind));
-        var content = Encoding.Latin1.GetString(PdfDocument.Open(document.ToByteArray()).Pages[0].GetContentData());
-        Assert.DoesNotContain("1 0 0 rg", content, StringComparison.Ordinal);
-        Assert.Contains("0 0 1 rg", content, StringComparison.Ordinal);
+        var read = PdfDocument.Open(document.ToByteArray());
+        var content = Encoding.Latin1.GetString(read.Pages[0].GetContentData());
         Assert.Contains("/OC BMC", content, StringComparison.Ordinal);
+        Assert.Equal([new PdfPathElement(new PdfRectangle(50, 0, 100, 100), PdfPathPaint.Fill, "0 0 1 rg", null)], PdfPageElements.Create(read.Pages[0]).Paths);
         Assert.False(document.Catalog.ContainsKey(PdfName.Create("OCProperties")));
+    }
+
+    private static PdfDocument CreateDocumentWithHiddenLayer(string content)
+    {
+        var document = new PdfDocument();
+        var hidden = document.Objects.Add(new PdfDictionary { [PdfNames.Type] = PdfName.Create("OCG"), [PdfNames.Name] = PdfString.FromText("Hidden") });
+        document.Catalog[PdfName.Create("OCProperties")] = new PdfDictionary
+        {
+            [PdfName.Create("OCGs")] = new PdfArray(hidden),
+            [PdfNames.D] = new PdfDictionary { [PdfName.Create("OFF")] = new PdfArray(hidden) },
+        };
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        page.CreateContentBuilder().AppendRawContent(Encoding.Latin1.GetBytes(content));
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary
+        {
+            [PdfNames.Properties] = new PdfDictionary { [PdfName.Create("H")] = hidden },
+            [PdfNames.Font] = new PdfDictionary
+            {
+                [PdfName.Create("F1")] = new PdfDictionary { [PdfNames.Type] = PdfNames.Font, [PdfNames.Subtype] = PdfName.Create("Type1"), [PdfName.Create("BaseFont")] = PdfName.Create("Helvetica") },
+            },
+        };
+        return PdfDocument.Open(document.ToByteArray());
+    }
+
+    [Fact]
+    public void FlatteningOptionalContentKeepsTheStateChangesOfHiddenContent()
+    {
+        var document = CreateDocumentWithHiddenLayer("/OC /H BDC 1 0 0 1 50 0 cm 0 0 5 5 re f BT /F1 12 Tf 10 10 Td (Secret) ' ET EMC 0 0 10 10 re f BT /F1 12 Tf 10 50 Td /OC /H BDC (Hidden) Tj EMC 0 -14 Td (Visible) Tj ET");
+        var before = PdfPageElements.Create(document.Pages[0]);
+
+        var applied = PdfOptimizer.Apply(PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { FlattenOptionalContent = true }));
+
+        Assert.Equal([PdfOptimizationActionKind.FlattenOptionalContent, PdfOptimizationActionKind.RemoveOptionalContentProperties], applied.Select(action => action.Kind));
+        var read = PdfDocument.Open(document.ToByteArray());
+        var after = PdfPageElements.Create(read.Pages[0]);
+        Assert.Equal([new PdfPathElement(new PdfRectangle(50, 0, 60, 10), PdfPathPaint.Fill, null, null)], after.Paths);
+        Assert.Equal("Visible", read.Pages[0].ExtractText().Trim());
+        Assert.Equal(before.Text.Single(line => line.Text == "Visible").Bounds, after.Text.Single(line => line.Text == "Visible").Bounds);
+        var content = Encoding.Latin1.GetString(read.Pages[0].GetContentData());
+        Assert.DoesNotContain("Secret", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("Hidden", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OptionalContentIsKeptWhenAPageIsNotFlattened()
+    {
+        // The visible text continues the hidden text on the same line: its position would change
+        var continued = CreateDocumentWithHiddenLayer("BT /F1 12 Tf 10 50 Td /OC /H BDC (Hidden) Tj EMC (Visible) Tj ET");
+        var applied = PdfOptimizer.Apply(PdfOptimizer.CreatePlan(continued, new PdfOptimizationOptions { FlattenOptionalContent = true }));
+        Assert.Empty(applied);
+        Assert.True(continued.Catalog.ContainsKey(PdfName.Create("OCProperties")));
+
+        // A page whose flattening is disabled still refers to its groups
+        var disabled = CreateDocumentWithHiddenLayer("/OC /H BDC 0 0 10 10 re f EMC");
+        var plan = PdfOptimizer.CreatePlan(disabled, new PdfOptimizationOptions { FlattenOptionalContent = true });
+        plan.Actions.Single(action => action.Kind == PdfOptimizationActionKind.FlattenOptionalContent).IsEnabled = false;
+        Assert.Empty(PdfOptimizer.Apply(plan));
+        Assert.True(disabled.Catalog.ContainsKey(PdfName.Create("OCProperties")));
+    }
+
+    [Fact]
+    public void OptimizerKeepsTheDefaultColorSpaces()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A5);
+        page.CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(0, 0, 10, 10).Fill();
+        page.Resources![PdfNames.ColorSpace] = new PdfDictionary
+        {
+            [PdfName.Create("DefaultRGB")] = new PdfArray(PdfName.Create("CalRGB"), new PdfDictionary { [PdfName.Create("WhitePoint")] = PdfArray.FromNumbers(0.9505, 1, 1.089) }),
+            [PdfName.Create("Unused")] = PdfName.Create("DeviceGray"),
+        };
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var applied = PdfOptimizer.Apply(PdfOptimizer.CreatePlan(read, new PdfOptimizationOptions { PruneUnusedResources = true }));
+
+        Assert.Equal("Unused", Assert.Single(applied).ResourceName);
+        Assert.Equal([PdfName.Create("DefaultRGB")], ((PdfDictionary)read.Pages[0].Resources!.GetResolved(PdfNames.ColorSpace)!).Keys);
     }
 
     [Fact]

@@ -230,14 +230,18 @@ public sealed class PdfRenderSession : IDisposable
             inks.Add((name, color.R, color.G, color.B));
         }
 
+        // The inks are multiplied into the target: no buffer other than the plate, which a render of the page needs anyway
         var width = target.Width;
         var height = target.Height;
-        var red = new double[width * height];
-        var green = new double[width * height];
-        var blue = new double[width * height];
-        red.AsSpan().Fill(1);
-        green.AsSpan().Fill(1);
-        blue.AsSpan().Fill(1);
+        var output = target.Frames[0];
+        output.ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                rows.GetRowSpan(y).Fill(new Rgba32(255, 255, 255, 255));
+            }
+        });
+
         using var plate = new Image<Rgba32>(width, height, Options.Configuration);
         foreach (var (colorant, r, g, b) in inks)
         {
@@ -252,31 +256,26 @@ public sealed class PdfRenderSession : IDisposable
             }
 
             var frame = plate.Frames[0];
-            for (var y = 0; y < height; y++)
+            output.ProcessPixelRows(rows =>
             {
-                for (var x = 0; x < width; x++)
+                for (var y = 0; y < height; y++)
                 {
-                    var pixel = frame[x, y];
-                    var tint = 1 - (pixel.R / 255.0);
-                    if (tint <= 0)
-                        continue;
+                    var outputRow = rows.GetRowSpan(y);
+                    for (var x = 0; x < width; x++)
+                    {
+                        var tint = 1 - (frame[x, y].R / 255.0);
+                        if (tint <= 0)
+                            continue;
 
-                    var index = (y * width) + x;
-                    red[index] *= 1 - (tint * (1 - r));
-                    green[index] *= 1 - (tint * (1 - g));
-                    blue[index] *= 1 - (tint * (1 - b));
+                        ref var pixel = ref outputRow[x];
+                        pixel = new Rgba32(
+                            Colors.RenderColorSpace.ToByte(pixel.R / 255.0 * (1 - (tint * (1 - r)))),
+                            Colors.RenderColorSpace.ToByte(pixel.G / 255.0 * (1 - (tint * (1 - g)))),
+                            Colors.RenderColorSpace.ToByte(pixel.B / 255.0 * (1 - (tint * (1 - b)))),
+                            255);
+                    }
                 }
-            }
-        }
-
-        var output = target.Frames[0];
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = 0; x < width; x++)
-            {
-                var index = (y * width) + x;
-                output[x, y] = new Rgba32(Colors.RenderColorSpace.ToByte(red[index]), Colors.RenderColorSpace.ToByte(green[index]), Colors.RenderColorSpace.ToByte(blue[index]), 255);
-            }
+            });
         }
     }
 

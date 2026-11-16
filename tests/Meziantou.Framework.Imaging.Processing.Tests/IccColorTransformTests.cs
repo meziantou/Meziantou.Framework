@@ -1883,8 +1883,11 @@ public sealed class IccColorTransformTests
         Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("\0\0\0\0", Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
         Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("Lab ", includeTintZero: true, [("c2sp", Mpe(3, 3, Element("bACS", 3, 3, U32(0))))], Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
 
-        // Malformed: no name, values that are not vectors of the connection space, a first element that is not the tint zero
+        // Malformed: no name, values that are not vectors of the connection space, a first element that is not the tint
+        // zero, device values (amounts of the colorants) outside [0, 1]
         Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("pcs ", Floats("fl32", 75, 20, 10))))));
+        Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10)), ("dev ", Floats("fl32", -1, 2, 0, 0))))));
+        Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10)), ("dev ", Floats("fl16", 0, 0, 0, 1.5f))))));
         Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20))))));
         Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("Lab ", includeTintZero: false, Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
     }

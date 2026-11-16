@@ -223,6 +223,11 @@ internal static class IccNamedColorReader
                     throw new UnsupportedImageFeatureException($"The {role} ICC profile gives device values for the data color space {IccReader.FormatSignature(header.DataColorSpace)}; only gray, RGB and CMYK are supported.", ImageFormat.Unknown, "ICC profile data color space");
 
                 device = ReadFullTint(members.Device.Slice(element), "device", allowIntegers: true, deviceChannels, fullTint, name, role);
+
+                // The device values are amounts of the colorants: floating-point values may be outside [0, 1]
+                if (Array.Exists(device, value => value is < 0 or > 1))
+                    throw Invalid(role, $"the device values of the named color '{name}' are not in [0, 1].");
+
                 deviceChannelCount = deviceChannels;
             }
 

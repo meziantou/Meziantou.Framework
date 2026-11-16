@@ -19,9 +19,13 @@ internal sealed class IccMpeCurveSet : IccMpeElement
         : base(curves.Length, curves.Length)
     {
         _curves = curves;
+        foreach (var curve in curves)
+        {
+            Cost += curve.Cost;
+        }
     }
 
-    public override long Cost => 4L * InputCount;
+    public override long Cost { get; }
 
     public static IccMpeCurveSet Parse(ReadOnlyMemory<byte> element, int inputs, int outputs, IccMpeParseContext context)
     {

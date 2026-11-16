@@ -137,6 +137,8 @@ internal sealed class IccMpeCalculator : IccMpeElement
         if (compiler.StackSize > IccMpeParseContext.MaxChannels || compiler.TempCount > IccMpeParseContext.MaxChannels)
             throw context.Invalid("the main function of a calculator element uses more than 65,535 stack values or temporary channels.");
 
+        // The operations copy one value at a time, and each evaluation clears the temporary channels and the outputs
+        cost += compiler.TempCount + outputs;
         return new IccMpeCalculator(inputs, outputs, compiler.Program, [.. compiler.CaseBodies], subElements, compiler.StackSize, compiler.TempCount, cost, compiler.TransposeSize);
     }
 
@@ -837,6 +839,7 @@ internal sealed class IccMpeCalculator : IccMpeElement
                         throw _context.Invalid(string.Create(CultureInfo.InvariantCulture, $"an 'in' operation of a calculator element reads the input channel {s + t}, but it has {_inputs}."));
 
                     Push(ref depth, t + 1);
+                    cost = t + 1;
                     return Simple(OpCode.In, s, t);
 
                 case 0x6F757420: // 'out '
@@ -844,21 +847,25 @@ internal sealed class IccMpeCalculator : IccMpeElement
                         throw _context.Invalid(string.Create(CultureInfo.InvariantCulture, $"an 'out' operation of a calculator element writes the output channel {s + t}, but it has {_outputs}."));
 
                     Pop(ref depth, t + 1, signature);
+                    cost = t + 1;
                     return Simple(OpCode.Out, s, t);
 
                 case 0x74676574: // 'tget'
                     TempCount = Math.Max(TempCount, s + t + 1);
                     Push(ref depth, t + 1);
+                    cost = t + 1;
                     return Simple(OpCode.TGet, s, t);
 
                 case 0x74707574: // 'tput'
                     TempCount = Math.Max(TempCount, s + t + 1);
                     Pop(ref depth, t + 1, signature);
+                    cost = t + 1;
                     return Simple(OpCode.TPut, s, t);
 
                 case 0x74736176: // 'tsav'
                     TempCount = Math.Max(TempCount, s + t + 1);
                     Need(depth, t + 1, signature);
+                    cost = t + 1;
                     return Simple(OpCode.TSav, s, t);
 
                 case 0x656E7620: // 'env '
@@ -886,7 +893,7 @@ internal sealed class IccMpeCalculator : IccMpeElement
 
                     Pop(ref depth, element.InputCount, signature);
                     Push(ref depth, element.OutputCount);
-                    cost = 1 + element.Cost;
+                    cost = 1 + element.InputCount + element.OutputCount + element.Cost;
                     return Simple(OpCode.SubElement, s, 0);
                 }
 

@@ -1890,6 +1890,55 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void IccMaxNamedColorsSharingTheirNameAreReadOnce()
+    {
+        // 1,000 colors whose name members all refer to the same name of 64 KiB
+        var name = new string('n', 65536);
+        var colors = IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedNameArray(name, 1000, sizeStep: 0), []));
+        Assert.HasCount(1000, colors);
+        Assert.Same(colors[0].Name, colors[999].Name);
+        Assert.Equal(0, colors.IndexOf(name));
+        Assert.Equal(new CieLab(50, 40, 20), colors[999].ConnectionSpaceLab);
+
+        // Names at the same offset but of different sizes would be read and stored again and again
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedNameArray(name, 1000, sizeStep: 1), [])));
+
+        // A namedColorArray: the tint zero structure, then the members of a structure per color (a name and PCS values),
+        // then the name and the PCS values they refer to
+        static byte[] SharedNameArray(string name, int count, int sizeStep)
+        {
+            var tintZero = Struct("tnt0", ("pcs ", Floats("fl32", 100, 0, 0)));
+            var nameData = Utf8(name);
+            var pcs = Floats("fl32", 50, 40, 20);
+            const int StructSize = 16 + (2 * 12);
+            var header = 16 + (8 * (count + 1));
+            var firstStruct = header + tintZero.Length;
+            var nameOffset = firstStruct + (count * StructSize);
+            var pcsOffset = nameOffset + nameData.Length;
+            var data = new List<byte>([.. "tary"u8, 0, 0, 0, 0, .. "ncol"u8, .. U32((uint)count + 1), .. U32((uint)header), .. U32((uint)tintZero.Length)]);
+            for (var i = 0; i < count; i++)
+            {
+                // Each structure extends to the end of the shared data, which its members refer to
+                var structOffset = firstStruct + (i * StructSize);
+                data.AddRange([.. U32((uint)structOffset), .. U32((uint)(pcsOffset + pcs.Length - structOffset))]);
+            }
+
+            data.AddRange(tintZero);
+            for (var i = 0; i < count; i++)
+            {
+                var structOffset = firstStruct + (i * StructSize);
+                data.AddRange([.. "tstr"u8, 0, 0, 0, 0, .. "nmcl"u8, .. U32(2)]);
+                data.AddRange([.. "name"u8, .. U32((uint)(nameOffset - structOffset)), .. U32((uint)(nameData.Length - (sizeStep * i)))]);
+                data.AddRange([.. "pcs "u8, .. U32((uint)(pcsOffset - structOffset)), .. U32((uint)pcs.Length)]);
+            }
+
+            data.AddRange(nameData);
+            data.AddRange(pcs);
+            return [.. data];
+        }
+    }
+
+    [Fact]
     public void CalculatorOperationsFollowIcc2Table102()
     {
         // Arithmetic, rounded to single precision; 'sign' gives 1 for positive values (Table 102 prints -1, a typographical error)
@@ -1998,19 +2047,33 @@ public sealed class IccColorTransformTests
         // Overlapping positions (the same offset, shorter sizes) are different elements, which would store the same data
         // again and again
         Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(tint, [.. Enumerable.Range(0, 32).Select(i => tint.Length - (4 * i))]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+    }
 
-        static byte[] Stage(byte[] element, int[] sizes)
+    [Fact]
+    public void SegmentedCurvesCountTheSearchOfTheirSegment()
+    {
+        // 1,024 segments: the segment k gives k, between the break-points (k - 1) / 1024 and k / 1024
+        var element = CurveSetElement(Segmented([.. Enumerable.Range(1, 1023).Select(i => i / 1024f)], [.. Enumerable.Range(0, 1024).Select(k => Formula(0, 1, 0, 0, k))]));
+        foreach (var k in new[] { 0, 1, 511, 512, 1022, 1023 })
         {
-            var offset = 16 + (8 * sizes.Length);
-            var data = new List<byte>([.. "mpet"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), .. U32((uint)sizes.Length)]);
-            foreach (var size in sizes)
-            {
-                data.AddRange([.. U32((uint)offset), .. U32((uint)size)]);
-            }
-
-            data.AddRange(element);
-            return [.. data];
+            Assert.Equal(k, Evaluate(element, (k + 0.5) / 1024)[0]);
         }
+
+        // The 10 steps of the binary search are part of the cost: a curve repeated by many positions exceeds the work per color
+        Assert.Equal(4 + 10 + 1, ParseElement(element).Cost);
+        IccMpeParser.CreateStage(Stage(element, [.. Enumerable.Repeat(element.Length, 1000)]), 1, 1, new IccMpeParseContext("source", 0x41324231));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(element, [.. Enumerable.Repeat(element.Length, 100_000)]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+    }
+
+    [Fact]
+    public void CalculatorCopiesCountTheirValues()
+    {
+        // tget 10 values, pop, in, out, then the 10 temporary channels and the output cleared before each evaluation
+        Assert.Equal(10 + 1 + 1 + 1 + 10 + 1, ParseElement(CalculatorElement(1, 1, [], "tget:0:9 pop:9 in out")).Cost);
+
+        // 20 copies of 65,535 temporary channels exceed the work per color
+        var copies = CalculatorElement(1, 1, [], string.Join(' ', Enumerable.Repeat("tget:0:65534 pop:65534", 20)) + " in out");
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(copies, [copies.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
     }
 
     [Fact]
@@ -2204,7 +2267,11 @@ public sealed class IccColorTransformTests
     private static IccProfile IccMaxNamedProfile(string connectionSpace, bool includeTintZero, (string Signature, byte[] Data)[] otherTags, params byte[][] colors)
     {
         byte[][] elements = includeTintZero ? [Struct("tnt0", ("pcs ", Floats("fl32", 100, 0, 0))), .. colors] : colors;
-        var array = Container("tary", "ncol", elements.Select(element => ((string?)null, element)).ToArray());
+        return IccMaxNamedProfileWithArray(connectionSpace, Container("tary", "ncol", elements.Select(element => ((string?)null, element)).ToArray()), otherTags);
+    }
+
+    private static IccProfile IccMaxNamedProfileWithArray(string connectionSpace, byte[] array, (string Signature, byte[] Data)[] otherTags)
+    {
         var data = IccTestProfiles.BuildBytes("CMYK", connectionSpace, [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249)), ("nmcl", array), .. otherTags], header =>
         {
             header[8] = 5;
@@ -2311,6 +2378,20 @@ public sealed class IccColorTransformTests
 
     // A multiProcessElementsType (ICC.2:2023 Table 63)
     private static byte[] Mpe(int inputs, int outputs, params byte[][] elements) => Positioned([.. "mpet"u8, 0, 0, 0, 0, .. U16(inputs), .. U16(outputs), .. U32((uint)elements.Length)], elements);
+
+    // A multiProcessElementsType of one channel whose elements all start at the same offset, with these sizes
+    private static byte[] Stage(byte[] element, int[] sizes)
+    {
+        var offset = 16 + (8 * sizes.Length);
+        var data = new List<byte>([.. "mpet"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), .. U32((uint)sizes.Length)]);
+        foreach (var size in sizes)
+        {
+            data.AddRange([.. U32((uint)offset), .. U32((uint)size)]);
+        }
+
+        data.AddRange(element);
+        return [.. data];
+    }
 
     // A header, a table of positions (offset and size relative to the start), then the items, 4-byte aligned
     private static byte[] Positioned(byte[] header, byte[][] items, byte[]? beforeItems = null)

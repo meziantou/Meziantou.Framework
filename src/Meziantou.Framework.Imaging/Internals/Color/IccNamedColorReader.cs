@@ -150,11 +150,12 @@ internal static class IccNamedColorReader
         var colors = new IccNamedColor[count - 1];
         deviceChannelCount = 0;
 
-        // Colors may share their tint values: the full tint of each tint array is found once. Only the vector at full tint
-        // of the other arrays is read, and the tint arrays read add up to a bounded size, so that colors that refer to the
-        // same or overlapping data many times do not read it again and again
+        // Colors may share their names and tint values: each is read once. Only the vector at full tint of the other
+        // arrays is read, and the names and tint arrays read add up to a bounded size, so that colors that refer to the
+        // same or overlapping data many times do not read and store it again and again
+        var names = new Dictionary<(long Offset, int Length), string>();
         var fullTints = new Dictionary<(long Offset, int Length), (int Vectors, int Index)>();
-        var tintBudget = tag.Length + (1L << 20);
+        var budget = tag.Length + (1L << 20);
         for (var i = 0; i < count; i++)
         {
             var element = GetPosition(tag, 16 + (8 * i), role, "'nmcl' tag");
@@ -173,17 +174,24 @@ internal static class IccNamedColorReader
             if (structType != StructNamedColor)
                 throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the element {i} of the 'nmcl' tag is not a namedColorStructure ('nmcl')."));
 
-            var name = TryGetMember(element, MemberName, role, out var nameData) ? ReadUtf8(nameData, role) : throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color {i} has no name."));
+            var elementOffset = (long)IccReader.ReadUInt32(tag[(16 + (8 * i))..]);
+            if (!TryGetMember(element, MemberName, role, out var nameData, out var nameOffset))
+                throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color {i} has no name."));
+
+            if (!names.TryGetValue((elementOffset + nameOffset, nameData.Length), out var name))
+            {
+                Consume(ref budget, nameData.Length, role);
+                name = ReadUtf8(nameData, role);
+                names[(elementOffset + nameOffset, nameData.Length)] = name;
+            }
+
             (int Vectors, int Index)? fullTint = null;
             if (TryGetMember(element, MemberTint, role, out var tintData, out var tintOffset))
             {
-                var key = ((long)IccReader.ReadUInt32(tag[(16 + (8 * i))..]) + tintOffset, tintData.Length);
+                var key = (elementOffset + tintOffset, tintData.Length);
                 if (!fullTints.TryGetValue(key, out var found))
                 {
-                    tintBudget -= tintData.Length;
-                    if (tintBudget < 0)
-                        throw new UnsupportedImageFeatureException($"The {role} ICC profile has more tint values than its 'nmcl' tag contains.", ImageFormat.Unknown, "ICC named colors too large to read");
-
+                    Consume(ref budget, tintData.Length, role);
                     found = FindFullTint(tintData, role);
                     fullTints[key] = found;
                 }
@@ -215,6 +223,14 @@ internal static class IccNamedColorReader
             throw new UnsupportedImageFeatureException($"The {role} ICC profile gives device values for some of its named colors only.", ImageFormat.Unknown, "ICC named colors with partial device values");
 
         return colors;
+    }
+
+    // Accounts for the bytes of the names and tint values read
+    private static void Consume(ref long budget, int length, string role)
+    {
+        budget -= length;
+        if (budget < 0)
+            throw new UnsupportedImageFeatureException($"The {role} ICC profile has more names and tint values than its 'nmcl' tag contains.", ImageFormat.Unknown, "ICC named colors too large to read");
     }
 
     // The tint values of a named color: their number, and the index of the full tint (1.0)

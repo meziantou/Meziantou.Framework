@@ -818,9 +818,17 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     marker segment in the first tile-part), an HT cleanup magnitude may use every bit-plane (FFmpeg refuses it), a
     codestream of three components whose last two are sub-sampled alike is sYCC (both decoders read it so). The
     fixtures record each disagreement with its reason.
-  - The encoder (`Jpeg2000EncoderCodec`) codes tiles one at a time (one tile-part each, no precincts) and writes the
-    packets in any of the five progression orders (`Jpeg2000PacketPosition` orders the position progressions for the
-    decoder and the encoder alike); a lossy output codes the opacity reversibly through COC and QCC marker segments. Its
+  - The encoder (`Jpeg2000EncoderCodec`) codes tiles one at a time and writes the packets in any of the five
+    progression orders (`RentPacketOrder`; `Jpeg2000PacketPosition` orders the position progressions for the decoder and
+    the encoder alike); a lossy output codes the opacity reversibly through COC and QCC marker segments. Precincts
+    (`PrecinctSizes`, given from the highest level down) only change the COD and COC marker segments: the partition of
+    the tile, shared with the decoder (`Jpeg2000TileGeometry`), cuts the code-blocks to them (B-17, B-18) and gives each
+    precinct its packets. A tile-part starts at each packet whose divided dimension changes (`StartsTilePart`); the
+    number of tile-parts of every tile is counted in the constructor, so that more than 255 is an `ArgumentException`
+    before anything is written, and so that the TLM marker segments, written with the head, have their size. A PLT
+    piece is kept between the SOT and SOD markers of each tile-part and filled once its packets are written. The rate
+    control counts the tile-part headers and a bound of the PLT segments (`LayerBudget`). FFmpeg 9.0.2 reads at most 32
+    tile-parts per tile ("error during processing marker segment ff90"), fewer than the 255 T.800 allows. Its
     quantization steps come from the gains of the synthesis kernel of the library, measured, not from published tables
     (the 9-7 and 5-3 norms are measured up to 10 levels and extrapolated above).
   - Quality layers and targets (J.14, `AllocateLayers`): the block coder records, for each pass, the exact length of
@@ -833,22 +841,30 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     passes are not recorded and the output is byte-identical to the single-layer encoder; a target every pass fits in
     keeps every pass. At equal size the PSNR is the one of `opj_compress -r` within 0.05 dB on photographs.
   - The HTJ2K encoder (`Jpeg2000HtBlockEncoder`, `BlockCoder = HighThroughput`) is the reverse of the HT block decoder:
-    one HT cleanup pass per code-block (no refinement pass), written stream by stream with the bit-stuffing each reading
-    procedure of T.814 clause 7 expects, and the codeword of each quad chosen among the rows of Annex C that its
-    exponent bound allows (the shortest codeword plus MagSgn bits). It codes the quantization indices of the standard
-    coder, so a lossy HT output decodes to the samples of the standard output. P_blk is `Mb - 1 - p` for a pass that
-    ends at the bit-plane p (T.814, 7.6), and `Assemble` keeps one bit-plane above the largest magnitude, because FFmpeg
-    refuses an exponent bound that uses every bit-plane. The output has one layer; a target is reached by coding one HT
-    cleanup segment per candidate lowest bit-plane and giving them to the same hull and bisection as the coding passes
-    (`GetPassTotal`, `GetHighThroughputSegment`; the zero bit-plane tag tree is rebuilt in `WritePacket` for the chosen
-    planes). `EachHtCleanupSegmentOfTheEncoderDecodesToItsBitPlanes` checks every candidate against the decoder, and
-    `HighThroughputOutputIsReadAlikeByOpenJpegOpenJphAndFFmpeg` against the three reference decoders. FFmpeg's probe
-    takes a JPH file for an ISO base media file: the harness names its `j2k_pipe` demuxer for `.jph` and `.jhc`.
-    HT SigProp and HT MagRef candidates for the rate control (three per bit-plane, as the standard passes) were tried on
-    2026-10-31 and left out: at 0.25 to 4 bits per pixel they gained 0.0 to 0.25 dB of PSNR (HT still 0.3 to 0.65 dB below
-    the standard coder, its byte overhead), but coding with a target became 1.6 to 1.9 times slower (0.65 times the
-    speed of the standard coder) and decoding those files 1.7 times slower: the standard coder then beats it on speed
-    and quality, while the cleanup-only candidates keep HT 1.1 to 1.3 times faster to code and 1.5 to 4.9 times to decode.
+    the HT cleanup pass written stream by stream with the bit-stuffing each reading procedure of T.814 clause 7
+    expects, and the codeword of each quad chosen among the rows of Annex C that its exponent bound allows (the shortest
+    codeword plus MagSgn bits); the HT SigProp and HT MagRef passes (`EncodeRefinement`, the scans of 7.4 and 7.5 with
+    the contexts that are not vertically causal) in one HT refinement segment, the SigProp bytes first, so that the
+    segment of the SigProp pass alone is its start. It codes the quantization indices of the standard coder, so a lossy
+    HT output decodes to the samples of the standard output. P_blk is `Mb - 1 - p` for a cleanup pass that ends at the
+    bit-plane p (T.814, 7.6), and `Assemble` keeps one bit-plane above the largest magnitude, because FFmpeg refuses an
+    exponent bound that uses every bit-plane. Without a target, a code-block is one cleanup pass down to the bit-plane 0
+    (the default output did not change). With a target, every HT set is coded, numbered as the passes of the standard
+    coder (`3 * set + 1` for the cleanup pass of a set, plus its refinement passes: `GetPassTotal`,
+    `GetHighThroughputSegments`), and `ComputeHighThroughputHull` orders the points by length, since they are not
+    truncations of each other. No placeholder pass is written (the zero bit-plane tag tree gives the bit-plane of the
+    cleanup pass), and a code-block is in one layer with its whole HT set: OpenJPEG refuses placeholder passes and HT
+    refinement passes in a later packet than their cleanup pass. With several layers, `AllocateLayers` first chooses the
+    HT set of every code-block for the target of the last layer (less a byte per packet of the other layers), then the
+    layers share out the code-blocks at the slopes of their sets (`_highThroughputSets`; the zero bit-plane tag trees
+    then hold the sets, so that every layer gives them alike). `EachHtSetOfTheEncoderDecodesToItsBitPlanes` checks every
+    candidate against the decoder, `HighThroughputOutputIsReadAlikeByOpenJpegOpenJphAndFFmpeg` and
+    `HighThroughputRefinementPassesPrecinctsAndLayersAreReadAlikeByTheReferenceDecoders` against the three reference
+    decoders (OpenJPH 0.32.0 reads one layer only). FFmpeg's probe takes a JPH file for an ISO base media file: the
+    harness names its `j2k_pipe` demuxer for `.jph` and `.jhc`. The refinement candidates were measured on 2026-11-15
+    (crops of a photograph and 1/f noise images, 0.25 to 4 bits per pixel): they gain 0.0 to 0.4 dB of PSNR over the
+    cleanup candidates alone (HT then 0.1 to 0.4 dB below the standard coder); the timings of that machine were too
+    noisy to measure their cost, which an earlier attempt measured at 1.6 to 1.9 times the coding time with a target.
   - The lossy quality is calibrated on `JpegEncoder` (`Jpeg2000QuantizationDesign`): the base step of the luminance is
     `0.47 * s^(3/4)` levels, `s` being the scale of the JPEG quality, and the two chrominances have twice that step (a
     QCC marker segment each). The constants were fitted on photographs of several sizes, so that a quality has the SSIM

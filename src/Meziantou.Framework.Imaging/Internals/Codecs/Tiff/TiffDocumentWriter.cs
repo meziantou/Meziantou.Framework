@@ -1346,12 +1346,12 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         if (metadata.XmpProfile is { } xmp)
         {
-            fields.Add(new TiffWriteField(TiffFormat.XmpTag, TiffFieldType.Byte, (ulong)xmp.Data.Length, xmp.Data.Span.ToArray()));
+            fields.Add(new TiffWriteField(TiffFormat.XmpTag, TiffFieldType.Byte, (ulong)xmp.Data.Length, xmp.Data.Memory));
         }
 
         if (metadata.IccProfile is { } icc)
         {
-            fields.Add(new TiffWriteField(TiffFormat.IccProfileTag, TiffFieldType.Undefined, (ulong)icc.Data.Length, icc.Data.Span.ToArray()));
+            fields.Add(new TiffWriteField(TiffFormat.IccProfileTag, TiffFieldType.Undefined, (ulong)icc.Data.Length, icc.Data.Memory));
         }
 
         fields.Sort(static (left, right) => left.Tag.CompareTo(right.Tag));
@@ -1438,7 +1438,7 @@ internal sealed class TiffDocumentWriter : IDisposable
             var value = entry[(IsBigTiff ? 12 : 8)..];
             if (field.Data.Length <= OffsetSize)
             {
-                field.Data.CopyTo(value);
+                field.Data.Span.CopyTo(value);
             }
             else
             {
@@ -1451,7 +1451,7 @@ internal sealed class TiffDocumentWriter : IDisposable
         {
             if (fields[i].Data.Length > OffsetSize)
             {
-                fields[i].Data.CopyTo(span[(int)(valueOffsets[i] - directoryOffset)..]);
+                fields[i].Data.Span.CopyTo(span[(int)(valueOffsets[i] - directoryOffset)..]);
             }
         }
 

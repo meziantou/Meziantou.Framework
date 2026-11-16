@@ -230,7 +230,8 @@ public static partial class CompressionFuzzTargets
 
             if (complete)
             {
-                if (entry.Length >= 0 && entry.HardLinkTarget is null)
+                // The length of a link of RAR5 is the length of its target, and its content is empty (or the content of its target)
+                if (entry.Length >= 0 && entry.HardLinkTarget is null && entry.LinkTarget is null)
                 {
                     FuzzAssert.Equal(entry.Length, length, $"The content of the entry '{entry.FullName}' does not have the length of the entry");
                 }

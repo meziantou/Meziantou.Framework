@@ -426,9 +426,15 @@ internal abstract class RarUnpacker
             }
             else
             {
-                for (var i = 0; i < length; i++)
+                // The bytes between the source and the destination repeat: copy them in chunks that double
+                var copied = 0;
+                var step = distance;
+                while (copied < length)
                 {
-                    window[destination + i] = window[source + i];
+                    var count = Math.Min(step, length - copied);
+                    window.AsSpan(source, count).CopyTo(window.AsSpan(destination + copied));
+                    copied += count;
+                    step += count;
                 }
             }
 

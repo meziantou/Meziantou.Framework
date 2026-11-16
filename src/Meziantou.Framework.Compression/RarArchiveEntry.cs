@@ -38,7 +38,7 @@ public sealed class RarArchiveEntry : ArchiveEntry
     /// </summary>
     public override string FullName => Header.Name;
 
-    /// <summary>Gets the length of the content of the entry: 0 for a directory, -1 when the archive does not store it.</summary>
+    /// <summary>Gets the length of the content of the entry: 0 for a directory, -1 when the archive does not store it. For a link of RAR5, it is the length the archive records (the length of the target), while <see cref="Open"/> returns an empty stream for a symbolic link.</summary>
     public override long Length => Header.IsDirectory ? 0 : Header.UnpackedSize;
 
     /// <summary>

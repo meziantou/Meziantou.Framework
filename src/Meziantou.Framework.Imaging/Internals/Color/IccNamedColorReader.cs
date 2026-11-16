@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -150,9 +151,10 @@ internal static class IccNamedColorReader
         var colors = new IccNamedColor[count - 1];
         deviceChannelCount = 0;
 
-        // Colors may share their names and tint values: each is read once. Only the vector at full tint of the other
-        // arrays is read, and the names and tint arrays read add up to a bounded size, so that colors that refer to the
-        // same or overlapping data many times do not read and store it again and again
+        // Colors may share their structures, names and tint values: each is read once. Only the vector at full tint of
+        // the other arrays is read, and the member tables, names and tint arrays read add up to a bounded size, so that
+        // colors that refer to the same or overlapping data many times do not read and store it again and again
+        var structures = new Dictionary<(long Offset, int Length), NamedColorMembers>();
         var names = new Dictionary<(long Offset, int Length), string>();
         var fullTints = new Dictionary<(long Offset, int Length), (int Vectors, int Index)>();
         var budget = tag.Length + (1L << 20);
@@ -175,43 +177,52 @@ internal static class IccNamedColorReader
                 throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the element {i} of the 'nmcl' tag is not a namedColorStructure ('nmcl')."));
 
             var elementOffset = (long)IccReader.ReadUInt32(tag[(16 + (8 * i))..]);
-            if (!TryGetMember(element, MemberName, role, out var nameData, out var nameOffset))
+            if (!structures.TryGetValue((elementOffset, element.Length), out var members))
+            {
+                members = ReadMembers(element, ref budget, role);
+                structures[(elementOffset, element.Length)] = members;
+            }
+
+            if (members.Name.Size < 0)
                 throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"the named color {i} has no name."));
 
-            if (!names.TryGetValue((elementOffset + nameOffset, nameData.Length), out var name))
+            var nameKey = (elementOffset + members.Name.Offset, members.Name.Size);
+            if (!names.TryGetValue(nameKey, out var name))
             {
-                Consume(ref budget, nameData.Length, role);
-                name = ReadUtf8(nameData, role);
-                names[(elementOffset + nameOffset, nameData.Length)] = name;
+                Consume(ref budget, members.Name.Size, role);
+                name = ReadUtf8(members.Name.Slice(element), role);
+                names[nameKey] = name;
             }
 
             (int Vectors, int Index)? fullTint = null;
-            if (TryGetMember(element, MemberTint, role, out var tintData, out var tintOffset))
+            if (members.Tint.Size >= 0)
             {
-                var key = (elementOffset + tintOffset, tintData.Length);
+                var key = (elementOffset + members.Tint.Offset, members.Tint.Size);
                 if (!fullTints.TryGetValue(key, out var found))
                 {
-                    Consume(ref budget, tintData.Length, role);
-                    found = FindFullTint(tintData, role);
+                    Consume(ref budget, members.Tint.Size, role);
+                    found = FindFullTint(members.Tint.Slice(element), role);
                     fullTints[key] = found;
                 }
 
                 fullTint = found;
             }
 
-            if (!TryGetMember(element, MemberPcs, role, out var pcsData))
+            if (members.Pcs.Size < 0)
                 throw Invalid(role, $"the named color '{name}' has no PCS values.");
+
+            var pcsData = members.Pcs.Slice(element);
 
             var full = ReadFullTint(pcsData, "PCS", allowIntegers: false, 3, fullTint, name, role);
             var (xyz, lab) = isLab ? FromLab(full[0], full[1], full[2]) : FromXyz(full[0], full[1], full[2]);
 
             var device = Array.Empty<double>();
-            if (TryGetMember(element, MemberDevice, role, out var deviceData))
+            if (members.Device.Size >= 0)
             {
                 if (channels is not { } deviceChannels)
                     throw new UnsupportedImageFeatureException($"The {role} ICC profile gives device values for the data color space {IccReader.FormatSignature(header.DataColorSpace)}; only gray, RGB and CMYK are supported.", ImageFormat.Unknown, "ICC profile data color space");
 
-                device = ReadFullTint(deviceData, "device", allowIntegers: true, deviceChannels, fullTint, name, role);
+                device = ReadFullTint(members.Device.Slice(element), "device", allowIntegers: true, deviceChannels, fullTint, name, role);
                 deviceChannelCount = deviceChannels;
             }
 
@@ -225,12 +236,12 @@ internal static class IccNamedColorReader
         return colors;
     }
 
-    // Accounts for the bytes of the names and tint values read
+    // Accounts for the bytes of the member tables, names and tint values read
     private static void Consume(ref long budget, int length, string role)
     {
         budget -= length;
         if (budget < 0)
-            throw new UnsupportedImageFeatureException($"The {role} ICC profile has more names and tint values than its 'nmcl' tag contains.", ImageFormat.Unknown, "ICC named colors too large to read");
+            throw new UnsupportedImageFeatureException($"The {role} ICC profile has more structure members, names and tint values than its 'nmcl' tag contains.", ImageFormat.Unknown, "ICC named colors too large to read");
     }
 
     // The tint values of a named color: their number, and the index of the full tint (1.0)
@@ -280,29 +291,45 @@ internal static class IccNamedColorReader
         return result;
     }
 
-    private static bool TryGetMember(ReadOnlySpan<byte> element, uint signature, string role, out ReadOnlySpan<byte> member) => TryGetMember(element, signature, role, out member, out _);
-
-    // The member and its offset in the structure
-    private static bool TryGetMember(ReadOnlySpan<byte> element, uint signature, string role, out ReadOnlySpan<byte> member, out uint offset)
+    // The members of a named color structure, in a single pass over its member table: the first member of each signature
+    private static NamedColorMembers ReadMembers(ReadOnlySpan<byte> element, ref long budget, string role)
     {
         var count = IccReader.ReadUInt32(element[12..]);
         if (16 + ((long)count * 12) > element.Length)
             throw Invalid(role, string.Create(CultureInfo.InvariantCulture, $"a structure of the 'nmcl' tag declares {count} members, which do not fit in its {element.Length} bytes."));
 
+        Consume(ref budget, (int)count * 12, role);
+        var members = new NamedColorMembers();
         for (var i = 0; i < count; i++)
         {
             var entry = 16 + (12 * i);
-            if (IccReader.ReadUInt32(element[entry..]) == signature)
+            switch (IccReader.ReadUInt32(element[entry..]))
             {
-                member = GetPosition(element, entry + 4, role, "structure of the 'nmcl' tag");
-                offset = IccReader.ReadUInt32(element[(entry + 4)..]);
-                return true;
+                case MemberName when members.Name.Size < 0:
+                    members.Name = GetMemberPosition(element, entry + 4, role);
+                    break;
+
+                case MemberTint when members.Tint.Size < 0:
+                    members.Tint = GetMemberPosition(element, entry + 4, role);
+                    break;
+
+                case MemberPcs when members.Pcs.Size < 0:
+                    members.Pcs = GetMemberPosition(element, entry + 4, role);
+                    break;
+
+                case MemberDevice when members.Device.Size < 0:
+                    members.Device = GetMemberPosition(element, entry + 4, role);
+                    break;
             }
         }
 
-        member = default;
-        offset = 0;
-        return false;
+        return members;
+    }
+
+    private static MemberPosition GetMemberPosition(ReadOnlySpan<byte> element, int position, string role)
+    {
+        _ = GetPosition(element, position, role, "structure of the 'nmcl' tag");
+        return new MemberPosition((int)IccReader.ReadUInt32(element[position..]), (int)IccReader.ReadUInt32(element[(position + 4)..]));
     }
 
     // A positionNumber (offset and size relative to the start of the containing structure) inside it
@@ -397,4 +424,23 @@ internal static class IccNamedColorReader
 
     private static InvalidImageContentException Invalid(string role, string message)
         => new($"The {role} ICC profile is invalid: {message}", ImageFormat.Unknown);
+
+    /// <summary>The position of a member in its structure, validated against it; <see cref="Size"/> is -1 when the structure has no such member.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct MemberPosition(int Offset, int Size)
+    {
+        public static MemberPosition None => new(0, -1);
+
+        public ReadOnlySpan<byte> Slice(ReadOnlySpan<byte> element) => element.Slice(Offset, Size);
+    }
+
+    /// <summary>The positions of the members of a named color structure that the reader uses.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct NamedColorMembers()
+    {
+        public MemberPosition Name = MemberPosition.None;
+        public MemberPosition Tint = MemberPosition.None;
+        public MemberPosition Pcs = MemberPosition.None;
+        public MemberPosition Device = MemberPosition.None;
+    }
 }

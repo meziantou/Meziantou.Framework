@@ -1890,6 +1890,51 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void IccMaxNamedColorsSharingTheirStructureAreReadOnce()
+    {
+        // 5,000 colors that all refer to the same structure, whose 20,000 members are unknown but the last two (a name
+        // and PCS values)
+        var colors = IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedStructureArray(5000, 20000, sizeStep: 0), []));
+        Assert.HasCount(5000, colors);
+        Assert.Equal("A", colors[4999].Name);
+        Assert.Equal(new CieLab(50, 40, 20), colors[4999].ConnectionSpaceLab);
+
+        // Structures at the same offset but of different sizes would have their members scanned again and again
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedStructureArray(5000, 20000, sizeStep: 1), [])));
+
+        // A namedColorArray: the tint zero structure, then a single structure that every color refers to
+        static byte[] SharedStructureArray(int count, int unknownMembers, int sizeStep)
+        {
+            var tintZero = Struct("tnt0", ("pcs ", Floats("fl32", 100, 0, 0)));
+            var name = Utf8("A");
+            var pcs = Floats("fl32", 50, 40, 20);
+            var header = 16 + (8 * (count + 1));
+            var structOffset = header + tintZero.Length;
+            var table = 16 + (12 * (unknownMembers + 2));
+            var structSize = table + name.Length + pcs.Length;
+            var data = new List<byte>([.. "tary"u8, 0, 0, 0, 0, .. "ncol"u8, .. U32((uint)count + 1), .. U32((uint)header), .. U32((uint)tintZero.Length)]);
+            for (var i = 0; i < count; i++)
+            {
+                data.AddRange([.. U32((uint)structOffset), .. U32((uint)(structSize + (sizeStep * i)))]);
+            }
+
+            data.AddRange(tintZero);
+            data.AddRange([.. "tstr"u8, 0, 0, 0, 0, .. "nmcl"u8, .. U32((uint)unknownMembers + 2)]);
+            for (var i = 0; i < unknownMembers; i++)
+            {
+                data.AddRange([.. "junk"u8, .. U32(0), .. U32(0)]);
+            }
+
+            data.AddRange([.. "name"u8, .. U32((uint)table), .. U32((uint)name.Length)]);
+            data.AddRange([.. "pcs "u8, .. U32((uint)(table + name.Length)), .. U32((uint)pcs.Length)]);
+            data.AddRange(name);
+            data.AddRange(pcs);
+            data.AddRange(new byte[sizeStep * count]);
+            return [.. data];
+        }
+    }
+
+    [Fact]
     public void IccMaxNamedColorsSharingTheirNameAreReadOnce()
     {
         // 1,000 colors whose name members all refer to the same name of 64 KiB

@@ -18,6 +18,7 @@ internal sealed class Rar3Unpacker : RarUnpacker
     private const int TableSize = MainCodeSize + DistanceCodeSize + LowDistanceCodeSize + RepeatCodeSize;
     private const int MaxFilterBlockSize = 0x3C000;
     private const int MaxPrograms = 1024;
+    private const int MaxSymbolsWithoutOutput = 100_000;
 
     private static readonly byte[] LengthBases = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224];
     private static readonly byte[] LengthBits = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5];
@@ -41,6 +42,7 @@ internal sealed class Rar3Unpacker : RarUnpacker
     private bool _tablesRead;
     private bool _needTables;
     private int _lastProgram;
+    private int _symbolsWithoutOutput;
 
     // PPMd
     private readonly RarPpmdState _ppmd;
@@ -73,6 +75,7 @@ internal sealed class Rar3Unpacker : RarUnpacker
     private protected override void StartFileCore(bool solid)
     {
         _needTables = !solid || !_tablesRead;
+        _symbolsWithoutOutput = 0;
     }
 
     private protected override void Decode(long limit)
@@ -97,14 +100,9 @@ internal sealed class Rar3Unpacker : RarUnpacker
         {
             while (position < limit)
             {
-                if (input.IsEndOfStream)
-                {
-                    FileEnded = true;
-                    break;
-                }
-
                 if (_ppmBlock)
                 {
+                    // The range decoder reads ahead: the last symbols are decoded after the end of the input
                     DecodedPosition = position;
                     if (!DecodePpm())
                     {
@@ -112,8 +110,24 @@ internal sealed class Rar3Unpacker : RarUnpacker
                         break;
                     }
 
+                    if (DecodedPosition == position)
+                    {
+                        if (++_symbolsWithoutOutput > MaxSymbolsWithoutOutput)
+                            throw new InvalidDataException("The PPMd data of the compressed data do not produce any output.");
+                    }
+                    else
+                    {
+                        _symbolsWithoutOutput = 0;
+                    }
+
                     position = DecodedPosition;
                     continue;
+                }
+
+                if (input.IsEndOfStream)
+                {
+                    FileEnded = true;
+                    break;
                 }
 
                 var symbol = _main.Decode(input);

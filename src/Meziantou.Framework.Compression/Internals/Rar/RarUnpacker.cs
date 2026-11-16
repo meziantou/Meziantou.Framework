@@ -338,7 +338,7 @@ internal abstract class RarUnpacker
             limit = Math.Min(limit, windowSize - MatchMargin);
         }
 
-        if (_fileSize >= 0)
+        if (_fileSize >= 0 && _fileSize < long.MaxValue - FileStart)
         {
             // Do not decode much more than the file needs: the output is read in chunks
             limit = Math.Min(limit, Math.Max(FileStart + _fileSize, DecodedPosition + 1));
@@ -363,7 +363,7 @@ internal abstract class RarUnpacker
 
     private void EnsureWindow()
     {
-        var needed = _fileSize < 0 ? 0x100000 : DecodedPosition + _fileSize + MatchMargin;
+        var needed = _fileSize < 0 || _fileSize > MaxSupportedWindowSize ? 0x100000 : DecodedPosition + _fileSize + MatchMargin;
         var size = (long)BitOperations.RoundUpToPowerOf2((ulong)Math.Clamp(needed, MinWindowSize, Math.Min(_maxWindowSize, MaxSupportedWindowSize)));
         if (size > Window.Length)
         {

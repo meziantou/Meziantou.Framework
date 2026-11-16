@@ -88,7 +88,7 @@ internal sealed class RarHeaderReader
         }
 
         header.DataOffset = _input.Position;
-        if (header.DataSize < 0)
+        if (header.DataSize < 0 || header.DataSize > long.MaxValue - header.DataOffset)
             throw new InvalidDataException("A header of the RAR archive has an invalid data size.");
 
         _nextHeaderPosition = header.DataOffset + header.DataSize;
@@ -630,6 +630,9 @@ internal sealed class RarHeaderReader
             unknownSize &= highUnpacked == 0xFFFFFFFF;
             unpackedSize |= (long)highUnpacked << 32;
         }
+
+        if (unpackedSize < 0 && !unknownSize)
+            throw new InvalidDataException("A header of the RAR archive has an invalid size.");
 
         var nameBytes = reader.ReadBytes(nameSize);
         byte[]? salt = null;

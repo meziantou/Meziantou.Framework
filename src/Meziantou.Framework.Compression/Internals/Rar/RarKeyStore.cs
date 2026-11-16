@@ -13,6 +13,9 @@ internal sealed class RarKeyStore
     /// <summary>The largest binary logarithm of the PBKDF2 iteration count of RAR5 (unrar has the same limit).</summary>
     public const int MaxRar5KdfCount = 24;
 
+    /// <summary>Gets or sets the largest binary logarithm of the PBKDF2 iteration count that is accepted. The fuzz targets lower it.</summary>
+    internal static int MaxKdfCount { get; set; } = MaxRar5KdfCount;
+
     private const int Rar3Rounds = 0x40000;
 
     private readonly Dictionary<string, (byte[] Key, byte[] Iv)> _rar3Keys = new(StringComparer.Ordinal);
@@ -43,8 +46,8 @@ internal sealed class RarKeyStore
     public Rar5Key GetRar5Key(ReadOnlySpan<byte> salt, int kdfCount)
     {
         var password = Password ?? throw new ArchivePasswordException("The archive is encrypted and no password is provided.");
-        if (kdfCount > MaxRar5KdfCount)
-            throw new InvalidDataException($"The key derivation of the archive uses 2^{kdfCount} iterations, more than the maximum, 2^{MaxRar5KdfCount}.");
+        if (kdfCount > MaxKdfCount)
+            throw new InvalidDataException($"The key derivation of the archive uses 2^{kdfCount} iterations, more than the maximum, 2^{MaxKdfCount}.");
 
         var cacheKey = Convert.ToHexString(salt) + ":" + kdfCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
         if (!_rar5Keys.TryGetValue(cacheKey, out var result))

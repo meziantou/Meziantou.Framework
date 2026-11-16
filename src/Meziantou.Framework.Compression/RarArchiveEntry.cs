@@ -13,7 +13,7 @@ public sealed class RarArchiveEntry : ArchiveEntry
 
     private readonly Func<RarArchiveEntry, Stream> _open;
     private string? _linkTarget;
-    private bool _linkTargetRead;
+    private byte[]? _linkTargetBytes;
 
     internal RarArchiveEntry(RarEntryData data, RarArchive? archive, Func<RarArchiveEntry, Stream> open)
     {
@@ -118,10 +118,9 @@ public sealed class RarArchiveEntry : ArchiveEntry
             if (!Data.IsRar4Symlink)
                 return null;
 
-            if (!_linkTargetRead)
+            if (_linkTargetBytes is null)
             {
-                _linkTarget = ReadLinkTarget();
-                _linkTargetRead = true;
+                ReadLinkTarget();
             }
 
             return _linkTarget;
@@ -136,17 +135,25 @@ public sealed class RarArchiveEntry : ArchiveEntry
     public override string? HardLinkTarget => Header.RedirectionType is RarRedirectionType.HardLink or RarRedirectionType.FileCopy ? Header.RedirectionTarget : null;
 
     /// <inheritdoc/>
-    public override Stream Open() => _open(this);
+    public override Stream Open()
+    {
+        // The content of a symbolic link of RAR 1.5-4.x is its target, which may be read already
+        if (_linkTargetBytes is not null)
+            return new MemoryStream(_linkTargetBytes, writable: false);
 
-    private string ReadLinkTarget()
+        return _open(this);
+    }
+
+    private void ReadLinkTarget()
     {
         if (Header.UnpackedSize > MaxLinkTargetLength)
             throw new InvalidDataException($"The target of the symbolic link '{FullName}' is too long.");
 
-        using var stream = Open();
+        using var stream = _open(this);
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
-        var bytes = buffer.GetBuffer().AsSpan(0, (int)buffer.Length);
-        return System.Text.Unicode.Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes);
+        var bytes = buffer.ToArray();
+        _linkTarget = System.Text.Unicode.Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes);
+        _linkTargetBytes = bytes;
     }
 }

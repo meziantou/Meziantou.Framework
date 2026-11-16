@@ -33,10 +33,10 @@ internal sealed class TextureCollectionLayout
 
     public int GetIndex(int layer, int face, int level) => (((layer * FaceCount) + face) * LevelCount) + level;
 
-    private static ArgumentException CreateMissingSurfaceException(int layer, int faceCount, int face, int level, ImageCollection collection)
+    private static ArgumentException CreateMissingSurfaceException(int layer, int faceCount, int face, int level, string paramName)
     {
         var missing = new TextureSurface(layer, faceCount == 6 ? (CubeMapFace)face : null, level, 0);
-        return new ArgumentException($"The surface ({missing}) is missing: every element of the array has the same faces and mipmap levels.", nameof(collection));
+        return new ArgumentException($"The surface ({missing}) is missing: every element of the array has the same faces and mipmap levels.", paramName);
     }
 
     /// <summary>Checks the structure of a collection.</summary>
@@ -90,7 +90,7 @@ internal sealed class TextureCollectionLayout
                     for (var level = 0; level < levelCount; level++)
                     {
                         if (!present.Contains((layer, face, level)))
-                            throw CreateMissingSurfaceException(layer, faceCount, face, level, collection);
+                            throw CreateMissingSurfaceException(layer, faceCount, face, level, nameof(collection));
                     }
                 }
             }
@@ -118,7 +118,7 @@ internal sealed class TextureCollectionLayout
                 {
                     var entry = entries[layout.GetIndex(layer, face, level)];
                     if (entry is null)
-                        throw CreateMissingSurfaceException(layer, faceCount, face, level, collection);
+                        throw CreateMissingSurfaceException(layer, faceCount, face, level, nameof(collection));
 
                     if (baseSize.IsEmpty)
                     {

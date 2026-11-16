@@ -63,10 +63,24 @@ internal static class TiffPackBits
     public static void EncodeRow(ReadOnlySpan<byte> row, ImageOutputBuffer output)
     {
         ArgumentNullException.ThrowIfNull(output);
+        var written = EncodeRow(row, output.GetSpan(GetMaxEncodedLength(row.Length)));
+        output.Advance(written);
+    }
 
-        // The worst case is a row of literal runs: one header byte for every 128 bytes (a repeated run is never longer
-        // than the bytes it replaces)
-        var destination = output.GetSpan(row.Length + (row.Length / MaxRunLength) + 2);
+    /// <summary>
+    /// Gets the largest number of bytes a row is compressed to: a row of literal runs, one header byte for every 128 bytes
+    /// (a repeated run is never longer than the bytes it replaces).
+    /// </summary>
+    /// <param name="length">The number of bytes of the row.</param>
+    /// <returns>The size of a buffer that holds any compressed row of this length.</returns>
+    public static int GetMaxEncodedLength(int length) => length + (length / MaxRunLength) + 2;
+
+    /// <summary>Compresses one row into a buffer of at least <see cref="GetMaxEncodedLength"/> bytes (see <see cref="EncodeRow(ReadOnlySpan{byte}, ImageOutputBuffer)"/>).</summary>
+    /// <param name="row">The bytes of the row.</param>
+    /// <param name="destination">The buffer of the compressed row.</param>
+    /// <returns>The number of bytes written.</returns>
+    public static int EncodeRow(ReadOnlySpan<byte> row, Span<byte> destination)
+    {
         var written = 0;
         var literalStart = 0;
         var position = 0;
@@ -87,10 +101,10 @@ internal static class TiffPackBits
         }
 
         written += WriteLiterals(row[literalStart..], destination[written..]);
-        output.Advance(written);
+        return written;
     }
 
-    /// <summary>The byte-at-a-time reference of <see cref="EncodeRow"/>.</summary>
+    /// <summary>The byte-at-a-time reference of <see cref="EncodeRow(ReadOnlySpan{byte}, ImageOutputBuffer)"/>.</summary>
     /// <param name="row">The bytes of the row.</param>
     /// <param name="output">The output buffer the compressed row is appended to.</param>
     internal static void EncodeRowScalar(ReadOnlySpan<byte> row, ImageOutputBuffer output)

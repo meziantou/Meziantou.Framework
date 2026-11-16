@@ -99,6 +99,12 @@ internal static class TiffFormat
     public const int PhotometricIccLab = 9;
     public const int PhotometricItuLab = 10;
 
+    /// <summary>A color filter array (TIFF/EP): one sample per pixel, of the color the pattern gives the position (DNG raw IFDs only).</summary>
+    public const int PhotometricCfa = 32803;
+
+    /// <summary>Linear raw data of the camera color space, every color at every pixel (DNG raw IFDs only).</summary>
+    public const int PhotometricLinearRaw = 34892;
+
     // Compression values
     public const int CompressionNone = 1;
     public const int CompressionCcittRle = 2;
@@ -114,6 +120,12 @@ internal static class TiffFormat
     public const int CompressionPackBits = 32773;
     public const int CompressionDeflate = 32946;
 
+    /// <summary>The lossy (baseline DCT) JPEG compression of DNG 1.4, for 8-bit linear raw data.</summary>
+    public const int CompressionDngLossyJpeg = 34892;
+
+    /// <summary>The JPEG XL compression of DNG 1.7.</summary>
+    public const int CompressionJpegXl = 52546;
+
     // PlanarConfiguration values
     public const int PlanarChunky = 1;
     public const int PlanarSeparate = 2;
@@ -122,6 +134,18 @@ internal static class TiffFormat
     public const int PredictorNone = 1;
     public const int PredictorHorizontalDifferencing = 2;
     public const int PredictorFloatingPoint = 3;
+
+    /// <summary>The horizontal differencing of DNG with the sample two pixels to the left.</summary>
+    public const int PredictorHorizontalDifferencingX2 = 34892;
+
+    /// <summary>The horizontal differencing of DNG with the sample four pixels to the left.</summary>
+    public const int PredictorHorizontalDifferencingX4 = 34893;
+
+    /// <summary>The floating-point predictor of DNG with the bytes two pixels to the left.</summary>
+    public const int PredictorFloatingPointX2 = 34894;
+
+    /// <summary>The floating-point predictor of DNG with the bytes four pixels to the left.</summary>
+    public const int PredictorFloatingPointX4 = 34895;
 
     // SampleFormat values
     public const int SampleFormatUnsignedInteger = 1;
@@ -181,6 +205,8 @@ internal static class TiffFormat
         CompressionAdobeDeflate => "Adobe Deflate",
         CompressionPackBits => "PackBits",
         CompressionDeflate => "Deflate",
+        CompressionDngLossyJpeg => "lossy JPEG (DNG)",
+        CompressionJpegXl => "JPEG XL",
         _ => string.Create(CultureInfo.InvariantCulture, $"compression {compression}"),
     };
 
@@ -197,6 +223,8 @@ internal static class TiffFormat
         PhotometricCieLab => "CIE L*a*b*",
         PhotometricIccLab => "ICC L*a*b*",
         PhotometricItuLab => "ITU L*a*b*",
+        PhotometricCfa => "CFA (color filter array)",
+        PhotometricLinearRaw => "LinearRaw",
         _ => string.Create(CultureInfo.InvariantCulture, $"photometric interpretation {photometric}"),
     };
 }

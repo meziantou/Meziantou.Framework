@@ -5,7 +5,10 @@ using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
-/// <summary>The conversions from and to the floating-point pixel formats (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>).</summary>
+/// <summary>
+/// The conversions from and to the floating-point pixel formats (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>,
+/// <see cref="GrayFloat"/>, <see cref="GrayHalf"/>, <see cref="LaFloat"/>, <see cref="LaHalf"/>).
+/// </summary>
 /// <remarks>
 /// <para>
 /// An integer sample <c>v</c> of largest value <c>max</c> is the fraction <c>v / max</c>: one correctly rounded
@@ -25,6 +28,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// numbers and the infinities, and clips or rejects the finite samples that round beyond the largest half (65,504).
 /// <see cref="RgbaHalf"/> to <see cref="RgbaFloat"/> is exact. Every check runs on the whole row before anything is written.
 /// </para>
+/// <para>
+/// The gray formats (<see cref="GrayFloat"/>, <see cref="GrayHalf"/>, <see cref="LaFloat"/>, <see cref="LaHalf"/>) read as
+/// their gray level repeated in the three colors. A floating-point gray destination gets the gray level of a gray color as
+/// it is and the Rec. 709 luma of the others, without clipping; removing alpha flattens <c>c a + bg (1 - a)</c> onto the
+/// background, or rejects the pixels whose alpha is not exactly 1. An integer gray sample is the same fraction in a
+/// floating-point gray format as in <see cref="RgbaFloat"/> or <see cref="RgbaHalf"/>, so that the conversions between the
+/// gray formats are exact where the color ones are.
+/// </para>
 /// </remarks>
 internal static partial class PixelConverter
 {
@@ -35,7 +46,22 @@ internal static partial class PixelConverter
     private const ushort HalfNegativeZero = 0x8000;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool IsFloat<TPixel>() => typeof(TPixel) == typeof(RgbaFloat) || typeof(TPixel) == typeof(RgbaHalf);
+    internal static bool IsFloat<TPixel>() => typeof(TPixel) == typeof(RgbaFloat) || typeof(TPixel) == typeof(RgbaHalf) || IsFloatGray<TPixel>();
+
+    /// <summary>Gets a value indicating whether a pixel type is one of the floating-point gray formats.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsFloatGray<TPixel>() => typeof(TPixel) == typeof(GrayFloat) || typeof(TPixel) == typeof(GrayHalf) || typeof(TPixel) == typeof(LaFloat) || typeof(TPixel) == typeof(LaHalf);
+
+    /// <summary>Gets a value indicating whether a pixel type stores half-precision samples.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsHalf<TPixel>() => typeof(TPixel) == typeof(RgbaHalf) || typeof(TPixel) == typeof(GrayHalf) || typeof(TPixel) == typeof(LaHalf);
+
+    /// <summary>Gets a value indicating whether a pixel format stores half-precision samples.</summary>
+    private static bool IsHalfFormat(PixelFormat format) => format is PixelFormat.RgbaHalf or PixelFormat.GrayHalf or PixelFormat.LaHalf;
+
+    /// <summary>Gets the gray level of a color: the level of a gray color as it is, else the Rec. 709 luma (not clipped).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static double GetGrayLevel(double r, double g, double b) => r == g && g == b ? r : (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
 
     /// <summary>Reads the components as fractions: integer samples over their largest value, floating-point samples as they are.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,6 +77,27 @@ internal static partial class PixelConverter
             ref var p = ref unsafe(Unsafe.As<TPixel, RgbaHalf>(ref pixel));
             (r, g, b, a) = ((double)p.R, (double)p.G, (double)p.B, (double)p.A);
         }
+        else if (typeof(TPixel) == typeof(GrayFloat))
+        {
+            double value = unsafe(Unsafe.As<TPixel, GrayFloat>(ref pixel)).Value;
+            (r, g, b, a) = (value, value, value, 1);
+        }
+        else if (typeof(TPixel) == typeof(GrayHalf))
+        {
+            var value = (double)unsafe(Unsafe.As<TPixel, GrayHalf>(ref pixel)).Value;
+            (r, g, b, a) = (value, value, value, 1);
+        }
+        else if (typeof(TPixel) == typeof(LaFloat))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, LaFloat>(ref pixel));
+            (r, g, b, a) = (p.L, p.L, p.L, p.A);
+        }
+        else if (typeof(TPixel) == typeof(LaHalf))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, LaHalf>(ref pixel));
+            var value = (double)p.L;
+            (r, g, b, a) = (value, value, value, (double)p.A);
+        }
         else if (IsPacked<TPixel>())
         {
             ReadPackedComponents(ref pixel, out var ri, out var gi, out var bi, out var ai, out var maxR, out var maxG, out var maxB, out var maxA);
@@ -62,6 +109,41 @@ internal static partial class PixelConverter
             double max = Is16Bit<TPixel>() ? Max16 : Max8;
             (r, g, b, a) = (ri / max, gi / max, bi / max, ai / max);
         }
+    }
+
+    /// <summary>Reads the components of the floating-point pixel at <paramref name="index"/> of a row of a floating-point format (see <see cref="ReadFloat"/>).</summary>
+    internal static void ReadFloat(PixelFormat format, ReadOnlySpan<byte> row, int index, out double r, out double g, out double b, out double a)
+    {
+        switch (format)
+        {
+            case PixelFormat.RgbaFloat:
+                ReadFloatAt<RgbaFloat>(row, index, out r, out g, out b, out a);
+                break;
+            case PixelFormat.RgbaHalf:
+                ReadFloatAt<RgbaHalf>(row, index, out r, out g, out b, out a);
+                break;
+            case PixelFormat.GrayFloat:
+                ReadFloatAt<GrayFloat>(row, index, out r, out g, out b, out a);
+                break;
+            case PixelFormat.GrayHalf:
+                ReadFloatAt<GrayHalf>(row, index, out r, out g, out b, out a);
+                break;
+            case PixelFormat.LaFloat:
+                ReadFloatAt<LaFloat>(row, index, out r, out g, out b, out a);
+                break;
+            case PixelFormat.LaHalf:
+                ReadFloatAt<LaHalf>(row, index, out r, out g, out b, out a);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not a floating-point format.");
+        }
+    }
+
+    private static void ReadFloatAt<TPixel>(ReadOnlySpan<byte> row, int index, out double r, out double g, out double b, out double a)
+        where TPixel : unmanaged
+    {
+        var pixel = unsafe(MemoryMarshal.Cast<byte, TPixel>(row))[index];
+        ReadFloat(ref pixel, out r, out g, out b, out a);
     }
 
     /// <summary>Reads the components of a packed pixel as they are stored, with the largest value of each (a missing alpha is opaque).</summary>
@@ -97,7 +179,7 @@ internal static partial class PixelConverter
     /// <summary>Gets a value indicating whether a 16-bit color converts to a floating-point format and back to the same color.</summary>
     private static bool IsExactlyRepresentableAsFloat(Rgba64 color, PixelFormat format)
     {
-        if (format == PixelFormat.RgbaFloat)
+        if (!IsHalfFormat(format))
             return true;
 
         return RoundTripsThroughHalf(color.R) && RoundTripsThroughHalf(color.G) && RoundTripsThroughHalf(color.B) && RoundTripsThroughHalf(color.A);
@@ -126,6 +208,24 @@ internal static partial class PixelConverter
                     return i;
             }
         }
+        else if (typeof(TPixel) == typeof(LaFloat))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, LaFloat>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].A != 1f)
+                    return i;
+            }
+        }
+        else if (typeof(TPixel) == typeof(LaHalf))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, LaHalf>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].A != Half.One)
+                    return i;
+            }
+        }
 
         return -1;
     }
@@ -137,16 +237,24 @@ internal static partial class PixelConverter
     {
         // The loops write through references: the slice throws for a destination shorter than the source
         destination = destination[..source.Length];
+        var removesAlpha = !PixelFormats.HasAlpha(destinationFormat);
         if (!IsFloat<TSource>())
         {
-            // Integer samples are fractions of [0, 1]: nothing to check, nothing to flatten (the destination has alpha)
-            ConvertIntegerToFloat(source, destination);
+            // Integer samples are fractions of [0, 1]: nothing to check but the alpha a gray destination without alpha removes
+            if (removesAlpha && PixelFormats.HasAlpha(sourceFormat) && background is null)
+            {
+                var index = useVectors ? IndexOfNonOpaque(source) : IndexOfNonOpaqueScalar(source);
+                if (index >= 0)
+                    throw CreateNonOpaqueException(sourceFormat, destinationFormat, index, format);
+            }
+
+            ConvertIntegerToFloat(source, destination, background);
             return;
         }
 
         var toInteger = !IsFloat<TDestination>();
-        var toHalf = typeof(TSource) == typeof(RgbaFloat) && typeof(TDestination) == typeof(RgbaHalf);
-        var removesAlpha = !PixelFormats.HasAlpha(destinationFormat);
+        var toHalf = !IsHalf<TSource>() && IsHalf<TDestination>();
+        var gray = PixelFormats.IsGrayscale(destinationFormat);
 
         // Every check runs before anything is written, so that a rejected conversion leaves the destination as it was
         ValidateFloatRowCore(source, sourceFormat, destinationFormat, background, format, floats, useVectors);
@@ -158,7 +266,8 @@ internal static partial class PixelConverter
         // The vector path converts the pixels whose samples are all in [0, 1] to integers, which every policy without tone
         // mapping keeps as they are, and the finite floats that round to finite halves to halves; the scalar loop converts
         // the others one block at a time
-        var vectors = useVectors && UseVectors && (toHalf || (toInteger && !floats.ToneMaps && (typeof(TDestination) == typeof(Rgba32) || typeof(TDestination) == typeof(Rgba64))));
+        var vectors = useVectors && UseVectors && ((typeof(TSource) == typeof(RgbaFloat) && typeof(TDestination) == typeof(RgbaHalf))
+            || ((typeof(TSource) == typeof(RgbaFloat) || typeof(TSource) == typeof(RgbaHalf)) && toInteger && !floats.ToneMaps && (typeof(TDestination) == typeof(Rgba32) || typeof(TDestination) == typeof(Rgba64))));
         nint end = 0;
         for (nint i = 0; i < source.Length; i++)
         {
@@ -188,7 +297,15 @@ internal static partial class PixelConverter
             {
                 if (toHalf)
                 {
-                    _ = PrepareHalf(ref r, ref g, ref b, ref a, floats.Clips);
+                    _ = PrepareHalfDestination(ref r, ref g, ref b, ref a, removesAlpha, gray, bgR, bgG, bgB, floats.Clips);
+                }
+
+                if (removesAlpha && a != 1)
+                {
+                    r = (r * a) + (bgR * (1 - a));
+                    g = (g * a) + (bgG * (1 - a));
+                    b = (b * a) + (bgB * (1 - a));
+                    a = 1;
                 }
 
                 WriteFloat(ref unsafe(Unsafe.Add(ref dst, i)), r, g, b, a);
@@ -209,17 +326,21 @@ internal static partial class PixelConverter
         where TSource : unmanaged
     {
         var toInteger = !PixelFormats.IsFloatingPoint(destinationFormat);
-        var toHalf = sourceFormat == PixelFormat.RgbaFloat && destinationFormat == PixelFormat.RgbaHalf;
-        if (!IsFloat<TSource>() || !(toInteger || toHalf))
+        var toHalf = !IsHalfFormat(sourceFormat) && IsHalfFormat(destinationFormat);
+        var removesAlpha = !PixelFormats.HasAlpha(destinationFormat);
+        var opaque = removesAlpha && background is null;
+        if (!IsFloat<TSource>() || !(toInteger || toHalf || opaque))
             return;
 
-        var removesAlpha = !PixelFormats.HasAlpha(destinationFormat);
+        var gray = PixelFormats.IsGrayscale(destinationFormat);
+        var (bgR, bgG, bgB) = background is { } bg ? (bg.R / (double)Max16, bg.G / (double)Max16, bg.B / (double)Max16) : (0d, 0d, 0d);
+
         ref var first = ref unsafe(MemoryMarshal.GetReference(source));
 
         // The vector path skips the pixels the policy accepts as they are: samples in [0, 1] (alpha 1 when it is removed
         // without background) without tone mapping, finite samples that round to finite halves for a half destination
-        var vectors = useVectors && UseVectors && (toHalf ? typeof(TSource) == typeof(RgbaFloat) : !floats.ToneMaps);
-        var opaque = removesAlpha && background is null;
+        // that keeps alpha
+        var vectors = useVectors && UseVectors && (toInteger ? !floats.ToneMaps : toHalf && !opaque && typeof(TSource) == typeof(RgbaFloat));
         var end = 0;
         for (var i = 0; i < source.Length; i++)
         {
@@ -233,7 +354,7 @@ internal static partial class PixelConverter
 
             ReadFloat(ref unsafe(Unsafe.Add(ref first, i)), out var r, out var g, out var b, out var a);
             var (r0, g0, b0, a0) = (r, g, b, a);
-            var status = toInteger ? PrepareInteger(ref r, ref g, ref b, ref a, floats) : PrepareHalf(ref r, ref g, ref b, ref a, floats.Clips);
+            var status = toInteger ? PrepareInteger(ref r, ref g, ref b, ref a, floats) : toHalf ? PrepareHalfDestination(ref r, ref g, ref b, ref a, removesAlpha && !opaque, gray, bgR, bgG, bgB, floats.Clips) : FloatSampleStatus.Valid;
             switch (status)
             {
                 case FloatSampleStatus.NotANumber:
@@ -258,6 +379,18 @@ internal static partial class PixelConverter
                 break;
             case PixelFormat.RgbaHalf:
                 ValidateFloatRow(unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(source)), sourceFormat, destinationFormat, background, format, floats);
+                break;
+            case PixelFormat.GrayFloat:
+                ValidateFloatRow(unsafe(MemoryMarshal.Cast<byte, GrayFloat>(source)), sourceFormat, destinationFormat, background, format, floats);
+                break;
+            case PixelFormat.GrayHalf:
+                ValidateFloatRow(unsafe(MemoryMarshal.Cast<byte, GrayHalf>(source)), sourceFormat, destinationFormat, background, format, floats);
+                break;
+            case PixelFormat.LaFloat:
+                ValidateFloatRow(unsafe(MemoryMarshal.Cast<byte, LaFloat>(source)), sourceFormat, destinationFormat, background, format, floats);
+                break;
+            case PixelFormat.LaHalf:
+                ValidateFloatRow(unsafe(MemoryMarshal.Cast<byte, LaHalf>(source)), sourceFormat, destinationFormat, background, format, floats);
                 break;
             default:
                 if (PixelFormats.HasAlpha(sourceFormat) && !PixelFormats.HasAlpha(destinationFormat) && background is null && IndexOfNonOpaque(sourceFormat, source) is var index and >= 0)
@@ -285,6 +418,34 @@ internal static partial class PixelConverter
                 largest = Largest(largest, (double)pixel.R, (double)pixel.G, (double)pixel.B);
             }
         }
+        else if (format == PixelFormat.GrayFloat)
+        {
+            foreach (var pixel in unsafe(MemoryMarshal.Cast<byte, GrayFloat>(row)))
+            {
+                largest = Largest(largest, pixel.Value, 0, 0);
+            }
+        }
+        else if (format == PixelFormat.GrayHalf)
+        {
+            foreach (var pixel in unsafe(MemoryMarshal.Cast<byte, GrayHalf>(row)))
+            {
+                largest = Largest(largest, (double)pixel.Value, 0, 0);
+            }
+        }
+        else if (format == PixelFormat.LaFloat)
+        {
+            foreach (var pixel in unsafe(MemoryMarshal.Cast<byte, LaFloat>(row)))
+            {
+                largest = Largest(largest, pixel.L, 0, 0);
+            }
+        }
+        else if (format == PixelFormat.LaHalf)
+        {
+            foreach (var pixel in unsafe(MemoryMarshal.Cast<byte, LaHalf>(row)))
+            {
+                largest = Largest(largest, (double)pixel.L, 0, 0);
+            }
+        }
 
         return largest;
 
@@ -303,11 +464,12 @@ internal static partial class PixelConverter
         }
     }
 
-    private static void ConvertIntegerToFloat<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination)
+    private static void ConvertIntegerToFloat<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination, Rgba64? background)
         where TSource : unmanaged
         where TDestination : unmanaged
     {
         Debug.Assert(destination.Length >= source.Length);
+        var (bgR, bgG, bgB) = background is { } bg ? (bg.R / (double)Max16, bg.G / (double)Max16, bg.B / (double)Max16) : (0d, 0d, 0d);
         ref var src = ref unsafe(MemoryMarshal.GetReference(source));
         ref var dst = ref unsafe(MemoryMarshal.GetReference(destination));
         var max = Is16Bit<TSource>() ? Max16 : Max8;
@@ -333,6 +495,31 @@ internal static partial class PixelConverter
             else if (typeof(TDestination) == typeof(RgbaHalf))
             {
                 unsafe { Unsafe.As<TDestination, RgbaHalf>(ref Unsafe.Add(ref dst, i)) = new RgbaHalf((Half)(r / (double)maxR), (Half)(g / (double)maxG), (Half)(b / (double)maxB), (Half)(a / (double)maxA)); }
+            }
+            else if (IsFloatGray<TDestination>())
+            {
+                // A gray color is the fraction of its level, as in the color formats; the alpha a destination without alpha
+                // removes is flattened onto the background (validated before)
+                var hasAlpha = typeof(TDestination) == typeof(LaFloat) || typeof(TDestination) == typeof(LaHalf);
+                double level;
+                if (r == g && g == b && maxR == maxG && maxG == maxB && (hasAlpha || a == maxA))
+                {
+                    level = typeof(TDestination) == typeof(GrayFloat) || typeof(TDestination) == typeof(LaFloat) ? r / (float)maxR : r / (double)maxR;
+                }
+                else
+                {
+                    var (rf, gf, bf, af) = (r / (double)maxR, g / (double)maxG, b / (double)maxB, a / (double)maxA);
+                    if (!hasAlpha && a != maxA)
+                    {
+                        rf = (rf * af) + (bgR * (1 - af));
+                        gf = (gf * af) + (bgG * (1 - af));
+                        bf = (bf * af) + (bgB * (1 - af));
+                    }
+
+                    level = GetGrayLevel(rf, gf, bf);
+                }
+
+                WriteFloat(ref unsafe(Unsafe.Add(ref dst, i)), level, level, level, typeof(TDestination) == typeof(LaFloat) ? a / (float)maxA : a / (double)maxA);
             }
             else
             {
@@ -599,6 +786,30 @@ internal static partial class PixelConverter
     }
 
     /// <summary>Clips the finite components that round beyond the range of <see cref="Half"/>, when the policy allows it.</summary>
+    /// <summary>
+    /// Prepares the components of a pixel converted to a half format: the colors are flattened over the background when
+    /// the destination removes alpha, and replaced by their gray level for a gray destination, before they are checked
+    /// against the half range, so that the range applies to the values the destination stores.
+    /// </summary>
+    private static FloatSampleStatus PrepareHalfDestination(ref double r, ref double g, ref double b, ref double a, bool flattens, bool gray, double bgR, double bgG, double bgB, bool clips)
+    {
+        if (flattens && a is >= 0 and < 1)
+        {
+            r = (r * a) + (bgR * (1 - a));
+            g = (g * a) + (bgG * (1 - a));
+            b = (b * a) + (bgB * (1 - a));
+            a = 1;
+        }
+
+        if (gray)
+        {
+            var y = GetGrayLevel(r, g, b);
+            (r, g, b) = (y, y, y);
+        }
+
+        return PrepareHalf(ref r, ref g, ref b, ref a, clips);
+    }
+
     private static FloatSampleStatus PrepareHalf(ref double r, ref double g, ref double b, ref double a, bool clips)
     {
         if (!OverflowsHalf(r) && !OverflowsHalf(g) && !OverflowsHalf(b) && !OverflowsHalf(a))
@@ -628,7 +839,7 @@ internal static partial class PixelConverter
     {
         if (IsGray<TPixel>())
         {
-            var y = Math.Min((0.2126 * r) + (0.7152 * g) + (0.0722 * b), 1);
+            var y = Math.Min(GetGrayLevel(r, g, b), 1);
             if (typeof(TPixel) == typeof(Gray8))
             {
                 unsafe { Unsafe.As<TPixel, Gray8>(ref pixel).Value = (byte)ToIntegerSample(y, Max8); }
@@ -709,9 +920,9 @@ internal static partial class PixelConverter
         }
     }
 
-    /// <summary>Writes components to a floating-point pixel, rounded to nearest.</summary>
+    /// <summary>Writes components to a floating-point pixel, rounded to nearest: a gray pixel gets the gray level of the color (<see cref="GetGrayLevel"/>), and a pixel without alpha ignores it.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void WriteFloat<TPixel>(ref TPixel pixel, double r, double g, double b, double a)
+    internal static void WriteFloat<TPixel>(ref TPixel pixel, double r, double g, double b, double a)
     {
         if (typeof(TPixel) == typeof(RgbaFloat))
         {
@@ -720,6 +931,22 @@ internal static partial class PixelConverter
         else if (typeof(TPixel) == typeof(RgbaHalf))
         {
             unsafe { Unsafe.As<TPixel, RgbaHalf>(ref pixel) = new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a); }
+        }
+        else if (typeof(TPixel) == typeof(GrayFloat))
+        {
+            unsafe { Unsafe.As<TPixel, GrayFloat>(ref pixel) = new GrayFloat((float)GetGrayLevel(r, g, b)); }
+        }
+        else if (typeof(TPixel) == typeof(GrayHalf))
+        {
+            unsafe { Unsafe.As<TPixel, GrayHalf>(ref pixel) = new GrayHalf((Half)GetGrayLevel(r, g, b)); }
+        }
+        else if (typeof(TPixel) == typeof(LaFloat))
+        {
+            unsafe { Unsafe.As<TPixel, LaFloat>(ref pixel) = new LaFloat((float)GetGrayLevel(r, g, b), (float)a); }
+        }
+        else if (typeof(TPixel) == typeof(LaHalf))
+        {
+            unsafe { Unsafe.As<TPixel, LaHalf>(ref pixel) = new LaHalf((Half)GetGrayLevel(r, g, b), (Half)a); }
         }
         else
         {

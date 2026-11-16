@@ -781,10 +781,20 @@ internal static partial class ExrCorpus
         return entry;
     }
 
+    /// <summary>Gets the default pixel format of an image: a luminance image is gray, of the precision of its samples (half samples without alpha).</summary>
+    private static string PixelFormatOf(bool halfPixels, string colorModel) => (colorModel, halfPixels) switch
+    {
+        ("Grayscale", true) => "GrayHalf",
+        ("Grayscale", false) => "GrayFloat",
+        ("GrayscaleAlpha", _) => "LaFloat",
+        (_, true) => "RgbaHalf",
+        _ => "RgbaFloat",
+    };
+
     /// <summary>Records a valid fixture: OpenEXR decodes it, and the expected pixels follow from its samples.</summary>
     private static void AddValid(Corpus<ExrTools> c, string name, string function, byte[] data, List<string> commands, string description, string? notes = null,
         IEnumerable<string>? features = null, Obj? cicp = null, Obj? parameters = null, string origin = "generated", string? source = null, string license = Corpus<ExrTools>.License,
-        Description? pattern = null)
+        Description? pattern = null, ExrDecoding[]? decodings = null)
     {
         var fixtureId = "exr/" + name;
         var dump = Decode(c, data) ?? throw new FatalException(fixtureId + ": OpenEXR does not read the file.");
@@ -795,7 +805,7 @@ internal static partial class ExrCorpus
         {
             ["width"] = width,
             ["height"] = height,
-            ["pixelFormat"] = halfPixels ? "RgbaHalf" : "RgbaFloat",
+            ["pixelFormat"] = PixelFormatOf(halfPixels, colorModel),
             ["colorModel"] = colorModel,
             ["bitsPerComponent"] = bits,
             ["orientation"] = 1,
@@ -857,13 +867,84 @@ internal static partial class ExrCorpus
         if (!string.IsNullOrEmpty(notes))
             fixture["notes"] = notes;
 
+        if (decodings is { Length: > 0 })
+            fixture["exrDecodings"] = Decodings(c, fixtureId, data, decodings, pattern);
+
         c.Fixtures.Add(fixture);
     }
 
-    private static void AddGenerated(Corpus<ExrTools> c, string name, string function, Description d, string description, string? notes = null, IEnumerable<string>? features = null, Obj? cicp = null)
+    private static void AddGenerated(Corpus<ExrTools> c, string name, string function, Description d, string description, string? notes = null, IEnumerable<string>? features = null, Obj? cicp = null, ExrDecoding[]? decodings = null)
     {
         var (data, command) = Write(c, d);
-        AddValid(c, name, function, data, [command], description, notes, features, cicp, new Obj { ["width"] = d.Width, ["height"] = d.Height }, pattern: d);
+        AddValid(c, name, function, data, [command], description, notes, features, cicp, new Obj { ["width"] = d.Width, ["height"] = d.Height }, pattern: d, decodings: decodings);
+    }
+
+    /// <summary>The samples of one level of a tiled part, whose data window becomes the one of the level.</summary>
+    private static Dump LevelDump(Dump dump, int levelX, int levelY)
+    {
+        var data = dump.DataWindow;
+        var tiles = dump.Part.GetProperty("tiles");
+        var d = new Description
+        {
+            Width = data[2] - data[0] + 1,
+            Height = data[3] - data[1] + 1,
+            Tiles = (tiles.GetProperty("xSize").GetInt32(), tiles.GetProperty("ySize").GetInt32(), tiles.GetProperty("levelMode").GetString()!, tiles.GetProperty("roundingMode").GetString()!),
+            Channels = [],
+        };
+        var offset = 0;
+        foreach (var (lx, ly, width, height) in Levels(d))
+        {
+            if (lx == levelX && ly == levelY)
+            {
+                var channels = dump.Channels.Select(channel => channel with { Bits = channel.Bits[offset..(offset + (width * height))] }).ToList();
+                int[] window = [data[0], data[1], data[0] + width - 1, data[1] + height - 1];
+                return dump with { DataWindow = window, DisplayWindow = window, Channels = channels };
+            }
+
+            offset += width * height;
+        }
+
+        throw new FatalException(string.Create(CultureInfo.InvariantCulture, $"The part has no level ({levelX}, {levelY})."));
+    }
+
+    /// <summary>Compares the samples of every level with the pattern given to exr-from-raw, bit for bit.</summary>
+    private static Obj? LevelsPatternCrossCheck(Description d, Dump dump)
+    {
+        var channels = d.Channels.Where(channel => !IsLossy(d.Compression, channel)).ToList();
+        if (channels.Count == 0)
+            return null;
+
+        var differing = 0;
+        foreach (var channel in channels)
+        {
+            var decoded = dump.Channels.Single(item => item.Name == channel.Name);
+            var samples = Samples(d, channel);
+            var size = channel.PixelType == "HALF" ? 2 : 4;
+            Py.Assert(samples.Length / size == decoded.Bits.Length, "the levels have the samples of the pattern");
+            for (var i = 0; i < decoded.Bits.Length; i++)
+            {
+                var bits = size == 2 ? BinaryPrimitives.ReadUInt16LittleEndian(samples.AsSpan(2 * i)) : BinaryPrimitives.ReadUInt32LittleEndian(samples.AsSpan(4 * i));
+                if (bits != decoded.Bits[i])
+                    differing++;
+            }
+        }
+
+        var names = string.Join(", ", channels.Select(channel => channel.Name));
+        var check = new Obj
+        {
+            ["decoder"] = "the pattern given to exr-from-raw",
+            ["result"] = differing == 0 ? "exact" : "differs",
+            ["notes"] = differing == 0
+                ? $"The samples of {names} in every level, bit for bit: the compression keeps them."
+                : string.Create(CultureInfo.InvariantCulture, $"{differing} samples of {names} differ from the pattern."),
+        };
+        if (differing == 0)
+        {
+            check["maxAbsoluteError"] = 0;
+            check["meanAbsoluteError"] = 0.0;
+        }
+
+        return check;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -879,6 +960,10 @@ internal static partial class ExrCorpus
     private static Func<int, int, int, double> Alpha => (level, x, y) => ((x + (2 * y)) % 5) switch { 0 => 0, 1 => 0.25, 2 => 0.5, 3 => 1, _ => 0.8 };
 
     private static Func<int, int, int, double> Flat(double value) => (level, x, y) => value;
+
+    // Smooth samples of one sign on a grid of 1/16: few bit patterns, which the reversible wavelet compresses
+    private static Func<int, int, int, double> Steps(int seed, double offset) => (level, x, y) =>
+        Math.Round(((Math.Sin((x + seed) / 3.0) * Math.Cos((y - seed) / 5.0) * 3) + offset) * 16, MidpointRounding.ToEven) / 16;
 
     private static Channel[] Rgba(string type, int seed) => [new("A", type, Alpha), new("B", type, Wave(seed)), new("G", type, Smooth(seed)), new("R", type, Wave(seed + 1, 8))];
 
@@ -898,6 +983,33 @@ internal static partial class ExrCorpus
                 "HALF R, G, B and A: waves and alphas of 0, 1/4, 1/2, 4/5 and 1.");
             AddGenerated(c, name + "-float-rgb", Function, new Description { Width = 19, Height = 21, Compression = compression, Channels = Rgb("FLOAT", 2) },
                 "FLOAT R, G and B: waves.");
+        }
+
+        // HTJ2K: a JPEG 2000 codestream per chunk, of HALF channels (the decoder has no 32-bit components). OpenEXR stores a
+        // chunk raw when its codestream is not smaller: the patterns are smooth steps of one sign, which compress
+        Channel[] steps = [new("A", "HALF", Alpha), new("B", "HALF", Steps(1, 4)), new("G", "HALF", Steps(2, 4)), new("R", "HALF", Steps(3, -4))];
+        AddHtj2k("htj2k256-half-rgba", new Description { Width = 23, Height = 37, Compression = "HTJ2K256", Channels = steps },
+            "HALF R, G, B and A, HTJ2K256: one chunk.", "R, G and B are the first three components, coded through the reversible color transform; the negative samples of R go through the binary complement of the NLT marker segments.");
+        AddHtj2k("htj2k32-half-rgba", new Description { Width = 23, Height = 37, Compression = "HTJ2K32", Channels = steps },
+            "HALF R, G, B and A, HTJ2K32: two chunks.", "The first chunk is a codestream; OpenEXR stores the second one, of 5 lines, raw.");
+        AddHtj2k("htj2k32-tiles", new Description { Width = 45, Height = 37, Compression = "HTJ2K32", Tiles = (32, 32, "ONE_LEVEL", "ROUND_DOWN"), Channels = steps },
+            "Tiles of 32x32 pixels of HALF R, G, B and A, HTJ2K32.", "Each tile is a codestream of its size, clipped at the edges; OpenEXR stores two of the clipped tiles raw.");
+        AddHtj2k("htj2k256-luminance-alpha", new Description { Width = 19, Height = 35, Compression = "HTJ2K256", Channels = [new("A", "HALF", Alpha), new("Y", "HALF", Steps(4, 4))] },
+            "HALF Y and A, HTJ2K256.", "No RGB set: the components are the channels in their order, without color transform.");
+        double[] specials = [double.PositiveInfinity, double.NegativeInfinity, -0.0, 65504, -65504, Math.Pow(2, -24), -Math.Pow(2, -24), double.NaN];
+        AddHtj2k("htj2k32-half-specials", new Description
+        {
+            Width = 32,
+            Height = 16,
+            Compression = "HTJ2K32",
+            Channels = [new("Y", "HALF", (level, x, y) => y == 0 && x < specials.Length ? specials[x] : Steps(5, 4)(level, x, y))],
+        }, "HALF infinities, not-a-number, negative zero, the largest and smallest halves, then smooth steps.", "The binary complement keeps negative zero apart from zero: it is -1 in the codestream.");
+
+        void AddHtj2k(string name, Description d, string description, string notes)
+        {
+            var (data, command) = Write(c, d);
+            Py.Assert(data.AsSpan().IndexOf((byte[])[0xFF, 0x4F, 0xFF, 0x51]) >= 0, "exr/" + name + ": OpenEXR stored every chunk raw.");
+            AddValid(c, name, Function, data, [command], description, notes, parameters: new Obj { ["width"] = d.Width, ["height"] = d.Height }, pattern: d);
         }
 
         // Flat blocks: the 3-byte form of B44A; a constant image: runs of RLE and PIZ
@@ -984,9 +1096,11 @@ internal static partial class ExrCorpus
         AddGenerated(c, "tiles-zip-one-level", Function, new Description { Width = 37, Height = 21, Compression = "ZIP", Tiles = (16, 8, "ONE_LEVEL", "ROUND_DOWN"), Channels = Rgba("HALF", 8) },
             "Tiles of 16x8 pixels: the last column and row of tiles are smaller.");
         AddGenerated(c, "tiles-piz-mipmap-round-up", Function, new Description { Width = 29, Height = 19, Compression = "PIZ", Tiles = (8, 8, "MIPMAP_LEVELS", "ROUND_UP"), Channels = Rgb("HALF", 9) },
-            "Mipmap levels rounded up: the full-resolution level is the image.", "The other levels are skipped.");
+            "Mipmap levels rounded up: the full-resolution level is the image.", "The other levels are decoded with OpenExrDecodingOptions.LevelX and LevelY, and listed by AuxiliaryImageCollection.",
+            decodings: [Level(1, 1), Level(2, 2), Level(3, 3), Level(4, 4), Level(5, 5), Level(1, 0) with { Feature = "Missing level" }, Level(6, 6) with { Feature = "Missing level" }]);
         AddGenerated(c, "tiles-rle-ripmap", Function, new Description { Width = 13, Height = 9, Compression = "RLE", Tiles = (4, 4, "RIPMAP_LEVELS", "ROUND_DOWN"), Channels = Rgb("FLOAT", 10) },
-            "Ripmap levels.", "The offset table lists the levels by rows of levels.");
+            "Ripmap levels.", "The offset table lists the levels by rows of levels; the other levels are decoded with OpenExrDecodingOptions.LevelX and LevelY.",
+            decodings: [Level(1, 0), Level(3, 0), Level(0, 1), Level(2, 1), Level(3, 3), Level(4, 0) with { Feature = "Missing level" }]);
         AddGenerated(c, "tiles-none-random-order", Function, new Description { Width = 20, Height = 20, Compression = "NONE", LineOrder = "RANDOM_Y", Tiles = (6, 7, "ONE_LEVEL", "ROUND_DOWN"), Channels = Rgba("HALF", 11) },
             "Tiles stored in a shuffled order.", "The chunks are read in the order of their offsets.");
         AddGenerated(c, "tiles-b44-odd", Function, new Description { Width = 11, Height = 10, Compression = "B44", Tiles = (5, 6, "ONE_LEVEL", "ROUND_DOWN"), Channels = Rgb("HALF", 12) },
@@ -1104,7 +1218,12 @@ internal static partial class ExrCorpus
 
         /// <summary>Gets the pattern the part was written from, when it is not the one of the fixture.</summary>
         public Description? Pattern { get; init; }
+
+        /// <summary>Gets the level of a tiled part that is decoded instead of the full resolution.</summary>
+        public (int X, int Y)? Level { get; init; }
     }
+
+    private static ExrDecoding Level(int x, int y) => new(null, "DisplayWindow") { Level = (x, y) };
 
     private static ExrDecoding Layer(string layer, string windowMode = "DisplayWindow") => new(layer, windowMode);
 
@@ -1128,6 +1247,12 @@ internal static partial class ExrCorpus
 
             entry["layer"] = decoding.Layer;
             entry["windowMode"] = decoding.WindowMode;
+            if (decoding.Level is var (levelX, levelY))
+            {
+                entry["levelX"] = levelX;
+                entry["levelY"] = levelY;
+            }
+
             if (decoding.Feature is { } feature)
             {
                 entry["expectedError"] = Unsupported(feature);
@@ -1138,8 +1263,18 @@ internal static partial class ExrCorpus
             var dump = Decode(c, data, decoding.Part?.Index ?? 0) ?? throw new FatalException(fixtureId + ": OpenEXR does not read the file.");
             var checks = new List<object?>();
             var decodingPattern = decoding.Pattern ?? pattern;
-            if (decodingPattern is not null && PatternCrossCheck(decodingPattern, dump) is { } patternCheck)
+            if (decoding.Level is { } level)
+            {
+                // The pattern of every level, then the samples of the level alone
+                if (decodingPattern is not null && LevelsPatternCrossCheck(decodingPattern, dump) is { } levelsCheck)
+                    checks.Add(levelsCheck);
+
+                dump = LevelDump(dump, level.X, level.Y);
+            }
+            else if (decodingPattern is not null && PatternCrossCheck(decodingPattern, dump) is { } patternCheck)
+            {
                 checks.Add(patternCheck);
+            }
 
             var halfOnly = true;
             if (dump.SampleCounts is not null)
@@ -1148,12 +1283,13 @@ internal static partial class ExrCorpus
                 halfOnly = dump.Channels.Where(channel => channel.Name is not ("Z" or "ZBack") && (decoding.Layer is null || LayerChannel(channel.Name, decoding.Layer) is not null)).All(channel => channel.PixelType == "HALF");
                 dump = Flatten(dump);
             }
-            else if (decoding.Part is null && FfmpegDecodingCrossCheck(c, data, dump, decoding) is { } ffmpegCheck)
+            else if (decoding.Part is null && decoding.Level is null && FfmpegDecodingCrossCheck(c, data, dump, decoding) is { } ffmpegCheck)
             {
                 checks.Add(ffmpegCheck);
             }
 
-            var pixels = Present(dump, decoding.Layer, decoding.WindowMode, out var halfPixels, out var colorModel, out var bits, out var width, out var height);
+            // A level is the image of its data window
+            var pixels = Present(dump, decoding.Layer, decoding.Level is null ? decoding.WindowMode : "DataWindow", out var halfPixels, out var colorModel, out var bits, out var width, out var height);
             if (decoding.Flatten)
             {
                 halfPixels = false;
@@ -1173,9 +1309,12 @@ internal static partial class ExrCorpus
 
             if (decoding.Flatten)
                 options = "the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), " + options;
+
+            if (decoding.Level is var (x, y))
+                options = string.Create(CultureInfo.InvariantCulture, $"the level ({x}, {y}), whose data window is the image, ") + options;
             entry["width"] = width;
             entry["height"] = height;
-            entry["pixelFormat"] = halfPixels ? "RgbaHalf" : "RgbaFloat";
+            entry["pixelFormat"] = PixelFormatOf(halfPixels, colorModel);
             entry["colorModel"] = colorModel;
             entry["bitsPerComponent"] = bits;
             entry["buffer"] = FloatBuffer(c, fixtureId + string.Create(CultureInfo.InvariantCulture, $".decoding-{i}.rgbaf32le.raw"), width, height, pixels);
@@ -1376,11 +1515,25 @@ internal static partial class ExrCorpus
     private static void BuildUnsupported(Corpus<ExrTools> c, FullPath images)
     {
         const string Function = nameof(BuildUnsupported);
-        foreach (var compression in new[] { "HTJ2K256", "HTJ2K32" })
         {
-            var (data, command) = Write(c, new Description { Width = 16, Height = 16, Compression = compression, Channels = Rgb("HALF", 30) });
-            AddError(c, "unsupported", "compression-" + compression.ToLowerInvariant(), Function, data, Unsupported("Compression: " + compression), $"The {compression} compression.", [command], requireOpenExrRejection: false);
+            var (data, command) = Write(c, new Description { Width = 16, Height = 16, Compression = "LJ2K", Channels = Rgb("HALF", 30) });
+            AddError(c, "unsupported", "compression-lj2k", Function, data, Unsupported("Compression: LJ2K"), "The LJ2K compression: the irreversible wavelet transformation of the colors, and a non-linearity of OpenJPH that no standard defines.", [command], requireOpenExrRejection: false);
         }
+
+        foreach (var (compression, type) in new[] { ("HTJ2K256", "FLOAT"), ("HTJ2K32", "UINT") })
+        {
+            var (data, command) = Write(c, new Description { Width = 16, Height = 16, Compression = compression, Channels = [.. Rgb("HALF", 30), new("A", type, Alpha)] });
+            AddError(c, "unsupported", compression.ToLowerInvariant() + "-" + type.ToLowerInvariant(), Function, data, Unsupported("Compression: " + compression + " with 32-bit channels"),
+                $"HALF R, G and B and a {type} A, {compression}: the 32-bit components of a {type} channel need more bit-planes than the block decoder has.", [command], requireOpenExrRejection: false);
+        }
+
+        AddUnsupported("htj2k256-subsampled-layer", new Description
+        {
+            Width = 32,
+            Height = 32,
+            Compression = "HTJ2K256",
+            Channels = [new("B", "HALF", Steps(1, 4)), new("G", "HALF", Steps(2, 4)), new("R", "HALF", Steps(3, -4)), new("aux.Y", "HALF", Steps(4, 2), XSampling: 2, YSampling: 2)],
+        }, "Extra channels", "HALF R, G and B and a sub-sampled HALF channel of another layer, HTJ2K256: the sub-sampled channel turns off the color transform, and the components are coded one after the other. The default layer is decoded without it.", Layer(""));
 
         void AddUnsupported(string name, Description d, string feature, string notes, params ExrDecoding[] decodings)
         {

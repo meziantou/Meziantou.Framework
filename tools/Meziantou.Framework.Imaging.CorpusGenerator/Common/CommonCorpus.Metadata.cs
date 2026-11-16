@@ -402,6 +402,28 @@ internal static partial class CommonCorpus
     /// <summary>TGA stores no metadata this library exposes (TgaCorpus).</summary>
     public static ParsedMetadata TgaMetadata() => new();
 
+    /// <summary>
+    /// The image resources of a PSD file (TestHarness/Psd/ReferencePsd): the resolution (1005, 16.16 fixed-point pixels per
+    /// inch), the ICC profile (1039), EXIF data (1058) and XMP metadata (1060).
+    /// </summary>
+    public static ParsedMetadata PsdMetadata(byte[] data)
+    {
+        var picture = TestHarness.Psd.ReferencePsd.Read(data);
+        var result = new ParsedMetadata();
+        if (picture.Resources.TryGetValue(1005, out var resolution) && resolution.Length >= 16)
+        {
+            long x = Bytes.I32BE(resolution, 0), y = Bytes.I32BE(resolution, 8);
+            Py.Assert(x % 65536 == 0 && y % 65536 == 0, "the PSD fixtures have whole resolutions");
+            if (x > 0 && y > 0)
+                result.Resolution = Resolution(x / 65536, y / 65536, "inch", x / 65536, y / 65536);
+        }
+
+        result.Icc = picture.Resources.GetValueOrDefault(1039);
+        result.Exif = picture.Resources.GetValueOrDefault(1058);
+        result.Xmp = picture.Resources.GetValueOrDefault(1060);
+        return result;
+    }
+
     /// <summary>Netpbm files store no metadata.</summary>
     public static ParsedMetadata PnmMetadata(byte[] data)
     {
@@ -458,6 +480,7 @@ internal static partial class CommonCorpus
             "bmp" => BmpMetadata(data),
             "tga" => TgaMetadata(),
             "pnm" => PnmMetadata(data),
+            "psd" => PsdMetadata(data),
             _ => throw new ArgumentOutOfRangeException(nameof(format), format),
         };
         var exifOrientation = parsed.Exif is { Length: > 0 } ? ExifReadOrientation(parsed.Exif) : null;

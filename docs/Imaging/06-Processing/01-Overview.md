@@ -68,7 +68,7 @@ resource limit leaves the image unchanged. See
 ## What the operations keep
 
 - **Pixel format and precision.** An operation keeps the pixel format of the image: a 16-bit image is processed with
-  16-bit precision, and alpha is kept. [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) images accept every operation, except
+  16-bit precision, and alpha is kept. The floating-point images ([RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) and their gray formats) accept every operation, except
   [ComputeHistogram](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ComputeHistogram), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize), [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) and [Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold), which need discrete levels. See
   [Pixel formats](../04-Concepts/05-PixelFormats.md).
 - **Metadata.** The metadata stays. Geometry changes update the EXIF dimensions, and every operation that changes pixels

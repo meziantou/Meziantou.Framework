@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// (pixel storage) always request clearing. The pool is thread-safe.
 /// </para>
 /// </remarks>
-internal sealed class SlabPool
+internal sealed class SlabPool : IBufferPool
 {
     /// <summary>The smallest size class.</summary>
     public const int MinimumLength = 64;

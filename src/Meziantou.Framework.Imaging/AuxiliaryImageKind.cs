@@ -20,4 +20,10 @@ public enum AuxiliaryImageKind
 
     /// <summary>A segmentation matte of Apple (portrait effects, skin, hair, teeth, glasses, sky).</summary>
     Matte,
+
+    /// <summary>
+    /// A lower resolution level of a tiled OpenEXR image: a level of its mipmaps or of its ripmaps
+    /// (<see cref="AuxiliaryImage.Level"/>).
+    /// </summary>
+    ResolutionLevel,
 }

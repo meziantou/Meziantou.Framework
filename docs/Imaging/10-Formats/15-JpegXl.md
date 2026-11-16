@@ -32,9 +32,10 @@ JPEG XL also stores the samples of high dynamic range and print workflows. They 
 all:
 
 - Floating-point samples load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) when every sample is a half-precision number, otherwise as
-  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat). Values above 1 (highlights) and below 0 are kept, in the color encoding the file declares
+  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat); a gray image loads as [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) or
+  [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat). Values above 1 (highlights) and below 0 are kept, in the color encoding the file declares
   (often linear sRGB): nothing is clamped or tone mapped.
-- Integer samples of 17 to 24 bits load as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat): each sample divided by the largest value, which gives the
+- Integer samples of 17 to 24 bits load as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) ([GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) or [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) for a gray image): each sample divided by the largest value, which gives the
   sample back when multiplied by it. Integers of more than 24 bits do not fit a single-precision number and throw an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 - A CMYK file (cyan, magenta and yellow in the color channels, black in an extra channel) loads only with

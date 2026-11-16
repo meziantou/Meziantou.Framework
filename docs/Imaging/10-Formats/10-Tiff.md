@@ -17,7 +17,9 @@ destination**, except for a page that is not compressed.
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
 | Reduced size | The reduced-resolution images of the first page (pyramids) | - |
 
-[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first page. Floating-point pages load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) (16 bits) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat).
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first page. Floating-point pages load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) (16 bits) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), and gray ones as [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf),
+[LaHalf](cref:Meziantou.Framework.Imaging.LaHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) or [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat). The encoder writes a floating-point image whose pixels are gray as
+one sample (two with alpha).
 
 ## Write a document of several pages
 

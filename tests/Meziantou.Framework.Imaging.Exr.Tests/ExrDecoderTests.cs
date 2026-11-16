@@ -695,6 +695,61 @@ public sealed class ExrDecoderTests
     }
 
     [Fact]
+    public void ThePreviewImageIsAnAuxiliaryThumbnail()
+    {
+        byte[] preview = [.. ExrFileBuilder.UInts(2, 1), 255, 0, 0, 255, 10, 20, 30, 128];
+        var data = ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Set("preview", "preview", preview).Build();
+
+        // The image is the full-resolution image; the preview is listed apart
+        Assert.Equal(new Size(1, 1), Image.Identify(data).Size);
+        var images = AuxiliaryImageCollection.Load(data);
+        var thumbnail = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.Thumbnail, thumbnail.Kind);
+        Assert.Null(thumbnail.Level);
+        Assert.Equal(new Size(2, 1), thumbnail.Size);
+        using var image = thumbnail.Decode<Rgba32>();
+        Assert.Equal(new Rgba32(255, 0, 0, 255), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(10, 20, 30, 128), image.Frames[0][1, 0]);
+        using var wide = thumbnail.Decode<Rgba64>();
+        Assert.Equal(new Rgba64(2570, 5140, 7710, 32896), wide.Frames[0][1, 0]);
+
+        // A preview whose pixels are not those of its size is malformed
+        var malformed = ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Set("preview", "preview", [.. ExrFileBuilder.UInts(2, 2), 1, 2, 3, 4]).Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(malformed));
+    }
+
+    [Fact]
+    public void LevelsAreRejectedWhenTheImageHasThemNot()
+    {
+        var data = ExrFileBuilder.ScanLines(1, 1, None, HalfChannel("R")).AddScanLineChunk(0, ExrFileBuilder.Halves(1f)).Build();
+        var configuration = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { LevelX = 1, LevelY = 1 } };
+        Assert.Equal("Missing level", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = configuration })).Feature);
+        Assert.Equal("Missing level", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = configuration })).Feature);
+        Assert.Empty(AuxiliaryImageCollection.Load(data));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrDecodingOptions { LevelX = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrDecodingOptions { LevelY = -1 });
+    }
+
+    [Theory]
+    [InlineData("4854000000040001")]
+    [InlineData("485400000004000100")]
+    [InlineData("4854000000040001000000")]
+    [InlineData("48550000000400010000FF4F")]
+    [InlineData("48540000000400020000FF4F")]
+    [InlineData("48540000000400010001FF4F")]
+    [InlineData("48540000000500010000FF4F")]
+    [InlineData("48540000000400010000FF4FFF51")]
+    public void MalformedHighThroughputChunksAreInvalid(string chunk)
+    {
+        // The header of the chunk (magic, payload length, channel map), then a codestream: an empty one, the wrong magic, a
+        // map of another size, an index out of the map, a payload longer than the chunk, a truncated SIZ marker segment
+        var data = ExrFileBuilder.ScanLines(1, 1, 11, HalfChannel("R")).AddScanLineChunk(0, Convert.FromHexString(chunk)).Build();
+        Assert.Equal(new Size(1, 1), Image.Identify(data).Size);
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+        Assert.Equal(ImageFormat.OpenExr, exception.Format);
+    }
+
+    [Fact]
     public void HeaderErrorsAreReportedByIdentification()
     {
         AssertInvalid(builder => builder.Remove("channels"));
@@ -720,8 +775,8 @@ public sealed class ExrDecoderTests
         AssertInvalid(builder => builder.VersionField = 2 | 0x800);
         AssertInvalid(builder => builder.VersionField = 2 | 0x200 | 0x1000);
 
-        AssertUnsupported(builder => builder.Set("compression", "compression", [10]));
-        AssertUnsupported(builder => builder.Set("compression", "compression", [11]));
+        AssertUnsupported(builder => builder.Set("compression", "compression", [10]).Set("channels", "chlist", ExrFileBuilder.ChannelList(ExrChannelDescription.FloatingPoint("R"))));
+        AssertUnsupported(builder => builder.Set("compression", "compression", [11]).Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("G"), ExrChannelDescription.UnsignedInt("R"))));
         AssertUnsupported(builder => builder.Set("compression", "compression", [12]));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("R"), HalfChannel("Z"))));
         AssertUnsupported(builder => builder.Set("channels", "chlist", ExrFileBuilder.ChannelList(HalfChannel("diffuse.R"))));
@@ -731,6 +786,10 @@ public sealed class ExrDecoderTests
         AssertUnsupported(builder => builder.Set("name", "string", ExrFileBuilder.Text("left")), new OpenExrDecodingOptions { Part = "right" });
         AssertUnsupported(builder => builder.VersionField = 1);
         AssertUnsupported(builder => builder.VersionField = 2 | 0x2000);
+
+        // HTJ2K256 and HTJ2K32 of HALF channels are read
+        Assert.Equal(new Size(1, 1), Image.Identify(Build(builder => builder.Set("compression", "compression", [10]))).Size);
+        Assert.Equal(new Size(1, 1), Image.Identify(Build(builder => builder.Set("compression", "compression", [11]))).Size);
 
         // Long names need the flag; other attributes are skipped
         Assert.Equal(new Size(1, 1), Image.Identify(Build(builder => { builder.VersionField = 2 | 0x400; builder.Set(new string('n', 200), "int", [0, 0, 0, 0]); })).Size);

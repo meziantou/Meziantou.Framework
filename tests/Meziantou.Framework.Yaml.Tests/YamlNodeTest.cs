@@ -470,4 +470,28 @@ public class YamlNodeTest
 
         Assert.Equal("k: !<tag:example.com,2000:foo> x", mapping.ToString());
     }
+
+    public static TheoryData<string> YamlTestSuiteJsonCases() => YamlTestSuite.Ids(testCase => !testCase.Error && testCase.Json is not null);
+
+    [Theory]
+    [MemberData(nameof(YamlTestSuiteJsonCases))]
+    public void YamlTestSuite_LoadsAsJson(string id)
+    {
+        // in.json is the value of each document of in.yaml, with the core schema
+        var testCase = YamlTestSuite.Get(id);
+        var expected = YamlTestSuite.ReadJsonValues(testCase.Json!);
+        var stream = YamlStream.Load(new StringReader(testCase.Yaml));
+        Assert.HasCount(expected.Count, stream);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            YamlTestSuite.AssertJsonEqual(expected[i], stream[i].Contents?.ToObject<object>());
+        }
+
+        if (expected.Count is 1)
+        {
+            // Without Preserve, the serializer rejects the aliases when it reads into object
+            var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+            YamlTestSuite.AssertJsonEqual(expected[0], YamlSerializer.Deserialize<object>(testCase.Yaml, options));
+        }
+    }
 }

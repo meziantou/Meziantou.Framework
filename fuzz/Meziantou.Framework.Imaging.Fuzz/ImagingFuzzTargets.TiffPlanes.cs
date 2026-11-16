@@ -85,13 +85,6 @@ public static partial class ImagingFuzzTargets
         }
     }
 
-    private static byte[] GetPixelBytes(Image image)
-    {
-        var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
-        image.Frames[0].CopyPixelBytesTo(bytes);
-        return bytes;
-    }
-
     private static IEnumerable<FuzzSeed> GetTiffPlanesSeeds()
     {
         // The cases of the unit tests: RGBA in uncompressed strips of 5 rows, RGB in LZW with the predictor, 16-bit RGB in

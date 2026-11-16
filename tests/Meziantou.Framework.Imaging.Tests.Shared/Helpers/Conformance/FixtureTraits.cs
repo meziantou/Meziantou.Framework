@@ -20,19 +20,31 @@ internal static class FixtureTraits
     public static bool IsDelimitedByEndOfInput(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("tga.trailingData") || fixture.Entry.HasFeature("pnm.raster=plain");
+        return fixture.Entry.HasFeature("tga.trailingData") || fixture.Entry.HasFeature("pnm.raster=plain") || IsReadByRandomAccessOnly(fixture);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the input is a random-access container that a sequential <c>ImageReader</c>
+    /// does not read (a DNG file, which the TIFF codec reads: its directories are located by offsets, the first one usually
+    /// after the samples). Its decoders buffer a stream whole, so its last byte is only delimited by the end of the input.
+    /// </summary>
+    public static bool IsReadByRandomAccessOnly(GoldenFixture fixture)
+    {
+        ArgumentNullException.ThrowIfNull(fixture);
+        return fixture.Entry.Format == "dng";
     }
 
     /// <summary>
     /// Gets a value indicating whether the input has bytes after the image data that the decoder never reads: the boxes of
-    /// an AVIF or HEIC file that follow the last byte of the items of the image (the walk ends there). The decoder then consumes
+    /// an AVIF or HEIC file that follow the last byte of the items of the image (the walk ends there), and the surfaces of a
+    /// DDS texture after the first one (a load reads the top level of the first face or element). The decoder then consumes
     /// fewer bytes than the file holds, so the encoded-byte requirement is smaller than the file length and no I/O failure
     /// in the trailing bytes can be observed.
     /// </summary>
     public static bool HasUnreadTrailingBytes(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        return fixture.Entry.HasFeature("avif.trailingData") || fixture.Entry.HasFeature("heic.trailingData");
+        return fixture.Entry.HasFeature("avif.trailingData") || fixture.Entry.HasFeature("heic.trailingData") || fixture.Entry.HasFeature("dds.trailingSurfaces");
     }
 
     /// <summary>
@@ -51,7 +63,18 @@ internal static class FixtureTraits
         return fixture.Entry.HasFeature("jxl.boxesAfterCodestream") || fixture.Entry.HasFeature("jp2.boxesAfterCodestream");
     }
 
-    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => IsDelimitedByEndOfInput(fixture) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture) || IsFragmentedSequence(fixture);
+    public static bool ProperPrefixMayBeValid(GoldenFixture fixture) => (IsDelimitedByEndOfInput(fixture) && !IsReadByRandomAccessOnly(fixture)) || HasUnreadTrailingBytes(fixture) || HasBoxesAfterTheCodestream(fixture) || IsFragmentedSequence(fixture) || HasPreview(fixture);
+
+    /// <summary>
+    /// Gets a value indicating whether the input is a DNG file with a preview: the bytes of the preview (its directory, its
+    /// values, its pixels) are never read by a load, and the file may end with them, so a prefix that cuts them is a valid
+    /// file. A span is still charged whole to the encoded-byte limit.
+    /// </summary>
+    public static bool HasPreview(GoldenFixture fixture)
+    {
+        ArgumentNullException.ThrowIfNull(fixture);
+        return fixture.Entry.HasFeature("dng.preview");
+    }
 
     /// <summary>
     /// Gets a value indicating whether the input is a fragmented AVIF image sequence: its images are described by movie
@@ -68,11 +91,17 @@ internal static class FixtureTraits
     /// <summary>
     /// Gets a value indicating whether a header identification needs the whole input: an AVIF or HEIC file whose last box is
     /// the one that describes the image (the <c>meta</c> box, or the <c>moov</c> box of an image sequence), because its media
-    /// data come first or are stored inside that box. The structure is read from the bytes by the independent reader.
+    /// data come first or are stored inside that box, and a DNG file, whose first directory follows its samples. The structure
+    /// is read from the bytes by the independent reader.
     /// </summary>
     public static bool HeaderIdentificationReadsWholeInput(GoldenFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
+
+        // The first directory of a DNG file of the corpus follows its samples (the DNG SDK writes its files so too)
+        if (IsReadByRandomAccessOnly(fixture))
+            return true;
+
         if (!IsHeif(fixture))
             return false;
 
@@ -231,6 +260,15 @@ internal static class FixtureTraits
             }
         }
 
+        // The canvas limits of a DNG file apply to its stored raw image, which its default crop makes smaller
+        if (fixture.Entry.Format == "dng")
+        {
+            var file = new TestHarness.Dng.TiffFile(fixture.ReadInput());
+            var raw = FindDngRawImage(file, file.ReadDirectory(file.FirstDirectory));
+            var (rawWidth, rawHeight) = ((int)raw.Number(256), (int)raw.Number(257));
+            return (rawWidth, rawHeight, (long)rawWidth * rawHeight);
+        }
+
         (int Width, int Height) size = (fixture.Expected.Width, fixture.Expected.Height);
         if (fixture.Entry.HasFeature("avif.clap") || fixture.Entry.HasFeature("heic.clap") || fixture.Entry.HasFeature("avif.seq.clap"))
         {
@@ -249,5 +287,13 @@ internal static class FixtureTraits
         }
 
         return (size.Width, size.Height, (long)size.Width * size.Height);
+    }
+
+    private static TestHarness.Dng.TiffFile.Directory FindDngRawImage(TestHarness.Dng.TiffFile file, TestHarness.Dng.TiffFile.Directory directory)
+    {
+        if ((directory.TryNumber(254) ?? 0) == 0)
+            return directory;
+
+        return (directory.TryNumbers(330) ?? []).Select(offset => FindDngRawImage(file, file.ReadDirectory((uint)offset))).First();
     }
 }

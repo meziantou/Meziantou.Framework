@@ -90,6 +90,35 @@ public sealed class ImageSaveTests
         Assert.Equal(new Rgba64(65535, 0, 0), decodedClip.Frames[0][1, 0]);
     }
 
+    [Theory]
+    [InlineData(PixelFormat.GrayFloat, PixelFormat.Gray16)]
+    [InlineData(PixelFormat.GrayHalf, PixelFormat.Gray16)]
+    [InlineData(PixelFormat.LaFloat, PixelFormat.La32)]
+    [InlineData(PixelFormat.LaHalf, PixelFormat.La32)]
+    public void FloatingPointGrayImagesAreReducedToGrayIntegers(PixelFormat format, PixelFormat reduced)
+    {
+        using var source = Image.ImportPixelData<LaFloat>([new LaFloat(0.25f, 0.5f), new LaFloat(1, 1), new LaFloat(0, 1)], 3, 1);
+        using var image = source.CloneAs(format, new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+
+        // PNG stores 16-bit gray (with alpha): the reduction keeps the gray format instead of widening it to RGBA
+        var encoder = new PngEncoder { FloatingPointConversion = new PixelConversionOptions(), MetadataHandling = MetadataHandling.DiscardUnsupported };
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        using var decoded = Image.Load(stream.ToArray());
+        Assert.Equal(reduced, decoded.PixelFormat);
+        using var expected = image.CloneAs(reduced, options: null);
+        Assert.Equal(StreamImages.GetBytes(expected.Frames[0]), StreamImages.GetBytes(decoded.Frames[0]));
+
+        // JPEG stores 8-bit gray: the reduction keeps a gray file
+        if (!PixelFormats.HasAlpha(format))
+        {
+            var jpeg = new JpegEncoder { FloatingPointConversion = new PixelConversionOptions(), AllowBitDepthReduction = true, MetadataHandling = MetadataHandling.DiscardUnsupported };
+            using var jpegStream = new MemoryStream();
+            image.Save(jpegStream, jpeg);
+            Assert.Equal(PixelFormat.Gray8, Image.Identify(jpegStream.ToArray()).PixelFormat);
+        }
+    }
+
     [Fact]
     public async Task FilesLoadIntoFloatingPointPixelsWithTheLabelOfTheFile()
     {

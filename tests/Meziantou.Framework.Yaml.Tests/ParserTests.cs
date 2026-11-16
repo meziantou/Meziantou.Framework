@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Text.Json;
 using Meziantou.Framework.Yaml.Events;
 
 namespace Meziantou.Framework.Yaml.Tests;
@@ -8,12 +7,10 @@ public class ParserTests : ParserTestHelper
 {
     public static TheoryData<string, string, string, bool> ConformanceCases()
     {
-        using var stream = typeof(ParserTests).Assembly.GetManifestResourceStream("Meziantou.Framework.Yaml.Tests.files.yaml-test-suite.cases.json")!;
-        using var document = JsonDocument.Parse(stream);
         var result = new TheoryData<string, string, string, bool>();
-        foreach (var item in document.RootElement.EnumerateArray())
+        foreach (var testCase in YamlTestSuite.All)
         {
-            result.Add(item.GetProperty("id").GetString()!, item.GetProperty("yaml").GetString()!, item.GetProperty("events").GetString()!, item.GetProperty("error").GetBoolean());
+            result.Add(testCase.Id, testCase.Yaml, testCase.Events, testCase.Error);
         }
 
         return result;
@@ -37,6 +34,27 @@ public class ParserTests : ParserTestHelper
         AssertConformance(new Parser<LookAheadBuffer>(new LookAheadBuffer(reader, 12)), expectedEvents, invalid);
     }
 
+    public static TheoryData<string> EmitterOutputCases() => YamlTestSuite.Ids(testCase => !testCase.Error && (testCase.Out is not null || testCase.Emit is not null));
+
+    [Theory]
+    [MemberData(nameof(EmitterOutputCases))]
+    public void YamlTestSuite_EmitterOutputsRepresentTheSameData(string id)
+    {
+        // out.yaml (a normalizing emitter) and emit.yaml (an emitter that keeps the styles) change the presentation of
+        // in.yaml, not its data
+        var testCase = YamlTestSuite.Get(id);
+        var expected = YamlTestSuite.ReadRepresentation(testCase.Yaml);
+        if (testCase.Out is not null)
+        {
+            Assert.Equal(expected, YamlTestSuite.ReadRepresentation(testCase.Out));
+        }
+
+        if (testCase.Emit is not null)
+        {
+            Assert.Equal(expected, YamlTestSuite.ReadRepresentation(testCase.Emit));
+        }
+    }
+
     [Theory]
     [InlineData("\\x0")]
     [InlineData("\\u123")]
@@ -50,7 +68,7 @@ public class ParserTests : ParserTestHelper
     public void InvalidUnicodeEscapes_ThrowYamlException(string escape)
     {
         using var reader = new StringReader("\"" + escape + "\"");
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
     }
 
     [Theory]
@@ -63,7 +81,7 @@ public class ParserTests : ParserTestHelper
     public void InvalidTagUtf8Escapes_ThrowYamlException(string escape)
     {
         using var reader = new StringReader("!<tag:example.com," + escape + "> value");
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
     }
 
     [Theory]
@@ -87,9 +105,9 @@ public class ParserTests : ParserTestHelper
         foreach (var yaml in inputs)
         {
             using var reader = new StringReader(yaml);
-            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+            Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
             using var bufferedReader = new StringReader(yaml);
-            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+            Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
         }
     }
 
@@ -110,9 +128,9 @@ public class ParserTests : ParserTestHelper
         })
         {
             using var reader = new StringReader(yaml);
-            Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+            Assert.Equal(expected, YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
             using var bufferedReader = new StringReader(yaml);
-            Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+            Assert.Equal(expected, YamlTestSuite.ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
         }
     }
 
@@ -126,9 +144,9 @@ public class ParserTests : ParserTestHelper
     public void ByteOrderMarks_AreRejectedInsideDocuments(string yaml)
     {
         using var reader = new StringReader(yaml);
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
         using var bufferedReader = new StringReader(yaml);
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
     }
 
     [Theory]
@@ -139,7 +157,7 @@ public class ParserTests : ParserTestHelper
     public void InvalidVerbatimTags_ThrowYamlException(string yaml)
     {
         using var reader = new StringReader(yaml);
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
     }
 
     [Theory]
@@ -149,7 +167,7 @@ public class ParserTests : ParserTestHelper
     public void ValidVerbatimTags_AreAccepted(string yaml, string expected)
     {
         using var reader = new StringReader(yaml);
-        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.Equal(expected, YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
     }
 
     [Theory]
@@ -164,9 +182,9 @@ public class ParserTests : ParserTestHelper
     public void ByteOrderMarks_AreAllowedInDocumentPrefixesAndQuotedScalars(string yaml, string expected)
     {
         using var reader = new StringReader(yaml);
-        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.Equal(expected, YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
         using var bufferedReader = new StringReader(yaml);
-        Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+        Assert.Equal(expected, YamlTestSuite.ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
     }
 
     [Theory]
@@ -176,7 +194,7 @@ public class ParserTests : ParserTestHelper
     public void ByteOrderMarks_AreRejectedInsideUnquotedScalars(string yaml)
     {
         using var reader = new StringReader(yaml);
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
     }
 
     [Theory]
@@ -194,11 +212,11 @@ public class ParserTests : ParserTestHelper
         var parser = Parser.CreateParser(reader);
         if (length > 1024)
         {
-            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(parser));
+            Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(parser));
         }
         else
         {
-            Assert.Equal("+STR\n+DOC\n+MAP\n=VAL :" + key + "\n=VAL :value\n-MAP\n-DOC\n-STR", ReadConformanceEvents(parser));
+            Assert.Equal("+STR\n+DOC\n+MAP\n=VAL :" + key + "\n=VAL :value\n-MAP\n-DOC\n-STR", YamlTestSuite.ReadEvents(parser));
         }
     }
 
@@ -222,9 +240,9 @@ public class ParserTests : ParserTestHelper
     public void SpecificationEdgeCases_ProduceExpectedEvents(string yaml, string expected)
     {
         using var reader = new StringReader(yaml);
-        Assert.Equal(expected, ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.Equal(expected, YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
         using var bufferedReader = new StringReader(yaml);
-        Assert.Equal(expected, ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+        Assert.Equal(expected, YamlTestSuite.ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
     }
 
     [Theory]
@@ -250,70 +268,22 @@ public class ParserTests : ParserTestHelper
     public void SpecificationEdgeCases_ThrowYamlException(string yaml)
     {
         using var reader = new StringReader(yaml);
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(Parser.CreateParser(reader)));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(Parser.CreateParser(reader)));
         using var bufferedReader = new StringReader(yaml);
-        Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(bufferedReader, 12))));
     }
 
     private static void AssertConformance(IParser parser, string expectedEvents, bool invalid)
     {
         if (invalid)
         {
-            Assert.ThrowsAny<YamlException>(() => ReadConformanceEvents(parser));
+            Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(parser));
         }
         else
         {
-            Assert.Equal(expectedEvents, ReadConformanceEvents(parser));
+            Assert.Equal(expectedEvents, YamlTestSuite.ReadEvents(parser));
             Assert.False(parser.MoveNext());
         }
-    }
-
-    private static string ReadConformanceEvents(IParser parser)
-    {
-        var events = new List<string>();
-        while (parser.MoveNext())
-        {
-            var current = parser.Current;
-            var properties = current is NodeEvent node
-                ? (node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " <" + node.Tag + ">")
-                : "";
-            events.Add(current switch
-            {
-                Events.StreamStart => "+STR",
-                Events.StreamEnd => "-STR",
-                Events.DocumentStart start => start.IsImplicit ? "+DOC" : "+DOC ---",
-                Events.DocumentEnd end => end.IsImplicit ? "-DOC" : "-DOC ...",
-                Events.MappingStart mapping => "+MAP" + (mapping.Style is YamlStyle.Flow ? " {}" : "") + properties,
-                Events.MappingEnd => "-MAP",
-                Events.SequenceStart sequence => "+SEQ" + (sequence.Style is YamlStyle.Flow ? " []" : "") + properties,
-                Events.SequenceEnd => "-SEQ",
-                Events.AnchorAlias alias => "=ALI *" + alias.Value,
-                Events.Scalar scalar => "=VAL" + properties + " " + ScalarIndicator(scalar.Style) + EscapeEventValue(scalar.Value),
-                _ => throw new InvalidOperationException($"Unexpected event: {current}"),
-            });
-        }
-
-        return string.Join('\n', events);
-    }
-
-    private static char ScalarIndicator(ScalarStyle style) => style switch
-    {
-        ScalarStyle.Plain => ':',
-        ScalarStyle.SingleQuoted => '\'',
-        ScalarStyle.DoubleQuoted => '"',
-        ScalarStyle.Literal => '|',
-        ScalarStyle.Folded => '>',
-        _ => throw new InvalidOperationException($"Unexpected scalar style: {style}"),
-    };
-
-    private static string EscapeEventValue(string value)
-    {
-        return value.Replace("\\", "\\\\", StringComparison.Ordinal)
-            .Replace("\0", "\\0", StringComparison.Ordinal)
-            .Replace("\b", "\\b", StringComparison.Ordinal)
-            .Replace("\n", "\\n", StringComparison.Ordinal)
-            .Replace("\r", "\\r", StringComparison.Ordinal)
-            .Replace("\t", "\\t", StringComparison.Ordinal);
     }
 
     [Fact]

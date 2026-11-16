@@ -1252,8 +1252,11 @@ public sealed class TiffEncoderTests
         // The layouts that follow the pixel format store it exactly
         if (pixels is not ("indexed" or "bilevel"))
         {
-            using var original = pixels == "bgra32" ? image.CloneAs<Rgba32>() : PixelFormats.IsFloatingPoint(image.PixelFormat) ? image.CloneAs<RgbaFloat>() : image.Clone();
-            Assert.Equal(GetPixelBytes(original), GetPixelBytes(decoded));
+            // A floating-point page of one or two samples decodes to GrayFloat or LaFloat
+            var isFloatingPoint = PixelFormats.IsFloatingPoint(image.PixelFormat);
+            using var original = pixels == "bgra32" ? image.CloneAs<Rgba32>() : isFloatingPoint ? image.CloneAs<RgbaFloat>() : image.Clone();
+            using var actual = isFloatingPoint ? decoded.CloneAs<RgbaFloat>() : decoded.Clone();
+            Assert.Equal(GetPixelBytes(original), GetPixelBytes(actual));
         }
 
         // The pages of a document are written the same way
@@ -1567,7 +1570,13 @@ public sealed class TiffEncoderTests
             3 => ImageColorModel.Rgb,
             _ => ImageColorModel.Rgba,
         };
-        Assert.Equal((PixelFormat.RgbaFloat, model, 32, ColorTransferFunction.Linear), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.Metadata.TransferFunction));
+        var expectedFormat = samplesPerPixel switch
+        {
+            1 => PixelFormat.GrayFloat,
+            2 => PixelFormat.LaFloat,
+            _ => PixelFormat.RgbaFloat,
+        };
+        Assert.Equal((expectedFormat, model, 32, ColorTransferFunction.Linear), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.Metadata.TransferFunction));
 
         using var decoded = Image.Load<RgbaFloat>(data);
         Assert.Equal(GetComponentBits(image), GetComponentBits(decoded));

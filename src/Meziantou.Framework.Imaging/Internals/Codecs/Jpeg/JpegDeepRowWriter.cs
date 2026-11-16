@@ -254,7 +254,19 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
         var channels = _components.Length;
         var row = unsafe(MemoryMarshal.Cast<byte, ushort>(_sourceRow!.RawBuffer.AsSpan(0, _width * channels * sizeof(ushort))));
         var max = _max;
-        if (channels == 1)
+        if (receiver.ReceivesStoredSamples)
+        {
+            // The samples as the frame stores them, interleaved in the order of the components
+            for (var c = 0; c < channels; c++)
+            {
+                var samples = GetSamples(_components[c], y);
+                for (var x = 0; x < samples.Length; x++)
+                {
+                    row[(channels * x) + c] = samples[x];
+                }
+            }
+        }
+        else if (channels == 1)
         {
             Scale(_components[0].GetDeepRow(y)[.._width], row, max);
         }

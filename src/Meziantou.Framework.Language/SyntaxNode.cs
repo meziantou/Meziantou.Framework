@@ -330,7 +330,8 @@ public abstract class SyntaxNode
     public TNode? FirstAncestorOrSelf<TNode>(Func<TNode, bool>? predicate = null)
         where TNode : SyntaxNode
     {
-        foreach (var node in AncestorsAndSelf())
+        // A loop over the parents rather than AncestorsAndSelf, which allocates its iterator
+        for (SyntaxNode? node = this; node is not null; node = node.Parent)
         {
             if (node is TNode match && (predicate is null || predicate(match)))
                 return match;

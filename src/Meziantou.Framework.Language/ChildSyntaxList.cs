@@ -109,7 +109,12 @@ public readonly struct ChildSyntaxList : IReadOnlyList<SyntaxNodeOrToken>, IEqua
             return new SyntaxNodeOrToken(node, greenChild, node.GetChildPosition(slotIndex), index);
         }
 
-        // The slot holds a list, so the answer is one of its children.
+        // The slot holds a list, so the answer is one of its children. A token needs no red node, nor the red list.
+        if (greenChild.GetRequiredSlot(remaining) is { IsToken: true } greenToken)
+        {
+            return new SyntaxNodeOrToken(node, greenToken, position + greenChild.GetSlotOffset(remaining), index);
+        }
+
         if (node.GetNodeSlot(slotIndex) is { } redList)
         {
             if (redList.GetNodeSlot(remaining) is { } redElement)
@@ -197,10 +202,12 @@ public readonly struct ChildSyntaxList : IReadOnlyList<SyntaxNodeOrToken>, IEqua
                     return new SyntaxNodeOrToken(node, slotGreen, _position, _index);
                 }
 
-                if (node.GetNodeSlot(_slot) is { } redList && redList.GetNodeSlot(_listIndex) is { } redElement)
+                // A token needs no red node, nor the red list
+                var element = slotGreen.GetRequiredSlot(_listIndex);
+                if (!element.IsToken && node.GetNodeSlot(_slot) is { } redList && redList.GetNodeSlot(_listIndex) is { } redElement)
                     return redElement;
 
-                return new SyntaxNodeOrToken(node, slotGreen.GetRequiredSlot(_listIndex), _position, _index);
+                return new SyntaxNodeOrToken(node, element, _position, _index);
             }
         }
 

@@ -65,7 +65,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         if (_abbreviations is null)
         {
             var abbreviations = new Dictionary<string, MarkdownAbbreviationDefinitionSyntax>(StringComparer.Ordinal);
-            foreach (var definition in DescendantNodes(IsBlockContainer).OfType<MarkdownAbbreviationDefinitionSyntax>())
+            foreach (var definition in GetBlocks<MarkdownAbbreviationDefinitionSyntax>())
             {
                 abbreviations[definition.Label] = definition;
             }
@@ -85,7 +85,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         if (_definitions is null)
         {
             var definitions = new Dictionary<string, MarkdownLinkReferenceDefinitionSyntax>(StringComparer.Ordinal);
-            foreach (var definition in LinkReferenceDefinitions)
+            foreach (var definition in GetBlocks<MarkdownLinkReferenceDefinitionSyntax>())
             {
                 definitions.TryAdd(Scanners.NormalizeLabel(definition.Label), definition);
             }
@@ -278,7 +278,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         if (_headings is null)
         {
             var headings = new Dictionary<string, MarkdownHeadingSyntax>(StringComparer.Ordinal);
-            foreach (var heading in DescendantNodes(IsBlockContainer).OfType<MarkdownHeadingSyntax>())
+            foreach (var heading in GetBlocks<MarkdownHeadingSyntax>())
             {
                 // A label has a character that is not whitespace
                 if (Scanners.NormalizeLabel(heading.GetFirstLineLabel(options)) is { Length: > 0 } headingLabel)
@@ -306,6 +306,37 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         ArgumentNullException.ThrowIfNull(visitor);
 
         return visitor.VisitMarkdownDocument(this);
+    }
+
+    // The blocks of a kind, in the order of the text, as DescendantNodes(IsBlockContainer).OfType<T>() finds them, without its
+    // iterators and without enumerating the tokens of the containers
+    private List<T> GetBlocks<T>()
+        where T : MarkdownSyntaxNode
+    {
+        var blocks = new List<T>();
+        AddBlocks(this, blocks);
+        return blocks;
+
+        static void AddBlocks(SyntaxNode container, List<T> blocks)
+        {
+            foreach (var child in container.ChildNodesAndTokens())
+            {
+                if (child.AsNode() is not { } node)
+                {
+                    continue;
+                }
+
+                if (node is T block)
+                {
+                    blocks.Add(block);
+                }
+
+                if (IsBlockContainer(node))
+                {
+                    AddBlocks(node, blocks);
+                }
+            }
+        }
     }
 
     private static bool ContainsKind(GreenNode root, SyntaxKind kind)

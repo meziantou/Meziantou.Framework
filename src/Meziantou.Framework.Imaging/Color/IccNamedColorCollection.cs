@@ -45,9 +45,16 @@ public sealed class IccNamedColorCollection : IReadOnlyList<IccNamedColor>
         _colors = colors;
         DeviceChannelCount = deviceChannelCount;
         _indexes = new Dictionary<string, int>(colors.Length, StringComparer.Ordinal);
+
+        // Colors that share their name share its string: it is hashed once, so that a long name referenced by many
+        // colors is not hashed again and again (the reader bounds the characters of the distinct names it reads)
+        var added = new HashSet<string>(ReferenceEqualityComparer.Instance);
         for (var i = 0; i < colors.Length; i++)
         {
-            _indexes.TryAdd(colors[i].Name, i);
+            if (added.Add(colors[i].Name))
+            {
+                _indexes.TryAdd(colors[i].Name, i);
+            }
         }
     }
 

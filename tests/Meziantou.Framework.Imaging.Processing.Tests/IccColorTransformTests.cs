@@ -1943,6 +1943,12 @@ public sealed class IccColorTransformTests
         Assert.HasCount(1000, colors);
         Assert.Same(colors[0].Name, colors[999].Name);
         Assert.Equal(0, colors.IndexOf(name));
+        Assert.Same(colors[0], colors[name]);
+
+        // Names that appear several times as distinct strings refer to their first color too
+        var duplicates = IccNamedColorCollection.Create(new IccProfile(new MetadataBlob(NamedProfile("Lab ", IccProfileBuilder.NamedColor2("", "", 0, ("Red", [1, 2, 3], []), ("Red", [4, 5, 6], []))))));
+        Assert.NotSame(duplicates[0].Name, duplicates[1].Name);
+        Assert.Equal(0, duplicates.IndexOf("Red"));
         Assert.Equal(new CieLab(50, 40, 20), colors[999].ConnectionSpaceLab);
 
         // Names at the same offset but of different sizes would be read and stored again and again

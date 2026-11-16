@@ -1,0 +1,28 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Compression</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Reads and writes 7z archives, reads RAR (RAR5 and RAR 2.9/4.x) and zip archives (BZip2, LZMA, PPMd, XZ, Zstandard, Deflate64, WinZip AES, ZipCrypto, multi-volume), and provides XZ, LZMA, LZMA2, LZip, BZip2 and Unix compress (.Z) streams, with an API similar to ZipArchive and ZipFile, and a reader that detects the format of an archive, including from non-seekable streams.</Description>
+    <PackageTags>compression;archive;7z;7zip;rar;zip;xz;lzma;lzma2;lzip;bzip2;ppmd;tar</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+
+    <!-- TODO(compression): remove once every shared helper has a caller -->
+    <NoWarn>$(NoWarn);MA0182</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The fuzz targets call the codecs directly -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Compression.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Compression.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CRC-32 and CRC-64/XZ (Crc64ParameterSet) -->
+    <PackageReference Include="System.IO.Hashing" Version="11.0.0" />
+  </ItemGroup>
+
+</Project>

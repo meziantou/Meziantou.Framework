@@ -90,6 +90,11 @@ internal static class IccMpeParser
         if (inputs == 0 || outputs == 0)
             throw context.Invalid($"the processing element {IccReader.FormatSignature(signature)} has no input or no output channel.");
 
+        // Each element and its arrays per channel (the curves of a curve set, the grid of a color lookup table) are charged
+        // before they are parsed: elements at overlapping positions of different sizes are distinct elements, which would
+        // otherwise store them again and again while charging only their data, possibly none
+        context.Allocate(1 + Math.Max(inputs, outputs));
+
         return signature switch
         {
             ElementCurveSet => IccMpeCurveSet.Parse(element, inputs, outputs, context),

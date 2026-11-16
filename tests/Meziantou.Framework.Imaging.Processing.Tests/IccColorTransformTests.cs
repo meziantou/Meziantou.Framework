@@ -2089,7 +2089,7 @@ public sealed class IccColorTransformTests
         // The same position many times: the element is read once
         var context = new IccMpeParseContext("source", 0x41324231);
         var stage = IccMpeParser.CreateStage(Stage(tint, [.. Enumerable.Repeat(tint.Length, 1000)]), 1, 1, context);
-        Assert.Equal(65536, context.Allocated);
+        Assert.Equal(65536 + 2, context.Allocated); // the values, then the element and its channel
         var values = new double[16];
         values[0] = 0.5;
         stage.Apply(values);
@@ -2114,6 +2114,43 @@ public sealed class IccColorTransformTests
         Assert.Equal(4 + 10 + 1, ParseElement(element).Cost);
         IccMpeParser.CreateStage(Stage(element, [.. Enumerable.Repeat(element.Length, 1000)]), 1, 1, new IccMpeParseContext("source", 0x41324231));
         Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(element, [.. Enumerable.Repeat(element.Length, 100_000)]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+    }
+
+    [Fact]
+    public void OverlappingCurveSetsChargeTheirChannels()
+    {
+        // A calculator whose sub-elements are the same curve set of 65,535 channels, which all share one curve: once is
+        // supported, 32 overlapping positions (the same offset, 32 sizes) would store 32 arrays of 65,535 curves
+        var once = CalculatorOfOverlappingCurveSets(1);
+        IccMpeParser.CreateStage(Stage(once, [once.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231));
+
+        var overlapping = CalculatorOfOverlappingCurveSets(32);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(overlapping, [overlapping.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+
+        static byte[] CalculatorOfOverlappingCurveSets(int subCount)
+        {
+            const int Channels = 65535;
+            var curve = Segmented([], Formula(0, 1, 1, 0, 0));
+            var curveSet = new List<byte>([.. "cvst"u8, 0, 0, 0, 0, .. U16(Channels), .. U16(Channels)]);
+            for (var i = 0; i < Channels; i++)
+            {
+                curveSet.AddRange([.. U32((uint)(12 + (8 * Channels))), .. U32((uint)curve.Length)]);
+            }
+
+            curveSet.AddRange(curve);
+            var main = new List<byte>([.. "func"u8, 0, 0, 0, 0, .. U32(2), .. "in  "u8, 0, 0, 0, 0, .. "out "u8, 0, 0, 0, 0]);
+            var curveSetOffset = 24 + (8 * subCount) + main.Count;
+            var data = new List<byte>([.. "calc"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), 0, 0, .. U16(subCount), .. U32((uint)(24 + (8 * subCount))), .. U32((uint)main.Count)]);
+            for (var i = 0; i < subCount; i++)
+            {
+                data.AddRange([.. U32((uint)curveSetOffset), .. U32((uint)(curveSet.Count + i))]);
+            }
+
+            data.AddRange(main);
+            data.AddRange(curveSet);
+            data.AddRange(new byte[subCount - 1]);
+            return [.. data];
+        }
     }
 
     [Fact]

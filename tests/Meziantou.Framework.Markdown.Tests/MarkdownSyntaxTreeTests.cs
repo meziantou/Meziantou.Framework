@@ -1435,6 +1435,28 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void RepeatedTokensKeepTheirPositionsAndTrivia()
+    {
+        // The green tokens of the same kind and text are shared, in a tree and between trees, and the ones with trivia are not
+        const string Text = "```cs\ncode\n```\n\n  ```cs\n  code\n  ```\n\n**bold** and **bold**\n";
+
+        foreach (var tree in new[] { MarkdownSyntaxTree.ParseText(Text), MarkdownSyntaxTree.ParseText(Text) })
+        {
+            Assert.Equal(Text, tree.GetRoot().ToFullString());
+            var position = 0;
+            foreach (var token in tree.GetRoot().DescendantTokens())
+            {
+                Assert.Equal(position, token.FullSpan.Start);
+                Assert.Equal(Text.Substring(token.FullSpan.Start, token.FullSpan.Length), token.ToFullString());
+                position = token.FullSpan.End;
+            }
+
+            Assert.Equal(Text.Length, position);
+            Assert.Equal(["```", "```", "```", "```"], tree.GetRoot().DescendantTokens().Where(token => token.RawKind == (int)SyntaxKind.CodeFenceToken).Select(token => token.Text));
+        }
+    }
+
+    [Fact]
     public void FormatterReturnsTheTreeOfAFormattedDocument()
     {
         var text = "# Title\n\nSome text\non two lines.\n\n- a\n- b\n";

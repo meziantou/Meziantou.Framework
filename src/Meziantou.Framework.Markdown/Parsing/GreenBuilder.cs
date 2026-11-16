@@ -31,8 +31,16 @@ internal sealed class GreenBuilder
     // The children of the nodes being built: the children of a node are at the end, from where the node started
     private readonly GreenNodeStack _children = new();
 
-    // The tokens of two or three characters without trivia, such as \r\n and **, which the tree shares
-    private readonly Dictionary<(int Kind, int Length, long Characters), Green.SyntaxToken> _sharedTokens = [];
+    // The recent tokens of a thread, by a hash of their kind and text: a token of the same kind and text reuses the string of
+    // the cached one, and the cached token itself when it has no trivia and no value. Documents repeat many tokens, such as the
+    // fences and the info strings of the code blocks, the lines of code, and the delimiters. The cache is lossy, as the string
+    // table of Roslyn: a token replaces the one of the same hash, so that it costs a fixed array per thread, not an entry per
+    // distinct text.
+    private const int TokenCacheSize = 4096;
+    private const int MaximumCachedTokenLength = 256;
+
+    [ThreadStatic]
+    private static CachedToken[]? s_tokenCache;
 
     // The token before the one being built: where it starts and ends
     private bool _hasPrevious;
@@ -119,46 +127,51 @@ internal sealed class GreenBuilder
             var trailing = CreateTrivia(element.End, GetTriviaSplit(nextStart));
             index++;
 
-            // The short tokens without trivia, such as line endings, brackets and delimiters, are shared: green nodes do not
-            // know their position
+            // The tokens without trivia, such as line endings, brackets and delimiters, are shared: green nodes do not know their
+            // position
             var length = element.End - element.Start;
-            if (leading is null && trailing is null && element.Value == 0 && length is > 0 and <= 3)
+            var shareable = leading is null && trailing is null && element.Value == 0;
+            if (shareable && length == 1 && _text[element.Start] is var c && char.IsAscii(c))
             {
-                if (length == 1 && _text[element.Start] is var c && char.IsAscii(c))
+                var tokens = Volatile.Read(ref AsciiTokens[(int)element.Kind]);
+                if (tokens is null)
                 {
-                    var tokens = Volatile.Read(ref AsciiTokens[(int)element.Kind]);
-                    if (tokens is null)
-                    {
-                        tokens = new Green.SyntaxToken?[128];
-                        tokens = Interlocked.CompareExchange(ref AsciiTokens[(int)element.Kind], tokens, comparand: null) ?? tokens;
-                    }
-
-                    if (Volatile.Read(ref tokens[c]) is not { } token)
-                    {
-                        token = new Green.SyntaxToken((int)element.Kind, AsciiStrings[c], leadingTrivia: null, trailingTrivia: null, isMissing: false);
-                        token = Interlocked.CompareExchange(ref tokens[c], token, comparand: null) ?? token;
-                    }
-
-                    return token;
+                    tokens = new Green.SyntaxToken?[128];
+                    tokens = Interlocked.CompareExchange(ref AsciiTokens[(int)element.Kind], tokens, comparand: null) ?? tokens;
                 }
 
-                long characters = 0;
-                for (var i = element.Start; i < element.End; i++)
+                if (Volatile.Read(ref tokens[c]) is not { } token)
                 {
-                    characters = (characters << 16) | _text[i];
+                    token = new Green.SyntaxToken((int)element.Kind, AsciiStrings[c], leadingTrivia: null, trailingTrivia: null, isMissing: false);
+                    token = Interlocked.CompareExchange(ref tokens[c], token, comparand: null) ?? token;
                 }
 
-                var key = ((int)element.Kind, length, characters);
-                if (!_sharedTokens.TryGetValue(key, out var shared))
-                {
-                    shared = new Green.SyntaxToken((int)element.Kind, GetString(element.Start, element.End), leadingTrivia: null, trailingTrivia: null, isMissing: false);
-                    _sharedTokens.Add(key, shared);
-                }
-
-                return shared;
+                return token;
             }
 
-            var text = GetString(element.Start, element.End);
+            string text;
+            if (length is > 1 and <= MaximumCachedTokenLength)
+            {
+                var span = _text.AsSpan(element.Start, length);
+                ref var entry = ref GetCachedToken(element.Kind, span);
+                if (entry.Text is not { } cachedText || entry.Kind != element.Kind || !span.SequenceEqual(cachedText))
+                {
+                    cachedText = span.ToString();
+                    entry = new CachedToken(element.Kind, cachedText, Token: null);
+                }
+
+                if (shareable)
+                {
+                    return entry.Token ??= new Green.SyntaxToken((int)element.Kind, cachedText, leadingTrivia: null, trailingTrivia: null, isMissing: false);
+                }
+
+                text = cachedText;
+            }
+            else
+            {
+                text = GetString(element.Start, element.End);
+            }
+
             if (element.Value != 0)
             {
                 return new Green.SyntaxTokenWithValue<int>((int)element.Kind, text, element.Value, text, leading, trailing, isMissing: false);
@@ -178,6 +191,25 @@ internal sealed class GreenBuilder
         var node = new MarkdownNode(element.Kind, _children.From(first));
         _children.Truncate(first);
         return node;
+    }
+
+    private static ref CachedToken GetCachedToken(SyntaxKind kind, ReadOnlySpan<char> text)
+    {
+        // The hash reads a few characters, not the whole text: a collision only costs a miss, as the text is compared
+        var cache = s_tokenCache ??= new CachedToken[TokenCacheSize];
+        var hash = (uint)kind;
+        hash = (hash * 31) + (uint)text.Length;
+        hash = (hash * 31) + text[0];
+        hash = (hash * 31) + text[1];
+        hash = (hash * 31) + text[text.Length / 4];
+        hash = (hash * 31) + text[text.Length / 2];
+        hash = (hash * 31) + text[text.Length * 3 / 4];
+        hash = (hash * 31) + text[^1];
+        hash = (hash * 31) + text[^2];
+        hash ^= hash >> 15;
+        hash *= 0x2C1B3C6D;
+        hash ^= hash >> 12;
+        return ref cache[hash & (TokenCacheSize - 1)];
     }
 
     private string GetString(int start, int end)
@@ -269,4 +301,6 @@ internal sealed class GreenBuilder
 
         return strings;
     }
+
+    private record struct CachedToken(SyntaxKind Kind, string? Text, Green.SyntaxToken? Token);
 }

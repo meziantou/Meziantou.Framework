@@ -24,6 +24,7 @@ on:
           - bloomfilter
           - charts
           - codeowners
+          - compression
           - csv
           - dependency-scanning
           - diagrams
@@ -112,6 +113,7 @@ env:
       { "project": "Meziantou.Framework.BloomFilters.Fuzz",        "component": "bloomfilter",           "day": 6 },
       { "project": "Meziantou.Framework.Charts.Fuzz",              "component": "charts",                "day": 1 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
+      { "project": "Meziantou.Framework.Compression.Fuzz",         "component": "compression",           "day": 5 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz",  "component": "dependency-scanning",   "day": 0 },
       { "project": "Meziantou.Framework.Diagrams.Fuzz",            "component": "diagrams",              "day": 2 },

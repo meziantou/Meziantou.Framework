@@ -10,6 +10,17 @@ namespace Meziantou.Framework.Compression;
 /// </summary>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/RarArchiveTests.cs" ref:region="RarArchive_Read" ref:dedent="true">
+/// using var stream = File.OpenRead(path);
+/// using var archive = new RarArchive(stream);
+/// Assert.Equal(RarFormatVersion.Rar5, archive.FormatVersion);
+/// Assert.True(archive.IsSolid);
+/// foreach (var entry in archive.Entries)
+/// {
+///     using var content = entry.Open();
+///     using var buffer = new MemoryStream();
+///     content.CopyTo(buffer);
+///     Assert.Equal(entry.Length, buffer.Length);
+/// }
 /// </code>
 /// </example>
 public sealed class RarArchive : Archive

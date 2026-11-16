@@ -24,6 +24,24 @@ namespace Meziantou.Framework.Compression;
 /// The archive is read from the start of the stream. A new archive is written from the current position of the stream.
 /// </para>
 /// </remarks>
+/// <example>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/SevenZipArchiveTests.cs" ref:region="SevenZipArchive_Create" ref:dedent="true">
+/// using var stream = new MemoryStream();
+/// using (var archive = new SevenZipArchive(stream, SevenZipArchiveMode.Create, leaveOpen: true))
+/// {
+///     // Each entry is compressed as it is written, into the current solid folder
+///     var entry = archive.CreateEntry("docs/readme.txt");
+///     using var writer = new StreamWriter(entry.Open());
+///     writer.Write("Hello from 7z");
+/// }
+///
+/// stream.Position = 0;
+/// using (var archive = new SevenZipArchive(stream))
+/// {
+///     Assert.Equal("docs/readme.txt", archive.Entries[0].FullName);
+/// }
+/// </code>
+/// </example>
 public sealed class SevenZipArchive : Archive
 {
     private readonly Stream _stream;

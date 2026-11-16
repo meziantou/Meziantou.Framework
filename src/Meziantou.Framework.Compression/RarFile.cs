@@ -42,6 +42,8 @@ public static class RarFile
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/RarFileTests.cs" ref:region="RarFile_ExtractToDirectory" ref:dedent="true">
+    /// RarFile.ExtractToDirectory(archivePath, destination, overwriteFiles: true);
+    /// Assert.True(File.Exists(Path.Combine(destination, "sub/dir1/file1.txt")));
     /// </code>
     /// </example>
     public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles = false, ArchiveReaderOptions? options = null)

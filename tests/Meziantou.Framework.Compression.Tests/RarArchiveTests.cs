@@ -23,7 +23,7 @@ public sealed class RarArchiveTests
     }
 
     /// <summary>Gets whether the content of an entry cannot be read: a compression that is not supported.</summary>
-    internal static bool IsUnsupported(string fileName, ExpectedEntry entry)
+    internal static bool IsUnsupported(ExpectedEntry entry)
     {
         return entry.Compression?.Contains("(v15) -m", StringComparison.Ordinal) is true && !entry.Compression.Contains("-m0", StringComparison.Ordinal);
     }
@@ -72,7 +72,7 @@ public sealed class RarArchiveTests
 
                 var entry = archive.GetEntry(expectedEntry.Name);
                 Assert.NotNull(entry);
-                if (IsUnsupported(fileName, expectedEntry))
+                if (IsUnsupported(expectedEntry))
                 {
                     Assert.Throws<NotSupportedException>(() => ComputeSha256(entry));
                     continue;
@@ -99,7 +99,7 @@ public sealed class RarArchiveTests
         using var archive = RarFile.OpenRead(GetPath(fileName), new ArchiveReaderOptions { Password = Password });
         foreach (var expectedEntry in expected.Entries.Reverse())
         {
-            if (expectedEntry.Sha256 is null || IsUnsupported(fileName, expectedEntry) || GetPassword(fileName, expectedEntry.Name) is not Password)
+            if (expectedEntry.Sha256 is null || IsUnsupported(expectedEntry) || GetPassword(fileName, expectedEntry.Name) is not Password)
                 continue;
 
             var entry = archive.GetEntry(expectedEntry.Name);

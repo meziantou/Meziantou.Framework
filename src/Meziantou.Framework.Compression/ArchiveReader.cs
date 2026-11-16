@@ -7,6 +7,25 @@ namespace Meziantou.Framework.Compression;
 /// response, a pipe). The content of the current entry can be read until the reader moves to the next entry; the content
 /// that is not read is skipped.
 /// </summary>
+/// <example>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/ArchiveFileTests.cs" ref:region="ArchiveReader_ForwardOnly" ref:dedent="true">
+/// // The stream does not need to be seekable: a network response, a pipe, ...
+/// using var input = File.OpenRead(path);
+/// using var archiveReader = ArchiveReader.Create(input);
+/// Assert.Equal(ArchiveFormat.Tar, archiveReader.Format);
+/// Assert.Equal(CompressionFormat.GZip, archiveReader.CompressionFormat);
+/// while (archiveReader.MoveToNextEntry())
+/// {
+///     var entry = archiveReader.Entry!;
+///     if (entry.FullName.EndsWith(".txt", StringComparison.Ordinal))
+///     {
+///         // The content can be read until the reader moves to the next entry
+///         using var content = archiveReader.OpenEntryStream();
+///         Assert.Equal(entry.Length, ReadAll(content).Length);
+///     }
+/// }
+/// </code>
+/// </example>
 public abstract partial class ArchiveReader : IDisposable, IAsyncDisposable
 {
     private ArchiveEntry? _entry;

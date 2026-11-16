@@ -25,6 +25,25 @@ namespace Meziantou.Framework.Compression;
 /// </remarks>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/ReadOnlyZipArchiveTests.cs" ref:region="ReadOnlyZipArchive_Read" ref:dedent="true">
+/// // A zip archive written by System.IO.Compression.ZipArchive
+/// using var stream = new MemoryStream();
+/// using (var writer = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+/// {
+///     using var entryStream = writer.CreateEntry("docs/readme.txt").Open();
+///     entryStream.Write("Hello, world!"u8);
+/// }
+///
+/// stream.Position = 0;
+/// using var archive = new ReadOnlyZipArchive(stream);
+/// Assert.HasCount(1, archive.Entries);
+///
+/// var entry = archive.GetEntry("docs/readme.txt")!;
+/// Assert.Equal(ZipCompressionMethod.Deflate, entry.CompressionMethod);
+/// Assert.Equal(13L, entry.Length);
+///
+/// // The stream checks the length and the CRC-32 of the content
+/// using var reader = new StreamReader(entry.Open());
+/// Assert.Equal("Hello, world!", reader.ReadToEnd());
 /// </code>
 /// </example>
 public sealed class ReadOnlyZipArchive : Archive

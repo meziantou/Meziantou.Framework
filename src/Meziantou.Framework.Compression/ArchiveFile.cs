@@ -8,6 +8,29 @@ namespace Meziantou.Framework.Compression;
 /// Opens an archive whatever its format (zip, 7z, RAR, tar, and tar compressed with gzip, bzip2, XZ, LZMA, lzip, Zstandard
 /// or Unix compress), detected from its content.
 /// </summary>
+/// <example>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/ArchiveFileTests.cs" ref:region="ArchiveFile_Open" ref:dedent="true">
+/// // The format is detected from the content: zip, 7z, RAR, or tar compressed with gzip, bzip2, XZ, ...
+/// using (var archive = ArchiveFile.Open(path))
+/// {
+///     foreach (var entry in archive.Entries)
+///     {
+///         if (entry.IsDirectory)
+///             continue;
+///
+///         using var stream = entry.Open();
+///         using var reader = new StreamReader(stream);
+///         var text = reader.ReadToEnd();
+///         Assert.NotNull(text);
+///     }
+///
+///     var hello = archive.GetEntry("hello.txt");
+///     Assert.Equal(16, hello?.Length);
+/// }
+///
+/// ArchiveFile.ExtractToDirectory(path, destination);
+/// </code>
+/// </example>
 public static class ArchiveFile
 {
     /// <summary>Detects the format of the data of a seekable stream, from its current position, and restores the position.</summary>

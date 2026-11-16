@@ -365,6 +365,26 @@ public sealed class BZip2StreamTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new BZip2CompressionOptions { BlockSize = 10 });
     }
 
+    [Fact]
+    public void Documentation_Example()
+    {
+        #region BZip2Stream_RoundTrip
+        var data = "Hello, bzip2! Hello, bzip2!"u8.ToArray();
+
+        using var compressed = new MemoryStream();
+        using (var bzip2 = new BZip2Stream(compressed, new BZip2CompressionOptions { BlockSize = 9 }, leaveOpen: true))
+        {
+            bzip2.Write(data);
+        }
+
+        compressed.Position = 0;
+        using var decompress = new BZip2Stream(compressed, CompressionMode.Decompress);
+        using var result = new MemoryStream();
+        decompress.CopyTo(result);
+        Assert.Equal(data, result.ToArray());
+        #endregion
+    }
+
     /// <summary>A deterministic generator of test data (xorshift64*), the same on every platform and version of .NET.</summary>
     internal sealed class PseudoRandom(int seed)
     {

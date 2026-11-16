@@ -9,8 +9,9 @@ public sealed class ArchiveReaderOptions
     public string? Password { get; set; }
 
     /// <summary>
-    /// Gets or sets the encoding of the entry names that the archive does not mark as UTF-8 (the code page 437 names of zip,
-    /// the OEM names of RAR 2.9). <see langword="null"/> uses UTF-8 where the format allows it, and Latin-1 otherwise.
+    /// Gets or sets the encoding of the entry names and comments that the archive does not store as Unicode (the names of
+    /// zip that are not marked as UTF-8, the OEM names of RAR 2.9). <see langword="null"/> decodes them with the code page
+    /// 437 in zip, as the zip tools write them, and in RAR as UTF-8 when they are valid UTF-8, or Latin-1 otherwise.
     /// </summary>
     public Encoding? EntryNameEncoding { get; set; }
 

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Compression.Fuzz/Meziantou.Framework.Compression.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Compression.InteropTests/Meziantou.Framework.Compression.InteropTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Compression.Tests/Meziantou.Framework.Compression.Tests.csproj" />
+  </Folder>
+</Solution>

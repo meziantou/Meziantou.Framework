@@ -19,6 +19,23 @@ namespace Meziantou.Framework.Compression;
 /// the data written so far can be decompressed.
 /// </para>
 /// </remarks>
+/// <example>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/XzStreamTests.cs" ref:region="XzStream_RoundTrip" ref:dedent="true">
+/// var data = "Hello, XZ! Hello, XZ! Hello, XZ!"u8.ToArray();
+///
+/// using var compressed = new MemoryStream();
+/// using (var xz = new XzStream(compressed, new XzCompressionOptions { Preset = 9, Check = XzCheck.Sha256 }, leaveOpen: true))
+/// {
+///     xz.Write(data);
+/// }
+///
+/// compressed.Position = 0;
+/// using var decompress = new XzStream(compressed, CompressionMode.Decompress);
+/// using var result = new MemoryStream();
+/// decompress.CopyTo(result);
+/// Assert.Equal(data, result.ToArray());
+/// </code>
+/// </example>
 public sealed class XzStream : Stream
 {
     private readonly CodecStreamCore _core;

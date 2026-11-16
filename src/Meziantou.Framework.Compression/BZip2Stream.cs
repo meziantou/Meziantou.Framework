@@ -10,6 +10,23 @@ namespace Meziantou.Framework.Compression;
 /// block and of each stream, and throws an <see cref="InvalidDataException"/> for invalid data. The compression produces
 /// the data of <c>bzip2</c>, which ends when the stream is disposed.
 /// </summary>
+/// <example>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/BZip2StreamTests.cs" ref:region="BZip2Stream_RoundTrip" ref:dedent="true">
+/// var data = "Hello, bzip2! Hello, bzip2!"u8.ToArray();
+///
+/// using var compressed = new MemoryStream();
+/// using (var bzip2 = new BZip2Stream(compressed, new BZip2CompressionOptions { BlockSize = 9 }, leaveOpen: true))
+/// {
+///     bzip2.Write(data);
+/// }
+///
+/// compressed.Position = 0;
+/// using var decompress = new BZip2Stream(compressed, CompressionMode.Decompress);
+/// using var result = new MemoryStream();
+/// decompress.CopyTo(result);
+/// Assert.Equal(data, result.ToArray());
+/// </code>
+/// </example>
 public sealed class BZip2Stream : Stream
 {
     [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The inner stream disposes it")]

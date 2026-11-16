@@ -31,6 +31,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.CodeDom'">https://meziantou.github.io/Meziantou.Framework/codedom/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.CodeOwners'">https://meziantou.github.io/Meziantou.Framework/codeowners/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.CommandLine'">https://meziantou.github.io/Meziantou.Framework/commandline/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Compression'">https://meziantou.github.io/Meziantou.Framework/compression/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Csv'">https://meziantou.github.io/Meziantou.Framework/csv/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DependencyScanning'">https://meziantou.github.io/Meziantou.Framework/dependencyscanning/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DependencyScanning.Tool'">https://meziantou.github.io/Meziantou.Framework/dependencyscanning/</PackageProjectUrl>

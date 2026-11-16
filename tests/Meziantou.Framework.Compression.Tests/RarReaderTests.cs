@@ -22,7 +22,7 @@ public sealed class RarReaderTests
             if (expectedEntry.Sha256 is null || GetPassword(fileName, expectedEntry.Name) is not Password || expectedEntry.Type is "Hard link" or "File reference")
                 continue;
 
-            if (IsUnsupported(fileName, expectedEntry))
+            if (IsUnsupported(expectedEntry))
             {
                 Assert.Throws<NotSupportedException>(() => ComputeSha256(entry));
                 continue;
@@ -46,7 +46,7 @@ public sealed class RarReaderTests
         while (reader.MoveToNextEntry())
         {
             var expectedEntry = expected.Entries[index++];
-            if (index % 2 is 1 || expectedEntry.Sha256 is null || IsUnsupported(fileName, expectedEntry) || GetPassword(fileName, expectedEntry.Name) is not Password || expectedEntry.Type is "Hard link" or "File reference")
+            if (index % 2 is 1 || expectedEntry.Sha256 is null || IsUnsupported(expectedEntry) || GetPassword(fileName, expectedEntry.Name) is not Password || expectedEntry.Type is "Hard link" or "File reference")
                 continue;
 
             Assert.Equal(expectedEntry.Sha256, ComputeSha256(reader.Entry!), $"Content of {expectedEntry.Name}");

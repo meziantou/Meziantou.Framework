@@ -75,6 +75,20 @@ public static class SevenZipFile
     /// <param name="destinationArchiveFileName">The path of the archive to create.</param>
     /// <param name="options">The options to write the archive.</param>
     /// <param name="includeBaseDirectory"><see langword="true"/> to include the name of the directory at the root of the archive.</param>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Compression.Tests/SevenZipFileTests.cs" ref:region="SevenZipFile_CreateFromDirectory" ref:dedent="true">
+    /// var options = new SevenZipCompressionOptions
+    /// {
+    ///     Method = SevenZipCompressionMethod.Lzma2,
+    ///     Level = 9,
+    /// };
+    ///
+    /// SevenZipFile.CreateFromDirectory(sourceDirectory, archivePath, options);
+    ///
+    /// using var archive = SevenZipFile.OpenRead(archivePath);
+    /// Assert.Equal("file.txt", archive.Entries[0].FullName);
+    /// </code>
+    /// </example>
     public static void CreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName, SevenZipCompressionOptions? options = null, bool includeBaseDirectory = false)
     {
         ArgumentNullException.ThrowIfNull(sourceDirectoryName);

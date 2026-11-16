@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
 /// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the OpenEXR encoder (its tiles, levels and compressions), the image data of PNG files (inflation and
-/// reconstruction), the lossy compression of its GIF encoder, the separate planes of its TIFF encoder, and its processing operations that read pixels or points
+/// reconstruction), the lossy compression of its GIF encoder, the separate planes of its TIFF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
 /// homography estimation and resizing; the merging of the pieces of strokes; the optimal line breaking of text layouts;
 /// and the options of the WebP encoder that change its pixels or its output (bit-depth dithering, sharp YUV,
@@ -47,6 +47,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
         new("imaging-tiff-planes", TiffPlanesTarget) { Seeds = GetTiffPlanesSeeds, Dictionary = Tokens },
+        new("imaging-jpeg2000-encoder", Jpeg2000EncoderTarget) { Seeds = GetJpeg2000EncoderSeeds, Dictionary = Tokens },
         new("imaging-webp-encoder", WebPEncoderTarget) { Seeds = GetWebPEncoderSeeds, Dictionary = Tokens },
     ];
 

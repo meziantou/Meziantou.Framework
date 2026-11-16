@@ -261,8 +261,23 @@ public sealed partial class FaultInjectionTests
 
                 return image;
             case "jp2":
-                // The whole encoder runs for every code-block: transformation, block coder, packet headers
-                encoder = new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip };
+            case "jp2-structured":
+                // The whole encoder runs for every code-block: transformation, block coder, packet headers; the structured
+                // output adds the rate control of two layers, precincts in a position progression, tile-parts and the TLM
+                // and PLT marker segments, coded by the high-throughput block coder with its refinement passes
+                encoder = encoderName is "jp2"
+                    ? new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip }
+                    : new Jpeg2000Encoder
+                    {
+                        MetadataHandling = MetadataHandling.Strip,
+                        BlockCoder = Jpeg2000BlockCoder.HighThroughput,
+                        PrecinctSizes = [new Size(32, 32), new Size(16, 16)],
+                        ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl,
+                        TilePartDivision = Jpeg2000TilePartDivision.Resolution,
+                        WriteTilePartLengths = true,
+                        WritePacketLengths = true,
+                        QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(1), Jpeg2000QualityLayer.Complete],
+                    };
                 if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
                     return image;
 

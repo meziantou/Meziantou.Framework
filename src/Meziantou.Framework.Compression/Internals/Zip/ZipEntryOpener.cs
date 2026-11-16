@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Meziantou.Framework.Compression.Internals.Deflate64;
+using Meziantou.Framework.Compression.Internals.Ppmd;
 using Meziantou.Framework.Compression.Internals.ZipLegacy;
 
 namespace Meziantou.Framework.Compression.Internals.Zip;
@@ -33,7 +34,7 @@ internal static class ZipEntryOpener
     /// <summary>Gets a value indicating whether a compression method is supported.</summary>
     public static bool IsSupported(ushort method) => (ZipCompressionMethod)method switch
     {
-        ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64 or ZipCompressionMethod.BZip2 => true,
+        ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64 or ZipCompressionMethod.BZip2 or ZipCompressionMethod.Ppmd => true,
         ZipCompressionMethod.Shrink or ZipCompressionMethod.Reduce1 or ZipCompressionMethod.Reduce2 or ZipCompressionMethod.Reduce3 or ZipCompressionMethod.Reduce4 or ZipCompressionMethod.Implode => true,
 #if NET11_0_OR_GREATER
         ZipCompressionMethod.Zstandard => true,
@@ -90,6 +91,27 @@ internal static class ZipEntryOpener
 #pragma warning restore CA2000
     }
 
+    /// <summary>
+    /// PPMd version I, revision 1 (method 98): 2 little-endian bytes of parameters (the order minus 1 in bits 0-3, the memory
+    /// size in MiB minus 1 in bits 4-11, the restore method in bits 12-15), then the PPMd8 data. Without a known length, the
+    /// decoder reads up to the end marker.
+    /// </summary>
+    private static Ppmd8DecoderStream CreatePpmdDecoder(ZipEntryInfo info, Stream input, long uncompressedSize, ArchiveReaderOptions options)
+    {
+        Span<byte> parameters = stackalloc byte[2];
+        if (input.ReadAtLeast(parameters, 2, throwOnEndOfStream: false) != 2)
+            throw new InvalidDataException($"The PPMd parameters of the zip entry '{info.FullName}' are truncated.");
+
+        var value = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(parameters);
+        var order = (value & 0xF) + 1;
+        var memorySize = (uint)(((value >> 4) & 0xFF) + 1) << 20;
+        var restoreMethod = value >> 12;
+        if (order < 2)
+            throw new InvalidDataException($"The PPMd order of the zip entry '{info.FullName}' is invalid.");
+
+        return new Ppmd8DecoderStream(input, order, memorySize, restoreMethod, uncompressedSize, options.MaxMemoryUsage, leaveOpen: false);
+    }
+
     /// <summary>The legacy methods do not mark the end of their data: they need the length of the content.</summary>
     private static long GetKnownLength(ZipEntryInfo info, long uncompressedSize)
     {
@@ -106,9 +128,9 @@ internal static class ZipEntryOpener
 
     private static Stream CreateDecoder(ZipEntryInfo info, Stream input, long uncompressedSize, ArchiveReaderOptions options)
     {
-        _ = options;
         return (ZipCompressionMethod)info.Method switch
         {
+            ZipCompressionMethod.Ppmd => CreatePpmdDecoder(info, input, uncompressedSize, options),
             ZipCompressionMethod.Stored => input,
             ZipCompressionMethod.Deflate => new DeflateStream(input, CompressionMode.Decompress, leaveOpen: false),
             ZipCompressionMethod.Deflate64 => new Deflate64DecoderStream(input, deflate64: true, leaveOpen: false),

@@ -110,7 +110,7 @@ internal static class ZipTestData
         if (fileName is "zstd.zip")
             return true;
 #endif
-        return fileName is "lzma.zip" or "lzma-eos-python.zip" or "ppmd.zip" or "xz.zip";
+        return fileName is "lzma.zip" or "lzma-eos-python.zip" or "xz.zip";
     }
 
     public static string GetPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", "Zip", fileName);

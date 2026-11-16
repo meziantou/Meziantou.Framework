@@ -737,6 +737,7 @@
     <Project Path="tools/Meziantou.Framework.WebPlatform.ChromiumDiff/Meziantou.Framework.WebPlatform.ChromiumDiff.csproj" />
     <Project Path="tools/Meziantou.Framework.WebPlatform.SpecGen/Meziantou.Framework.WebPlatform.SpecGen.csproj" />
     <Project Path="tools/Meziantou.Framework.WebPlatform.SpecUpdate/Meziantou.Framework.WebPlatform.SpecUpdate.csproj" />
+    <Project Path="tools/Meziantou.Framework.Yaml.TestSuite.Generator/Meziantou.Framework.Yaml.TestSuite.Generator.csproj" />
   </Folder>
   <Folder Name="/fuzz/">
     <Project Path="fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />

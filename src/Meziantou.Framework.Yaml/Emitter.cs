@@ -321,8 +321,9 @@ public partial class Emitter : IEmitter
 
         if (value.Length == 0)
         {
+            // SelectScalarStyle decides where an empty plain scalar can be written: it depends on the position of the node
             _scalarData.IsMultiline = false;
-            _scalarData.IsFlowPlainAllowed = false;
+            _scalarData.IsFlowPlainAllowed = true;
             _scalarData.IsBlockPlainAllowed = true;
             _scalarData.IsSingleQuotedAllowed = true;
             _scalarData.IsBlockAllowed = false;
@@ -1429,7 +1430,8 @@ public partial class Emitter : IEmitter
             }
         }
 
-        _isWhitespace = false;
+        // An empty scalar only wrote the separating space: the next indicator must not add another one ("? : value")
+        _isWhitespace = value.Length == 0;
         _isIndentation = false;
 
         if (_isRootContext)
@@ -1487,7 +1489,7 @@ public partial class Emitter : IEmitter
             {
                 style = ScalarStyle.SingleQuoted;
             }
-            if (string.IsNullOrEmpty(_scalarData.Value) && (_flowLevel != 0 || _isSimpleKeyContext))
+            if (string.IsNullOrEmpty(_scalarData.Value) && !IsEmptyPlainScalarAllowed())
             {
                 style = ScalarStyle.SingleQuoted;
             }
@@ -1529,6 +1531,32 @@ public partial class Emitter : IEmitter
         }
 
         _scalarData.Style = style;
+    }
+
+    /// <summary>
+    /// Determines whether an empty scalar can be written as an empty plain scalar at the current position. An empty plain
+    /// scalar is a null, while a quoted one is an empty string, so it stays plain wherever YAML allows an empty node: in
+    /// block context, as the key or the value of a flow mapping, and as a flow sequence entry that has an anchor or a tag.
+    /// An empty implicit key is written as an explicit key instead (see <see cref="CheckSimpleKey"/>).
+    /// </summary>
+    private bool IsEmptyPlainScalarAllowed()
+    {
+        if (_isSimpleKeyContext)
+            return false;
+
+        return _flowLevel == 0 || _isMappingContext || _anchorData.Anchor is not null || _tagData.Handle is not null || _tagData.Suffix is not null;
+    }
+
+    /// <summary>Determines whether the scalar is empty and is written as a plain scalar (a null).</summary>
+    private bool IsEmptyPlainScalar(Scalar scalar)
+    {
+        if (scalar.Value.Length != 0 || _isCanonical || _emitKeyQuoted)
+            return false;
+
+        if (scalar.Style is not (ScalarStyle.Any or ScalarStyle.Plain))
+            return false;
+
+        return scalar.IsPlainImplicit || _tagData.Handle is not null || _tagData.Suffix is not null;
     }
 
     /// <summary>Expect ALIAS.</summary>
@@ -1697,6 +1725,13 @@ public partial class Emitter : IEmitter
 
             case EventType.YAML_SCALAR_EVENT:
                 if (_scalarData.IsMultiline)
+                {
+                    return false;
+                }
+
+                // An empty implicit key would have to be quoted to be visible, which turns the null into an empty
+                // string: write it as an explicit key ("? ") instead.
+                if (IsEmptyPlainScalar((Scalar)_events.Peek()))
                 {
                     return false;
                 }

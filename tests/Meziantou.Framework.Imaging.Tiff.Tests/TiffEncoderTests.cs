@@ -1051,6 +1051,390 @@ public sealed class TiffEncoderTests
     }
 
     [Fact]
+    public void SeparatePlanesStoreTheStripsOfEachPlaneInTurn()
+    {
+        // TIFF 6.0, PlanarConfiguration 2: the strips of the red samples, then the green, blue and alpha ones, each strip of
+        // RowsPerStrip rows of one sample per pixel
+        using var source = CreatePattern(37, 23);
+        var file = Save(source, new TiffEncoder { Compression = TiffCompression.None, SeparatePlanes = true, RowsPerStrip = 5 });
+        var tags = ReadTags(file);
+        Assert.Equal([2UL], tags[284]);
+        Assert.Equal([4UL], tags[277]);
+        Assert.Equal([8UL, 8, 8, 8], tags[258]);
+        Assert.Equal([5UL], tags[278]);
+        Assert.HasCount(20, tags[273]);
+        Assert.HasCount(20, tags[279]);
+
+        var pixels = GetPixelBytes(source);
+        for (var plane = 0; plane < 4; plane++)
+        {
+            for (var strip = 0; strip < 5; strip++)
+            {
+                var rows = Math.Min(5, 23 - (strip * 5));
+                var expected = new byte[rows * 37];
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    expected[i] = pixels[(((((strip * 5) + (i / 37)) * 37) + (i % 37)) * 4) + plane];
+                }
+
+                Assert.Equal(expected, ReadStrip(file, (plane * 5) + strip));
+            }
+        }
+
+        // The directory of an uncompressed page precedes its strips: the header points to the directory that follows it,
+        // and the strips follow each other up to the end of the file
+        Assert.Equal(8, BinaryPrimitives.ReadInt32LittleEndian(file.AsSpan(4)));
+        for (var i = 1; i < 20; i++)
+        {
+            Assert.Equal(tags[273][i - 1] + tags[279][i - 1], tags[273][i]);
+        }
+
+        Assert.Equal((ulong)file.Length, tags[273][19] + tags[279][19]);
+    }
+
+    [Fact]
+    public void SeparatePlanesPredictEachPlaneOnItsOwn()
+    {
+        // Horizontal differencing: each sample of a row of a plane minus the sample on its left, modulo 2^8
+        using (var rgb = Image.ImportPixelData<Rgb24>([new Rgb24(1, 2, 3), new Rgb24(5, 1, 250)], 2, 1))
+        {
+            var file = Save(rgb, new TiffEncoder { Compression = TiffCompression.Lzw, Predictor = TiffPredictor.HorizontalDifferencing, SeparatePlanes = true });
+            Assert.Equal([2UL], ReadTags(file)[317]);
+            Assert.Equal(TiffReferenceCodecs.EncodeLzw([1, 4]), ReadStrip(file, 0));
+            Assert.Equal(TiffReferenceCodecs.EncodeLzw([2, 255]), ReadStrip(file, 1));
+            Assert.Equal(TiffReferenceCodecs.EncodeLzw([3, 247]), ReadStrip(file, 2));
+        }
+
+        // 16-bit samples in tiles: the rows of a tile of a plane start their own differences, over the padded width
+        var samples = new Rgb48[20 * 17];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = new Rgb48((ushort)(i * 977), (ushort)(65535 - (i * 13)), (ushort)(i * i * 31));
+        }
+
+        using var deep = Image.ImportPixelData<Rgb48>(samples, 20, 17);
+        var tiled = Save(deep, new TiffEncoder { Predictor = TiffPredictor.HorizontalDifferencing, SeparatePlanes = true, TileWidth = 16, TileHeight = 16 });
+        var tags = ReadTags(tiled);
+        Assert.Equal([2UL], tags[284]);
+        Assert.HasCount(12, tags[324]);
+
+        // The top-right tile of the blue plane: four columns of the page, then twelve of zero samples
+        var tile = Inflate(tiled.AsSpan((int)tags[324][9], (int)tags[325][9]).ToArray());
+        Assert.HasCount(16 * 16 * 2, tile);
+        for (var y = 0; y < 16; y++)
+        {
+            var previous = 0;
+            for (var x = 0; x < 16; x++)
+            {
+                var value = y < 17 && x < 4 ? samples[(y * 20) + 16 + x].B : 0;
+                Assert.Equal((ushort)(value - previous), BinaryPrimitives.ReadUInt16LittleEndian(tile.AsSpan(((y * 16) + x) * 2)));
+                previous = value;
+            }
+        }
+
+        // The floating-point predictor of TIFF Technical Note 3, with one sample per pixel
+        using var floats = CreateFloatingPointPattern(9, 4, gray: false, opaque: false);
+        var floatFile = Save(floats, new TiffEncoder { SeparatePlanes = true });
+        Assert.Equal([3UL], ReadTags(floatFile)[317]);
+        var pixels = new RgbaFloat[9 * 4];
+        floats.Frames[0].CopyPixelDataTo(pixels);
+        for (var plane = 0; plane < 4; plane++)
+        {
+            var strip = Inflate(ReadStrip(floatFile, plane));
+            Assert.HasCount(4 * 9 * sizeof(float), strip);
+            for (var y = 0; y < 4; y++)
+            {
+                var row = TiffReferenceCodecs.UndoFloatingPointPredictor(strip.AsSpan(y * 9 * sizeof(float), 9 * sizeof(float)), 1, sizeof(float), bigEndian: false);
+                for (var x = 0; x < 9; x++)
+                {
+                    var pixel = pixels[(y * 9) + x];
+                    var expected = plane switch
+                    {
+                        0 => pixel.R,
+                        1 => pixel.G,
+                        2 => pixel.B,
+                        _ => pixel.A,
+                    };
+
+                    Assert.Equal(BitConverter.SingleToUInt32Bits(expected), BinaryPrimitives.ReadUInt32LittleEndian(row.AsSpan(x * sizeof(float))));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void APageOfOneSampleIsTheSameFileInSeparatePlanes()
+    {
+        // A single plane: TIFF 6.0 makes PlanarConfiguration irrelevant, and the page is written as chunky
+        using var source = CreatePattern(37, 23);
+        using var gray = source.CloneAs<Gray8>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+        var chunky = Save(gray, new TiffEncoder { RowsPerStrip = 5 });
+        Assert.Equal([1UL], ReadTags(chunky)[284]);
+        Assert.Equal(chunky, Save(gray, new TiffEncoder { RowsPerStrip = 5, SeparatePlanes = true }));
+
+        using var black = Image.ImportPixelData<Gray8>([new Gray8(0), new Gray8(255)], 2, 1);
+        foreach (var layout in new[] { TiffPixelLayout.Bilevel, TiffPixelLayout.Indexed })
+        {
+            Assert.Equal(Save(black, new TiffEncoder { PixelLayout = layout }), Save(black, new TiffEncoder { PixelLayout = layout, SeparatePlanes = true }));
+        }
+    }
+
+    public static TheoryData<string, TiffCompression, bool> SeparatePlaneCases()
+    {
+        var data = new TheoryData<string, TiffCompression, bool>();
+        string[] pixels = ["gray8", "gray16", "la16", "la32", "rgb24", "rgba32", "bgra32", "rgb48", "rgba64", "cmyk32", "cmyk64", "float1", "float2", "float3", "float4", "indexed", "bilevel"];
+        foreach (var name in pixels)
+        {
+            TiffCompression[] compressions = name == "bilevel"
+                ? [TiffCompression.None, TiffCompression.Deflate, TiffCompression.PackBits, TiffCompression.CcittModifiedHuffman, TiffCompression.CcittGroup3, TiffCompression.CcittGroup4]
+                : [TiffCompression.None, TiffCompression.Deflate, TiffCompression.Lzw, TiffCompression.PackBits];
+            foreach (var compression in compressions)
+            {
+                foreach (var tiled in new[] { false, true })
+                {
+                    data.Add(name, compression, tiled);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(SeparatePlaneCases))]
+    public void SeparatePlanesStoreEveryLayoutExactly(string pixels, TiffCompression compression, bool tiled)
+    {
+        // Strips of 8 rows, or tiles of 16x32 pixels, the ones of the edges partial; the byte order and the offset size
+        // change from a case to the next
+        using var image = CreatePlanarImage(pixels, 45, 37);
+        var variant = (pixels.Length + (int)compression + (tiled ? 1 : 0)) % 3;
+        var predictor = compression is TiffCompression.Deflate or TiffCompression.Lzw && pixels is not ("indexed" or "bilevel") && variant != 2
+            ? TiffPredictor.HorizontalDifferencing
+            : TiffPredictor.None;
+        var chunky = new TiffEncoder
+        {
+            Compression = compression,
+            Predictor = predictor,
+            PixelLayout = pixels switch
+            {
+                "indexed" => TiffPixelLayout.Indexed,
+                "bilevel" => TiffPixelLayout.Bilevel,
+                _ => TiffPixelLayout.Auto,
+            },
+            BigEndian = variant == 1,
+            BigTiff = variant == 2,
+            RowsPerStrip = 8,
+            TileWidth = tiled ? 16 : 0,
+            TileHeight = tiled ? 32 : 0,
+        };
+
+        var planar = new TiffEncoder
+        {
+            Compression = chunky.Compression,
+            Predictor = chunky.Predictor,
+            PixelLayout = chunky.PixelLayout,
+            BigEndian = chunky.BigEndian,
+            BigTiff = chunky.BigTiff,
+            RowsPerStrip = chunky.RowsPerStrip,
+            TileWidth = chunky.TileWidth,
+            TileHeight = chunky.TileHeight,
+            SeparatePlanes = true,
+        };
+
+        var file = Save(image, planar);
+        var info = Image.Identify(file);
+        Assert.Equal(image.Size, info.Size);
+        using var expected = LoadPlanarImage(Save(image, chunky), pixels);
+        using var decoded = LoadPlanarImage(file, pixels);
+        Assert.Equal(expected.PixelFormat, decoded.PixelFormat);
+        Assert.Equal(GetPixelBytes(expected), GetPixelBytes(decoded));
+
+        // The layouts that follow the pixel format store it exactly
+        if (pixels is not ("indexed" or "bilevel"))
+        {
+            // A floating-point page of one or two samples decodes to GrayFloat or LaFloat
+            var isFloatingPoint = PixelFormats.IsFloatingPoint(image.PixelFormat);
+            using var original = pixels == "bgra32" ? image.CloneAs<Rgba32>() : isFloatingPoint ? image.CloneAs<RgbaFloat>() : image.Clone();
+            using var actual = isFloatingPoint ? decoded.CloneAs<RgbaFloat>() : decoded.Clone();
+            Assert.Equal(GetPixelBytes(original), GetPixelBytes(actual));
+        }
+
+        // The pages of a document are written the same way
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(image);
+        pages.Add(image);
+        using var stream = new MemoryStream();
+        pages.Save(stream, planar);
+        using var reloaded = ImageCollection.Load(stream.ToArray());
+        Assert.Equal(2, reloaded.Count);
+        using var second = pixels switch
+        {
+            "cmyk32" => reloaded[1].Decode<Cmyk32>(),
+            "cmyk64" => reloaded[1].Decode<Cmyk64>(),
+            _ => reloaded[1].Decode(),
+        };
+        Assert.Equal(GetPixelBytes(decoded), GetPixelBytes(second));
+    }
+
+    /// <summary>An image of <paramref name="width"/>x<paramref name="height"/> pixels of a layout of <see cref="SeparatePlaneCases"/>.</summary>
+    private static Image CreatePlanarImage(string pixels, int width, int height)
+    {
+        var opaque = new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) };
+        using var pattern = CreatePattern(width, height);
+        var colors = new Rgba32[width * height];
+        pattern.Frames[0].CopyPixelDataTo(colors);
+        using var deep = Image.ImportPixelData<Rgba64>([.. colors.Select(static (color, i) => new Rgba64((ushort)((color.R * 257) + (i % 251)), (ushort)(color.G * 251), (ushort)(color.B * 7), (ushort)((color.A * 257) - (i % 7))))], width, height);
+        return pixels switch
+        {
+            "gray8" => pattern.CloneAs<Gray8>(opaque),
+            "gray16" => deep.CloneAs<Gray16>(opaque),
+            "la16" => pattern.CloneAs<La16>(),
+            "la32" => deep.CloneAs<La32>(),
+            "rgb24" => pattern.CloneAs<Rgb24>(opaque),
+            "rgba32" => pattern.Clone(),
+            "bgra32" => pattern.CloneAs<Bgra32>(),
+            "rgb48" => deep.CloneAs<Rgb48>(opaque),
+            "rgba64" => deep.Clone(),
+            "cmyk32" => Image.ImportPixelData<Cmyk32>([.. colors.Select(static (color, i) => new Cmyk32(color.R, color.G, color.B, (byte)(i * 7)))], width, height),
+            "cmyk64" => Image.ImportPixelData<Cmyk64>([.. colors.Select(static (color, i) => new Cmyk64((ushort)(color.R * 251), (ushort)((color.G * 257) + (i % 13)), (ushort)(color.B * 3), (ushort)(i * i * 7)))], width, height),
+            "float1" or "float2" or "float3" or "float4" => CreateFloatingPointPattern(width, height, gray: pixels[^1] <= '2', opaque: (pixels[^1] - '0') % 2 == 1),
+            "indexed" => Image.ImportPixelData<Rgb24>([.. colors.Select(static color => new Rgb24((byte)(color.R & 0xE0), (byte)(color.G & 0xC0), (byte)(color.B & 0xE0)))], width, height),
+            _ => Image.ImportPixelData<Gray8>([.. colors.Select(static color => new Gray8(color.R >= 128 ? (byte)255 : (byte)0))], width, height),
+        };
+    }
+
+    /// <summary>Loads a file of <see cref="CreatePlanarImage"/>: the CMYK pages as CMYK pixels.</summary>
+    private static Image LoadPlanarImage(byte[] file, string pixels) => pixels switch
+    {
+        "cmyk32" => Image.Load<Cmyk32>(file),
+        "cmyk64" => Image.Load<Cmyk64>(file),
+        _ => Image.Load(file),
+    };
+
+    [Theory]
+    [InlineData(TiffCompression.Lzw, "rgba32", 0, 0, TiffPredictor.None)]
+    [InlineData(TiffCompression.Deflate, "rgba64-big-endian", 64, 48, TiffPredictor.HorizontalDifferencing)]
+    [InlineData(TiffCompression.Deflate, "float", 0, 0, TiffPredictor.None)]
+    public void PlanesCompressedByWorkersAreTheFileOfOneWorker(TiffCompression compression, string pixels, int tileWidth, int tileHeight, TiffPredictor predictor)
+    {
+        var encoder = new TiffEncoder
+        {
+            Compression = compression,
+            Predictor = predictor,
+            TileWidth = tileWidth,
+            TileHeight = tileHeight,
+            RowsPerStrip = 7,
+            BigEndian = pixels == "rgba64-big-endian",
+            SeparatePlanes = true,
+        };
+
+        var (expected, _) = SaveWithWorkers(pixels, encoder, workers: 1);
+        using (var image = CreateWorkerImage(pixels, ImageConfiguration.Default))
+        using (var decoded = Image.Load(expected))
+        using (var reference = Image.Load(Save(image, new TiffEncoder { Compression = compression, Predictor = predictor, BigEndian = encoder.BigEndian })))
+        {
+            Assert.Equal(GetPixelBytes(reference), GetPixelBytes(decoded));
+        }
+
+        foreach (var workers in new[] { 2, 3, 16 })
+        {
+            var (file, _) = SaveWithWorkers(pixels, encoder, workers);
+            Assert.Equal(expected, file);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false, 0)]
+    [InlineData(true, false, 16)]
+    [InlineData(false, true, 0)]
+    [InlineData(true, true, 32)]
+    public async Task AnUncompressedPageIsWrittenForwardOnly(bool separatePlanes, bool bigTiff, int tileSize)
+    {
+        // The directory of an uncompressed page precedes its strips, so a one-page document needs no seek and no patch
+        using var source = CreatePattern(37, 23);
+        var encoder = new TiffEncoder { Compression = TiffCompression.None, SeparatePlanes = separatePlanes, BigTiff = bigTiff, TileWidth = tileSize, TileHeight = tileSize, RowsPerStrip = 5 };
+        var expected = Save(source, encoder);
+        using (var stream = new TestOutputStream())
+        {
+            source.Save(stream, encoder);
+            Assert.Equal(expected, stream.ToArray());
+        }
+
+        await using (var stream = new TestOutputStream())
+        {
+            await source.SaveAsync(stream, encoder, XunitCancellationToken);
+            Assert.Equal(expected, stream.ToArray());
+        }
+
+        using (var decoded = Image.Load(expected))
+        {
+            TestImages.AssertSamePixels(source, (Image<Rgba32>)decoded);
+        }
+
+        // A document of one page too, but the directory of a second page is linked from the first one
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(source);
+        using (var stream = new TestOutputStream())
+        {
+            pages.Save(stream, encoder);
+            Assert.Equal(expected, stream.ToArray());
+        }
+
+        pages.Add(source);
+        using (var stream = new TestOutputStream())
+        {
+            Assert.Throws<ArgumentException>(() => pages.Save(stream, encoder));
+            Assert.Equal(0, stream.BytesWritten);
+        }
+
+        using var seekable = new MemoryStream();
+        pages.Save(seekable, encoder);
+        using var reloaded = ImageCollection.Load(seekable.ToArray());
+        using var second = reloaded[1].Decode();
+        TestImages.AssertSamePixels(source, (Image<Rgba32>)second);
+    }
+
+    [Theory]
+    [InlineData(TiffCompression.None)]
+    [InlineData(TiffCompression.Deflate)]
+    public void TheTablesOfManyBlocksAreChargedToTheLimit(TiffCompression compression)
+    {
+        // 32,768 strips of one row in four planes: the tables of their offsets and lengths, and their copies in the
+        // directory, take about 4 MB, which a limit of 2 MB rejects before they are allocated; the same page in chunky
+        // strips fits in it
+        var pixels = new Rgba32[32_768];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)i, (byte)(i >> 8), (byte)(i >> 16), 255);
+        }
+
+        var encoder = new TiffEncoder { Compression = compression, SeparatePlanes = true, RowsPerStrip = 1 };
+        using (var limited = Image.ImportPixelData<Rgba32>(pixels, 1, pixels.Length, configuration: new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 2L << 20 } }))
+        using (var stream = new MemoryStream())
+        {
+            Assert.Throws<ImageResourceLimitException>(() => limited.Save(stream, encoder));
+            limited.Save(stream, new TiffEncoder { Compression = compression, RowsPerStrip = 1 });
+        }
+
+        using var image = Image.ImportPixelData<Rgba32>(pixels, 1, pixels.Length, configuration: new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 64L << 20 } });
+        using var decoded = RoundTrip(image, encoder);
+        TestImages.AssertSamePixels(image, (Image<Rgba32>)decoded);
+    }
+
+    [Fact]
+    public void JpegCompressionCannotBeWrittenInSeparatePlanes()
+    {
+        using var source = Image.ImportPixelData<Rgb24>([new Rgb24(1, 2, 3), new Rgb24(4, 5, 6)], 2, 1);
+        using var stream = new MemoryStream();
+        Assert.Throws<ArgumentException>(() => source.Save(stream, new TiffEncoder { Compression = TiffCompression.Jpeg, SeparatePlanes = true }));
+
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(source);
+        Assert.Throws<ArgumentException>(() => pages.Save(stream, new TiffEncoder { Compression = TiffCompression.Jpeg, SeparatePlanes = true }));
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
     public void ADocumentUsesTheLayoutAndTheCompressionForEveryPage()
     {
         // Pages of other sizes and pixel formats, each with its own colors: a color map per page

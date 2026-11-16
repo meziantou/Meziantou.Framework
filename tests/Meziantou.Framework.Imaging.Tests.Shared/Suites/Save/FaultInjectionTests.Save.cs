@@ -82,10 +82,11 @@ public sealed partial class FaultInjectionTests
 
                 // Output failures at many positions of a non-seekable stream (a seekable stream for AVIF and HEIC image sequences,
                 // which write their moov box last, for compressed OpenEXR files, which patch the offsets of their chunks, and for
-                // DNG files, which patch the offset of their image file directory: they reject non-seekable output before writing
-                // anything). WebP animations, which patch their RIFF size, keep their whole output in memory for a non-seekable
-                // stream and write it at completion: the failures happen there
-                var patched = (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or DngEncoder;
+                // compressed TIFF files, which patch the pointer to their directory, and for DNG files, which patch the offset of
+                // their image file directory: they reject non-seekable output before writing anything). WebP animations, which
+                // patch their RIFF size, keep their whole output in memory for a non-seekable stream and write it at completion:
+                // the failures happen there
+                var patched = (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or TiffEncoder { Compression: not TiffCompression.None } or DngEncoder;
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();
@@ -114,7 +115,7 @@ public sealed partial class FaultInjectionTests
                 Assert.Equal(live, audit.LiveBytes);
 
                 // A writer faulted by an I/O failure stays faulted
-                var patchedWriter = (encoder is WebPEncoder or AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or DngEncoder;
+                var patchedWriter = (encoder is WebPEncoder or AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or TiffEncoder { Compression: not TiffCompression.None } or DngEncoder;
                 await using (var output = new TestOutputStream { FailAtPosition = 0, Seekable = patchedWriter, AllowPatching = patchedWriter })
                 using (var writer = CreateWriter(output, image, encoder))
                 {
@@ -297,6 +298,14 @@ public sealed partial class FaultInjectionTests
                     // The lossy coder: DCT blocks, Huffman coded AC symbols, zlib sections and the run-length coded alpha
                     _ => new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip, Compression = OpenExrCompression.Dwab },
                 };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
+                    return image;
+
+                image.Dispose();
+                return null;
+            case "tiff-planar":
+                // Separate planes: every block of every plane serialized, cut from the chunky rows, predicted and compressed
+                encoder = new TiffEncoder { MetadataHandling = MetadataHandling.Strip, SeparatePlanes = true, Predictor = TiffPredictor.HorizontalDifferencing, TileWidth = 16, TileHeight = 16 };
                 if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
                     return image;
 

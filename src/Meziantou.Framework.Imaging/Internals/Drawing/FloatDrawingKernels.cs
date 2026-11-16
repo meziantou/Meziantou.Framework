@@ -44,6 +44,18 @@ internal static class FloatDrawingKernels
 {
     private const double PaintMax = ushort.MaxValue;
 
+    private static readonly AsyncLocal<bool> TestForceGeneralValue = new();
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the current asynchronous flow composites every paint with the general loop of
+    /// <see cref="Composite{TPixel}"/>. Tests compare it with the loop of a solid color bit for bit.
+    /// </summary>
+    internal static bool TestForceGeneral
+    {
+        get => TestForceGeneralValue.Value;
+        set => TestForceGeneralValue.Value = value;
+    }
+
     /// <summary>Composites a paint over a run of pixels of a row of a floating-point frame.</summary>
     /// <typeparam name="TPixel">A floating-point pixel type.</typeparam>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
@@ -62,9 +74,15 @@ internal static class FloatDrawingKernels
         if (source.Curves is not null)
             throw new UnsupportedImageFeatureException("A floating-point image is not combined in the linear light of the tone curves of its ICC profile: label it as linear light (ColorTransferFunction.Linear), or draw in its encoded values.", ImageFormat.Unknown, "Linear light of floating-point pixels with an ICC profile");
 
-        var decode = isLinear ? CicpTransfer.GetDecode16(transfer) : default;
         var mode = source.Mode;
         var blend = source.Blend;
+        if (typeof(TPixel) == typeof(RgbaFloat) && !isLinear && mode == CompositeMode.SourceOver && blend == BlendMode.Normal && source.Colors.IsEmpty && source.FloatColors.IsEmpty && !TestForceGeneral)
+        {
+            CompositeSolidOver(unsafe(MemoryMarshal.Cast<TPixel, RgbaFloat>(pixels)), coverage, source.Color);
+            return;
+        }
+
+        var decode = isLinear ? CicpTransfer.GetDecode16(transfer) : default;
         var isInert = DrawingKernels.IsTransparentPaintInert(mode);
         var colors = source.Colors;
         var floatColors = source.FloatColors;
@@ -195,6 +213,58 @@ internal static class FloatDrawingKernels
             }
 
             Write(ref pixel, b[0], b[1], b[2], Math.Min(total, 1));
+        }
+    }
+
+    /// <summary>
+    /// Composites one color with <see cref="CompositeMode.SourceOver"/> and <see cref="BlendMode.Normal"/> over
+    /// <see cref="RgbaFloat"/> pixels in their encoded values: the operations of <see cref="Composite{TPixel}"/>, in the
+    /// same order, without what the other paints, operators and blend modes need.
+    /// </summary>
+    private static void CompositeSolidOver(Span<RgbaFloat> pixels, ReadOnlySpan<uint> coverage, DrawingColor color)
+    {
+        const double Full = CoverageRasterizer.FullCoverage;
+        var sourceAlpha = color.Alpha / PaintMax;
+        if (sourceAlpha == 0)
+            return;
+
+        var s0 = color.C0 / PaintMax;
+        var s1 = color.C1 / PaintMax;
+        var s2 = color.C2 / PaintMax;
+        var opaque = new RgbaFloat((float)s0, (float)s1, (float)s2, 1);
+        var destinationFactor = 1 - sourceAlpha;
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            var q = coverage[i];
+            if (q == 0)
+                continue;
+
+            ref var pixel = ref pixels[i];
+            if (q == CoverageRasterizer.FullCoverage && sourceAlpha == 1)
+            {
+                pixel = opaque;
+                continue;
+            }
+
+            double backdrop = pixel.A;
+            var covered = q / Full;
+            var sourceWeight = covered * sourceAlpha;
+            var destinationWeight = ((1 - covered) * backdrop) + (covered * destinationFactor * backdrop);
+            var total = sourceWeight + destinationWeight;
+            if (!(total > 0))
+            {
+                if (backdrop != 0)
+                {
+                    pixel = default;
+                }
+
+                continue;
+            }
+
+            var r = ((s0 * sourceWeight) + (pixel.R * destinationWeight)) / total;
+            var g = ((s1 * sourceWeight) + (pixel.G * destinationWeight)) / total;
+            var b = ((s2 * sourceWeight) + (pixel.B * destinationWeight)) / total;
+            pixel = new RgbaFloat((float)r, (float)g, (float)b, (float)Math.Min(total, 1));
         }
     }
 

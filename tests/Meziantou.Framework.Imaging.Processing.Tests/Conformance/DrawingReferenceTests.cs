@@ -390,11 +390,13 @@ public sealed class DrawingReferenceTests
     [Fact]
     public void TheEventsOfARowAreSortedByHeightThenBySlot()
     {
-        // Short runs (insertion sort), long ones (partitions), many equal heights, and orders that partition badly
+        // Short runs (insertion sort), long ones (partitions), many equal heights, and orders that partition badly. The
+        // heights of a row (equal or not) are sorted as packed integers, which -0 and the heights of the whole frame do not
+        // fit in
         var random = new Random(Seed);
         foreach (var count in new[] { 0, 1, 2, 3, 15, 16, 17, 31, 64, 200, 1000, 5000 })
         {
-            for (var pattern = 0; pattern < 5; pattern++)
+            for (var pattern = 0; pattern < 8; pattern++)
             {
                 var keys = new double[count];
                 var slots = Enumerable.Range(0, count).OrderBy(_ => random.Next()).ToArray();
@@ -406,9 +408,14 @@ public sealed class DrawingReferenceTests
                         1 => random.Next(4) / 4.0,
                         2 => i / (double)Math.Max(count, 1),
                         3 => (count - i) / (double)Math.Max(count, 1),
-                        _ => i % 2 == 0 ? i / (double)Math.Max(count, 1) : 1 - (i / (double)Math.Max(count, 1)),
+                        4 => i % 2 == 0 ? i / (double)Math.Max(count, 1) : 1 - (i / (double)Math.Max(count, 1)),
+                        5 => 341 + random.NextDouble(),
+                        6 => 77 + (random.Next(8) / 8.0),
+                        _ => random.Next(3) switch { 0 => -0.0, 1 => 0.0, _ => random.NextDouble() },
                     };
                 }
+
+                var isPackable = pattern is 5 or 6;
 
                 var expected = keys.Zip(slots).OrderBy(item => item.First).ThenBy(item => item.Second).ToArray();
 
@@ -428,6 +435,20 @@ public sealed class DrawingReferenceTests
 
                     Assert.Equal(expected.Select(item => item.First), sortedKeys);
                     Assert.Equal(expected.Select(item => item.Second), sortedSlots);
+                }
+
+                var packedKeys = keys.ToArray();
+                var packedSlots = slots.ToArray();
+                if (CoverageRasterizer.TrySortPacked(packedKeys, packedSlots))
+                {
+                    Assert.Equal(expected.Select(item => item.First), packedKeys);
+                    Assert.Equal(expected.Select(item => item.Second), packedSlots);
+                }
+                else
+                {
+                    Assert.False(isPackable && count > 0);
+                    Assert.Equal(keys, packedKeys);
+                    Assert.Equal(slots, packedSlots);
                 }
             }
         }

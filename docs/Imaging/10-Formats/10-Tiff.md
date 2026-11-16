@@ -5,13 +5,13 @@ description: Read and write TIFF documents of one or several pages, compressed w
 
 TIFF is the format of scanned documents, multi-page files and imaging pipelines. [TiffEncoder](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder) writes every page without
 loss by default, compressed with Deflate, in a layout that follows the pixel format. **It needs a seekable
-destination.**
+destination**, except for a page that is not compressed.
 
 ## What is read and written
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Container | Classic TIFF and BigTIFF, both byte orders, strips and tiles, chunky samples and separate planes, multi-page documents | Classic TIFF (default) or BigTIFF, both byte orders, strips or tiles, chunky samples, multi-page documents |
+| Container | Classic TIFF and BigTIFF, both byte orders, strips and tiles, chunky samples and separate planes, multi-page documents | Classic TIFF (default) or BigTIFF, both byte orders, strips or tiles, chunky samples or separate planes, multi-page documents |
 | Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; 8 and 16-bit CMYK as CMYK pixels or with a color conversion; CIE L\*a\*b\* with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, CMYK at 8 or 16 bits (lossless compressions), bilevel, palette, 32-bit floating-point |
 | Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, old-style JPEG, JPEG 2000; the bits of each byte in either order (`FillOrder`), except in JPEG and JPEG 2000 data | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
@@ -82,6 +82,38 @@ public static void SaveScanAsBilevel(string inputPath, string tiffPath, string p
 
 See [Binarization](../06-Processing/09-Binarization.md). A bilevel page loads back as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), with one bit per component.
 
+## Write separate planes
+
+By default, the samples of a pixel are stored side by side (chunky, `PlanarConfiguration` 1). [SeparatePlanes](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.SeparatePlanes) stores
+each sample in a plane of its own (`PlanarConfiguration` 2): the strips or tiles of the red samples, then those of the
+green, blue and alpha samples (or the cyan, magenta, yellow and black inks). Some imaging pipelines expect this layout,
+and it can compress better, because each plane is predicted and compressed on its own:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_TiffSeparatePlanes;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveTiffInSeparatePlanes(string inputPath, string tiffPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // One strip set of red samples, then of green, blue and alpha samples (PlanarConfiguration = 2), each plane
+    // predicted and compressed on its own
+    image.Save(tiffPath, new TiffEncoder { SeparatePlanes = true, Predictor = TiffPredictor.HorizontalDifferencing });
+}
+```
+<!-- endref -->
+
+Every layout, compression (but [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg)), predictor, strip and tile setting works with separate planes, in single-page saves and in
+documents. A page of one sample per pixel (gray, bilevel, palette) has a single plane: it is the same file either way,
+and is written as chunky, which more readers accept.
+
+## Write to a stream that cannot seek
+
+A directory stores the offsets of the strips it describes, so the directory of a compressed page is written after its
+strips, and the pointer to it is patched afterward: a compressed page needs a seekable destination. The strips of an
+uncompressed page ([None](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.None)) have known lengths, so its directory is written before them and nothing is patched: a
+one-page uncompressed document is written forward only, to any stream, such as a network stream or the body of an HTTP
+response. A document of several pages links each directory to the next one, so it still needs a seekable destination.
+
 ## Pyramids
 
 A large image is often stored with reduced-resolution versions of itself, so that a viewer can show it at any zoom
@@ -111,6 +143,7 @@ See [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a
 | [BigEndian](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.BigEndian) | Writes big-endian instead of little-endian files; the pixels are the same | `false` |
 | [RowsPerStrip](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.RowsPerStrip) | The rows of a strip; 0 chooses strips of about 64 KiB of samples | 0 |
 | [TileWidth](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.TileWidth) and [TileHeight](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.TileHeight) | Write tiles of this size (multiples of 16) instead of strips, so that readers can decode a region of a large page; the tiles of the right and bottom edges are padded | 0 (strips) |
+| [SeparatePlanes](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.SeparatePlanes) | Stores each sample in a plane of its own (`PlanarConfiguration` 2) instead of the samples of a pixel side by side | `false` |
 | [Predictor](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.Predictor) | [HorizontalDifferencing](cref:Meziantou.Framework.Imaging.Formats.TiffPredictor.HorizontalDifferencing) stores the difference of each 8- or 16-bit sample from its left neighbor, which usually makes photographs, gradients and screenshots smaller with Deflate and LZW (the only compressions it is accepted with) | [None](cref:Meziantou.Framework.Imaging.Formats.TiffPredictor.None) |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata TIFF cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
@@ -123,14 +156,15 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
   colors or a pixel that is not opaque.
 - The CCITT compressions require `PixelLayout = Bilevel`, and [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) requires [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto): another combination throws an
   `ArgumentException`. So does horizontal differencing with another compression than Deflate or LZW or another
-  layout than `Auto`, a tile size without the other one, and tiles with [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg).
+  layout than `Auto`, a tile size without the other one, and tiles or separate planes with [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg).
 - [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) is the only lossy compression. It stores 8-bit samples without alpha: a 16-bit pixel format or a pixel that is
   not opaque is rejected.
 
 ## Pitfalls
 
-- The destination must be seekable: a directory stores the offsets of the strips or tiles it describes, which are only known once
-  they are written. A non-seekable stream is rejected before anything is written; paths are always seekable.
+- The destination must be seekable, unless the document is one uncompressed page: a directory stores the offsets of the
+  strips or tiles it describes, which are only known once they are compressed. A non-seekable stream is rejected before
+  anything is written; paths are always seekable.
 - EXIF blocks and text entries are not written: they follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
 - Floating-point pages are written as 32-bit floats with `PixelLayout = Auto` and any compression but [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg). A
   floating-point page without an ICC profile is read as linear light, so the image must be labeled

@@ -2599,6 +2599,36 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveTiffInSeparatePlanesWritesOnePlanePerSample()
+    {
+        var pixels = new Rgba32[7 * 5];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)(i * 7), (byte)(255 - i), (byte)(i * i), (byte)(100 + i));
+        }
+
+        using var source = Image.ImportPixelData<Rgba32>(pixels, 7, 5);
+        var input = GetPath("planes.png");
+        source.Save(input);
+        var tiff = GetPath("planes.tif");
+        Examples.SaveTiffInSeparatePlanes(input, tiff);
+
+        // PlanarConfiguration (tag 284) of the first directory of the little-endian file is 2, and the pixels are the source ones
+        var file = File.ReadAllBytes(tiff);
+        var directory = BinaryPrimitives.ReadInt32LittleEndian(file.AsSpan(4));
+        var count = BinaryPrimitives.ReadUInt16LittleEndian(file.AsSpan(directory));
+        var planar = Enumerable.Range(0, count)
+            .Select(i => file.AsSpan(directory + 2 + (i * 12), 12).ToArray())
+            .Single(entry => BinaryPrimitives.ReadUInt16LittleEndian(entry) == 284);
+        Assert.Equal(2, BinaryPrimitives.ReadUInt16LittleEndian(planar.AsSpan(8)));
+
+        using var decoded = Image.Load<Rgba32>(tiff);
+        var actual = new Rgba32[pixels.Length];
+        decoded.Frames[0].CopyPixelDataTo(actual);
+        Assert.Equal(pixels, actual);
+    }
+
+    [Fact]
     public void WriteAndReadIconKeepsEveryRepresentationAndTheCursorHotspot()
     {
         var (apngPath, _) = BuildAnimation();

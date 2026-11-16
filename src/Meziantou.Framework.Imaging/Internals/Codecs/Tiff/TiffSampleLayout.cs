@@ -40,7 +40,13 @@ internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPe
     /// <summary>Gets the number of stored bytes of one row, padded to a whole number of bytes.</summary>
     /// <param name="width">The number of pixels of a row.</param>
     /// <returns>The length.</returns>
-    public long GetRowLength(int width) => (((long)width * SamplesPerPixel * BitsPerSample) + 7) / 8;
+    public long GetRowLength(int width) => GetRowLength(width, SamplesPerPixel);
+
+    /// <summary>Gets the number of stored bytes of one row of some of the samples, padded to a whole number of bytes.</summary>
+    /// <param name="width">The number of pixels of a row.</param>
+    /// <param name="samples">The number of samples of a pixel the row holds: 1 for a row of one plane.</param>
+    /// <returns>The length.</returns>
+    public long GetRowLength(int width, int samples) => (((long)width * samples * BitsPerSample) + 7) / 8;
 
     /// <summary>Selects the layout of a page.</summary>
     /// <param name="encoder">The encoder settings.</param>

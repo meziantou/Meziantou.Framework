@@ -549,12 +549,12 @@ internal sealed class DngEncoderCodec : ImageEncoderCodec
                 BinaryPrimitives.WriteUInt32LittleEndian(entry[4..], (uint)field.Count);
                 if (field.Data.Length <= 4)
                 {
-                    field.Data.CopyTo(entry[8..]);
+                    field.Data.Span.CopyTo(entry[8..]);
                 }
                 else
                 {
                     BinaryPrimitives.WriteUInt32LittleEndian(entry[8..], (uint)valueOffsets[i]);
-                    field.Data.CopyTo(span[(int)(valueOffsets[i] - directoryOffset)..]);
+                    field.Data.Span.CopyTo(span[(int)(valueOffsets[i] - directoryOffset)..]);
                 }
             }
 

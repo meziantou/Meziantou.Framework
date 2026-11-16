@@ -42,6 +42,10 @@ internal sealed class IccPipeline
     private long _outputCurveColors;
     private QuantizationThresholds[]? _byteOutputTables;
 
+    // 1 once a caller has started building the 8-bit output tables: the other callers evaluate the last stage meanwhile
+    // instead of building the same tables
+    private int _byteOutputTablesBuilding;
+
     // The scope that the decoded entries of the lookup tables are charged to, or null when they are read in place
     private AllocationScope? _lookupTableScope;
 
@@ -598,7 +602,8 @@ internal sealed class IccPipeline
     /// Gets, when the last stage is one inverse tone curve per destination channel, the tables that give the 8-bit
     /// destination sample of each channel from the value before that stage (<see cref="ApplyBetweenCurves"/>): the same
     /// sample as evaluating the curve then <see cref="IccByteSample.Store"/>. The tables are built once the pipeline has
-    /// converted <see cref="ByteOutputTablesThreshold"/> colors, counting the colors of this call.
+    /// converted <see cref="ByteOutputTablesThreshold"/> colors, counting the colors of this call, by the first caller that
+    /// crosses the threshold; the other callers get <see langword="null"/> until they are published.
     /// </summary>
     /// <param name="colors">The number of colors the caller is about to convert.</param>
     /// <returns>The table of each destination channel, or <see langword="null"/> when the last stage is evaluated.</returns>
@@ -613,8 +618,13 @@ internal sealed class IccPipeline
             if (Interlocked.Add(ref _outputCurveColors, colors) < ByteOutputTablesThreshold)
                 return null;
 
+            // Only one caller builds the tables (about 40,000 evaluations of each curve): the parallel workers that cross
+            // the threshold at the same time evaluate the last stage, which gives the same samples, until they are published
+            if (Interlocked.CompareExchange(ref _byteOutputTablesBuilding, 1, 0) != 0)
+                return null;
+
             tables = CreateByteOutputTables(curves);
-            tables = Interlocked.CompareExchange(ref _byteOutputTables, tables, null) ?? tables;
+            Volatile.Write(ref _byteOutputTables, tables);
         }
 
         return ReferenceEquals(tables, NoByteOutputTables) ? null : tables;

@@ -41,7 +41,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | BMP | No embedded JPEG/PNG payloads, no linked ICC profile; one still image is written. |
 | TGA | No premultiplied alpha; true-color and grayscale output only, no metadata. |
 | Netpbm | [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first image of a concatenation ([ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) reads them all); no metadata. |
-| TIFF | Subsampled YCbCr data in separate planes, ITU L\*a\*b\*, lightness-only L\*a\*b\* and some extra-sample layouts are not read; L\*a\*b\* pages need a color conversion. Writing uses chunky samples (no separate planes), one page per [Save](cref:Meziantou.Framework.Imaging.Image.Save) (use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) for documents) and a seekable destination. |
+| TIFF | Subsampled YCbCr data in separate planes, ITU L\*a\*b\*, lightness-only L\*a\*b\* and some extra-sample layouts are not read; L\*a\*b\* pages need a color conversion. Writing stores one page per [Save](cref:Meziantou.Framework.Imaging.Image.Save) (use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) for documents), needs a seekable destination unless the document is one uncompressed page, and writes JPEG-compressed pages with chunky samples only. |
 | ICO / CUR | At most 256 pixels per side; 32-bit DIB or PNG representations are written. |
 | ANI | One representation per frame; always loops; needs a seekable destination. |
 | AVIF | Gain maps, depth maps and thumbnails are only read by `AuxiliaryImageCollection`; gain maps are written next to still images only. Sequences need a seekable destination; the encoder is single-threaded except for grid tiles. |

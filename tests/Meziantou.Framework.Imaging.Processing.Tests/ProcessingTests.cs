@@ -299,6 +299,37 @@ public sealed class ProcessingTests
     }
 
     [Fact]
+    public void ConvertColorProfileGivesTheSameResultWithSeveralWorkers()
+    {
+        Assert.Equal(Convert<Rgba32>(1, (x, y) => new Rgba32((byte)x, (byte)y, (byte)(x ^ y), (byte)(255 - x))), Convert<Rgba32>(4, (x, y) => new Rgba32((byte)x, (byte)y, (byte)(x ^ y), (byte)(255 - x))));
+        Assert.Equal(Convert<Rgba64>(1, (x, y) => new Rgba64((ushort)(x * 211), (ushort)(y * 257), (ushort)((x ^ y) * 199), ushort.MaxValue)), Convert<Rgba64>(4, (x, y) => new Rgba64((ushort)(x * 211), (ushort)(y * 257), (ushort)((x ^ y) * 199), ushort.MaxValue)));
+
+        static TPixel[] Convert<TPixel>(int workers, Func<int, int, TPixel> pixel)
+            where TPixel : unmanaged
+        {
+            // 300x256 pixels are split into bands of rows when several workers are allowed
+            using var image = new Image<TPixel>(300, 256, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Frames[0].ProcessPixelRows(pixel, static (pixels, pixel) =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = pixel(x, y);
+                    }
+                }
+            });
+
+            image.Metadata.IccProfile = IccProfile.DisplayP3;
+            image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+            var pixels = new TPixel[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+    }
+
+    [Fact]
     public void ConvertColorProfileRejectsFloatingPointColorsOutsideTheUnitRangeBeforeAnythingChanges()
     {
         foreach (var value in new[] { 1.5f, -0.25f, float.NaN, float.PositiveInfinity })

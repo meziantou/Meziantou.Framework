@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -67,13 +68,27 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>The winding number of an edge that just entered the sweep line and was not walked yet.</summary>
     private const int UnknownWinding = int.MinValue;
 
+    /// <summary>The number of positions on each side of <see cref="SweepSpans.PositionHint"/> where <see cref="FindPosition"/> looks for a slot before it searches the sweep line.</summary>
+    private const int PositionHintWindow = 32;
+
+    /// <summary>The number of events of a row up to which they are sorted by insertion.</summary>
+    private const int MaxInsertionSortLength = 16;
+
     /// <summary>The number of columns of a row from which the entries of the difference row that are zero are skipped.</summary>
     private const int MinZeroSkipWidth = 32;
 
-    // The scratch of the sweep, for each edge a row can hold at once
+    /// <summary>The number of positions the changes of a height span from which they are recorded, and the walk jumps between them (see <see cref="Walk"/>).</summary>
+    private const int MinJumpingWalkSpan = 32;
+
+    // The kinds of the entries of ChangeEvents
+    private const int Removal = 0;
+    private const int Insertion = 1;
+    private const int ChangedRange = 2;
+
+    // The scratch of the sweep, for each edge a row can hold at once: a copy of the edge, then the doubles and integers
     private const int SweepDoublesPerEdge = 4;
-    private const int SweepIntegersPerEdge = 10;
-    private const int SweepBytesPerEdge = (SweepDoublesPerEdge * sizeof(double)) + (SweepIntegersPerEdge * sizeof(int));
+    private const int SweepIntegersPerEdge = 14;
+    private static readonly int SweepBytesPerEdge = Unsafe.SizeOf<DrawingEdge>() + (SweepDoublesPerEdge * sizeof(double)) + (SweepIntegersPerEdge * sizeof(int));
 
     private readonly AllocationScope _scope;
     private readonly int _width;
@@ -110,6 +125,10 @@ internal sealed class CoverageRasterizer : IDisposable
     private int _freeCount;
     private int _changedFirst;
     private int _changedLast;
+
+    // The number of entries of ChangeEvents for the current height: none until the changes span many positions
+    private int _changeEventCount;
+
     private int _dirtyMin;
     private int _dirtyMax;
     private int _events;
@@ -210,93 +229,151 @@ internal sealed class CoverageRasterizer : IDisposable
     private Span<double> SweepDoubles
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => unsafe(MemoryMarshal.Cast<byte, double>(_sweepBytes.AsSpan(0, SweepDoublesPerEdge * sizeof(double) * _sweepCapacity)));
+        get => unsafe(MemoryMarshal.Cast<byte, double>(_sweepBytes.AsSpan(Unsafe.SizeOf<DrawingEdge>() * _sweepCapacity, SweepDoublesPerEdge * sizeof(double) * _sweepCapacity)));
     }
 
     private Span<int> SweepIntegers
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => unsafe(MemoryMarshal.Cast<byte, int>(_sweepBytes.AsSpan(SweepDoublesPerEdge * sizeof(double) * _sweepCapacity, SweepIntegersPerEdge * sizeof(int) * _sweepCapacity)));
+        get => unsafe(MemoryMarshal.Cast<byte, int>(_sweepBytes.AsSpan((Unsafe.SizeOf<DrawingEdge>() + (SweepDoublesPerEdge * sizeof(double))) * _sweepCapacity, SweepIntegersPerEdge * sizeof(int) * _sweepCapacity)));
     }
 
-    // Each edge of the sweep line has a slot, which it keeps until it ends. By slot:
+    // Each edge of the sweep line has a slot, which it keeps until it ends. By slot, then the structures over the slots,
+    // each a slice of SweepDoubles or SweepIntegers of one integer or double per slot (two for ChangeEvents):
+    private const int SinceYSlice = 0;
+    private const int CrossingYSlice = 1;
+    private const int StartKeysSlice = 2;
+    private const int EndKeysSlice = 3;
+    private const int SlotEdgeSlice = 0;
+    private const int SlotSignSlice = 1;
+    private const int WindingBeforeSlice = 2;
+    private const int HeapPositionSlice = 3;
+    private const int HeapSlice = 4;
+    private const int LineSlice = 5;
+    private const int FreeSlotsSlice = 6;
+    private const int StartSlotsSlice = 7;
+    private const int EndSlotsSlice = 8;
+    private const int NeighborChangedSlice = 9;
+    private const int ChangedPositionsSlice = 10;
+    private const int ChangeEventsSlice = 11;
+    private const int PositionHintSlice = 13;
+
+    /// <summary>
+    /// A copy of the edge of the slot: the sweep reads the edges of the sweep line at every event, and the copies of the
+    /// few hundred edges a row holds stay in the cache, where the edges of the whole shape do not.
+    /// </summary>
+    private Span<DrawingEdge> SlotEdges
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, DrawingEdge>(_sweepBytes.AsSpan(0, Unsafe.SizeOf<DrawingEdge>() * _sweepCapacity)));
+    }
 
     /// <summary>The height since which the edge is the boundary it currently is.</summary>
-    private Span<double> SinceY => SweepDoubles[.._sweepCapacity];
-
-    /// <summary>The height at which the edge crosses its right neighbor, or infinity.</summary>
-    private Span<double> CrossingY => SweepDoubles.Slice(_sweepCapacity, _sweepCapacity);
+    private Span<double> SinceY => GetSlice(SweepDoubles, _sweepCapacity, SinceYSlice);
 
     /// <summary>The edge of the slot.</summary>
-    private Span<int> SlotEdge => SweepIntegers[.._sweepCapacity];
+    private Span<int> SlotEdge => GetSlice(SweepIntegers, _sweepCapacity, SlotEdgeSlice);
 
     /// <summary>What the edge is: +1 when the inside starts at it, -1 when the inside ends at it, 0 when it is not a boundary.</summary>
-    private Span<int> SlotSign => SweepIntegers.Slice(_sweepCapacity, _sweepCapacity);
-
-    /// <summary>The winding number just left of the edge.</summary>
-    private Span<int> WindingBefore => SweepIntegers.Slice(2 * _sweepCapacity, _sweepCapacity);
-
-    /// <summary>The position of the slot in <see cref="Heap"/>, or -1.</summary>
-    private Span<int> HeapPosition => SweepIntegers.Slice(3 * _sweepCapacity, _sweepCapacity);
+    private Span<int> SlotSign => GetSlice(SweepIntegers, _sweepCapacity, SlotSignSlice);
 
     // And the structures over the slots:
 
-    /// <summary>The slots that cross their right neighbor, the first crossing at the root (a binary heap).</summary>
-    private Span<int> Heap => SweepIntegers.Slice(4 * _sweepCapacity, _sweepCapacity);
-
-    /// <summary>The sweep line: the slots from left to right at the current height.</summary>
-    private Span<int> Line => SweepIntegers.Slice(5 * _sweepCapacity, _sweepCapacity);
-
     /// <summary>The slots that are not used.</summary>
-    private Span<int> FreeSlots => SweepIntegers.Slice(6 * _sweepCapacity, _sweepCapacity);
-
-    /// <summary>The slots that start in the current row, by height (the heights are in <see cref="StartKeys"/>).</summary>
-    private Span<int> StartSlots => SweepIntegers.Slice(7 * _sweepCapacity, _sweepCapacity);
-
-    /// <summary>The slots that end in the current row, by height (the heights are in <see cref="EndKeys"/>).</summary>
-    private Span<int> EndSlots => SweepIntegers.Slice(8 * _sweepCapacity, _sweepCapacity);
+    private Span<int> FreeSlots => GetSlice(SweepIntegers, _sweepCapacity, FreeSlotsSlice);
 
     /// <summary>
-    /// Whether the right neighbor of the edge changed since <see cref="CrossingY"/> was last computed (1) or not (0). The
-    /// crossing of a pair of neighbors that do not cross stays infinite whatever the height it is computed at: only the
-    /// pairs that are new, and those that cross, are computed again.
+    /// A bit per position of the sweep line, set by <see cref="Walk"/> where an edge was inserted or removed at the current
+    /// height and at the left neighbor of that position (which has a new right neighbor), and cleared once it is done. The
+    /// integers of the slice hold more bits than the sweep line has positions, plus one.
     /// </summary>
-    private Span<int> NeighborChanged => SweepIntegers.Slice(9 * _sweepCapacity, _sweepCapacity);
+    private Span<ulong> ChangedPositions => unsafe(MemoryMarshal.Cast<int, ulong>(GetSlice(SweepIntegers, _sweepCapacity, ChangedPositionsSlice)));
 
-    private Span<double> StartKeys => SweepDoubles.Slice(2 * _sweepCapacity, _sweepCapacity);
+    /// <summary>
+    /// What changed in the sweep line at the current height, in order, once the changes span many positions (see
+    /// <see cref="RecordChange"/>): a range of positions marked as a whole (two entries, of kind <see cref="ChangedRange"/>),
+    /// then each insertion (<see cref="Insertion"/>) and removal (<see cref="Removal"/>). An entry is the position times 4,
+    /// plus its kind. An edge does not start and end at the same height: there are at most two entries more than slots.
+    /// </summary>
+    private Span<int> ChangeEvents => GetSlice(SweepIntegers, _sweepCapacity, ChangeEventsSlice, 2);
 
-    private Span<double> EndKeys => SweepDoubles.Slice(3 * _sweepCapacity, _sweepCapacity);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Span<T> GetSlice<T>(Span<T> storage, int capacity, int index, int count = 1) => storage.Slice(index * capacity, count * capacity);
 
     /// <summary>The storage of the sweep of a row, taken once for the row: the sweep reaches it at every event.</summary>
     private readonly ref struct SweepSpans
     {
         public readonly Span<DrawingEdge> Edges;
+        public readonly Span<DrawingEdge> SlotEdges;
         public readonly Span<double> Accumulation;
         public readonly Span<double> SinceY;
+
+        /// <summary>The height at which the edge crosses its right neighbor, or infinity.</summary>
         public readonly Span<double> CrossingY;
+
         public readonly Span<int> SlotEdge;
         public readonly Span<int> SlotSign;
+
+        /// <summary>The winding number just left of the edge.</summary>
         public readonly Span<int> WindingBefore;
+
+        /// <summary>The position of the slot in <see cref="Heap"/>, or -1.</summary>
         public readonly Span<int> HeapPosition;
-        public readonly Span<int> Heap;
-        public readonly Span<int> Line;
-        public readonly Span<int> FreeSlots;
+
+        /// <summary>
+        /// Whether the right neighbor of the edge changed since <see cref="CrossingY"/> was last computed (1) or not (0). The
+        /// crossing of a pair of neighbors that do not cross stays infinite whatever the height it is computed at: only the
+        /// pairs that are new, and those that cross, are computed again.
+        /// </summary>
         public readonly Span<int> NeighborChanged;
+
+        /// <summary>
+        /// A position the edge of the slot had in the sweep line, recently: where <see cref="FindPosition"/> looks first. The
+        /// edges inserted and removed on its left since then moved it by as many positions at most.
+        /// </summary>
+        public readonly Span<int> PositionHint;
+
+        /// <summary>The slots that cross their right neighbor, the first crossing at the root (a binary heap).</summary>
+        public readonly Span<int> Heap;
+
+        /// <summary>The sweep line: the slots from left to right at the current height.</summary>
+        public readonly Span<int> Line;
+
+        public readonly Span<int> FreeSlots;
+
+        /// <summary>The slots that start in the current row, by height (the heights are in <see cref="StartKeys"/>).</summary>
+        public readonly Span<int> StartSlots;
+
+        /// <summary>The slots that end in the current row, by height (the heights are in <see cref="EndKeys"/>).</summary>
+        public readonly Span<int> EndSlots;
+
+        public readonly Span<double> StartKeys;
+        public readonly Span<double> EndKeys;
 
         public SweepSpans(CoverageRasterizer rasterizer)
         {
+            // The slices of the scratch, from two spans of it
+            var capacity = rasterizer._sweepCapacity;
+            var doubles = rasterizer.SweepDoubles;
+            var integers = rasterizer.SweepIntegers;
             Edges = rasterizer.EdgeList;
+            SlotEdges = rasterizer.SlotEdges;
             Accumulation = rasterizer.Accumulation;
-            SinceY = rasterizer.SinceY;
-            CrossingY = rasterizer.CrossingY;
-            SlotEdge = rasterizer.SlotEdge;
-            SlotSign = rasterizer.SlotSign;
-            WindingBefore = rasterizer.WindingBefore;
-            HeapPosition = rasterizer.HeapPosition;
-            Heap = rasterizer.Heap;
-            Line = rasterizer.Line;
-            FreeSlots = rasterizer.FreeSlots;
-            NeighborChanged = rasterizer.NeighborChanged;
+            SinceY = GetSlice(doubles, capacity, SinceYSlice);
+            CrossingY = GetSlice(doubles, capacity, CrossingYSlice);
+            StartKeys = GetSlice(doubles, capacity, StartKeysSlice);
+            EndKeys = GetSlice(doubles, capacity, EndKeysSlice);
+            SlotEdge = GetSlice(integers, capacity, SlotEdgeSlice);
+            SlotSign = GetSlice(integers, capacity, SlotSignSlice);
+            WindingBefore = GetSlice(integers, capacity, WindingBeforeSlice);
+            HeapPosition = GetSlice(integers, capacity, HeapPositionSlice);
+            Heap = GetSlice(integers, capacity, HeapSlice);
+            Line = GetSlice(integers, capacity, LineSlice);
+            FreeSlots = GetSlice(integers, capacity, FreeSlotsSlice);
+            StartSlots = GetSlice(integers, capacity, StartSlotsSlice);
+            EndSlots = GetSlice(integers, capacity, EndSlotsSlice);
+            NeighborChanged = GetSlice(integers, capacity, NeighborChangedSlice);
+            PositionHint = GetSlice(integers, capacity, PositionHintSlice);
         }
     }
 
@@ -401,6 +478,9 @@ internal sealed class CoverageRasterizer : IDisposable
         {
             order[rowCounts[GetFirstRow(list[i])]++] = i;
         }
+
+        // A rasterization canceled in the middle of a walk left its changes
+        ChangedPositions[..((maxActive >> 6) + 1)].Clear();
 
         // Every slot a row can need is free; the first ones are taken first. The edges of a row take their slots before
         // those that end in it release theirs: no more slots are taken at once than edges cross a row
@@ -709,26 +789,29 @@ internal sealed class CoverageRasterizer : IDisposable
     {
         var s = new SweepSpans(this);
         var edges = s.Edges;
+        var slotEdges = s.SlotEdges;
         double top = row;
         var bottom = top + 1;
 
         // The events of the row: the edges of the sweep line that end in it, and the edges that start in it
         var line = s.Line;
         var slotEdge = s.SlotEdge;
-        var startKeys = StartKeys;
-        var startSlots = StartSlots;
-        var endKeys = EndKeys;
-        var endSlots = EndSlots;
+        var startKeys = s.StartKeys;
+        var startSlots = s.StartSlots;
+        var endKeys = s.EndKeys;
+        var endSlots = s.EndSlots;
         var startCount = 0;
         var endCount = 0;
+        var positionHint = s.PositionHint;
         for (var i = 0; i < _lineCount; i++)
         {
             var slot = line[i];
-            var end = edges[slotEdge[slot]].Y1;
+            var end = slotEdges[slot].Y1;
             if (end <= bottom)
             {
                 endKeys[endCount] = end;
                 endSlots[endCount++] = slot;
+                positionHint[slot] = i;
             }
         }
 
@@ -739,6 +822,7 @@ internal sealed class CoverageRasterizer : IDisposable
             ref readonly var edge = ref edges[index];
             var slot = s.FreeSlots[--_freeCount];
             slotEdge[slot] = index;
+            slotEdges[slot] = edge;
             s.SlotSign[slot] = 0;
             s.WindingBefore[slot] = UnknownWinding;
             s.SinceY[slot] = edge.Y0;
@@ -775,6 +859,7 @@ internal sealed class CoverageRasterizer : IDisposable
 
                 _changedFirst = int.MaxValue;
                 _changedLast = -1;
+                _changeEventCount = 0;
                 while (endIndex < endCount && endKeys[endIndex] <= y)
                 {
                     Remove(ref s, endSlots[endIndex++]);
@@ -824,20 +909,68 @@ internal sealed class CoverageRasterizer : IDisposable
 
     /// <summary>
     /// Sorts the events of a row by height, then by slot: a total order (the slots of a row are distinct), so that the
-    /// result does not depend on the sorting algorithm. An introspective sort: partitions around a median of three, sorts
-    /// short ranges by insertion, and falls back to a heap sort when the partitions go too deep. In place, without
-    /// allocation, and never quadratic.
+    /// result does not depend on the sorting algorithm. The heights of a row are positive and close to each other: the
+    /// pair is packed into one integer when it fits (<see cref="TrySortPacked"/>). Otherwise, an introspective sort:
+    /// partitions around a median of three, sorts short ranges by insertion, and falls back to a heap sort when the
+    /// partitions go too deep. In place, without allocation, and never quadratic.
     /// </summary>
     internal static void SortEvents(Span<double> keys, Span<int> slots)
     {
+        if (keys.Length > MaxInsertionSortLength && TrySortPacked(keys, slots))
+            return;
+
         IntroSortEvents(keys, slots, 2 * (BitOperations.Log2((uint)keys.Length) + 1));
+    }
+
+    /// <summary>
+    /// Sorts events as integers made of the bits of the height (a positive double is ordered as its bits), minus those of
+    /// the lowest one, followed by the bits of the slot: their order is the order of the events.
+    /// </summary>
+    /// <returns><see langword="false"/>, and nothing changed, when a height is negative or not a number, a slot is negative, or the integers do not fit in 64 bits.</returns>
+    internal static bool TrySortPacked(Span<double> keys, Span<int> slots)
+    {
+        var bits = unsafe(MemoryMarshal.Cast<double, long>(keys));
+        slots = slots[..bits.Length];
+        var lowest = long.MaxValue;
+        var highest = long.MinValue;
+        var slotMask = 0;
+        for (var i = 0; i < bits.Length; i++)
+        {
+            lowest = Math.Min(lowest, bits[i]);
+            highest = Math.Max(highest, bits[i]);
+            slotMask |= slots[i];
+        }
+
+        // -0 and the negative heights have the sign bit, the NaNs are above the infinity
+        if (lowest < 0 || highest > BitConverter.DoubleToInt64Bits(double.PositiveInfinity) || slotMask < 0)
+            return false;
+
+        var slotBits = Math.Max(32 - BitOperations.LeadingZeroCount((uint)slotMask), 1);
+        if (((ulong)(highest - lowest) >> (64 - slotBits)) != 0)
+            return false;
+
+        var packed = unsafe(MemoryMarshal.Cast<double, ulong>(keys));
+        for (var i = 0; i < packed.Length; i++)
+        {
+            packed[i] = ((ulong)(bits[i] - lowest) << slotBits) | (uint)slots[i];
+        }
+
+        packed.Sort();
+        var slotMaskBits = (1UL << slotBits) - 1;
+        for (var i = 0; i < packed.Length; i++)
+        {
+            var value = packed[i];
+            slots[i] = (int)(value & slotMaskBits);
+            bits[i] = lowest + (long)(value >> slotBits);
+        }
+
+        return true;
     }
 
     /// <summary>Sorts events, with a heap sort once <paramref name="depthLimit"/> partitions are nested.</summary>
     internal static void IntroSortEvents(Span<double> keys, Span<int> slots, int depthLimit)
     {
-        const int InsertionSortThreshold = 16;
-        while (keys.Length > InsertionSortThreshold)
+        while (keys.Length > MaxInsertionSortLength)
         {
             if (depthLimit-- == 0)
             {
@@ -979,11 +1112,10 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Puts an edge that starts at the current height in the sweep line.</summary>
     private void Insert(ref SweepSpans s, int slot, double y)
     {
-        var edges = s.Edges;
+        var slotEdges = s.SlotEdges;
         var line = s.Line;
         var slotEdge = s.SlotEdge;
-        var index = slotEdge[slot];
-        ref readonly var edge = ref edges[index];
+        ref readonly var edge = ref slotEdges[slot];
 
         // After every edge that is on its left at this height, or at the same place and going more to the left
         var low = 0;
@@ -991,9 +1123,9 @@ internal sealed class CoverageRasterizer : IDisposable
         while (low < high)
         {
             var middle = (low + high) >>> 1;
-            var otherIndex = slotEdge[line[middle]];
-            ref readonly var other = ref edges[otherIndex];
-            if (IsBefore(GetX(other, y), other.Slope, otherIndex, edge.X0, edge.Slope, index))
+            var otherSlot = line[middle];
+            ref readonly var other = ref slotEdges[otherSlot];
+            if (IsBefore(GetX(other, y), other.Slope, otherSlot, edge.X0, edge.Slope, slot, slotEdge))
             {
                 low = middle + 1;
             }
@@ -1006,6 +1138,7 @@ internal sealed class CoverageRasterizer : IDisposable
         line.Slice(low, _lineCount - low).CopyTo(line[(low + 1)..]);
         line[low] = slot;
         _lineCount++;
+        s.PositionHint[slot] = low;
 
         // Its left neighbor has a new right neighbor, and it has one
         var neighborChanged = s.NeighborChanged;
@@ -1015,20 +1148,22 @@ internal sealed class CoverageRasterizer : IDisposable
             neighborChanged[line[low - 1]] = 1;
         }
 
-        if (_changedLast >= low)
+        var changedFirst = _changedFirst;
+        var changedLast = _changedLast;
+        _changedFirst = Math.Min(changedFirst, low);
+        _changedLast = Math.Max(changedLast >= low ? changedLast + 1 : changedLast, low);
+        if (_changeEventCount != 0 || _changedLast - _changedFirst >= MinJumpingWalkSpan)
         {
-            _changedLast++;
+            RecordChange((low << 2) | Insertion, changedFirst, changedLast);
         }
 
-        _changedFirst = Math.Min(_changedFirst, low);
-        _changedLast = Math.Max(_changedLast, low);
         CountEvent();
     }
 
     /// <summary>Takes an edge that ends at the current height out of the sweep line.</summary>
     private void Remove(ref SweepSpans s, int slot)
     {
-        var end = s.Edges[s.SlotEdge[slot]].Y1;
+        var end = s.SlotEdges[slot].Y1;
         RecordBoundary(ref s, slot, end);
         var position = FindPosition(ref s, slot, end);
         var line = s.Line;
@@ -1045,14 +1180,16 @@ internal sealed class CoverageRasterizer : IDisposable
             s.NeighborChanged[line[position - 1]] = 1;
         }
 
-        if (_changedLast > position)
+        // The edge that takes its place has a new left neighbor
+        var changedFirst = _changedFirst;
+        var changedLast = _changedLast;
+        _changedFirst = Math.Min(changedFirst, position);
+        _changedLast = Math.Max(changedLast > position ? changedLast - 1 : changedLast, position);
+        if (_changeEventCount != 0 || _changedLast - _changedFirst >= MinJumpingWalkSpan)
         {
-            _changedLast--;
+            RecordChange((position << 2) | Removal, changedFirst, changedLast);
         }
 
-        // The edge that takes its place has a new left neighbor
-        _changedFirst = Math.Min(_changedFirst, position);
-        _changedLast = Math.Max(_changedLast, position);
         CountEvent();
     }
 
@@ -1064,6 +1201,8 @@ internal sealed class CoverageRasterizer : IDisposable
         var other = line[position + 1];
         line[position] = other;
         line[position + 1] = slot;
+        s.PositionHint[other] = position;
+        s.PositionHint[slot] = position + 1;
 
         // The winding number left of the pair does not change; what each of them separates does
         var winding = s.WindingBefore[slot];
@@ -1078,11 +1217,136 @@ internal sealed class CoverageRasterizer : IDisposable
     }
 
     /// <summary>
+    /// Records an insertion or a removal in <see cref="ChangeEvents"/>, once the changes of the height span many positions.
+    /// The changes before the first one recorded were in a range of fewer positions (<paramref name="changedFirst"/> to
+    /// <paramref name="changedLast"/>, before this one): the range is recorded as a whole.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void RecordChange(int change, int changedFirst, int changedLast)
+    {
+        var events = ChangeEvents;
+        var count = _changeEventCount;
+        if (count == 0 && changedFirst <= changedLast)
+        {
+            events[count++] = (Math.Max(changedFirst - 1, 0) << 2) | ChangedRange;
+            events[count++] = (changedLast << 2) | ChangedRange;
+        }
+
+        events[count++] = change;
+        _changeEventCount = count;
+    }
+
+    /// <summary>
+    /// Marks in <see cref="ChangedPositions"/> the positions where the edges of the current height were inserted and
+    /// removed, and their left neighbors, which have new right neighbors: the positions marked by an event move with their
+    /// edges as the events that follow it insert and remove edges on their left.
+    /// </summary>
+    private void MarkChanges(Span<ulong> bits)
+    {
+        var events = ChangeEvents[.._changeEventCount];
+
+        // The length of the sweep line before the events
+        var length = _lineCount;
+        foreach (var changeEvent in events)
+        {
+            switch (changeEvent & 3)
+            {
+                case Insertion:
+                    length--;
+                    break;
+                case Removal:
+                    length++;
+                    break;
+            }
+        }
+
+        if ((events[0] & 3) == ChangedRange)
+        {
+            for (var position = events[0] >> 2; position <= events[1] >> 2; position++)
+            {
+                bits[position >> 6] |= 1UL << position;
+            }
+
+            events = events[2..];
+        }
+
+        foreach (var changeEvent in events)
+        {
+            var position = changeEvent >> 2;
+            var first = position >> 6;
+            var kept = (1UL << position) - 1;
+            if ((changeEvent & 3) == Insertion)
+            {
+                // The positions marked go up to the length of the sweep line
+                length++;
+                for (var i = length >> 6; i > first; i--)
+                {
+                    bits[i] = (bits[i] << 1) | (bits[i - 1] >> 63);
+                }
+
+                var word = bits[first];
+                bits[first] = (word & kept) | ((word & ~kept) << 1);
+            }
+            else
+            {
+                // The edge on the right of the removed one takes its position
+                var last = length >> 6;
+                length--;
+                var word = bits[first];
+                var shifted = (word & kept) | ((word >> 1) & ~kept);
+                for (var i = first; i < last; i++)
+                {
+                    var next = bits[i + 1];
+                    bits[i] = shifted | (next << 63);
+                    shifted = next >> 1;
+                }
+
+                bits[last] = shifted;
+            }
+
+            MarkChange(bits, position);
+        }
+    }
+
+    private static void MarkChange(Span<ulong> bits, int position)
+    {
+        bits[position >> 6] |= 1UL << position;
+        if (position > 0)
+        {
+            bits[(position - 1) >> 6] |= 1UL << (position - 1);
+        }
+    }
+
+    /// <summary>Gets the first position noted in <see cref="ChangedPositions"/> from <paramref name="position"/>, or <paramref name="limit"/> when there is none before it.</summary>
+    private static int GetNextChange(ReadOnlySpan<ulong> bits, int position, int limit)
+    {
+        var index = position >> 6;
+        var word = bits[index] & (ulong.MaxValue << position);
+        while (true)
+        {
+            if (word != 0)
+                return Math.Min((index << 6) + BitOperations.TrailingZeroCount(word), limit);
+
+            if (++index > limit >> 6)
+                return limit;
+
+            word = bits[index];
+        }
+    }
+
+    /// <summary>
     /// Walks the edges around what changed in the sweep line at the current height, from left to right: each edge gets
     /// its winding number, becomes or stops being a boundary, and learns when it crosses its new neighbor.
     /// </summary>
     private void Walk(ref SweepSpans s, double y)
     {
+        var walksEveryEdge = WalksEveryEdge;
+        if (_changeEventCount != 0 && !walksEveryEdge)
+        {
+            WalkBetweenChanges(ref s, y);
+            return;
+        }
+
         var line = s.Line;
         var first = _changedFirst;
         var last = Math.Min(_changedLast, _lineCount - 1);
@@ -1090,17 +1354,16 @@ internal sealed class CoverageRasterizer : IDisposable
         if (first > 0)
         {
             var before = line[first - 1];
-            winding = s.WindingBefore[before] + s.Edges[s.SlotEdge[before]].Direction;
+            winding = s.WindingBefore[before] + s.SlotEdges[before].Direction;
         }
 
         // The contours are closed: right of the last change, the winding numbers are what they were, and the walk stops
         // at the first edge that confirms it. The changes of a height can be far apart (the glyphs of a line of text share
         // their baseline and their x-height), and the edges between them are passed quickly: an edge whose winding number
-        // did not change stays the boundary it was
-        var edges = s.Edges;
-        var slotEdge = s.SlotEdge;
+        // did not change stays the boundary it was. When they span many edges, the walk jumps between them instead
+        // (WalkBetweenChanges)
+        var slotEdges = s.SlotEdges;
         var windingBefore = s.WindingBefore;
-        var walksEveryEdge = WalksEveryEdge;
         var position = first;
         for (; position < _lineCount; position++)
         {
@@ -1112,7 +1375,7 @@ internal sealed class CoverageRasterizer : IDisposable
 
                 if (!walksEveryEdge)
                 {
-                    winding += edges[slotEdge[slot]].Direction;
+                    winding += slotEdges[slot].Direction;
                     continue;
                 }
             }
@@ -1135,11 +1398,91 @@ internal sealed class CoverageRasterizer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Does what <see cref="Walk"/> does, for changes that span many edges: their positions are marked
+    /// (<see cref="ChangedPositions"/>), and from an edge whose winding number did not change, the walk jumps to the next
+    /// one. The edges in between did not change either: each stays the boundary it was, and the winding number right of
+    /// the last of them is what it was. Nothing else differs, and the coverages are the same, bit for bit.
+    /// </summary>
+    private void WalkBetweenChanges(ref SweepSpans s, double y)
+    {
+        var changes = ChangedPositions;
+        MarkChanges(changes);
+        var line = s.Line;
+        var first = _changedFirst;
+        var last = Math.Min(_changedLast, _lineCount - 1);
+        var winding = 0;
+        if (first > 0)
+        {
+            var before = line[first - 1];
+            winding = s.WindingBefore[before] + s.SlotEdges[before].Direction;
+        }
+
+        var slotEdges = s.SlotEdges;
+        var windingBefore = s.WindingBefore;
+        var position = first;
+        while (position < _lineCount)
+        {
+            var slot = line[position];
+            if (windingBefore[slot] == winding)
+            {
+                if (position > last)
+                    break;
+
+                var next = GetNextChange(changes, position + 1, last + 1);
+                if (next >= _lineCount)
+                {
+                    position = _lineCount;
+                    break;
+                }
+
+                var previous = line[next - 1];
+                winding = windingBefore[previous] + slotEdges[previous].Direction;
+                position = next;
+                continue;
+            }
+
+            winding = Update(ref s, slot, winding, y);
+            position++;
+        }
+
+        // The new pairs of neighbors are at the positions of the changes, or left of them: when no pair crosses (the heap
+        // is empty), they are the only ones to look at
+        var neighborChanged = s.NeighborChanged;
+        var crossingY = s.CrossingY;
+        var from = Math.Max(first - 1, 0);
+        var to = Math.Min(position, _lineCount);
+        if (_heapCount == 0)
+        {
+            for (var i = GetNextChange(changes, from, to); i < to; i = GetNextChange(changes, i + 1, to))
+            {
+                if (neighborChanged[line[i]] != 0)
+                {
+                    ScheduleCrossing(ref s, i, y);
+                }
+            }
+        }
+        else
+        {
+            for (var i = from; i < to; i++)
+            {
+                var slot = line[i];
+                if (neighborChanged[slot] != 0 || !double.IsPositiveInfinity(crossingY[slot]))
+                {
+                    ScheduleCrossing(ref s, i, y);
+                }
+            }
+        }
+
+        // Every position marked is between the left neighbor of the first change and the last change
+        changes[(from >> 6)..((_changedLast >> 6) + 1)].Clear();
+    }
+
     /// <summary>Sets the winding number left of an edge; when the edge becomes another kind of boundary, records the stretch it was until now.</summary>
     /// <returns>The winding number right of the edge.</returns>
     private int Update(ref SweepSpans s, int slot, int winding, double y)
     {
-        var after = winding + s.Edges[s.SlotEdge[slot]].Direction;
+        var after = winding + s.SlotEdges[slot].Direction;
         var sign = (IsInside(after) ? 1 : 0) - (IsInside(winding) ? 1 : 0);
         if (sign != s.SlotSign[slot])
         {
@@ -1159,7 +1502,7 @@ internal sealed class CoverageRasterizer : IDisposable
         var sign = s.SlotSign[slot];
         if (sign != 0 && y > since)
         {
-            ref readonly var edge = ref s.Edges[s.SlotEdge[slot]];
+            ref readonly var edge = ref s.SlotEdges[slot];
             var height = y - since;
             AddBoundary(ref s, GetX(edge, since), GetX(edge, y), sign > 0 ? height : -height);
         }
@@ -1176,9 +1519,9 @@ internal sealed class CoverageRasterizer : IDisposable
         var crossing = double.PositiveInfinity;
         if (position + 1 < _lineCount)
         {
-            var edges = s.Edges;
-            ref readonly var left = ref edges[s.SlotEdge[slot]];
-            ref readonly var right = ref edges[s.SlotEdge[line[position + 1]]];
+            var slotEdges = s.SlotEdges;
+            ref readonly var left = ref slotEdges[slot];
+            ref readonly var right = ref slotEdges[line[position + 1]];
             var end = Math.Min(left.Y1, right.Y1);
 
             // In the other order where the first of them ends: they cross on the way
@@ -1285,19 +1628,34 @@ internal sealed class CoverageRasterizer : IDisposable
         return crossing[slot] != crossing[other] ? crossing[slot] < crossing[other] : slot < other;
     }
 
-    /// <summary>Finds a slot in the sweep line, which is in left-to-right order at a height (up to rounding).</summary>
+    /// <summary>
+    /// Finds a slot in the sweep line: around the position it had recently (<see cref="SweepSpans.PositionHint"/>), then
+    /// by its place in the sweep line, which is in left-to-right order at a height (up to rounding). A slot is at one
+    /// position only.
+    /// </summary>
     private int FindPosition(ref SweepSpans s, int slot, double y)
     {
-        var edges = s.Edges;
         var line = s.Line;
-        var slotEdge = s.SlotEdge;
-        var x = GetX(edges[slotEdge[slot]], y);
+        var hint = s.PositionHint[slot];
+        if ((uint)hint < (uint)_lineCount)
+        {
+            if (line[hint] == slot)
+                return hint;
+
+            var windowStart = Math.Max(hint - PositionHintWindow, 0);
+            var found = line[windowStart..Math.Min(hint + PositionHintWindow, _lineCount)].IndexOf(slot);
+            if (found >= 0)
+                return windowStart + found;
+        }
+
+        var slotEdges = s.SlotEdges;
+        var x = GetX(slotEdges[slot], y);
         var low = 0;
         var high = _lineCount;
         while (low < high)
         {
             var middle = (low + high) >>> 1;
-            if (GetX(edges[slotEdge[line[middle]]], y) < x)
+            if (GetX(slotEdges[line[middle]], y) < x)
             {
                 low = middle + 1;
             }
@@ -1487,7 +1845,7 @@ internal sealed class CoverageRasterizer : IDisposable
             var end = column + 1;
             if (end <= last && bits[end] == 0)
             {
-                var next = bits[end..(last + 1)].IndexOfAnyExcept(0UL);
+                var next = IndexOfNonZero(bits[end..(last + 1)]);
                 end = next < 0 ? last + 1 : end + next;
                 coverage[(column + 1)..end].Fill(value);
             }
@@ -1506,6 +1864,34 @@ internal sealed class CoverageRasterizer : IDisposable
         }
 
         return area;
+    }
+
+    /// <summary>
+    /// Gets the index of the first value that is not zero, or -1: <see cref="MemoryExtensions.IndexOfAnyExcept{T}(ReadOnlySpan{T}, T)"/>,
+    /// with 64 bytes per test. The zeros between two boundaries far apart (the inside of a large stroked shape) are
+    /// most of what a row reads.
+    /// </summary>
+    internal static int IndexOfNonZero(ReadOnlySpan<ulong> values)
+    {
+        var index = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            ref var first = ref unsafe(MemoryMarshal.GetReference(values));
+            for (; index + 8 <= values.Length; index += 8)
+            {
+                var any = unsafe(Vector128.LoadUnsafe(ref first, (nuint)index) | Vector128.LoadUnsafe(ref first, (nuint)index + 2) | Vector128.LoadUnsafe(ref first, (nuint)index + 4) | Vector128.LoadUnsafe(ref first, (nuint)index + 6));
+                if (any != Vector128<ulong>.Zero)
+                    break;
+            }
+        }
+
+        for (; index < values.Length; index++)
+        {
+            if (values[index] != 0)
+                return index;
+        }
+
+        return -1;
     }
 
     private void Touch(int first, int last)
@@ -1551,9 +1937,9 @@ internal sealed class CoverageRasterizer : IDisposable
         return edge.X0 + ((y - edge.Y0) * edge.Slope);
     }
 
-    /// <summary>The total order of the edges at a height: position, then direction of travel (the one going more to the left first), then index.</summary>
+    /// <summary>The total order of the edges of two slots at a height: position, then direction of travel (the one going more to the left first), then index.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsBefore(double x, double slope, int index, double otherX, double otherSlope, int otherIndex)
+    private static bool IsBefore(double x, double slope, int slot, double otherX, double otherSlope, int otherSlot, Span<int> slotEdge)
     {
         if (x != otherX)
             return x < otherX;
@@ -1561,6 +1947,6 @@ internal sealed class CoverageRasterizer : IDisposable
         if (slope != otherSlope)
             return slope < otherSlope;
 
-        return index < otherIndex;
+        return slotEdge[slot] < slotEdge[otherSlot];
     }
 }

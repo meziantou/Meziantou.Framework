@@ -67,6 +67,9 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>The winding number of an edge that just entered the sweep line and was not walked yet.</summary>
     private const int UnknownWinding = int.MinValue;
 
+    /// <summary>The number of positions on each side of <see cref="PositionHint"/> where <see cref="FindPosition"/> looks for a slot before it searches the sweep line.</summary>
+    private const int PositionHintWindow = 32;
+
     /// <summary>The number of events of a row up to which they are sorted by insertion.</summary>
     private const int MaxInsertionSortLength = 16;
 
@@ -83,7 +86,7 @@ internal sealed class CoverageRasterizer : IDisposable
 
     // The scratch of the sweep, for each edge a row can hold at once: a copy of the edge, then the doubles and integers
     private const int SweepDoublesPerEdge = 4;
-    private const int SweepIntegersPerEdge = 13;
+    private const int SweepIntegersPerEdge = 14;
     private static readonly int SweepBytesPerEdge = Unsafe.SizeOf<DrawingEdge>() + (SweepDoublesPerEdge * sizeof(double)) + (SweepIntegersPerEdge * sizeof(int));
 
     private readonly AllocationScope _scope;
@@ -303,6 +306,12 @@ internal sealed class CoverageRasterizer : IDisposable
     /// </summary>
     private Span<int> ChangeEvents => SweepIntegers.Slice(11 * _sweepCapacity, 2 * _sweepCapacity);
 
+    /// <summary>
+    /// A position the edge of the slot had in the sweep line, recently: where <see cref="FindPosition"/> looks first. The
+    /// edges inserted and removed on its left since then moved it by as many positions at most.
+    /// </summary>
+    private Span<int> PositionHint => SweepIntegers.Slice(13 * _sweepCapacity, _sweepCapacity);
+
     private Span<double> StartKeys => SweepDoubles.Slice(2 * _sweepCapacity, _sweepCapacity);
 
     private Span<double> EndKeys => SweepDoubles.Slice(3 * _sweepCapacity, _sweepCapacity);
@@ -323,9 +332,11 @@ internal sealed class CoverageRasterizer : IDisposable
         public readonly Span<int> Line;
         public readonly Span<int> FreeSlots;
         public readonly Span<int> NeighborChanged;
+        public readonly Span<int> PositionHint;
 
         public SweepSpans(CoverageRasterizer rasterizer)
         {
+            PositionHint = rasterizer.PositionHint;
             Edges = rasterizer.EdgeList;
             SlotEdges = rasterizer.SlotEdges;
             Accumulation = rasterizer.Accumulation;
@@ -767,6 +778,7 @@ internal sealed class CoverageRasterizer : IDisposable
         var endSlots = EndSlots;
         var startCount = 0;
         var endCount = 0;
+        var positionHint = s.PositionHint;
         for (var i = 0; i < _lineCount; i++)
         {
             var slot = line[i];
@@ -775,6 +787,7 @@ internal sealed class CoverageRasterizer : IDisposable
             {
                 endKeys[endCount] = end;
                 endSlots[endCount++] = slot;
+                positionHint[slot] = i;
             }
         }
 
@@ -1101,6 +1114,7 @@ internal sealed class CoverageRasterizer : IDisposable
         line.Slice(low, _lineCount - low).CopyTo(line[(low + 1)..]);
         line[low] = slot;
         _lineCount++;
+        s.PositionHint[slot] = low;
 
         // Its left neighbor has a new right neighbor, and it has one
         var neighborChanged = s.NeighborChanged;
@@ -1163,6 +1177,8 @@ internal sealed class CoverageRasterizer : IDisposable
         var other = line[position + 1];
         line[position] = other;
         line[position + 1] = slot;
+        s.PositionHint[other] = position;
+        s.PositionHint[slot] = position + 1;
 
         // The winding number left of the pair does not change; what each of them separates does
         var winding = s.WindingBefore[slot];
@@ -1588,11 +1604,26 @@ internal sealed class CoverageRasterizer : IDisposable
         return crossing[slot] != crossing[other] ? crossing[slot] < crossing[other] : slot < other;
     }
 
-    /// <summary>Finds a slot in the sweep line, which is in left-to-right order at a height (up to rounding).</summary>
+    /// <summary>
+    /// Finds a slot in the sweep line: around the position it had recently (<see cref="PositionHint"/>), then by its place
+    /// in the sweep line, which is in left-to-right order at a height (up to rounding). A slot is at one position only.
+    /// </summary>
     private int FindPosition(ref SweepSpans s, int slot, double y)
     {
-        var slotEdges = s.SlotEdges;
         var line = s.Line;
+        var hint = s.PositionHint[slot];
+        if ((uint)hint < (uint)_lineCount)
+        {
+            if (line[hint] == slot)
+                return hint;
+
+            var windowStart = Math.Max(hint - PositionHintWindow, 0);
+            var found = line[windowStart..Math.Min(hint + PositionHintWindow, _lineCount)].IndexOf(slot);
+            if (found >= 0)
+                return windowStart + found;
+        }
+
+        var slotEdges = s.SlotEdges;
         var x = GetX(slotEdges[slot], y);
         var low = 0;
         var high = _lineCount;

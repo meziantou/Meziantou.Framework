@@ -1,0 +1,104 @@
+using System.IO.Compression;
+
+namespace Meziantou.Framework.Compression.Internals.Zip;
+
+/// <summary>Builds the stream of the content of an entry: the decryption, the decompression, and the checks.</summary>
+internal static class ZipEntryOpener
+{
+    /// <summary>Throws the exception that opening the entry throws before reading anything, when the entry cannot be read.</summary>
+    public static void ThrowIfNotSupported(ZipEntryInfo info)
+    {
+        if ((info.Flags & ZipEntryInfo.FlagMaskedHeaders) != 0)
+            throw new NotSupportedException($"The zip entry '{info.FullName}' is in an archive whose central directory is encrypted, which is not supported.");
+
+        if (info.Encryption is ZipEncryption.Unsupported)
+        {
+            if (info.RawMethod is ZipEntryInfo.AesMethod && !info.HasAesExtra)
+                throw new InvalidDataException($"The AES extra field of the zip entry '{info.FullName}' is missing.");
+
+            throw new NotSupportedException($"The encryption of the zip entry '{info.FullName}' is not supported (PKWARE strong encryption, or an unknown AES version).");
+        }
+
+        if (!IsSupported(info.Method))
+            throw new NotSupportedException($"The compression method {info.Method} of the zip entry '{info.FullName}' is not supported.");
+    }
+
+    /// <summary>Gets a value indicating whether a compression method is supported.</summary>
+    public static bool IsSupported(ushort method) => (ZipCompressionMethod)method switch
+    {
+        ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate => true,
+#if NET11_0_OR_GREATER
+        ZipCompressionMethod.Zstandard => true,
+#endif
+        _ => false,
+    };
+
+    /// <summary>Opens the content of an entry.</summary>
+    /// <param name="info">The entry.</param>
+    /// <param name="raw">The raw content (possibly encrypted). The returned stream owns it.</param>
+    /// <param name="uncompressedSize">The length of the content, or -1 when it is not known yet.</param>
+    /// <param name="options">The options of the archive.</param>
+    /// <param name="onEnd">The action run when the content ends, which may return the length and the CRC-32 to check.</param>
+    /// <param name="isValid">A function that returns <see langword="false"/> when the content can no longer be read.</param>
+    /// <param name="createDecoder">Creates the decoder instead of <see cref="CreateDecoder"/> (the deflate decoder that finds the end of a streamed entry).</param>
+    public static Stream Open(ZipEntryInfo info, Stream raw, long uncompressedSize, ArchiveReaderOptions options, Func<(long Length, uint? Crc)?>? onEnd, Func<bool>? isValid, Func<Stream, Stream>? createDecoder = null)
+    {
+        // The streams are disposed by the returned stream, or by the catch block
+#pragma warning disable CA2000 // Dispose objects before losing scope
+        Stream data = raw;
+        try
+        {
+            ThrowIfNotSupported(info);
+            WinZipAesDecryptStream? aes = null;
+            switch (info.Encryption)
+            {
+                case ZipEncryption.ZipCrypto:
+                    var checkByte = info.HasDataDescriptor ? (byte)(info.DosTime >> 8) : (byte)(info.Crc >> 24);
+                    data = new ZipCryptoDecryptStream(raw, GetPassword(info, options), checkByte);
+                    break;
+
+                case ZipEncryption.Aes128 or ZipEncryption.Aes192 or ZipEncryption.Aes256:
+                    aes = new WinZipAesDecryptStream(raw, GetPassword(info, options), info.Encryption);
+                    data = aes;
+                    break;
+            }
+
+            var decoder = createDecoder is not null ? createDecoder(data) : CreateDecoder(info, data, uncompressedSize, options);
+            data = decoder;
+            var end = aes is null ? onEnd : () =>
+            {
+                aes.VerifyAuthenticationCode();
+                return onEnd?.Invoke();
+            };
+
+            return new ZipEntryStream(decoder, uncompressedSize, info.ExpectedCrc, info.Encryption is ZipEncryption.ZipCrypto, end, isValid);
+        }
+        catch
+        {
+            data.Dispose();
+            raw.Dispose();
+            throw;
+        }
+#pragma warning restore CA2000
+    }
+
+    private static string GetPassword(ZipEntryInfo info, ArchiveReaderOptions options)
+    {
+        return options.Password ?? throw new ArchivePasswordException($"The zip entry '{info.FullName}' is encrypted: set the password in the options.");
+    }
+
+    private static Stream CreateDecoder(ZipEntryInfo info, Stream input, long uncompressedSize, ArchiveReaderOptions options)
+    {
+        _ = uncompressedSize;
+        _ = options;
+        return (ZipCompressionMethod)info.Method switch
+        {
+            ZipCompressionMethod.Stored => input,
+            ZipCompressionMethod.Deflate => new DeflateStream(input, CompressionMode.Decompress, leaveOpen: false),
+#if NET11_0_OR_GREATER
+            ZipCompressionMethod.Zstandard => new ZstandardStream(input, CompressionMode.Decompress, leaveOpen: false),
+#endif
+            _ => throw new NotSupportedException($"The compression method {info.Method} of the zip entry '{info.FullName}' is not supported."),
+        };
+    }
+}

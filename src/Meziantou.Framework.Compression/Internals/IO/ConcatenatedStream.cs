@@ -61,6 +61,18 @@ internal sealed class ConcatenatedStream : Stream
         }
     }
 
+    /// <summary>
+    /// Gets the offset, in the concatenated stream, at which a volume starts (used to resolve the disk numbers of a split zip
+    /// archive). Every volume is resolved first, so the streams must be seekable.
+    /// </summary>
+    /// <param name="index">The 0-based index of the volume, less than <see cref="VolumeCount"/>.</param>
+    /// <returns>The offset of the first byte of the volume.</returns>
+    public long GetVolumeStart(int index)
+    {
+        ResolveAll();
+        return _starts[index];
+    }
+
     /// <summary>Gets the volume that contains the current position (used to locate the headers of RAR volumes).</summary>
     public int CurrentVolume => _current;
 

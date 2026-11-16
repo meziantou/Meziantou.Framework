@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Meziantou.Framework.Compression.Internals.Deflate64;
+using Meziantou.Framework.Compression.Internals.Lzma;
 using Meziantou.Framework.Compression.Internals.Ppmd;
 using Meziantou.Framework.Compression.Internals.ZipLegacy;
 
@@ -34,7 +35,7 @@ internal static class ZipEntryOpener
     /// <summary>Gets a value indicating whether a compression method is supported.</summary>
     public static bool IsSupported(ushort method) => (ZipCompressionMethod)method switch
     {
-        ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64 or ZipCompressionMethod.BZip2 or ZipCompressionMethod.Ppmd => true,
+        ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate or ZipCompressionMethod.Deflate64 or ZipCompressionMethod.BZip2 or ZipCompressionMethod.Ppmd or ZipCompressionMethod.Lzma or ZipCompressionMethod.Xz => true,
         ZipCompressionMethod.Shrink or ZipCompressionMethod.Reduce1 or ZipCompressionMethod.Reduce2 or ZipCompressionMethod.Reduce3 or ZipCompressionMethod.Reduce4 or ZipCompressionMethod.Implode => true,
 #if NET11_0_OR_GREATER
         ZipCompressionMethod.Zstandard => true,
@@ -92,6 +93,36 @@ internal static class ZipEntryOpener
     }
 
     /// <summary>
+    /// LZMA (method 14): a 2-byte version, the 2-byte length of the properties (5), and the properties, then the LZMA data.
+    /// General purpose flag bit 1 says that the data end with an end marker, which a streamed entry needs.
+    /// </summary>
+    private static LzmaDecoderStream CreateLzmaDecoder(ZipEntryInfo info, Stream input, long uncompressedSize, ArchiveReaderOptions options)
+    {
+        Span<byte> header = stackalloc byte[4];
+        if (input.ReadAtLeast(header, header.Length, throwOnEndOfStream: false) != header.Length)
+            throw new InvalidDataException($"The LZMA header of the zip entry '{info.FullName}' is truncated.");
+
+        var propertiesLength = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(header[2..]);
+        if (propertiesLength is not 5)
+            throw new InvalidDataException($"The LZMA properties of the zip entry '{info.FullName}' are invalid.");
+
+        Span<byte> properties = stackalloc byte[5];
+        if (input.ReadAtLeast(properties, properties.Length, throwOnEndOfStream: false) != properties.Length)
+            throw new InvalidDataException($"The LZMA properties of the zip entry '{info.FullName}' are truncated.");
+
+        if (uncompressedSize < 0 && (info.Flags & 2) is 0)
+            throw new NotSupportedException($"The LZMA data of the zip entry '{info.FullName}' have no end marker, and its length is not known before its data descriptor: read it from a seekable stream.");
+
+        // The decoder allocates at most the dictionary, and at most the length of the content
+        long dictionarySize = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(properties[1..]);
+        var window = uncompressedSize >= 0 ? Math.Min(dictionarySize, uncompressedSize) : dictionarySize;
+        if (window > options.MaxMemoryUsage)
+            throw new InvalidDataException($"The LZMA dictionary of the zip entry '{info.FullName}' ({dictionarySize} bytes) exceeds the maximum memory usage.");
+
+        return new LzmaDecoderStream(input, properties, uncompressedSize, leaveOpen: false);
+    }
+
+    /// <summary>
     /// PPMd version I, revision 1 (method 98): 2 little-endian bytes of parameters (the order minus 1 in bits 0-3, the memory
     /// size in MiB minus 1 in bits 4-11, the restore method in bits 12-15), then the PPMd8 data. Without a known length, the
     /// decoder reads up to the end marker.
@@ -131,6 +162,8 @@ internal static class ZipEntryOpener
         return (ZipCompressionMethod)info.Method switch
         {
             ZipCompressionMethod.Ppmd => CreatePpmdDecoder(info, input, uncompressedSize, options),
+            ZipCompressionMethod.Lzma => CreateLzmaDecoder(info, input, uncompressedSize, options),
+            ZipCompressionMethod.Xz => new XzStream(input, CompressionMode.Decompress, leaveOpen: false),
             ZipCompressionMethod.Stored => input,
             ZipCompressionMethod.Deflate => new DeflateStream(input, CompressionMode.Decompress, leaveOpen: false),
             ZipCompressionMethod.Deflate64 => new Deflate64DecoderStream(input, deflate64: true, leaveOpen: false),

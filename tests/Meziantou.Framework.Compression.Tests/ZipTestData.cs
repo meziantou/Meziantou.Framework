@@ -103,14 +103,16 @@ internal static class ZipTestData
         }
     }
 
-    /// <summary>Gets a value indicating whether the archive uses a method that is not supported yet.</summary>
+    /// <summary>Gets a value indicating whether the archive uses a method that is not supported on this framework.</summary>
     public static bool IsNotSupported(string fileName)
     {
-#if !NET11_0_OR_GREATER
-        if (fileName is "zstd.zip")
-            return true;
+        // ZstandardStream is new in .NET 11
+#if NET11_0_OR_GREATER
+        _ = fileName;
+        return false;
+#else
+        return fileName is "zstd.zip";
 #endif
-        return fileName is "lzma.zip" or "lzma-eos-python.zip" or "xz.zip";
     }
 
     public static string GetPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", "Zip", fileName);

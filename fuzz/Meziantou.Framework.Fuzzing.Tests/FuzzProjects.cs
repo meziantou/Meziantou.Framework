@@ -15,7 +15,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.BloomFilters.Fuzz", BloomFilters.Fuzz.BloomFiltersFuzzTargets.All),
         ("Meziantou.Framework.Charts.Fuzz", Charts.Fuzz.ChartsFuzzTargets.All),
         ("Meziantou.Framework.CodeOwners.Fuzz", CodeOwners.Fuzz.CodeOwnersFuzzTargets.All),
-        ("Meziantou.Framework.Compression.Fuzz", Meziantou.Framework.CompressionFuzz.CompressionFuzzTargets.All),
+        ("Meziantou.Framework.Compression.Fuzz", CompressionFuzz.CompressionFuzzTargets.All),
         ("Meziantou.Framework.Csv.Fuzz", Csv.Fuzz.CsvFuzzTargets.All),
         ("Meziantou.Framework.DependencyScanning.Fuzz", DependencyScanning.Fuzz.DependencyScanningFuzzTargets.All),
         ("Meziantou.Framework.Diagrams.Fuzz", Diagrams.Fuzz.DiagramsFuzzTargets.All),

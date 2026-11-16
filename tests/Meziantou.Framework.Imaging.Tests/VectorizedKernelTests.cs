@@ -3466,7 +3466,7 @@ public sealed class VectorizedKernelTests
         var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();
         foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Rgba64, PixelFormat.Gray16 })
         {
-            foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
+            foreach (var filter in new[] { ResamplingFilter.NearestNeighbor, ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
             {
                 data.Add(format, filter, ResizeWorkingSpace.Encoded);
             }

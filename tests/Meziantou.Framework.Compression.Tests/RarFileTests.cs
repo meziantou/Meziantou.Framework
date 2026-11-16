@@ -176,11 +176,7 @@ public sealed class RarFileTests
             if (expectedEntry.Sha256 is null)
                 continue;
 
-            var actual = ComputeSha256(archive.GetEntry(expectedEntry.Name)!);
-            if (actual is not "ppmd")
-            {
-                Assert.Equal(expectedEntry.Sha256, actual, expectedEntry.Name);
-            }
+            Assert.Equal(expectedEntry.Sha256, ComputeSha256(archive.GetEntry(expectedEntry.Name)!), expectedEntry.Name);
         }
     }
 }

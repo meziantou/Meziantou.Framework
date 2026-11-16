@@ -28,11 +28,7 @@ public sealed class RarReaderTests
                 continue;
             }
 
-            var actual = ComputeSha256(entry);
-            if (actual is not "ppmd")
-            {
-                Assert.Equal(expectedEntry.Sha256, actual, $"Content of {expectedEntry.Name}");
-            }
+            Assert.Equal(expectedEntry.Sha256, ComputeSha256(entry), $"Content of {expectedEntry.Name}");
         }
 
         Assert.Equal(expected.Entries.Length, index);
@@ -53,11 +49,7 @@ public sealed class RarReaderTests
             if (index % 2 is 1 || expectedEntry.Sha256 is null || IsUnsupported(fileName, expectedEntry) || GetPassword(fileName, expectedEntry.Name) is not Password || expectedEntry.Type is "Hard link" or "File reference")
                 continue;
 
-            var actual = ComputeSha256(reader.Entry!);
-            if (actual is not "ppmd")
-            {
-                Assert.Equal(expectedEntry.Sha256, actual, $"Content of {expectedEntry.Name}");
-            }
+            Assert.Equal(expectedEntry.Sha256, ComputeSha256(reader.Entry!), $"Content of {expectedEntry.Name}");
         }
 
         Assert.Equal(expected.Entries.Length, index);

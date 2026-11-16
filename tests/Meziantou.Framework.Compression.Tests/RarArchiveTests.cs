@@ -74,15 +74,11 @@ public sealed class RarArchiveTests
                 Assert.NotNull(entry);
                 if (IsUnsupported(fileName, expectedEntry))
                 {
-                    Assert.Throws<NotSupportedException>(() => ComputeSha256Core(entry));
+                    Assert.Throws<NotSupportedException>(() => ComputeSha256(entry));
                     continue;
                 }
 
-                var actual = ComputeSha256(entry);
-                if (actual is not "ppmd")
-                {
-                    Assert.Equal(expectedEntry.Sha256, actual, $"Content of {expectedEntry.Name}");
-                }
+                Assert.Equal(expectedEntry.Sha256, ComputeSha256(entry), $"Content of {expectedEntry.Name}");
             }
         }
         finally
@@ -108,11 +104,7 @@ public sealed class RarArchiveTests
 
             var entry = archive.GetEntry(expectedEntry.Name);
             Assert.NotNull(entry);
-            var actual = ComputeSha256(entry);
-            if (actual is not "ppmd")
-            {
-                Assert.Equal(expectedEntry.Sha256, actual, $"Content of {expectedEntry.Name}");
-            }
+            Assert.Equal(expectedEntry.Sha256, ComputeSha256(entry), $"Content of {expectedEntry.Name}");
         }
     }
 
@@ -390,19 +382,6 @@ public sealed class RarArchiveTests
     }
 
     internal static string ComputeSha256(ArchiveEntry entry)
-    {
-        try
-        {
-            return ComputeSha256Core(entry);
-        }
-        catch (Exception ex) when (ex.Message.Contains("PPMd", StringComparison.Ordinal))
-        {
-            // TODO(compression): remove once the PPMd decoder is merged
-            return "ppmd";
-        }
-    }
-
-    private static string ComputeSha256Core(ArchiveEntry entry)
     {
         using var stream = entry.Open();
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);

@@ -3440,6 +3440,11 @@ public sealed class PdfDocumentTests
         dictionary[PdfName.Create("Interpolate")] = PdfBoolean.True;
         Assert.Equal(PdfPageChangeKinds.None, PdfDocumentComparer.Compare(expected, PdfPageElements.Create(renamed.Pages[0])).Changes);
 
+        // The same image, in a layer that can hide it
+        var layered = PdfDocument.Open(bytes);
+        layered.Pages[0].GetImages()[0].Dictionary[PdfName.Create("OC")] = new PdfDictionary { [PdfNames.Type] = PdfName.Create("OCG"), [PdfNames.Name] = PdfString.FromText("Layer") };
+        Assert.Equal(PdfPageChangeKinds.Images, PdfDocumentComparer.Compare(expected, PdfPageElements.Create(layered.Pages[0])).Changes);
+
         // The same shading, sheared: the bounds of the unit square do not show it
         var sheared = new PdfDocument();
         sheared.Pages.Add(new PdfSize(200, 200)).CreateContentBuilder()

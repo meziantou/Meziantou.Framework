@@ -49,8 +49,9 @@ public sealed class PdfPageElements
     /// <summary>Gets the shadings painted, in the order of the content, forms included.</summary>
     public IReadOnlyList<PdfShadingElement> Shadings { get; }
 
-    // The entries of an image dictionary that change what it shows (8.9.5), inline abbreviations included (8.9.7)
-    private static readonly PdfName[] ImageDisplayKeys = [.. new[] { "ColorSpace", "CS", "BitsPerComponent", "BPC", "Decode", "D", "ImageMask", "IM", "Mask", "SMask", "SMaskInData", "Filter", "F", "DecodeParms", "DP" }.Select(PdfName.Create)];
+    // The entries of an image dictionary that change what it shows (8.9.5), inline abbreviations included (8.9.7), and
+    // its optional content group (8.11.3.3), which can hide it
+    private static readonly PdfName[] ImageDisplayKeys = [.. new[] { "ColorSpace", "CS", "BitsPerComponent", "BPC", "Decode", "D", "ImageMask", "IM", "Mask", "SMask", "SMaskInData", "Filter", "F", "DecodeParms", "DP", "OC" }.Select(PdfName.Create)];
 
     /// <summary>Reads the elements of a page. The parts of the content that cannot be read are skipped.</summary>
     /// <param name="page">The page.</param>

@@ -57,13 +57,13 @@ internal sealed class TiffDirectory
     public ReadOnlySpan<TiffField> Fields => _fields;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the values read from the input are kept, so that reading the values of a tag
-    /// again reads (and charges to the encoded-byte limit) nothing: the DNG decoder reads some tags of IFD 0 for several
-    /// purposes (the camera profile, the properties, the EXIF profile).
+    /// Gets or sets a value indicating whether the values of a tag are charged to the encoded-byte limit only the first time
+    /// they are read: the DNG decoder reads some tags of IFD 0 for several purposes (the camera profile, the properties, the
+    /// EXIF profile). A value read again is read again, into a buffer of the scope; no copy of it is kept.
     /// </summary>
     public bool CachesValues { get; set; }
 
-    private Dictionary<ushort, byte[]>? _cachedValues;
+    private HashSet<ushort>? _readTags;
 
     /// <summary>Reads the directory at an offset.</summary>
     /// <param name="source">The input.</param>
@@ -173,17 +173,9 @@ internal sealed class TiffDirectory
         if (!CachesValues)
             return _source.ReadToBuffer(offset, length);
 
-        _cachedValues ??= [];
-        if (!_cachedValues.TryGetValue(field.Tag, out var cached))
-        {
-            using var read = _source.ReadToBuffer(offset, length);
-            cached = read.Span.ToArray();
-            _cachedValues[field.Tag] = cached;
-        }
-
-        var copy = _source.Scope.Rent(cached.Length, AllocationKind.DecoderState, clear: false);
-        cached.CopyTo(copy.Span);
-        return copy;
+        // A value read again is not charged to the encoded-byte limit again: the set of the tags read keeps no bytes alive
+        _readTags ??= [];
+        return _source.ReadToBuffer(offset, length, charge: _readTags.Add(field.Tag));
     }
 
     /// <summary>Gets the offset of the out-of-line values of an entry.</summary>

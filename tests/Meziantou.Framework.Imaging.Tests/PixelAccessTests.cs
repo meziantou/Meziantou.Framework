@@ -100,6 +100,22 @@ public sealed class PixelAccessTests
 
     #region ICustomPixel_Bgr555
     /// <summary>A pixel of 5-bit blue, green and red components packed in 16 bits (blue in the low bits), stored as <see cref="Rgb24"/>.</summary>
+    [Fact]
+    public void CustomPixelCopiesConvertCmykThroughTheEmbeddedProfileLikeCloneAs()
+    {
+        // The embedded profile converts the inks, not the device formulas: the same colors as CloneAs with the same options
+        using var image = new Image<Cmyk32>(2, 1, new Cmyk32(10, 200, 40, 30));
+        image.Frames[0][1, 0] = new Cmyk32(220, 15, 90, 5);
+        image.Metadata.IccProfile = Metadata.IccProfile.Cgats001CompatibleCmyk;
+        var options = new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default };
+        using var rgb = image.CloneAs<Rgb24>(options);
+        var expected = new Bgr555[2];
+        rgb.Frames[0].CopyCustomPixelDataTo<Bgr555>(expected);
+        var actual = new Bgr555[2];
+        image.Frames[0].CopyCustomPixelDataTo<Bgr555>(actual, options: options);
+        Assert.Equal(expected, actual);
+    }
+
     private readonly record struct Bgr555(ushort Packed) : ICustomPixel<Bgr555>
     {
         public static PixelFormat StorageFormat => PixelFormat.Rgb24;

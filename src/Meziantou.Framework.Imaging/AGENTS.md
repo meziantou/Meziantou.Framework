@@ -1038,8 +1038,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   `DngPlanes`, single precision computed in double; `DngOpcodeList` and `DngColorProfile` document the choices the
   specification leaves open, and `ReferenceDng` of the test harness mirrors them: the corpus compares the two exactly,
   so a change of a stage changes both, and the generator (`DngCorpus.cs`) is rerun. A directory or a tag value is never
-  read twice (`TiffDirectory.CachesValues`): reads of a seekable stream are charged to the encoded-byte limit one by
-  one. The canvas limits apply to the stored raw image, which the default crop makes smaller. Oracles: `dng_validate`
+  charged twice (`TiffDirectory.CachesValues`): reads of a seekable stream are charged to the encoded-byte limit one by
+  one, and a tag read again is read without a charge, into a buffer of the scope (no copy is kept). The canvas limits apply to the stored raw image, which the default crop makes smaller. Oracles: `dng_validate`
   of the DNG SDK (stages 1 and 2 exact; its rendering, with the identity `ProfileToneCurve` and `DefaultBlackRender` 1
   of the scenes, within a tolerance, the demosaicing differing) and LibRaw `unprocessed_raw` (stored samples).
   `DngEncoderCodec` writes linear raw data only: `DngRawImage` gives no camera profile, so a CFA mosaic cannot be written

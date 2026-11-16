@@ -180,7 +180,7 @@ public abstract class ImageFrame
         }
 
         // Every row is checked before the first one is written
-        var plan = PixelConversionPlan.Create(PixelFormat, format, options);
+        var plan = PixelConversionPlan.Create(PixelFormat, format, options, OwnerImage.Metadata.IccProfile);
         Image.PrepareConversion(plan, [this]);
         using var row = CustomPixels.RentRow(OwnerImage.Owner.Scope, width, PixelFormats.GetBytesPerPixel(format));
         using (var lease = storage.AcquireLease())

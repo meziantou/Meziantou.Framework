@@ -356,6 +356,23 @@ public sealed class DngDecoderTests
         Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 4096 } } }));
     }
 
+    [Fact]
+    public void TheOpcodesOfALargeListAreChargedToTheLiveAllocationLimit()
+    {
+        // A gain map of 256x256 points takes 256 KiB: the bytes read from the tag, their copy and the parsed gains are all
+        // live while the list is parsed
+        var gains = new float[256 * 256];
+        gains.AsSpan().Fill(1);
+        var list = new DngOpcodeWriter().GainMap(new DngOpcodeArea(0, 0, 32, 48), 256, 256, 1 / 255.0, 1 / 255.0, 0, 0, 1, gains).ToArray();
+        var data = Variant(DngScenes.Get("bayer-rggb"), opcodeList2: list).Build();
+        var limit = 2L * list.Length;
+        var error = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } } }));
+        Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, error.Kind);
+
+        var info = Image.Identify(data, new ImageIdentifyOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 2 * limit } } });
+        Assert.Equal(ImageFormat.Dng, info.Format);
+    }
+
     [Theory]
     [InlineData(0.3127, 0.3290, 6504)]
     [InlineData(0.44757, 0.40745, 2856)]

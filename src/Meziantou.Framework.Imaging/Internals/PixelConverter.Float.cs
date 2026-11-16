@@ -254,6 +254,7 @@ internal static partial class PixelConverter
 
         var toInteger = !IsFloat<TDestination>();
         var toHalf = !IsHalf<TSource>() && IsHalf<TDestination>();
+        var gray = PixelFormats.IsGrayscale(destinationFormat);
 
         // Every check runs before anything is written, so that a rejected conversion leaves the destination as it was
         ValidateFloatRowCore(source, sourceFormat, destinationFormat, background, format, floats, useVectors);
@@ -296,7 +297,7 @@ internal static partial class PixelConverter
             {
                 if (toHalf)
                 {
-                    _ = PrepareHalf(ref r, ref g, ref b, ref a, floats.Clips);
+                    _ = PrepareHalfDestination(ref r, ref g, ref b, ref a, removesAlpha, gray, bgR, bgG, bgB, floats.Clips);
                 }
 
                 if (removesAlpha && a != 1)
@@ -331,6 +332,9 @@ internal static partial class PixelConverter
         if (!IsFloat<TSource>() || !(toInteger || toHalf || opaque))
             return;
 
+        var gray = PixelFormats.IsGrayscale(destinationFormat);
+        var (bgR, bgG, bgB) = background is { } bg ? (bg.R / (double)Max16, bg.G / (double)Max16, bg.B / (double)Max16) : (0d, 0d, 0d);
+
         ref var first = ref unsafe(MemoryMarshal.GetReference(source));
 
         // The vector path skips the pixels the policy accepts as they are: samples in [0, 1] (alpha 1 when it is removed
@@ -350,7 +354,7 @@ internal static partial class PixelConverter
 
             ReadFloat(ref unsafe(Unsafe.Add(ref first, i)), out var r, out var g, out var b, out var a);
             var (r0, g0, b0, a0) = (r, g, b, a);
-            var status = toInteger ? PrepareInteger(ref r, ref g, ref b, ref a, floats) : toHalf ? PrepareHalf(ref r, ref g, ref b, ref a, floats.Clips) : FloatSampleStatus.Valid;
+            var status = toInteger ? PrepareInteger(ref r, ref g, ref b, ref a, floats) : toHalf ? PrepareHalfDestination(ref r, ref g, ref b, ref a, removesAlpha && !opaque, gray, bgR, bgG, bgB, floats.Clips) : FloatSampleStatus.Valid;
             switch (status)
             {
                 case FloatSampleStatus.NotANumber:
@@ -782,6 +786,30 @@ internal static partial class PixelConverter
     }
 
     /// <summary>Clips the finite components that round beyond the range of <see cref="Half"/>, when the policy allows it.</summary>
+    /// <summary>
+    /// Prepares the components of a pixel converted to a half format: the colors are flattened over the background when
+    /// the destination removes alpha, and replaced by their gray level for a gray destination, before they are checked
+    /// against the half range, so that the range applies to the values the destination stores.
+    /// </summary>
+    private static FloatSampleStatus PrepareHalfDestination(ref double r, ref double g, ref double b, ref double a, bool flattens, bool gray, double bgR, double bgG, double bgB, bool clips)
+    {
+        if (flattens && a is >= 0 and < 1)
+        {
+            r = (r * a) + (bgR * (1 - a));
+            g = (g * a) + (bgG * (1 - a));
+            b = (b * a) + (bgB * (1 - a));
+            a = 1;
+        }
+
+        if (gray)
+        {
+            var y = GetGrayLevel(r, g, b);
+            (r, g, b) = (y, y, y);
+        }
+
+        return PrepareHalf(ref r, ref g, ref b, ref a, clips);
+    }
+
     private static FloatSampleStatus PrepareHalf(ref double r, ref double g, ref double b, ref double a, bool clips)
     {
         if (!OverflowsHalf(r) && !OverflowsHalf(g) && !OverflowsHalf(b) && !OverflowsHalf(a))

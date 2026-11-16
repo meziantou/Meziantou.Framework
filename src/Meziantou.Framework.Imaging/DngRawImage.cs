@@ -230,6 +230,7 @@ public sealed class DngRawImage : IDisposable
         _stored = null;
         _linear?.Dispose();
         _linear = null;
+        _raw.Dispose();
     }
 
     private static UnknownImageFormatException CreateNotDngException() => new("The data is not a DNG file: a TIFF file whose first image file directory has a DNGVersion tag.");
@@ -245,15 +246,17 @@ public sealed class DngRawImage : IDisposable
 
             var document = DngDocument.Read(source, header, ifd0, context);
             var raw = DngRawDescriptor.Resolve(document.RawImage, context);
-            var stored = DngPipeline.ReadStage1(source, raw, context);
+            DngPlanes? stored = null;
             try
             {
+                stored = DngPipeline.ReadStage1(source, raw, context);
                 var linear = DngPipeline.Linearize(stored, raw, context);
                 return new DngRawImage(raw, stored, linear);
             }
             catch
             {
-                stored.Dispose();
+                stored?.Dispose();
+                raw.Dispose();
                 throw;
             }
         }

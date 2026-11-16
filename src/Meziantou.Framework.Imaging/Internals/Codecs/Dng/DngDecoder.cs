@@ -20,7 +20,7 @@ internal static class DngDecoder
         => Translate(() =>
         {
             var document = DngDocument.Read(source, header, ifd0, context);
-            var raw = DngRawDescriptor.Resolve(document.RawImage, context);
+            using var raw = DngRawDescriptor.Resolve(document.RawImage, context);
             _ = DngColorProfile.Read(document.Ifd0, raw.Planes).GetCameraToOutput();
             var metadata = ReadMetadata(document, context);
             if (mode == ImageIdentifyMode.FullScan)
@@ -53,7 +53,7 @@ internal static class DngDecoder
                 return DecodeDirectory(source, document, index, request, context);
 
             request = request.ForFullResolution(ImageFormat.Dng, supportsRegion: true);
-            var raw = DngRawDescriptor.Resolve(document.RawImage, context);
+            using var raw = DngRawDescriptor.Resolve(document.RawImage, context);
             var matrix = DngColorProfile.Read(document.Ifd0, raw.Planes).GetCameraToOutput();
             var metadata = ReadMetadata(document, context);
             var area = request.GetRegion(raw.DefaultCrop.Size, ImageFormat.Dng);

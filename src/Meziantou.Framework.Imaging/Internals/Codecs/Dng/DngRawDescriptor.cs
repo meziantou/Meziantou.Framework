@@ -6,8 +6,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// that map its stored values to linear reference values (linearization, black and white levels), its active area and
 /// its default crop.
 /// </summary>
-internal sealed class DngRawDescriptor
+internal sealed class DngRawDescriptor : IDisposable
 {
+    private readonly List<AllocationCharge> _opcodeListCharges = [];
+
     private DngRawDescriptor(TiffPage page)
     {
         Page = page;
@@ -93,6 +95,32 @@ internal sealed class DngRawDescriptor
     {
         var page = TiffPage.ResolveDngRaw(directory.Directory, directory.Index, context);
         var descriptor = new DngRawDescriptor(page);
+        try
+        {
+            descriptor.ResolveCore(directory, context);
+            return descriptor;
+        }
+        catch
+        {
+            descriptor.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>Releases the charge of the opcode lists.</summary>
+    public void Dispose()
+    {
+        foreach (var charge in _opcodeListCharges)
+        {
+            charge.Dispose();
+        }
+
+        _opcodeListCharges.Clear();
+    }
+
+    private void ResolveCore(DngDirectory directory, ImageCodecContext context)
+    {
+        var page = Page;
 
         // Every strip or tile is inside the input: a file cut in its samples is rejected without reading them
         var length = (ulong)directory.Directory.Source.Length;
@@ -102,12 +130,11 @@ internal sealed class DngRawDescriptor
                 throw DngFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The block {i} of the raw image of the DNG file ({page.BlockByteCounts[i]} bytes at offset {page.BlockOffsets[i]}) is outside the input of {length} bytes."));
         }
 
-        descriptor.ResolveColorFilterArray();
-        descriptor.ResolveInterleaving();
-        descriptor.ResolveAreas();
-        descriptor.ResolveLevels(context);
-        descriptor.ResolveOpcodeLists(context);
-        return descriptor;
+        ResolveColorFilterArray();
+        ResolveInterleaving();
+        ResolveAreas();
+        ResolveLevels(context);
+        ResolveOpcodeLists(context);
     }
 
     private TiffDirectory Directory => Page.Directory;
@@ -282,8 +309,27 @@ internal sealed class DngRawDescriptor
                 continue;
 
             context.Tracker.ChargeMetadataBytes((long)field.Count);
-            var data = DngTagReader.TryReadBytes(Directory, tags[i], "OpcodeList" + (i + 1).ToString(CultureInfo.InvariantCulture), context.Limits.MaxMetadataBytes);
-            OpcodeLists[i] = DngOpcodeList.Parse(data, i + 1, context.IsLenient);
+
+            // The arrays of the parsed opcodes take at most as many bytes as their parameters (a table entry, a gain or
+            // a coordinate is stored in as many bytes as it is kept in): the list is charged twice its size, for the copy
+            // of its bytes while it is parsed and for its opcodes, which stay charged until the descriptor is disposed
+            var name = "OpcodeList" + (i + 1).ToString(CultureInfo.InvariantCulture);
+            var retained = context.Scope.Charge((long)field.Count, AllocationKind.DecoderState);
+            try
+            {
+                using (context.Scope.Charge((long)field.Count, AllocationKind.Temporary))
+                {
+                    var data = DngTagReader.TryReadBytes(Directory, tags[i], name, context.Limits.MaxMetadataBytes);
+                    OpcodeLists[i] = DngOpcodeList.Parse(data, i + 1, context.IsLenient);
+                }
+            }
+            catch
+            {
+                retained.Dispose();
+                throw;
+            }
+
+            _opcodeListCharges.Add(retained);
         }
     }
 }

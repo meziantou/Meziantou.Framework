@@ -1123,6 +1123,25 @@ public sealed class PixelConversionTests
     }
 
     [Fact]
+    public void TheHalfRangeAppliesToTheValuesAHalfDestinationStores()
+    {
+        // Flattened over black, 100000 at alpha 0.5 is 50000; the luma of (100000, 0, 0) is 21260: both fit a half
+        var background = new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) };
+        var gray = new GrayHalf[2];
+        PixelConversionPlan.Create<RgbaFloat, GrayHalf>(background).ConvertRow<RgbaFloat, GrayHalf>([new(100000, 100000, 100000, 0.5f), new(100000, 0, 0)], gray);
+        Assert.Equal([new GrayHalf((Half)50000), new GrayHalf((Half)21260)], gray);
+
+        var rgb = new RgbaHalf[1];
+        var keepsAlpha = PixelConversionPlan.Create<RgbaFloat, RgbaHalf>(background);
+        Assert.Throws<UnsupportedImageFeatureException>(() => keepsAlpha.ConvertRow<RgbaFloat, RgbaHalf>([new(100000, 100000, 100000, 0.5f)], rgb));
+
+        // Clipping clips the stored value, not the colors before they are flattened
+        var clip = PixelConversionPlan.Create<RgbaFloat, GrayHalf>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0), OutOfRangeSamples = OutOfRangeSampleHandling.Clip });
+        clip.ConvertRow<RgbaFloat, GrayHalf>([new(100000, 100000, 100000, 0.5f), new(200000, 200000, 200000, 0.5f)], gray);
+        Assert.Equal([new GrayHalf((Half)50000), new GrayHalf(Half.MaxValue)], gray);
+    }
+
+    [Fact]
     public void FloatToHalfRoundsAndRejectsWhatOverflowsUnlessClipped()
     {
         RgbaFloat[] row = [new(1 / 3f, -2.5f, 65504f, 0.5f), new(float.NaN, float.PositiveInfinity, float.NegativeInfinity, 1), new(65519f, -65519f, 1e-8f, 0)];

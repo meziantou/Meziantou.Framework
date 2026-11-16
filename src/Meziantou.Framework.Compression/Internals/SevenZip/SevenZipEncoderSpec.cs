@@ -17,5 +17,5 @@ internal sealed class SevenZipEncoderSpec
     /// <summary>Gets the function that creates the encoder. The encoder owns its output.</summary>
     public Func<Stream, (Stream Encoder, Func<byte[]> Properties)> Create { get; }
 
-    public static SevenZipEncoderSpec Copy { get; } = new(SevenZipMethodId.Copy, output => (output, static () => []));
+    public static SevenZipEncoderSpec Copy { get; } = new(SevenZipMethodId.Copy, output => (output, () => []));
 }

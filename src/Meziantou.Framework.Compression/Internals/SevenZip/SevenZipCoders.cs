@@ -120,7 +120,7 @@ internal static class SevenZipCoders
             _ => throw new ArgumentOutOfRangeException(nameof(filter)),
         };
 
-        return new SevenZipEncoderSpec(id, output => (new BranchFilterEncoderStream(output, kind, startOffset: 0, leaveOpen: false), static () => []));
+        return new SevenZipEncoderSpec(id, output => (new BranchFilterEncoderStream(output, kind, startOffset: 0, leaveOpen: false), () => []));
     }
 
     public static SevenZipEncoderSpec CreateMethodEncoderSpec(SevenZipCompressionMethod method, int level, int? dictionarySize)
@@ -144,7 +144,7 @@ internal static class SevenZipCoders
                 {
                     // As 7-Zip: blocks of 100,000 bytes at level 1, 500,000 at level 3, and 900,000 from level 5
                     var blockSize = dictionarySize is { } size ? Math.Clamp(size / 100_000, 1, 9) : level switch { <= 2 => 1, <= 4 => 5, _ => 9 };
-                    return new SevenZipEncoderSpec(SevenZipMethodId.BZip2, output => (new BZip2Stream(output, new BZip2CompressionOptions { BlockSize = blockSize }, leaveOpen: false), static () => []));
+                    return new SevenZipEncoderSpec(SevenZipMethodId.BZip2, output => (new BZip2Stream(output, new BZip2CompressionOptions { BlockSize = blockSize }, leaveOpen: false), () => []));
                 }
 
             case SevenZipCompressionMethod.Ppmd:

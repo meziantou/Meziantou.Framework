@@ -66,7 +66,9 @@ while (archiveReader.MoveToNextEntry())
     {
         // The content can be read until the reader moves to the next entry
         using var content = archiveReader.OpenEntryStream();
-        Assert.Equal(entry.Length, ReadAll(content).Length);
+        using var copy = new MemoryStream();
+        content.CopyTo(copy);
+        Assert.Equal(entry.Length, copy.Length);
     }
 }
 ```

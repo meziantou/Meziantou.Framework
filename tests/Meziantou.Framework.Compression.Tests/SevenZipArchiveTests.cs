@@ -724,7 +724,8 @@ public sealed class SevenZipArchiveTests
     public void Snippet_Read()
     {
         #region SevenZipArchive_Read
-        using (var archive = new SevenZipArchive(File.OpenRead(GetPath("lzma2.7z"))))
+        var path = Path.Combine(AppContext.BaseDirectory, "TestData", "SevenZip", "lzma2.7z");
+        using (var archive = new SevenZipArchive(File.OpenRead(path)))
         {
             var entry = archive.GetEntry("hello.txt");
             Assert.NotNull(entry);

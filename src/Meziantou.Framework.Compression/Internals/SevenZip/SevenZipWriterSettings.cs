@@ -98,7 +98,7 @@ internal sealed class SevenZipWriterSettings
         return method switch
         {
             SevenZipCompressionMethod.Copy => SevenZipEncoderSpec.Copy,
-            SevenZipCompressionMethod.Deflate => new SevenZipEncoderSpec(SevenZipMethodId.Deflate, output => (new DeflateStream(output, GetDeflateLevel(level), leaveOpen: false), static () => [])),
+            SevenZipCompressionMethod.Deflate => new SevenZipEncoderSpec(SevenZipMethodId.Deflate, output => (new DeflateStream(output, GetDeflateLevel(level), leaveOpen: false), () => [])),
             _ => SevenZipCoders.CreateMethodEncoderSpec(method, level, dictionarySize),
         };
     }

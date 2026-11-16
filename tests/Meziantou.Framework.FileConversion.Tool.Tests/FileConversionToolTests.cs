@@ -884,6 +884,36 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task Output_KeepsThePermissionsOfTheReplacedFile()
+    {
+        // Windows has no Unix permissions
+        if (OperatingSystem.IsWindows())
+            return;
+
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+        var output = await WriteFileAsync(temp, "a.pdf", "private"u8.ToArray());
+        File.SetUnixFileMode(output, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "pdf", "--overwrite")).ExitCode);
+
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(output));
+        Assert.HasCount(1, PdfDocument.Open(File.ReadAllBytes(output)).Pages);
+    }
+
+    [Fact]
+    public async Task Output_LongFileName()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "a.png", TestFiles.CreateImage(10, 10, ImageFormat.Png));
+
+        // 250 characters: the temporary file must not add the name of the output to its own name
+        var name = new string('n', 246) + ".pdf";
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath(name))).ExitCode);
+        Assert.True(File.Exists(temp.GetFullPath(name)));
+    }
+
+    [Fact]
     public async Task Output_LinkToTheInputIsRejected()
     {
         await using var temp = TemporaryDirectory.Create();

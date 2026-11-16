@@ -41,19 +41,34 @@ internal static class ArchiveFiles
     /// <summary>
     /// Writes a file through a new temporary file next to it, so that a failed conversion does not leave a partial file.
     /// The file replaces the output path: an existing link at this path is replaced, not followed, so the file it points
-    /// to is not changed.
+    /// to is not changed. On Unix, the replaced file keeps its permissions.
     /// </summary>
     public static void WriteAtomically(FullPath path, Action<Stream> write)
     {
-        // A unique name, created exclusively: an existing file is never truncated, and parallel conversions do not collide
+        // The permissions of the file that is replaced: the content is written to a file only its owner can read, then the
+        // file gets these permissions, so that a private output does not become readable by other users
+        UnixFileMode? existingMode = null;
+        if (!OperatingSystem.IsWindows() && File.Exists(path))
+        {
+            existingMode = File.GetUnixFileMode(path);
+        }
+
+        // A short unique name, so that it fits in the length limit of a file name, created exclusively: an existing file is
+        // never truncated, and parallel conversions do not collide
         FullPath temporaryPath;
         FileStream stream;
         while (true)
         {
-            temporaryPath = path.Parent / ("." + path.Name + "." + Guid.NewGuid().ToString("N") + ".tmp");
+            temporaryPath = path.Parent / ("." + Guid.NewGuid().ToString("N")[..16] + ".tmp");
             try
             {
-                stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.ReadWrite, Share = FileShare.None };
+                if (existingMode is not null && !OperatingSystem.IsWindows())
+                {
+                    options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+                }
+
+                stream = new FileStream(temporaryPath, options);
                 break;
             }
             catch (IOException) when (File.Exists(temporaryPath))
@@ -67,6 +82,11 @@ internal static class ArchiveFiles
             using (stream)
             {
                 write(stream);
+            }
+
+            if (existingMode is { } mode && !OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(temporaryPath, mode);
             }
 
             File.Move(temporaryPath, path, overwrite: true);

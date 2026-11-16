@@ -357,6 +357,25 @@ public sealed class DngDecoderTests
     }
 
     [Fact]
+    public void BadPixelsWithoutAGoodNeighborAreLeftAsTheyAre()
+    {
+        // A rectangle larger than the image marks every pixel: none has a good neighbor to be repaired from
+        var scene = DngScenes.Get("bayer-rggb");
+        var fixedData = new DngFileBuilder
+        {
+            Width = scene.Width,
+            Height = scene.Height,
+            Samples = scene.Samples,
+            BlackLevel = scene.BlackLevel,
+            WhiteLevel = scene.WhiteLevel,
+            ColorMatrix1 = scene.ColorMatrix1,
+            AsShotNeutral = scene.AsShotNeutral,
+            OpcodeList1 = new DngOpcodeWriter().FixBadPixelsList(0, [], [(0, 0, scene.Height + 10, scene.Width + 10)]).ToArray(),
+        }.Build();
+        AssertSamePixels(Variant(scene).Build(), fixedData);
+    }
+
+    [Fact]
     public void TheOpcodesOfALargeListAreChargedToTheLiveAllocationLimit()
     {
         // A gain map of 256x256 points takes 256 KiB: the bytes read from the tag, their copy and the parsed gains are all

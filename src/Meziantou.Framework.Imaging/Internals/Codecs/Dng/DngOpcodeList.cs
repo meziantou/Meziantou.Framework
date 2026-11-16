@@ -407,19 +407,24 @@ internal sealed class DngOpcodeList
             if (image.Planes != 1)
                 throw DngFormat.Invalid("The opcode FixBadPixels of the DNG file applies to an image of a Bayer pattern, which has one plane.");
 
-            // The bad pixels, marked first so that a bad pixel is never the neighbor another one is repaired from
-            var bad = new HashSet<(int X, int Y)>();
+            // The bad pixels, marked first in a bit mask charged to the scope so that a bad pixel is never the neighbor
+            // another one is repaired from: a repair reads good pixels only, so it is written in place
+            var width = image.Width;
+            var height = image.Height;
+            using var buffer = context.Scope.Rent((int)(((long)width * height + 7) / 8), AllocationKind.DecoderState, clear: true);
+            var mask = buffer.Span;
+            var any = false;
             if (constant is { } value)
             {
                 var marked = values == DngSampleValues.StoredFloats ? value : (float)(value / 65535.0);
-                for (var y = 0; y < image.Height; y++)
+                for (var y = 0; y < height; y++)
                 {
                     var row = image.GetRow(y);
-                    for (var x = 0; x < image.Width; x++)
+                    for (var x = 0; x < width; x++)
                     {
                         if (row[x] == marked)
                         {
-                            bad.Add((x, y));
+                            Mark(mask, x, y);
                         }
                     }
                 }
@@ -427,58 +432,74 @@ internal sealed class DngOpcodeList
 
             foreach (var (row, column) in points)
             {
-                if (row < image.Height && column < image.Width)
+                if (row < height && column < width)
                 {
-                    bad.Add((column, row));
+                    Mark(mask, column, row);
                 }
             }
 
             foreach (var rectangle in rectangles)
             {
-                for (var y = rectangle.Top; y < Math.Min(rectangle.Bottom, image.Height); y++)
+                for (var y = rectangle.Top; y < Math.Min(rectangle.Bottom, height); y++)
                 {
-                    for (var x = rectangle.Left; x < Math.Min(rectangle.Right, image.Width); x++)
+                    for (var x = rectangle.Left; x < Math.Min(rectangle.Right, width); x++)
                     {
-                        bad.Add((x, y));
+                        Mark(mask, x, y);
                     }
                 }
             }
 
-            var repaired = new List<(int X, int Y, float Value)>(bad.Count);
-            foreach (var (x, y) in bad.Order())
+            if (!any)
+                return;
+
+            for (var y = 0; y < height; y++)
             {
-                var sum = 0.0;
-                var count = 0;
-                AddNeighbor(x - 2, y);
-                AddNeighbor(x + 2, y);
-                AddNeighbor(x, y - 2);
-                AddNeighbor(x, y + 2);
-                if (IsGreen(x, y))
+                for (var x = 0; x < width; x++)
                 {
-                    AddNeighbor(x - 1, y - 1);
-                    AddNeighbor(x + 1, y - 1);
-                    AddNeighbor(x - 1, y + 1);
-                    AddNeighbor(x + 1, y + 1);
-                }
+                    if (!IsMarked(mask, x, y))
+                        continue;
 
-                if (count > 0)
-                {
-                    repaired.Add((x, y, (float)(sum / count)));
-                }
+                    var sum = 0.0;
+                    var count = 0;
+                    AddNeighbor(mask, x - 2, y);
+                    AddNeighbor(mask, x + 2, y);
+                    AddNeighbor(mask, x, y - 2);
+                    AddNeighbor(mask, x, y + 2);
+                    if (IsGreen(x, y))
+                    {
+                        AddNeighbor(mask, x - 1, y - 1);
+                        AddNeighbor(mask, x + 1, y - 1);
+                        AddNeighbor(mask, x - 1, y + 1);
+                        AddNeighbor(mask, x + 1, y + 1);
+                    }
 
-                void AddNeighbor(int nx, int ny)
-                {
-                    if (nx < 0 || ny < 0 || nx >= image.Width || ny >= image.Height || bad.Contains((nx, ny)))
-                        return;
+                    if (count > 0)
+                    {
+                        image[x, y, 0] = (float)(sum / count);
+                    }
 
-                    sum += image[nx, ny, 0];
-                    count++;
+                    void AddNeighbor(ReadOnlySpan<byte> mask, int nx, int ny)
+                    {
+                        if (nx < 0 || ny < 0 || nx >= width || ny >= height || IsMarked(mask, nx, ny))
+                            return;
+
+                        sum += image[nx, ny, 0];
+                        count++;
+                    }
                 }
             }
 
-            foreach (var (x, y, repairedValue) in repaired)
+            void Mark(Span<byte> mask, int x, int y)
             {
-                image[x, y, 0] = repairedValue;
+                var index = ((long)y * width) + x;
+                mask[(int)(index >> 3)] |= (byte)(1 << (int)(index & 7));
+                any = true;
+            }
+
+            bool IsMarked(ReadOnlySpan<byte> mask, int x, int y)
+            {
+                var index = ((long)y * width) + x;
+                return (mask[(int)(index >> 3)] & (1 << (int)(index & 7))) != 0;
             }
         }
 

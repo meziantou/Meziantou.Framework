@@ -60,24 +60,10 @@ internal static class JpegXlLayeredIO
     private static void Write(JpegXlLayeredImage image, PreparedLayers layers, Stream stream, JpegXlEncoder encoder)
     {
         var count = image.Layers.Count;
-        var layouts = new JpegXlFrameLayout[count];
-        for (var i = 0; i < count; i++)
-        {
-            var layer = image.Layers[i];
-            var size = layer.Image.Size;
-            var name = layer.Name is { } text ? JpegXlLayer.StrictUtf8.GetBytes(text) : [];
-            layouts[i] = new JpegXlFrameLayout
-            {
-                HasCrop = layer.Offset != default || size != image.Size,
-                X0 = layer.Offset.X,
-                Y0 = layer.Offset.Y,
-                Width = size.Width,
-                Height = size.Height,
-                BlendMode = (int)layer.BlendMode,
-                Name = name,
-            };
-        }
 
+        // The layout of a layer, with its encoded name, is built when the session writes its frame and released with it:
+        // the save holds at most the names of the frames it has not written yet
+        var layouts = new LayerLayouts(image);
         var scope = AllocationScope.Create(image.Configuration, Operation);
         var capabilities = ImageOutputCapabilities.ForStillImage(encoder, image.Size);
         var options = new ImageEncoderSessionOptions(encoder, capabilities, image.Size, layers.PixelFormat, count, layers.Metadata, Animation: null, image.Configuration, scope);
@@ -108,6 +94,21 @@ internal static class JpegXlLayeredIO
 
         session.BeginComplete(count);
         Pump(session, output, stream);
+    }
+
+    private static JpegXlFrameLayout CreateLayout(JpegXlLayer layer, Size canvasSize)
+    {
+        var size = layer.Image.Size;
+        return new JpegXlFrameLayout
+        {
+            HasCrop = layer.Offset != default || size != canvasSize,
+            X0 = layer.Offset.X,
+            Y0 = layer.Offset.Y,
+            Width = size.Width,
+            Height = size.Height,
+            BlendMode = (int)layer.BlendMode,
+            Name = layer.Name is { } text ? JpegXlLayer.StrictUtf8.GetBytes(text) : [],
+        };
     }
 
     private static void Pump(ImageEncoderSession session, ImageOutputBuffer output, Stream stream)
@@ -250,5 +251,22 @@ internal static class JpegXlLayeredIO
 
             base.Dispose(disposing);
         }
+    }
+
+    private sealed class LayerLayouts(JpegXlLayeredImage image) : IReadOnlyList<JpegXlFrameLayout>
+    {
+        public int Count => image.Layers.Count;
+
+        public JpegXlFrameLayout this[int index] => CreateLayout(image.Layers[index], image.Size);
+
+        public IEnumerator<JpegXlFrameLayout> GetEnumerator()
+        {
+            for (var i = 0; i < Count; i++)
+            {
+                yield return this[i];
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

@@ -57,7 +57,7 @@ public sealed class Image<TPixel> : Image
     }
 
     /// <summary>
-    /// Initializes a new single-frame still image with a zeroed frame. This is the internal construction hook used by
+    /// Initializes a new single-frame still image with a zeroed frame (unless <paramref name="clearPixels"/> is <see langword="false"/>). This is the internal construction hook used by
     /// imports, clones and decoders: <paramref name="configuration"/> and <paramref name="size"/> must already be validated
     /// (<see cref="ImageResourceLimits.EnsureCanvasWithinLimits(long, long)"/>).
     /// </summary>
@@ -68,12 +68,16 @@ public sealed class Image<TPixel> : Image
     /// images they return stay charged to it until those images are disposed, even after the reader is disposed.
     /// </param>
     /// <param name="layoutOptions">The storage layout (tests use it to force segmented or padded rows), or <see langword="null"/> for the default.</param>
-    internal Image(ImageConfiguration configuration, Size size, AllocationScope? scope, PixelStorageLayoutOptions? layoutOptions)
+    /// <param name="clearPixels">
+    /// <see langword="false"/> when the caller writes every row of the first frame before the image is used, and disposes
+    /// of it when it fails before: its pixels are then not zeroed.
+    /// </param>
+    internal Image(ImageConfiguration configuration, Size size, AllocationScope? scope, PixelStorageLayoutOptions? layoutOptions, bool clearPixels = true)
         : base(configuration, size, scope, layoutOptions)
     {
         _ = PixelFormats.GetPixelFormat<TPixel>();
         _frames = new ImageFrameCollection<TPixel>(this);
-        AppendFrameCore(new FrameMetadata());
+        AppendFrameCore(new FrameMetadata(), clearPixels);
     }
 
     /// <summary>
@@ -127,7 +131,9 @@ public sealed class Image<TPixel> : Image
     public override Image<TPixel> Clone()
     {
         ThrowIfDisposed();
-        var clone = new Image<TPixel>(Configuration, Size, scope: null, LayoutOptions);
+
+        // Every row of the first frame is copied before the clone is returned: it is not zeroed
+        var clone = new Image<TPixel>(Configuration, Size, scope: null, LayoutOptions, clearPixels: false);
         try
         {
             clone.CopyFrameFrom(FrameCore(0), 0);

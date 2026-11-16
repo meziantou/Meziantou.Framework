@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -94,7 +95,7 @@ internal static partial class PixelConverter
         where TDestination : unmanaged
         => ConvertRow(source, destination, background, format, useVectors: false, floats);
 
-    private static void ConvertRow<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination, Rgba64? background, ImageFormat format, bool useVectors, FloatSampleConversion? floats)
+    private static void ConvertRow<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination, Rgba64? background, ImageFormat format, bool useVectors, FloatSampleConversion? floats, bool sourceIsOpaque = false)
         where TSource : unmanaged
         where TDestination : unmanaged
     {
@@ -124,7 +125,7 @@ internal static partial class PixelConverter
         }
 
         var removesAlpha = PixelFormats.HasAlpha(sourceFormat) && !PixelFormats.HasAlpha(destinationFormat);
-        if (removesAlpha && background is null)
+        if (removesAlpha && background is null && !sourceIsOpaque)
         {
             var index = useVectors ? IndexOfNonOpaque(source) : IndexOfNonOpaqueScalar(source);
             if (index >= 0)
@@ -147,8 +148,9 @@ internal static partial class PixelConverter
     /// <exception cref="ArgumentException">A buffer length is invalid, or the background is not fully opaque.</exception>
     /// <param name="format">The image format reported in exceptions, or <see cref="ImageFormat.Unknown"/>.</param>
     /// <param name="floats">The policy of the floating-point samples out of range of the destination, or <see langword="null"/> to reject them.</param>
+    /// <param name="sourceIsOpaque"><see langword="true"/> when the caller already checked that every pixel is fully opaque (<see cref="ValidateRow"/>): alpha is then dropped without being checked again.</param>
     /// <exception cref="UnsupportedImageFeatureException">Non-opaque pixels would be discarded, or floating-point samples cannot be stored (nothing is written).</exception>
-    public static int ConvertRow(PixelFormat sourceFormat, ReadOnlySpan<byte> source, PixelFormat destinationFormat, Span<byte> destination, Rgba64? background = null, ImageFormat format = ImageFormat.Unknown, FloatSampleConversion? floats = null)
+    public static int ConvertRow(PixelFormat sourceFormat, ReadOnlySpan<byte> source, PixelFormat destinationFormat, Span<byte> destination, Rgba64? background = null, ImageFormat format = ImageFormat.Unknown, FloatSampleConversion? floats = null, bool sourceIsOpaque = false)
     {
         var sourceBytesPerPixel = PixelFormats.GetBytesPerPixel(sourceFormat);
         var destinationBytesPerPixel = PixelFormats.GetBytesPerPixel(destinationFormat);
@@ -169,64 +171,64 @@ internal static partial class PixelConverter
         switch (sourceFormat)
         {
             case PixelFormat.Rgba32:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba32>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba32>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Bgra32:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Bgra32>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Bgra32>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgb24:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgb24>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgb24>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgba64:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba64>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba64>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Gray8:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Gray8>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Gray8>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.RgbaFloat:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, RgbaFloat>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, RgbaFloat>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.RgbaHalf:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Gray16:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Gray16>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Gray16>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.La16:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, La16>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, La16>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.La32:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, La32>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, La32>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgb48:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgb48>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgb48>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.A8:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, A8>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, A8>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Argb32:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Argb32>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Argb32>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Abgr32:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Abgr32>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Abgr32>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Bgr565:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Bgr565>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Bgr565>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgba1010102:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.GrayFloat:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayFloat>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayFloat>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.GrayHalf:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayHalf>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, GrayHalf>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.LaFloat:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaFloat>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaFloat>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             case PixelFormat.LaHalf:
-                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaHalf>(source)), destinationFormat, destination, background, format, floats);
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, LaHalf>(source)), destinationFormat, destination, background, format, floats, sourceIsOpaque);
                 break;
             default:
                 throw new UnreachableException();
@@ -370,58 +372,58 @@ internal static partial class PixelConverter
     internal static UnsupportedImageFeatureException CreateNonOpaqueException(PixelFormat sourceFormat, PixelFormat destinationFormat, int index, ImageFormat format = ImageFormat.Unknown)
         => new(string.Create(CultureInfo.InvariantCulture, $"Converting {sourceFormat} pixels to {destinationFormat} would discard alpha: the pixel at index {index} of the row is not fully opaque. Provide an opaque background color (PixelConversionOptions.BackgroundColor) to flatten the pixels, or use a pixel type with alpha."), format, "Alpha removal");
 
-    private static void ConvertFrom<TSource>(ReadOnlySpan<TSource> source, PixelFormat destinationFormat, Span<byte> destination, Rgba64? background, ImageFormat format, FloatSampleConversion? floats)
+    private static void ConvertFrom<TSource>(ReadOnlySpan<TSource> source, PixelFormat destinationFormat, Span<byte> destination, Rgba64? background, ImageFormat format, FloatSampleConversion? floats, bool sourceIsOpaque)
         where TSource : unmanaged
     {
         switch (destinationFormat)
         {
             case PixelFormat.Rgba32:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba32>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba32>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Bgra32:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Bgra32>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Bgra32>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgb24:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgb24>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgb24>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgba64:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba64>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba64>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Gray8:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Gray8>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Gray8>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.RgbaFloat:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, RgbaFloat>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, RgbaFloat>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.RgbaHalf:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Gray16:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Gray16>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Gray16>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.La16:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, La16>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, La16>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.La32:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, La32>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, La32>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgb48:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgb48>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgb48>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.A8:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, A8>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, A8>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Argb32:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Argb32>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Argb32>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Abgr32:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Abgr32>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Abgr32>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Bgr565:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Bgr565>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Bgr565>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.Rgba1010102:
-                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(destination)), background, format, floats);
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(destination)), background, format, UseVectors, floats, sourceIsOpaque);
                 break;
             case PixelFormat.GrayFloat:
                 ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, GrayFloat>(destination)), background, format, floats);
@@ -1075,6 +1077,28 @@ internal static partial class PixelConverter
                 }
             }
 
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // 16 pixels: LD3 separates the three samples, ST4 interleaves them again with an opaque alpha
+                unsafe
+                {
+                    fixed (byte* inputPointer = &input)
+                    fixed (byte* outputPointer = &output)
+                    {
+                        for (; i + 16 <= length; i += 16)
+                        {
+                            var (first, second, third) = AdvSimd.Arm64.Load3xVector128AndUnzip(inputPointer + (3 * i));
+                            if (swaps)
+                            {
+                                (first, third) = (third, first);
+                            }
+
+                            AdvSimd.Arm64.StoreVectorAndZip(outputPointer + (4 * i), (first, second, third, Vector128<byte>.AllBitsSet));
+                        }
+                    }
+                }
+            }
+
             for (; i + 6 <= length; i += 4)
             {
                 unsafe { (Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(3 * i)), order) | opaque).StoreUnsafe(ref output, (nuint)(4 * i)); }
@@ -1107,6 +1131,28 @@ internal static partial class PixelConverter
                 {
                     var pixels = Avx2.Shuffle(unsafe(Vector256.LoadUnsafe(ref input, (nuint)(4 * i))), order256);
                     unsafe { Avx2.PermuteVar8x32(pixels.AsInt32(), groups256).AsByte().StoreUnsafe(ref output, (nuint)(3 * i)); }
+                }
+            }
+
+            if (AdvSimd.Arm64.IsSupported && !flattens)
+            {
+                // 16 pixels: LD4 separates the four samples, ST3 interleaves the three colors again
+                unsafe
+                {
+                    fixed (byte* inputPointer = &input)
+                    fixed (byte* outputPointer = &output)
+                    {
+                        for (; i + 16 <= length; i += 16)
+                        {
+                            var (first, second, third, _) = AdvSimd.Arm64.Load4xVector128AndUnzip(inputPointer + (4 * i));
+                            if (swaps)
+                            {
+                                (first, third) = (third, first);
+                            }
+
+                            AdvSimd.Arm64.StoreVectorAndZip(outputPointer + (3 * i), (first, second, third));
+                        }
+                    }
                 }
             }
 

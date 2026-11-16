@@ -424,19 +424,19 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     {
         if (!DrawingKernels.IsBridgedToColorFormat<TPixel>())
         {
-            ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, cancellationToken);
+            ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, OwnerImage.Configuration.MaxDegreeOfParallelism, cancellationToken);
         }
         else if (BridgeFormat == PixelFormat.Rgba64)
         {
-            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgba64>(from, to, pipeline, uint16Tables, cancellationToken));
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgba64>(from, to, pipeline, uint16Tables, OwnerImage.Configuration.MaxDegreeOfParallelism, cancellationToken));
         }
         else if (BridgeFormat == PixelFormat.Rgb24)
         {
-            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgb24>(from, to, pipeline, uint16Tables, cancellationToken));
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgb24>(from, to, pipeline, uint16Tables, OwnerImage.Configuration.MaxDegreeOfParallelism, cancellationToken));
         }
         else if (BridgeFormat == PixelFormat.Rgba32)
         {
-            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgba32>(from, to, pipeline, uint16Tables, cancellationToken));
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgba32>(from, to, pipeline, uint16Tables, OwnerImage.Configuration.MaxDegreeOfParallelism, cancellationToken));
         }
         else
         {

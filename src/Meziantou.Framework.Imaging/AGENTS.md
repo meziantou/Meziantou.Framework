@@ -1350,8 +1350,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     already cross (`NeighborChanged`): a pair that did not cross still does not, whatever the height. That halved the
     instructions of a paragraph and the coverages are the same bit for bit: `WalksEveryEdge` brings back the
     exhaustive walk, which `DrawingFuzzTests.TheSweepSkipsOnlyWhatCannotChange` and
-    `DrawingReferenceTests.TheSweepOfAParagraphIsTheSweepThatWalksEveryEdge` compare with. The spans of the sweep
-    are taken once per row (`SweepSpans`), not at each access.
+    `DrawingReferenceTests.TheSweepOfAParagraphIsTheSweepThatWalksEveryEdge` compare with. Once the changes of a
+    height span 32 positions, they are recorded (`RecordChange`, the ones before as one range) and marked in a bitmap
+    of the positions (`ChangedPositions`), and the walk jumps from an edge whose winding number did not change to the
+    next change (`WalkBetweenChanges`): -20 % instructions on a page of text. Recording every change cost 1.5 % on
+    short lines (100 labels). The spans of the sweep are taken once per row (`SweepSpans`), not at each access, and
+    the edges of the sweep line are copies in the scratch of their slots (`SlotEdges`), which stay in the cache.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules). A floating-point frame is
     composited by `FloatDrawingKernels` instead (the same formulas in double precision, not rounded to a grid).

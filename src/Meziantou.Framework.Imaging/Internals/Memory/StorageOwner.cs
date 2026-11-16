@@ -83,10 +83,10 @@ internal sealed class StorageOwner
         => Allocate(PixelStorageLayout.Create(width, height, bytesPerPixel, options), kind, reservation: null);
 
     /// <summary>Allocates zeroed pixel storage, drawing on <paramref name="reservation"/> when it covers the storage.</summary>
-    internal PixelStorage Allocate(PixelStorageLayout layout, AllocationKind kind, AllocationReservation? reservation)
+    internal PixelStorage Allocate(PixelStorageLayout layout, AllocationKind kind, AllocationReservation? reservation, bool clear = true)
     {
         ThrowIfDisposed();
-        var storage = PixelStorage.Create(this, layout, kind, reservation);
+        var storage = PixelStorage.Create(this, layout, kind, reservation, clear);
         lock (_lock)
         {
             if (!_disposed)

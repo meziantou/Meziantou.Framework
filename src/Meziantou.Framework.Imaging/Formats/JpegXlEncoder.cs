@@ -9,9 +9,10 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Animations are written as full frames that replace the image; durations are stored in milliseconds
-/// (<see cref="DurationRounding"/>). A frame of an animation must have a duration: JPEG XL defines a frame without duration
-/// as a layer of the next frame, not as an image that is shown.
+/// Animations are written as full frames that replace the image, or as the regions that change with
+/// <see cref="OptimizeFrames"/>; durations are stored in milliseconds (<see cref="DurationRounding"/>). A frame of an
+/// animation must have a duration: JPEG XL defines a frame without duration as a layer of the next frame, not as an image
+/// that is shown.
 /// </para>
 /// <para>
 /// The ICC profile is stored in the codestream, byte for byte; without a profile, the linear transfer function and a CICP
@@ -27,6 +28,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// A JPEG file is recompressed without loss by <see cref="JpegXlTranscoder"/>, not by this encoder, which stores pixels.
+/// A still image made of layers, each with its position and blend mode, is written by <see cref="JpegXlLayeredImage"/> with
+/// these settings.
 /// </para>
 /// </remarks>
 public sealed class JpegXlEncoder : ImageEncoder
@@ -117,6 +120,26 @@ public sealed class JpegXlEncoder : ImageEncoder
             field = value;
         }
     } = 5;
+
+    /// <summary>
+    /// Gets a value indicating whether the frames of an animation after the first one are written as the rectangle of the
+    /// image that changes, over the previous frame. Defaults to <see langword="false"/>: every frame covers the image.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each frame stores the bounding box of the pixels that differ from the previous frame given to the encoder, which
+    /// replaces those pixels in the previous frame: the decoder keeps every frame in a reference slot and draws the next
+    /// one over it, so lossless output shows exactly the frames of the image, with their durations and the play count. A
+    /// frame equal to the previous one is a single pixel. The first frame, and a frame whose changes reach every edge of the
+    /// image, cover it. Lossy output codes the rectangle alone; the pixels around it are the ones decoded for the previous
+    /// frames.
+    /// </para>
+    /// <para>
+    /// The encoder keeps a copy of the last frame (the size of a frame of the image), and decoders keep the previous frame
+    /// as a reference. Ignored by a still image.
+    /// </para>
+    /// </remarks>
+    public bool OptimizeFrames { get; init; }
 
     /// <summary>
     /// Gets how frame durations are converted to JPEG XL ticks (milliseconds, 32-bit values). Defaults to

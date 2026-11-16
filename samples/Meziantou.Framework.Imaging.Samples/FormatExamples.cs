@@ -117,4 +117,40 @@ internal static class FormatExamples
         });
     }
     #endregion
+
+    /// <summary>JPEG XL layers: write a still image of layers, read the image they make and the layers back.</summary>
+    #region Imaging_JpegXlLayers
+    public static string SaveJpegXlLayers(string photoPath, string logoPath, string layeredPath)
+    {
+        using (var photo = Image.Load<Rgba32>(photoPath))
+        using (var logo = Image.Load<Rgba32>(logoPath))
+        using (var document = new JpegXlLayeredImage(photo.Width, photo.Height))
+        {
+            // Each layer is an image of any size at a position on the canvas, combined with the layers below it by a blend
+            // mode of the format: Blend draws the logo over the photo, weighted by its alpha. The layers have the same
+            // pixel format; the colors of the document describe all of them.
+            document.AddLayer(photo, name: "Photo");
+            document.AddLayer(logo, new Point(photo.Width - logo.Width - 8, 8), JpegXlBlendMode.Blend, "Logo");
+            document.Save(layeredPath, new JpegXlEncoder { Effort = 7 });
+        }
+
+        // Image.Load gives the image the layers make, as a viewer shows it; JpegXlLayeredImage.Load gives the layers back,
+        // exactly for lossless output, from any still JPEG XL file whose frames are layers
+        using var layers = JpegXlLayeredImage.Load(layeredPath);
+        return string.Join(", ", layers.Layers.Select(layer => $"{layer.Name} {layer.Image.Width}x{layer.Image.Height} at {layer.Offset.X},{layer.Offset.Y} ({layer.BlendMode})"));
+    }
+    #endregion
+
+    /// <summary>A JPEG XL animation written as the regions that change.</summary>
+    #region Imaging_JpegXlOptimizedAnimation
+    public static long SaveOptimizedJpegXlAnimation(string animationPath, string jxlPath)
+    {
+        using var animation = Image.Load(animationPath);
+
+        // Each frame after the first one stores the rectangle that changes, drawn over the previous frame: a screen
+        // recording or a small moving object costs far less than full frames, and lossless frames decode exactly
+        animation.Save(jxlPath, new JpegXlEncoder { OptimizeFrames = true });
+        return new FileInfo(jxlPath).Length;
+    }
+    #endregion
 }

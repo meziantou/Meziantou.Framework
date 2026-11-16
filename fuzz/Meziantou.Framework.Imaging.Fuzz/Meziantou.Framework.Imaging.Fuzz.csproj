@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the JPEG 2000 encoder, the processing operations, the strokes, the optimal line breaking and the ICC profiles of color conversion. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR codec, the image data of PNG files, the lossy GIF compression, the JPEG 2000 encoder, the processing operations, the strokes, the optimal line breaking, the ICC profiles of color conversion, and the layers and optimized animations of JPEG XL. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -13,6 +13,9 @@
     <!-- The seeds of imaging-radiance: the Radiance HDR files of the golden corpus, valid, invalid, unsupported and over the limits -->
     <SeedPicture Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\invalid\hdr\*.hdr;..\..\tests\Meziantou.Framework.Imaging.Fixtures\limit\hdr\*.hdr" />
     <EmbeddedResource Include="@(SeedPicture)" LogicalName="Seeds/radiance/%(Filename)%(Extension)" Link="Seeds\radiance\%(Filename)%(Extension)" />
+    <!-- The seeds of imaging-jxl-layers-load, after the layered files it generates: the JPEG XL files of the golden corpus -->
+    <JpegXlSeed Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\jxl\*.jxl" />
+    <EmbeddedResource Include="@(JpegXlSeed)" LogicalName="Seeds/jxl/%(Filename)%(Extension)" Link="Seeds\jxl\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

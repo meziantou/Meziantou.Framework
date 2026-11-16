@@ -381,6 +381,8 @@ public sealed class SevenZipArchiveTests
                     data.Add(method, solid, encrypted, SevenZipFilter.Auto);
                 }
             }
+
+            data.Add(method, false, true, SevenZipFilter.None);
         }
 
         foreach (var filter in Enum.GetValues<SevenZipFilter>())

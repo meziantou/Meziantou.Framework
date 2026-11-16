@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using Meziantou.Framework.Compression.Internals.Crypto;
 using Meziantou.Framework.Compression.Internals.Deflate64;
+using Meziantou.Framework.Compression.Internals.Ppmd;
 
 namespace Meziantou.Framework.Compression.Internals.SevenZip;
 
@@ -37,6 +38,12 @@ internal static class SevenZipCoders
             case SevenZipMethodId.BZip2:
                 return new BZip2Stream(input, CompressionMode.Decompress, leaveOpen: false);
 
+            case SevenZipMethodId.Ppmd:
+                if (properties.Length < 5)
+                    throw new InvalidDataException("The PPMd properties of the 7z archive are truncated.");
+
+                return new Ppmd7DecoderStream(input, properties[0], BinaryPrimitives.ReadUInt32LittleEndian(properties.AsSpan(1)), unpackSize, context.MaxMemoryUsage, leaveOpen: false);
+
             case SevenZipMethodId.Aes:
                 return CreateAesDecoder(input, properties, context);
 
@@ -64,6 +71,20 @@ internal static class SevenZipCoders
             // As 7-Zip: blocks of 100,000 bytes at level 1, 500,000 at level 3, and 900,000 from level 5
             var blockSize = dictionarySize is { } size ? Math.Clamp(size / 100_000, 1, 9) : level switch { <= 2 => 1, <= 4 => 5, _ => 9 };
             return new SevenZipEncoderSpec(SevenZipMethodId.BZip2, output => (new BZip2Stream(output, new BZip2CompressionOptions { BlockSize = blockSize }, leaveOpen: false), static () => []));
+        }
+
+        if (method is SevenZipCompressionMethod.Ppmd)
+        {
+            var (order, memorySize) = Ppmd7EncoderStream.GetDefaultParameters(level);
+            if (dictionarySize is { } size)
+            {
+                memorySize = (uint)size;
+            }
+
+            var properties = new byte[5];
+            properties[0] = (byte)order;
+            BinaryPrimitives.WriteUInt32LittleEndian(properties.AsSpan(1), memorySize);
+            return new SevenZipEncoderSpec(SevenZipMethodId.Ppmd, output => (new Ppmd7EncoderStream(output, order, memorySize, leaveOpen: false), () => properties));
         }
 
         throw new NotSupportedException($"The method {method} is not supported yet.");

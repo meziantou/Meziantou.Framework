@@ -93,7 +93,52 @@ internal sealed class BlockParser
             parser._references.TryAdd(label, value: true);
         }
 
-        var position = parser.HasExtension(MarkdownExtensions.YamlFrontMatter) ? parser.ParseFrontMatter() : 0;
+        parser.ParseBlocks();
+        if (parser.HasExtension(MarkdownExtensions.AutoIdentifiers) && options.AutoIdentifierOptions.HasFlag(MarkdownAutoIdentifierOptions.AutoLink))
+        {
+            parser.AddHeadingLabels(parser._document);
+        }
+
+        parser.Convert(parser._document);
+        ArrayPool<Line>.Shared.Return(parser._lines);
+        parser._lines = [];
+        return parser._triviaSpans;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether <see cref="Parse"/> reads the text as a single paragraph, found from the blocks: the
+    /// inlines are not parsed and no tree is built. Returns <see langword="null"/> when only the inlines tell, which is the case
+    /// of a paragraph with a pipe when <see cref="MarkdownExtensions.PipeTables"/> is enabled.
+    /// </summary>
+    public static bool? IsSingleParagraph(string text, MarkdownParseOptions options)
+    {
+        using var tree = new TreeBuffer(1);
+        var parser = new BlockParser(text, options, tree);
+        try
+        {
+            parser.ParseBlocks();
+
+            // The definitions of a paragraph are blocks before it, and a paragraph of definitions only is not one
+            if (parser._document.Children is not [{ Kind: SyntaxKind.Paragraph, IsEmpty: false, DefinitionsOrNull: null or [] } paragraph])
+            {
+                return false;
+            }
+
+            // The pipe tables of Markdig are found in the inlines of a paragraph
+            return parser.HasExtension(MarkdownExtensions.PipeTables) && paragraph.Subject!.Text.AsSpan(paragraph.ContentStart).Contains('|') ? null : true;
+        }
+        finally
+        {
+            ArrayPool<Line>.Shared.Return(parser._lines);
+            parser._lines = [];
+        }
+    }
+
+    // Reads the blocks of the text: the blocks are closed, and the content of their paragraphs is read
+    private void ParseBlocks()
+    {
+        var text = _text;
+        var position = HasExtension(MarkdownExtensions.YamlFrontMatter) ? ParseFrontMatter() : 0;
         while (position < text.Length)
         {
             var lineEnd = position;
@@ -108,26 +153,17 @@ internal sealed class BlockParser
                 eolEnd += text[eolEnd] == '\r' && eolEnd + 1 < text.Length && text[eolEnd + 1] == '\n' ? 2 : 1;
             }
 
-            parser.IncorporateLine(position, lineEnd, eolEnd);
+            IncorporateLine(position, lineEnd, eolEnd);
             position = eolEnd;
         }
 
-        parser._atEnd = true;
-        while (parser._tip is { } tip && tip != parser._document)
+        _atEnd = true;
+        while (_tip is { } tip && tip != _document)
         {
-            parser.Finalize(tip);
+            Finalize(tip);
         }
 
-        parser.Finalize(parser._document);
-        if (parser.HasExtension(MarkdownExtensions.AutoIdentifiers) && options.AutoIdentifierOptions.HasFlag(MarkdownAutoIdentifierOptions.AutoLink))
-        {
-            parser.AddHeadingLabels(parser._document);
-        }
-
-        parser.Convert(parser._document);
-        ArrayPool<Line>.Shared.Return(parser._lines);
-        parser._lines = [];
-        return parser._triviaSpans;
+        Finalize(_document);
     }
 
     private char Peek(int index) => index < _lineEnd ? _text[index] : '\0';

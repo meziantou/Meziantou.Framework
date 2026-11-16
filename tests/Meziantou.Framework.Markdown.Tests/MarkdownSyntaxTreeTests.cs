@@ -1398,6 +1398,42 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(expected, text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n') == other.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n'));
     }
 
+    [Theory]
+    [InlineData("a\nb", "", true)]
+    [InlineData("`a`\n*b*", "", true)]
+    [InlineData("a\n===", "", false)]
+    [InlineData("a\n- b", "", false)]
+    [InlineData("a\n> b", "", false)]
+    [InlineData("[a]: /url\nb", "", false)]
+    [InlineData("[a]: /url", "", false)]
+    [InlineData("", "", false)]
+    [InlineData("a\n\nb", "", false)]
+    [InlineData("a | b\n- | -", "", false)]
+    [InlineData("a | b\n--- | ---", "gfm", false)]
+    [InlineData("a | b", "gfm", true)]
+    [InlineData("a | b\n- | -", "advanced", null)]
+    [InlineData("a\nb", "advanced", true)]
+    [InlineData("a\n:   b", "advanced", false)]
+    [InlineData("a\n: b", "advanced", true)]
+    [InlineData("---\na: b\n---", "advanced", false)]
+    public void FindsASingleParagraphFromTheBlocks(string text, string options, bool? expected)
+    {
+        var parseOptions = options switch
+        {
+            "gfm" => MarkdownParseOptions.GitHubFlavored,
+            "advanced" => new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced },
+            _ => MarkdownParseOptions.Default,
+        };
+
+        var single = Parsing.BlockParser.IsSingleParagraph(text, parseOptions);
+
+        Assert.Equal(expected, single);
+        if (single is not null)
+        {
+            Assert.Equal(single, MarkdownSyntaxTree.ParseText(text, parseOptions).GetRoot().Blocks is [MarkdownParagraphSyntax]);
+        }
+    }
+
     [Fact]
     public void FormatterReturnsTheTreeOfAFormattedDocument()
     {

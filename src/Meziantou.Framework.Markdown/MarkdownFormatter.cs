@@ -606,7 +606,9 @@ public static class MarkdownFormatter
             return blocks.Count >= 2 && blocks[^2].Kind() == continuedBlock.Kind && blocks[^1].Kind() == kind;
         }
 
-        private static bool IsSingleParagraph(string text, MarkdownParseOptions options) => IsText(text, options) || MarkdownSyntaxTree.ParseText(text, options).GetRoot().Blocks is [MarkdownParagraphSyntax];
+        // The blocks tell whether the text is a paragraph, without parsing its inlines and building its tree, except for the pipe
+        // tables of Markdig
+        private static bool IsSingleParagraph(string text, MarkdownParseOptions options) => IsText(text, options) || (Parsing.BlockParser.IsSingleParagraph(text, options) ?? MarkdownSyntaxTree.ParseText(text, options).GetRoot().Blocks is [MarkdownParagraphSyntax]);
 
         // Text whose lines all start with a letter is a paragraph, without parsing it: a block starts with punctuation, a digit
         // or whitespace, or with letters followed by . or ) for the list items of ListExtras. A table starts on a line with a pipe.

@@ -163,6 +163,12 @@ public static class MarkdownFuzzTargets
 
         _ = MarkdownHtmlRenderer.ToHtml(tree);
 
+        // The formatter finds whether a text is a single paragraph from its blocks, without parsing its inlines
+        if (Parsing.BlockParser.IsSingleParagraph(text, options) is { } single)
+        {
+            FuzzAssert.True(single == (tree.GetRoot().Blocks is [MarkdownParagraphSyntax]), $"The blocks of the text tell that it is a single paragraph: {single}, but its tree does not: {FuzzAssert.Format(text)}");
+        }
+
         // The plain text has no HTML: the HTML of the text is not written
         var plainText = MarkdownPlainTextRenderer.ToPlainText(tree);
         FuzzAssert.True(plainText.Length == 0 || plainText[^1] == '\n', $"The plain text {FuzzAssert.Format(plainText)} does not end with a line ending: {FuzzAssert.Format(text)}");

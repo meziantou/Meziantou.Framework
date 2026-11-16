@@ -5,24 +5,24 @@ description: Convert EPUB books to PDF documents, comic book archives or images,
 
 ## Convert an EPUB book to a PDF document
 
-The text of the book is laid out with its style sheets on pages of `--epub-page-size`, A5 by default. Each document of
+The text of the book is laid out with its style sheets on pages of `--layout-page-size`, A5 by default. Each document of
 the book (usually a chapter) starts a new page. The text of the PDF document stays text, so it can be searched and
 selected, and the title and author of the book are the metadata of the document:
 
 ```bash
 Meziantou.Framework.FileConversion.Tool book.epub --output-format pdf
-Meziantou.Framework.FileConversion.Tool book.epub --output book.pdf --epub-page-size A4 --epub-margin 20 --epub-font-size 12
+Meziantou.Framework.FileConversion.Tool book.epub --output book.pdf --layout-page-size A4 --layout-margin 20 --layout-font-size 12
 ```
 
 | Option | Description |
 | --- | --- |
-| `--epub-page-size` | `A3`, `A4`, `A5` (the default), `Letter`, `Legal`, or a size such as `148x210mm` |
-| `--epub-margin` | The margin of the pages, in millimeters. 15 by default |
-| `--epub-font-size` | The size of the text, in points. By default, the size the style sheets of the book set |
+| `--layout-page-size` | `A3`, `A4`, `A5` (the default for a book), `Letter`, `Legal`, or a size such as `148x210mm` |
+| `--layout-margin` | The margin of the pages, in millimeters. 15 by default |
+| `--layout-font-size` | The size of the text, in points. By default, the size the style sheets of the book set |
 | `--epub-mode` | `Auto` (the default), `Render` or `Images`: see below |
 
 The book is read on its own: the tool loads its style sheets, images and fonts from the book, and never from the
-network. Scripts do not run.
+network. Scripts do not run. The `--layout-*` options also lay out [Markdown and HTML documents](08-MarkdownAndHtml.md).
 
 ## Books whose pages are images
 

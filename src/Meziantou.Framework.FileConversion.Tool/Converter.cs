@@ -34,14 +34,9 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
             ValidatePdfOutputSettings();
         }
 
-        var textInput = Array.FindIndex(inputFormats, format => format.Kind is FileFormatKind.Markdown or FileFormatKind.Html);
         if (outputFormat.Kind is FileFormatKind.Markdown or FileFormatKind.Html)
         {
             ConvertTextDocuments(inputs, inputFormats, template, outputFormat);
-        }
-        else if (textInput >= 0)
-        {
-            throw new ConversionException($"The input '{inputs[textInput]}' is {WithArticle(inputFormats[textInput].Name)} document, which can be converted only to HTML or Markdown");
         }
         else if (outputFormat.Kind is FileFormatKind.Archive)
         {
@@ -253,7 +248,7 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
 
             var text = File.ReadAllText(input);
             var result = outputFormat.Kind is FileFormatKind.Html
-                ? TextDocumentConverter.MarkdownToHtml(text, name, settings)
+                ? TextDocumentConverter.MarkdownToHtml(text, name, settings, settings.HtmlFragment).Html
                 : TextDocumentConverter.HtmlToMarkdown(text, settings);
 
             outputPath.CreateParentDirectory();

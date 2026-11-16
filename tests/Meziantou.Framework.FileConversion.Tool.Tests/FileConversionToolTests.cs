@@ -438,11 +438,11 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         await using var temp = TemporaryDirectory.Create();
         var input = await WriteFileAsync(temp, "book.epub", TestFiles.CreateTextEpub());
 
-        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--epub-page-size", "A6x", "--dpi", "50");
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--layout-page-size", "A6x", "--dpi", "50");
         Assert.Equal(1, exitCode);
         Assert.Contains("A6x", console.Error);
 
-        (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--epub-font-size", "14");
+        (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--layout-font-size", "14");
         Assert.Equal(0, exitCode);
         Assert.Empty(console.Error);
 
@@ -558,7 +558,7 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Contains("Jpeg (.jpg, .jpeg): read, write", console.Output);
         Assert.Contains("--jpeg-quality", console.Output);
         Assert.Contains("EPUB (.epub): read", console.Output);
-        Assert.Contains("--epub-page-size", console.Output);
+        Assert.Contains("--layout-page-size", console.Output);
         Assert.Contains("TarGz (.tar.gz, .tgz): read, write", console.Output);
         Assert.Contains("CBR (.cbr): read", console.Output);
         Assert.Contains("--7z-password", console.Output);
@@ -644,6 +644,118 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task MarkdownToPdf_LaysOutTheText()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        await WriteFileAsync(temp, "docs/images/chart.png", TestFiles.CreateImage(40, 20, ImageFormat.Png));
+        var input = await WriteFileAsync(temp, "docs/report.md", Encoding.UTF8.GetBytes("# Quarterly report\n\nHello **world**\n\n![chart](images/chart.png)\n"));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf", "--layout-margin", "10");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("docs/report.pdf")));
+        Assert.Equal(PdfSize.A4.Width, document.Pages[0].MediaBox.Width, 0.5);
+        Assert.Equal("Quarterly report", document.Information.Title);
+        var text = document.Pages[0].ExtractText();
+        Assert.Contains("Quarterly report", text);
+        Assert.Contains("Hello world", text);
+
+        // The image of the folder of the document is loaded
+        Assert.HasCount(1, document.Pages[0].GetImages());
+    }
+
+    [Fact]
+    public async Task HtmlToPng_RendersThePages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "page.html", Encoding.UTF8.GetBytes("<!DOCTYPE html><html><head><title>Page</title><style>p { color: red }</style></head><body><p>Hello</p></body></html>"));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png", "--layout-page-size", "100x50mm", "--dpi", "50");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // The number of pages is known once the document is laid out: the number is padded to 4 digits
+        // 100 millimeters at 50 DPI
+        var info = Identify(temp.GetFullPath("page-0001.png"));
+        Assert.InRange(info.Size.Width, 195, 199);
+        Assert.InRange(info.Size.Height, 97, 100);
+    }
+
+    [Fact]
+    public async Task HtmlRoot_LoadsTheFilesOfTheRoot()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        await WriteFileAsync(temp, "site/logo.png", TestFiles.CreateImage(40, 20, ImageFormat.Png));
+        var input = await WriteFileAsync(temp, "site/pages/page.html", Encoding.UTF8.GetBytes("<p>Text</p><img src=\"../logo.png\">"));
+
+        // The files outside of the folder of the document are not loaded by default
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("default.pdf"))).ExitCode);
+        Assert.Empty(PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("default.pdf"))).Pages[0].GetImages());
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("root.pdf"), "--html-root", temp.GetFullPath("site"))).ExitCode);
+        Assert.HasCount(1, PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("root.pdf"))).Pages[0].GetImages());
+
+        var (exitCode, console) = await RunAsync(input, "-o", temp.GetFullPath("error.pdf"), "--html-root", temp.GetFullPath("other"));
+        Assert.Equal(1, exitCode);
+        Assert.Contains("--html-root", console.Error);
+    }
+
+    [Theory]
+    [InlineData("https://local.invalid/a/b.png", "a/b.png")]
+    [InlineData("https://local.invalid/a/./b.css?v=1#top", "a/b.css")]
+    [InlineData("https://local.invalid/a/../b%20c.png", "b c.png")]
+    [InlineData("https://local.invalid/../secret.txt", null)]
+    [InlineData("https://local.invalid/a/../../secret.txt", null)]
+    [InlineData("https://local.invalid/%2e%2e/secret.txt", null)]
+    [InlineData("https://local.invalid/a%2F..%2F..%2Fsecret.txt", null)]
+    [InlineData("https://local.invalid/C:%5Csecret.txt", null)]
+    [InlineData("https://local.invalid/", null)]
+    [InlineData("https://example.com/a.png", null)]
+    [InlineData("file:///etc/passwd", null)]
+    public void LocalFileDocumentLoader_ResolvesThePathsOfTheRoot(string url, string? expected)
+    {
+        var root = FullPath.FromPath("/root/site");
+        var resolved = Layout.LocalFileDocumentLoader.TryResolvePath(root, url, out var path);
+
+        Assert.Equal(expected is not null, resolved);
+        if (expected is not null)
+        {
+            Assert.Equal(root / expected, path);
+        }
+    }
+
+    [Fact]
+    public async Task PdfPassword_RemovesTheEncryption()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "doc.pdf", TestFiles.CreatePdf(2));
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("protected.pdf"), "--pdf-output-password", "secret", "--pdf-owner-password", "owner", "--pdf-permissions", "Print")).ExitCode);
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("protected.pdf"), "-o", temp.GetFullPath("plain.pdf"));
+        Assert.Equal(1, exitCode);
+        Assert.NotEmpty(console.Error);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("protected.pdf"), "-o", temp.GetFullPath("plain.pdf"), "--pdf-password", "secret")).ExitCode);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("plain.pdf")));
+        Assert.False(document.IsEncrypted);
+        Assert.Equal(PdfPermissions.All, document.Permissions);
+        Assert.HasCount(2, document.Pages);
+    }
+
+    [Fact]
+    public async Task ArchivePassword_RemovesTheEncryption()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "data.zip", TestFiles.CreateZip(("a.txt", "Secret"u8.ToArray())));
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("protected.7z"), "--7z-password", "pass", "--7z-encrypt-headers")).ExitCode);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("protected.7z"), "-o", temp.GetFullPath("plain.zip"), "--archive-password", "pass")).ExitCode);
+        Assert.Equal("Secret", ReadArchive(temp.GetFullPath("plain.zip"))["a.txt"]);
+    }
+
+    [Fact]
     public async Task HtmlToMarkdown_ConvertsTheBody()
     {
         await using var temp = TemporaryDirectory.Create();
@@ -660,8 +772,8 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Theory]
-    [InlineData("doc.md", "pdf", "can be converted only to HTML or Markdown")]
-    [InlineData("doc.html", "png", "can be converted only to HTML or Markdown")]
+    [InlineData("doc.md", "zip", "cannot be converted to an archive")]
+    [InlineData("doc.html", "7z", "cannot be converted to an archive")]
     [InlineData("doc.md", "md", "only HTML documents can")]
     [InlineData("doc.png", "html", "only Markdown documents can")]
     public async Task Error_TextDocumentConversions(string inputName, string outputFormat, string expectedError)

@@ -194,32 +194,37 @@ internal static class Program
             Description = "How the EPUB pages are made. Auto uses the images of a book whose pages are images (comics), and lays out the text of the other books",
             DefaultValueFactory = _ => defaults.EpubMode,
         }, format => format.Kind is FileFormatKind.Epub);
-        var epubPageSizeOption = AddFormatOption(new Option<PageSize>("--epub-page-size")
+        // Layout of the text of EPUB, Markdown and HTML documents
+        static bool IsLaidOut(FileFormat format) => format.Kind is FileFormatKind.Epub or FileFormatKind.Markdown or FileFormatKind.Html;
+        var layoutPageSizeOption = AddFormatOption(new Option<PageSize?>("--layout-page-size")
         {
-            Description = "The size of the pages the text of an EPUB book is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm",
-            DefaultValueFactory = _ => PageSize.ParseFixed("A5"),
+            Description = "The size of the pages the text of EPUB, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB, A4 for Markdown and HTML",
             CustomParser = result => Parse(result, PageSize.ParseFixed),
-        }, format => format.Kind is FileFormatKind.Epub);
-        var epubMarginOption = AddFormatOption(new Option<double>("--epub-margin")
+        }, IsLaidOut);
+        var layoutMarginOption = AddFormatOption(new Option<double>("--layout-margin")
         {
-            Description = "The margin of the pages the text of an EPUB book is laid out on, in millimeters",
-            DefaultValueFactory = _ => defaults.EpubMargin,
-        }, format => format.Kind is FileFormatKind.Epub);
-        epubMarginOption.Validators.Add(result =>
+            Description = "The margin of the pages the text of EPUB, Markdown and HTML documents is laid out on, in millimeters",
+            DefaultValueFactory = _ => defaults.LayoutMargin,
+        }, IsLaidOut);
+        layoutMarginOption.Validators.Add(result =>
         {
-            if (result.GetValue(epubMarginOption) is < 0 or > 100)
+            if (result.GetValue(layoutMarginOption) is < 0 or > 100)
             {
-                result.AddError("--epub-margin must be between 0 and 100");
+                result.AddError("--layout-margin must be between 0 and 100");
             }
         });
-        var epubFontSizeOption = AddFormatOption(new Option<double?>("--epub-font-size") { Description = "The size of the text of an EPUB book, in points. Default: the size of the style sheets of the book" }, format => format.Kind is FileFormatKind.Epub);
-        epubFontSizeOption.Validators.Add(result =>
+        var layoutFontSizeOption = AddFormatOption(new Option<double?>("--layout-font-size") { Description = "The size of the text of EPUB, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document" }, IsLaidOut);
+        layoutFontSizeOption.Validators.Add(result =>
         {
-            if (result.GetValue(epubFontSizeOption) is < 1 or > 200)
+            if (result.GetValue(layoutFontSizeOption) is < 1 or > 200)
             {
-                result.AddError("--epub-font-size must be between 1 and 200");
+                result.AddError("--layout-font-size must be between 1 and 200");
             }
         });
+        var htmlRootOption = AddFormatOption(new Option<DirectoryInfo?>("--html-root")
+        {
+            Description = "The folder whose files (images, style sheets, fonts) Markdown and HTML documents laid out on pages can load, such as the root of a documentation site. Default: the folder of each document. Nothing is loaded from the network",
+        }, format => format.Kind is FileFormatKind.Markdown or FileFormatKind.Html);
 
         // Markdown input and HTML output
         var markdownExtensionsOption = AddFormatOption(new Option<string>("--markdown-extensions")
@@ -298,7 +303,7 @@ internal static class Program
             pageSizeOption, pageMarginOption, pageOrientationOption, pdfImageEncodingOption,
             pdfConformanceOption, pdfOutputIntentOption, pdfMaxImageDpiOption, pdfOptimizeOption, pdfLinearizeOption,
             pdfOutputPasswordOption, pdfOwnerPasswordOption, pdfPermissionsOption, pdfFlattenFormsOption,
-            epubModeOption, epubPageSizeOption, epubMarginOption, epubFontSizeOption,
+            epubModeOption, layoutPageSizeOption, layoutMarginOption, layoutFontSizeOption, htmlRootOption,
             markdownExtensionsOption, markdownDisableHtmlOption, htmlFragmentOption, htmlTitleOption, htmlStylesheetOption,
             markdownHeadingStyleOption, markdownCodeBlockStyleOption, markdownEmphasisMarkerOption, markdownListMarkerOption, markdownUnknownElementsOption, markdownComplexTablesOption,
             comicImageFormatOption,
@@ -362,9 +367,10 @@ internal static class Program
                 PdfPermissions = parseResult.GetValue(pdfPermissionsOption),
                 PdfFlattenForms = parseResult.GetValue(pdfFlattenFormsOption),
                 EpubMode = parseResult.GetValue(epubModeOption),
-                EpubPageSize = parseResult.GetValue(epubPageSizeOption)?.Size ?? defaults.EpubPageSize,
-                EpubMargin = parseResult.GetValue(epubMarginOption),
-                EpubFontSize = parseResult.GetValue(epubFontSizeOption),
+                LayoutPageSize = parseResult.GetValue(layoutPageSizeOption)?.Size,
+                LayoutMargin = parseResult.GetValue(layoutMarginOption),
+                LayoutFontSize = parseResult.GetValue(layoutFontSizeOption),
+                HtmlRoot = parseResult.GetValue(htmlRootOption) is { } htmlRoot ? FullPath.FromPath(htmlRoot.FullName) : null,
                 MarkdownExtensions = parseResult.GetRequiredValue(markdownExtensionsOption),
                 MarkdownDisableHtml = parseResult.GetValue(markdownDisableHtmlOption),
                 HtmlFragment = parseResult.GetValue(htmlFragmentOption),

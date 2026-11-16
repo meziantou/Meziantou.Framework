@@ -1,11 +1,8 @@
 using System.IO.Compression;
 using Meziantou.Framework.FileConversionTool.Epub;
+using Meziantou.Framework.FileConversionTool.Layout;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf;
-using Meziantou.Framework.Pdf.Rendering;
-using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Imaging;
-using Meziantou.Framework.WebPlatform.PdfRendering;
 
 namespace Meziantou.Framework.FileConversionTool.Inputs;
 
@@ -15,8 +12,6 @@ namespace Meziantou.Framework.FileConversionTool.Inputs;
 /// </summary>
 internal sealed class EpubInputDocument : InputDocument
 {
-    private const double CssPixelsPerPoint = 96.0 / 72.0;
-
     private readonly ZipArchive _archive;
     private readonly EpubPackage _package;
     private readonly IReadOnlyList<string>? _imagePages;
@@ -138,92 +133,5 @@ internal sealed class EpubInputDocument : InputDocument
     }
 
     private List<ConversionPage> RenderDocument(EpubManifestItem item, int firstPageNumber, CancellationToken cancellationToken)
-    {
-        using var context = new BrowsingContext(new BrowsingContextOptions
-        {
-            DocumentLoader = new EpubDocumentLoader(_archive, _package),
-            RenderingBackend = new ImagingRenderingBackend(),
-        });
-
-        context.Navigate(EpubDocumentLoader.GetUrl(item.Path));
-        context.EventLoop.RunUntilIdle();
-        cancellationToken.ThrowIfCancellationRequested();
-
-        AddUserStyleSheet(context.Document);
-        context.EventLoop.RunUntilIdle();
-
-        var pageSize = _settings.EpubPageSize;
-        var margin = PageSize.MillimetersToPoints(_settings.EpubMargin) * CssPixelsPerPoint;
-        var printOptions = new PrintOptions
-        {
-            PageWidth = pageSize.Width * CssPixelsPerPoint,
-            PageHeight = pageSize.Height * CssPixelsPerPoint,
-            MarginTop = margin,
-            MarginRight = margin,
-            MarginBottom = margin,
-            MarginLeft = margin,
-            PreferCssPageSize = false,
-        };
-
-        var pages = new List<ConversionPage>();
-        if (_renderToPdf)
-        {
-            var document = context.PrintToPdf(printOptions);
-            _printedDocuments.Add(document);
-            foreach (var page in document.Pages)
-            {
-                pages.Add(new PrintedPdfPage(firstPageNumber + pages.Count + 1, page, _settings));
-            }
-        }
-        else
-        {
-            var images = context.RenderPages(printOptions, new ScreenshotOptions { DevicePixelRatio = _settings.Dpi / 96 });
-            foreach (var image in images)
-            {
-                pages.Add(new RenderedImagePage(firstPageNumber + pages.Count + 1, image));
-            }
-        }
-
-        return pages;
-    }
-
-    private void AddUserStyleSheet(Document document)
-    {
-        if (_settings.EpubFontSize is not { } fontSize)
-            return;
-
-        var parent = (Node?)document.Head ?? document.DocumentElement;
-        if (parent is null)
-            return;
-
-        var style = document.CreateElement("style");
-        style.TextContent = string.Create(CultureInfo.InvariantCulture, $"html {{ font-size: {fontSize}pt; }}");
-        parent.AppendChild(style);
-    }
-
-    private sealed class PrintedPdfPage(int pageNumber, PdfPage page, ConversionSettings settings) : ConversionPage(pageNumber)
-    {
-        public override PdfPage? GetPdfPage() => page;
-
-        public override Image RenderImage(CancellationToken cancellationToken) => PdfRenderer.RenderPage(page, new PdfRenderOptions { Dpi = settings.Dpi }, cancellationToken);
-    }
-
-    private sealed class RenderedImagePage(int pageNumber, Image image) : ConversionPage(pageNumber)
-    {
-        private Image? _image = image;
-
-        // The image is given once: the caller owns it
-        public override Image RenderImage(CancellationToken cancellationToken)
-        {
-            var result = _image ?? throw new InvalidOperationException("The image of the page is already used");
-            _image = null;
-            return result;
-        }
-
-        public override void Discard()
-        {
-            _image?.Dispose();
-            _image = null;
-        }
-    }
+        => LayoutRenderer.Render(new EpubDocumentLoader(_archive, _package), EpubDocumentLoader.GetUrl(item.Path), _settings.LayoutPageSize ?? PdfSize.A5, _settings, _renderToPdf, firstPageNumber, _printedDocuments, cancellationToken);
 }

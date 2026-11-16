@@ -11,11 +11,12 @@ description: A command-line tool that converts images, PDF documents, EPUB books
 - an EPUB book to a PDF document, a comic book archive or images
 - a comic book archive (CBZ, CBR, CB7, CBT) to a PDF document, images or another comic book archive
 - a Markdown document to an HTML page, and an HTML page to a Markdown document
+- a Markdown or HTML document to a PDF document or images
 - an archive to another archive format: zip, 7z, tar, .tar.gz, .tar.bz2, .tar.xz... and RAR as an input
 - several PDF documents to one PDF document, and a PDF document to one document per page
 - a PDF document to PDF/A, to a smaller, linearized or encrypted PDF document, or to a PDF document whose form fields are flattened
 
-Each format has its own options, such as `--jpeg-quality`, `--dpi` or `--epub-page-size`.
+Each format has its own options, such as `--jpeg-quality`, `--dpi` or `--layout-page-size`.
 
 ## What you can do with it
 
@@ -25,7 +26,7 @@ Each format has its own options, such as `--jpeg-quality`, `--dpi` or `--epub-pa
   PDF/A, smaller, linearized or encrypted. See [PDF documents](04-Pdf.md).
 - **Convert EPUB books and comic book archives**. See [EPUB books and comic book archives](05-EpubAndComicBooks.md).
 - **Name the output files** when an input gives several files. See [Output file names](06-OutputNames.md).
-- **Convert Markdown and HTML** documents to each other. See [Markdown and HTML](08-MarkdownAndHtml.md).
+- **Convert Markdown and HTML** documents to each other, and to PDF documents or images. See [Markdown and HTML](08-MarkdownAndHtml.md).
 - **Convert archives** from one format to another, such as RAR to zip or zip to .tar.gz. See [Archives](07-Archives.md).
 
 The [command reference](09-CommandReference.md) lists every option.

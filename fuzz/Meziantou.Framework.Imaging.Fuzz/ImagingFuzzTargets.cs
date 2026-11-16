@@ -11,7 +11,8 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
 /// homography estimation and resizing; the conversions between the pixel formats; the merging of the pieces of strokes;
-/// the optimal line breaking of text layouts; the options of the WebP encoder that change its pixels or its output
+/// the optimal line breaking of text layouts; the ICC profiles that the color conversions read (named colors, the
+/// processing elements of iccMAX profiles); the options of the WebP encoder that change its pixels or its output
 /// (bit-depth dithering, sharp YUV, non-seekable animations); and the layers of JPEG XL images and the regions of its
 /// optimized animations. The inputs of the processing targets are small images whose pixel format, size, frames and
 /// bytes come from the fuzzer, followed by the options of the operation.
@@ -59,6 +60,8 @@ public static partial class ImagingFuzzTargets
         new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
         new("imaging-stroke", StrokeTarget) { Seeds = GetStrokeSeeds, Dictionary = StrokeTokens },
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
+        new("imaging-icc-named-colors", IccNamedColorsTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
+        new("imaging-icc-conversion", IccProfileConversionTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
         new("imaging-pixel-conversion", PixelConversionTarget) { Seeds = GetPixelConversionSeeds, Dictionary = Tokens },
         new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },

@@ -1079,6 +1079,40 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.HdrToneMappingOptions? ToneMapping { get => throw null; init { } }
     }
 
+    public sealed class IccNamedColor
+    {
+        public Meziantou.Framework.Imaging.CieXyz ConnectionSpaceColor { get => throw null; }
+        public Meziantou.Framework.Imaging.CieLab ConnectionSpaceLab { get => throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<double> DeviceValues { get => throw null; }
+        public string Name { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class IccNamedColorCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.IccNamedColor>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.IccNamedColor>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.IccNamedColor>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public int DeviceChannelCount { get => throw null; }
+        public Meziantou.Framework.Imaging.IccNamedColor this[int index] { get => throw null; }
+        public Meziantou.Framework.Imaging.IccNamedColor this[string name] { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.IccProfile Profile { get => throw null; }
+        public static Meziantou.Framework.Imaging.IccNamedColorCollection Create(Meziantou.Framework.Imaging.Metadata.IccProfile profile) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.IccNamedColor> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public int IndexOf(string name) => throw null;
+        public bool TryGetValue(string name, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.IccNamedColor? color) => throw null;
+    }
+
+    public sealed class IccNamedColorTransform
+    {
+        public Meziantou.Framework.Imaging.IccNamedColorCollection Colors { get => throw null; }
+        public int DestinationChannelCount { get => throw null; }
+        public void Convert(Meziantou.Framework.Imaging.IccNamedColor color, System.Span<byte> destination) { }
+        public void Convert(Meziantou.Framework.Imaging.IccNamedColor color, System.Span<float> destination) { }
+        public void Convert(Meziantou.Framework.Imaging.IccNamedColor color, System.Span<ushort> destination) { }
+        public static Meziantou.Framework.Imaging.IccNamedColorTransform Create(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Metadata.IccProfile> profiles, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.IccNamedColorTransform Create(Meziantou.Framework.Imaging.Metadata.IccProfile namedColorProfile, Meziantou.Framework.Imaging.Metadata.IccProfile destination, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) => throw null;
+    }
+
     public abstract class Image : System.IDisposable
     {
         public const int FormatDetectionPrefixLength = 18;

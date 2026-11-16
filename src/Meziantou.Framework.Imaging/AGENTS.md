@@ -1198,8 +1198,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - `IccProfile.Cgats001CompatibleCmyk` is third-party data (CC0-1.0): `Internals/Color/BuiltInCmykProfile.g.cs` is
   transcribed from the corpus by the `icc-builtin` command of the corpus generator. Never edit it by hand.
 
-- Written from ICC.1:2001-04 (version 2 profiles), ICC.1:2022 (version 4 profiles) and Adobe's published black point
-  compensation algorithm; cite the clause in the code. Code from another color management system may be ported only
+- Written from ICC.1:2001-04 (version 2 profiles), ICC.1:2022 (version 4 profiles), ICC.2:2023 (version 5, iccMAX) and
+  Adobe's published black point compensation algorithm; cite the clause in the code. Code from another color management system may be ported only
   under the license rule of "Hard constraints" (Little CMS is MIT; Argyll CMS is AGPL and stays an oracle).
 - A profile is untrusted input. Validate every size against the tag before reading (64-bit arithmetic for table
   sizes), read color lookup tables in place (`ReadOnlyMemory<byte>`, no copy) so that a transform only copies
@@ -1251,6 +1251,31 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   exact gamut for matrix-based and CICP destinations, round trip through the colorimetric tables for table-based ones.
   `Clip` adds no stage, so the default conversions are unchanged bit for bit. The HDR clipping policy is separate
   (`HdrToneMapStage`).
+- Named color profiles (`IccNamedColorReader`: the `ncl2` tag of versions 2 and 4, the `nmcl` tag array of version 5)
+  are never a source or a destination of `IccColorTransform`: `IccNamedColorCollection` reads them and
+  `IccNamedColorTransform` converts their colors through `IccPipeline.CreateFromNamedColors`, a sequence that starts in
+  the connection space (`IccProfileModel.CreateNamedColorSource` only gives the media white point), without black point
+  compensation (LittleCMS ignores it too). The CIEXYZ coordinates of `ncl2` are u1Fixed15 numbers (Table 66): LittleCMS
+  2.19 and iccDEV 2.4.2.5 both scale them otherwise, so only the hand-computed values of `IccColorTransformTests` judge
+  them. Version 5 colors are read at full tint, with floating-point PCS values only.
+- iccMAX: `IccProfileModel` accepts version 5 profiles with a CIEXYZ or CIELAB connection space and rejects a spectral
+  connection space, custom connection conditions (`c2sp`, `s2cp`) and the iccMAX-only classes as
+  `UnsupportedImageFeatureException`. `TryFindLookupTable` follows ICC.2:2023 section 8.14.2 for version 5 (the `A2B3`
+  and `B2A3` tags are ICC-absolute: the model converts them to and from media-relative colorimetry, so the pipeline keeps
+  its rescaling of the absolute intent) and keeps the ICC.1 order for versions 2 and 4; `DToBx`/`BToDx` are ignored in
+  every version. A `multiProcessElementsType` tag (`IccMpeParser`, one `IccMpeStage` per tag) has a connection space that
+  is not encoded (CIEXYZ with Y = 1, CIELAB in its units). The elements (`IccMpeElement` and its subclasses) evaluate in
+  `double`, except the calculator (`IccMpeCalculator`), whose operands are float32Number values: each result is rounded
+  to single precision, as iccDEV computes. The calculator is compiled once: the stack depth after each operation is
+  static (streams that may not run must not change it, else `UnsupportedImageFeatureException`), which sizes the scratch
+  memory of the stage (stack-allocated up to 256 values, rented above) and bounds the work (`IccMpeParseContext.MaxCost`
+  operations per color, 16 levels of nested calculators). Two values that are not numbers are equal for `eq` (section
+  11.2.1.1, as in iccDEV); `solv` solves square systems only. A value that is not a number at the end of a tag is 0.
+- The iccMAX references are colors converted by iccApplyNamedCmm of iccDEV (the reference implementation, from the
+  pinned Meziantou.Prebuilt release) on profiles written as XML (`Common/IccMaxProfileXml.cs` of the corpus generator)
+  and built by iccFromXml (`IccCorpus.IccMax.cs`). iccDEV applies a black point scaling to the version 4 perceptual
+  intent, as LittleCMS does: compare the perceptual intent between iccMAX profiles only. Its `solv` fails on every
+  system, so the corpus calculator does not use it.
 - `IccColorTransformOptions.ClipFloatingPointSamples = false` evaluates `IccStage.ApplyUnbounded` instead of `Apply` for
   the floating-point samples of `IccColorTransform`: tone curves extended beyond [0, 1] (`IccCurve.EvaluateUnbounded`,
   `IccInverseCurve.EvaluateUnbounded`), matrices as they are, clipping stages skipped. A stage that has a range (a lookup

@@ -437,13 +437,58 @@ public static ushort[] SoftProof(IccProfile display, IccProfile printer, ReadOnl
 - A sequence that does not connect, such as an abstract profile first or a device link profile after a device
   profile, is an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 
+## Convert named colors
+
+A named color profile is a swatch book: a list of named colors (spot colors such as "PMS 185 C"), with their
+colorimetry and, often, the device values that print them. [IccNamedColorCollection](cref:Meziantou.Framework.Imaging.IccNamedColorCollection) reads the colors and finds them
+by name, and [IccNamedColorTransform](cref:Meziantou.Framework.Imaging.IccNamedColorTransform) converts them to the device values of another profile:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_NamedColors;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static (byte[] Rgb, IReadOnlyList<double> Inks) SpotColor(string swatchBookPath, string name)
+{
+    var swatchBook = new IccProfile(new MetadataBlob(File.ReadAllBytes(swatchBookPath)));
+    var colors = IccNamedColorCollection.Create(swatchBook);
+    if (!colors.TryGetValue(name, out var color))
+        throw new ArgumentException($"The swatch book has no color named '{name}'.", nameof(name));
+
+    // The colorimetry of the color, converted to the device values of the display (relative colorimetric intent)
+    var transform = IccNamedColorTransform.Create(swatchBook, IccProfile.Srgb);
+    var rgb = new byte[transform.DestinationChannelCount];
+    transform.Convert(color, rgb);
+
+    // On the press the profile was made for, its device values (here CMYK inks) reproduce the color exactly
+    return (rgb, color.DeviceValues);
+}
+```
+<!-- endref -->
+
+- The name is compared ordinally, with its prefix and suffix: version 2 and 4 profiles store a prefix, a root name and
+  a suffix, and the name of the color is the three of them as they are stored.
+- [ConnectionSpaceColor](cref:Meziantou.Framework.Imaging.IccNamedColor.ConnectionSpaceColor) and [ConnectionSpaceLab](cref:Meziantou.Framework.Imaging.IccNamedColor.ConnectionSpaceLab) give the colorimetry of the color, relative to the media white
+  under the D50 illuminant; [DeviceValues](cref:Meziantou.Framework.Imaging.IccNamedColor.DeviceValues) gives its device values, in [0, 1], when the profile has them. On the
+  device the profile was made for, these values reproduce the color exactly; a conversion through an output profile
+  only approximates them.
+- The transform takes a sequence that starts with the named color profile, as [IccColorTransform.Create](cref:Meziantou.Framework.Imaging.IccColorTransform.Create) does for
+  samples. Black point compensation does not apply to named colors: they are measured colors, not the range of a
+  device.
+- An iccMAX (version 5) named color profile stores several tints of each color: the collection holds the color at full
+  tint.
+
 ## Supported profiles
 
 ICC version 2 and version 4 profiles of input, display, output and color space classes, for gray, RGB and CMYK data:
 matrix-based profiles (with sampled, gamma and parametric curves) and table-based ones; device link and abstract
-profiles in a sequence of profiles. Conversions are evaluated in
+profiles in a sequence of profiles; named color profiles through [IccNamedColorTransform](cref:Meziantou.Framework.Imaging.IccNamedColorTransform). Conversions are evaluated in
 double precision from the formulas of the ICC specification, so they give the same results on every platform.
 
-A malformed profile is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException). A valid profile of another kind (version 5, named color,
-other color spaces, a device link or abstract profile outside a sequence), or one that cannot be a destination, is an
-[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+ICC version 5 (iccMAX) profiles convert the same way when their profile connection space is CIEXYZ or CIELAB under the
+standard D50 conditions. Their tables may be processing elements: curve sets, matrices, lookup tables of
+floating-point entries, tint arrays and calculators, the small programs of iccMAX, which run in single precision as
+the specification defines them. Their tags of the absolute colorimetric intent are used, and each colorimetric intent
+falls back on the tag of the other one. A spectral connection space, custom viewing conditions, the color appearance,
+emission and reflectance elements, and the material (BRDF) and multiplex connections are not supported.
+
+A malformed profile is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException). A valid profile of another kind (a named color profile where samples
+are converted, other color spaces, a device link or abstract profile outside a sequence, the iccMAX features above),
+or one that cannot be a destination, is an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).

@@ -76,8 +76,13 @@ internal sealed class IccProfileModel
             throw new InvalidImageContentException($"The {role} ICC profile is invalid: {error}", ImageFormat.Unknown);
 
         _ = IccHeader.TryRead(data.Span, out var header);
-        if (header.Version.Major > 4)
-            throw CreateUnsupported(role, string.Create(CultureInfo.InvariantCulture, $"has version {header.Version.Major}.{header.Version.Minor} (iccMAX); only versions 2 and 4 are supported."), "ICC profile version 5");
+        if (header.Version.Major > 5)
+            throw CreateUnsupported(role, string.Create(CultureInfo.InvariantCulture, $"has version {header.Version.Major}.{header.Version.Minor}; only versions 2, 4 and 5 (iccMAX) are supported."), "ICC profile version");
+
+        if (header.Version.Major == 5)
+        {
+            ValidateIccMax(data.Span, header, role);
+        }
 
         switch (header.ProfileClass)
         {
@@ -90,6 +95,9 @@ internal sealed class IccProfileModel
             case IccReader.ClassDeviceLink or IccReader.ClassAbstract:
                 throw CreateUnsupported(role, $"has the class {IccReader.FormatSignature(header.ProfileClass)}, which does not describe the colors of a device on its own; use it in a sequence of profiles (IccColorTransform.Create with a list of profiles).", "ICC profile class");
 
+            case IccReader.ClassNamedColor:
+                throw CreateUnsupported(role, "is a named color profile, which converts color names, not samples: use IccNamedColorTransform.", "ICC profile class");
+
             default:
                 throw CreateUnsupported(role, $"has the class {IccReader.FormatSignature(header.ProfileClass)}; only input, display, output and color space profiles are supported{(allowLinkAndAbstract ? ", and device link and abstract profiles in a sequence of profiles" : "")}.", "ICC profile class");
         }
@@ -100,6 +108,37 @@ internal sealed class IccProfileModel
 
         return new IccProfileModel(data, header, role, channelCount, outputChannelCount: 3);
     }
+
+    // ICC.2:2023: what the library supports of a version 5 profile is the colorimetric connection space (CIEXYZ or CIELAB
+    // relative to the standard D50 observer and illuminant); spectral connection spaces (section 7.2.21) and custom profile
+    // connection conditions (section 6.3.2) are identified and rejected
+    private static void ValidateIccMax(ReadOnlySpan<byte> data, IccHeader header, string role)
+    {
+        if (header.ProfileClass != IccReader.ClassDeviceLink && header.ConnectionSpace == 0)
+            throw CreateUnsupported(role, "is an iccMAX profile with a spectral profile connection space only; only the CIEXYZ and CIELAB connection spaces are supported.", "ICC spectral profile connection space");
+
+        if (IccReader.TryGetTag(data, IccReader.TagCustomToStandardPcc, out _) || IccReader.TryGetTag(data, IccReader.TagStandardToCustomPcc, out _))
+            throw CreateUnsupported(role, "is an iccMAX profile with custom profile connection conditions ('c2sp', 's2cp'); only the standard D50 connection conditions are supported.", "ICC custom profile connection conditions");
+    }
+
+    /// <summary>
+    /// Creates the model of a named color profile as the source of a sequence of profiles: its colors are already in the
+    /// connection space, and only its media white point is used (ICC-absolute colorimetric intent).
+    /// </summary>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    public static IccProfileModel CreateNamedColorSource(IccProfile profile, string role)
+    {
+        var data = profile.Data.Memory;
+        if (!MetadataValidation.TryValidateIccProfile(data.Span, out var error))
+            throw new InvalidImageContentException($"The {role} ICC profile is invalid: {error}", ImageFormat.Unknown);
+
+        _ = IccHeader.TryRead(data.Span, out var header);
+        Debug.Assert(header.ProfileClass == IccReader.ClassNamedColor);
+        return new IccProfileModel(data, header, role, channelCount: 3, outputChannelCount: 3);
+    }
+
+    /// <summary>Gets a value indicating whether the profile is a named color profile (ICC.1:2022 section 8.9, ICC.2:2023 section 8.10).</summary>
+    public bool IsNamedColor => Header.ProfileClass == IccReader.ClassNamedColor;
 
     // ICC.1:2022 section 8.6: the data color space of a device link profile is its input, the field of the connection space
     // its output, both device color spaces. Section 8.7: both color spaces of an abstract profile are connection spaces.
@@ -198,10 +237,30 @@ internal sealed class IccProfileModel
     {
         if (TryFindLookupTable(deviceToConnection: true, intent, out var tag, out var signature))
         {
-            if (IccLutParser.Append(tag, ChannelCount, 3, deviceToConnection: true, !IsLabConnectionSpace, stages) is { } error)
-                throw Invalid($"in the {IccReader.FormatSignature(signature)} tag, {error}");
+            if (IsMultiProcessElements(tag))
+            {
+                // The connection space of a multiProcessElementsType is not encoded: CIEXYZ (Y = 1 for the white) or CIELAB
+                stages.Add(IccMpeParser.CreateStage(tag, ChannelCount, 3, new IccMpeParseContext(_role, signature)));
+                if (IsLabConnectionSpace)
+                {
+                    stages.Add(IccLabToXyzStage.Instance);
+                }
+            }
+            else
+            {
+                if (IccLutParser.Append(tag, ChannelCount, 3, deviceToConnection: true, !IsLabConnectionSpace, stages) is { } error)
+                    throw Invalid($"in the {IccReader.FormatSignature(signature)} tag, {error}");
 
-            AppendDecoding(stages, IccReader.ReadUInt32(tag.Span), signature);
+                AppendDecoding(stages, IccReader.ReadUInt32(tag.Span), signature);
+            }
+
+            // ICC.2:2023 section 9.2.2: the ICC-absolute colorimetry of an 'A2B3' tag, relative to the media white
+            if (signature == IccReader.TagAToB3)
+            {
+                var white = GetMediaWhitePoint();
+                stages.Add(IccMatrixStage.CreateScale(IccColorimetry.D50X / white.X, IccColorimetry.D50Y / white.Y, IccColorimetry.D50Z / white.Z));
+            }
+
             return;
         }
 
@@ -296,7 +355,14 @@ internal sealed class IccProfileModel
             throw Invalid("the device link profile has no 'A2B0' tag.");
 
         // The device values on both sides are not encoded: the tag is read as the table of a device profile
-        if (IccLutParser.Append(_data.Slice(offset, length), ChannelCount, OutputChannelCount, deviceToConnection: true, connectionIsXyz: false, stages) is { } error)
+        var tag = _data.Slice(offset, length);
+        if (IsMultiProcessElements(tag))
+        {
+            stages.Add(IccMpeParser.CreateStage(tag, ChannelCount, OutputChannelCount, new IccMpeParseContext(_role, IccReader.TagAToB0)));
+            return;
+        }
+
+        if (IccLutParser.Append(tag, ChannelCount, OutputChannelCount, deviceToConnection: true, connectionIsXyz: false, stages) is { } error)
             throw Invalid($"in the 'A2B0' tag, {error}");
     }
 
@@ -317,6 +383,23 @@ internal sealed class IccProfileModel
         var tag = _data.Slice(offset, length);
         var type = IccReader.ReadUInt32(tag.Span);
         var inputIsLab = Header.DataColorSpace == IccReader.SignatureLab;
+        if (type == IccMpeParser.TypeMultiProcessElements)
+        {
+            // The connection spaces of a multiProcessElementsType are not encoded (ICC.1:2022 section 6.3.4.1)
+            if (inputIsLab)
+            {
+                stages.Add(IccXyzToLabStage.Instance);
+            }
+
+            stages.Add(IccMpeParser.CreateStage(tag, 3, 3, new IccMpeParseContext(_role, IccReader.TagAToB0)));
+            if (IsLabConnectionSpace)
+            {
+                stages.Add(IccLabToXyzStage.Instance);
+            }
+
+            return;
+        }
+
         AppendEncoding(stages, type, IccReader.TagAToB0, inputIsLab);
         if (IccLutParser.AppendConnectionSpaceTable(tag, inputIsXyz: !inputIsLab, stages) is { } error)
             throw Invalid($"in the 'A2B0' tag, {error}");
@@ -348,6 +431,24 @@ internal sealed class IccProfileModel
     {
         if (TryFindLookupTable(deviceToConnection: false, intent, out var tag, out var signature))
         {
+            // ICC.2:2023 section 9.2.41: a 'B2A3' tag converts ICC-absolute colorimetry
+            if (signature == IccReader.TagBToA3)
+            {
+                var white = GetMediaWhitePoint();
+                stages.Add(IccMatrixStage.CreateScale(white.X / IccColorimetry.D50X, white.Y / IccColorimetry.D50Y, white.Z / IccColorimetry.D50Z));
+            }
+
+            if (IsMultiProcessElements(tag))
+            {
+                if (IsLabConnectionSpace)
+                {
+                    stages.Add(IccXyzToLabStage.Instance);
+                }
+
+                stages.Add(IccMpeParser.CreateStage(tag, 3, ChannelCount, new IccMpeParseContext(_role, signature)));
+                return;
+            }
+
             AppendEncoding(stages, IccReader.ReadUInt32(tag.Span), signature);
             if (IccLutParser.Append(tag, 3, ChannelCount, deviceToConnection: false, !IsLabConnectionSpace, stages) is { } error)
                 throw Invalid($"in the {IccReader.FormatSignature(signature)} tag, {error}");
@@ -447,40 +548,48 @@ internal sealed class IccProfileModel
     }
 
     /// <summary>
-    /// Finds the lookup table of a rendering intent (ICC.1:2022 section 8.10.2): the tag of the intent when present, else
-    /// the tag of the perceptual intent (AToB0 or BToA0). The ICC-absolute colorimetric intent uses the tag of the
-    /// media-relative colorimetric intent. Without any of them, the profile is used through its matrix and tone curves.
+    /// Finds the lookup table of a rendering intent. Version 2 and 4 profiles (ICC.1:2022 section 8.10.2): the tag of the
+    /// intent when present, else the tag of the perceptual intent (AToB0 or BToA0); the ICC-absolute colorimetric intent uses
+    /// the tag of the media-relative colorimetric intent. Version 5 profiles (ICC.2:2023 sections 8.14.2, 9.2.2 and 9.2.4)
+    /// add the tags of the ICC-absolute colorimetric intent (AToB3, BToA3): each colorimetric intent falls back on the tag
+    /// of the other one, then the perceptual tag; the perceptual and saturation intents fall back on the perceptual, the
+    /// media-relative, then the ICC-absolute tags. Without any of them, the profile is used through its matrix and tone
+    /// curves. The DToBx and BToDx tags are not used (ICC.1:2022 lets a CMM ignore them).
     /// </summary>
     private bool TryFindLookupTable(bool deviceToConnection, IccRenderingIntent intent, out ReadOnlyMemory<byte> tag, out uint signature)
     {
-        signature = (intent, deviceToConnection) switch
+        ReadOnlySpan<int> order = (Header.Version.Major >= 5, intent) switch
         {
-            (IccRenderingIntent.Perceptual, true) => IccReader.TagAToB0,
-            (IccRenderingIntent.Perceptual, false) => IccReader.TagBToA0,
-            (IccRenderingIntent.Saturation, true) => IccReader.TagAToB2,
-            (IccRenderingIntent.Saturation, false) => IccReader.TagBToA2,
-            (_, true) => IccReader.TagAToB1,
-            (_, false) => IccReader.TagBToA1,
+            (true, IccRenderingIntent.AbsoluteColorimetric) => [3, 1, 0],
+            (true, IccRenderingIntent.RelativeColorimetric) => [1, 3, 0],
+            (true, IccRenderingIntent.Saturation) => [2, 0, 1, 3],
+            (true, _) => [0, 1, 3],
+            (false, IccRenderingIntent.Perceptual) => [0],
+            (false, IccRenderingIntent.Saturation) => [2, 0],
+            (false, _) => [1, 0],
         };
 
         var data = _data.Span;
-        if (!IccReader.TryFindTag(data, signature, out var offset, out var length))
+        foreach (var index in order)
         {
-            signature = deviceToConnection ? IccReader.TagAToB0 : IccReader.TagBToA0;
-            if (!IccReader.TryFindTag(data, signature, out offset, out length))
-            {
-                tag = default;
-                return false;
-            }
+            signature = (deviceToConnection ? IccReader.TagAToB0 : IccReader.TagBToA0) + (uint)index;
+            if (!IccReader.TryFindTag(data, signature, out var offset, out var length))
+                continue;
+
+            // The type signature of the tag selects the encoding of the connection space before the tag is parsed
+            if (length < 4)
+                throw Invalid($"the {IccReader.FormatSignature(signature)} tag is too short to have a type.");
+
+            tag = _data.Slice(offset, length);
+            return true;
         }
 
-        // The type signature of the tag selects the encoding of the connection space before the tag is parsed
-        if (length < 4)
-            throw Invalid($"the {IccReader.FormatSignature(signature)} tag is too short to have a type.");
-
-        tag = _data.Slice(offset, length);
-        return true;
+        tag = default;
+        signature = 0;
+        return false;
     }
+
+    private static bool IsMultiProcessElements(ReadOnlyMemory<byte> tag) => tag.Length >= 4 && IccReader.ReadUInt32(tag.Span) == IccMpeParser.TypeMultiProcessElements;
 
     /// <summary>
     /// Appends the conversion of the normalized output of a lookup table to CIEXYZ (ICC.1:2022 section 6.3.4): CIEXYZ is

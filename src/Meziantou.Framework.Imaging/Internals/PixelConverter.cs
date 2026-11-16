@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -1050,6 +1051,28 @@ internal static partial class PixelConverter
                 }
             }
 
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // 16 pixels: LD3 separates the three samples, ST4 interleaves them again with an opaque alpha
+                unsafe
+                {
+                    fixed (byte* inputPointer = &input)
+                    fixed (byte* outputPointer = &output)
+                    {
+                        for (; i + 16 <= length; i += 16)
+                        {
+                            var (first, second, third) = AdvSimd.Arm64.Load3xVector128AndUnzip(inputPointer + (3 * i));
+                            if (swaps)
+                            {
+                                (first, third) = (third, first);
+                            }
+
+                            AdvSimd.Arm64.StoreVectorAndZip(outputPointer + (4 * i), (first, second, third, Vector128<byte>.AllBitsSet));
+                        }
+                    }
+                }
+            }
+
             for (; i + 6 <= length; i += 4)
             {
                 unsafe { (Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(3 * i)), order) | opaque).StoreUnsafe(ref output, (nuint)(4 * i)); }
@@ -1082,6 +1105,28 @@ internal static partial class PixelConverter
                 {
                     var pixels = Avx2.Shuffle(unsafe(Vector256.LoadUnsafe(ref input, (nuint)(4 * i))), order256);
                     unsafe { Avx2.PermuteVar8x32(pixels.AsInt32(), groups256).AsByte().StoreUnsafe(ref output, (nuint)(3 * i)); }
+                }
+            }
+
+            if (AdvSimd.Arm64.IsSupported && !flattens)
+            {
+                // 16 pixels: LD4 separates the four samples, ST3 interleaves the three colors again
+                unsafe
+                {
+                    fixed (byte* inputPointer = &input)
+                    fixed (byte* outputPointer = &output)
+                    {
+                        for (; i + 16 <= length; i += 16)
+                        {
+                            var (first, second, third, _) = AdvSimd.Arm64.Load4xVector128AndUnzip(inputPointer + (4 * i));
+                            if (swaps)
+                            {
+                                (first, third) = (third, first);
+                            }
+
+                            AdvSimd.Arm64.StoreVectorAndZip(outputPointer + (3 * i), (first, second, third));
+                        }
+                    }
                 }
             }
 

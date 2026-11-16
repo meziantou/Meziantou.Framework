@@ -408,6 +408,22 @@ internal sealed partial class ContentRenderer
                 case "BM":
                     _state.BlendMode = ReadBlendMode(value);
                     break;
+
+                // The overprint parameters (8.6.7): op is OP when the dictionary does not have it
+                case "OP" when value is PdfBoolean overprint:
+                    _state.StrokeOverprint = overprint.Value;
+                    if (!dictionary.ContainsKey(PdfName.Create("op")))
+                    {
+                        _state.FillOverprint = overprint.Value;
+                    }
+
+                    break;
+                case "op" when value is PdfBoolean overprint:
+                    _state.FillOverprint = overprint.Value;
+                    break;
+                case "OPM" when value is PdfNumber mode:
+                    _state.OverprintMode = mode.DoubleValue == 1 ? 1 : 0;
+                    break;
                 case "AIS" when value is PdfBoolean alphaIsShape:
                     _state.AlphaIsShape = alphaIsShape.Value;
                     break;

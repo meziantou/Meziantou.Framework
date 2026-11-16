@@ -4527,10 +4527,67 @@ public static ushort[] SoftProof(IccProfile display, IccProfile printer, ReadOnl
 ```
 <!-- endref -->
 
-A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (version 5, named color,
-other data color spaces, a device link or abstract profile outside a sequence), or one that cannot be a destination
-(no table from the connection space, a constant tone curve, colorants that do not span a color space), is an
-`UnsupportedImageFeatureException`. Table sizes are validated against the profile before anything is read. Color lookup tables are read in place from the
+**Named colors.** A named color profile (class `nmcl`) is a swatch book: a list of named colors with their colorimetry
+and, optionally, the device values that reproduce them. `IccNamedColorCollection.Create(profile)` reads them, in the
+order of the profile, and finds them by name (ordinal comparison; a repeated name refers to its first color).
+`IccNamedColorTransform` converts them, from their media-relative colorimetry in the profile connection space, through
+a sequence of profiles that starts with the named color profile (abstract profiles, then a destination, as for
+`IccColorTransform`); black point compensation does not apply to them, as in LittleCMS, and the ICC-absolute intent
+rescales them from the media white of the named color profile. Version 2 and 4 profiles store them in a
+`namedColor2Tag` (ICC.1:2022 section 10.17): a 7-bit ASCII name made of a prefix, a root name and a suffix
+(`"PMS "`, `"185"`, `" C"` give `"PMS 185 C"`), CIELAB in the legacy 16-bit encoding of `lut16Type` or CIEXYZ as
+u1Fixed15 numbers, and 16-bit device values. Version 5 profiles store them in a `namedColorTag` (ICC.2:2023 section
+9.2.104) with UTF-8 names and values for several tints: the collection holds the color at full tint (the vector whose
+tint is 1, or the last one without tint values), with floating-point PCS values; integer PCS values, colors without a
+full tint, spectral data and the BRDF and normal map members are not read. A named color profile is never a source or
+a destination of `IccColorTransform` or `ConvertColorProfile`: it converts names, not samples.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_NamedColors;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static (byte[] Rgb, IReadOnlyList<double> Inks) SpotColor(string swatchBookPath, string name)
+{
+    var swatchBook = new IccProfile(new MetadataBlob(File.ReadAllBytes(swatchBookPath)));
+    var colors = IccNamedColorCollection.Create(swatchBook);
+    if (!colors.TryGetValue(name, out var color))
+        throw new ArgumentException($"The swatch book has no color named '{name}'.", nameof(name));
+
+    // The colorimetry of the color, converted to the device values of the display (relative colorimetric intent)
+    var transform = IccNamedColorTransform.Create(swatchBook, IccProfile.Srgb);
+    var rgb = new byte[transform.DestinationChannelCount];
+    transform.Convert(color, rgb);
+
+    // On the press the profile was made for, its device values (here CMYK inks) reproduce the color exactly
+    return (rgb, color.DeviceValues);
+}
+```
+<!-- endref -->
+
+**iccMAX profiles.** Version 5 profiles (ICC.2:2023) convert like version 2 and 4 profiles when their connection space
+is CIEXYZ or CIELAB under the standard D50 observer and illuminant: input, display, output, color space, device link
+and abstract profiles of gray, RGB and CMYK data. Their `AToBx` and `BToAx` tags may be `lutAToBType` and `lutBToAType`
+or `multiProcessElementsType` (clause 11), whose connection space is not encoded (CIEXYZ with Y = 1 for the white,
+CIELAB in L\*a\*b\* units). The processing elements are the curve sets (segmented curves with the eight formula types
+and sampled segments, single sampled curves, sampled calculator curves), matrices, color lookup tables of float32Number
+entries (multilinear interpolation, or tetrahedral when the interpolation hint asks for it), tint arrays, `bACS` and
+`eACS` (passed through), and calculators: every operation of Table 102 and of sections 11.2.1.2 to 11.2.1.11 but the
+color appearance ones (`tJab`, `fJab`), evaluated in single precision as their float32Number operands, with
+sub-elements nested up to 16 levels. The function of a calculator is checked when the profile is read (known
+operations, existing channels, no stack underflow, streams of a condition that leave the same number of values), and a
+stream that may not run (an `if` without `else`, a `sel` without `dflt`) must leave the stack as it found it. Two
+values that are not numbers are equal for `eq`, so that a value can be compared with `NaN ` (section 11.2.1.1), as in
+iccDEV; `solv` solves square systems only, and `env` knows the variables `true` and `ndef` only. The tags of the
+ICC-absolute colorimetric intent (`A2B3`, `B2A3`) are used as section 8.14.2 orders them: each colorimetric intent
+falls back on the tag of the other (rescaled by the media white point), then on the perceptual tag; the perceptual and
+saturation intents fall back on the perceptual, then the colorimetric tags. A spectral connection space, custom
+profile connection conditions (`c2sp`, `s2cp`), the color encoding space and multiplex profile classes, and the
+emission, reflectance, observer, sparse matrix, extended lookup table, tone map and color appearance elements are
+`UnsupportedImageFeatureException`; the BRDF, directional and spectral tags of a profile are not read. The `DToBx` and
+`BToDx` tags are ignored, in version 4 profiles too (ICC.1:2022 section 8.10.2 lets a CMM do so).
+
+A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (a named color profile, other
+data color spaces, a device link or abstract profile outside a sequence, the iccMAX features above), or one that cannot
+be a destination (no table from the connection space, a constant tone curve, colorants that do not span a color
+space), is an `UnsupportedImageFeatureException`. Table sizes are validated against the profile before anything is read. Color lookup tables are read in place from the
 profile; a transform only copies the one-dimensional curves, so its memory is bounded by a small multiple of the
 profile size, and converting samples allocates nothing. The first curve of an 8-bit conversion is read from a
 256-entry table per channel, with results identical to the evaluation of the curve.
@@ -6859,7 +6916,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
 | PNG/APNG | Default output follows the pixel format, including RGB 16-bit and gray+alpha 8/16-bit; grayscale below 8 bits requires `PngOptimization.MinimumSize`, APNG delta rectangles `PngEncoder.OptimizeFrames` or `MinimumSize`. Palettes are selected by `PngPixelLayout.Indexed` or `MinimumSize`, exact unless `AllowColorReduction` (a sequential writer fixes its palette from the first image; later frames must fit it, or are mapped to it with `AllowColorReduction`). Unknown critical chunks are rejected; unknown ancillary chunks that are not safe to copy are only written with `WriteUnsafeToCopyChunks`; Apple CgBI files are decoded with the precision their premultiplied colors keep (lossy for low alpha values) and never written |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
-| Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based), device-link and abstract profiles in sequences of profiles: no version 5 (iccMAX) or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK pixels (`Cmyk32`, `Cmyk64`) are only read by JPEG, TIFF and PSD and written by JPEG and TIFF, and only moved (crop, flip, quarter turns, orientation) by the processing operations; the untyped load of a CMYK file needs `CmykConversionOptions`; CMYK JPEG output is baseline only; gamut mapping is per-channel clipping or a chroma reduction in Oklab, never a perceptual compression of in-gamut colors |
+| Color management | ICC version 2, 4 and 5 (iccMAX, colorimetric connection space) grayscale, RGB and CMYK profiles (matrix-based, table-based and multi-process elements in `AToBx`/`BToAx` tags), device-link and abstract profiles in sequences of profiles, named color profiles through `IccNamedColorTransform` (full tint only for version 5): no spectral connection space, custom connection conditions, BRDF or multiplex connection, no color appearance, emission or reflectance element, no `D2Bx`/`B2Dx` tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); CMYK pixels (`Cmyk32`, `Cmyk64`) are only read by JPEG, TIFF and PSD and written by JPEG and TIFF, and only moved (crop, flip, quarter turns, orientation) by the processing operations; the untyped load of a CMYK file needs `CmykConversionOptions`; CMYK JPEG output is baseline only; gamut mapping is per-channel clipping or a chroma reduction in Oklab, never a perceptual compression of in-gamut colors |
 | Drawing | Coverages computed on one thread (large shapes are composited by several workers); under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], layers, patterns, filters, shadows, blurs, masks and groups are drawn on images of 16-bit samples (what is drawn in them is clipped to [0, 1]), and what reads the canvas back (a backdrop layer, a backdrop blur, a group that is not isolated) or draws a floating-point image combines it through 16-bit colors, so its samples must be in [0, 1] (others are rejected with an `UnsupportedImageFeatureException`, never clipped) and are quantized to 1/65535 |
 | Floating-point pixels | `RgbaFloat`, `RgbaHalf` and the gray `GrayFloat`, `GrayHalf`, `LaFloat` and `LaHalf`; OpenEXR, TIFF and DPX store them (Radiance HDR the color ones), the other encoders reduce them to 16-bit integers with `ImageEncoder.FloatingPointConversion`; Netpbm has no PFM support; HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
 | Processing | `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; histograms, equalization and auto-levels work on the encoded samples (floating-point samples are binned to 65,536 levels from 0 to 1), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |

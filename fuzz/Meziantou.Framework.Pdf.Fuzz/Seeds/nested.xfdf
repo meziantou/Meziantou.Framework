@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xfdf xmlns="http://ns.adobe.com/xfdf/" xml:space="preserve">
+  <fields>
+    <field name="a">
+      <value>1</value>
+      <field name="b"><value>2</value><value>3</value></field>
+      <field name=""><value/></field>
+    </field>
+    <field name="c"/>
+  </fields>
+</xfdf>

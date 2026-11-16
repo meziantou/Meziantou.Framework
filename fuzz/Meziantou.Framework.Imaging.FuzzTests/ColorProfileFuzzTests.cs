@@ -101,10 +101,11 @@ public sealed class ColorProfileFuzzTests
 
     private static List<FuzzSeed> GetSeeds()
     {
-        // The external profiles of the corpus; its synthetic profiles are built below with the others
+        // The external profiles of the corpus and its iccMAX profiles (built by iccFromXml); its other synthetic profiles are
+        // built below with the others
         var root = FixtureRoot.GetDirectory();
         var manifest = FixtureManifestLoader.Load(root / FixtureRoot.ManifestFileName);
-        List<FuzzSeed> seeds = [.. (manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external").Select(profile => new FuzzSeed(profile.Id, File.ReadAllBytes(root / profile.File.Path)))];
+        List<FuzzSeed> seeds = [.. (manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external" || profile.Provenance.Generator?.Contains("iccFromXml", StringComparison.Ordinal) == true).Select(profile => new FuzzSeed(profile.Id, File.ReadAllBytes(root / profile.File.Path)))];
         seeds.AddRange(new (string Id, IccProfile Profile)[]
         {
             ("builtin/srgb", IccProfile.Srgb),
@@ -120,6 +121,8 @@ public sealed class ColorProfileFuzzTests
             ("synthetic/gray-paper", IccTestProfiles.GrayPaper()),
             ("synthetic/rgb-scanner", IccTestProfiles.RgbScanner()),
             ("synthetic/gray-printer-mab", IccTestProfiles.GrayPrinterLutAToB()),
+            ("synthetic/named-lab-v2", IccTestProfiles.NamedColorLabV2()),
+            ("synthetic/named-xyz-v4", IccTestProfiles.NamedColorXyzV4()),
         }.Select(seed => new FuzzSeed(seed.Id, seed.Profile.Data.ToArray())));
         if (seeds.Count < 15)
             throw new InvalidOperationException("The corpus has no color profile.");
@@ -165,6 +168,9 @@ public sealed class ColorProfileFuzzTests
         }
 
         var options = new IccColorTransformOptions { Intent = Intents[variant & 3], BlackPointCompensation = (variant & 4) != 0 };
+        if (profile.ProfileClass == IccProfileClass.NamedColor)
+            return CheckNamedColors(profile, options, out outcome);
+
         var other = profile.ColorSpace == IccProfileColorSpace.Gray ? IccProfile.SrgbGray : IccProfile.Srgb;
         foreach (var (source, destination) in new[] { (profile, other), (other, profile), (profile, profile) })
         {
@@ -193,6 +199,53 @@ public sealed class ColorProfileFuzzTests
 
             if (CheckBatches(source, destination, options) is { } batchFailure)
                 return batchFailure;
+        }
+
+        return null;
+    }
+
+    // The colors of a named color profile: read, found by their name, converted to sRGB in [0, 1]
+    private static FuzzFailure? CheckNamedColors(IccProfile profile, IccColorTransformOptions options, out string outcome)
+    {
+        IccNamedColorTransform transform;
+        try
+        {
+            transform = IccNamedColorTransform.Create(profile, IccProfile.Srgb, options);
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException)
+        {
+            outcome = exception.GetType().Name;
+            return null;
+        }
+        catch (Exception exception)
+        {
+            outcome = "?";
+            return FuzzFailure.FromException("create-named", exception);
+        }
+
+        outcome = "converted";
+        var colors = transform.Colors;
+        var rgb = new float[3];
+        for (var i = 0; i < colors.Count; i++)
+        {
+            var color = colors[i];
+            if (color.DeviceValues.Count != colors.DeviceChannelCount)
+                return FuzzFailure.Property("named-device-values", $"The color {i} has {color.DeviceValues.Count} device values instead of {colors.DeviceChannelCount}.");
+
+            if (colors.IndexOf(color.Name) is var index && (index < 0 || index > i))
+                return FuzzFailure.Property("named-lookup", $"The color {i} is not found by its name.");
+
+            try
+            {
+                transform.Convert(color, rgb);
+            }
+            catch (Exception exception)
+            {
+                return FuzzFailure.FromException("convert-named", exception);
+            }
+
+            if (rgb.Any(value => !(value >= 0f && value <= 1f)))
+                return FuzzFailure.Property("named-range", "A converted named color is not in [0, 1].");
         }
 
         return null;

@@ -93,6 +93,7 @@ internal static class AnnotationRenderer
 
         var renderer = new ContentRenderer(cache, page.Document, state, depth: 0, optionalContent)
         {
+            Plate = cache.Plate,
             BaseMatrix = ctm,
             DeviceSize = deviceSize,
         };

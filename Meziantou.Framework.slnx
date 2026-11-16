@@ -103,6 +103,7 @@
     <Project Path="src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
     <Project Path="src/Meziantou.Framework.CodeOwners/Meziantou.Framework.CodeOwners.csproj" />
     <Project Path="src/Meziantou.Framework.CommandLine/Meziantou.Framework.CommandLine.csproj" />
+    <Project Path="src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
     <Project Path="src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
     <Project Path="src/Meziantou.Framework.DependencyScanning.Tool/Meziantou.Framework.DependencyScanning.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
@@ -433,6 +434,7 @@
     <Project Path="src/Meziantou.Framework.ObjectMethodExecutor/Meziantou.Framework.ObjectMethodExecutor.csproj" />
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector.InMemory/Meziantou.Framework.OpenTelemetryCollector.InMemory.csproj" />
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
+    <Project Path="src/Meziantou.Framework.Pdf.JavaScript/Meziantou.Framework.Pdf.JavaScript.csproj" />
     <Project Path="src/Meziantou.Framework.Pdf.VectorGraphics/Meziantou.Framework.Pdf.VectorGraphics.csproj" />
     <Project Path="src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="src/Meziantou.Framework.PooledMemoryStream/Meziantou.Framework.PooledMemoryStream.csproj" />
@@ -537,6 +539,8 @@
     <Project Path="tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CodeOwners.Tests/Meziantou.Framework.CodeOwners.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Compression.InteropTests/Meziantou.Framework.Compression.InteropTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Compression.Tests/Meziantou.Framework.Compression.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Csv.Tests/Meziantou.Framework.Csv.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tool.Tests/Meziantou.Framework.DependencyScanning.Tool.Tests.csproj" />
@@ -644,6 +648,7 @@
     <Project Path="tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.Corpus/Meziantou.Framework.Pdf.Corpus.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.InteropTests/Meziantou.Framework.Pdf.InteropTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Pdf.JavaScript.Tests/Meziantou.Framework.Pdf.JavaScript.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.TestHarness/Meziantou.Framework.Pdf.TestHarness.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.VectorGraphics.Tests/Meziantou.Framework.Pdf.VectorGraphics.Tests.csproj" />
@@ -753,6 +758,7 @@
     <Project Path="fuzz/Meziantou.Framework.BloomFilters.Fuzz/Meziantou.Framework.BloomFilters.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Charts.Fuzz/Meziantou.Framework.Charts.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.CodeOwners.Fuzz/Meziantou.Framework.CodeOwners.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Compression.Fuzz/Meziantou.Framework.Compression.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Diagrams.Fuzz/Meziantou.Framework.Diagrams.Fuzz.csproj" />
@@ -781,6 +787,7 @@
     <Project Path="fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Ntp.Fuzz/Meziantou.Framework.Ntp.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Pdf.Fuzz/Meziantou.Framework.Pdf.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Pdf.FuzzTests/Meziantou.Framework.Pdf.FuzzTests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Pdf.VectorGraphics.Fuzz/Meziantou.Framework.Pdf.VectorGraphics.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz.csproj" />

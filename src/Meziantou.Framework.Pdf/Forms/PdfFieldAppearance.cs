@@ -48,15 +48,15 @@ internal static class PdfFieldAppearance
     public static bool HasState(PdfDictionary widget, PdfName state) => widget.Get<PdfDictionary>(PdfFormField.APName)?.Get<PdfDictionary>(PdfNames.N)?.ContainsKey(state) ?? false;
 
     /// <summary>Writes the appearances of the widgets of a text field or a choice field.</summary>
-    public static void Update(PdfFormField field)
+    public static void Update(PdfFormField field, string? displayText = null)
     {
         foreach (var (widget, _) in field.GetWidgetDictionaries())
         {
-            Update(field, widget);
+            Update(field, widget, displayText);
         }
     }
 
-    private static void Update(PdfFormField field, PdfDictionary widget)
+    private static void Update(PdfFormField field, PdfDictionary widget, string? displayText)
     {
         if (!PdfRectangle.TryRead(widget.Get<PdfArray>(PdfNames.Rect), out var rectangle))
             return;
@@ -94,7 +94,7 @@ internal static class PdfFieldAppearance
         switch (field)
         {
             case PdfTextField text:
-                DrawText(builder, text, font, fontSize, inner, alignment);
+                DrawText(builder, text, displayText, font, fontSize, inner, alignment);
                 break;
             case PdfChoiceField { IsComboBox: true } choice:
                 var value = choice.Value;
@@ -110,9 +110,9 @@ internal static class PdfFieldAppearance
         widget[PdfFormField.APName] = new PdfDictionary { [PdfNames.N] = form.Reference };
     }
 
-    private static void DrawText(PdfContentBuilder builder, PdfTextField field, PdfFont font, double fontSize, PdfRectangle box, int alignment)
+    private static void DrawText(PdfContentBuilder builder, PdfTextField field, string? displayText, PdfFont font, double fontSize, PdfRectangle box, int alignment)
     {
-        var text = field.Value ?? "";
+        var text = displayText ?? field.Value ?? "";
         if (field.IsPassword)
         {
             text = new string('*', text.Length);

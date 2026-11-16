@@ -1,6 +1,6 @@
 ---
 title: Extracting text
-description: Get the text of the pages of a document, search a document for a word, find where the words are, read right-to-left text in order, and know what the extraction can and cannot do.
+description: Get the text of the pages of a document, search a document for a word, find where the words are, extract ruled tables, read right-to-left text in order, and know what the extraction can and cannot do.
 ---
 
 [PdfPage.ExtractText](cref:Meziantou.Framework.Pdf.PdfPage.ExtractText) returns the text of a page, with a line break between the lines:
@@ -105,6 +105,37 @@ same order.
   rotated keeps the order of the content.
 - The columns are read from left to right, also for the right-to-left scripts. The cells of a table are blocks, read
   column by column when blank spaces separate the columns.
+
+## Extract a ruled table
+
+[PdfTableExtractor](cref:Meziantou.Framework.Pdf.PdfTableExtractor) rebuilds a table drawn with rules (lines or thin rectangles) in a region of a page: the rules
+make the grid, and the words fill its cells:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfTextExtractionTests.cs;region=Pdf_ExtractTable;format=md-fenced-code-block;dedent=true -->
+```csharp
+var read = PdfDocument.Open(file);
+var result = PdfTableExtractor.Extract(read.Pages[0], new PdfRectangle(40, 300, 420, 790));
+if (result.Succeeded)
+{
+    var amount = result.Table[1, 2];
+}
+```
+<!-- endref -->
+
+- [Rows](cref:Meziantou.Framework.Pdf.PdfExtractedTable.Rows) lists the rows from the top, each with the text of its cells from the left; the lines of a cell are
+  separated by line feeds. [ColumnBoundaries](cref:Meziantou.Framework.Pdf.PdfExtractedTable.ColumnBoundaries) and [RowBoundaries](cref:Meziantou.Framework.Pdf.PdfExtractedTable.RowBoundaries) give the positions of the rules.
+- The region must contain the whole grid, its outer border included. Rules closer than
+  [Tolerance](cref:Meziantou.Framework.Pdf.PdfTableExtractionOptions.Tolerance) are the same line, and filled rectangles thinner than
+  [MaxRuleThickness](cref:Meziantou.Framework.Pdf.PdfTableExtractionOptions.MaxRuleThickness) are rules.
+- When a table cannot be rebuilt correctly, there is no table: [Failure](cref:Meziantou.Framework.Pdf.PdfTableExtractionResult.Failure) tells why, and
+  [Message](cref:Meziantou.Framework.Pdf.PdfTableExtractionResult.Message) where.
+
+| [PdfTableExtractionFailureKind](cref:Meziantou.Framework.Pdf.PdfTableExtractionFailureKind) | Reason |
+| --- | --- |
+| [NoGrid](cref:Meziantou.Framework.Pdf.PdfTableExtractionFailureKind.NoGrid) | Fewer than two horizontal or two vertical rules: a table without rules, laid out with spaces |
+| [MergedCells](cref:Meziantou.Framework.Pdf.PdfTableExtractionFailureKind.MergedCells) | A cell spans several rows or columns: a rule between two cells is missing |
+| [NonHorizontalText](cref:Meziantou.Framework.Pdf.PdfTableExtractionFailureKind.NonHorizontalText) | Text of the region is rotated or written vertically |
+| [ImageOnly](cref:Meziantou.Framework.Pdf.PdfTableExtractionFailureKind.ImageOnly) | The region has images but no text, such as a scanned table |
 
 ## Search text written with ligatures
 

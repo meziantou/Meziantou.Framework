@@ -5078,6 +5078,20 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SpotColorGivesTheDisplayColorAndTheInks()
+    {
+        // A swatch book: a version 2 named color profile of CMYK inks with the prefix "PMS " and the suffix " C"
+        var swatchBook = GetPath("swatches.icc");
+        File.WriteAllBytes(swatchBook, IccTestProfiles.NamedColorLabV2().Data.ToArray());
+        var (rgb, inks) = ColorExamples.SpotColor(swatchBook, "PMS Process Cyan C");
+
+        // L* 55, a* -37, b* -50: a cyan on the display, and full cyan ink on the press
+        Assert.True(rgb[0] < 60 && rgb[1] > 120 && rgb[2] > 180, string.Join(' ', rgb));
+        Assert.Equal([1, 0, 0, 0], inks);
+        Assert.Throws<ArgumentException>("name", () => ColorExamples.SpotColor(swatchBook, "Process Cyan"));
+    }
+
+    [Fact]
     public void SaveGifThresholdsOrFlattensAlphaAndReducesColors()
     {
         // 1,024 colors whose alpha grows from 0 (left) to 248 (right), in steps of 8

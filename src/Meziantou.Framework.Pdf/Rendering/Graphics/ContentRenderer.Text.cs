@@ -177,11 +177,12 @@ internal sealed partial class ContentRenderer
         var state = _state.Clone();
         state.Ctm = glyphs.FontMatrix * rendering * _state.Ctm;
         state.Font = null;
-        var fill = _state.FillColorSpace.ToRgb(_state.FillColor);
+        TryGetColor(_state.FillColorSpace, _state.FillColor, stroke: false, out var fill);
         var renderer = new ContentRenderer(_cache, _document, state, _depth + 1, _optionalContent)
         {
             SuppressHalftones = SuppressHalftones,
             ForcedColor = ForcedColor,
+            Plate = Plate,
             BaseMatrix = BaseMatrix,
             DeviceSize = DeviceSize,
             StencilColor = _state.FillColorSpace is Colors.RenderColorSpace.PatternSpace ? null : fill,

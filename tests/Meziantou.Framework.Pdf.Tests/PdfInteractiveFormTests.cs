@@ -596,4 +596,173 @@ public sealed class PdfInteractiveFormTests
         Assert.Equal(["name", "group.child", "combo"], form.GetFields().Select(field => field.FullName));
         Assert.HasCount(3, page.Annotations);
     }
+
+    [Fact]
+    public void FormDataIsExported()
+    {
+        var form = PdfDocument.Open(CreateForm()).Form;
+
+        #region Pdf_ExportFormData
+        var data = form.ExportData();
+        var fdf = data.ToFdf();
+        var xfdf = data.ToXfdf();
+        #endregion
+
+        Assert.Equal(["name", "address.city", "agree", "size", "country", "colors", "id", "other"], data.Fields.Select(field => field.Name));
+        Assert.Equal(["Old", null, "Off", "S", "fr", null, "42", "Second page"], data.Fields.Select(field => field.Value));
+        Assert.Equal([false, false, true, true, false, false, false, false], data.Fields.Select(field => field.IsName));
+
+        var text = Encoding.Latin1.GetString(fdf);
+        Assert.StartsWith("%FDF-1.2\n", text, StringComparison.Ordinal);
+        Assert.Contains("<</T (address) /Kids [<</T (city)>>]>>", text, StringComparison.Ordinal);
+        Assert.Contains("<</T (agree) /V /Off>>", text, StringComparison.Ordinal);
+        Assert.Contains("<field name=\"address\">\n      <field name=\"city\" />\n    </field>", xfdf, StringComparison.Ordinal);
+        Assert.Contains("<field name=\"size\">\n      <value>S</value>\n    </field>", xfdf, StringComparison.Ordinal);
+
+        var fromFdf = PdfFormData.ParseFdf(fdf);
+        Assert.Equal(data.Fields.Where(field => field.Values.Count > 0).Select(field => field.ToString()), fromFdf.Fields.Select(field => field.ToString()));
+        var fromXfdf = PdfFormData.ParseXfdf(xfdf);
+        Assert.Equal(data.Fields.Where(field => field.Values.Count > 0).Select(field => field.ToString()), fromXfdf.Fields.Select(field => field.ToString()));
+    }
+
+    [Fact]
+    public void FdfIsImported()
+    {
+        // An FDF file as viewers write it: no cross-reference table, a hierarchy of partial names, names for the buttons
+        var fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /F (form.pdf) /Fields [
+              << /T (name) /V (Jane Doe) >>
+              << /T (address) /Kids [ << /T (city) /V <FEFF0050006100720069007300A0> >> ] >>
+              << /T (agree) /V /Yes >>
+              << /T (size) /V /L >>
+              << /T (colors) /V [(red) (blue)] >>
+              << /T (id) /V (43) >>
+              << /T (missing) /V (x) >>
+              << /T (country) /V (es) >>
+            ] >> >>
+            endobj
+            trailer
+            << /Root 1 0 R >>
+            %%EOF
+            """u8.ToArray();
+        var document = PdfDocument.Open(CreateForm());
+
+        #region Pdf_ImportFormData
+        var data = PdfFormData.ParseFdf(fdf);
+        var result = document.Form.ImportData(data);
+        #endregion
+
+        Assert.Equal("form.pdf", data.SourceFile);
+        Assert.Equal(["name", "address.city", "agree", "size", "colors"], result.UpdatedFields);
+        Assert.Equal(["missing"], result.UnknownFields);
+        Assert.Equal(["id", "country"], result.RejectedFields.Keys.Order(StringComparer.Ordinal).Reverse());
+
+        var form = PdfDocument.Open(document.ToByteArray()).Form;
+        Assert.Equal("Jane Doe", form.FindField("name")!.Value);
+        Assert.Equal("Paris\u00A0", form.FindField("address.city")!.Value);
+        Assert.True(((PdfCheckBoxField)form.FindField("agree")!).IsChecked);
+        Assert.Equal("L", form.FindField("size")!.Value);
+        Assert.Equal(["red", "blue"], ((PdfChoiceField)form.FindField("colors")!).SelectedValues);
+        Assert.Equal("42", form.FindField("id")!.Value);
+        var appearance = form.FindField("name")!.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!;
+        Assert.Contains("(Jane Doe) Tj", Encoding.Latin1.GetString(appearance.GetDecodedData()), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void XfdfIsImported()
+    {
+        var xfdf = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <xfdf xmlns="http://ns.adobe.com/xfdf/" xml:space="preserve">
+              <f href="form.pdf"/>
+              <fields>
+                <field name="name"><value>Jane &amp; John</value></field>
+                <field name="address"><field name="city"><value>Lyon</value></field></field>
+                <field name="agree"><value>Off</value></field>
+                <field name="colors"><value>green</value><value>blue</value></field>
+              </fields>
+              <annots/>
+            </xfdf>
+            """;
+        var document = PdfDocument.Open(CreateForm());
+
+        var data = PdfFormData.ParseXfdf(xfdf);
+        var result = document.Form.ImportData(data);
+
+        Assert.Equal("form.pdf", data.SourceFile);
+        Assert.Equal(["name", "address.city", "agree", "colors"], result.UpdatedFields);
+        Assert.Equal("Jane & John", document.Form.FindField("name")!.Value);
+        Assert.Equal("Lyon", document.Form.FindField("address.city")!.Value);
+        Assert.False(((PdfCheckBoxField)document.Form.FindField("agree")!).IsChecked);
+        Assert.Equal(["green", "blue"], ((PdfChoiceField)document.Form.FindField("colors")!).SelectedValues);
+    }
+
+    [Theory]
+    [InlineData("<html/>")]
+    [InlineData("<xfdf><fields>")]
+    [InlineData("<!DOCTYPE xfdf [<!ENTITY e \"x\">]><xfdf/>")]
+    public void InvalidXfdfIsRejected(string xml)
+    {
+        Assert.Throws<InvalidPdfContentException>(() => PdfFormData.ParseXfdf(xml));
+    }
+
+    [Fact]
+    public void FormDataWritesCharactersXmlCannotHold()
+    {
+        var data = new PdfFormData();
+        data.Fields.Add(new PdfFormDataField("a.b", "x\u0001\uD800y"));
+        data.Fields.Add(new PdfFormDataField("a", ["1", "2"]));
+
+        var xfdf = PdfFormData.ParseXfdf(data.ToXfdf());
+        var fdf = PdfFormData.ParseFdf(data.ToFdf());
+
+        Assert.Equal(["a.b = x\uFFFD\uFFFDy", "a = 1, 2"], xfdf.Fields.Select(field => field.ToString()));
+        Assert.Equal(["a = 1, 2", "a.b = x\u0001\uFFFDy"], fdf.Fields.Select(field => field.ToString()));
+        Assert.Throws<InvalidPdfContentException>(() => PdfFormData.ParseFdf("%FDF-1.2\n1 0 obj\n<< >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"u8));
+    }
+
+    [Fact]
+    public void FormScriptsAreRead()
+    {
+        var data = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [10 0 R 11 0 R 12 0 R] /CO [12 0 R] >> /Names << /JavaScript << /Names [(init) << /S /JavaScript /JS (var rate = 0.2;) >> (stream) << /S /JavaScript /JS 20 0 R >>] >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 300] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [10 0 R 11 0 R 12 0 R] >>")
+            .Add(10, "<< /FT /Tx /T (Price) /Type /Annot /Subtype /Widget /Rect [10 250 150 270] /P 3 0 R /AA << /K << /S /JavaScript /JS (AFNumber_Keystroke\\(2, 0, 0, 0, \"\", true\\);) >> /F << /S /JavaScript /JS (AFNumber_Format\\(2, 0, 0, 0, \"$\", true\\);) >> >> >>")
+            .Add(11, "<< /FT /Tx /T (Quantity) /Type /Annot /Subtype /Widget /Rect [10 220 150 240] /P 3 0 R /AA << /V << /S /URI /URI (https://example.com) >> >> >>")
+            .Add(12, "<< /FT /Tx /T (Total) /Ff 1 /Type /Annot /Subtype /Widget /Rect [10 190 150 210] /P 3 0 R /DA (/Helv 10 Tf 0 g) /AA << /C << /S /JavaScript /JS (AFSimple_Calculate\\(\"PRD\", \"Price, Quantity\"\\);) >> >> >>")
+            .Add(20, HandWrittenPdf.Stream("function twice(x) { return 2 * x; }"))
+            .ToArray();
+        var document = PdfDocument.Open(data);
+        var form = document.Form;
+
+        #region Pdf_ReadFormScripts
+        var total = form.FindField("Total")!;
+        var calculate = total.Actions.Calculate?.Script;
+        var order = form.CalculationOrder;
+        var documentScripts = document.JavaScripts;
+        #endregion
+
+        Assert.Equal("AFSimple_Calculate(\"PRD\", \"Price, Quantity\");", calculate);
+        Assert.Equal(["Total"], order.Select(field => field.FullName));
+        Assert.Equal(["init", "stream"], documentScripts.Keys);
+        Assert.Equal("function twice(x) { return 2 * x; }", documentScripts["stream"]);
+        var price = form.FindField("Price")!.Actions;
+        Assert.StartsWith("AFNumber_Keystroke", price.Keystroke!.Script, StringComparison.Ordinal);
+        Assert.StartsWith("AFNumber_Format", price.Format!.Script, StringComparison.Ordinal);
+        Assert.Null(price.Validate);
+        Assert.Null(form.FindField("Quantity")!.Actions.Validate);
+
+        // A format script shows a text, while the value keeps the number
+        var textField = (PdfTextField)form.FindField("Price")!;
+        textField.SetValue("1234.5", "$1,234.50");
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal("1234.5", read.Form.FindField("Price")!.Value);
+        var appearance = Encoding.Latin1.GetString(read.Form.FindField("Price")!.Dictionary.Get<PdfDictionary>(AP)!.Get<PdfStream>(PdfNames.N)!.GetDecodedData());
+        Assert.Contains("($1,234.50) Tj", appearance, StringComparison.Ordinal);
+        Assert.DoesNotContain("1234.5", appearance, StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => ((PdfTextField)form.FindField("Total")!).SetValue("1", "1"));
+    }
 }

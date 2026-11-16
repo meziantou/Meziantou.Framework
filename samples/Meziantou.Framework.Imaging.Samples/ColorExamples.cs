@@ -97,4 +97,23 @@ internal static class ColorExamples
         return preview;
     }
     #endregion
+
+    // A spot color of a named color profile (a swatch book) on an sRGB display and on a CMYK press
+    #region Imaging_NamedColors
+    public static (byte[] Rgb, IReadOnlyList<double> Inks) SpotColor(string swatchBookPath, string name)
+    {
+        var swatchBook = new IccProfile(new MetadataBlob(File.ReadAllBytes(swatchBookPath)));
+        var colors = IccNamedColorCollection.Create(swatchBook);
+        if (!colors.TryGetValue(name, out var color))
+            throw new ArgumentException($"The swatch book has no color named '{name}'.", nameof(name));
+
+        // The colorimetry of the color, converted to the device values of the display (relative colorimetric intent)
+        var transform = IccNamedColorTransform.Create(swatchBook, IccProfile.Srgb);
+        var rgb = new byte[transform.DestinationChannelCount];
+        transform.Convert(color, rgb);
+
+        // On the press the profile was made for, its device values (here CMYK inks) reproduce the color exactly
+        return (rgb, color.DeviceValues);
+    }
+    #endregion
 }

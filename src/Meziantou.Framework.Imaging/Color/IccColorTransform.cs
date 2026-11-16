@@ -10,9 +10,12 @@ namespace Meziantou.Framework.Imaging;
 /// <remarks>
 /// <para>
 /// Supported profiles are ICC version 2 and version 4 input, display, output and color space profiles whose data color
-/// space is grayscale, RGB or CMYK, based on a matrix and tone curves or on lookup tables. A destination profile must
-/// describe the conversion from the profile connection space, which input profiles often do not. Device link and abstract
-/// profiles are supported in a sequence of profiles (<see cref="Create(IReadOnlyList{IccProfile}, IccColorTransformOptions?)"/>).
+/// space is grayscale, RGB or CMYK, based on a matrix and tone curves or on lookup tables, and version 5 (iccMAX) profiles
+/// of the same kinds whose profile connection space is CIEXYZ or CIELAB, whose tables may also be processing elements
+/// (curve sets, matrices, lookup tables, tint arrays and calculators). A destination profile must describe the
+/// conversion from the profile connection space, which input profiles often do not. Device link and abstract profiles
+/// are supported in a sequence of profiles (<see cref="Create(IReadOnlyList{IccProfile}, IccColorTransformOptions?)"/>);
+/// named color profiles convert names, not samples (<see cref="IccNamedColorTransform"/>).
 /// </para>
 /// <para>
 /// Samples are interleaved device values without alpha: one sample per color for grayscale, three (red, green, blue) for

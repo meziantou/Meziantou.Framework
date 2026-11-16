@@ -23,9 +23,11 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
   [Loading images](05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 - **Color profiles are never applied implicitly.** Colors change only when you convert them
   ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)). See [Color management](09-Color/03-ColorManagement.md).
-- **Color management covers ICC versions 2 and 4** grayscale, RGB and CMYK profiles, and device-link and abstract
-  profiles in sequences of profiles; no iccMAX or named-color profiles. Gamut mapping is per-channel clipping or a
-  chroma reduction, opt-in.
+- **Color management covers ICC versions 2, 4 and 5** grayscale, RGB and CMYK profiles, device-link and abstract
+  profiles in sequences of profiles, and named color profiles. iccMAX profiles need a colorimetric connection space:
+  no spectral connection, custom viewing conditions, color appearance, emission or reflectance elements, material
+  (BRDF) or multiplex connection; their named colors are read at full tint only. Gamut mapping is per-channel clipping
+  or a chroma reduction, opt-in. See [Supported profiles](09-Color/03-ColorManagement.md#supported-profiles).
 
 ## Formats
 

@@ -374,14 +374,23 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   - *generated* (`synthetic-*`): built by `Common/IccProfileBuilder.cs` of the generator, a file without any dependency
     on the library that the test projects also compile (`IccTestProfiles`). They provide what no profile under an
     allowed license does: `lut8Type`, `lutAToBType` and `lutBToAType` tables, tables in both directions (including to
-    CMYK, one per rendering intent), the CIEXYZ connection space with tables, media white points and black points. Their
-    tables sample simple device models: they are not realistic, only well defined.
+    CMYK, one per rendering intent), the CIEXYZ connection space with tables, media white points and black points, and
+    a version 2 named color profile. Their tables sample simple device models: they are not realistic, only well
+    defined.
+  - *generated* (`iccmax-*`): version 5 (iccMAX) profiles written as XML by `Common/IccMaxProfileXml.cs` and built by
+    iccFromXml of iccDEV, the reference implementation of ICC.2:2023: `multiProcessElementsType` tables with curve sets
+    (every formula type, sampled segments, single sampled curves), matrices, float lookup tables, a calculator that
+    exercises the stack, conditional, selection and arithmetic operations and its sub-elements, the tags of the absolute
+    colorimetric intent (`A2B3`, `B2A3`) alone and with the others, and a named color array with tints. The tests do not
+    rebuild them: iccFromXml is not run by the tests.
 - **`colorTransforms`**: for a source profile, a destination profile, a rendering intent and the black point
   compensation setting, a file of vectors (`icc/vectors/<id>.u16le`): for each color, the source device samples then
   the samples **converted by an independent color management system**, as little-endian 16-bit numbers covering the
   device range. The reference is LittleCMS, through `transicc -n -c0` (no precalculation: each color is evaluated,
-  not interpolated in a device link; `-b` for black point compensation); its exact version and command line are
-  recorded in `reference`.
+  not interpolated in a device link; `-b` for black point compensation), and for the iccMAX profiles iccDEV, through
+  `iccApplyNamedCmm --cfg` (linear interpolation, floating-point colors); the exact version and command line are
+  recorded in `reference`. A named color profile as the source has one source sample per color, the index of the color
+  in the profile (`"sourceSamples": "named-color-index"`).
 - **Comparison**: two color management systems never agree bit for bit. Each entry declares `maxAbsoluteError` and
   `maxMeanAbsoluteError` in 16-bit units (257 is one level of 255; at most 64) with the measured `justification`.
   `ColorConversionGoldenTests` also fails when a declared limit is more than twice the measured difference, so a
@@ -390,15 +399,22 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   points), which change samples by whole levels and which the reference of the test harness (`ReferenceIccTransform`)
   would share with the library.
 - **Colors**: every 8-bit level and 64 random 16-bit values for grayscale sources; a 7-level grid and 157 random 16-bit
-  colors for RGB sources. For CMYK sources, every grid point of the color lookup table of the intent (the device
-  values that its input tables map to the grid).
-- **What the vectors do not cover**, because LittleCMS is not a valid judge there (`ReferenceIccTransform` and the
+  colors for RGB sources. For CMYK sources converted by LittleCMS, every grid point of the color lookup table of the
+  intent (the device values that its input tables map to the grid); for the iccMAX CMYK profile, whose tables both
+  systems interpolate multilinearly, a 7-level grid and 157 random colors. Every color of a named color profile.
+- **What the vectors do not cover**, because the reference is not a valid judge there (`ReferenceIccTransform` and the
   hand-computed values of `IccColorTransformTests` cover these):
   - *Four-channel interpolation between grid points.* The ICC specification does not define the interpolation and
     color management systems differ: on the coarse 6-point table of the external CMYK profile, LittleCMS (linear along
     the first input, tetrahedral on the others) and Apple ColorSync (multilinear, like the library) are several levels
     of 255 apart for some colors, while they agree on grid points. For one and three inputs the two systems use the
     same interpolation as the library, so those colors are not restricted to grid points.
+  - *Named colors in the CIEXYZ connection space.* ICC.1:2022 Table 66 stores them as u1Fixed15 numbers; LittleCMS
+    2.19 decodes them with the scale of the legacy CIELAB encoding (the media white comes out 0.4% too bright) and
+    iccDEV 2.4.2.5 twice too bright, so `IccColorTransformTests` checks them with hand-computed values.
+  - *The `solv` calculator operation of iccMAX*, which iccDEV 2.4.2.5 reports as failed for every system, and the
+    perceptual intent from an iccMAX profile to a version 4 profile, which iccDEV compensates for the perceptual
+    reference medium as LittleCMS does.
   - *Black point compensation where LittleCMS 2.19 was observed not to follow the published algorithm.* It applies no
     compensation with the relative colorimetric intent to a table-based monochrome profile whose device black is not
     black, nor (with the CMYK output profile of macOS) to a CMYK output profile used as a source; and with the

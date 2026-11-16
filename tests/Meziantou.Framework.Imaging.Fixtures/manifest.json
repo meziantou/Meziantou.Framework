@@ -167036,6 +167036,168 @@
         "icc.class=output",
         "icc.black-point"
       ]
+    },
+    {
+      "id": "icc/synthetic-named-lab-v2",
+      "file": {
+        "path": "icc/profiles/synthetic-named-lab-v2.icc",
+        "sha256": "c04cb656976572fed3622745c75cff0db7d1b945edf9c9c0e8be5e7dacb251f3",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccProfileBuilder.cs (NamedColorLabV2)",
+        "tools": [
+          ".NET 10.0"
+        ]
+      },
+      "features": [
+        "icc.version=2",
+        "icc.model=named-color",
+        "icc.pcs=lab",
+        "icc.space=cmyk",
+        "icc.class=named-color"
+      ]
+    },
+    {
+      "id": "icc/iccmax-rgb-xyz-mpe",
+      "file": {
+        "path": "icc/profiles/iccmax-rgb-xyz-mpe.icc",
+        "sha256": "9afa34ea1611d94c195636881f796ddbdce74d257533cdf9a4bd145c4710d9b2",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccMaxProfileXml.cs (RgbXyzMpe), built by iccFromXml",
+        "tools": [
+          ".NET 10.0",
+          "iccFromXml (iccDEV 2.4.2.5)"
+        ]
+      },
+      "features": [
+        "icc.version=5",
+        "icc.model=mpe",
+        "icc.mpe=curves",
+        "icc.mpe=matrix",
+        "icc.pcs=xyz",
+        "icc.space=rgb",
+        "icc.direction=both"
+      ]
+    },
+    {
+      "id": "icc/iccmax-rgb-lab-calculator",
+      "file": {
+        "path": "icc/profiles/iccmax-rgb-lab-calculator.icc",
+        "sha256": "c3bf5e09a56d3b3b04ce5d90d54761c78f50eaf986e1dc5f85ebaf1698f0afd6",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccMaxProfileXml.cs (RgbLabCalculator), built by iccFromXml",
+        "tools": [
+          ".NET 10.0",
+          "iccFromXml (iccDEV 2.4.2.5)"
+        ]
+      },
+      "features": [
+        "icc.version=5",
+        "icc.model=mpe",
+        "icc.mpe=calculator",
+        "icc.pcs=lab",
+        "icc.space=rgb",
+        "icc.class=color-space",
+        "icc.direction=both"
+      ]
+    },
+    {
+      "id": "icc/iccmax-cmyk-lab-clut",
+      "file": {
+        "path": "icc/profiles/iccmax-cmyk-lab-clut.icc",
+        "sha256": "44495d6605d5304747e1b177fe2b7a3d9402fd53409af5f6aa33bcaab171434c",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccMaxProfileXml.cs (CmykLabClut), built by iccFromXml",
+        "tools": [
+          ".NET 10.0",
+          "iccFromXml (iccDEV 2.4.2.5)"
+        ]
+      },
+      "features": [
+        "icc.version=5",
+        "icc.model=mpe",
+        "icc.mpe=clut",
+        "icc.mpe=sampled-curves",
+        "icc.pcs=lab",
+        "icc.space=cmyk",
+        "icc.class=output",
+        "icc.direction=both",
+        "icc.media-white",
+        "icc.absolute-tags"
+      ]
+    },
+    {
+      "id": "icc/iccmax-gray-xyz-absolute",
+      "file": {
+        "path": "icc/profiles/iccmax-gray-xyz-absolute.icc",
+        "sha256": "b7662b5662ac3c6f8f5246c4aa8dbd48dfdbcd8f0656868e8f81daf8b4f8a1dd",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccMaxProfileXml.cs (GrayXyzAbsolute), built by iccFromXml",
+        "tools": [
+          ".NET 10.0",
+          "iccFromXml (iccDEV 2.4.2.5)"
+        ]
+      },
+      "features": [
+        "icc.version=5",
+        "icc.model=mpe",
+        "icc.mpe=formula-curves",
+        "icc.pcs=xyz",
+        "icc.space=gray",
+        "icc.class=output",
+        "icc.direction=both",
+        "icc.media-white",
+        "icc.absolute-tags"
+      ]
+    },
+    {
+      "id": "icc/iccmax-named-lab",
+      "file": {
+        "path": "icc/profiles/iccmax-named-lab.icc",
+        "sha256": "e7cc5f470fc6cf70961ecb365c29e73bbfdc7d566a21f4e2d16f6ac6bf0bf797",
+        "role": "profile"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Common/IccMaxProfileXml.cs (NamedColors), built by iccFromXml",
+        "tools": [
+          ".NET 10.0",
+          "iccFromXml (iccDEV 2.4.2.5)"
+        ]
+      },
+      "features": [
+        "icc.version=5",
+        "icc.model=named-color",
+        "icc.pcs=lab",
+        "icc.space=cmyk",
+        "icc.class=named-color"
+      ]
     }
   ],
   "colorTransforms": [
@@ -169688,6 +169850,435 @@
         "maxMeanAbsoluteError": 0.75,
         "justification": "Both systems estimate the black point from the round trip of a lightness ramp, sampled at 256 points by LittleCMS and at 101 by the library."
       }
+    },
+    {
+      "id": "icc/synthetic-named-lab-v2-to-srgb-v4",
+      "source": "icc/synthetic-named-lab-v2",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 3,
+      "sampleCount": 10,
+      "vectors": {
+        "path": "icc/vectors/synthetic-named-lab-v2-to-srgb-v4.u16le",
+        "sha256": "d6e71f0dc8a6e5407dd77f2e6e027b34c7a5f283f78a55d2582f0a26652f2c18",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t1 -i icc/profiles/synthetic-named-lab-v2.icc -o icc/profiles/sRGB-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      },
+      "sourceSamples": "named-color-index"
+    },
+    {
+      "id": "icc/synthetic-named-lab-v2-to-synthetic-cmyk-lab-lut16-perceptual",
+      "source": "icc/synthetic-named-lab-v2",
+      "destination": "icc/synthetic-cmyk-lab-lut16",
+      "intent": "perceptual",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 4,
+      "sampleCount": 10,
+      "vectors": {
+        "path": "icc/vectors/synthetic-named-lab-v2-to-synthetic-cmyk-lab-lut16-perceptual.u16le",
+        "sha256": "047069c797bf9beab484b03afa28e63b78819bc5b37881aeb31f942949e99e9b",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t0 -i icc/profiles/synthetic-named-lab-v2.icc -o icc/profiles/synthetic-cmyk-lab-lut16.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 1.0,
+        "justification": "Same tables and interpolation in both systems; LittleCMS evaluates tables with 16-bit intermediate values, the library in double precision, and a steep curve after a table amplifies that rounding near black."
+      },
+      "sourceSamples": "named-color-index"
+    },
+    {
+      "id": "icc/synthetic-named-lab-v2-to-sgrey-v4-absolute",
+      "source": "icc/synthetic-named-lab-v2",
+      "destination": "icc/sgrey-v4",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 10,
+      "vectors": {
+        "path": "icc/vectors/synthetic-named-lab-v2-to-sgrey-v4-absolute.u16le",
+        "sha256": "14405ba76d9e5ad6f5fc7e6f05db7b2e0e9f838512a10cfd8e4f300dcaee3fde",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "transicc (LittleCMS 2.19)",
+        "command": "transicc -n -c0 -t3 -i icc/profiles/synthetic-named-lab-v2.icc -o icc/profiles/sGrey-v4.icc",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.cs (Generate)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same matrix and tone curves in both systems: only the rounding of the printed samples and the single-precision arithmetic of LittleCMS differ."
+      },
+      "sourceSamples": "named-color-index"
+    },
+    {
+      "id": "icc/iccmax-rgb-xyz-mpe-to-srgb-v4",
+      "source": "icc/iccmax-rgb-xyz-mpe",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/iccmax-rgb-xyz-mpe-to-srgb-v4.u16le",
+        "sha256": "8d27aa6174736e333239a5c2872f5bf946446e7d84a3cc803acbb4497dfa8aaf",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-rgb-xyz-mpe.icc relative linear, icc/profiles/sRGB-v4.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'RGB ', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 6,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-iccmax-rgb-xyz-mpe",
+      "source": "icc/srgb-v4",
+      "destination": "icc/iccmax-rgb-xyz-mpe",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-iccmax-rgb-xyz-mpe.u16le",
+        "sha256": "c642e5b1e88df9bc1400bc68fef57c6afc90e4f478928395d4db931301ffc6be",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/sRGB-v4.icc relative linear, icc/profiles/iccmax-rgb-xyz-mpe.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'RGB ', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/iccmax-rgb-lab-calculator-to-srgb-v4",
+      "source": "icc/iccmax-rgb-lab-calculator",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/iccmax-rgb-lab-calculator-to-srgb-v4.u16le",
+        "sha256": "3fd683531f99c505f0556c3eb70454daca0b6ae8cb0559af8b562fd74e6b5cdc",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-rgb-lab-calculator.icc relative linear, icc/profiles/sRGB-v4.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'RGB ', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 6,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same calculator functions in both systems, in single precision: only the precision of the curves and matrices around them and the order of the sums differ."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-iccmax-rgb-lab-calculator",
+      "source": "icc/srgb-v4",
+      "destination": "icc/iccmax-rgb-lab-calculator",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-iccmax-rgb-lab-calculator.u16le",
+        "sha256": "cb726c5388db8181588e44dfb14f569f380d6f74f1a87fd417cf76b97a8ee62b",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/sRGB-v4.icc relative linear, icc/profiles/iccmax-rgb-lab-calculator.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'RGB ', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 6,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same calculator functions in both systems, in single precision: only the precision of the curves and matrices around them and the order of the sums differ."
+      }
+    },
+    {
+      "id": "icc/iccmax-rgb-xyz-mpe-to-iccmax-rgb-lab-calculator-perceptual",
+      "source": "icc/iccmax-rgb-xyz-mpe",
+      "destination": "icc/iccmax-rgb-lab-calculator",
+      "intent": "perceptual",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 3,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/iccmax-rgb-xyz-mpe-to-iccmax-rgb-lab-calculator-perceptual.u16le",
+        "sha256": "fbff2907159cb3e06916086df39fc99ff179a713565e5f1aca40a31e01310d51",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-rgb-xyz-mpe.icc perceptual linear, icc/profiles/iccmax-rgb-lab-calculator.icc perceptual linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'RGB ', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same calculator functions in both systems, in single precision: only the precision of the curves and matrices around them and the order of the sums differ."
+      }
+    },
+    {
+      "id": "icc/iccmax-cmyk-lab-clut-to-srgb-v4",
+      "source": "icc/iccmax-cmyk-lab-clut",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 2558,
+      "vectors": {
+        "path": "icc/vectors/iccmax-cmyk-lab-clut-to-srgb-v4.u16le",
+        "sha256": "6535ae3e5121020144590d7bb1429aab88c9ddf59cb1f84861e7a465cddbaf34",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-cmyk-lab-clut.icc relative linear, icc/profiles/sRGB-v4.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'CMYK', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-iccmax-cmyk-lab-clut",
+      "source": "icc/srgb-v4",
+      "destination": "icc/iccmax-cmyk-lab-clut",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 4,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-iccmax-cmyk-lab-clut.u16le",
+        "sha256": "18ba25e3bb5e613dbfa85fffec8b7beca5053752dc4894996fd8fc9d70f3b7fb",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/sRGB-v4.icc relative linear, icc/profiles/iccmax-cmyk-lab-clut.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'RGB ', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/iccmax-cmyk-lab-clut-to-srgb-v4-absolute",
+      "source": "icc/iccmax-cmyk-lab-clut",
+      "destination": "icc/srgb-v4",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 4,
+      "destinationChannels": 3,
+      "sampleCount": 2558,
+      "vectors": {
+        "path": "icc/vectors/iccmax-cmyk-lab-clut-to-srgb-v4-absolute.u16le",
+        "sha256": "8d105455fa63fb5a4f0a9251fe88d2752d2c9ea54b34e0d02664d2e96ac4b277",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-cmyk-lab-clut.icc absolute linear, icc/profiles/sRGB-v4.icc absolute linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'CMYK', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/srgb-v4-to-iccmax-cmyk-lab-clut-absolute",
+      "source": "icc/srgb-v4",
+      "destination": "icc/iccmax-cmyk-lab-clut",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 3,
+      "destinationChannels": 4,
+      "sampleCount": 500,
+      "vectors": {
+        "path": "icc/vectors/srgb-v4-to-iccmax-cmyk-lab-clut-absolute.u16le",
+        "sha256": "430ca40d13a796cee8b9c54077af2c971f9c211d9d397a76aef26569fc6759f9",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/sRGB-v4.icc absolute linear, icc/profiles/iccmax-cmyk-lab-clut.icc absolute linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'RGB ', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/iccmax-gray-xyz-absolute-to-sgrey-v4",
+      "source": "icc/iccmax-gray-xyz-absolute",
+      "destination": "icc/sgrey-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/iccmax-gray-xyz-absolute-to-sgrey-v4.u16le",
+        "sha256": "1ebdf45910b4cf0eaf57bf68b81169f68c158511727ee2b9f0ea9f423dd43bac",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-gray-xyz-absolute.icc relative linear, icc/profiles/sGrey-v4.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'GRAY', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/sgrey-v4-to-iccmax-gray-xyz-absolute",
+      "source": "icc/sgrey-v4",
+      "destination": "icc/iccmax-gray-xyz-absolute",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v4-to-iccmax-gray-xyz-absolute.u16le",
+        "sha256": "6b0dd0cecbe5a634dc1f68f61a68c81141b1908a36a87c12d5c8d96a0845d716",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/sGrey-v4.icc relative linear, icc/profiles/iccmax-gray-xyz-absolute.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'GRAY', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/iccmax-gray-xyz-absolute-to-sgrey-v4-absolute",
+      "source": "icc/iccmax-gray-xyz-absolute",
+      "destination": "icc/sgrey-v4",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/iccmax-gray-xyz-absolute-to-sgrey-v4-absolute.u16le",
+        "sha256": "da428d0cea6fd902ce1ad14f4cece435cff28f89623446df9616d26181516f10",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-gray-xyz-absolute.icc absolute linear, icc/profiles/sGrey-v4.icc absolute linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'GRAY', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/sgrey-v4-to-iccmax-gray-xyz-absolute-absolute",
+      "source": "icc/sgrey-v4",
+      "destination": "icc/iccmax-gray-xyz-absolute",
+      "intent": "absolute-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 1,
+      "sampleCount": 320,
+      "vectors": {
+        "path": "icc/vectors/sgrey-v4-to-iccmax-gray-xyz-absolute-absolute.u16le",
+        "sha256": "5e73b1704adb33f866b8554545fddb12c12f29572251562eb521a7e473069d6e",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/sGrey-v4.icc absolute linear, icc/profiles/iccmax-gray-xyz-absolute.icc absolute linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'GRAY', float device values)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      }
+    },
+    {
+      "id": "icc/iccmax-named-lab-to-srgb-v4",
+      "source": "icc/iccmax-named-lab",
+      "destination": "icc/srgb-v4",
+      "intent": "relative-colorimetric",
+      "blackPointCompensation": false,
+      "sourceChannels": 1,
+      "destinationChannels": 3,
+      "sampleCount": 10,
+      "vectors": {
+        "path": "icc/vectors/iccmax-named-lab-to-srgb-v4.u16le",
+        "sha256": "25b8a8662be6f8bf98b40890f9f578160cf21c6c91e7aac2dbb9d9c90d800970",
+        "role": "vectors"
+      },
+      "reference": {
+        "tool": "iccApplyNamedCmm (iccDEV 2.4.2.5)",
+        "command": "iccApplyNamedCmm --cfg configuration.json (profileSequence: icc/profiles/iccmax-named-lab.icc relative linear, icc/profiles/sRGB-v4.icc relative linear; dstEncoding float, dstPrecision 9; colorData srcSpace 'nmcl', named colors at tint 1)",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/IccCorpus.IccMax.cs (ConvertWithIccDev)"
+      },
+      "comparison": {
+        "maxAbsoluteError": 4,
+        "maxMeanAbsoluteError": 0.5,
+        "justification": "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both."
+      },
+      "sourceSamples": "named-color-index"
     }
   ],
   "fonts": [

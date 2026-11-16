@@ -1677,6 +1677,11 @@ public static partial class FixtureManifestValidator
                 errors.Add($"{name}: black point compensation does not apply to the absolute colorimetric intent.");
             }
 
+            if (transform.SourceSamples is not (null or ColorTransformEntry.NamedColorIndexSamples) || (transform.SourceSamples is not null && transform.SourceChannels != 1))
+            {
+                errors.Add($"{name}: invalid sourceSamples '{transform.SourceSamples}' (allowed: {ColorTransformEntry.NamedColorIndexSamples}, with one source channel).");
+            }
+
             if (transform.SourceChannels is not (1 or 3 or 4) || transform.DestinationChannels is not (1 or 3 or 4))
             {
                 errors.Add($"{name}: channel counts must be 1, 3 or 4 (source {transform.SourceChannels}, destination {transform.DestinationChannels}).");

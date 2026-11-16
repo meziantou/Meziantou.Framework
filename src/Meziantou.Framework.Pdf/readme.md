@@ -22,7 +22,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   (`PdfDocument.PdfAConformance`), the conversion of existing documents to PDF/A-2 and PDF/A-3 (b, u)
   (`PdfDocument.ConvertToPdfA`: actions, appearances, substitute fonts, LZW, metadata), PDF/UA-1 and PDF/UA-2 (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
-  validated by veraPDF in the tests
+  validated by veraPDF in the tests, and an inspector of the accessibility issues of existing documents
+  (`PdfAccessibilityInspector`)
 - **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
   AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`), and the
   public-key security handler for the RSA certificates of recipients (`PdfEncryptionRecipient`,
@@ -34,22 +35,35 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   metadata, the outline (bookmarks), links and annotations (notes, text markups, free texts, stamps, flags), page
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
   (`PdfContentBuilder.DrawTextBox`: Unicode line breaking, soft hyphens and pluggable hyphenation), tables
-  (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page), pages moved, duplicated, removed and imported from other documents (merging), a
+  (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page), pages moved, duplicated, removed and imported from other documents (merging), N-up sheets and
+  scanned spreads split into pages (`PdfImposition`), a
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`, with the
   right-to-left lines put in the order of the text by the Unicode Bidirectional Algorithm), positioned
   text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
-  layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
+  layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), ruled tables
+  rebuilt from their rules and text (`PdfTableExtractor`, with a typed reason when it cannot), image extraction
   (`PdfPage.GetImages`), content drawn over or under the content of a page (`PdfContentPlacement`), text watermarks
-  (`PdfDocument.AddWatermark`), interactive forms created, read, filled and flattened (`PdfDocument.Form`), redaction
+  (`PdfDocument.AddWatermark`), headers and footers with page numbers, dates and Bates numbers
+  (`PdfDocument.AddHeaderFooter`, `PdfBates`), interactive forms created, read, filled and flattened (`PdfDocument.Form`), and their values exchanged as FDF
+  and XFDF (`PdfFormData`), their scripts read (`PdfFormField.Actions`, `PdfInteractiveForm.CalculationOrder`,
+  `PdfDocument.JavaScripts`; `Meziantou.Framework.Pdf.JavaScript` runs them), redaction
   (`PdfPage.Redact`: the text, paths, image pixels and annotations of areas removed from the content, not hidden)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
-  and tiling patterns; transparency groups, soft masks and blend modes
+  and tiling patterns; transparency groups, soft masks and blend modes; the plates of the colorants
+  (`PdfRenderOptions.Plate`), an overprint simulation (`PdfRenderOptions.SimulateOverprint`), the colorants of a page
+  (`PdfSeparations`) and a print production report (`PdfPrintProductionReport`: page boxes, colorants, output intents)
 - **Signatures** (`Meziantou.Framework.Pdf.Signing`): PAdES baseline B-B, B-T, B-LT and B-LTA signatures (CAdES
   detached signatures, RFC 3161 time stamps, the document security store, document time stamps), certification and
   field locks, visible signatures, appended as incremental updates, and the verification of the signatures of a
   document and of the changes made after them
+- **Tools**: a round-trip validator that checks that the writer is deterministic and keeps the pages of a document
+  (`PdfRoundTripValidator`, with structural summaries of documents: `PdfDocumentSummary`), an optimizer that plans
+  then applies its changes (`PdfOptimizer`: metadata, JavaScript, attachments, thumbnails, comments, forms, bookmarks,
+  layers, unused resources and objects, stream compression, image downsampling), and a sanitizer that repairs harmless
+  issues in one incremental update (`PdfSaveSanitizer`), and a structural comparison of documents
+  (`PdfDocumentComparer`, `PdfPageElements`: text and its geometry, images, paths, shadings)
 
 ## Create a document
 
@@ -472,7 +486,8 @@ image.Save(png, new Imaging.Formats.PngEncoder());
 
 The image is the crop box of the page, rotated as the page is shown, on a white background (`PdfRenderOptions.Background`,
 `null` for a transparent one). `PdfRenderOptions.RenderAnnotations` draws the appearances of the annotations, and
-generates one for the annotations and the form fields that have none. `PdfRenderOptions.Region` renders part of the
+generates one for the annotations and the form fields that have none (with the line endings of lines and
+polylines, the cells of comb fields and the styles of rich text values). `PdfRenderOptions.Region` renders part of the
 page, `Width` and `Height` fit it to a size in pixels instead of `Dpi`, and `PathAntialiasing` and `TextAntialiasing`
 turn the antialiasing off. `PdfRenderOptions.Intent` renders for viewing, printing or exporting (the annotations with
 the Print flag, the layers whose usage is for printing), `OptionalContentConfiguration` selects a configuration of the
@@ -615,5 +630,6 @@ specification says; a content stream that cannot be decoded throws when its data
 - The fields of a saved document whose default appearance names an embedded font are filled with that font only when
   it is given again (`PdfInteractiveForm.AddFont`); otherwise their values are drawn with Helvetica. The text boxes
   break the lines at the spaces, without the Unicode line breaking rules nor hyphenation.
-- The renderer composites in sRGB: overprint is not simulated, and the halftones are applied to the red, green and blue
-  components only, when `PdfRenderOptions.UseHalftones` asks for them.
+- The renderer composites in sRGB: overprinting is simulated with a simple model of the inks when
+  `PdfRenderOptions.SimulateOverprint` asks for it, and the halftones are applied to the red, green and blue components
+  only, when `PdfRenderOptions.UseHalftones` asks for them.

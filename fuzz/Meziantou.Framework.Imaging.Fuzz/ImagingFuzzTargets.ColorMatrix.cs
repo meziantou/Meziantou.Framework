@@ -13,10 +13,14 @@ public static partial class ImagingFuzzTargets
     /// format, a byte of width (1 to 64) and one of height (1 to 3), twenty bytes of coefficients (a special value below
     /// 16, a multiple of 1/32 between -4 and 4 otherwise), then the samples, repeated when the input is shorter. Every
     /// sample must be the one of the documented formula, computed here in double precision with the same order of operations.
+    /// The bit 2 of the byte of pixel format makes the rows of the matrix read one sample each (the other coefficients of
+    /// the samples are zero), as brightness, contrast, invert and opacity do: Arm64 looks them up in tables.
     /// </summary>
     private static void ColorMatrixTarget(ReadOnlySpan<byte> data)
     {
-        var format = FuzzInput.ReadByte(ref data) % 4;
+        var formatByte = FuzzInput.ReadByte(ref data);
+        var format = formatByte % 4;
+        var isDiagonal = (formatByte & 4) != 0;
         var width = 1 + (FuzzInput.ReadByte(ref data) % 64);
         var height = 1 + (FuzzInput.ReadByte(ref data) % 3);
         var values = new double[20];
@@ -32,6 +36,20 @@ public static partial class ImagingFuzzTargets
             values[3] = values[8] = values[13] = 0;
             values[15] = values[16] = values[17] = values[19] = 0;
             values[18] = 1;
+        }
+
+        if (isDiagonal)
+        {
+            for (var row = 0; row < 4; row++)
+            {
+                for (var column = 0; column < 4; column++)
+                {
+                    if (column != row)
+                    {
+                        values[(row * 5) + column] = 0;
+                    }
+                }
+            }
         }
 
         var matrix = new ColorMatrix(values);
@@ -104,6 +122,9 @@ public static partial class ImagingFuzzTargets
         yield return new FuzzSeed("bgra32-opacity", (byte[])[1, 7, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 148, 0, 1, 250, 128, 0, 64]);
         yield return new FuzzSeed("rgb24-infinities", (byte[])[2, 33, 2, 10, 12, 6, 3, 0, 11, 13, 9, 0, 3, 200, 100, 3, 0, 0, 0, 0, 0, 3, 0, 1, 77, 0, 255]);
         yield return new FuzzSeed("rgba64-random", (byte[])[3, 9, 1, 40, 200, 100, 150, 20, 220, 60, 33, 140, 70, 90, 180, 250, 17, 131, 160, 3, 0, 255, 255, 0, 0, 18, 52, 86, 120]);
+        yield return new FuzzSeed("rgba32-diagonal", (byte[])[4, 47, 2, 180, 0, 0, 0, 20, 0, 150, 0, 0, 120, 0, 0, 100, 0, 9, 0, 0, 0, 120, 0, 1, 250, 128, 0, 64, 17, 200]);
+        yield return new FuzzSeed("bgra32-diagonal-alpha-kept", (byte[])[5, 35, 1, 140, 0, 0, 0, 0, 0, 200, 0, 0, 0, 0, 0, 90, 0, 7, 0, 0, 0, 3, 0, 0, 10, 220, 30, 255, 99, 0]);
+        yield return new FuzzSeed("rgb24-diagonal", (byte[])[6, 63, 0, 160, 0, 0, 0, 12, 0, 120, 0, 0, 10, 0, 0, 170, 0, 4, 0, 0, 0, 3, 0, 1, 77, 0, 255, 128, 64]);
         yield return new FuzzSeed("rgba32-single-pixel", (byte[])[0, 0, 0, 5, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 3, 0, 1, 200, 100, 50, 25]);
     }
 }

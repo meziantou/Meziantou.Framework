@@ -3422,8 +3422,19 @@ operation?.End(new DragPointerState(10, 10, Buttons: 0));           // drag, dro
   `relatedTarget`), the drop is accepted when `dragover` is canceled (or when text is dragged over a text control or
   editable content), and a `drop` event that is not canceled keeps the drag operation. The text dropped in a text control
   or in editable content is inserted at its end.
-- There is no drag feedback (`setDragImage()` only records the image), no drop of files from outside the user agent, and
-  no drag between documents.
+- A drag from outside the user agent (files and folders from the file manager) starts with
+  `DragAndDropOperation.StartFromOutside(DragData, Document)`, or `Input.Mouse.BeginDrag(DragData)` and
+  `Input.Drop(x, y, DragData)`: it has no source node, so no `dragstart`, `drag` or `dragend`. The drag data store holds
+  a `File` per dropped file or folder (a folder is an empty `File` with no type, as in Chromium) and the strings.
+  `DataTransferItem.webkitGetAsEntry()` returns the entries of the File and Directory Entries API
+  (https://wicg.github.io/entries-api/: `FileSystemDirectoryEntry`, `FileSystemFileEntry`, `FileSystemDirectoryReader`,
+  read-only, with callbacks invoked from tasks), and `getAsFileSystemHandle()` a `FileSystemHandle` to an in-memory copy
+  of the dropped files. As in Chromium, `webkitGetAsEntry()` also works for the files that a script adds to a
+  `DataTransfer`: the root directory of the file system contains the files of the drag data store. A drop on a file input (or its button) that is not canceled selects the files (the first one
+  without `multiple`; the files of the folders with `webkitdirectory`, with their `webkitRelativePath`; `webkitEntries`
+  has the entries) and fires the trusted `input` and `change` events. Escape cancels a drag.
+- There is no drag feedback (`setDragImage()` only records the image), no navigation to a file dropped outside of a drop
+  target, and no drag between documents.
 
 ## Clipboard
 

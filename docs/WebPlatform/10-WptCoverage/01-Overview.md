@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,848 | 29,904 | 1,915 | 96% |
+| [Stable](#stable-tests) | 26,852 | 29,904 | 1,911 | 96% |
 | [Tentative](#tentative-tests) | 1,454 | 3,169 | 659 | 58% |
 | [Reftests](#reftests) | 28,313 | 29,507 | 149 | 96% |
 | [Crash tests](#crash-tests) | 2,041 | 2,111 | 58 | 99% |
-| **All** | **58,656** | **64,691** | **2,781** | **95%** |
+| **All** | **58,660** | **64,691** | **2,777** | **95%** |
 
 ## Failure reasons
 
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 163
 - **TEST BUG**: 1,076
-- **NOT IMPLEMENTED**: 3,847
+- **NOT IMPLEMENTED**: 3,843
 - **REQUIRES**: 760
   - `hardware`: 575
   - `layout`: 23
@@ -216,7 +216,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`encoding`](encoding.md) | 153 | 153 | 0 | 100% |
 | [`encoding-detection`](encoding-detection.md) | 5 | 5 | 0 | 100% |
 | [`encrypted-media`](encrypted-media.md) | 0 | 99 | 99 | – |
-| [`entries-api`](entries-api.md) | 0 | 4 | 4 | – |
+| [`entries-api`](entries-api.md) | 4 | 4 | 0 | 100% |
 | [`event-timing`](event-timing.md) | 68 | 72 | 0 | 94% |
 | [`eventsource`](eventsource.md) | 67 | 67 | 0 | 100% |
 | [`eyedropper`](eyedropper.md) | 0 | 1 | 1 | – |
@@ -420,7 +420,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 328 | 331 | 0 | 99% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,848** | **29,904** | **1,915** | **96%** |
+| **Total (343 sections)** | **26,852** | **29,904** | **1,911** | **96%** |
 
 ## Tentative tests
 

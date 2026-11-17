@@ -228,6 +228,8 @@ public sealed class WptTests
 
     public static TheoryData<string> WebMcpTests => GetTests("webmcp");
 
+    public static TheoryData<string> EntriesApiTests => GetTests("entries-api");
+
     public static TheoryData<string> BadgingTests => GetTests("badging");
 
     public static TheoryData<string> BatteryStatusTests => GetTests("battery-status");
@@ -1186,6 +1188,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebMcpTests))]
     public void WebMcp(string test) => Run("webmcp", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(EntriesApiTests))]
+    public void EntriesApi(string test) => Run("entries-api", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(BadgingTests))]

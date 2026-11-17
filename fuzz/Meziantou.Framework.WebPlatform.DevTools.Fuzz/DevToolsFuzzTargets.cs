@@ -34,6 +34,17 @@ public static class DevToolsFuzzTargets
         """{"id":4,"method":"Target.attachToTarget","params":{"targetId":"0BC005978161A72847928A31E4237124","flatten":true}}""",
     ];
 
+    /// <summary>The <c>data</c> parameters of <c>Input.dispatchDragEvent</c>.</summary>
+    private static readonly string[] DragDataSeeds =
+    [
+        """{"items":[{"mimeType":"text/plain","data":"text"}],"files":["/tmp/notes.txt","/tmp/folder"],"dragOperationsMask":1}""",
+        """{"items":[],"dragOperationsMask":65535}""",
+        """{"items":[{"mimeType":"text/uri-list","data":"https://example.com/"},{"mimeType":"TEXT/PLAIN","data":""}],"dragOperationsMask":18}""",
+        """{"items":[{"mimeType":1,"data":"x"}],"dragOperationsMask":0}""",
+        """{"files":["a/b", "", ".."],"dragOperationsMask":-1}""",
+        """{"items":[1]}""",
+    ];
+
     private static readonly (string Pattern, string Url)[] GlobSeeds =
     [
         ("*", "https://example.com/"),
@@ -66,6 +77,7 @@ public static class DevToolsFuzzTargets
         "{", "}", "[", "]", ":", ",", "\"", "null", "true", "false", "1", "-1", "1.5", "1e3", "9223372036854775807", "9223372036854775808",
         "\"id\"", "\"method\"", "\"params\"", "\"sessionId\"", "\"Browser.getVersion\"", "\"Runtime.evaluate\"",
         "*", "?", "\\", "https://", "http://", "/", ".", "#",
+        "\"items\"", "\"files\"", "\"mimeType\"", "\"data\"", "\"dragOperationsMask\"", "65535",
         "GET ", "POST ", " HTTP/1.1", "\r\n", "\r\n\r\n", "Host: ", "Upgrade: websocket", "Sec-WebSocket-Key: ", "localhost", "127.0.0.1", "[::1]", ":9222",
     ];
 
@@ -74,9 +86,54 @@ public static class DevToolsFuzzTargets
         new("devtools-message", Message) { Seeds = () => MessageSeeds.Select((seed, index) => FuzzSeed.FromText("message-" + index, seed)), Dictionary = Tokens },
         new("devtools-url-glob", Glob) { Seeds = () => GlobSeeds.Select((seed, index) => FuzzSeed.FromText("glob-" + index, seed.Pattern + "\0" + seed.Url)), Dictionary = Tokens },
         new("devtools-http-request", Http) { Seeds = () => HttpSeeds.Select((seed, index) => new FuzzSeed("http-" + index, Encoding.Latin1.GetBytes(seed))), Dictionary = Tokens },
+        new("devtools-drag-data", DragDataParameter) { Seeds = () => DragDataSeeds.Select((seed, index) => FuzzSeed.FromText("drag-data-" + index, seed)), Dictionary = Tokens },
     ];
 
     /// <summary>The input is a message of a client: it is a command exactly when a JSON reader sees an object with an integer id and a string method.</summary>
+    /// <summary>
+    /// Reads the drag data of <c>Input.dispatchDragEvent</c> (the files are not read from the disk): it is accepted or rejected
+    /// with a <see cref="ProtocolException"/>, and the data has the strings of the items and a valid effectAllowed.
+    /// </summary>
+    private static void DragDataParameter(ReadOnlySpan<byte> data)
+    {
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(data.ToArray());
+        }
+        catch (JsonException)
+        {
+            return;
+        }
+
+        using (document)
+        {
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+                return;
+
+            var files = new List<string>();
+            Dom.DragData dragData;
+            try
+            {
+                dragData = Targets.PageSession.ReadDragData(document.RootElement, (_, path) =>
+                {
+                    FuzzAssert.True(path is not null, "a file path is null");
+                    files.Add(path);
+                });
+            }
+            catch (ProtocolException)
+            {
+                return;
+            }
+
+            var items = document.RootElement.TryGetProperty("items", out var itemsElement) && itemsElement.ValueKind == JsonValueKind.Array ? itemsElement.GetArrayLength() : 0;
+            FuzzAssert.True(dragData.Strings.Count <= items, "the drag data has more strings than items");
+            FuzzAssert.True(dragData.EffectAllowed is "none" or "copy" or "copyLink" or "copyMove" or "link" or "linkMove" or "move" or "all", "the effectAllowed is not valid");
+            var fileCount = document.RootElement.TryGetProperty("files", out var filesElement) && filesElement.ValueKind == JsonValueKind.Array ? filesElement.GetArrayLength() : 0;
+            FuzzAssert.Equal(fileCount, files.Count, "every file of the parameter is read");
+        }
+    }
+
     private static void Message(ReadOnlySpan<byte> data)
     {
         var bytes = data.ToArray();

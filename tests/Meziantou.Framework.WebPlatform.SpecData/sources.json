@@ -317,6 +317,7 @@
       "vibration",
       "web-share",
       "webmcp",
+      "entries-api",
       "badging",
       "battery-status",
       "screen-wake-lock",

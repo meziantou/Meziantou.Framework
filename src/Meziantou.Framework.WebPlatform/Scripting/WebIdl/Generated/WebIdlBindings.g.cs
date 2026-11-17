@@ -231,7 +231,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["FileList"] = Binding_FileList<TAdapter, TValue>.Binding,
             ["FileReader"] = Binding_FileReader<TAdapter, TValue>.Binding,
             ["FileReaderSync"] = Binding_FileReaderSync<TAdapter, TValue>.Binding,
+            ["FileSystem"] = Binding_FileSystem<TAdapter, TValue>.Binding,
+            ["FileSystemDirectoryEntry"] = Binding_FileSystemDirectoryEntry<TAdapter, TValue>.Binding,
             ["FileSystemDirectoryHandle"] = Binding_FileSystemDirectoryHandle<TAdapter, TValue>.Binding,
+            ["FileSystemDirectoryReader"] = Binding_FileSystemDirectoryReader<TAdapter, TValue>.Binding,
+            ["FileSystemEntry"] = Binding_FileSystemEntry<TAdapter, TValue>.Binding,
+            ["FileSystemFileEntry"] = Binding_FileSystemFileEntry<TAdapter, TValue>.Binding,
             ["FileSystemFileHandle"] = Binding_FileSystemFileHandle<TAdapter, TValue>.Binding,
             ["FileSystemHandle"] = Binding_FileSystemHandle<TAdapter, TValue>.Binding,
             ["FileSystemSyncAccessHandle"] = Binding_FileSystemSyncAccessHandle<TAdapter, TValue>.Binding,
@@ -1209,6 +1214,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.FileApi.BlobPropertyBag dictionaryDom_FileApi_BlobPropertyBag:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileApi_BlobPropertyBag(r, dictionaryDom_FileApi_BlobPropertyBag);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemFlags dictionaryDom_FileApi_FileSystemFlags:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileApi_FileSystemFlags(r, dictionaryDom_FileApi_FileSystemFlags);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.FileSystemCreateWritableOptions dictionaryDom_FileSystemCreateWritableOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileSystemCreateWritableOptions(r, dictionaryDom_FileSystemCreateWritableOptions);
                 return true;
@@ -2030,6 +2038,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileSystemFileHandle> taskSystem_Threading_Tasks_Task_Dom_FileSystemFileHandle_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileSystemFileHandle_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileSystemHandle> taskSystem_Threading_Tasks_Task_Dom_FileSystemHandle_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileSystemHandle_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileSystemSyncAccessHandle> taskSystem_Threading_Tasks_Task_Dom_FileSystemSyncAccessHandle_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileSystemSyncAccessHandle_, static (r, v) => r.Wrap(v));

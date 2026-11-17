@@ -27,6 +27,9 @@ internal sealed class DragDataItem(DragDataItemKind kind, string type, object da
     public string Type { get; } = type;
 
     public object Data { get; } = data;
+
+    /// <summary>The file or the directory of the item: a dropped file or directory, or the file of a File item (created on first use).</summary>
+    public DragDataEntry? Entry { get; set; }
 }
 
 /// <summary>The data that underlies a drag-and-drop operation (https://html.spec.whatwg.org/multipage/dnd.html#drag-data-store).</summary>
@@ -43,6 +46,96 @@ internal sealed class DragDataStore
 
     /// <summary>The clear-was-called flag and the types-to-clear list of a clipboard event (https://w3c.github.io/clipboard-apis/#fire-a-clipboard-event), null for a drag-and-drop operation.</summary>
     public ClipboardClearState? ClipboardClear { get; init; }
+
+    /// <summary>The data of a drag from outside the user agent, null for the other drags.</summary>
+    public DragData? ExternalData { get; init; }
+
+    /// <summary>The time of the start of a drag from outside the user agent (milliseconds since the Unix epoch): the date of the files that have none.</summary>
+    public long DropTime { get; init; }
+
+    /// <summary>The window of the target of the last drag-and-drop event: the window of the entries and of the handles of the dropped files.</summary>
+    public Window? Window { get; set; }
+
+    private FileApi.FileSystem? _entriesFileSystem;
+    private InMemoryFileSystemBackend? _handlesBackend;
+
+    /// <summary>
+    /// The file system of the entries of the files of the store (https://wicg.github.io/entries-api/#html-data), created on
+    /// first use: its root directory contains the entries of the File items (the dropped files and directories).
+    /// </summary>
+    public FileApi.FileSystem? GetEntriesFileSystem()
+    {
+        if (_entriesFileSystem is null && (Window ?? GlobalScope.Current) is { } global)
+        {
+            _entriesFileSystem = new FileApi.FileSystem(global, GetRootEntries, DropTime);
+        }
+
+        return _entriesFileSystem;
+    }
+
+    /// <summary>The file or the directory of a File item (https://wicg.github.io/entries-api/#dom-datatransferitem-webkitgetasentry).</summary>
+    public DragDataEntry GetEntry(DragDataItem item) => item.Entry ??= new DragDataFile((FileApi.File)item.Data);
+
+    private List<DragDataEntry> GetRootEntries()
+    {
+        var entries = new List<DragDataEntry>();
+        foreach (var item in Items)
+        {
+            if (item.Kind == DragDataItemKind.File)
+            {
+                entries.Add(GetEntry(item));
+            }
+        }
+
+        return entries;
+    }
+
+    /// <summary>The origin key of the snapshot of the dropped files and directories in <see cref="GetHandlesBackend"/>.</summary>
+    internal const string HandlesOrigin = "dropped-files";
+
+    /// <summary>
+    /// A copy of the dropped files and directories, the file system of the handles of <c>getAsFileSystemHandle()</c>
+    /// (created on first use): the writes of the page change the copy only.
+    /// </summary>
+    public InMemoryFileSystemBackend? GetHandlesBackend()
+    {
+        if (ExternalData is not { } data)
+            return null;
+
+        if (_handlesBackend is null)
+        {
+            var backend = new InMemoryFileSystemBackend();
+            foreach (var entry in data.Entries)
+            {
+                AddToBackend(backend, [entry.Name], entry);
+            }
+
+            _handlesBackend = backend;
+        }
+
+        return _handlesBackend;
+    }
+
+    private void AddToBackend(InMemoryFileSystemBackend backend, string[] path, DragDataEntry entry)
+    {
+        switch (entry)
+        {
+            case DragDataFile file:
+                var time = file.LastModified?.ToUnixTimeMilliseconds() ?? DropTime;
+                backend.CreateEntry(HandlesOrigin, path, FileSystemHandleKind.File, time);
+                backend.WriteFile(HandlesOrigin, path, 0, file.Content.Span, time);
+                break;
+
+            case DragDataDirectory directory:
+                backend.CreateEntry(HandlesOrigin, path, FileSystemHandleKind.Directory, DropTime);
+                foreach (var child in directory.Entries)
+                {
+                    AddToBackend(backend, [.. path, child.Name], child);
+                }
+
+                break;
+        }
+    }
 
     /// <summary>Records a call to clearData() or clear() during a clipboard event: <paramref name="format"/> is null when all the data is cleared.</summary>
     public void OnCleared(string? format)
@@ -504,5 +597,46 @@ public sealed class DataTransferItem
             return null;
 
         return (File)_item.Data;
+    }
+
+    /// <summary>
+    /// Returns the entry of a file item (https://wicg.github.io/entries-api/#dom-datatransferitem-webkitgetasentry): a file
+    /// or a directory dropped from outside the user agent (read the files of a directory with
+    /// <see cref="FileApi.FileSystemDirectoryEntry.CreateReader"/>), or a file added by a script. The root directory of its
+    /// file system contains the files of the drag data store. Null for the text items, and while the drag data store is
+    /// protected (before the drop).
+    /// </summary>
+    /// <seealso href="https://wicg.github.io/entries-api/#dom-datatransferitem-webkitgetasentry"/>
+    [IdlMember("webkitGetAsEntry", "https://wicg.github.io/entries-api/#dom-datatransferitem-webkitgetasentry")]
+    public FileApi.FileSystemEntry? WebkitGetAsEntry()
+    {
+        if (Mode is not (DragDataStoreMode.ReadWrite or DragDataStoreMode.ReadOnly) || _item.Kind != DragDataItemKind.File)
+            return null;
+
+        var store = _dataTransfer.Store!;
+        return store.GetEntriesFileSystem()?.GetTopLevelEntry(store.GetEntry(_item));
+    }
+
+    /// <summary>
+    /// Returns a handle to a file or a directory dropped from outside the user agent
+    /// (https://wicg.github.io/file-system-access/#dom-datatransferitem-getasfilesystemhandle): a handle to a copy of the
+    /// dropped files, that the page can read and change (the files of the disk do not change). The task completes with null
+    /// for the other items, and while the drag data store is protected (before the drop).
+    /// </summary>
+    /// <seealso href="https://wicg.github.io/file-system-access/#dom-datatransferitem-getasfilesystemhandle"/>
+    [IdlMember("getAsFileSystemHandle", "https://wicg.github.io/file-system-access/#dom-datatransferitem-getasfilesystemhandle")]
+    public Task<FileSystemHandle?> GetAsFileSystemHandle()
+    {
+        if (Mode is not (DragDataStoreMode.ReadWrite or DragDataStoreMode.ReadOnly) || _item.Kind != DragDataItemKind.File || _item.Entry is not { } entry)
+            return Task.FromResult<FileSystemHandle?>(null);
+
+        var store = _dataTransfer.Store!;
+        if (store.Window is not { } window || store.GetHandlesBackend() is not { } backend)
+            return Task.FromResult<FileSystemHandle?>(null);
+
+        FileSystemHandle handle = entry is DragDataDirectory
+            ? new FileSystemDirectoryHandle(window, backend, DragDataStore.HandlesOrigin, [entry.Name])
+            : new FileSystemFileHandle(window, backend, DragDataStore.HandlesOrigin, [entry.Name]);
+        return Task.FromResult<FileSystemHandle?>(handle);
     }
 }

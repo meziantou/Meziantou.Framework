@@ -107,6 +107,17 @@ public sealed class KeyboardInput
             UpdateInputModifiers();
         }
 
+        // During a drag-and-drop operation, the keys go to the drag (not to the page): Escape cancels it
+        if (_input.Mouse.DragOperation is not null)
+        {
+            if (key.Key == "Escape")
+            {
+                _input.CancelDrag(_input.Mouse);
+            }
+
+            return;
+        }
+
         if (GetTarget() is not { } target)
             return;
 

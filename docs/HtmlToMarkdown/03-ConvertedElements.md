@@ -339,6 +339,9 @@ Assert.Equal("""
   `rowspan="0"` spans to that end.
 - A span that would make the table larger than 1,000,000 cells (rows × columns) is ignored, so that a small document
   cannot produce a huge table.
+- [Duplicate](cref:Meziantou.Framework.TableSpanHandling.Duplicate) copies at most 1,000,000 characters in a document:
+  the other positions of a span that would copy more are empty, as with
+  [EmptyCells](cref:Meziantou.Framework.TableSpanHandling.EmptyCells).
 
 ### Complex tables
 

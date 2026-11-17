@@ -173,6 +173,10 @@ public static void DrawTiltedCard(string outputPath)
   drawn on an image of the plane, then that image is drawn in perspective.
 - What is on the other side of the horizon (behind the viewer) has no image: a drawing that crosses the horizon is cut
   there, and nothing is rejected.
+- Curves are cut into more segments where the perspective enlarges them, near the horizon most. A stroke is cut where
+  its outline lands, so a wide pen costs little more than a thin one, even when it reaches the horizon. The round and
+  square caps of a dashed pen can end anywhere along a curve and reach along it: a wide one is cut finely on most of a
+  curve near the horizon, and is slow to draw. Prefer butt caps for wide dashed strokes in perspective.
 - Transformations started inside each other are combined in three dimensions: a rotation inside a perspective shows the
   side that comes closer larger, as the transforms of nested elements of CSS do.
 

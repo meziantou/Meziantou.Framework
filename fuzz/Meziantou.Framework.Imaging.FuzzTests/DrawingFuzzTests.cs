@@ -33,9 +33,11 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// widest pens for lines and rectangles, dashed ones included, so that a case stays a matter of milliseconds.
 /// </para>
 /// <para>
-/// In perspective, a curve is cut finer wherever its stroke comes near the horizon of the plane, which a filtered layer
-/// can bring into view: a pen 84 pixels wide on a circle of 14 pixels was 120,000 crossing wedges, for minutes (fuzz
-/// regression). There, the pens of curves are at most about 20 pixels wide, like the lengths are at most 60.
+/// In perspective, a curve is cut finer wherever the outline of its stroke comes near the horizon of the plane, which a
+/// filtered layer can bring into view (ProjectiveView.GetCurveScale): a pen 84 pixels wide on a circle of 14 pixels was
+/// 195,000 crossing edges, for minutes, while the pen reached the horizon from every part of the circle (fuzz
+/// regression). The round and square caps of dashes can end anywhere on a curve, and reach as far as the pen along it:
+/// there, the dashed pens of these caps are at most about 20 pixels wide, like the lengths are at most 60.
 /// </para>
 /// </remarks>
 public sealed class DrawingFuzzTests
@@ -1242,6 +1244,10 @@ public sealed class DrawingFuzzTests
 
         var pen = CreatePen(random, canvas, context, widest: random.Chance(10));
 
+        // In perspective, the round and square caps of the dashes of a curve stay narrower than most of its bends (see
+        // the remarks): the widths of 1 to 101 pixels become widths of 1 to 21 pixels
+        var width = s_isInPerspective && pen.LineCap != LineCap.Butt && pen.Width is > 21 and <= 101 ? 1 + ((pen.Width - 1) / 5) : pen.Width;
+
         // A pen far wider than the canvas with dashes far shorter than its width cuts every curve near the canvas into
         // slivers across the whole canvas, at as many angles: the exact area of their union costs the square of their
         // number, legitimately. Its pattern is at least a thousandth of its width.
@@ -1254,7 +1260,7 @@ public sealed class DrawingFuzzTests
             }
         }
 
-        return new Pen(pen.Brush, pen.Width)
+        return new Pen(pen.Brush, width)
         {
             LineJoin = pen.LineJoin,
             LineCap = pen.LineCap,
@@ -1266,13 +1272,11 @@ public sealed class DrawingFuzzTests
 
     private static Pen CreatePen(FuzzRandom random, DrawingCanvas canvas, FuzzContext context, bool widest)
     {
-        // In perspective, the pens of curves stay narrower than most of their bends (see the remarks)
-        var wide = s_isInPerspective ? 20 : 100;
         var width = random.Next(10) switch
         {
-            0 => widest ? MaxCoordinate : 1 + (NextDouble(random) * wide),
+            0 => widest ? MaxCoordinate : 1 + (NextDouble(random) * 100),
             1 => random.Chance(3) ? 0 : 1e-9 + (NextDouble(random) * 1e-3),
-            2 => 1 + (NextDouble(random) * (widest ? 100000 : wide)),
+            2 => 1 + (NextDouble(random) * (widest ? 100000 : 100)),
             _ => 0.05 + (NextDouble(random) * 6),
         };
         return new Pen(CreateBrush(random, canvas, context), width)

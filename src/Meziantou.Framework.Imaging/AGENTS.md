@@ -1582,7 +1582,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   cut by four half-planes in the coordinates of the drawing, then divided by `W`: never reject, never clamp a vertex
   that is not on the border), curves are cut adaptively for the factor `ProjectiveView.GetScale` bounds on what is
   seen of each part (`PathFlattener.Projected*`, the arcs of the stroker): a uniform cut of a large curve at the
-  largest factor near the viewer made millions of chords. What has a size in the drawing that is not a shape (the
+  largest factor near the viewer made millions of chords. Inside a curve, a stroke measures the factor where its
+  outline lands (`GetCurveScale`: the part moved by half the width along its normals, from the cone of its tangents),
+  not on all the pen reaches: a wide pen reaches the horizon from every part of a small curve, which were all cut at
+  `MaxScale`. Markers and the round caps of dashes keep the reach (`Pen.TryGetCurveOutline`). What has a size in the drawing that is not a shape (the
   blur and the offset of a shadow, a blur, color glyphs) is drawn by a session on an image of the plane
   (`DrawingSession.Projections.cs`), then drawn in perspective; a plane seen from its edge (`IsFlat`) draws nothing,
   since its pieces on one line would cross each other everywhere. Transformations of space nest in 4x4

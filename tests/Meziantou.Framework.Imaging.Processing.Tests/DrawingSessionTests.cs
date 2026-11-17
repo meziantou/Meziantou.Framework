@@ -2963,6 +2963,57 @@ public sealed class DrawingSessionTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AWidePenNearTheHorizonIsCutWhereItsOutlineLands(bool isDashed)
+    {
+        // A plane seen nearly edge-on: almost every point goes within 1e-4 pixel of the vanishing point (50.31, 2), and the
+        // horizon is the line x = -21.88 of the plane. A pen 84.5 pixels wide on a circle of radius 13.76 and arcs of
+        // ellipses reaches the horizon from every part of them, while the outline of its stroke lands near the horizon
+        // at a few places only: cut for the reach of the pen, every part was cut 65,536 times finer, in 195,000 edges
+        // that cross each other at the vanishing point, for minutes (fuzz regression). The path is the one of the fuzz
+        // case, arcs included.
+        var path = new VectorPath(
+            [PathCommand.MoveTo, PathCommand.LineTo, PathCommand.Arc, PathCommand.Close, PathCommand.MoveTo, PathCommand.Arc, PathCommand.ArcContinuation, PathCommand.ArcContinuation, PathCommand.Ellipse, PathCommand.MoveTo, PathCommand.LineTo, PathCommand.Arc, PathCommand.ArcContinuation, PathCommand.ArcContinuation, PathCommand.ArcContinuation, PathCommand.Close, PathCommand.MoveTo, PathCommand.QuadraticTo],
+            [
+            7.01310829002704, 28.467758171676813,
+            7.013108302025602, 12.725965439784396,
+            7.01310829002704, 28.467758171676813, 2.130573808136149E-08, 0, 0, 19.049854120672126, 0.5631610617718658, -0.826347153745921, 0.9266637419686288, -0.3758913530805127, 7.013108309770295, 21.307082730270988,
+            7.01310829002704, 28.467758171676813,
+            26.602955758409102, 23.975477140000542, -4.651513261143416, 11.454756290148561, -42.32450462299675, -17.187008569925837, 0.9328247904029937, 0.36033027961803443, 0.48699568796165965, -0.8734043736475962, 61.30409630792905, 44.56510251484653,
+            26.602955758409102, 23.975477140000542, -4.651513261143416, 11.454756290148561, -42.32450462299675, -17.187008569925837, 0.48699568796165965, -0.8734043736475962, -0.7968871434885282, -0.6041281987647108, 55.87911361548039, 25.230485650089747,
+            26.602955758409102, 23.975477140000542, -4.651513261143416, 11.454756290148561, -42.32450462299675, -17.187008569925837, -0.7968871434885282, -0.6041281987647108, -0.7094349534829372, 0.7047709179418961, 0.07382187786816097, 3.7361688376387416,
+            9.668886760578427, 25.83879465978018, 13.759682995967317, 13.759682995967317,
+            0, 6.65504793638903,
+            6.6647651510190355, 6.65504793638903,
+            0, 6.65504793638903, 6.678613145346393, 0, 0, 0, 0.9979265164749052, 0.0643635589154356, 0.18642772547845846, 0.9824686779602333, 1.2450786580374613, 6.65504793638903,
+            0, 6.65504793638903, 6.678613145346393, 0, 0, 0, 0.18642772547845846, 0.9824686779602333, -0.9049824700989729, 0.42544885569661783, -6.04402782111105, 6.65504793638903,
+            0, 6.65504793638903, 6.678613145346393, 0, 0, 0, -0.9049824700989729, 0.42544885569661783, -0.6376091817474399, -0.7703600011367154, -4.258345062812009, 6.65504793638903,
+            0, 6.65504793638903, 6.678613145346393, 0, 0, 0, -0.6376091817474399, -0.7703600011367154, 0.5871006893393724, -0.8095139162344486, 3.9210183814638615, 6.65504793638903,
+            0, 6.65504793638903,
+            4.7363442309631525, 8.036818417743234, -2.795966062021799, -108.92981615788426,
+            ],
+            new RectangleD(-200, -200, 400, 400));
+        var transform = new ProjectiveTransform(1.7422965749764903, 0.06924918865877217, 0.03463023903403511, 0, 7.710559872308175E-06, 0, 38.11527381090911, 1.5148101671147525, 0.7575883267617542);
+        var pen = new Pen(new SolidBrush(new Rgba32(10, 20, 30, 200)), 84.50908653919112)
+        {
+            LineJoin = LineJoin.Miter,
+            MiterLimit = 5.321953753531635,
+            DashPattern = isDashed ? [6.699129033815458, 4.691417125969625, 3335.991986191077, 3404.172261707723] : [],
+            DashOffset = 8.836639374064625,
+        };
+        using var image = new Image<Rgba32>(58, 134);
+        // A few tens of milliseconds: cut for the reach of the pen, the stroke took more than 20 seconds
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        image.Draw(canvas => canvas.Transform(transform, plane => plane.Stroke(pen, path)), timeout.Token);
+
+        // The stroke is a wedge from the vanishing point down to the left of the canvas
+        Assert.Equal(new Rgba32(10, 20, 30, 200), image.Frames[0][10, 100]);
+        Assert.Equal(default, image.Frames[0][55, 100]);
+    }
+
     [Fact]
     public void WhatIsBeyondTheHorizonOfThePlaneIsNotDrawn()
     {

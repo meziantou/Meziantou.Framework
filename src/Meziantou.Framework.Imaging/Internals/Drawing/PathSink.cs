@@ -31,6 +31,14 @@ internal abstract class PathSink
         => Projection is { } projection ? projection.GetScale(minX, minY, maxX, maxY) : Scale;
 
     /// <summary>
+    /// Gets the factor by which what is drawn from the inside of a part of a curve is enlarged at most before it is
+    /// drawn: the part is in a rectangle, and its tangents in the cone of three directions (see
+    /// <see cref="ProjectiveView.GetCurveScale"/>). It is <see cref="Scale"/>, unless there is a <see cref="Projection"/>.
+    /// </summary>
+    public double GetCurveScale(double minX, double minY, double maxX, double maxY, double ax, double ay, double bx, double by, double cx, double cy)
+        => Projection is { } projection ? projection.GetCurveScale(minX, minY, maxX, maxY, ax, ay, bx, by, cx, cy) : Scale;
+
+    /// <summary>
     /// Gets the factor by which what is drawn in a rectangle at one of the ends of a curve is enlarged at most before it
     /// is drawn: what <see cref="GetScale"/> gives, with <see cref="ProjectiveView.EndReach"/> around the rectangle.
     /// </summary>

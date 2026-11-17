@@ -295,11 +295,10 @@ public sealed class PngDecoderTests
                 { "Adler-32 trailer cut by a byte", image.Encode(false, zlib: stream[..^1]) },
                 { "empty datastream", image.Encode(false, zlib: []) },
                 { "palette index out of range", PngTestImage.Create(2, 1, 3, 8, [0, 2], [1, 2, 3, 4, 5, 6]).Encode(false) },
+
+                // The decoder knows where the deflate data ends: the checksum that follows it is not the last bytes
+                { "Adler-32 trailer repeated", image.Encode(false, zlib: [.. stream, .. stream[^4..]]) },
             };
-#if NET11_0_OR_GREATER
-            // The decoder knows where the deflate data ends: the checksum that follows it is not the last bytes
-            data.Add("Adler-32 trailer repeated", image.Encode(false, zlib: [.. stream, .. stream[^4..]]));
-#endif
             return data;
         }
     }

@@ -67,12 +67,10 @@ internal sealed class SyntaxList : GreenNode
             if (count == 1)
                 return children[0];
 
+            // A bulk copy: storing the children one by one checks the type of the array for each of them
+            // The children are not null: count is the number of non-null children
             var copy = new GreenNode[count];
-            for (var i = 0; i < count; i++)
-            {
-                copy[i] = children[i]!;
-            }
-
+            children.CopyTo(copy!);
             return new SyntaxList(copy);
         }
 

@@ -317,10 +317,10 @@ public sealed class HighlightRegistry : IReadOnlyCollection<KeyValuePair<string,
                 if (abstractRange is StaticRange staticRange && !staticRange.IsValid)
                     continue;
 
-                if (abstractRange.Collapsed || (hitNode is not null && !ReferenceEquals(hitNode.GetRoot(), abstractRange.StartContainer.GetRoot())))
+                if (abstractRange.Collapsed || (hitNode is not null && !ReferenceEquals(hitNode.GetRoot(), abstractRange.StartContainerInternal.GetRoot())))
                     continue;
 
-                var range = new Dom.Range(abstractRange.StartContainer, abstractRange.StartOffset, abstractRange.EndContainer, abstractRange.EndOffset);
+                var range = new Dom.Range(abstractRange.StartContainerInternal, abstractRange.StartOffset, abstractRange.EndContainerInternal, abstractRange.EndOffset);
                 foreach (var quad in range.GetClientQuads())
                 {
                     if (quad.Bounds.Contains(x, y))

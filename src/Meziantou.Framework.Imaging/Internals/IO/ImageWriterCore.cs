@@ -87,15 +87,16 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     public PixelFormat PixelFormat { get; }
 
     /// <summary>
-    /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, <see cref="PixelFormat.Rgba64"/> for a
-    /// floating-point format, whose frames are reduced with <see cref="ImageEncoder.FloatingPointConversion"/> first, the
+    /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, 16-bit integers for a floating-point format
+    /// (<see cref="PixelFormatWidening.GetReducedFloatingPointFormat"/>), whose frames are reduced with
+    /// <see cref="ImageEncoder.FloatingPointConversion"/> first, the
     /// lossless widening of a format the encoder does not store (<see cref="PixelFormatWidening"/>), or
     /// <see cref="PixelFormat.Rgba32"/> for indexed PNG output that reduces colors (<see cref="PngColorReduction"/>).
     /// </summary>
     public PixelFormat EncodedPixelFormat { get; }
 
     /// <summary>
-    /// Gets the pixel format of the frames once their floating-point samples are reduced (<see cref="PixelFormat.Rgba64"/>)
+    /// Gets the pixel format of the frames once their floating-point samples are reduced (<see cref="PixelFormatWidening.GetReducedFloatingPointFormat"/>)
     /// or their format is widened for the encoder, before any color reduction.
     /// </summary>
     private PixelFormat ReducedPixelFormat { get; }
@@ -372,6 +373,9 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Ani && stream is { CanSeek: false })
             throw new ArgumentException("ANI output requires a seekable stream: the frame and step counts and the sizes are written before the frames and patched once every frame is written. Write to a seekable stream or a path.", nameof(stream));
 
+        if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Tiff && stream is { CanSeek: false })
+            throw new ArgumentException("Compressed TIFF output requires a seekable stream: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the strips are compressed. Write to a seekable stream or a path, or set TiffEncoder.Compression to None.", nameof(stream));
+
         if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.OpenExr && stream is { CanSeek: false })
             throw new ArgumentException("Compressed OpenEXR output requires a seekable stream: the offsets of the chunks are written before the chunks and patched once they are written. Write to a seekable stream or a path, or set OpenExrEncoder.Compression to None.", nameof(stream));
 
@@ -560,7 +564,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private static PixelFormat GetEncodedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PngColorReduction.Applies(encoder) ? PixelFormat.Rgba32 : GetReducedPixelFormat(encoder, pixelFormat);
 
     private static PixelFormat GetReducedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat)
-        => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormat.Rgba64 : PixelFormatWidening.GetEncodedFormat(encoder, pixelFormat);
+        => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormatWidening.GetReducedFloatingPointFormat(encoder, pixelFormat) : PixelFormatWidening.GetEncodedFormat(encoder, pixelFormat);
 
     /// <summary>Rejects floating-point pixels before anything exists, unless the encoder stores them or says how to reduce them.</summary>
     private static void EnsureEncodable(ImageEncoder encoder, ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
@@ -571,7 +575,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples && encoder.FloatingPointConversion is null)
         {
             throw new UnsupportedImageFeatureException(
-                $"{capabilities.Name} output does not store floating-point samples, so encoding {pixelFormat} pixels would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers (Rgba64), or convert the image explicitly with CloneAs.",
+                $"{capabilities.Name} output does not store floating-point samples, so encoding {pixelFormat} pixels would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers, or convert the image explicitly with CloneAs.",
                 capabilities.Format,
                 "Floating-point samples");
         }

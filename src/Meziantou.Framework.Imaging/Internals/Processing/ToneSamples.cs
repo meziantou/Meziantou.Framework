@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -21,7 +22,7 @@ internal static class ToneSamples
     private const float FloatLevelMax = 65535;
 
     /// <summary>Gets the number of levels of a sample: 256 or 65,536 (16-bit and floating-point formats).</summary>
-    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba1010102 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf ? 65536 : 256;
+    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba1010102 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf or PixelFormat.GrayFloat or PixelFormat.GrayHalf or PixelFormat.LaFloat or PixelFormat.LaHalf ? 65536 : 256;
 
     /// <summary>
     /// Gets the level of a floating-point sample: <c>round(65535 v)</c> for a value from 0 to 1, ties away from zero, 0 below
@@ -399,8 +400,31 @@ internal static class ToneSamples
 
                 break;
 
+            case PixelFormat.GrayFloat or PixelFormat.LaFloat:
+                ReadFloatGray(unsafe(MemoryMarshal.Cast<byte, float>(pixels)), format == PixelFormat.LaFloat, count, rgba);
+                break;
+
+            case PixelFormat.GrayHalf or PixelFormat.LaHalf:
+                ReadFloatGray(unsafe(MemoryMarshal.Cast<byte, Half>(pixels)), format == PixelFormat.LaHalf, count, rgba);
+                break;
+
             default:
                 throw new NotSupportedException($"The pixel format '{format}' has no integer samples.");
+        }
+    }
+
+    /// <summary>Reads floating-point gray pixels (with alpha when <paramref name="hasAlpha"/>) as their level in the three colors, opaque without alpha.</summary>
+    private static void ReadFloatGray<TSample>(ReadOnlySpan<TSample> samples, bool hasAlpha, int count, Span<ushort> rgba)
+        where TSample : unmanaged, IFloatingPointIeee754<TSample>
+    {
+        var step = hasAlpha ? 2 : 1;
+        for (var i = 0; i < count; i++)
+        {
+            var level = GetFloatLevel(float.CreateTruncating(samples[step * i]));
+            rgba[4 * i] = level;
+            rgba[(4 * i) + 1] = level;
+            rgba[(4 * i) + 2] = level;
+            rgba[(4 * i) + 3] = hasAlpha ? GetFloatLevel(float.CreateTruncating(samples[(step * i) + 1])) : ushort.MaxValue;
         }
     }
 
@@ -577,6 +601,26 @@ internal static class ToneSamples
                     halves[i] = (Half)GetFloatValue(rgba[i], (float)halves[i]);
                     halves[i + 1] = (Half)GetFloatValue(rgba[i + 1], (float)halves[i + 1]);
                     halves[i + 2] = (Half)GetFloatValue(rgba[i + 2], (float)halves[i + 2]);
+                }
+
+                break;
+
+            case PixelFormat.GrayFloat or PixelFormat.LaFloat:
+                var grayFloats = unsafe(MemoryMarshal.Cast<byte, float>(pixels));
+                var floatStep = format == PixelFormat.LaFloat ? 2 : 1;
+                for (var i = 0; i < count; i++)
+                {
+                    grayFloats[floatStep * i] = GetFloatValue(rgba[4 * i], grayFloats[floatStep * i]);
+                }
+
+                break;
+
+            case PixelFormat.GrayHalf or PixelFormat.LaHalf:
+                var grayHalves = unsafe(MemoryMarshal.Cast<byte, Half>(pixels));
+                var halfStep = format == PixelFormat.LaHalf ? 2 : 1;
+                for (var i = 0; i < count; i++)
+                {
+                    grayHalves[halfStep * i] = (Half)GetFloatValue(rgba[4 * i], (float)grayHalves[halfStep * i]);
                 }
 
                 break;

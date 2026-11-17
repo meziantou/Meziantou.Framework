@@ -506,10 +506,52 @@
         },
         {
           "name": "japanese-informal",
-          "prose": "Informal Japanese Kanji numbering (e.g., 千百十一)",
-          "href": "https://drafts.csswg.org/css-counter-styles-3/#japanese-informal",
+          "prose": "japanese-informal is an alias for japanese",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-japanese-informal",
           "type": "value",
           "value": "japanese-informal"
+        },
+        {
+          "name": "korean-hangul-formal",
+          "prose": "korean-hangul-formal is an alias for korean-hangul",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-korean-hangul-formal",
+          "type": "value",
+          "value": "korean-hangul-formal"
+        },
+        {
+          "name": "korean-hanja-informal",
+          "prose": "korean-hanja-informal is an alias for korean-hanja",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-korean-hanja-informal",
+          "type": "value",
+          "value": "korean-hanja-informal"
+        },
+        {
+          "name": "simp-chinese-informal",
+          "prose": "simp-chinese-informal is an alias for simp-chinese",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-simp-chinese-informal",
+          "type": "value",
+          "value": "simp-chinese-informal"
+        },
+        {
+          "name": "trad-chinese-informal",
+          "prose": "trad-chinese-informal is an alias for trad-chinese",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-trad-chinese-informal",
+          "type": "value",
+          "value": "trad-chinese-informal"
+        },
+        {
+          "name": "cjk-ideographic",
+          "prose": "cjk-ideographic is an alias for trad-chinese",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-cjk-ideographic",
+          "type": "value",
+          "value": "cjk-ideographic"
+        },
+        {
+          "name": "japanese",
+          "prose": "Informal Japanese Kanji numbering (e.g., 千百十一)",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#japanese",
+          "type": "value",
+          "value": "japanese"
         },
         {
           "name": "japanese-formal",
@@ -519,18 +561,18 @@
           "value": "japanese-formal"
         },
         {
-          "name": "korean-hangul-formal",
+          "name": "korean-hangul",
           "prose": "Korean Hangul numbering (e.g., 일천일백일십일)",
-          "href": "https://drafts.csswg.org/css-counter-styles-3/#korean-hangul-formal",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#korean-hangul",
           "type": "value",
-          "value": "korean-hangul-formal"
+          "value": "korean-hangul"
         },
         {
-          "name": "korean-hanja-informal",
+          "name": "korean-hanja",
           "prose": "Informal Korean Hanja numbering (e.g., 千百十一)",
-          "href": "https://drafts.csswg.org/css-counter-styles-3/#korean-hanja-informal",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#korean-hanja",
           "type": "value",
-          "value": "korean-hanja-informal"
+          "value": "korean-hanja"
         },
         {
           "name": "korean-hanja-formal",
@@ -545,6 +587,13 @@
           "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-ethiopic-numeric",
           "type": "value",
           "value": "ethiopic-numeric"
+        },
+        {
+          "name": "nko-ordinal",
+          "prose": "The nko-ordinal counter style is defined for all numbers. It is identical to the nko-cardinal style defined in [predefined-counter-styles], except the final digit has a combining dot either above or below it, depending on that digit’s value.",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#valdef-counter-style-name-nko-ordinal",
+          "type": "value",
+          "value": "nko-ordinal"
         }
       ],
       "value": "<custom-ident>"
@@ -574,11 +623,11 @@
       "value": "<counter-style-name> | <symbols()>",
       "values": [
         {
-          "name": "simp-chinese-informal",
+          "name": "simp-chinese",
           "prose": "Simplified Chinese informal numbering (e.g., 一千一百一十一)",
-          "href": "https://drafts.csswg.org/css-counter-styles-3/#simp-chinese-informal",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#simp-chinese",
           "type": "value",
-          "value": "simp-chinese-informal"
+          "value": "simp-chinese"
         },
         {
           "name": "simp-chinese-formal",
@@ -588,11 +637,11 @@
           "value": "simp-chinese-formal"
         },
         {
-          "name": "trad-chinese-informal",
+          "name": "trad-chinese",
           "prose": "Traditional Chinese informal numbering (e.g., 一千一百一十一)",
-          "href": "https://drafts.csswg.org/css-counter-styles-3/#trad-chinese-informal",
+          "href": "https://drafts.csswg.org/css-counter-styles-3/#trad-chinese",
           "type": "value",
-          "value": "trad-chinese-informal"
+          "value": "trad-chinese"
         },
         {
           "name": "trad-chinese-formal",
@@ -600,13 +649,6 @@
           "href": "https://drafts.csswg.org/css-counter-styles-3/#trad-chinese-formal",
           "type": "value",
           "value": "trad-chinese-formal"
-        },
-        {
-          "name": "cjk-ideographic",
-          "prose": "This counter style is identical to trad-chinese-informal. (It exists for legacy reasons.)",
-          "href": "https://drafts.csswg.org/css-counter-styles-3/#cjk-ideographic",
-          "type": "value",
-          "value": "cjk-ideographic"
         }
       ]
     },

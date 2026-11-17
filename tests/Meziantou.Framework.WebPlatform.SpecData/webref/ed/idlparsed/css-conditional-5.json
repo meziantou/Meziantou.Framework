@@ -9,6 +9,7 @@
       "functions": {
         "Window": [
           "CSSContainerRule",
+          "ContainerQueryList",
           "CSSSupportsConditionRule"
         ]
       }
@@ -135,6 +136,59 @@
         "partial": false,
         "href": "https://drafts.csswg.org/css-conditional-5/#csscontainerrule"
       },
+      "ContainerQueryList": {
+        "fragment": "[Exposed=Window]\ninterface ContainerQueryList {\n  readonly attribute CSSOMString query;\n  readonly attribute boolean matches;\n};",
+        "type": "interface",
+        "name": "ContainerQueryList",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "attribute",
+            "name": "query",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-query"
+          },
+          {
+            "type": "attribute",
+            "name": "matches",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-matches"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://drafts.csswg.org/css-conditional-5/#containerquerylist"
+      },
       "CSSSupportsConditionRule": {
         "fragment": "[Exposed=Window]\ninterface CSSSupportsConditionRule : CSSGroupingRule {\n  readonly attribute CSSOMString name;\n};",
         "type": "interface",
@@ -173,11 +227,65 @@
         "href": "https://drafts.csswg.org/css-conditional-5/#csssupportsconditionrule"
       }
     },
-    "idlExtendedNames": {},
+    "idlExtendedNames": {
+      "Element": [
+        {
+          "fragment": "partial interface Element {\n  [NewObject] ContainerQueryList matchContainer(CSSOMString query);\n};",
+          "type": "interface",
+          "name": "Element",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "operation",
+              "name": "matchContainer",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "ContainerQueryList"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "query",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "CSSOMString"
+                  },
+                  "default": null,
+                  "optional": false,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://drafts.csswg.org/css-conditional-5/#dom-element-matchcontainer"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
     "globals": {},
     "exposed": {
       "Window": [
         "CSSContainerRule",
+        "ContainerQueryList",
         "CSSSupportsConditionRule"
       ]
     },
@@ -190,6 +298,13 @@
         "CSSOMString",
         "CSSContainerCondition"
       ],
+      "Element": [
+        "ContainerQueryList",
+        "CSSOMString"
+      ],
+      "ContainerQueryList": [
+        "CSSOMString"
+      ],
       "CSSSupportsConditionRule": [
         "CSSGroupingRule",
         "CSSOMString"
@@ -198,6 +313,7 @@
     "externalDependencies": [
       "CSSOMString",
       "CSSConditionRule",
+      "Element",
       "CSSGroupingRule"
     ],
     "hasObsoleteIdl": false

@@ -18538,7 +18538,7 @@
         "href": "https://html.spec.whatwg.org/multipage/canvas.html#canvasfillrule"
       },
       "CanvasRenderingContext2DSettings": {
-        "fragment": "dictionary CanvasRenderingContext2DSettings {\n  boolean alpha = true;\n  boolean desynchronized = false;\n  PredefinedColorSpace colorSpace = \"srgb\";\n  CanvasColorType colorType = \"unorm8\";\n  boolean willReadFrequently = false;\n};",
+        "fragment": "dictionary CanvasRenderingContext2DSettings {\n  boolean alpha = true;\n  boolean desynchronized = false;\n  PredefinedColorSpace colorSpace = \"srgb\";\n  CanvasToneMapping toneMapping = {};\n  CanvasColorType colorType = \"unorm8\";\n  boolean willReadFrequently = false;\n};",
         "type": "dictionary",
         "name": "CanvasRenderingContext2DSettings",
         "inheritance": null,
@@ -18599,6 +18599,24 @@
             },
             "required": false,
             "href": "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvasrenderingcontext2dsettings-colorspace"
+          },
+          {
+            "type": "field",
+            "name": "toneMapping",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CanvasToneMapping"
+            },
+            "default": {
+              "type": "dictionary"
+            },
+            "required": false,
+            "href": "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvasrenderingcontext2dsettings-tonemapping"
           },
           {
             "type": "field",
@@ -24375,6 +24393,55 @@
         ],
         "extAttrs": [],
         "href": "https://html.spec.whatwg.org/multipage/canvas.html#predefinedcolorspace"
+      },
+      "CanvasToneMappingMode": {
+        "fragment": "enum CanvasToneMappingMode { \"standard\", \"extended\" };",
+        "type": "enum",
+        "name": "CanvasToneMappingMode",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "standard",
+            "href": "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvastonemappingmode-standard"
+          },
+          {
+            "type": "enum-value",
+            "value": "extended",
+            "href": "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvastonemappingmode-extended"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://html.spec.whatwg.org/multipage/canvas.html#canvastonemappingmode"
+      },
+      "CanvasToneMapping": {
+        "fragment": "dictionary CanvasToneMapping {\n  CanvasToneMappingMode mode = \"standard\";\n};",
+        "type": "dictionary",
+        "name": "CanvasToneMapping",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "mode",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CanvasToneMappingMode"
+            },
+            "default": {
+              "type": "string",
+              "value": "standard"
+            },
+            "required": false,
+            "href": "https://html.spec.whatwg.org/multipage/canvas.html#dom-canvastonemapping-mode"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://html.spec.whatwg.org/multipage/canvas.html#canvastonemapping"
       },
       "CustomElementRegistry": {
         "fragment": "[Exposed=Window]\ninterface CustomElementRegistry {\n  constructor();\n\n  [CEReactions] undefined define(DOMString name, CustomElementConstructor constructor, optional ElementDefinitionOptions options = {});\n  (CustomElementConstructor or undefined) get(DOMString name);\n  DOMString? getName(CustomElementConstructor constructor);\n  Promise<CustomElementConstructor> whenDefined(DOMString name);\n  [CEReactions] undefined upgrade(Node root);\n  [CEReactions] undefined initialize(Node root);\n};",
@@ -44784,7 +44851,7 @@
       ],
       "Element": [
         {
-          "fragment": "partial interface Element {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined appendHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined prependHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined appendHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined prependHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) outerHTML;\n  [CEReactions] undefined insertAdjacentHTML(DOMString position, (TrustedHTML or DOMString) string);\n};",
+          "fragment": "partial interface Element {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined appendHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined prependHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions, NewObject] WritableStream streamHTML(optional SetHTMLOptions options = {});\n  [NewObject] WritableStream streamAppendHTML(optional SetHTMLOptions options = {});\n  [NewObject] WritableStream streamPrependHTML(optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined appendHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined prependHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions, NewObject] WritableStream streamHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [NewObject] WritableStream streamAppendHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [NewObject] WritableStream streamPrependHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) outerHTML;\n  [CEReactions] undefined insertAdjacentHTML(DOMString position, (TrustedHTML or DOMString) string);\n};",
           "type": "interface",
           "name": "Element",
           "inheritance": null,
@@ -44962,6 +45029,138 @@
               ],
               "special": "",
               "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-prependhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-streamhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamAppendHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-streamappendhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamPrependHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-streamprependhtml"
             },
             {
               "type": "operation",
@@ -45241,6 +45440,189 @@
             },
             {
               "type": "operation",
+              "name": "streamHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-streamhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "streamAppendHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-streamappendhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "streamPrependHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-element-streamprependhtmlunsafe"
+            },
+            {
+              "type": "operation",
               "name": "getHTML",
               "idlType": {
                 "type": "return-type",
@@ -45448,7 +45830,7 @@
       ],
       "ShadowRoot": [
         {
-          "fragment": "partial interface ShadowRoot {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined appendHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined prependHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined appendHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined prependHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n};",
+          "fragment": "partial interface ShadowRoot {\n  [CEReactions] undefined setHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined appendHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined prependHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions, NewObject] WritableStream streamHTML(optional SetHTMLOptions options = {});\n  [NewObject] WritableStream streamAppendHTML(optional SetHTMLOptions options = {});\n  [NewObject] WritableStream streamPrependHTML(optional SetHTMLOptions options = {});\n  [CEReactions] undefined setHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined appendHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined prependHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions, NewObject] WritableStream streamHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [NewObject] WritableStream streamAppendHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [NewObject] WritableStream streamPrependHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  DOMString getHTML(optional GetHTMLOptions options = {});\n\n  [CEReactions] attribute (TrustedHTML or [LegacyNullToEmptyString] DOMString) innerHTML;\n};",
           "type": "interface",
           "name": "ShadowRoot",
           "inheritance": null,
@@ -45626,6 +46008,138 @@
               ],
               "special": "",
               "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-prependhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-streamhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamAppendHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-streamappendhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamPrependHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-streamprependhtml"
             },
             {
               "type": "operation",
@@ -45905,6 +46419,189 @@
             },
             {
               "type": "operation",
+              "name": "streamHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-streamhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "streamAppendHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-streamappendhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "streamPrependHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-shadowroot-streamprependhtmlunsafe"
+            },
+            {
+              "type": "operation",
               "name": "getHTML",
               "idlType": {
                 "type": "return-type",
@@ -45992,7 +46689,7 @@
       ],
       "NonDocumentTypeChildNode": [
         {
-          "fragment": "partial interface mixin NonDocumentTypeChildNode {\n  [CEReactions] undefined beforeHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined afterHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined replaceWithHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined beforeHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined afterHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined replaceWithHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n};",
+          "fragment": "partial interface mixin NonDocumentTypeChildNode {\n  [CEReactions] undefined beforeHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined afterHTML(DOMString html, optional SetHTMLOptions options = {});\n  [CEReactions] undefined replaceWithHTML(DOMString html, optional SetHTMLOptions options = {});\n  [NewObject] WritableStream streamBeforeHTML(optional SetHTMLOptions options = {});\n  [NewObject] WritableStream streamAfterHTML(optional SetHTMLOptions options = {});\n  [CEReactions, NewObject] WritableStream streamReplaceWithHTML(optional SetHTMLOptions options = {});\n  [CEReactions] undefined beforeHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined afterHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions] undefined replaceWithHTMLUnsafe((TrustedHTML or DOMString) html, optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [NewObject] WritableStream streamBeforeHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [NewObject] WritableStream streamAfterHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n  [CEReactions, NewObject] WritableStream streamReplaceWithHTMLUnsafe(optional (SetHTMLUnsafeOptions or TrustedHTMLParserOptions) options = {});\n};",
           "type": "interface mixin",
           "name": "NonDocumentTypeChildNode",
           "inheritance": null,
@@ -46170,6 +46867,138 @@
               ],
               "special": "",
               "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-replacewithhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamBeforeHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-streambeforehtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamAfterHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-streamafterhtml"
+            },
+            {
+              "type": "operation",
+              "name": "streamReplaceWithHTML",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": false,
+                    "idlType": "SetHTMLOptions"
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-streamreplacewithhtml"
             },
             {
               "type": "operation",
@@ -46446,6 +47275,189 @@
               ],
               "special": "",
               "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-replacewithhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "streamBeforeHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-streambeforehtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "streamAfterHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-streamafterhtmlunsafe"
+            },
+            {
+              "type": "operation",
+              "name": "streamReplaceWithHTMLUnsafe",
+              "idlType": {
+                "type": "return-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WritableStream"
+              },
+              "arguments": [
+                {
+                  "type": "argument",
+                  "name": "options",
+                  "extAttrs": [],
+                  "idlType": {
+                    "type": "argument-type",
+                    "extAttrs": [],
+                    "generic": "",
+                    "nullable": false,
+                    "union": true,
+                    "idlType": [
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "SetHTMLUnsafeOptions"
+                      },
+                      {
+                        "type": "argument-type",
+                        "extAttrs": [],
+                        "generic": "",
+                        "nullable": false,
+                        "union": false,
+                        "idlType": "TrustedHTMLParserOptions"
+                      }
+                    ]
+                  },
+                  "default": {
+                    "type": "dictionary"
+                  },
+                  "optional": true,
+                  "variadic": false
+                }
+              ],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "NewObject",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "href": "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-nondocumenttypechildnode-streamreplacewithhtmlunsafe"
             }
           ],
           "extAttrs": [],
@@ -47009,7 +48021,7 @@
       ],
       "HTMLEmbedElement": [
         {
-          "fragment": "partial interface HTMLEmbedElement {\n  [CEReactions, Reflect] attribute DOMString align;\n  [CEReactions, Reflect] attribute DOMString name;\n};",
+          "fragment": "partial interface HTMLEmbedElement {\n  [CEReactions, Reflect] attribute DOMString align;\n  [CEReactions, Reflect] attribute DOMString name;\n  [CEReactions, Reflect] attribute unsigned long hspace;\n  [CEReactions, Reflect] attribute unsigned long vspace;\n};",
           "type": "interface",
           "name": "HTMLEmbedElement",
           "inheritance": null,
@@ -47071,6 +48083,64 @@
               "special": "",
               "readonly": false,
               "href": "https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-name"
+            },
+            {
+              "type": "attribute",
+              "name": "hspace",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Reflect",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-hspace"
+            },
+            {
+              "type": "attribute",
+              "name": "vspace",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Reflect",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://html.spec.whatwg.org/multipage/obsolete.html#dom-embed-vspace"
             }
           ],
           "extAttrs": [],
@@ -50051,6 +51121,7 @@
       ],
       "CanvasRenderingContext2DSettings": [
         "PredefinedColorSpace",
+        "CanvasToneMapping",
         "CanvasColorType"
       ],
       "CanvasRenderingContext2D": [
@@ -50171,6 +51242,9 @@
         "CanvasPathDrawingStyles",
         "CanvasTextDrawingStyles",
         "CanvasPath"
+      ],
+      "CanvasToneMapping": [
+        "CanvasToneMappingMode"
       ],
       "CustomElementRegistry": [
         "CustomElementConstructor",
@@ -50461,6 +51535,7 @@
       ],
       "Element": [
         "SetHTMLOptions",
+        "WritableStream",
         "TrustedHTML",
         "SetHTMLUnsafeOptions",
         "TrustedHTMLParserOptions",
@@ -50468,6 +51543,7 @@
       ],
       "ShadowRoot": [
         "SetHTMLOptions",
+        "WritableStream",
         "TrustedHTML",
         "SetHTMLUnsafeOptions",
         "TrustedHTMLParserOptions",
@@ -50475,6 +51551,7 @@
       ],
       "NonDocumentTypeChildNode": [
         "SetHTMLOptions",
+        "WritableStream",
         "TrustedHTML",
         "SetHTMLUnsafeOptions",
         "TrustedHTMLParserOptions"
@@ -50735,6 +51812,7 @@
       "ViewTransition",
       "Function",
       "VoidFunction",
+      "WritableStream",
       "NonDocumentTypeChildNode",
       "Range",
       "Uint8ClampedArray",

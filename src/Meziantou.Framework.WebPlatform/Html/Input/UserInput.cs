@@ -161,6 +161,18 @@ public sealed partial class UserInput
     public Element? HitTest(double x, double y) => HitTest(x, y, out _);
 
     /// <summary>
+    /// Drops data from outside the page at a position, as when the user drops files from the file manager: the mouse enters
+    /// the viewport at the position with its button pressed (<c>dragenter</c>, <c>dragover</c>), then the button is released
+    /// (<c>drop</c> when the page accepts the data, else <c>dragleave</c>). See <see cref="PointerInput.BeginDrag"/> to move
+    /// over the page before the drop.
+    /// </summary>
+    /// <param name="x">The horizontal position, in CSS pixels, relative to the viewport of the top-level browsing context.</param>
+    /// <param name="y">The vertical position, in CSS pixels, relative to the viewport of the top-level browsing context.</param>
+    /// <param name="data">The files, the directories and the strings that are dropped.</param>
+    /// <exception cref="InvalidOperationException">A button of the mouse is pressed.</exception>
+    public void Drop(double x, double y, DragData data) => DropFromOutside(Mouse, x, y, data);
+
+    /// <summary>
     /// Returns the element at a point of the viewport of the top-level browsing context (see <see cref="HitTest(double, double)"/>),
     /// and the name of the pseudo-element of the element whose box is hit (see <see cref="Css.Layout.LayoutBox.PseudoElement"/>), or null.
     /// </summary>
@@ -498,6 +510,16 @@ public sealed class PointerInput
 
     /// <summary>Cancels the pointer (https://w3c.github.io/pointerevents/#dfn-pointercancel-event): <c>pointercancel</c>, and the buttons are released without click.</summary>
     public void Cancel() => _input.Cancel(this);
+
+    /// <summary>
+    /// Starts a drag from outside the page at the position of the mouse, as when the user drags files from the file manager
+    /// into the window: <c>dragenter</c> and <c>dragover</c> are fired at the element under the pointer. Then
+    /// <see cref="Move"/> fires the drag events (not the pointer events), <see cref="Up"/> drops the data, and Escape
+    /// (<see cref="KeyboardInput.Press"/>) or <see cref="Cancel"/> cancels the drag.
+    /// </summary>
+    /// <param name="data">The files, the directories and the strings that are dragged.</param>
+    /// <exception cref="InvalidOperationException">The pointer is not the mouse, or a button is pressed.</exception>
+    public void BeginDrag(DragData data) => _input.BeginDrag(this, data);
 
     internal bool IsTouch => PointerType == "touch";
 

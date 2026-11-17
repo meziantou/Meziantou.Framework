@@ -81,7 +81,7 @@ fails.
 
 ## Experimental APIs
 
-The members that implement proposals that no specification defines yet (such as [Element.StreamAppendHtml()](cref:Meziantou.Framework.WebPlatform.Dom.Element.StreamAppendHtml)) have the
-`[Experimental]` attribute: using them reports an error with a diagnostic per feature (`WEBPLATEXP0002`...), which you
-suppress to use them (`<NoWarn>$(NoWarn);WEBPLATEXP0002</NoWarn>`). They may change or be removed when the proposal
+The members that implement proposals that no specification defines yet (such as [ContainerQueryList.OnChange](cref:Meziantou.Framework.WebPlatform.Css.Om.ContainerQueryList.OnChange)) have the
+`[Experimental]` attribute: using them reports an error with a diagnostic per feature (`WEBPLATEXP0003`...), which you
+suppress to use them (`<NoWarn>$(NoWarn);WEBPLATEXP0005</NoWarn>`). They may change or be removed when the proposal
 changes.

@@ -442,6 +442,38 @@
         "column-width",
         "columnWidth"
       ]
+    },
+    {
+      "name": "interpolate-size",
+      "href": "https://drafts.csswg.org/css-sizing-4/#propdef-interpolate-size",
+      "value": "numeric-only | allow-keywords",
+      "initial": "numeric-only",
+      "appliesTo": "all elements",
+      "inherited": "yes",
+      "percentages": "n/a",
+      "computedValue": "as specified",
+      "canonicalOrder": "per grammar",
+      "animationType": "not animatable",
+      "values": [
+        {
+          "name": "numeric-only",
+          "prose": "A <size-keyword> can only be combined with a compatible <calc-size()>.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-interpolate-size-numeric-only",
+          "type": "value",
+          "value": "numeric-only"
+        },
+        {
+          "name": "allow-keywords",
+          "prose": "Sizing values can also be combined if one of them is an <size-keyword> and the other is a <length-percentage>. This is done by treating the <size-keyword> keyword as though it is calc-size(keyword, size) and applying the rules in § 7.2 Interpolating calc-size(). In other cases, a <size-keyword> still cannot be interpolated.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-interpolate-size-allow-keywords",
+          "type": "value",
+          "value": "allow-keywords"
+        }
+      ],
+      "styleDeclaration": [
+        "interpolate-size",
+        "interpolateSize"
+      ]
     }
   ],
   "atrules": [],
@@ -452,6 +484,55 @@
       "href": "https://drafts.csswg.org/css-sizing-4/#typedef-box-size",
       "type": "type",
       "value": "<length-percentage [0,∞]> | stretch | contain | min-content | max-content | fit-content | stretch(<length-percentage [0,∞]>) | fit-content(<length-percentage [0,∞]>) | <calc-size()>"
+    },
+    {
+      "name": "calc-size()",
+      "prose": "The calc-size() function allows math and transition/animation to be performed on these sizes in a safe, well-defined way. Its syntax is as follows:",
+      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-calc-size",
+      "type": "function",
+      "value": "calc-size( <calc-size-basis>, <calc-sum> )",
+      "values": [
+        {
+          "name": "<size-keyword>",
+          "prose": "Indicates that the calc-size() is basing its size off of the specified keyword. Represents any sizing keywords allowed in the context where the function is used. For example, in width, it matches auto, min-content, stretch, etc. Also allows any related sizing functions, like the fit-content() function in width/etc., which is a variation of the fit-content keyword. For all purposes other than actually resolving the size, the calc-size() acts like this keyword. The calc-size calculation will use the corresponding size as the value of its size keyword.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#typedef-calc-size-size-keyword",
+          "type": "type"
+        },
+        {
+          "name": "<calc-sum>",
+          "prose": "Indicates that the calc-size() is basing its size off of the specified calculation. For all purposes other than actually resolving the size, the calc-size() acts like this calculation wrapped in a calc() (including, for example, whether it represents a definite or indefinite size). The calc-size calculation will use the corresponding size as the value of its size keyword.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-calc-size-calc-sum",
+          "type": "value",
+          "value": "<calc-sum>"
+        },
+        {
+          "name": "<calc-size()>",
+          "prose": "Indicates that the outer calc-size() is basing its size off of this inner calc-size(), and will share the same behavior as it. The calc-size calculation will use the size of the inner calc-size() as its size keyword. The size keyword is allowed, in this case, even if the inner calc-size() uses any. For example, in calc-size(calc-size(min-content, size / 2), size + 10%), the outer calc-size() acts as if its calc-size basis was min-content, and will calculate its own size using the result of the inner calc-size(), equivalent to calc-size(min-content, size / 2 + 10%).",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-calc-size-calc-size",
+          "type": "value",
+          "value": "<calc-size()>"
+        },
+        {
+          "name": "any",
+          "prose": "Indicates that the calc-size() does not depend on any additional information, and thus can be interpolated with any other size. The calc-size() function represents a definite size. The calc-size calculation cannot use the size keyword; it is a syntax error for size to appear in the calc-size calculation.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-calc-size-any",
+          "type": "value",
+          "value": "any"
+        },
+        {
+          "name": "size",
+          "prose": "Within the calc-size calculation, the size is a <calc-keyword> which is a <length>, and resolves at used value time to the size specified above.",
+          "href": "https://drafts.csswg.org/css-sizing-4/#valdef-calc-size-size",
+          "type": "value",
+          "value": "size"
+        }
+      ]
+    },
+    {
+      "name": "<calc-size-basis>",
+      "href": "https://drafts.csswg.org/css-sizing-4/#typedef-calc-size-basis",
+      "type": "type",
+      "value": "[ <size-keyword> | <calc-sum> | <calc-size()> | any ]"
     }
   ],
   "warnings": [
@@ -619,45 +700,12 @@
     },
     {
       "msg": "Dangling value",
-      "name": "calc-size()",
-      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
-      "type": "function",
-      "for": "width"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "calc-size()",
-      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
-      "type": "function",
-      "for": "height"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "calc-size()",
-      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
-      "type": "function",
-      "for": "min-width"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "calc-size()",
-      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
-      "type": "function",
-      "for": "min-height"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "calc-size()",
-      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
-      "type": "function",
-      "for": "max-width"
-    },
-    {
-      "msg": "Dangling value",
-      "name": "calc-size()",
-      "href": "https://drafts.csswg.org/css-sizing-4/#funcdef-width-calc-size",
-      "type": "function",
-      "for": "max-height"
+      "name": "size",
+      "prose": "Within the calc-size calculation, the size is a <calc-keyword> which is a <length>, and resolves at used value time to the size specified above.",
+      "href": "https://drafts.csswg.org/css-sizing-4/#valdef-calc-size-size",
+      "type": "value",
+      "value": "size",
+      "for": "calc()"
     }
   ]
 }

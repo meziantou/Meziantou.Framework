@@ -215,23 +215,56 @@ internal static class Resampler
                 continue;
             }
 
+            // The output and the indices have the same length: only the reads of the input row are checked
             var input = GetRow<TPixel>(source, ys[dy]);
-            for (var dx = 0; dx < xs.Length; dx++)
+            var pixels = output[..xs.Length];
+            for (var dx = 0; dx < pixels.Length; dx++)
             {
-                output[dx] = input[xs[dx]];
+                pixels[dx] = input[xs[dx]];
             }
 
             if (plan.HasAlpha)
             {
-                // A pixel whose alpha is zero is written as transparent black, as for every filter
-                var samples = unsafe(MemoryMarshal.Cast<TPixel, TSample>(output));
-                for (var i = 0; i < samples.Length; i += 4)
+                ClearTransparentPixels(unsafe(MemoryMarshal.Cast<TPixel, TSample>(output)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Writes the pixels whose alpha is zero as transparent black, as every filter does: four samples per pixel, alpha
+    /// last. Groups of 8-bit pixels that have none are skipped with vectors.
+    /// </summary>
+    private static void ClearTransparentPixels<TSample>(Span<TSample> samples)
+        where TSample : unmanaged
+    {
+        var i = 0;
+        if (typeof(TSample) == typeof(byte) && Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && !TestForceScalar)
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TSample, uint>(samples));
+            var alpha = Vector128.Create(0xFF000000u);
+            var n = 0;
+            for (; n + 4 <= pixels.Length; n += 4)
+            {
+                if (!Vector128.EqualsAny(Vector128.Create(pixels.Slice(n, 4)) & alpha, Vector128<uint>.Zero))
+                    continue;
+
+                for (var k = n; k < n + 4; k++)
                 {
-                    if (WorkingSamples.IsZero(samples[i + 3]))
+                    if ((pixels[k] & 0xFF000000u) == 0)
                     {
-                        samples.Slice(i, 4).Clear();
+                        pixels[k] = 0;
                     }
                 }
+            }
+
+            i = n * 4;
+        }
+
+        for (; i < samples.Length; i += 4)
+        {
+            if (WorkingSamples.IsZero(samples[i + 3]))
+            {
+                samples.Slice(i, 4).Clear();
             }
         }
     }

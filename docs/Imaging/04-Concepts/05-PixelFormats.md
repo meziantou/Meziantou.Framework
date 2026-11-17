@@ -1,6 +1,6 @@
 ---
 title: Pixel formats
-description: The eighteen pixel formats, which one a file loads as, how to convert, and how alpha and precision are kept.
+description: The twenty-two pixel formats, which one a file loads as, how to convert, and how alpha and precision are kept.
 ---
 
 Every image stores its pixels in one pixel format, such as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) or [Gray16](cref:Meziantou.Framework.Imaging.Gray16). This page lists the formats, tells
@@ -26,6 +26,10 @@ which one a file loads as, and shows how to convert between them without losing 
 | [Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102) | 4 | 10-bit color and 2-bit alpha packed in 32 bits, for GPU and HDR display buffers |
 | [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) | 8 | Half-precision floating-point color and alpha, in linear light |
 | [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) | 16 | Single-precision floating-point color and alpha, in linear light |
+| [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf) | 2 | Half-precision floating-point gray level, in linear light |
+| [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) | 4 | Single-precision floating-point gray level, in linear light |
+| [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf) | 4 | Half-precision floating-point gray level and alpha |
+| [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) | 8 | Single-precision floating-point gray level and alpha |
 | [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) | 4 | 8-bit cyan, magenta, yellow and black ink amounts, for print |
 | [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) | 8 | 16-bit ink amounts |
 
@@ -33,7 +37,7 @@ Alpha is always straight (not premultiplied), and 16-bit samples and packed valu
 machine.
 [PixelFormats](cref:Meziantou.Framework.Imaging.PixelFormats) describes each format ([HasAlpha](cref:Meziantou.Framework.Imaging.PixelFormats.HasAlpha), [HasColor](cref:Meziantou.Framework.Imaging.PixelFormats.HasColor), [IsGrayscale](cref:Meziantou.Framework.Imaging.PixelFormats.IsGrayscale), [IsFloatingPoint](cref:Meziantou.Framework.Imaging.PixelFormats.IsFloatingPoint), [IsCmyk](cref:Meziantou.Framework.Imaging.PixelFormats.IsCmyk), [GetBytesPerPixel](cref:Meziantou.Framework.Imaging.PixelFormats.GetBytesPerPixel), …).
 
-The CMYK formats hold inks, not light (0 is no ink): only JPEG and TIFF read and write them, the operations that move
+The CMYK formats hold inks, not light (0 is no ink): only JPEG, TIFF and PSD read and write them, the operations that move
 pixels (crop, flip, quarter turns, orientation) keep them, and the other operations reject them. A conversion between
 them and the other formats converts colors, so it needs [PixelConversionOptions.CmykConversion](cref:Meziantou.Framework.Imaging.PixelConversionOptions.CmykConversion): see
 [Color management](../09-Color/03-ColorManagement.md#keep-cmyk-images).
@@ -50,12 +54,13 @@ them and the other formats converts colors, so it needs [PixelConversionOptions.
 | Gray PNG with alpha | [La16](cref:Meziantou.Framework.Imaging.La16) or [La32](cref:Meziantou.Framework.Imaging.La32) |
 | JPEG | [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) ([Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) for samples of more than 8 bits) |
 | OpenEXR, floating-point TIFF pages | [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) |
+| Floating-point gray: OpenEXR luminance, TIFF, JPEG XL, 32-bit PSD, monochrome DNG, DPX luma | [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat), [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf) or [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) |
 
 [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) tells the format before decoding ([ImageInfo.PixelFormat](cref:Meziantou.Framework.Imaging.ImageInfo.PixelFormat)): see
 [Identifying images](../05-LoadingAndSaving/03-IdentifyingImages.md).
 
 When your code works on pixels of a known type, load in that type with [Image.Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load), or convert with
-[CloneAs\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CloneAs). A type that is not one of the eighteen formats throws a `NotSupportedException` before anything is
+[CloneAs\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CloneAs). A type that is not one of the twenty-two formats throws a `NotSupportedException` before anything is
 read.
 
 ## Convert between formats
@@ -187,7 +192,10 @@ public static Image<Rgba1010102> ConvertDisplayBuffer(ReadOnlySpan<Bgr565> frame
 ## Floating-point and high dynamic range
 
 [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) and [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) hold linear light, where 1 is the reference white: a component above 1 is a highlight, a
-negative one is outside the gamut of the primaries, and alpha is a coverage from 0 to 1. OpenEXR files and the
+negative one is outside the gamut of the primaries, and alpha is a coverage from 0 to 1. [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf),
+[GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat), [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf) and [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) hold a gray level with the same meaning, in a quarter or half of the
+memory: they are what a floating-point gray file loads as. A color converts to them as its Rec. 709 luma (a gray color
+keeps its level exactly), and they convert to the color formats with their level in the three colors, exactly. OpenEXR files and the
 floating-point pages of TIFF files load in these formats; [Load\<RgbaFloat\>](cref:Meziantou.Framework.Imaging.Image.Load) converts any other file.
 
 Integer formats cannot hold values outside [0, 1], so a conversion to them throws on such samples unless you compress
@@ -226,6 +234,73 @@ public static Image<Rgba64> ToneMapHighlights(Image<RgbaFloat> hdr, string pngPa
 Every check runs on every frame before anything is allocated. A conversion keeps the transfer function label of its
 source: an sRGB [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) image becomes sRGB-encoded floats, not linear light. See
 [Color management](../09-Color/03-ColorManagement.md) and [OpenEXR](../10-Formats/17-OpenExr.md).
+
+## Custom pixel types
+
+A pixel type of your application, such as the layout of another API, implements [ICustomPixel\<TSelf\>](cref:Meziantou.Framework.Imaging.ICustomPixel{TSelf}): it names the
+built-in format it converts from and to ([StorageFormat](cref:Meziantou.Framework.Imaging.ICustomPixel{TSelf}.StorageFormat)) and converts whole rows. The
+library then imports its pixels ([Image.ImportCustomPixelData](cref:Meziantou.Framework.Imaging.Image.ImportCustomPixelData)), copies the pixels of a frame of any
+format to it ([CopyCustomPixelDataTo](cref:Meziantou.Framework.Imaging.ImageFrame.CopyCustomPixelDataTo), which converts them to the storage format first, with the rules of
+[CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs)), and gives the rows of a frame of the storage format to edit
+([ProcessCustomPixelRows](cref:Meziantou.Framework.Imaging.ImageFrame.ProcessCustomPixelRows)):
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_CustomPixel;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Yuv8[] ToYuv(string path)
+{
+    // The pixels of any image are converted to Rgb24, the storage format of Yuv8, then to Yuv8
+    using var image = Image.Load(path);
+    var pixels = new Yuv8[image.Width * image.Height];
+    image.Frames[0].CopyCustomPixelDataTo<Yuv8>(pixels, options: new PixelConversionOptions { BackgroundColor = new Rgba64(65535, 65535, 65535) });
+
+    // An image is made from Yuv8 pixels, and its frames are edited as Yuv8 pixels, row by row
+    using var copy = Image.ImportCustomPixelData<Yuv8>(pixels, image.Width, image.Height);
+    copy.Frames[0].ProcessCustomPixelRows<Yuv8>(static (row, y) =>
+    {
+        foreach (ref var pixel in row)
+        {
+            pixel = pixel with { U = 128, V = 128 };
+        }
+    });
+
+    return pixels;
+}
+
+/// <summary>A full-range BT.601 Y'CbCr pixel, converted from and to the 8-bit RGB of the library.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public readonly record struct Yuv8(byte Y, byte U, byte V) : ICustomPixel<Yuv8>
+{
+    public static PixelFormat StorageFormat => PixelFormat.Rgb24;
+
+    public static void FromStorage(ReadOnlySpan<byte> source, Span<Yuv8> destination)
+    {
+        for (var i = 0; i < destination.Length; i++)
+        {
+            double r = source[3 * i], g = source[(3 * i) + 1], b = source[(3 * i) + 2];
+            var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+            destination[i] = new(Clamp(y), Clamp(128 + ((b - y) * 0.564)), Clamp(128 + ((r - y) * 0.713)));
+        }
+    }
+
+    public static void ToStorage(ReadOnlySpan<Yuv8> source, Span<byte> destination)
+    {
+        for (var i = 0; i < source.Length; i++)
+        {
+            var (y, u, v) = (source[i].Y, source[i].U - 128.0, source[i].V - 128.0);
+            destination[3 * i] = Clamp(y + (1.402 * v));
+            destination[(3 * i) + 1] = Clamp(y - (0.344136 * u) - (0.714136 * v));
+            destination[(3 * i) + 2] = Clamp(y + (1.772 * u));
+        }
+    }
+
+    private static byte Clamp(double value) => (byte)Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), 0, 255);
+}
+```
+<!-- endref -->
+
+The members of the interface are static, so the calls are bound when the code is compiled, which works with trimming
+and native AOT. An image always stores the built-in format: [Image\<TPixel\>](cref:Meziantou.Framework.Imaging.Image{TPixel}), the codecs, the readers and writers and the
+processing operations only take the built-in pixel types.
 
 ## See also
 

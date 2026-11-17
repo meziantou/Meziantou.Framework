@@ -622,6 +622,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     public override bool IsEmbedded => _receiver is not null;
 
+    public override bool AcceptsTwoComponentLosslessFrames => _receiver is { ReceivesStoredSamples: true };
+
     // Lenient decoding applies to JPEG files, not to the datastreams of another format
     private bool IsLenient => _context.IsLenient && _receiver is null;
 

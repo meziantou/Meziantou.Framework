@@ -63,8 +63,13 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     private PooledBuffer? _offsets;
     private PooledBuffer? _order;
     private ImageInfo? _result;
+    private readonly (int X, int Y)? _level;
 
-    public ExrStructureParser(ImageCodecContext context, StructureWalk walk, ExrDecoder? decoder = null)
+    /// <param name="context">The state of the operation.</param>
+    /// <param name="walk">How far the input is walked.</param>
+    /// <param name="decoder">The decoder of the chunks, for <see cref="StructureWalk.Decode"/>.</param>
+    /// <param name="level">The level that is decoded instead of the one the options select, or <see langword="null"/>.</param>
+    public ExrStructureParser(ImageCodecContext context, StructureWalk walk, ExrDecoder? decoder = null, (int X, int Y)? level = null)
         : base(ImageFormat.OpenExr)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -76,6 +81,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         _context = context;
         _walk = walk;
         _decoder = walk == StructureWalk.Decode ? decoder : null;
+        _level = level;
         _metadata = new DecodedMetadataBuilder(context.Tracker, ImageFormat.OpenExr);
     }
 
@@ -101,7 +107,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     public ImageMetadata Metadata => _metadata.Metadata;
 
     /// <summary>Gets the default working representation: <see cref="PixelFormat.RgbaHalf"/> when every channel is HALF and there is no alpha, otherwise <see cref="PixelFormat.RgbaFloat"/>.</summary>
-    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForOpenExr(Header.UsesHalfPixels);
+    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForOpenExr(Header.UsesHalfPixels, Header.IsLuminance, Header.HasAlpha);
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
@@ -357,12 +363,17 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     private bool OnHeaderEnd()
     {
         var options = _context.Configuration.OpenExrDecoding;
+        if (_level is var (levelX, levelY))
+        {
+            options = options.WithLevel(levelX, levelY);
+        }
+
         var header = SelectPart(options.Part);
         Header = header;
         header.Complete(_context.Limits, options);
         Size = new Size((int)header.ImageWindow.Width, (int)header.ImageWindow.Height);
         ExrColorDescription.Apply(header, _metadata.Metadata);
-        var (data, display) = (header.DataWindow, header.DisplayWindow);
+        var (data, display) = (header.FileDataWindow, header.DisplayWindow);
         _metadata.Metadata.OpenExrWindows = new OpenExrWindows(new Point(data.MinX, data.MinY), new Point(data.MaxX, data.MaxY), new Point(display.MinX, display.MinY), new Point(display.MaxX, display.MaxY));
         if (_walk == StructureWalk.Header)
         {
@@ -607,12 +618,12 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         if (size < 0 || size > int.MaxValue - headerLength)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk {index} has the size {size}."));
 
-        if (_walk == StructureWalk.Decode && index < header.FirstLevelChunkCount)
+        if (_walk == StructureWalk.Decode && index >= header.LevelFirstChunk && index - header.LevelFirstChunk < header.FirstLevelChunkCount)
         {
             if (remaining.Length < headerLength + size)
                 return NeedChunkBytes((int)(headerLength + size), isEndOfInput);
 
-            _decoder!.OnChunk(index, remaining.Slice(payloadStart, (int)(headerLength - payloadStart + size)));
+            _decoder!.OnChunk(index - header.LevelFirstChunk, remaining.Slice(payloadStart, (int)(headerLength - payloadStart + size)));
             Advance(ref consumed, (int)(headerLength + size));
             _cursor++;
             return ParseStatus.Complete;
@@ -661,7 +672,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     {
         var header = Header;
         var y = BinaryPrimitives.ReadInt32LittleEndian(chunk);
-        var offset = (long)y - header.DataWindow.MinY;
+        var offset = (long)y - header.FileDataWindow.MinY;
         if (offset < 0 || offset % header.LinesPerChunk != 0 || offset / header.LinesPerChunk >= header.ChunkCount)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk {index} starts at the line {y}, which does not start a chunk of the data window."));
 

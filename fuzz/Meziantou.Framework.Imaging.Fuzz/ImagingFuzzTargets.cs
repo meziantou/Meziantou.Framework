@@ -4,14 +4,19 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.Imaging.Fuzz;
 
 /// <summary>
-/// The Radiance HDR codec of <c>Meziantou.Framework.Imaging</c>, the OpenEXR encoder (its tiles, levels and compressions), the image data of PNG files (inflation and
-/// reconstruction), the lossy compression of its GIF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing operations that read pixels or points
+/// The Radiance HDR, PSD, DNG, DDS, DPX, Cineon and KTX 2.0 codecs of <c>Meziantou.Framework.Imaging</c> (and the
+/// decoders of the BC1 to BC7 blocks, and the encoders of the BCn, ETC2, EAC and ASTC blocks), the OpenEXR encoder (its
+/// tiles, levels and compressions), the image data of PNG files (inflation and
+/// reconstruction), the lossy compression of its GIF encoder, the separate planes of its TIFF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing
+/// operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
-/// homography estimation and resizing; the merging of the pieces of strokes; the optimal line breaking of text layouts;
-/// the options of the WebP encoder that change its pixels or its output (bit-depth dithering, sharp YUV, non-seekable
-/// animations); and the layers of JPEG XL images and the regions of its optimized animations. The inputs of the
-/// processing targets are small images whose pixel format, size, frames and bytes come from the fuzzer, followed by the
-/// options of the operation.
+/// homography estimation and resizing; the conversions between the pixel formats (and from CMYK inks with the device
+/// formulas, with the clones and vertical flips of the inks); the merging of the pieces of strokes;
+/// the optimal line breaking of text layouts; the texts drawn from glyph masks; the ICC profiles that the color conversions read (named colors, the
+/// processing elements of iccMAX profiles); the options of the WebP encoder that change its pixels or its output
+/// (bit-depth dithering, sharp YUV, non-seekable animations); and the layers of JPEG XL images and the regions of its
+/// optimized animations. The inputs of the processing targets are small images whose pixel format, size, frames and
+/// bytes come from the fuzzer, followed by the options of the operation.
 /// </summary>
 public static partial class ImagingFuzzTargets
 {
@@ -32,8 +37,21 @@ public static partial class ImagingFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("imaging-radiance", RadianceTarget) { Seeds = GetRadianceSeeds, Dictionary = RadianceTokens },
+        new("imaging-psd", PsdTarget) { Seeds = GetPsdSeeds, Dictionary = PsdTokens },
+        new("imaging-dng", DngTarget) { Seeds = GetDngSeeds, Dictionary = DngTokens },
+        new("imaging-dds", DdsTarget) { Seeds = GetDdsSeeds, Dictionary = DdsTokens },
+        new("imaging-dds-blocks", DdsBlockTarget) { Seeds = GetDdsBlockSeeds, Dictionary = Tokens },
+        new("imaging-dpx", DpxTarget) { Seeds = GetDpxSeeds, Dictionary = DpxTokens },
+        new("imaging-cineon", CineonTarget) { Seeds = GetCineonSeeds, Dictionary = DpxTokens },
+        new("imaging-ktx2", Ktx2Target) { Seeds = GetKtx2Seeds, Dictionary = Ktx2Tokens },
+        new("imaging-psd-encoder", PsdEncoderTarget) { Seeds = GetPsdEncoderSeeds, Dictionary = Tokens },
+        new("imaging-dng-encoder", DngEncoderTarget) { Seeds = GetDngEncoderSeeds, Dictionary = Tokens },
+        new("imaging-cineon-encoder", CineonEncoderTarget) { Seeds = GetCineonEncoderSeeds, Dictionary = Tokens },
+        new("imaging-texture-blocks", TextureBlockTarget) { Seeds = GetTextureBlockSeeds, Dictionary = Tokens },
+        new("imaging-texture-encoders", TextureEncoderTarget) { Seeds = GetTextureEncoderSeeds, Dictionary = Tokens },
         new("imaging-openexr-encoder", OpenExrEncoderTarget) { Seeds = GetOpenExrEncoderSeeds, Dictionary = Tokens },
         new("imaging-png-image-data", PngImageDataTarget) { Seeds = GetPngImageDataSeeds, Dictionary = PngImageDataTokens },
+        new("imaging-png-zlib", PngZlibTarget) { Seeds = GetPngZlibSeeds, Dictionary = PngImageDataTokens },
         new("imaging-gif-lossy", GifLossyTarget) { Seeds = GetGifLossySeeds, Dictionary = Tokens },
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
         new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },
@@ -43,10 +61,17 @@ public static partial class ImagingFuzzTargets
         new("imaging-homography", HomographyTarget) { Seeds = GetHomographySeeds, Dictionary = Tokens },
         new("imaging-skew", SkewTarget) { Seeds = GetSkewSeeds, Dictionary = Tokens },
         new("imaging-stroke", StrokeTarget) { Seeds = GetStrokeSeeds, Dictionary = StrokeTokens },
+        new("imaging-sweep-pieces", SweepPiecesTarget) { Seeds = GetSweepPiecesSeeds, Dictionary = SweepPiecesTokens },
         new("imaging-resize", ResizeTarget) { Seeds = GetResizeSeeds, Dictionary = Tokens },
+        new("imaging-icc-named-colors", IccNamedColorsTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
+        new("imaging-icc-conversion", IccProfileConversionTarget) { Seeds = GetIccSeeds, Dictionary = IccTokens },
+        new("imaging-pixel-conversion", PixelConversionTarget) { Seeds = GetPixelConversionSeeds, Dictionary = Tokens },
+        new("imaging-device-cmyk", DeviceCmykTarget) { Seeds = GetDeviceCmykSeeds, Dictionary = Tokens },
         new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
+        new("imaging-glyph-masks", GlyphMasksTarget) { Seeds = GetGlyphMaskSeeds, Dictionary = GlyphMaskTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
+        new("imaging-tiff-planes", TiffPlanesTarget) { Seeds = GetTiffPlanesSeeds, Dictionary = Tokens },
         new("imaging-jpeg2000-encoder", Jpeg2000EncoderTarget) { Seeds = GetJpeg2000EncoderSeeds, Dictionary = Tokens },
         new("imaging-webp-encoder", WebPEncoderTarget) { Seeds = GetWebPEncoderSeeds, Dictionary = Tokens },
         new("imaging-jxl-layers", JpegXlLayersTarget) { Seeds = GetJpegXlLayersSeeds, Dictionary = JpegXlLayerTokens },

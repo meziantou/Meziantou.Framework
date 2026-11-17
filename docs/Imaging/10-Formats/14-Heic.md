@@ -127,6 +127,6 @@ a bit-rate or luma-sample-rate limit on playback.
   most tiles of a phone photo for a crop. An image that is not a grid is decoded down to the rows of coding tree blocks
   that the area and a margin of 16 pixels need (an image of several columns of HEVC tiles is decoded whole). See
   [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
-- Premultiplied alpha, extended precision processing, inter pictures of more than 12 bits and the screen content,
-  multilayer and 3D extensions of HEVC are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
+- Premultiplied colors are divided by their alpha when they are read, which can round them. Extended precision
+  processing, inter pictures of more than 12 bits and the screen content, multilayer and 3D extensions of HEVC are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
 - HEVC is covered by patents in many countries: check the licensing terms that apply to what you distribute.

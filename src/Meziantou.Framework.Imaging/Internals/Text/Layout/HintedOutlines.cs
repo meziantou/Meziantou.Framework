@@ -3,8 +3,11 @@ using Meziantou.Framework.Imaging.Typography;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>The hinted outlines of the glyphs of a layout, in font units, by font, glyph and size.</summary>
-internal sealed class HintedOutlines(RecordedOutlines outlines, Dictionary<(Font Font, int Glyph, double Size), int> indexes)
+internal sealed class HintedOutlines(RecordedOutlines outlines, Dictionary<(Font Font, int Glyph, double Size), int> indexes, TextHinting hinting)
 {
+    /// <summary>Gets how the outlines were fitted to the pixel grid.</summary>
+    public TextHinting Hinting => hinting;
+
     /// <summary>Sends the hinted outline of a glyph to a sink.</summary>
     /// <returns><see langword="false"/> when the glyph was not hinted.</returns>
     public bool TryReplay(Font font, int glyph, double size, OutlineSink sink)

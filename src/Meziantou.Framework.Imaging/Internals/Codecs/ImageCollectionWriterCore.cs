@@ -136,7 +136,8 @@ internal static class ImageCollectionWriterCore
         {
             TiffEncoder => ImageCollectionKind.Pages,
             IcoEncoder => ImageCollectionKind.Representations,
-            _ => throw new ArgumentException($"The {encoder.GetType().Name} encoder writes a single image; use Image.Save. Only TiffEncoder (pages) and IcoEncoder (representations) write a collection.", nameof(encoder)),
+            DdsEncoder or Ktx2Encoder => ImageCollectionKind.TextureSurfaces,
+            _ => throw new ArgumentException($"The {encoder.GetType().Name} encoder writes a single image; use Image.Save. Only TiffEncoder (pages), IcoEncoder (representations), DdsEncoder and Ktx2Encoder (texture surfaces) write a collection.", nameof(encoder)),
         };
 
         if (collection.Count == 0)
@@ -145,8 +146,15 @@ internal static class ImageCollectionWriterCore
         if (collection.Kind != expectedKind)
             throw new ArgumentException($"{ImageFormatNames.Get(encoder.Format)} output stores {expectedKind}, but the collection holds {collection.Kind}.", nameof(encoder));
 
-        if (encoder is TiffEncoder && !seekable)
-            throw new ArgumentException("TIFF output requires a seekable destination: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the pages are encoded.", nameof(encoder));
+        if (encoder is DdsEncoder or Ktx2Encoder)
+        {
+            // The structure of the texture does not depend on the pixels
+            _ = TextureCollectionLayout.Create(collection, encoder.Format, GenerateMipmaps(encoder));
+        }
+
+        // The directory of an uncompressed page precedes its strips, so only the pointer from a page to the next one is patched
+        if (encoder is TiffEncoder tiff && !seekable && (tiff.Compression != TiffCompression.None || collection.Count > 1))
+            throw new ArgumentException("TIFF output requires a seekable destination, except for one uncompressed page: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the pages are encoded.", nameof(encoder));
 
         for (var i = 0; i < collection.Count; i++)
         {
@@ -162,7 +170,7 @@ internal static class ImageCollectionWriterCore
                 if (PixelFormats.IsFloatingPoint(collection[i].PixelFormat))
                 {
                     throw new UnsupportedImageFeatureException(
-                        string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(encoder.Format)} output does not store floating-point samples, so encoding the {collection[i].PixelFormat} pixels of entry {i} would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers (Rgba64), or convert the image explicitly with CloneAs."),
+                        string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(encoder.Format)} output does not store floating-point samples, so encoding the {collection[i].PixelFormat} pixels of entry {i} would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers, or convert the image explicitly with CloneAs."),
                         encoder.Format,
                         "Floating-point samples");
                 }
@@ -179,6 +187,10 @@ internal static class ImageCollectionWriterCore
         if (encoder is TiffEncoder tiff)
         {
             await WriteTiffAsync(collection, tiff, output, scope, stream, asynchronous, cancellationToken).ConfigureAwait(false);
+        }
+        else if (encoder is DdsEncoder or Ktx2Encoder)
+        {
+            await WriteTextureAsync(collection, encoder, output, scope, stream, asynchronous, cancellationToken).ConfigureAwait(false);
         }
         else
         {
@@ -209,6 +221,144 @@ internal static class ImageCollectionWriterCore
 
             writer.CompletePage(output);
             await FlushIfNeededAsync(output, stream, asynchronous, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Determines whether two surfaces have the labels a KTX 2.0 file writes once, as it writes them: the transfer function
+    /// (sRGB or linear), the primaries (BT.709 by default) and <c>KTXorientation</c>. Two descriptions of the same label (a
+    /// linear transfer function, with or without a CICP description of BT.709 and linear light) are the same label.
+    /// </summary>
+    private static bool HasSameKtx2Labels(MetadataWritePlan first, MetadataWritePlan other, bool floatingPoint)
+        => Ktx2TextureWriter.IsSrgbTransfer(first, floatingPoint) == Ktx2TextureWriter.IsSrgbTransfer(other, floatingPoint)
+            && GetKtx2Primaries(first) == GetKtx2Primaries(other)
+            && Ktx2TextureWriter.GetOrientation(first.Orientation) == Ktx2TextureWriter.GetOrientation(other.Orientation);
+
+    private static int GetKtx2Primaries(MetadataWritePlan plan) => plan.Cicp is { } cicp ? Ktx2TextureWriter.GetPrimaries(cicp) ?? Ktx2Format.PrimariesBt709 : Ktx2Format.PrimariesBt709;
+
+    private static bool GenerateMipmaps(ImageEncoder encoder) => encoder is DdsEncoder { GenerateMipmaps: true } or Ktx2Encoder { GenerateMipmaps: true };
+
+    /// <summary>
+    /// Writes a texture: each surface is materialized, checked and encoded in turn (with the mipmap levels generated from it),
+    /// and the encoded surfaces are kept until the container is written in its own order.
+    /// </summary>
+    private static async ValueTask WriteTextureAsync(ImageCollection collection, ImageEncoder encoder, ImageOutputBuffer output, AllocationScope scope, Stream stream, bool asynchronous, CancellationToken cancellationToken)
+    {
+        var configuration = collection.Configuration;
+        var generateMipmaps = GenerateMipmaps(encoder);
+        var layout = TextureCollectionLayout.Create(collection, encoder.Format, generateMipmaps);
+        var levelCount = generateMipmaps ? TextureMipmaps.GetLevelCount(layout.Width, layout.Height) : layout.LevelCount;
+        EncodedTexture? texture = null;
+        Ktx2FileParts? partsOwner = null;
+        try
+        {
+            TextureTarget? target = null;
+            MetadataWritePlan? plan = null;
+            DdsTextureFormat ddsFormat = default;
+            Ktx2TextureFormat ktx2Format = default;
+            var srgb = false;
+            for (var layer = 0; layer < layout.LayerCount; layer++)
+            {
+                for (var face = 0; face < layout.FaceCount; face++)
+                {
+                    for (var level = 0; level < layout.LevelCount; level++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var entry = layout.Entries[layout.GetIndex(layer, face, level)];
+                        using var item = Materialize(entry, configuration, encoder, cancellationToken);
+                        var image = item.Image;
+                        var entryPlan = MetadataWritePlan.Create(image.Metadata, encoder.Format, encoder.MetadataHandling, image.Size, image.PixelFormat, encoder);
+                        MetadataWritePlan.ValidateFrameMetadata(image.Frames[0].MetadataCore, encoder.Format, encoder.MetadataHandling);
+                        if (target is null)
+                        {
+                            // The first surface decides the format and the color label of the texture
+                            plan = entryPlan;
+                            if (encoder is DdsEncoder dds)
+                            {
+                                ddsFormat = DdsTextureWriter.ResolveFormat(dds, image.PixelFormat);
+                                target = DdsTextureWriter.GetTarget(ddsFormat);
+                                srgb = !target.IsFloatingPoint;
+                            }
+                            else
+                            {
+                                var ktx2 = (Ktx2Encoder)encoder;
+                                ktx2Format = Ktx2TextureWriter.ResolveFormat(ktx2, image.PixelFormat);
+                                srgb = Ktx2TextureWriter.IsSrgbTransfer(entryPlan, Ktx2TextureWriter.IsFloatingPoint(ktx2Format));
+                                target = Ktx2TextureWriter.GetTarget(ktx2Format, srgb);
+                            }
+
+                            texture = new EncodedTexture(target, layout.Width, layout.Height, levelCount, layout.LayerCount, layout.FaceCount, isArray: layout.LayerCount > 1);
+                        }
+                        else if (encoder switch
+                        {
+                            DdsEncoder dds => DdsTextureWriter.ResolveFormat(dds, image.PixelFormat) != ddsFormat,
+                            _ => Ktx2TextureWriter.ResolveFormat((Ktx2Encoder)encoder, image.PixelFormat) != ktx2Format,
+                        })
+                        {
+                            // The first surface chose the texture format of the default TextureFormat; a surface of other pixels
+                            // would change precision without changing its color meaning (sRGB integers stored as linear floats)
+                            throw new ArgumentException($"The surface ({entry.TextureSurface}) has {image.PixelFormat} pixels, which the encoder writes as another texture format than the pixels of the first surface. Give every surface the same pixel format, or set the encoder's TextureFormat.", nameof(collection));
+                        }
+                        else if (encoder is Ktx2Encoder && !HasSameKtx2Labels(plan!, entryPlan, Ktx2TextureWriter.IsFloatingPoint(ktx2Format)) && encoder.MetadataHandling == MetadataHandling.Strict)
+                        {
+                            // A KTX 2.0 texture has one color label and one orientation: those of the first surface. A surface whose
+                            // own differ would be labeled (and its mipmap levels filtered) as the first one. DDS stores no label: its
+                            // format alone says whether the texels are sRGB
+                            throw new UnsupportedImageFeatureException($"The surface ({entry.TextureSurface}) has another color label (transfer function, CICP description) or orientation than the first surface, and a {ImageFormatNames.Get(encoder.Format)} texture stores one for all its surfaces. Give every surface the same labels, or set the encoder's MetadataHandling to DiscardUnsupported or Strip to label them all as the first one.", encoder.Format, "Metadata: labels of a surface");
+                        }
+
+                        var (allowBitDepthReduction, allowChannelReduction, thorough) = encoder switch
+                        {
+                            DdsEncoder dds => (dds.AllowBitDepthReduction, dds.AllowChannelReduction, dds.Quality == TextureCompressionQuality.Thorough),
+                            Ktx2Encoder ktx2 => (ktx2.AllowBitDepthReduction, ktx2.AllowChannelReduction, ktx2.Quality == TextureCompressionQuality.Thorough),
+                            _ => throw new InvalidOperationException("Not a texture encoder."),
+                        };
+                        var formatName = encoder is DdsEncoder ? DdsEncoderCodec.GetFormatName(ddsFormat) : Ktx2EncoderCodec.GetFormatName(Ktx2TextureWriter.GetVkFormat(ktx2Format, srgb));
+                        var encoderName = encoder.GetType().Name;
+                        TextureValidation.EnsurePrecision(image.PixelFormat, target, allowBitDepthReduction, encoder.Format, formatName, encoderName);
+                        var pixels = TexturePixels.Load(image.Frames[0], image.PixelFormat, target.Precision, scope, cancellationToken);
+                        using var surface = new TextureSurfaceEncoder(pixels, target, generateMipmaps ? levelCount : 1, thorough, srgb && !target.IsFloatingPoint, scope);
+                        TextureValidation.Validate(pixels, target, allowChannelReduction, encoder.Format, formatName, encoderName, cancellationToken);
+                        surface.Complete(cancellationToken);
+                        var levels = surface.TakeLevels();
+                        for (var i = 0; i < levels.Length; i++)
+                        {
+                            texture!.Set(layer, face, level + i, levels[i]);
+                        }
+                    }
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            IReadOnlyList<ReadOnlyMemory<byte>> parts;
+            if (encoder is DdsEncoder ddsEncoder)
+            {
+                var dx10 = DdsTextureWriter.UsesDx10Header(ddsFormat, texture!.IsArray, ddsEncoder.HeaderVersion);
+                List<ReadOnlyMemory<byte>> list = [DdsTextureWriter.CreateHeader(texture, ddsFormat, dx10)];
+                list.AddRange(DdsTextureWriter.GetSurfaces(texture));
+                parts = list;
+            }
+            else
+            {
+                var ktx2Encoder = (Ktx2Encoder)encoder;
+                var file = Ktx2TextureWriter.Create(texture!, Ktx2TextureWriter.GetVkFormat(ktx2Format, srgb), plan!, srgb, ktx2Encoder.Supercompression, scope);
+                partsOwner = file;
+                parts = file.Parts;
+            }
+
+            foreach (var part in parts)
+            {
+                for (var offset = 0; offset < part.Length; offset += output.FlushThreshold)
+                {
+                    output.Write(part.Span.Slice(offset, Math.Min(output.FlushThreshold, part.Length - offset)));
+                    await FlushIfNeededAsync(output, stream, asynchronous, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+        finally
+        {
+            partsOwner?.Dispose();
+            texture?.Dispose();
         }
     }
 
@@ -295,7 +445,7 @@ internal static class ImageCollectionWriterCore
         if (entry.OwnedOrNull is { } owned)
         {
             if (PixelFormats.IsFloatingPoint(owned.PixelFormat) && !encoder.StoresFloatingPointSamples)
-                return new MaterializedEntry(owned.CloneAs<Rgba64>(encoder.FloatingPointConversion), ownsImage: true);
+                return new MaterializedEntry(owned.CloneAs(PixelFormatWidening.GetReducedFloatingPointFormat(encoder, owned.PixelFormat), encoder.FloatingPointConversion), ownsImage: true);
 
             var widened = PixelFormatWidening.GetEncodedFormat(encoder, owned.PixelFormat);
             if (widened != owned.PixelFormat)

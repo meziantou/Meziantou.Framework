@@ -97,3 +97,15 @@ Both analyses read the Rec. 709 luma of the frame, premultiplied by alpha for th
 corner. The results do not depend on the platform: the votes are integers, and equal votes or responses are sorted in a
 fixed order. The working memory is charged to the image: for the lines, 18 bytes per pixel for the edges and 12 bytes
 per cell of the accumulator; for the corners, up to 48 bytes per pixel.
+
+## Coordinates and settings
+
+- **Lines.** A [Distance](cref:Meziantou.Framework.Imaging.HoughLine.Distance) is measured from the corner of the image,
+  the center of a pixel being at its index plus 0.5: a distance measured from the pixel indices is smaller by
+  `(cos θ + sin θ) / 2`. The angles are in degrees.
+- **Harris and Shi-Tomasi.** The gradients are weighted by a Gaussian of
+  [Sigma](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.Sigma); to sum them over a 3x3 window instead, a Sigma of
+  0.8 is the closest.
+- **FAST.** [FastThreshold](cref:Meziantou.Framework.Imaging.CornerDetectionOptions.FastThreshold) is a fraction of the
+  full range: a threshold of `t` levels of 8-bit samples is `(t + 0.5) / 255`. The score of a corner, which keeps one
+  corner of a cluster of candidates, is the sum of the differences beyond the threshold.

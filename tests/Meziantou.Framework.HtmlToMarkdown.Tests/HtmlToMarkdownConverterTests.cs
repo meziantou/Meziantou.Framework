@@ -5113,6 +5113,52 @@ public sealed class HtmlToMarkdownConverterTests
     }
 
     [Fact]
+    public void TableSpans_DuplicatedContentIsLimited()
+    {
+        var content = new string('a', 2000);
+        var html = $"<table><tr><td colspan=\"1000\">{content}</td></tr><tr><td colspan=\"2\">b</td></tr></table>";
+        var markdown = HtmlToMarkdown.Convert(html, new() { TableSpanHandling = TableSpanHandling.Duplicate });
+        var lines = markdown.Split('\n');
+        Assert.StartsWith($"| {content} |  |", lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("| b | b |  |", lines[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TableSpans_DuplicatedContentLimitIsSharedByTheDocument()
+    {
+        var content = new string('a', 600);
+        var table = $"<table><tr><td colspan=\"1000\">{content}</td></tr></table>";
+        var markdown = HtmlToMarkdown.Convert(table + table, new() { TableSpanHandling = TableSpanHandling.Duplicate });
+        var firstRows = markdown.Split('\n').Where(line => line.StartsWith($"| {content} |", StringComparison.Ordinal)).ToList();
+        Assert.HasCount(2, firstRows);
+        Assert.Single(firstRows, row => row.StartsWith($"| {content} | {content} |", StringComparison.Ordinal));
+        Assert.Single(firstRows, row => row.StartsWith($"| {content} |  |", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TableSpans_RawHtmlTablesDoNotUseTheDuplicatedContentLimit()
+    {
+        var content = new string('a', 1001);
+        var simpleTable = "<table><tr><td colspan=\"2\">bb</td></tr></table>";
+        var rawTable = $"<table><thead><tr><th colspan=\"1000\">{content}</th></tr><tr><th>c</th></tr></thead></table>";
+        foreach (var html in new[] { rawTable + simpleTable, simpleTable + rawTable })
+        {
+            var markdown = HtmlToMarkdown.Convert(html, new() { TableSpanHandling = TableSpanHandling.Duplicate, ComplexTableHandling = ComplexTableHandling.Html });
+            Assert.Contains("| bb | bb |", markdown, StringComparison.Ordinal);
+            Assert.Contains("<table>", markdown, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void TableSpans_DuplicatedNestedTablesAreLimited()
+    {
+        var inner = "<table>" + string.Concat(Enumerable.Repeat("<tr><td colspan=\"1000\">x</td></tr>", 10)) + "</table>";
+        var html = "<table>" + string.Concat(Enumerable.Repeat($"<tr><td colspan=\"1000\" rowspan=\"0\">{inner}</td></tr>", 10)) + "</table>";
+        var markdown = HtmlToMarkdown.Convert(html, new() { TableSpanHandling = TableSpanHandling.Duplicate });
+        Assert.HasCountLessThan(10_000_000, markdown);
+    }
+
+    [Fact]
     public void TableSpans_CellsSkipPositionsOfRowSpans()
     {
         AssertHtmlToMarkdown(

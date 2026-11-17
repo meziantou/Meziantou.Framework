@@ -1,0 +1,31 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+    <RootNamespace>Meziantou.Framework.FileConversionTool</RootNamespace>
+
+    <Version>1.0.1</Version>
+    <Description>CLI to convert files from one format to another: images, PDF, EPUB, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT) and archives (zip, 7z, RAR, tar)</Description>
+    <PackageTags>image, pdf, epub, markdown, html, cbz, cbr, zip, 7z, rar, tar, converter, cli, dotnet-tool</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.HtmlToMarkdown/Meziantou.Framework.HtmlToMarkdown.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
+  </ItemGroup>
+
+</Project>

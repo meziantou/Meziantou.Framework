@@ -43,6 +43,7 @@ internal static class DrawingTestSupport
     public static TheoryData<PixelFormat> FloatFormats => [PixelFormat.RgbaFloat, PixelFormat.RgbaHalf];
 
     /// <summary>Creates an image whose pixels are zero (transparent black, or black).</summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new image is returned to the caller, which owns it.")]
     public static Image Create(PixelFormat format, int width, int height, ImageConfiguration? configuration = null) => format switch
     {
         PixelFormat.Rgba32 => new Image<Rgba32>(width, height, configuration),
@@ -63,6 +64,10 @@ internal static class DrawingTestSupport
         PixelFormat.Rgba1010102 => new Image<Rgba1010102>(width, height, configuration),
         PixelFormat.Cmyk32 => new Image<Cmyk32>(width, height, configuration),
         PixelFormat.Cmyk64 => new Image<Cmyk64>(width, height, configuration),
+        PixelFormat.GrayFloat => new Image<GrayFloat>(width, height, configuration),
+        PixelFormat.GrayHalf => new Image<GrayHalf>(width, height, configuration),
+        PixelFormat.LaFloat => new Image<LaFloat>(width, height, configuration),
+        PixelFormat.LaHalf => new Image<LaHalf>(width, height, configuration),
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 
@@ -89,11 +94,12 @@ internal static class DrawingTestSupport
         }
         if (PixelFormats.IsFloatingPoint(format))
         {
-            var values = new int[width * height * 4];
+            var components = PixelFormats.GetComponentCount(format);
+            var values = new int[width * height * components];
             for (var i = 0; i < values.Length; i++)
             {
                 var sample = next(65536);
-                if (i % 4 == 3)
+                if (PixelFormats.HasAlpha(format) && i % components == components - 1)
                 {
                     sample = next(4) switch
                     {
@@ -103,7 +109,7 @@ internal static class DrawingTestSupport
                     };
                 }
 
-                values[i] = format == PixelFormat.RgbaFloat ? BitConverter.SingleToInt32Bits(sample / 65535f) : BitConverter.HalfToUInt16Bits((Half)(sample / 65535.0));
+                values[i] = PixelFormats.GetBitsPerComponent(format) == 32 ? BitConverter.SingleToInt32Bits(sample / 65535f) : BitConverter.HalfToUInt16Bits((Half)(sample / 65535.0));
             }
 
             WriteSamples(image.Frames[0], values);
@@ -147,14 +153,14 @@ internal static class DrawingTestSupport
 
         if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
         {
-            var bits = new int[frame.Width * frame.Height * 4];
+            var bits = new int[frame.Width * frame.Height * PixelFormats.GetComponentCount(frame.PixelFormat)];
             frame.ProcessPixelBytes(bits, static (pixels, bits) =>
             {
                 var index = 0;
                 for (var y = 0; y < pixels.Height; y++)
                 {
                     var row = pixels.GetRowSpan(y);
-                    if (pixels.PixelFormat == PixelFormat.RgbaFloat)
+                    if (PixelFormats.GetBitsPerComponent(pixels.PixelFormat) == 32)
                     {
                         foreach (var value in unsafe(MemoryMarshal.Cast<byte, int>(row)))
                         {
@@ -228,7 +234,7 @@ internal static class DrawingTestSupport
                 for (var y = 0; y < pixels.Height; y++)
                 {
                     var row = pixels.GetRowSpan(y);
-                    if (pixels.PixelFormat == PixelFormat.RgbaFloat)
+                    if (PixelFormats.GetBitsPerComponent(pixels.PixelFormat) == 32)
                     {
                         var values = unsafe(MemoryMarshal.Cast<byte, int>(row));
                         for (var i = 0; i < values.Length; i++)

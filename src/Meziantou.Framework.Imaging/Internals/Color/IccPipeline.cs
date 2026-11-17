@@ -42,6 +42,10 @@ internal sealed class IccPipeline
     private long _outputCurveColors;
     private QuantizationThresholds[]? _byteOutputTables;
 
+    // 1 once a caller has started building the 8-bit output tables: the other callers evaluate the last stage meanwhile
+    // instead of building the same tables
+    private int _byteOutputTablesBuilding;
+
     // The scope that the decoded entries of the lookup tables are charged to, or null when they are read in place
     private AllocationScope? _lookupTableScope;
 
@@ -243,6 +247,30 @@ internal sealed class IccPipeline
     /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">A profile is not supported, or the sequence does not connect.</exception>
     public static IccPipeline Create(IReadOnlyList<IccProfile> profiles, IccRenderingIntent intent, bool blackPointCompensation, GamutMapping gamutMapping)
+        => CreateSequence(profiles, namedColorSource: false, intent, blackPointCompensation, gamutMapping);
+
+    /// <summary>
+    /// Creates the conversion of the colors of a named color profile, the first profile of a sequence, through the other
+    /// profiles (see <see cref="Create(IReadOnlyList{IccProfile}, IccRenderingIntent, bool, GamutMapping)"/>). The
+    /// conversion starts in the connection space: its input is the media-relative CIEXYZ of a named color.
+    /// </summary>
+    /// <remarks>
+    /// The named colors are measured colors, not the range of a device: black point compensation does not apply to them
+    /// (as in LittleCMS), and the ICC-absolute colorimetric intent rescales them from the media white of the named color
+    /// profile.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The sequence has fewer than two profiles.</exception>
+    /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A profile is not supported, or the sequence does not connect.</exception>
+    public static IccPipeline CreateFromNamedColors(IReadOnlyList<IccProfile> profiles, IccRenderingIntent intent, GamutMapping gamutMapping)
+    {
+        if (profiles.Count < 2)
+            throw new ArgumentException("The sequence of profiles must have the named color profile and at least one profile after it.", nameof(profiles));
+
+        return CreateSequence(profiles, namedColorSource: true, intent, blackPointCompensation: false, gamutMapping);
+    }
+
+    private static IccPipeline CreateSequence(IReadOnlyList<IccProfile> profiles, bool namedColorSource, IccRenderingIntent intent, bool blackPointCompensation, GamutMapping gamutMapping)
     {
         if (profiles.Count == 0)
             throw new ArgumentException("The sequence of profiles is empty.", nameof(profiles));
@@ -251,17 +279,17 @@ internal sealed class IccPipeline
         for (var i = 0; i < models.Length; i++)
         {
             var role = i == 0 ? "source" : i == models.Length - 1 ? "destination" : string.Create(CultureInfo.InvariantCulture, $"intermediate (at index {i})");
-            models[i] = IccProfileModel.Create(profiles[i], role, allowLinkAndAbstract: true);
+            models[i] = i == 0 && namedColorSource ? IccProfileModel.CreateNamedColorSource(profiles[i], role) : IccProfileModel.Create(profiles[i], role, allowLinkAndAbstract: true);
         }
 
-        if (models.Length == 2 && !models[0].IsDeviceLink && !models[0].IsAbstract && !models[1].IsDeviceLink && !models[1].IsAbstract)
+        if (!namedColorSource && models.Length == 2 && !models[0].IsDeviceLink && !models[0].IsAbstract && !models[1].IsDeviceLink && !models[1].IsAbstract)
             return Create(profiles[0], profiles[1], intent, blackPointCompensation, gamutMapping);
 
         var stages = new IccStageList();
         uint? deviceSpace = null;           // the color space of the device values, outside the connection space
-        IccProfileModel? connectionSource = null; // the device profile that entered the connection space
+        IccProfileModel? connectionSource = namedColorSource ? models[0] : null; // the device profile that entered the connection space
         List<IccProfileModel>? abstracts = null;
-        for (var i = 0; i < models.Length; i++)
+        for (var i = namedColorSource ? 1 : 0; i < models.Length; i++)
         {
             var model = models[i];
             if (model.IsAbstract)
@@ -574,7 +602,8 @@ internal sealed class IccPipeline
     /// Gets, when the last stage is one inverse tone curve per destination channel, the tables that give the 8-bit
     /// destination sample of each channel from the value before that stage (<see cref="ApplyBetweenCurves"/>): the same
     /// sample as evaluating the curve then <see cref="IccByteSample.Store"/>. The tables are built once the pipeline has
-    /// converted <see cref="ByteOutputTablesThreshold"/> colors, counting the colors of this call.
+    /// converted <see cref="ByteOutputTablesThreshold"/> colors, counting the colors of this call, by the first caller that
+    /// crosses the threshold; the other callers get <see langword="null"/> until they are published.
     /// </summary>
     /// <param name="colors">The number of colors the caller is about to convert.</param>
     /// <returns>The table of each destination channel, or <see langword="null"/> when the last stage is evaluated.</returns>
@@ -589,8 +618,13 @@ internal sealed class IccPipeline
             if (Interlocked.Add(ref _outputCurveColors, colors) < ByteOutputTablesThreshold)
                 return null;
 
+            // Only one caller builds the tables (about 40,000 evaluations of each curve): the parallel workers that cross
+            // the threshold at the same time evaluate the last stage, which gives the same samples, until they are published
+            if (Interlocked.CompareExchange(ref _byteOutputTablesBuilding, 1, 0) != 0)
+                return null;
+
             tables = CreateByteOutputTables(curves);
-            tables = Interlocked.CompareExchange(ref _byteOutputTables, tables, null) ?? tables;
+            Volatile.Write(ref _byteOutputTables, tables);
         }
 
         return ReferenceEquals(tables, NoByteOutputTables) ? null : tables;

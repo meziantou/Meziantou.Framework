@@ -1,0 +1,1325 @@
+{
+  "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Ktx2Corpus.cs",
+  "tools": [
+    "KTX-Software 4.4.2",
+    "astcenc 5.7.1",
+    "basisu 2.50",
+    "ffmpeg 9.0.2",
+    "Apple ImageIO (sips)",
+    ".NET 11.0"
+  ],
+  "files": [
+    {
+      "file": "rgba8-srgb-levels.ktx2",
+      "sha256": "1316eb3486d035cda926a57c974a52968ce36543c96d8e0e295222a541ff8fc2",
+      "description": "Three levels of 8-bit sRGB RGBA, each a pattern.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 13,
+          "height": 9,
+          "layout": "rgba8",
+          "sha256": "0f1a4e96dfd0a8ff5093dc01a4abbd698dff31ada3e260fe7588149ec879d71b",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "level": 1,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 6,
+          "height": 4,
+          "layout": "rgba8",
+          "sha256": "d7146b62bb4ec134a1fcd739a3d9ff4132ab05aeb5eb7b02979505ba1f1d6590",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "level": 2,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 3,
+          "height": 2,
+          "layout": "rgba8",
+          "sha256": "96ad4438ae66b56363581bed731d1114fe278c5a200ce46530f87c0842004e6d",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "rgba16-unorm-zstd.ktx2",
+      "sha256": "38be1d899b5d9eb0ee5d4a461415804d327c691fe555530355d28a916a7fc266",
+      "description": "16-bit RGBA supercompressed with Zstandard (random samples).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 11,
+          "height": 7,
+          "layout": "rgba16le",
+          "sha256": "f73e960673d0dfc9ceeba24a027a7d7b7fbcb4094adabcbac39892d8e43c21e5",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "rgb8-unorm-zlib.ktx2",
+      "sha256": "cb57096f960a15114d6852949b0be0d954c001f0d085bf4f204610b07baf665b",
+      "description": "8-bit RGB supercompressed with ZLIB: alpha is 1.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 9,
+          "height": 5,
+          "layout": "rgba8",
+          "sha256": "7734c255a6f643a99d1954fe18f996fad430028937a5b048ea5f48f5b7e221b0",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "rgba32f-cube.ktx2",
+      "sha256": "cf09597d6fd78658d40cb27011c206a94246c35a7a41bc16d21ff5a7c7584fe5",
+      "description": "A cube map of 32-bit float RGBA: every face is an entry, from \u002BX to -Z.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 4,
+          "height": 4,
+          "layout": "rgbaf32le",
+          "sha256": "b512ec50797025d00d3f61a87ad85802bb439bff4bae33a33ef99b9dbc6a986b",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "level": 0,
+          "layer": 0,
+          "face": 1,
+          "slice": 0,
+          "width": 4,
+          "height": 4,
+          "layout": "rgbaf32le",
+          "sha256": "d460790be7e8231f7930e5c476816b7c0cf1860d263a03050c010efcd2994254",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "level": 0,
+          "layer": 0,
+          "face": 2,
+          "slice": 0,
+          "width": 4,
+          "height": 4,
+          "layout": "rgbaf32le",
+          "sha256": "cf8ff06ba2d53c141ed1a67edc7ed0801230cec82b5a9591d54989cd57aa5421",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "level": 0,
+          "layer": 0,
+          "face": 3,
+          "slice": 0,
+          "width": 4,
+          "height": 4,
+          "layout": "rgbaf32le",
+          "sha256": "0757be7bd46d86d7cdd2e82b7f2009db42c338909d229b580fa9cf2e7af35567",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 4,
+          "level": 0,
+          "layer": 0,
+          "face": 4,
+          "slice": 0,
+          "width": 4,
+          "height": 4,
+          "layout": "rgbaf32le",
+          "sha256": "b9ed0776d5616ff0c0d86366590c62435c0ab8e217e145423ebb21c69109347f",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "level": 0,
+          "layer": 0,
+          "face": 5,
+          "slice": 0,
+          "width": 4,
+          "height": 4,
+          "layout": "rgbaf32le",
+          "sha256": "58934122ba284a452889247c17ba6dd18ef1fc8e3a2a1d70604f103a531f85d1",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "rgba16f-array.ktx2",
+      "sha256": "bbd32c03cf8d57b0fad6a5a28e4ccdb9bf7707e0a73b463743d26bfa30334295",
+      "description": "An array of three layers of half RGBA.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 5,
+          "height": 3,
+          "layout": "rgbaf16le",
+          "sha256": "cff406416a0c4750a57c37f2b2b8857cefc6305df06941af26a026486d6faff1",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "level": 0,
+          "layer": 1,
+          "face": 0,
+          "slice": 0,
+          "width": 5,
+          "height": 3,
+          "layout": "rgbaf16le",
+          "sha256": "bfff6a673166cc8c391f2ef1f49288eccdda70df7cf0086bca088c2bf021fcb2",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "level": 0,
+          "layer": 2,
+          "face": 0,
+          "slice": 0,
+          "width": 5,
+          "height": 3,
+          "layout": "rgbaf16le",
+          "sha256": "4348e180b64a00e31e0684b0654bc5598a5c342829735422d3f718970fe4f612",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "r8-luminance.ktx2",
+      "sha256": "632bf3c44b272ab3251ae78bc768e953061ed1200ccf6f50cea614adbd65d20e",
+      "description": "R8 with the swizzle rrr1 (Luminance8, section 5.4.1): gray.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 7,
+          "height": 3,
+          "layout": "rgba8",
+          "sha256": "f80ca2dec656c3375f3d1cc1c77500865bab46cab8742d592f56c72f9a51435b",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "rg8-unorm.ktx2",
+      "sha256": "5a9d121417a4af985644728e9029736cd84c51677e0d998391ab68ca7794a197",
+      "description": "R8G8: blue is 0 and alpha 1, as a GPU samples it.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 7,
+          "height": 3,
+          "layout": "rgba8",
+          "sha256": "577d24735fcaf1583cdf7c9577fd35a77548dd0f299fe3f7221327e12b723cee",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "rgba8-3d.ktx2",
+      "sha256": "3671ee2a4d817d96b6b52704a9b431e5207e647731460959cb1306e6177fca86",
+      "description": "A 3x2x4 texture: each depth slice is an entry.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 3,
+          "height": 2,
+          "layout": "rgba8",
+          "sha256": "1b953b733ce0354fb08581a85742da5825352b40323371b6de666ac414c40399",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 1,
+          "width": 3,
+          "height": 2,
+          "layout": "rgba8",
+          "sha256": "8b0d872352ae2912833a9bc05eec4dd483ee01a27c1c7682d0318782f31e1da8",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 2,
+          "width": 3,
+          "height": 2,
+          "layout": "rgba8",
+          "sha256": "233a8b64e1fda3a2b5ee72cdfd04ce602116b61c335c8a7db8f613a640c4dcf7",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 3,
+          "width": 3,
+          "height": 2,
+          "layout": "rgba8",
+          "sha256": "178f5afb65ddb6379c1f0ce155d6746778a3b521dd0ac68fc318ed6da796afa9",
+          "reference": "The pattern given to ktx create --raw, converted by the rules of the format (the channels it lacks are 0, alpha 1)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored texels the pattern was written from."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "etc2-rgb8-srgb.ktx2",
+      "sha256": "44a9a0c77f2681cc38962a280d6060e36b15f52eb74ae4a7ca281526bf1fe9a5",
+      "description": "ETC2_R8G8B8_SRGB_BLOCK: 16x12 texels of random blocks.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 16,
+          "height": 12,
+          "layout": "rgba8",
+          "sha256": "2b0a5af6c2417d766c88367d8bf76cad4caab4404a9da51445ca2058f7ed3d8a",
+          "reference": "Apple ImageIO (sips, a 16-bit PNG file)",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "etc2-rgba8-unorm.ktx2",
+      "sha256": "072cfcfdbf9a06a25b4c791a67368a54a56cca54d2b93f4ca3154f0db64dd80a",
+      "description": "ETC2_R8G8B8A8_UNORM_BLOCK: 16x12 texels of random blocks.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 16,
+          "height": 12,
+          "layout": "rgba8",
+          "sha256": "7e98840aedd460dfc23a90ac22f9ef4bba3c179263a0253490d4b736f0f9dc8e",
+          "reference": "Apple ImageIO (sips, a 16-bit PNG file)",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "eac-r11-unorm.ktx2",
+      "sha256": "c1d85dc931591e2d1221301f650343d99993f44439d6a5043e05879c4d949a8a",
+      "description": "EAC_R11_UNORM_BLOCK: 16x12 texels of random blocks.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 16,
+          "height": 12,
+          "layout": "rgba16le",
+          "sha256": "277848ba2f5cc0a3554b96bdc81b6baffd8f0ebb3012c2b64eb38b7ef3ccafed",
+          "reference": "Apple ImageIO (sips, a 16-bit PNG file)",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "eac-rg11-unorm.ktx2",
+      "sha256": "4bc6c2249b18b2f596eaefc417d36c1734f60927cac47d551989839e99c657d7",
+      "description": "EAC_R11G11_UNORM_BLOCK: 16x12 texels of random blocks.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 16,
+          "height": 12,
+          "layout": "rgba16le",
+          "sha256": "8577c1f2f748f466fdbfa316b431361f586bbe86daf356d08aa320db4bb25e9e",
+          "reference": "Apple ImageIO (sips, a 16-bit PNG file)",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc1-rgb-unorm.ktx2",
+      "sha256": "576d86c0849c556f61e56050bafd6c7a60c1ee4a4ded8598ef295a20da4269b7",
+      "description": "BC1_RGB_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc1-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "00ae1a1a5fde194e8f9d80d0e7f21fcba54030ab08a005f1e4034825d03c6b6c",
+          "reference": "The reference of the DDS fixture dds/random-bc1-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc1-rgba-unorm-odd-size.ktx2",
+      "sha256": "83a89d9e9b4dd584845996e77acd81234d7b708dfdf3506cc10781b1365164ea",
+      "description": "BC1_RGBA_UNORM_BLOCK: the 13x9 blocks of the DDS fixture dds/odd-size-bc1.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 13,
+          "height": 9,
+          "layout": "rgba8",
+          "sha256": "785764ecdfd74f7c9293a71a4de9a9ea27e7d2c3dbaab43714cf3a1d9ab2d0c7",
+          "reference": "The reference of the DDS fixture dds/odd-size-bc1 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc1-rgba-srgb.ktx2",
+      "sha256": "ee4e3c6f8f9f01372b329a99caa4b65425b4f5c1a64abcae4f1bdad12bff22fd",
+      "description": "BC1_RGBA_SRGB_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc1-unorm-srgb.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "c669ef0e4c4e40a30022ac0b53a20ebe3203ece6399ceba7e4bf212de6d045e0",
+          "reference": "The reference of the DDS fixture dds/random-bc1-unorm-srgb (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc2-unorm.ktx2",
+      "sha256": "d4fc4bf21556c7672b7184747c0b1b46ac3caa765598c6556ea803f9d63118ac",
+      "description": "BC2_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc2-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "c940951a25608afca9f5e629065f966d82fab5de9bd25df397427e9a914acf22",
+          "reference": "The reference of the DDS fixture dds/random-bc2-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc3-srgb.ktx2",
+      "sha256": "f24096fbc0ae346f7fdb26f740d3fa2e2533e29b9db3b19f435b52e7a27b82c6",
+      "description": "BC3_SRGB_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc3-unorm-srgb.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "2409b7a095e85d709798cb67242fe11f0b20792b18da4729a621478625ee74b2",
+          "reference": "The reference of the DDS fixture dds/random-bc3-unorm-srgb (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc4-unorm.ktx2",
+      "sha256": "e50a0831783f261f8a5da7c34370a6de4bacbbe3d99378b5eead2e43e0bee141",
+      "description": "BC4_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc4-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "0ecf30b22555b7730ce968dc03c678aa4f17298f5e1cb1838e9f9380e5089afe",
+          "reference": "The reference of the DDS fixture dds/random-bc4-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc4-snorm.ktx2",
+      "sha256": "382853987d5f06182819c50f36d6c912c574d90cdaaa7d152c8dd6c99e3c64f7",
+      "description": "BC4_SNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc4-snorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf32le",
+          "sha256": "f3156843fa086e8670620b9f99ad7f9249f6bb35ab1ce1a7a90a5d1c704220cf",
+          "reference": "The reference of the DDS fixture dds/random-bc4-snorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc5-unorm.ktx2",
+      "sha256": "89d7f646949ff6c83932ebbb9650dff5495a10144155697fde16a81f16511472",
+      "description": "BC5_UNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc5-unorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "52056bd1a8f4b8407a8d9bf146e0db6fceea074a6fbb122d75c078954c6a7774",
+          "reference": "The reference of the DDS fixture dds/random-bc5-unorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc5-snorm.ktx2",
+      "sha256": "6ebcb5a7e0e8e4ada65119723e14740ea5576978b968a5dc4dca61037aa2c911",
+      "description": "BC5_SNORM_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc5-snorm.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf32le",
+          "sha256": "1e4bdbb2abce05d572915112a354f75ee54511bfbfda7b5d1248b75735038dc6",
+          "reference": "The reference of the DDS fixture dds/random-bc5-snorm (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc6h-ufloat.ktx2",
+      "sha256": "0f6297794b83f47c2b8d5753baa08fd7bc353b531dcedc9f6cfe9f51092830fa",
+      "description": "BC6H_UFLOAT_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc6h-uf16.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf16le",
+          "sha256": "94e33b528385d1f3e08849e5ba544ed96650aa08f9e11f375a50633506e4ea18",
+          "reference": "The reference of the DDS fixture dds/random-bc6h-uf16 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc6h-sfloat.ktx2",
+      "sha256": "7b00178637b023c525a95b0e0e3be3036627f9a48169ec2a7a54e5a57ac80f93",
+      "description": "BC6H_SFLOAT_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc6h-sf16.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgbaf16le",
+          "sha256": "95953e901dcbb28bb5e865b15795116b1e3f59b119dbe0b8d817527785c1b810",
+          "reference": "The reference of the DDS fixture dds/random-bc6h-sf16 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc7-unorm-odd-size.ktx2",
+      "sha256": "0650a4fb3c301c468f11ccb27afb69239c821be9a4b117f130540958da665795",
+      "description": "BC7_UNORM_BLOCK: the 5x3 blocks of the DDS fixture dds/odd-size-bc7.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 5,
+          "height": 3,
+          "layout": "rgba8",
+          "sha256": "73443fa88b562838ecc9b6873181dd3e60484b4593e9ced1fc59e610a1de3650",
+          "reference": "The reference of the DDS fixture dds/odd-size-bc7 (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "bcn-bc7-srgb.ktx2",
+      "sha256": "fcd71ba1e1dbde47e64de946bc04e6573e972d8cc5603c76abf28e0d9e9d67d4",
+      "description": "BC7_SRGB_BLOCK: the 24x24 blocks of the DDS fixture dds/random-bc7-unorm-srgb.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 24,
+          "height": 24,
+          "layout": "rgba8",
+          "sha256": "66c3879d7942fb9842291ef65f0e56057efd94f96034136d03b4a300905743c9",
+          "reference": "The reference of the DDS fixture dds/random-bc7-unorm-srgb (golden corpus), read by the rules of KTX: the channels the format lacks are 0, alpha 1",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --raw",
+              "result": "exact",
+              "notes": "The stored blocks are those of the DDS fixture."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "astc-4x4-srgb.ktx2",
+      "sha256": "307c8f30e77007a5ed149605be96d6b05d17f39f6608a7ab8a89252e2f10af06",
+      "description": "ASTC 4x4 sRGB from a pattern (ktx create, exhaustive quality).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "2996e078a2585122ac835e686b6dd8228387780d4ada3265ba098cd8fe18406e",
+          "reference": "ktx extract (PNG)",
+          "crossChecks": [
+            {
+              "decoder": "astcenc -ds (KTX file of 8-bit samples)",
+              "result": "exact",
+              "notes": "The same texels."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "astc-8x6-srgb.ktx2",
+      "sha256": "08d04c3e0866492ab012f168544ea01215111800377b0c300df39bf6c9c9d80d",
+      "description": "ASTC 8x6 sRGB from a pattern (ktx create, exhaustive quality).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "0032f876c65e5e774d7a5cc2410acf17a1eecc3197139466516b03db1198e7d6",
+          "reference": "ktx extract (PNG)",
+          "crossChecks": [
+            {
+              "decoder": "astcenc -ds (KTX file of 8-bit samples)",
+              "result": "exact",
+              "notes": "The same texels."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "astc-12x12-srgb.ktx2",
+      "sha256": "a39c37dfee94e41191086fec062fccdbd2a526a3ea1fb60619c8b71d40f2488b",
+      "description": "ASTC 12x12 sRGB from a pattern (ktx create, exhaustive quality).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "7d7541d523b01bc8843924809ebba95930436844118ba6e3245772509faad473",
+          "reference": "ktx extract (PNG)",
+          "crossChecks": [
+            {
+              "decoder": "astcenc -ds (KTX file of 8-bit samples)",
+              "result": "exact",
+              "notes": "The same texels."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "astc-5x5-unorm.ktx2",
+      "sha256": "a7bbdfcf501e1663c67d4f9b88a193da8b64e32a95369e4820f122d6d378398b",
+      "description": "ASTC 5x5 UNORM from a pattern: decode_float16 halves (KTX section 5.7).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgbaf16le",
+          "sha256": "24e86f8958db153dd2451776b57477e859962180a94deb02e356d400728e1daa",
+          "reference": "astcenc -dh (KTX file of halves)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract (PNG, decode_unorm8)",
+              "result": "exact",
+              "notes": "The top 8 bits of each UNORM16 value, which the half keeps."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "astc-10x8-unorm.ktx2",
+      "sha256": "4e0a5474c19b6856591bf349afd94a410a28d2016af334bde660b0e73036ca11",
+      "description": "ASTC 10x8 UNORM from a pattern: decode_float16 halves (KTX section 5.7).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgbaf16le",
+          "sha256": "8751fbd178d9e48420aeaa62b6c7bb05ee3328809b6813d17492ea073a67aa54",
+          "reference": "astcenc -dh (KTX file of halves)",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract (PNG, decode_unorm8)",
+              "result": "exact",
+              "notes": "The top 8 bits of each UNORM16 value, which the half keeps."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "astc-4x4-hdr.ktx2",
+      "sha256": "f4bc70fcf411b25c96885d39d125bd7b9ead5fc981112dab4dbb2a97c39a8060",
+      "description": "ASTC 4x4 HDR (SFLOAT) blocks written by astcenc -ch from a Radiance HDR picture.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 19,
+          "height": 13,
+          "layout": "rgbaf16le",
+          "sha256": "ed6d45c15cb12352e1596a17bea31491f363d27cc672db0be8b9c313050f4f02",
+          "reference": "astcenc -dh (KTX file of halves)",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "astc-8x8-hdr.ktx2",
+      "sha256": "b7d8b694105717a2014f6b908350759f5f6b3a12c0d55b61b6947f3b3dde8af0",
+      "description": "ASTC 8x8 HDR (SFLOAT) blocks written by astcenc -ch from a Radiance HDR picture.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 19,
+          "height": 13,
+          "layout": "rgbaf16le",
+          "sha256": "289408c5425898c8eb852bc351a5f1a8534e110eecad85a835d3b6fc242e3d15",
+          "reference": "astcenc -dh (KTX file of halves)",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "etc1s-rgba-srgb-levels.ktx2",
+      "sha256": "a68e21952cf0b97d851c869001e2bfa1257fa6bb0bdb95d676a89d1c2efdf99a",
+      "description": "ETC1S (BasisLZ) with an alpha slice, sRGB, and the generated levels (ktx create --encode basis-lz --generate-mipmap).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "b78b5126d5fd5157f7a00e45d8f63e0f12495c23ecf82e183cbb9dd9d3a09172",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": [
+            {
+              "decoder": "basisu -unpack (RGBA32)",
+              "result": "exact",
+              "notes": "The same texels."
+            }
+          ]
+        },
+        {
+          "index": 1,
+          "level": 1,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 18,
+          "height": 14,
+          "layout": "rgba8",
+          "sha256": "b2a51340b14baf27e7cb7c9d740b390fea2079e2ef9f94cf107de8b25974fd5a",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        },
+        {
+          "index": 2,
+          "level": 2,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 9,
+          "height": 7,
+          "layout": "rgba8",
+          "sha256": "ef8b70661c5bc0151cbaf19f6c184fff08df7eb4d8fc199812848ef96acde448",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        },
+        {
+          "index": 3,
+          "level": 3,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 4,
+          "height": 3,
+          "layout": "rgba8",
+          "sha256": "96e4a36139410279cd7c7db05e7684abcf4c955eb781ae03d4649d06e565f8f6",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        },
+        {
+          "index": 4,
+          "level": 4,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 2,
+          "height": 1,
+          "layout": "rgba8",
+          "sha256": "27d61a6bdd743f9049bd299e4c0ef415057f77f4aea34c42ff58cd3f4cd6487a",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        },
+        {
+          "index": 5,
+          "level": 5,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 1,
+          "height": 1,
+          "layout": "rgba8",
+          "sha256": "8c8a5146afe34cfb1e02f48b5c127eddcc458d91393b4dbdee54406b3b7af814",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "etc1s-r.ktx2",
+      "sha256": "6a576363dc640442f7775ba69e00815dcf1abd6b9e1c1fb5d455f0efcb6b94c6",
+      "description": "ETC1S of the channels RRR (red).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "96165cfa804c2338d48fc9e236a5ad2415839812d9ab8bb40b59a4e09f6287e1",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "etc1s-rg.ktx2",
+      "sha256": "f5a96bc79564d030520472d36946e67715b4290eccfb998507f4d10bfad303c8",
+      "description": "ETC1S of the channels RRR and GGG (red and green).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "14ed6acbed6934771329184fdbc60c037be97a50b74f519c6905c3b32cc43020",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "etc1s-video.ktx2",
+      "sha256": "fbb004db49f1e9c440c1513fc0fb05c0127ef4553bb4758f5a0b23fbd709636d",
+      "description": "An ETC1S video of 4 frames (basisu -tex_type video): KTXanimData, and P-frames that reuse blocks of the previous frame.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 32,
+          "height": 16,
+          "layout": "rgba8",
+          "sha256": "dabf57796edcb77eca817be49fbf00fd48895c359defa230a2fcc43b4787158e",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        },
+        {
+          "index": 1,
+          "level": 0,
+          "layer": 1,
+          "face": 0,
+          "slice": 0,
+          "width": 32,
+          "height": 16,
+          "layout": "rgba8",
+          "sha256": "263b4c977c2996c1900202b7d3771fbe37b11abd0b1ab73c5d2489217d816cff",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        },
+        {
+          "index": 2,
+          "level": 0,
+          "layer": 2,
+          "face": 0,
+          "slice": 0,
+          "width": 32,
+          "height": 16,
+          "layout": "rgba8",
+          "sha256": "f5f1dcb839082e00dd3d58700af91f1bb31b535c295bde1dbeb59ea0a2257b5d",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        },
+        {
+          "index": 3,
+          "level": 0,
+          "layer": 3,
+          "face": 0,
+          "slice": 0,
+          "width": 32,
+          "height": 16,
+          "layout": "rgba8",
+          "sha256": "f5f1dcb839082e00dd3d58700af91f1bb31b535c295bde1dbeb59ea0a2257b5d",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "uastc-rgba-unorm-zstd.ktx2",
+      "sha256": "9638a8959d036d56f355ede9ad5eb1bafdbe6d36804b4db473e882ae14085853",
+      "description": "UASTC with Zstandard, linear transfer function (ktx create --encode uastc --zstd).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "c07eaeaffd6f7d6e07eb6011e994def1bb7dd26def075588794962fda3fc0268",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": [
+            {
+              "decoder": "basisu -unpack (RGBA32)",
+              "result": "exact",
+              "notes": "The same texels."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "uastc-rgba-srgb.ktx2",
+      "sha256": "15b14dc78d60c552d2871ae7303725beae1efff355ce555183f98577a62424d2",
+      "description": "UASTC with the sRGB transfer function: the endpoints are expanded with 0x80 (section 25.7.2.8).",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "6fab2146a06764d35677f06643df74f2dcdc1e5d7108c042c2cb3f84cb614d7d",
+          "reference": "basisu -unpack (the lossless transcoding to ASTC 4x4), decoded as ASTC 4x4 sRGB by ktx extract",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --transcode rgba8",
+              "result": "differs",
+              "notes": "KTX-Software and basisu decode UASTC with the linear expansion of the endpoints whatever the transfer function: 383 samples differ by 1."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "file": "uastc-rg.ktx2",
+      "sha256": "a4716fd86396db23d893a1d2fe38421c9f1942e133b00742ebd21e5117a178d3",
+      "description": "UASTC of an R8G8 texture.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "b46d497f6dd3d0f370f2460a3306566aa1d8435c33350e77c815e3a4291d4640",
+          "reference": "ktx extract --transcode rgba8",
+          "crossChecks": []
+        }
+      ]
+    },
+    {
+      "file": "basisu-uastc.ktx2",
+      "sha256": "b5d65027328d21b6b6468bfdc8fc3a1b344f6950125833a982003959968491d3",
+      "description": "UASTC with levels and the sRGB transfer function, written by basisu (-ktx2 -uastc -mipmap) from an RGB picture.",
+      "entries": [
+        {
+          "index": 0,
+          "level": 0,
+          "layer": 0,
+          "face": 0,
+          "slice": 0,
+          "width": 37,
+          "height": 29,
+          "layout": "rgba8",
+          "sha256": "185bde84ceb3d411bb7033b5b2e60c3d3ee39a28aef7a4572d810067ba938eed",
+          "reference": "basisu -unpack (the lossless transcoding to ASTC 4x4), decoded as ASTC 4x4 sRGB by ktx extract",
+          "crossChecks": [
+            {
+              "decoder": "ktx extract --transcode rgba8",
+              "result": "differs",
+              "notes": "KTX-Software and basisu decode UASTC with the linear expansion of the endpoints whatever the transfer function: 458 samples differ by 1."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

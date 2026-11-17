@@ -1,8 +1,7 @@
 # HTML insertion methods and partial updates
 
-The library implements the HTML insertion methods of the HTML Standard, the streaming methods proposed for the HTML
-Standard and the `<template for>` patching of the HTML Standard. They are available from .NET and from the scripts. The
-streaming methods are [experimental .NET APIs](experimental-apis.md) (`WEBPLATEXP0002`).
+The library implements the HTML insertion methods of the HTML Standard, their streaming variants and the
+`<template for>` patching of the HTML Standard. They are available from .NET and from the scripts.
 
 ## Positional methods
 

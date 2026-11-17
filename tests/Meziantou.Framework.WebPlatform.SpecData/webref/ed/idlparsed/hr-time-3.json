@@ -12,6 +12,9 @@
         ],
         "Worker": [
           "Performance"
+        ],
+        "AudioWorklet": [
+          "WorkletPerformance"
         ]
       }
     },
@@ -128,6 +131,43 @@
         ],
         "partial": false,
         "href": "https://w3c.github.io/hr-time/#performance"
+      },
+      "WorkletPerformance": {
+        "fragment": "[Exposed=AudioWorklet]\ninterface WorkletPerformance {\n    DOMHighResTimeStamp now();\n};",
+        "type": "interface",
+        "name": "WorkletPerformance",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "now",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMHighResTimeStamp"
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/hr-time/#dom-performance-now"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "AudioWorklet"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/hr-time/#workletperformance"
       }
     },
     "idlExtendedNames": {
@@ -165,6 +205,41 @@
           "extAttrs": [],
           "partial": true
         }
+      ],
+      "AudioWorkletGlobalScope": [
+        {
+          "fragment": "partial interface AudioWorkletGlobalScope {\n  [Replaceable] readonly attribute WorkletPerformance performance;\n};",
+          "type": "interface",
+          "name": "AudioWorkletGlobalScope",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "performance",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "WorkletPerformance"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "Replaceable",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": true,
+              "href": "https://w3c.github.io/hr-time/#the-audioworklet-performance-attr"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
       ]
     },
     "globals": {},
@@ -174,6 +249,9 @@
       ],
       "Worker": [
         "Performance"
+      ],
+      "AudioWorklet": [
+        "WorkletPerformance"
       ]
     },
     "dependencies": {
@@ -181,13 +259,20 @@
         "EventTarget",
         "DOMHighResTimeStamp"
       ],
+      "WorkletPerformance": [
+        "DOMHighResTimeStamp"
+      ],
       "WindowOrWorkerGlobalScope": [
         "Performance"
+      ],
+      "AudioWorkletGlobalScope": [
+        "WorkletPerformance"
       ]
     },
     "externalDependencies": [
       "EventTarget",
-      "WindowOrWorkerGlobalScope"
+      "WindowOrWorkerGlobalScope",
+      "AudioWorkletGlobalScope"
     ],
     "hasObsoleteIdl": false
   }

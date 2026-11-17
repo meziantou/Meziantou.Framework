@@ -29,61 +29,89 @@ internal static class ColorConversionKernels
     /// <param name="destination">The leased destination pixels.</param>
     /// <param name="pipeline">The conversion.</param>
     /// <param name="uint16Tables">The values of the first stage for 16-bit samples, or <see langword="null"/> to evaluate it.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of workers: the rows of a large frame are split into bands (<see cref="RowBands"/>), and each row is converted alone, so the pixels do not depend on the number of workers.</param>
     /// <param name="cancellationToken">The token checked between row bands.</param>
-    public static void ConvertRows<TPixel>(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken)
+    public static void ConvertRows<TPixel>(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, int maxDegreeOfParallelism, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
-        var height = source.Height;
-        for (var y = 0; y < height; y++)
+        var sourceStorage = source.Storage;
+        var destinationStorage = destination.Storage;
+        var height = sourceStorage.Height;
+        var workers = RowBands.GetWorkerCount(new Size(sourceStorage.Width, height), maxDegreeOfParallelism);
+        if (workers == 1)
         {
-            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            ConvertRows<TPixel>(sourceStorage, destinationStorage, pipeline, uint16Tables, 0, height, cancellationToken);
+            return;
+        }
+
+        // The pipeline is thread-safe: its lookup tables are built once, whichever worker needs them first, and every
+        // color gets the samples of the scalar reference with or without them
+        RowBands.RunParallelInBandOrder(workers, band => ConvertRows<TPixel>(sourceStorage, destinationStorage, pipeline, uint16Tables, RowBands.GetBandStart(height, band, workers), RowBands.GetBandStart(height, band + 1, workers), cancellationToken));
+    }
+
+    private static void ConvertRows<TPixel>(PixelStorage source, PixelStorage destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, int start, int end, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+    {
+        for (var y = start; y < end; y++)
+        {
+            if ((y - start) % ProcessingKernels.RowsPerCancellationCheck == 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (typeof(TPixel) == typeof(Rgba32))
             {
-                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 4, 4);
+                Convert<byte, IccByteSample>(pipeline, source.GetRowSpanCore(y), destination.GetRowSpanCore(y), 4, 4);
             }
             else if (typeof(TPixel) == typeof(Bgra32))
             {
-                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 4, 4, reverseColorOrder: true);
+                Convert<byte, IccByteSample>(pipeline, source.GetRowSpanCore(y), destination.GetRowSpanCore(y), 4, 4, reverseColorOrder: true);
             }
             else if (typeof(TPixel) == typeof(Rgb24))
             {
-                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 3, 3);
+                Convert<byte, IccByteSample>(pipeline, source.GetRowSpanCore(y), destination.GetRowSpanCore(y), 3, 3);
             }
             else if (typeof(TPixel) == typeof(Gray8))
             {
-                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 1, 1);
+                Convert<byte, IccByteSample>(pipeline, source.GetRowSpanCore(y), destination.GetRowSpanCore(y), 1, 1);
             }
             else if (typeof(TPixel) == typeof(Rgba64))
             {
-                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 4, 4, uint16Tables: uint16Tables);
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowSpanCore(y))), 4, 4, uint16Tables: uint16Tables);
             }
             else if (typeof(TPixel) == typeof(Gray16))
             {
-                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 1, 1, uint16Tables: uint16Tables);
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowSpanCore(y))), 1, 1, uint16Tables: uint16Tables);
             }
             else if (typeof(TPixel) == typeof(La16))
             {
-                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 2, 2);
+                Convert<byte, IccByteSample>(pipeline, source.GetRowSpanCore(y), destination.GetRowSpanCore(y), 2, 2);
             }
             else if (typeof(TPixel) == typeof(La32))
             {
-                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 2, 2, uint16Tables: uint16Tables);
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowSpanCore(y))), 2, 2, uint16Tables: uint16Tables);
             }
             else if (typeof(TPixel) == typeof(Rgb48))
             {
-                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 3, 3, uint16Tables: uint16Tables);
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowSpanCore(y))), 3, 3, uint16Tables: uint16Tables);
             }
             else if (typeof(TPixel) == typeof(RgbaFloat))
             {
-                Convert<float, IccSingleSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, float>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, float>(destination.GetRowBytes(y))), 4, 4);
+                Convert<float, IccSingleSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, float>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, float>(destination.GetRowSpanCore(y))), 4, 4);
             }
             else if (typeof(TPixel) == typeof(RgbaHalf))
             {
-                Convert<Half, IccHalfSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, Half>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, Half>(destination.GetRowBytes(y))), 4, 4);
+                Convert<Half, IccHalfSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, Half>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, Half>(destination.GetRowSpanCore(y))), 4, 4);
+            }
+            else if (typeof(TPixel) == typeof(GrayFloat) || typeof(TPixel) == typeof(LaFloat))
+            {
+                var channels = typeof(TPixel) == typeof(LaFloat) ? 2 : 1;
+                Convert<float, IccSingleSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, float>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, float>(destination.GetRowSpanCore(y))), channels, channels);
+            }
+            else if (typeof(TPixel) == typeof(GrayHalf) || typeof(TPixel) == typeof(LaHalf))
+            {
+                var channels = typeof(TPixel) == typeof(LaHalf) ? 2 : 1;
+                Convert<Half, IccHalfSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, Half>(source.GetRowSpanCore(y))), unsafe(MemoryMarshal.Cast<byte, Half>(destination.GetRowSpanCore(y))), channels, channels);
             }
             else
             {

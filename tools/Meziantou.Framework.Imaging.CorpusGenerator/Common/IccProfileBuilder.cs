@@ -701,6 +701,89 @@ internal static class IccProfileBuilder
                 ("bTRC", blue),
             ]);
 
+    /// <summary>
+    /// A <c>namedColor2Type</c> (ICC.1:2022 section 10.17): the prefix and suffix, then for each color its root name, its
+    /// PCS coordinates (legacy 16-bit PCSLAB, or u1Fixed15 PCSXYZ, already encoded by the caller) and its device
+    /// coordinates (0 to 65535).
+    /// </summary>
+    public static byte[] NamedColor2(string prefix, string suffix, int deviceCoordinates, params (string Name, ushort[] Pcs, ushort[] Device)[] colors)
+    {
+        var colorSize = 38 + (2 * deviceCoordinates);
+        var data = new byte[84 + (colors.Length * colorSize)];
+        "ncl2"u8.CopyTo(data);
+        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(12), (uint)colors.Length);
+        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(16), (uint)deviceCoordinates);
+        Encoding.ASCII.GetBytes(prefix).CopyTo(data, 20);
+        Encoding.ASCII.GetBytes(suffix).CopyTo(data, 52);
+        for (var i = 0; i < colors.Length; i++)
+        {
+            var offset = 84 + (i * colorSize);
+            Encoding.ASCII.GetBytes(colors[i].Name).CopyTo(data, offset);
+            for (var j = 0; j < 3; j++)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(offset + 32 + (2 * j)), colors[i].Pcs[j]);
+            }
+
+            for (var j = 0; j < deviceCoordinates; j++)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(offset + 38 + (2 * j)), colors[i].Device[j]);
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>The colors of the named color profiles: CIELAB values, and the CMYK inks that print them.</summary>
+    public static readonly (string Name, double[] Lab, double[] Cmyk)[] NamedColorSamples =
+    [
+        ("Paper", [100, 0, 0], [0, 0, 0, 0]),
+        ("Black", [0, 0, 0], [0, 0, 0, 1]),
+        ("Rubine Red", [48, 74, 15], [0.06, 1, 0.45, 0.02]),
+        ("Warm Red", [59, 66.49, 59.38], [0, 0.9, 1, 0]),
+        ("Orange 021", [69, 54.07, 77.99], [0, 0.61, 1, 0]),
+        ("Yellow", [91, -4.59, 97.38], [0.05, 0, 1, 0]),
+        ("Green", [43.27, -57.85, 21.37], [1, 0.16, 1, 0.13]),
+        ("Process Cyan", [55, -37, -50], [1, 0, 0, 0]),
+        ("Reflex Blue", [25.44, 27.95, -58.05], [1, 0.77, 0.31, 0.42]),
+        ("Cool Gray 7", [61.5, -0.5, -1.8], [0, 0, 0, 0.55]),
+    ];
+
+    /// <summary>
+    /// A version 2 named color profile with the CIELAB connection space and CMYK device coordinates: the colors of
+    /// <see cref="NamedColorSamples"/>, with a prefix and a suffix.
+    /// </summary>
+    public static byte[] NamedColorLabV2()
+        => BuildBytes(
+            "CMYK",
+            "Lab ",
+            [
+                ("wtpt", Xyz(0.9642, 1, 0.8249)),
+                ("ncl2", NamedColor2("PMS ", " C", 4, [.. NamedColorSamples.Select(color => (color.Name, ToUInt16(EncodeLabLegacy(color.Lab)), ToUInt16(color.Cmyk)))])),
+            ],
+            header =>
+            {
+                header[8] = 2;
+                header[9] = 0x40;
+                "nmcl"u8.CopyTo(header.AsSpan(12));
+            });
+
+    /// <summary>
+    /// A version 4 named color profile with the CIEXYZ connection space, a media white point that is not the illuminant and
+    /// no device coordinates.
+    /// </summary>
+    public static byte[] NamedColorXyzV4()
+        => BuildBytes(
+            "RGB ",
+            "XYZ ",
+            [
+                ("wtpt", Xyz(0.9505, 1, 1.089)),
+                ("ncl2", NamedColor2("", "", 0, [.. NamedColorSamples.Select(color => (color.Name, ToUInt16(EncodeXyz(LabToXyz(color.Lab))), Array.Empty<ushort>()))])),
+            ],
+            header => "nmcl"u8.CopyTo(header.AsSpan(12)));
+
+    /// <summary>Rounds normalized values to 16-bit numbers.</summary>
+    public static ushort[] ToUInt16(double[] values) => [.. values.Select(value => (ushort)Math.Round(Math.Clamp(value, 0, 1) * 65535, MidpointRounding.AwayFromZero))];
+
     /// <summary>A monochrome display profile.</summary>
     public static byte[] Gray(byte[] curve, string connectionSpace = "XYZ ") => BuildBytes("GRAY", connectionSpace, [("kTRC", curve)]);
 

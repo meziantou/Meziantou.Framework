@@ -18,16 +18,12 @@ internal static class Binding_AbstractRange<TAdapter, TValue> where TAdapter : s
         DefineMembers = DefineMembers,
     };
 
-    private static TValue Get_startContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.AbstractRange>(t, Binding); return r.Wrap(o.StartContainer); }
     private static TValue Get_startOffset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.AbstractRange>(t, Binding); return r.FromNumber((double)o.StartOffset); }
-    private static TValue Get_endContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.AbstractRange>(t, Binding); return r.Wrap(o.EndContainer); }
     private static TValue Get_endOffset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.AbstractRange>(t, Binding); return r.FromNumber((double)o.EndOffset); }
     private static TValue Get_collapsed(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.AbstractRange>(t, Binding); return r.FromBoolean(o.Collapsed); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
-        r.DefineAttribute(instanceTarget, "startContainer", Get_startContainer, null);
         r.DefineAttribute(instanceTarget, "startOffset", Get_startOffset, null);
-        r.DefineAttribute(instanceTarget, "endContainer", Get_endContainer, null);
         r.DefineAttribute(instanceTarget, "endOffset", Get_endOffset, null);
         r.DefineAttribute(instanceTarget, "collapsed", Get_collapsed, null);
     }

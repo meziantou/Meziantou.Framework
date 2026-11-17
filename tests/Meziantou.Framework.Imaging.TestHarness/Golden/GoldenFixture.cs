@@ -103,6 +103,18 @@ public sealed class GoldenFixture
         return RawBufferReader.Read(RootDirectory, decoding.Buffer ?? throw new InvalidOperationException($"A decoding of the fixture '{Id}' gives an error, not pixels."));
     }
 
+    /// <summary>Gets the surfaces of a DDS fixture of several surfaces, in file order.</summary>
+    public IReadOnlyList<DdsSurfaceDefinition> DdsSurfaces => Entry.DdsSurfaces ?? throw new InvalidOperationException($"Fixture '{Id}' declares no DDS surface.");
+
+    /// <summary>Reads the pixels of one of <see cref="DdsSurfaces"/>.</summary>
+    /// <param name="surface">The surface.</param>
+    /// <returns>The buffer.</returns>
+    public RawPixelBuffer GetDdsSurfaceReference(DdsSurfaceDefinition surface)
+    {
+        ArgumentNullException.ThrowIfNull(surface);
+        return RawBufferReader.Read(RootDirectory, surface.Buffer);
+    }
+
     /// <inheritdoc/>
     public override string ToString() => Id;
 

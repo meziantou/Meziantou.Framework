@@ -51,8 +51,8 @@ namespace Meziantou.Framework.Imaging;
 /// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels, as
 /// <see cref="Pad"/> and <see cref="ExtendCanvas"/> write their padding color). Operations run on the calling thread, except that <see cref="Resize"/>,
 /// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, the sharpening,
-/// the edge detection, <see cref="Pixelate(Image, int, CancellationToken)"/>, <see cref="OilPaint(Image, int, int, CancellationToken)"/>
-/// and <see cref="Flatten(Image, Rgba64, CancellationToken)"/> may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/>
+/// the edge detection, <see cref="Pixelate(Image, int, CancellationToken)"/>, <see cref="OilPaint(Image, int, int, CancellationToken)"/>,
+/// <see cref="Flatten(Image, Rgba64, CancellationToken)"/> and <see cref="ConvertColorProfile"/> may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/>
 /// workers for large frames (identical results).
 /// </para>
 /// </remarks>
@@ -1246,8 +1246,10 @@ public static partial class ImageProcessingExtensions
     /// CMYK images are rejected.
     /// </para>
     /// <para>
-    /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) by the scalar reference
-    /// conversion, on the calling thread. Alpha is copied unchanged and the color of transparent pixels is converted like
+    /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) with the results of the
+    /// scalar reference conversion. When the image configuration allows several workers
+    /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), the rows of a large frame are split into bands converted
+    /// concurrently; the result is identical to the single-worker result. Alpha is copied unchanged and the color of transparent pixels is converted like
     /// any other. Colors outside the destination gamut are clipped per channel.
     /// </para>
     /// <para>

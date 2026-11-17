@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 
@@ -196,13 +197,28 @@ internal sealed partial class DrawingSession
             // A floating-point frame gets the colors of the matrix in place, unclipped
             if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
             {
-                if (frame.PixelFormat == PixelFormat.RgbaFloat)
+                switch (frame.PixelFormat)
                 {
-                    FloatDrawingKernels.ApplyColorMatrix<RgbaFloat>(storage, y, column, matrix, run);
-                }
-                else
-                {
-                    FloatDrawingKernels.ApplyColorMatrix<RgbaHalf>(storage, y, column, matrix, run);
+                    case PixelFormat.RgbaFloat:
+                        FloatDrawingKernels.ApplyColorMatrix<RgbaFloat>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.RgbaHalf:
+                        FloatDrawingKernels.ApplyColorMatrix<RgbaHalf>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.GrayFloat:
+                        FloatDrawingKernels.ApplyColorMatrix<GrayFloat>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.GrayHalf:
+                        FloatDrawingKernels.ApplyColorMatrix<GrayHalf>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.LaFloat:
+                        FloatDrawingKernels.ApplyColorMatrix<LaFloat>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.LaHalf:
+                        FloatDrawingKernels.ApplyColorMatrix<LaHalf>(storage, y, column, matrix, run);
+                        break;
+                    default:
+                        throw new UnreachableException();
                 }
 
                 continue;

@@ -58,6 +58,9 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
 
     public PdfRenderOptions Options { get; } = options;
 
+    /// <summary>Gets or sets the colorant whose plate the page is rendered as, or <see langword="null"/> for the colors of the page.</summary>
+    public string? Plate { get; set; } = options.Plate;
+
     public FontEnvironment FontEnvironment { get; } = new PooledFontEnvironment(FontResourceLimits.Default, MaxFontAllocationBytes);
 
     /// <summary>Gets or sets the resolution of the device of the page being rendered, in pixels per inch: the size of the cells of the halftones of type 1.</summary>

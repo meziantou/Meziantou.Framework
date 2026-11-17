@@ -1,264 +1,59 @@
-// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license.
-// See the license.txt file in the project root for more information.
-
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Reflection;
-
-using Meziantou.Framework.Markdown.Helpers;
-using Meziantou.Framework.Markdown.Parsers;
-using Meziantou.Framework.Markdown.Renderers;
-using Meziantou.Framework.Markdown.Renderers.Normalize;
-using Meziantou.Framework.Markdown.Syntax;
-
 namespace Meziantou.Framework.Markdown;
 
 /// <summary>
-/// Provides methods for parsing a Markdown string to a syntax tree and converting it to other formats.
+/// Converts Markdown text to HTML or to plain text in one call: it parses the text with <see cref="MarkdownSyntaxTree.ParseText(string, MarkdownParseOptions?, string?)"/>,
+/// then renders the tree with <see cref="MarkdownHtmlRenderer"/> or <see cref="MarkdownPlainTextRenderer"/>.
 /// </summary>
+/// <example>
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs" ref:region="MarkdownConverter_Usage" ref:dedent="true">
+/// Assert.Equal("&lt;p&gt;Some &lt;strong&gt;bold&lt;/strong&gt; text&lt;/p&gt;\n", MarkdownConverter.ToHtml("Some **bold** text"));
+/// Assert.Equal("&lt;p&gt;&lt;del&gt;Old&lt;/del&gt; new&lt;/p&gt;\n", MarkdownConverter.ToHtml("~~Old~~ new", MarkdownParseOptions.GitHubFlavored));
+/// Assert.Equal("Some bold text\n", MarkdownConverter.ToPlainText("Some **bold** text"));
+/// </code>
+/// </example>
 public static class MarkdownConverter
 {
-    /// <summary>
-    /// Gets or sets the version.
-    /// </summary>
-    [field: MaybeNull]
-    public static string Version => field ??= typeof(MarkdownConverter).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "Unknown";
+    /// <summary>Converts CommonMark text to HTML.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="markdown"/> is <see langword="null"/>.</exception>
+    public static string ToHtml(string markdown) => ToHtml(markdown, parseOptions: null, rendererOptions: null);
 
-    internal static readonly MarkdownPipeline DefaultPipeline = new MarkdownPipelineBuilder().Build();
+    /// <summary>Converts Markdown text to HTML.</summary>
+    /// <param name="markdown">The text.</param>
+    /// <param name="parseOptions">The extensions to read, or <see langword="null"/> for <see cref="MarkdownParseOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="markdown"/> is <see langword="null"/>.</exception>
+    public static string ToHtml(string markdown, MarkdownParseOptions? parseOptions) => ToHtml(markdown, parseOptions, rendererOptions: null);
 
-    [field: MaybeNull]
-    private static MarkdownPipeline DefaultTrackTriviaPipeline => field ??= new MarkdownPipelineBuilder().EnableTrackTrivia().Build();
-
-    private static MarkdownPipeline GetPipeline(MarkdownPipeline? pipeline) => pipeline ?? DefaultPipeline;
-
-
-    /// <summary>
-    /// Normalizes the specified markdown to a normalized markdown text.
-    /// </summary>
-    /// <param name="markdown">The markdown.</param>
-    /// <param name="options">The normalize options</param>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <returns>A normalized markdown text.</returns>
-    public static string Normalize([StringSyntax("Markdown")] string markdown, NormalizeOptions? options = null, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
-    {
-        using var writer = new StringWriter();
-        Normalize(markdown, writer, options, pipeline, context);
-        return writer.ToString();
-    }
-
-    /// <summary>
-    /// Normalizes the specified markdown to a normalized markdown text.
-    /// </summary>
-    /// <param name="markdown">The markdown.</param>
-    /// <param name="writer">The destination <see cref="TextWriter"/> that will receive the result of the conversion.</param>
-    /// <param name="options">The normalize options</param>
-    /// <param name="pipeline">The pipeline.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <returns>A normalized markdown text.</returns>
-    public static MarkdownDocument Normalize([StringSyntax("Markdown")] string markdown, TextWriter writer, NormalizeOptions? options = null, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
+    /// <summary>Converts Markdown text to HTML.</summary>
+    /// <param name="markdown">The text.</param>
+    /// <param name="parseOptions">The extensions to read, or <see langword="null"/> for <see cref="MarkdownParseOptions.Default"/>.</param>
+    /// <param name="rendererOptions">How to write the HTML, or <see langword="null"/> for <see cref="MarkdownHtmlRendererOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="markdown"/> is <see langword="null"/>.</exception>
+    public static string ToHtml(string markdown, MarkdownParseOptions? parseOptions, MarkdownHtmlRendererOptions? rendererOptions)
     {
         ArgumentNullException.ThrowIfNull(markdown);
 
-        pipeline = GetPipeline(pipeline);
-
-        var document = MarkdownParser.Parse(markdown, pipeline, context);
-
-        var renderer = new NormalizeRenderer(writer, options);
-        pipeline.Setup(renderer);
-
-        renderer.Render(document);
-        writer.Flush();
-
-        return document;
+        return MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(markdown, parseOptions), rendererOptions);
     }
 
-    /// <summary>
-    /// Converts a Markdown string to HTML.
-    /// </summary>
-    /// <param name="markdown">A Markdown text.</param>
-    /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <returns>The HTML string.</returns>
-    /// <exception cref="ArgumentNullException">If <paramref name="markdown"/> is null.</exception>
-    public static string ToHtml([StringSyntax("Markdown")] string markdown, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
+    /// <summary>Converts CommonMark text to plain text.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="markdown"/> is <see langword="null"/>.</exception>
+    public static string ToPlainText(string markdown) => ToPlainText(markdown, parseOptions: null, rendererOptions: null);
+
+    /// <summary>Converts Markdown text to plain text.</summary>
+    /// <param name="markdown">The text.</param>
+    /// <param name="parseOptions">The extensions to read, or <see langword="null"/> for <see cref="MarkdownParseOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="markdown"/> is <see langword="null"/>.</exception>
+    public static string ToPlainText(string markdown, MarkdownParseOptions? parseOptions) => ToPlainText(markdown, parseOptions, rendererOptions: null);
+
+    /// <summary>Converts Markdown text to plain text.</summary>
+    /// <param name="markdown">The text.</param>
+    /// <param name="parseOptions">The extensions to read, or <see langword="null"/> for <see cref="MarkdownParseOptions.Default"/>.</param>
+    /// <param name="rendererOptions">How to write the text, or <see langword="null"/> for <see cref="MarkdownHtmlRendererOptions.Default"/>.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="markdown"/> is <see langword="null"/>.</exception>
+    public static string ToPlainText(string markdown, MarkdownParseOptions? parseOptions, MarkdownHtmlRendererOptions? rendererOptions)
     {
         ArgumentNullException.ThrowIfNull(markdown);
 
-        pipeline = GetPipeline(pipeline);
-
-        var document = MarkdownParser.Parse(markdown, pipeline, context);
-
-        return ToHtml(document, pipeline);
-    }
-
-    /// <summary>
-    /// Converts a Markdown document to HTML.
-    /// </summary>
-    /// <param name="document">A Markdown document.</param>
-    /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <returns>The HTML string.</returns>
-    /// <exception cref="ArgumentNullException">If <paramref name="document"/> is null.</exception>
-    public static string ToHtml(this MarkdownDocument document, MarkdownPipeline? pipeline = null)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-
-        pipeline ??= DefaultPipeline;
-
-        using var rentedRenderer = pipeline.RentHtmlRenderer();
-        HtmlRenderer renderer = rentedRenderer.Instance;
-
-        renderer.Render(document);
-        renderer.Writer.Flush();
-
-        return renderer.Writer.ToString() ?? string.Empty;
-    }
-
-    /// <summary>
-    /// Converts a Markdown document to HTML.
-    /// </summary>
-    /// <param name="document">A Markdown document.</param>
-    /// <param name="writer">The destination <see cref="TextWriter"/> that will receive the result of the conversion.</param>
-    /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <exception cref="ArgumentNullException">If <paramref name="document"/> is null.</exception>
-    public static void ToHtml(this MarkdownDocument document, TextWriter writer, MarkdownPipeline? pipeline = null)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(writer);
-
-        pipeline ??= DefaultPipeline;
-
-        using var rentedRenderer = pipeline.RentHtmlRenderer(writer);
-        HtmlRenderer renderer = rentedRenderer.Instance;
-
-        renderer.Render(document);
-        renderer.Writer.Flush();
-    }
-
-    /// <summary>
-    /// Converts a Markdown string to HTML and output to the specified writer.
-    /// </summary>
-    /// <param name="markdown">A Markdown text.</param>
-    /// <param name="writer">The destination <see cref="TextWriter"/> that will receive the result of the conversion.</param>
-    /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <returns>The Markdown document that has been parsed</returns>
-    /// <exception cref="ArgumentNullException">if reader or writer variable are null</exception>
-    public static MarkdownDocument ToHtml([StringSyntax("Markdown")] string markdown, TextWriter writer, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
-    {
-        ArgumentNullException.ThrowIfNull(markdown);
-        ArgumentNullException.ThrowIfNull(writer);
-
-        pipeline = GetPipeline(pipeline);
-
-        var document = MarkdownParser.Parse(markdown, pipeline, context);
-
-        ToHtml(document, writer, pipeline);
-
-        return document;
-    }
-
-    /// <summary>
-    /// Converts a Markdown string using a custom <see cref="IMarkdownRenderer"/>.
-    /// </summary>
-    /// <param name="markdown">A Markdown text.</param>
-    /// <param name="renderer">The renderer to convert Markdown to.</param>
-    /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <exception cref="ArgumentNullException">if markdown or writer variable are null</exception>
-    public static object Convert([StringSyntax("Markdown")] string markdown, IMarkdownRenderer renderer, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
-    {
-        ArgumentNullException.ThrowIfNull(markdown);
-        ArgumentNullException.ThrowIfNull(renderer);
-
-        pipeline = GetPipeline(pipeline);
-
-        var document = MarkdownParser.Parse(markdown, pipeline, context);
-
-        pipeline.Setup(renderer);
-        return renderer.Render(document);
-    }
-
-    /// <summary>
-    /// Parses the specified markdown into an AST <see cref="MarkdownDocument"/>
-    /// </summary>
-    /// <param name="markdown">The markdown text.</param>
-    /// <param name="trackTrivia">Whether to parse trivia such as whitespace, extra heading characters and unescaped string values.</param>
-    /// <returns>An AST Markdown document</returns>
-    /// <exception cref="ArgumentNullException">if markdown variable is null</exception>
-    public static MarkdownDocument Parse([StringSyntax("Markdown")] string markdown, bool trackTrivia = false)
-    {
-        ArgumentNullException.ThrowIfNull(markdown);
-
-        MarkdownPipeline? pipeline = trackTrivia ? DefaultTrackTriviaPipeline : null;
-
-        return Parse(markdown, pipeline);
-    }
-
-    /// <summary>
-    /// Parses the specified markdown into an AST <see cref="MarkdownDocument"/>
-    /// </summary>
-    /// <param name="markdown">The markdown text.</param>
-    /// <param name="pipeline">The pipeline used for the parsing.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <returns>An AST Markdown document</returns>
-    /// <exception cref="ArgumentNullException">if markdown variable is null</exception>
-    public static MarkdownDocument Parse([StringSyntax("Markdown")] string markdown, MarkdownPipeline? pipeline, MarkdownParserContext? context = null)
-    {
-        ArgumentNullException.ThrowIfNull(markdown);
-
-        pipeline = GetPipeline(pipeline);
-
-        return MarkdownParser.Parse(markdown, pipeline, context);
-    }
-
-    /// <summary>
-    /// Converts a Markdown string to Plain text and output to the specified writer.
-    /// </summary>
-    /// <param name="markdown">A Markdown text.</param>
-    /// <param name="writer">The destination <see cref="TextWriter"/> that will receive the result of the conversion.</param>
-    /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <returns>The Markdown document that has been parsed</returns>
-    /// <exception cref="ArgumentNullException">if reader or writer variable are null</exception>
-    public static MarkdownDocument ToPlainText([StringSyntax("Markdown")] string markdown, TextWriter writer, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
-    {
-        ArgumentNullException.ThrowIfNull(markdown);
-        ArgumentNullException.ThrowIfNull(writer);
-
-        pipeline = GetPipeline(pipeline);
-
-        var document = MarkdownParser.Parse(markdown, pipeline, context);
-
-        // We override the renderer with our own writer
-        var renderer = new HtmlRenderer(writer)
-        {
-            EnableHtmlForBlock = false,
-            EnableHtmlForInline = false,
-            EnableHtmlEscape = false,
-        };
-        pipeline.Setup(renderer);
-
-        renderer.Render(document);
-        writer.Flush();
-
-        return document;
-    }
-
-    /// <summary>
-    /// Converts a Markdown string to Plain text by using a <see cref="StringWriter"/> .
-    /// </summary>
-    /// <param name="markdown">A Markdown text.</param>
-    /// <param name="pipeline">The pipeline used for the conversion.</param>
-    /// <param name="context">A parser context used for the parsing.</param>
-    /// <returns>The result of the conversion</returns>
-    /// <exception cref="ArgumentNullException">if markdown variable is null</exception>
-    public static string ToPlainText([StringSyntax("Markdown")] string markdown, MarkdownPipeline? pipeline = null, MarkdownParserContext? context = null)
-    {
-        ArgumentNullException.ThrowIfNull(markdown);
-        using var writer = new StringWriter();
-        ToPlainText(markdown, writer, pipeline, context);
-        return writer.ToString();
+        return MarkdownPlainTextRenderer.ToPlainText(MarkdownSyntaxTree.ParseText(markdown, parseOptions), rendererOptions);
     }
 }

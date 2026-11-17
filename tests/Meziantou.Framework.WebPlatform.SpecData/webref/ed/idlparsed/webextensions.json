@@ -6,7 +6,16 @@
   "idlparsed": {
     "jsNames": {
       "constructors": {},
-      "functions": {}
+      "functions": {
+        "Window": [
+          "OnAlarmEvent",
+          "Alarms"
+        ],
+        "Worker": [
+          "OnAlarmEvent",
+          "Alarms"
+        ]
+      }
     },
     "idlNames": {
       "RunAt": {
@@ -51,13 +60,701 @@
         ],
         "extAttrs": [],
         "href": "https://w3c.github.io/webextensions/specification/#enumdef-executionworld"
+      },
+      "Alarm": {
+        "fragment": "dictionary Alarm {\n  required DOMString name;\n  required double scheduledTime;\n  double periodInMinutes;\n  required boolean persistAcrossSessions;\n};",
+        "type": "dictionary",
+        "name": "Alarm",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarm-name"
+          },
+          {
+            "type": "field",
+            "name": "scheduledTime",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarm-scheduledtime"
+          },
+          {
+            "type": "field",
+            "name": "periodInMinutes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarm-periodinminutes"
+          },
+          {
+            "type": "field",
+            "name": "persistAcrossSessions",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarm-persistacrosssessions"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webextensions/specification/#dictdef-alarm"
+      },
+      "AlarmCreateInfo": {
+        "fragment": "dictionary AlarmCreateInfo {\n  DOMString name;\n  double when;\n  double delayInMinutes;\n  double periodInMinutes;\n  boolean persistAcrossSessions;\n};",
+        "type": "dictionary",
+        "name": "AlarmCreateInfo",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "name",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarmcreateinfo-name"
+          },
+          {
+            "type": "field",
+            "name": "when",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarmcreateinfo-when"
+          },
+          {
+            "type": "field",
+            "name": "delayInMinutes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarmcreateinfo-delayinminutes"
+          },
+          {
+            "type": "field",
+            "name": "periodInMinutes",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarmcreateinfo-periodinminutes"
+          },
+          {
+            "type": "field",
+            "name": "persistAcrossSessions",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarmcreateinfo-persistacrosssessions"
+          }
+        ],
+        "extAttrs": [],
+        "partial": false,
+        "href": "https://w3c.github.io/webextensions/specification/#dictdef-alarmcreateinfo"
+      },
+      "AlarmListener": {
+        "fragment": "callback AlarmListener = undefined (Alarm alarm);",
+        "type": "callback",
+        "name": "AlarmListener",
+        "idlType": {
+          "type": "return-type",
+          "extAttrs": [],
+          "generic": "",
+          "nullable": false,
+          "union": false,
+          "idlType": "undefined"
+        },
+        "arguments": [
+          {
+            "type": "argument",
+            "name": "alarm",
+            "extAttrs": [],
+            "idlType": {
+              "type": "argument-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Alarm"
+            },
+            "default": null,
+            "optional": false,
+            "variadic": false
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://w3c.github.io/webextensions/specification/#callbackdef-alarmlistener"
+      },
+      "OnAlarmEvent": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface OnAlarmEvent {\n  undefined addListener(AlarmListener listener);\n  undefined removeListener(AlarmListener listener);\n  boolean hasListener(AlarmListener listener);\n};",
+        "type": "interface",
+        "name": "OnAlarmEvent",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "addListener",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "listener",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlarmListener"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-onalarmevent-addlistener"
+          },
+          {
+            "type": "operation",
+            "name": "removeListener",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "undefined"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "listener",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlarmListener"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-onalarmevent-removelistener"
+          },
+          {
+            "type": "operation",
+            "name": "hasListener",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "listener",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlarmListener"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-onalarmevent-haslistener"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webextensions/specification/#onalarmevent"
+      },
+      "Alarms": {
+        "fragment": "[Exposed=(Window,Worker)]\ninterface Alarms {\n  Promise<undefined> create(optional AlarmCreateInfo alarmInfo = {});\n  Promise<undefined> create(DOMString name, optional AlarmCreateInfo alarmInfo = {});\n\n  Promise<(Alarm or undefined)> get(optional DOMString name);\n  Promise<sequence<Alarm>> getAll();\n  Promise<boolean> clear(optional DOMString name);\n  Promise<undefined> clearAll();\n\n  attribute OnAlarmEvent onAlarm;\n};",
+        "type": "interface",
+        "name": "Alarms",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "alarmInfo",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlarmCreateInfo"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarms-create"
+          },
+          {
+            "type": "operation",
+            "name": "create",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": false,
+                "variadic": false
+              },
+              {
+                "type": "argument",
+                "name": "alarmInfo",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "AlarmCreateInfo"
+                },
+                "default": {
+                  "type": "dictionary"
+                },
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarms-create-name-alarminfo"
+          },
+          {
+            "type": "operation",
+            "name": "get",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": true,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Alarm"
+                    },
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "undefined"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarms-get"
+          },
+          {
+            "type": "operation",
+            "name": "getAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "sequence",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": [
+                    {
+                      "type": "return-type",
+                      "extAttrs": [],
+                      "generic": "",
+                      "nullable": false,
+                      "union": false,
+                      "idlType": "Alarm"
+                    }
+                  ]
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarms-getall"
+          },
+          {
+            "type": "operation",
+            "name": "clear",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "boolean"
+                }
+              ]
+            },
+            "arguments": [
+              {
+                "type": "argument",
+                "name": "name",
+                "extAttrs": [],
+                "idlType": {
+                  "type": "argument-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "DOMString"
+                },
+                "default": null,
+                "optional": true,
+                "variadic": false
+              }
+            ],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarms-clear"
+          },
+          {
+            "type": "operation",
+            "name": "clearAll",
+            "idlType": {
+              "type": "return-type",
+              "extAttrs": [],
+              "generic": "Promise",
+              "nullable": false,
+              "union": false,
+              "idlType": [
+                {
+                  "type": "return-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "undefined"
+                }
+              ]
+            },
+            "arguments": [],
+            "extAttrs": [],
+            "special": "",
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarms-clearall"
+          },
+          {
+            "type": "attribute",
+            "name": "onAlarm",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "OnAlarmEvent"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://w3c.github.io/webextensions/specification/#dom-alarms-onalarm"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://w3c.github.io/webextensions/specification/#alarms"
       }
     },
-    "idlExtendedNames": {},
+    "idlExtendedNames": {
+      "Browser": [
+        {
+          "fragment": "partial interface Browser {\n  attribute Alarms alarms;\n};",
+          "type": "interface",
+          "name": "Browser",
+          "inheritance": null,
+          "members": [
+            {
+              "type": "attribute",
+              "name": "alarms",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "Alarms"
+              },
+              "extAttrs": [],
+              "special": "",
+              "readonly": false,
+              "href": "https://w3c.github.io/webextensions/specification/#dom-browser-alarms"
+            }
+          ],
+          "extAttrs": [],
+          "partial": true
+        }
+      ]
+    },
     "globals": {},
-    "exposed": {},
-    "dependencies": {},
-    "externalDependencies": [],
+    "exposed": {
+      "Window": [
+        "OnAlarmEvent",
+        "Alarms"
+      ],
+      "Worker": [
+        "OnAlarmEvent",
+        "Alarms"
+      ]
+    },
+    "dependencies": {
+      "Browser": [
+        "Alarms"
+      ],
+      "Alarm": [],
+      "AlarmCreateInfo": [],
+      "OnAlarmEvent": [
+        "AlarmListener"
+      ],
+      "Alarms": [
+        "AlarmCreateInfo",
+        "Alarm",
+        "OnAlarmEvent"
+      ]
+    },
+    "externalDependencies": [
+      "Browser"
+    ],
     "hasObsoleteIdl": false
   }
 }

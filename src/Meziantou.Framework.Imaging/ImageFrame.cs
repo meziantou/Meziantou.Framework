@@ -138,6 +138,97 @@ public abstract class ImageFrame
         }
     }
 
+    /// <summary>
+    /// Copies the pixels of the frame to a caller buffer of a custom pixel type: the pixels are converted to its storage
+    /// format (<see cref="ICustomPixel{TSelf}.StorageFormat"/>) with the rules of <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>
+    /// when the frame has another format, then to the custom pixels (<see cref="ICustomPixel{TSelf}.FromStorage"/>). Pixels
+    /// between rows (stride padding) are left untouched.
+    /// </summary>
+    /// <typeparam name="TPixel">The custom pixel type.</typeparam>
+    /// <param name="destination">The destination buffer.</param>
+    /// <param name="strideInPixels">
+    /// The distance between the starts of two consecutive destination rows, in pixels, or 0 for tightly packed rows. Must be
+    /// 0 or at least <see cref="Width"/>.
+    /// </param>
+    /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="PixelConversionOptions.Default"/>.</param>
+    /// <exception cref="NotSupportedException">The storage format of <typeparamref name="TPixel"/> is not a built-in pixel format.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="strideInPixels"/> is invalid.</exception>
+    /// <exception cref="ArgumentException"><paramref name="destination"/> is too short (the last row only needs <see cref="Width"/> pixels).</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The conversion to the storage format would lose information that the options do not allow to lose (nothing is written).</exception>
+    /// <exception cref="ImageResourceLimitException">The working row exceeds the allocation limit.</exception>
+    /// <exception cref="InvalidOperationException">A conflicting lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public void CopyCustomPixelDataTo<TPixel>(Span<TPixel> destination, int strideInPixels = 0, PixelConversionOptions? options = null)
+        where TPixel : unmanaged, ICustomPixel<TPixel>
+    {
+        var format = CustomPixels.GetStorageFormat<TPixel>();
+        ArgumentOutOfRangeException.ThrowIfNegative(strideInPixels);
+        var storage = GetStorage();
+        var width = storage.Width;
+        var stride = RowStride.Resolve(strideInPixels, width, nameof(strideInPixels), "pixels");
+        RowStride.EnsureLength(destination.Length, stride, width, storage.Height, nameof(destination), "pixels");
+        var sourceLength = storage.RowLength;
+        if (format == PixelFormat)
+        {
+            using var lease = storage.AcquireLease();
+            for (var y = 0; y < storage.Height; y++)
+            {
+                TPixel.FromStorage(lease.GetRowBytes(y)[..sourceLength], destination.Slice(RowStride.GetOffset(y, stride), width));
+            }
+
+            return;
+        }
+
+        // Every row is checked before the first one is written
+        var plan = PixelConversionPlan.Create(PixelFormat, format, options, OwnerImage.Metadata.IccProfile);
+        Image.PrepareConversion(plan, [this]);
+        using var row = CustomPixels.RentRow(OwnerImage.Owner.Scope, width, PixelFormats.GetBytesPerPixel(format));
+        using (var lease = storage.AcquireLease())
+        {
+            for (var y = 0; y < storage.Height; y++)
+            {
+                _ = plan.ConvertRow(lease.GetRowBytes(y)[..sourceLength], row.Span);
+                TPixel.FromStorage(row.Span, destination.Slice(RowStride.GetOffset(y, stride), width));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gives the pixels of the frame, row by row, as pixels of a custom pixel type that the callback may change: each row
+    /// is converted from the storage format (<see cref="ICustomPixel{TSelf}.FromStorage"/>), given to the callback, and
+    /// converted back (<see cref="ICustomPixel{TSelf}.ToStorage"/>). The frame must have the storage format of the type.
+    /// </summary>
+    /// <typeparam name="TPixel">The custom pixel type.</typeparam>
+    /// <param name="action">The callback, called once per row from the top. It must not retain the span.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="NotSupportedException">The storage format of <typeparamref name="TPixel"/> is not a built-in pixel format.</exception>
+    /// <exception cref="InvalidOperationException">The frame does not have the storage format of <typeparamref name="TPixel"/> (convert the image first with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>), or a conflicting lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working row exceeds the allocation limit.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <remarks>An exception of the callback stops the processing: the rows before it are already changed.</remarks>
+    public void ProcessCustomPixelRows<TPixel>(CustomPixelRowAction<TPixel> action)
+        where TPixel : unmanaged, ICustomPixel<TPixel>
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var format = CustomPixels.GetStorageFormat<TPixel>();
+        if (format != PixelFormat)
+            throw new InvalidOperationException($"The frame stores {PixelFormat} pixels, but the pixel type '{typeof(TPixel).FullName}' converts from and to {format} pixels. Convert the image first (CloneAs), or copy its pixels with CopyCustomPixelDataTo.");
+
+        var storage = GetStorage();
+        var width = storage.Width;
+        var rowLength = storage.RowLength;
+        using var row = CustomPixels.RentRow(OwnerImage.Owner.Scope, width, CustomPixels.GetSize<TPixel>());
+        var pixels = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, TPixel>(row.Span))[..width];
+        using var lease = storage.AcquireLease();
+        for (var y = 0; y < storage.Height; y++)
+        {
+            var bytes = lease.GetRowBytes(y)[..rowLength];
+            TPixel.FromStorage(bytes, pixels);
+            action(pixels, y);
+            TPixel.ToStorage(pixels, bytes);
+        }
+    }
+
     /// <summary>Draws on this frame only.</summary>
     /// <remarks>
     /// The callback runs once, while the pixels of the frame are leased. See <see cref="DrawingCanvas"/> for the

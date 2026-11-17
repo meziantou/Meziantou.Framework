@@ -47,6 +47,7 @@ var unicodeBlocksFilePath = outputPath / "UnicodeBlocks.g.cs";
 var unicodeScriptsFilePath = outputPath / "UnicodeScripts.g.cs";
 var csprojPath = root / "src" / "Meziantou.Framework.Unicode" / "Meziantou.Framework.Unicode.csproj";
 var frameworkCsprojPath = root / "src" / "Meziantou.Framework" / "Meziantou.Framework.csproj";
+var markdownCsprojPath = root / "src" / "Meziantou.Framework.Markdown" / "Meziantou.Framework.Markdown.csproj";
 
 var (confusableEntries, confusablesLastModified) = await LoadConfusablesEntries();
 await WriteConfusableCharactersFile(confusableEntries, confusablesLastModified);
@@ -76,6 +77,16 @@ if (frameworkUpdated)
     await IncrementPatchVersion(frameworkCsprojPath);
 }
 
+// The ASCII identifiers of the headings belong to Meziantou.Framework.Markdown: an update of the table changes the version of
+// that package only, and creating the table does not
+var asciiDecompositionFilePath = root / "src" / "Meziantou.Framework.Markdown" / "Parsing" / "CharNormalizer.g.cs";
+var asciiDecompositionExisted = File.Exists(asciiDecompositionFilePath);
+var markdownUpdated = await AsciiDecompositionWriter.WriteAsync(asciiDecompositionFilePath);
+if (markdownUpdated && asciiDecompositionExisted)
+{
+    await IncrementPatchVersion(markdownCsprojPath);
+}
+
 // The conformance files only change the tests: they are reported as an update, but they do not change the version
 // of the package.
 var testFilesUpdated = await ConformanceFilesWriter.WriteAsync(root);
@@ -86,7 +97,7 @@ if (outputUpdated)
     await IncrementPatchVersion(csprojPath);
 }
 
-if (outputUpdated || frameworkUpdated)
+if (outputUpdated || frameworkUpdated || markdownUpdated)
 {
     Console.WriteLine("The file has been updated");
 

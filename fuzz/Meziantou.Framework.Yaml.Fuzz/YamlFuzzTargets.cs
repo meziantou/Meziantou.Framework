@@ -365,18 +365,14 @@ public static class YamlFuzzTargets
 
     /// <summary>
     /// The emitter quotes a plain scalar it cannot write plain, such as a multi-line one or one starting with an
-    /// indicator, which only keeps its meaning when it resolves to a string. The empty plain scalar is the exception:
-    /// it is null, and the emitter writes it as <c>''</c> in a flow collection or a key, where it cannot be plain. The
-    /// canonical form double-quotes every scalar, as emitKeyQuoted does for the keys, and the events of the parser hold
-    /// no resolved tag the emitter could write instead.
+    /// indicator, which only keeps its meaning when it resolves to a string. The empty plain scalar, a null, stays plain:
+    /// as a key, the emitter writes it as an explicit key. The canonical form double-quotes every scalar, as
+    /// emitKeyQuoted does for the keys, and the events of the parser hold no resolved tag the emitter could write instead.
     /// </summary>
     private static string ResolveTag(Scalar scalar, bool isQuoted)
     {
         if (isQuoted)
             return "untagged";
-
-        if (scalar.Value.Length is 0)
-            return "empty";
 
         return Schemas.CoreSchema.Instance.TryParse(scalar, decodeValue: false, out var tag, out _) ? tag : "?";
     }
@@ -592,15 +588,34 @@ public static class YamlFuzzTargets
         }
     }
 
-    /// <summary>Each case with the default emitter, and with settings that vary from one case to the next.</summary>
+    /// <summary>
+    /// Each case with the default emitter, and with settings that vary from one case to the next. The outputs of the
+    /// emitters of the suite (out.yaml and emit.yaml) are inputs too: they are the same data in another presentation.
+    /// </summary>
     private static IEnumerable<FuzzSeed> GetEmitterSeeds()
     {
         var index = 0;
-        foreach (var (id, yaml) in GetSuiteCases())
+        foreach (var (id, yaml) in GetSuiteCases().Concat(GetSuiteEmitterOutputs()))
         {
             yield return FuzzSeed.FromText(id, [0], yaml);
             yield return FuzzSeed.FromText(id + "-options", [(byte)(index * 59)], yaml);
             index++;
+        }
+    }
+
+    private static IEnumerable<(string Id, string Yaml)> GetSuiteEmitterOutputs()
+    {
+        using var document = FuzzResources.ReadJson(typeof(YamlFuzzTargets).Assembly, "yaml-test-suite.cases.json");
+        foreach (var item in document.RootElement.EnumerateArray())
+        {
+            var id = item.GetProperty("id").GetString()!;
+            foreach (var propertyName in new[] { "out", "emit" })
+            {
+                if (item.TryGetProperty(propertyName, out var value))
+                {
+                    yield return (id + "-" + propertyName, value.GetString()!);
+                }
+            }
         }
     }
 

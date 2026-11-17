@@ -105,8 +105,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleOptions Defaults_Dom_IdleOptions = new();
 
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions Defaults_Dom_IdleRequestOptions = new();
-
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions Defaults_Dom_ImageBitmapOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageDataSettings Defaults_Dom_ImageDataSettings = new();
@@ -1571,6 +1569,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_FileApi_FileSystemFlags(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemFlags value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "create", r.FromBoolean(value.Create));
+        r.SetMember(result, "exclusive", r.FromBoolean(value.Exclusive));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_FileSystemCreateWritableOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.FileSystemCreateWritableOptions value)
     {
         var result = r.CreateObject();
@@ -1776,7 +1782,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static TValue FromDictionary_Dom_IdleRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions value)
     {
         var result = r.CreateObject();
-        if (value.Timeout is not null) r.SetMember(result, "timeout", (value.Timeout.HasValue ? r.FromNumber((double)value.Timeout.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "timeout", (value.Timeout.HasValue ? r.FromNumber((double)value.Timeout.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -4766,6 +4772,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.CreateScriptUrlCallback ToDelegate_Dom_CreateScriptUrlCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateScriptUrlCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "CreateScriptURLCallback"); return (r.IsNullOrUndefined(result) ? (string?)null : r.ToUsvString(result)); }));
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FileApi.ErrorCallback ToDelegate_Dom_FileApi_ErrorCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FileApi.ErrorCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "ErrorCallback"); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileCallback ToDelegate_Dom_FileApi_FileCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "FileCallback"); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemEntriesCallback ToDelegate_Dom_FileApi_FileSystemEntriesCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemEntriesCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "FileSystemEntriesCallback"); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemEntryCallback ToDelegate_Dom_FileApi_FileSystemEntryCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemEntryCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "FileSystemEntryCallback"); }));
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback ToDelegate_Dom_FrameRequestCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromNumber((double)p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "FrameRequestCallback"); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback ToDelegate_Dom_FunctionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); foreach (var item in p0) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.ToJs(r.GlobalScope), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "Function"); return result; }));
@@ -6695,6 +6709,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemFlags ToDictionary_Dom_FileApi_FileSystemFlags(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "FileSystemFlags");
+        var m0_value = r.GetDictionaryMember(value, "create");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "exclusive");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemFlags
+        {
+            Create = m0,
+            Exclusive = m1,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.FileSystemGetDirectoryOptions ToDictionary_Dom_FileSystemGetDirectoryOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "FileSystemGetDirectoryOptions");
@@ -7037,11 +7065,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         r.CheckDictionary(value, "IdleRequestOptions");
         var m0_value = r.GetDictionaryMember(value, "timeout");
-        var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (uint?)r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (uint)(uint)(0d) : r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         return new global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions
         {
-            Timeout = m0_present ? m0 : Defaults_Dom_IdleRequestOptions.Timeout,
+            Timeout = m0,
         };
     }
 

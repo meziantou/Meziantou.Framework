@@ -14,10 +14,23 @@ internal static class TimeFormats
 
     public static double ToMilliseconds(DateTime utc) => (utc - DateTime.UnixEpoch).Ticks / (double)TimeSpan.TicksPerMillisecond;
 
-    public static DateTime FromMilliseconds(double milliseconds) => DateTime.UnixEpoch.AddTicks((long)Math.Round(milliseconds * TimeSpan.TicksPerMillisecond, MidpointRounding.AwayFromZero));
-
-    public static string FormatCategory(double milliseconds)
+    /// <summary>Converts a time, in milliseconds since the Unix epoch, to the closest <see cref="DateTime"/>: the times past the bounds of <see cref="DateTime"/> convert to these bounds.</summary>
+    public static DateTime FromMilliseconds(double milliseconds)
     {
+        // The conversion to double rounds the number of ticks, so the bounds of DateTime may not round-trip without the clamp
+        var ticks = Math.Round(milliseconds * TimeSpan.TicksPerMillisecond, MidpointRounding.AwayFromZero);
+        var minTicks = DateTime.MinValue.Ticks - DateTime.UnixEpoch.Ticks;
+        var maxTicks = DateTime.MaxValue.Ticks - DateTime.UnixEpoch.Ticks;
+        var offset = ticks <= minTicks ? minTicks : ticks >= maxTicks ? maxTicks : Math.Clamp((long)ticks, minTicks, maxTicks);
+        return DateTime.UnixEpoch.AddTicks(offset);
+    }
+
+    /// <summary>Formats a time as a category, or returns <see langword="null"/> when it is not finite or outside the bounds of <see cref="DateTime"/>, as the times a mark derives from its data can be.</summary>
+    public static string? FormatCategory(double milliseconds)
+    {
+        if (!(milliseconds >= ToMilliseconds(DateTime.MinValue) && milliseconds <= ToMilliseconds(DateTime.MaxValue)))
+            return null;
+
         var date = FromMilliseconds(milliseconds);
         return date.TimeOfDay == TimeSpan.Zero
             ? date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)

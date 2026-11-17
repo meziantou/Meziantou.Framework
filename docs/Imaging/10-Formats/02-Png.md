@@ -163,9 +163,9 @@ See [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a
 
 A malformed file is rejected with an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException).
 The image data must be one complete zlib datastream that decompresses to exactly the scanlines of the image: a valid
-header, deflate data that ends with its final block, then its Adler-32 checksum, and no byte after it. On .NET 11, the
-decoder knows where the deflate data ends, so it also rejects bytes between the deflate data and the checksum that
-happen to end with a matching checksum. With
+header, deflate data that ends with its final block, then its Adler-32 checksum, and no byte after it. The decoder
+knows where the deflate data ends, so it also rejects bytes between the deflate data and the checksum that happen to end
+with a matching checksum. With
 [lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept), two deviations that
 browsers tolerate are accepted:
 

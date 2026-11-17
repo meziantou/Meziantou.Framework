@@ -29,7 +29,7 @@
       "prose": "All three methods of setting link parameters share the same syntax for defining a parameter, using the param() function:",
       "href": "https://drafts.csswg.org/css-link-params-1/#funcdef-param",
       "type": "function",
-      "value": "param( <param-spec> , <declaration-value>? )"
+      "value": "param( <param-spec> [ ':' <declaration-value>? ]? )"
     },
     {
       "name": "<param-spec>",

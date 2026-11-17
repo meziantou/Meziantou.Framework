@@ -44,6 +44,7 @@
           "CharacterData",
           "CDATASection",
           "AbstractRange",
+          "NodeRange",
           "NodeIterator",
           "TreeWalker",
           "DOMTokenList",
@@ -8572,27 +8573,11 @@
         "href": "https://dom.spec.whatwg.org/#comment"
       },
       "AbstractRange": {
-        "fragment": "[Exposed=Window]\ninterface AbstractRange {\n  readonly attribute Node startContainer;\n  readonly attribute unsigned long startOffset;\n  readonly attribute Node endContainer;\n  readonly attribute unsigned long endOffset;\n  readonly attribute boolean collapsed;\n};",
+        "fragment": "[Exposed=Window]\ninterface AbstractRange {\n  readonly attribute unsigned long startOffset;\n  readonly attribute unsigned long endOffset;\n  readonly attribute boolean collapsed;\n};",
         "type": "interface",
         "name": "AbstractRange",
         "inheritance": null,
         "members": [
-          {
-            "type": "attribute",
-            "name": "startContainer",
-            "idlType": {
-              "type": "attribute-type",
-              "extAttrs": [],
-              "generic": "",
-              "nullable": false,
-              "union": false,
-              "idlType": "Node"
-            },
-            "extAttrs": [],
-            "special": "",
-            "readonly": true,
-            "href": "https://dom.spec.whatwg.org/#dom-range-startcontainer"
-          },
           {
             "type": "attribute",
             "name": "startOffset",
@@ -8608,22 +8593,6 @@
             "special": "",
             "readonly": true,
             "href": "https://dom.spec.whatwg.org/#dom-range-startoffset"
-          },
-          {
-            "type": "attribute",
-            "name": "endContainer",
-            "idlType": {
-              "type": "attribute-type",
-              "extAttrs": [],
-              "generic": "",
-              "nullable": false,
-              "union": false,
-              "idlType": "Node"
-            },
-            "extAttrs": [],
-            "special": "",
-            "readonly": true,
-            "href": "https://dom.spec.whatwg.org/#dom-range-endcontainer"
           },
           {
             "type": "attribute",
@@ -8671,6 +8640,59 @@
         ],
         "partial": false,
         "href": "https://dom.spec.whatwg.org/#abstractrange"
+      },
+      "NodeRange": {
+        "fragment": "[Exposed=Window]\ninterface NodeRange : AbstractRange {\n  readonly attribute Node startContainer;\n  readonly attribute Node endContainer;\n};",
+        "type": "interface",
+        "name": "NodeRange",
+        "inheritance": "AbstractRange",
+        "members": [
+          {
+            "type": "attribute",
+            "name": "startContainer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Node"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://dom.spec.whatwg.org/#dom-range-startcontainer"
+          },
+          {
+            "type": "attribute",
+            "name": "endContainer",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "Node"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://dom.spec.whatwg.org/#dom-range-endcontainer"
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          }
+        ],
+        "partial": false,
+        "href": "https://dom.spec.whatwg.org/#noderange"
       },
       "StaticRangeInit": {
         "fragment": "dictionary StaticRangeInit {\n  required Node startContainer;\n  required unsigned long startOffset;\n  required Node endContainer;\n  required unsigned long endOffset;\n};",
@@ -8748,10 +8770,10 @@
         "href": "https://dom.spec.whatwg.org/#dictdef-staticrangeinit"
       },
       "StaticRange": {
-        "fragment": "[Exposed=Window]\ninterface StaticRange : AbstractRange {\n  constructor(StaticRangeInit init);\n};",
+        "fragment": "[Exposed=Window]\ninterface StaticRange : NodeRange {\n  constructor(StaticRangeInit init);\n};",
         "type": "interface",
         "name": "StaticRange",
-        "inheritance": "AbstractRange",
+        "inheritance": "NodeRange",
         "members": [
           {
             "type": "constructor",
@@ -8792,10 +8814,10 @@
         "href": "https://dom.spec.whatwg.org/#staticrange"
       },
       "Range": {
-        "fragment": "[Exposed=Window]\ninterface Range : AbstractRange {\n  constructor();\n\n  readonly attribute Node commonAncestorContainer;\n\n  undefined setStart(Node node, unsigned long offset);\n  undefined setEnd(Node node, unsigned long offset);\n  undefined setStartBefore(Node node);\n  undefined setStartAfter(Node node);\n  undefined setEndBefore(Node node);\n  undefined setEndAfter(Node node);\n  undefined collapse(optional boolean toStart = false);\n  undefined selectNode(Node node);\n  undefined selectNodeContents(Node node);\n\n  const unsigned short START_TO_START = 0;\n  const unsigned short START_TO_END = 1;\n  const unsigned short END_TO_END = 2;\n  const unsigned short END_TO_START = 3;\n  short compareBoundaryPoints(unsigned short how, Range sourceRange);\n\n  [CEReactions] undefined deleteContents();\n  [CEReactions, NewObject] DocumentFragment extractContents();\n  [CEReactions, NewObject] DocumentFragment cloneContents();\n  [CEReactions] undefined insertNode(Node node);\n  [CEReactions] undefined surroundContents(Node newParent);\n\n  [NewObject] Range cloneRange();\n  undefined detach();\n\n  boolean isPointInRange(Node node, unsigned long offset);\n  short comparePoint(Node node, unsigned long offset);\n\n  boolean intersectsNode(Node node);\n\n  stringifier;\n};",
+        "fragment": "[Exposed=Window]\ninterface Range : NodeRange {\n  constructor();\n\n  readonly attribute Node commonAncestorContainer;\n\n  undefined setStart(Node node, unsigned long offset);\n  undefined setEnd(Node node, unsigned long offset);\n  undefined setStartBefore(Node node);\n  undefined setStartAfter(Node node);\n  undefined setEndBefore(Node node);\n  undefined setEndAfter(Node node);\n  undefined collapse(optional boolean toStart = false);\n  undefined selectNode(Node node);\n  undefined selectNodeContents(Node node);\n\n  const unsigned short START_TO_START = 0;\n  const unsigned short START_TO_END = 1;\n  const unsigned short END_TO_END = 2;\n  const unsigned short END_TO_START = 3;\n  short compareBoundaryPoints(unsigned short how, Range sourceRange);\n\n  [CEReactions] undefined deleteContents();\n  [CEReactions, NewObject] DocumentFragment extractContents();\n  [CEReactions, NewObject] DocumentFragment cloneContents();\n  [CEReactions] undefined insertNode(Node node);\n  [CEReactions] undefined surroundContents(Node newParent);\n\n  [NewObject] Range cloneRange();\n  undefined detach();\n\n  boolean isPointInRange(Node node, unsigned long offset);\n  short comparePoint(Node node, unsigned long offset);\n\n  boolean intersectsNode(Node node);\n\n  stringifier;\n};",
         "type": "interface",
         "name": "Range",
-        "inheritance": "AbstractRange",
+        "inheritance": "NodeRange",
         "members": [
           {
             "type": "constructor",
@@ -12008,6 +12030,7 @@
         "ProcessingInstruction",
         "Comment",
         "AbstractRange",
+        "NodeRange",
         "StaticRange",
         "Range",
         "NodeIterator",
@@ -12208,18 +12231,20 @@
       "Comment": [
         "CharacterData"
       ],
-      "AbstractRange": [
+      "AbstractRange": [],
+      "NodeRange": [
+        "AbstractRange",
         "Node"
       ],
       "StaticRangeInit": [
         "Node"
       ],
       "StaticRange": [
-        "AbstractRange",
+        "NodeRange",
         "StaticRangeInit"
       ],
       "Range": [
-        "AbstractRange",
+        "NodeRange",
         "Node",
         "Range",
         "DocumentFragment"

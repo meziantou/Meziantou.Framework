@@ -283,7 +283,7 @@
         "href": "https://webmachinelearning.github.io/webmcp/#modelcontext"
       },
       "ModelContextTool": {
-        "fragment": "dictionary ModelContextTool {\n  required DOMString name;\n  // Because `title` is for display in possibly native UIs, this must be a `USVString`.\n  // See https://w3ctag.github.io/design-principles/#idl-string-types.\n  USVString title;\n  required DOMString description;\n  object inputSchema;\n  required ToolExecuteCallback execute;\n  ToolAnnotations annotations;\n};",
+        "fragment": "dictionary ModelContextTool {\n  required DOMString name;\n  // Because `title` is for display in possibly native UIs, this must be a `USVString`.\n  // See https://w3ctag.github.io/design-principles/#idl-string-types.\n  USVString title;\n  required DOMString description;\n  object inputSchema;\n  object outputSchema;\n  required ToolExecuteCallback execute;\n  ToolAnnotations annotations;\n};",
         "type": "dictionary",
         "name": "ModelContextTool",
         "inheritance": null,
@@ -351,6 +351,22 @@
             "default": null,
             "required": false,
             "href": "https://webmachinelearning.github.io/webmcp/#dom-modelcontexttool-inputschema"
+          },
+          {
+            "type": "field",
+            "name": "outputSchema",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-modelcontexttool-outputschema"
           },
           {
             "type": "field",
@@ -677,7 +693,7 @@
         "href": "https://webmachinelearning.github.io/webmcp/#dictdef-modelcontextexecutetooloptions"
       },
       "RegisteredTool": {
-        "fragment": "dictionary RegisteredTool {\n  required DOMString name;\n  // `title` can be exposed as a `DOMString` since it was taken in by a\n  // `USVString`, meaning all unmatched surrogate processing has already been\n  // done, and there's no need to do it again on tool exposure.\n  DOMString title;\n  required DOMString description;\n  object inputSchema;\n  required Window window;\n  required USVString origin;\n  ToolAnnotations annotations;\n};",
+        "fragment": "dictionary RegisteredTool {\n  required DOMString name;\n  // `title` can be exposed as a `DOMString` since it was taken in by a\n  // `USVString`, meaning all unmatched surrogate processing has already been\n  // done, and there's no need to do it again on tool exposure.\n  DOMString title;\n  required DOMString description;\n  object inputSchema;\n  object outputSchema;\n  required Window window;\n  required USVString origin;\n  ToolAnnotations annotations;\n};",
         "type": "dictionary",
         "name": "RegisteredTool",
         "inheritance": null,
@@ -745,6 +761,22 @@
             "default": null,
             "required": false,
             "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-inputschema"
+          },
+          {
+            "type": "field",
+            "name": "outputSchema",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "object"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-outputschema"
           },
           {
             "type": "field",

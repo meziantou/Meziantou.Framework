@@ -49,6 +49,7 @@ internal sealed partial class DrawingSession
     private bool _patternIsAliased;
     private CompositingSpace _patternSpace;
     private double _patternTolerance;
+    private bool _patternMasksText;
     private IccPipeline? _patternPipeline;
 
     /// <summary>Draws the tile of a pattern, unless it is the one that was drawn last, and gets the transformation that places its image on the canvas.</summary>
@@ -115,7 +116,7 @@ internal sealed partial class DrawingSession
             image = null;
         }
 
-        if (image is null || image.Width != width || image.Height != height || _patternWindow != window || !ReferenceEquals(_patternBrush, brush) || _patternIsAliased != _isAliased || _patternSpace != _compositingSpace || _patternTolerance != _curveTolerance || !ReferenceEquals(_patternPipeline, _paintPipeline))
+        if (image is null || image.Width != width || image.Height != height || _patternWindow != window || !ReferenceEquals(_patternBrush, brush) || _patternIsAliased != _isAliased || _patternSpace != _compositingSpace || _patternTolerance != _curveTolerance || _patternMasksText != (_textGlyphMasks is not null) || !ReferenceEquals(_patternPipeline, _paintPipeline))
         {
             if (_patternDepth >= MaxPatternDepth)
                 throw new InvalidOperationException("A pattern brush is drawn inside too many pattern brushes: a pattern must not paint itself.");
@@ -147,6 +148,7 @@ internal sealed partial class DrawingSession
             _patternIsAliased = _isAliased;
             _patternSpace = _compositingSpace;
             _patternTolerance = _curveTolerance;
+            _patternMasksText = _textGlyphMasks is not null;
             _patternPipeline = _paintPipeline;
         }
 
@@ -251,6 +253,7 @@ internal sealed partial class DrawingSession
         session._imageCurves = _imageCurves;
         session._paintPipeline = _paintPipeline;
         session._curveTolerance = _curveTolerance;
+        session._textGlyphMasks = _textGlyphMasks;
         session.RestoreCompositingSpace(_compositingSpace);
         if (_isAliased)
         {

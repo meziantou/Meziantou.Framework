@@ -204,8 +204,10 @@ public abstract partial class Image : IDisposable
             ? RowBands.GetWorkerCount(_size, _configuration.MaxDegreeOfParallelism)
             : 1;
         PrepareConversion(plan, GetAllFrames(), workers);
+        plan.MarkSourceValidated();
 
-        var result = new Image<TPixel>(_configuration, _size, scope: null, LayoutOptions);
+        // Every row of the first frame is written before the image is returned: it is not zeroed
+        var result = new Image<TPixel>(_configuration, _size, scope: null, LayoutOptions, clearPixels: false);
         try
         {
             ConvertFrame(_frames[0], result.FrameAt(0), plan, workers);
@@ -236,6 +238,7 @@ public abstract partial class Image : IDisposable
     /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="PixelConversionOptions.Default"/>.</param>
     /// <returns>A new image owned by the caller.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new image is returned to the caller, which owns it.")]
     internal Image CloneAs(PixelFormat format, PixelConversionOptions? options) => format switch
     {
         PixelFormat.Rgba32 => CloneAs<Rgba32>(options),
@@ -256,6 +259,10 @@ public abstract partial class Image : IDisposable
         PixelFormat.Rgba1010102 => CloneAs<Rgba1010102>(options),
         PixelFormat.Cmyk32 => CloneAs<Cmyk32>(options),
         PixelFormat.Cmyk64 => CloneAs<Cmyk64>(options),
+        PixelFormat.GrayFloat => CloneAs<GrayFloat>(options),
+        PixelFormat.GrayHalf => CloneAs<GrayHalf>(options),
+        PixelFormat.LaFloat => CloneAs<LaFloat>(options),
+        PixelFormat.LaHalf => CloneAs<LaHalf>(options),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 
@@ -495,12 +502,13 @@ public abstract partial class Image : IDisposable
     /// <summary>Creates a typed frame over a storage of this image.</summary>
     private protected abstract ImageFrame CreateFrame(PixelStorage storage, FrameMetadata metadata);
 
-    /// <summary>Allocates a zeroed frame storage of the canvas size, charged to the scope of the image.</summary>
-    private protected PixelStorage AllocateFrameStorage()
-        => Owner.Allocate(_size.Width, _size.Height, PixelFormats.GetBytesPerPixel(PixelFormat), LayoutOptions);
+    /// <summary>Allocates a frame storage of the canvas size, charged to the scope of the image.</summary>
+    /// <param name="clear"><see langword="false"/> when the caller writes every row before anything reads them (see <see cref="PixelStorage.Create"/>).</param>
+    private protected PixelStorage AllocateFrameStorage(bool clear = true)
+        => Owner.Allocate(PixelStorageLayout.Create(_size.Width, _size.Height, PixelFormats.GetBytesPerPixel(PixelFormat), LayoutOptions), AllocationKind.ImagePixels, reservation: null, clear);
 
-    /// <summary>Attaches a zeroed frame at the end without structural checks (construction, clones, decoders).</summary>
-    private protected ImageFrame AppendFrameCore(FrameMetadata metadata) => AppendFrameCore(AllocateFrameStorage(), metadata);
+    /// <summary>Attaches a frame at the end without structural checks (construction, clones, decoders), zeroed unless <paramref name="clear"/> is <see langword="false"/>.</summary>
+    private protected ImageFrame AppendFrameCore(FrameMetadata metadata, bool clear = true) => AppendFrameCore(AllocateFrameStorage(clear), metadata);
 
     /// <summary>Attaches a frame over a storage of this image at the end without structural checks (wrapped memory).</summary>
     private protected ImageFrame AppendFrameCore(PixelStorage storage, FrameMetadata metadata)

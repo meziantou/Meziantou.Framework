@@ -17,10 +17,16 @@ internal static class PngZlib
     /// <param name="level">The compression level.</param>
     /// <param name="leaveOpen"><see langword="true"/> to leave <paramref name="stream"/> open when the zlib stream is disposed.</param>
     /// <returns>The zlib stream.</returns>
-    public static ZLibStream Create(Stream stream, CompressionLevel level, bool leaveOpen)
+    public static PngZlibStream Create(Stream stream, CompressionLevel level, bool leaveOpen)
     {
-        return level is CompressionLevel.Fastest
-            ? new ZLibStream(stream, new ZLibCompressionOptions { CompressionLevel = FastestLevel }, leaveOpen)
-            : new ZLibStream(stream, level, leaveOpen);
+        var zlibLevel = level switch
+        {
+            CompressionLevel.NoCompression => 0,
+            CompressionLevel.Fastest => FastestLevel,
+            CompressionLevel.SmallestSize => 9,
+            _ => 6, // Optimal: the default level of zlib
+        };
+
+        return new PngZlibStream(stream, zlibLevel, leaveOpen);
     }
 }

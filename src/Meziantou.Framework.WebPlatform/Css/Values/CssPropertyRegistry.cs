@@ -494,6 +494,11 @@ internal static partial class CssPropertyRegistry
         // https://svgwg.org/svg2-draft/painting.html#SpecifyingPaint
         ["<paint>"] = "none | <color> | <url> [ none | <color> ]? | context-fill | context-stroke",
 
+        // https://drafts.csswg.org/css-text-4/#typedef-spacing-trim: the editor's draft splits the keywords per position and
+        // drops normal, the initial value of text-spacing-trim; the browsers implement the keywords of the previous draft
+        // (WPT css/css-text/parsing/text-spacing-trim-valid.html)
+        ["<spacing-trim>"] = "space-all | normal | space-first | trim-start | trim-both | trim-all",
+
         // https://drafts.csswg.org/motion-1/#typedef-offset-path: <ray()> | <url> | <basic-shape>, but the browsers reject the
         // fill rule of path(), which does not apply to a motion path (WPT css/motion/parsing/offset-path-parsing-invalid.html)
         ["<offset-path>"] = "<ray()> | <url> | <basic-shape-rect> | <circle()> | <ellipse()> | <polygon()> | path( <string> ) | <shape()>",

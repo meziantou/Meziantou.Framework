@@ -20,6 +20,8 @@ public sealed class FormatDetectionTests
     [InlineData(new byte[] { 0x52, 0x49, 0x46, 0x46, 0x10, 0x00, 0x00, 0x00, 0x41, 0x43, 0x4F, 0x4E }, ImageFormat.Ani)] // "RIFF" size "ACON"
     [InlineData(new byte[] { 0x52, 0x49, 0x46, 0x46, 0x10, 0x00, 0x00, 0x00, 0x41, 0x43, 0x4F }, ImageFormat.Unknown)] // 11 bytes
     [InlineData(new byte[] { 0x52, 0x49, 0x46, 0x58, 0x10, 0x00, 0x00, 0x00, 0x41, 0x43, 0x4F, 0x4E }, ImageFormat.Unknown)] // "RIFX" (big-endian RIFF)
+    [InlineData(new byte[] { 0x44, 0x44, 0x53, 0x20, 0x7C, 0x00, 0x00, 0x00 }, ImageFormat.Dds)] // "DDS " and the header size
+    [InlineData(new byte[] { 0x44, 0x44, 0x53 }, ImageFormat.Unknown)] // 3 bytes
     [InlineData(new byte[] { 0x71, 0x6F, 0x69, 0x66, 0x00, 0x00, 0x00, 0x01 }, ImageFormat.Qoi)] // "qoif" and a width
     [InlineData(new byte[] { 0x71, 0x6F, 0x69, 0x66, 0x00, 0x00, 0x00 }, ImageFormat.Unknown)] // 7 bytes
     [InlineData(new byte[] { 0x42, 0x4D, 0x7A, 0x00, 0x00, 0x00, 0x00, 0x00 }, ImageFormat.Bmp)] // "BM" and a file size
@@ -194,6 +196,8 @@ public sealed class FormatDetectionTests
     [InlineData(ImageFormat.Jpeg2000, "JPEG 2000", "image/jp2", ".jp2")]
     [InlineData(ImageFormat.OpenExr, "OpenEXR", "image/x-exr", ".exr")]
     [InlineData(ImageFormat.Radiance, "Radiance HDR", "image/vnd.radiance", ".hdr")]
+    [InlineData(ImageFormat.Psd, "PSD", "image/vnd.adobe.photoshop", ".psd")]
+    [InlineData(ImageFormat.Dds, "DDS", "image/vnd-ms.dds", ".dds")]
     public void FormatsDescribeTheirNameMimeTypeAndExtension(ImageFormat format, string name, string mimeType, string extension)
     {
         // The registered media types (IANA) where there is one, otherwise those of the freedesktop.org shared MIME

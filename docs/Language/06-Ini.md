@@ -241,7 +241,9 @@ else, so an edit cannot create a new section or cut a value short. [SyntaxFacts.
 [IsValidValue](cref:Meziantou.Framework.Language.Ini.SyntaxFacts.IsValidValue) tell without throwing.
 
 However you edit a document, with these methods, [ReplaceNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNode), [InsertNodesAfter](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.InsertNodesAfter) or a rewriter, its entries stay on
-lines of their own: an entry that another one follows gets a line break if it has none.
+lines of their own: an entry that another one follows gets a line break if it has none. In the git dialect, a value
+that ends the text with `\`, or with `\` and a lone `\r` that the added line feed would turn into `\r\n`, would continue
+on the entry that follows: a blank line goes after it to end it.
 
 ## Diagnostics
 

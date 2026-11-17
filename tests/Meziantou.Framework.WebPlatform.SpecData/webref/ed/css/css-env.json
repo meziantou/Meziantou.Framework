@@ -102,6 +102,18 @@
           "href": "https://drafts.csswg.org/css-env-1/#valdef-env-preferred-text-scale",
           "type": "value",
           "value": "preferred-text-scale"
+        },
+        {
+          "name": "color",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-color",
+          "type": "value",
+          "value": "color"
+        },
+        {
+          "name": "accent-color",
+          "href": "https://drafts.csswg.org/css-env-1/#valdef-env-accent-color",
+          "type": "value",
+          "value": "accent-color"
         }
       ]
     },

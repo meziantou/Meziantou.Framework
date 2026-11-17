@@ -36,6 +36,10 @@ with the YAML 1.2 rules; other versions throw a [SemanticErrorException](cref:Me
 directives, block and flow collections, the five scalar styles (plain, single-quoted, double-quoted, literal and
 folded), anchors, aliases, merge keys, tags and comments are supported.
 
+The parser, the emitter and the loader are tested against the [YAML test suite](https://github.com/yaml/yaml-test-suite):
+the parser produces the expected events or rejects the invalid documents, the documents written by the emitter read
+back as the same data, and the documents load as the expected JSON values.
+
 ## Choose an API
 
 The library has four layers. Use the highest one that does what you need:

@@ -1052,7 +1052,15 @@ public sealed class TiffCodecTests
     {
         var (_, model, bits, planes, file) = FloatingPointReferenceFileCases.Single(item => item.Name == name);
         var data = Convert.FromHexString(file);
-        var format = bits == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+        var format = (planes.Length, bits == 16) switch
+        {
+            (1, true) => PixelFormat.GrayHalf,
+            (1, false) => PixelFormat.GrayFloat,
+            (2, true) => PixelFormat.LaHalf,
+            (2, false) => PixelFormat.LaFloat,
+            (_, true) => PixelFormat.RgbaHalf,
+            _ => PixelFormat.RgbaFloat,
+        };
 
         // The layout is known without decoding a sample
         var info = Image.Identify(data);
@@ -1167,7 +1175,16 @@ public sealed class TiffCodecTests
         }).Build();
 
         using var image = Image.Load(data);
-        Assert.Equal(bits == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat, image.PixelFormat);
+        var expectedFormat = (samplesPerPixel, bits == 16) switch
+        {
+            (1, true) => PixelFormat.GrayHalf,
+            (1, false) => PixelFormat.GrayFloat,
+            (2, true) => PixelFormat.LaHalf,
+            (2, false) => PixelFormat.LaFloat,
+            (_, true) => PixelFormat.RgbaHalf,
+            _ => PixelFormat.RgbaFloat,
+        };
+        Assert.Equal(expectedFormat, image.PixelFormat);
         Assert.Equal(expected, GetComponentBits(image));
     }
 
@@ -4245,7 +4262,7 @@ public sealed class TiffCodecTests
 
             for (var c = 0; c < 4; c++)
             {
-                result[(i * 4) + c] = format == PixelFormat.RgbaHalf ? BitConverter.HalfToUInt16Bits((Half)pixel[c]) : BitConverter.SingleToUInt32Bits(pixel[c]);
+                result[(i * 4) + c] = PixelFormats.GetBitsPerComponent(format) == 16 ? BitConverter.HalfToUInt16Bits((Half)pixel[c]) : BitConverter.SingleToUInt32Bits(pixel[c]);
             }
         }
 
@@ -4253,12 +4270,27 @@ public sealed class TiffCodecTests
     }
 
     /// <summary>Gets the bits of the components of an <see cref="RgbaHalf"/> or <see cref="RgbaFloat"/> image, so that signed zeros and not-a-number values are compared exactly.</summary>
+    /// <summary>Gets the bits of the components of a floating-point image, four per pixel: a gray level is repeated in the three colors, and a missing alpha is 1.</summary>
     private static uint[] GetComponentBits(Image image)
     {
         var bytes = GetBytes(image);
-        return image.PixelFormat == PixelFormat.RgbaHalf
+        var isHalf = PixelFormats.GetBitsPerComponent(image.PixelFormat) == 16;
+        uint[] components = isHalf
             ? [.. unsafe(MemoryMarshal.Cast<byte, ushort>(bytes.AsSpan())).ToArray().Select(static value => (uint)value)]
             : unsafe(MemoryMarshal.Cast<byte, uint>(bytes.AsSpan())).ToArray();
+        var count = PixelFormats.GetComponentCount(image.PixelFormat);
+        if (count == 4)
+            return components;
+
+        var one = isHalf ? BitConverter.HalfToUInt16Bits(Half.One) : BitConverter.SingleToUInt32Bits(1f);
+        var result = new uint[components.Length / count * 4];
+        for (var i = 0; i < components.Length / count; i++)
+        {
+            var level = components[i * count];
+            (result[i * 4], result[(i * 4) + 1], result[(i * 4) + 2], result[(i * 4) + 3]) = (level, level, level, count == 2 ? components[(i * count) + 1] : one);
+        }
+
+        return result;
     }
 
     private static TPixel[] Decode<TPixel>(byte[] data, ImageDecodeOptions? options = null)

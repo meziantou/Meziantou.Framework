@@ -49,7 +49,10 @@ internal sealed class Blender
     }
 
     /// <summary>Returns the node from the previous tree that belongs at <paramref name="newPosition"/>, if any.</summary>
-    public GreenNode? TryTakeNode(int newPosition, NodeContext context)
+    /// <param name="newPosition">Where the parser is in the new text.</param>
+    /// <param name="depth">How many objects and arrays the parser is inside.</param>
+    /// <param name="context">What the parser is asking for.</param>
+    public GreenNode? TryTakeNode(int newPosition, int depth, NodeContext context)
     {
         var oldPosition = MapToOld(newPosition);
         if (oldPosition < 0)
@@ -72,7 +75,7 @@ internal sealed class Blender
         // descends only when it is turned down.
         while (!_exhausted && _current.FullSpan.Start == oldPosition)
         {
-            if (_current.AsNode(out var node) && CanReuse(node, oldPosition, context))
+            if (_current.AsNode(out var node) && CanReuse(node, oldPosition, depth, context))
             {
                 Debug.Assert(
                     string.CompareOrdinal(_newTextValue, newPosition, _oldTextValue, oldPosition, node.Green.FullWidth) == 0,
@@ -101,7 +104,7 @@ internal sealed class Blender
         return newPosition >= newChangeEnd ? newPosition - _change.Delta : -1;
     }
 
-    private bool CanReuse(SyntaxNode node, int oldStart, NodeContext context)
+    private bool CanReuse(SyntaxNode node, int oldStart, int depth, NodeContext context)
     {
         var green = node.Green;
         if (green.FullWidth == 0 || green.IsMissing)
@@ -114,11 +117,43 @@ internal sealed class Blender
         if (!IsAllowedInContext((SyntaxKind)green.RawKind, context))
             return false;
 
+        if (!FitsUnderMaxDepth(node, green, depth))
+            return false;
+
         // A character either side, because an insertion touching an edge can join two lexemes into one: 12 and 3
         // become 123, / and / become a comment.
         var probe = TextSpan.FromBounds(Math.Max(0, oldStart - 1), oldStart + green.FullWidth + 1);
 
         return !probe.IntersectsWith(_untouchable);
+    }
+
+    /// <summary>Determines whether the node, placed at <paramref name="depth"/>, still nests no deeper than the parser allows.</summary>
+    /// <remarks>
+    /// The parser keeps what nests past <see cref="LanguageParser.MaxDepth"/> as skipped text, so a node parsed whole
+    /// near the limit would be cut short if an edit moved it deeper, by opening a bracket before it for instance. A node
+    /// parsed whole at some depth parses whole at any depth that is not greater. Deeper, it still does when the limit is
+    /// further away than the node is wide, as each level of nesting takes at least one character.
+    /// </remarks>
+    private static bool FitsUnderMaxDepth(SyntaxNode node, GreenNode green, int depth)
+    {
+        if (depth + green.FullWidth <= LanguageParser.MaxDepth)
+            return true;
+
+        return depth <= GetDepth(node);
+
+        static int GetDepth(SyntaxNode node)
+        {
+            var depth = 0;
+            for (var parent = node.Parent; parent is not null; parent = parent.Parent)
+            {
+                if ((SyntaxKind)parent.RawKind is SyntaxKind.JsonObject or SyntaxKind.JsonArray)
+                {
+                    depth++;
+                }
+            }
+
+            return depth;
+        }
     }
 
     private static bool IsAllowedInContext(SyntaxKind kind, NodeContext context) => context switch

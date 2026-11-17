@@ -1,6 +1,6 @@
 ---
 title: Security
-description: "Render the Markdown of your users safely: disable raw HTML, keep the attribute filter, filter the tags of GitHub and sanitize the HTML."
+description: "Render the Markdown of your users safely: disable raw HTML, keep the attribute filter, filter the tags of GitHub, limit the nesting and sanitize the HTML."
 ---
 
 Markdown is often written by users: comments, descriptions, messages. CommonMark lets the author write raw HTML and any
@@ -28,6 +28,26 @@ Assert.Equal("<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>\n<p>Some &lt;b&gt;bol
 [TagFilter](cref:Meziantou.Framework.Markdown.MarkdownExtensions.TagFilter), an extension of GitHub Flavored
 Markdown, escapes the tags that change how the rest of the page is read: `title`, `textarea`, `style`, `xmp`, `iframe`,
 `noembed`, `noframes`, `script` and `plaintext`. It keeps the other tags and their attributes: it is not a sanitizer.
+
+## Limit the nesting
+
+A few characters can nest many blocks or inlines: each `>` of a line starts a block quote, and each `*` can open an
+emphasis. A tree that deep would exhaust the stack of the code that walks it, the renderers and your visitors.
+[MaximumNestingDepth](cref:Meziantou.Framework.Markdown.MarkdownParseOptions.MaximumNestingDepth), 128 by default, is
+the number of blocks that a block can be nested in, and of inlines that an inline can be nested in: a deeper block is
+text of a paragraph, and a deeper inline is text, so parsing never fails:
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownParseOptions_MaximumNestingDepth;format=md-fenced-code-block;dedent=true -->
+```csharp
+var markdown = new string('>', 10_000) + " text";
+
+// The block quotes nested in more than 2 block quotes are text: the tree is 3 block quotes deep
+var options = new MarkdownParseOptions { MaximumNestingDepth = 2 };
+var tree = MarkdownSyntaxTree.ParseText(markdown, options);
+Assert.HasCount(3, tree.GetRoot().DescendantNodes().OfType<MarkdownBlockQuoteSyntax>());
+Assert.Equal(markdown, tree.GetRoot().ToFullString());
+```
+<!-- endref -->
 
 ## Sanitize the HTML
 

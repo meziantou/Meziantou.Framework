@@ -30,6 +30,26 @@ public sealed record MarkdownParseOptions
     /// <summary>Gets where the links of <see cref="MarkdownExtensions.JiraLinks"/> go.</summary>
     public MarkdownJiraLinkOptions JiraLinks { get; init; } = MarkdownJiraLinkOptions.Default;
 
+    /// <summary>
+    /// Gets the number of blocks that a block can be nested in, and of inlines that an inline can be nested in: a block nested
+    /// in more blocks is text of a paragraph of its container, and an inline nested in more inlines is text of its container.
+    /// The default is 128.
+    /// </summary>
+    /// <remarks>
+    /// The limit keeps the tree shallow enough to be built, walked and rendered without exhausting the stack, whatever the
+    /// text, such as thousands of <c>&gt;</c> or of <c>*</c>.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    public int MaximumNestingDepth
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            field = value;
+        }
+    } = 128;
+
     /// <summary>Gets a value indicating whether HTML is text: no HTML block or inline HTML is recognized, and the renderer escapes it.</summary>
     /// <remarks>Autolinks, such as <c>&lt;https://example.com&gt;</c>, are still links.</remarks>
     public bool DisableHtml { get; init; }

@@ -13,27 +13,42 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     private readonly SourceText _text;
     private readonly MarkdownDocumentSyntax _root;
 
-    private MarkdownSyntaxTree(SourceText text, MarkdownParseOptions options, MarkdownDocumentSyntax root, string? path, MarkdownSyntaxTree? container = null)
+    private MarkdownSyntaxTree(SourceText text, MarkdownParseOptions options, MarkdownDocumentSyntax root, string? path, MarkdownSyntaxTree? container = null, CellContext? cell = null)
     {
         _text = text;
         _root = root;
         Options = options;
         FilePath = path;
         Container = container;
+        _cell = cell;
         _root.AttachToTree(this);
     }
 
     // The tree of the grid table of a cell, whose definitions the cell can use
     internal MarkdownSyntaxTree? Container { get; }
 
+    // For the content of a cell, how it was parsed, which the trees made from it keep
+    private readonly CellContext? _cell;
+
     // The content of a cell of a grid table of the tree. Markdig does not close the blocks of a cell that the last line of the table
     // spans: a grid table that ends it is kept, even when it has no row.
     internal static MarkdownSyntaxTree ParseCell(string text, MarkdownSyntaxTree? container, bool isClosed)
     {
         var options = container?.Options ?? MarkdownParseOptions.Default;
-        var labels = container?.GetRoot().LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)) ?? [];
-        var green = MarkdownParser.Parse(text, options, new CellContext(labels, KeepsGridTable: !isClosed));
-        return new MarkdownSyntaxTree(SourceText.From(text), options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), container?.FilePath, container);
+        string[] labels = [.. container?.GetRoot().LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)) ?? []];
+        var cell = new CellContext(labels, KeepsGridTable: !isClosed);
+        var green = MarkdownParser.Parse(text, options, cell);
+        return new MarkdownSyntaxTree(SourceText.From(text), options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), container?.FilePath, container, cell);
+    }
+
+    // Parses a new text as this tree was: the content of a cell keeps the definitions of its table
+    internal MarkdownSyntaxTree Reparse(SourceText text)
+    {
+        if (_cell is null)
+            return ParseText(text, Options, FilePath);
+
+        var green = MarkdownParser.Parse(text.ToString(), Options, _cell);
+        return new MarkdownSyntaxTree(text, Options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), FilePath, Container, _cell);
     }
 
     public override string? FilePath { get; }
@@ -185,7 +200,7 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
 
     protected override SyntaxNode GetRootCore() => _root;
 
-    private MarkdownSyntaxTree WithText(string text) => ParseText(text, Options, FilePath);
+    private MarkdownSyntaxTree WithText(string text) => Reparse(SourceText.From(text));
 
     private void EnsureBlockOfThisTree(MarkdownBlockSyntax block)
     {
@@ -272,14 +287,14 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     // A blank line gets the markers without the spaces after them, so that it has no trailing whitespace
     private static void AppendPrefixed(StringBuilder builder, string prefix, string line) => builder.Append(line.Length == 0 ? prefix.TrimEnd() : prefix).Append(line);
 
-    protected override SyntaxTree WithChangedTextCore(SourceText newText) => ParseText(newText, Options, FilePath);
+    protected override SyntaxTree WithChangedTextCore(SourceText newText) => Reparse(newText);
 
     // A document that belongs to another tree gets a new red node, so that its nodes know the tree they are in; a root that
     // is not a document, such as a paragraph, is parsed as one
     protected override SyntaxTree WithRootCore(SyntaxNode root) => root switch
     {
-        MarkdownDocumentSyntax { SyntaxTree: null } document => new MarkdownSyntaxTree(SourceText.From(root.ToFullString()), Options, document, FilePath),
-        MarkdownDocumentSyntax document => new MarkdownSyntaxTree(SourceText.From(root.ToFullString()), Options, (MarkdownDocumentSyntax)document.Green.CreateRed(parent: null, position: 0), FilePath),
-        _ => ParseText(root.ToFullString(), Options, FilePath),
+        MarkdownDocumentSyntax { SyntaxTree: null } document => new MarkdownSyntaxTree(SourceText.From(root.ToFullString()), Options, document, FilePath, Container, _cell),
+        MarkdownDocumentSyntax document => new MarkdownSyntaxTree(SourceText.From(root.ToFullString()), Options, (MarkdownDocumentSyntax)document.Green.CreateRed(parent: null, position: 0), FilePath, Container, _cell),
+        _ => Reparse(SourceText.From(root.ToFullString())),
     };
 }

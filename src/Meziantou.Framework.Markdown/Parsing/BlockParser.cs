@@ -25,6 +25,7 @@ internal sealed class BlockParser
     private readonly MarkdownExtensions _extensions;
     private readonly bool _disableHtml;
     private readonly bool _allowNestedAlerts;
+    private readonly int _maximumNestingDepth;
 
     // The alert being converted, which a quote in it cannot be, and the paragraph that starts with its kind
     private bool _inAlert;
@@ -85,6 +86,7 @@ internal sealed class BlockParser
         _extensions = options.Extensions;
         _disableHtml = options.DisableHtml;
         _allowNestedAlerts = options.AllowNestedAlerts;
+        _maximumNestingDepth = options.MaximumNestingDepth;
 
         // A block has at most every line of the text
         _lines = ArrayPool<Line>.Shared.Rent(text.AsSpan().Count('\n') + 1);
@@ -280,6 +282,14 @@ internal sealed class BlockParser
         while (!matchedLeaf)
         {
             FindNextNonspace();
+
+            // A block nested in more blocks than the limit is text, so that the tree stays shallow enough to walk
+            if (container.Depth > _maximumNestingDepth)
+            {
+                AdvanceNextNonspace();
+                break;
+            }
+
             if (!_indented && !IsMaybeSpecial(Peek(_nextNonspace)) && !IsMaybeExtension(container, Peek(_nextNonspace)) && _syntaxExtensions?.GetFencedBlockExtensions(Peek(_nextNonspace)) is null)
             {
                 AdvanceNextNonspace();
@@ -2607,6 +2617,9 @@ internal sealed class BlockParser
         public SyntaxKind Kind { get; set; } = kind;
 
         public Block? Parent { get; } = parent;
+
+        // The number of ancestors: the document is at depth 0
+        public int Depth { get; } = parent is null ? 0 : parent.Depth + 1;
 
         private static readonly List<Block> NoChildren = [];
 

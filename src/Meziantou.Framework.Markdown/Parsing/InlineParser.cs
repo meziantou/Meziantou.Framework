@@ -104,9 +104,14 @@ internal sealed class InlineParser
     private const int MaximumExtensionDepth = 32;
     private int _extensionDepth;
 
+    // The inlines nested deeper than this are text: see FlattenDeepInlines
+    private readonly int _maximumNestingDepth;
+    private readonly List<InlineNode> _flattenedTokens = [];
+
     public InlineParser(Dictionary<string, bool> references, MarkdownParseOptions options)
     {
         var extensions = options.Extensions;
+        _maximumNestingDepth = options.MaximumNestingDepth;
         _disableHtml = options.DisableHtml;
         _references = references;
         _strikethrough = extensions.HasFlag(MarkdownExtensions.Strikethrough);
@@ -292,6 +297,7 @@ internal sealed class InlineParser
     private void Complete(TreeBuffer output)
     {
         ProcessEmphasis(stackBottom: null);
+        FlattenDeepInlines();
 
         // As in Markdig: the dashes after the emphasis, then the emoji that end with a delimiter, then the quotes are paired
         if (_smartyPants)
@@ -3813,6 +3819,105 @@ internal sealed class InlineParser
         {
             delimiter.Next.Previous = delimiter.Previous;
         }
+    }
+
+    // Replaces the inlines nested in more inlines than the limit by their tokens, so that the passes that walk the inlines recursively,
+    // and the tree, stay shallow whatever the text, such as thousands of nested emphasis. The tokens of the constructs that are
+    // removed are text; the tokens that can be anywhere in an inline, such as entities, keep their kind.
+    private void FlattenDeepInlines()
+    {
+        // An inline nested in more inlines than the limit has more nodes above it
+        if (_usedNodes <= _maximumNestingDepth + 1)
+        {
+            return;
+        }
+
+        // The depth of the node: 1 for the children of the block
+        var depth = 1;
+        var node = _root.FirstChild;
+        while (node is not null)
+        {
+            if (!node.IsToken && node.FirstChild is not null)
+            {
+                // The inlines that the node is in
+                if (depth - 1 <= _maximumNestingDepth)
+                {
+                    depth++;
+                    node = node.FirstChild;
+                    continue;
+                }
+
+                node = Flatten(node);
+            }
+
+            while (node.Next is null)
+            {
+                node = node.Parent!;
+                depth--;
+                if (node == _root)
+                {
+                    return;
+                }
+            }
+
+            node = node.Next;
+        }
+    }
+
+    // Replaces a node by its tokens, and returns the last one
+    private InlineNode Flatten(InlineNode container)
+    {
+        var tokens = _flattenedTokens;
+        tokens.Clear();
+        var node = container.FirstChild!;
+        while (true)
+        {
+            if (node.IsToken)
+            {
+                tokens.Add(node);
+            }
+            else if (node.FirstChild is not null)
+            {
+                node = node.FirstChild;
+                continue;
+            }
+
+            while (node.Next is null && node != container)
+            {
+                node = node.Parent!;
+            }
+
+            if (node == container)
+            {
+                break;
+            }
+
+            node = node.Next!;
+        }
+
+        // A construct always has tokens, such as its delimiters: an empty token keeps the place of one that would have none
+        if (tokens.Count == 0)
+        {
+            tokens.Add(NewNode(SyntaxKind.TextToken, container.Start, container.Start));
+        }
+
+        var anchor = container;
+        foreach (var token in tokens)
+        {
+            token.Unlink();
+            if (token.Kind is not (SyntaxKind.TextToken or SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken or SyntaxKind.EscapedCharacterToken or SyntaxKind.EntityToken or SyntaxKind.EmojiToken or SyntaxKind.SmartyPantToken))
+            {
+                token.ChangeKind(SyntaxKind.TextToken);
+                token.Value = 0;
+            }
+
+            token.IsDelimiterRun = false;
+            anchor.InsertAfter(token);
+            anchor = token;
+        }
+
+        container.Unlink();
+        return anchor;
     }
 
     private void AddBuildElements(InlineNode node, TreeBuffer result)

@@ -98,7 +98,7 @@ public static class MarkdownFormatter
             return tree;
         }
 
-        var formatted = MarkdownSyntaxTree.ParseText(text, tree.Options, tree.FilePath);
+        var formatted = tree.Reparse(SourceText.From(text));
         return RendersAsTheSameHtml(tree, formatted) ? formatted : tree;
     }
 
@@ -116,7 +116,7 @@ public static class MarkdownFormatter
             return text;
         }
 
-        return RendersAsTheSameHtml(tree, MarkdownSyntaxTree.ParseText(text, tree.Options, tree.FilePath)) ? text : original;
+        return RendersAsTheSameHtml(tree, tree.Reparse(SourceText.From(text))) ? text : original;
     }
 
     // The line endings of the code change with the line ending of the document

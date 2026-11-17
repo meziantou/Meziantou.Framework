@@ -276,6 +276,34 @@ public static class MarkdownFuzzTargets
         }
 
         CheckTypedApi(tree, text);
+        CheckNestingDepth(text, options);
+    }
+
+    // With a small limit, the deeper constructs are text: the tree still reproduces the text, and the blocks and the inlines
+    // are nested in at most as many blocks or inlines as the limit, and the blocks that a block adds at once, such as a list
+    // and its first item
+    private static void CheckNestingDepth(string text, MarkdownParseOptions options)
+    {
+        var limit = 1 + (text.Length % 3);
+        var tree = MarkdownSyntaxTree.ParseText(text, options with { MaximumNestingDepth = limit });
+        SyntaxTreeInvariants.Check(tree, text, "Markdown", diagnosticsOnNodes: true, diagnosticsInSourceOrder: true);
+        foreach (var node in tree.GetRoot().DescendantNodes())
+        {
+            switch (node)
+            {
+                case MarkdownBlockSyntax:
+                    var blocks = node.Ancestors().Count(ancestor => ancestor is MarkdownBlockSyntax);
+                    FuzzAssert.True(blocks <= limit + 3, $"The block at {node.Span} is nested in {blocks} blocks, more than the limit {limit}: {FuzzAssert.Format(text)}");
+                    break;
+
+                case MarkdownInlineSyntax:
+                    var inlines = node.Ancestors().TakeWhile(ancestor => ancestor is not MarkdownBlockSyntax).Count(ancestor => ancestor is MarkdownInlineSyntax);
+                    FuzzAssert.True(inlines <= limit, $"The inline at {node.Span} is nested in {inlines} inlines, more than the limit {limit}: {FuzzAssert.Format(text)}");
+                    break;
+            }
+        }
+
+        _ = MarkdownHtmlRenderer.ToHtml(tree);
     }
 
     // The typed nodes read their tokens without throwing, the walker visits every node, a rewrite that changes nothing keeps

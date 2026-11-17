@@ -1237,6 +1237,28 @@ public sealed class MarkdownSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void GridTableCellEditsKeepTheDefinitionsOfTheTable()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables };
+        var tree = MarkdownSyntaxTree.ParseText("+---------+\n| [x][r]  |\n+---------+\n\n[r]: /url\n", options);
+        var content = Assert.IsType<MarkdownGridTableSyntax>(tree.GetRoot().Blocks[0]).Rows[0].Cells[0].Content;
+        Assert.Equal("<p><a href=\"/url\">x</a></p>\n", MarkdownHtmlRenderer.ToHtml(content));
+
+        var inserted = content.InsertBlocksAfter(content.GetRoot().Blocks.Single(), "\nb");
+        Assert.Equal("<p><a href=\"/url\">x</a></p>\n<p>b</p>\n", MarkdownHtmlRenderer.ToHtml(inserted));
+
+        var changed = (MarkdownSyntaxTree)content.WithChangedText(SourceText.From("[y][r]"));
+        Assert.Equal("<p><a href=\"/url\">y</a></p>\n", MarkdownHtmlRenderer.ToHtml(changed));
+
+        var paragraph = MarkdownSyntaxTree.ParseText("[z][r]", options).GetRoot().Blocks.Single();
+        Assert.Equal("<p><a href=\"/url\">z</a></p>\n", MarkdownHtmlRenderer.ToHtml((MarkdownSyntaxTree)content.WithRoot(paragraph)));
+        Assert.Equal("<p><a href=\"/url\">x</a></p>\n", MarkdownHtmlRenderer.ToHtml((MarkdownSyntaxTree)content.WithRoot(content.GetRoot())));
+
+        var formatted = MarkdownFormatter.Format(content);
+        Assert.Equal("<p><a href=\"/url\">x</a></p>\n", MarkdownHtmlRenderer.ToHtml(formatted));
+    }
+
     [Theory]
     [InlineData("+-------+-------+\n| Name  | Price |\n+=======+=======+\n| Apple | 1     |\n+-------+-------+\n", "<table>\n<col style=\"width:50%\" />\n<col style=\"width:50%\" />\n<thead>\n<tr>\n<th>Name</th>\n<th>Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Apple</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n")]
     [InlineData("+---+---+---+\n| AAAAA | B |\n+---+---+ B +\n| D | E | B |\n+ D +---+---+\n| D | CCCCC |\n+---+---+---+\n", "<table>\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<tbody>\n<tr>\n<td colspan=\"2\">AAAAA</td>\n<td rowspan=\"2\">B\nB\nB</td>\n</tr>\n<tr>\n<td rowspan=\"2\">D\nD\nD</td>\n<td>E</td>\n</tr>\n<tr>\n<td colspan=\"2\">CCCCC</td>\n</tr>\n</tbody>\n</table>\n")]
@@ -2094,6 +2116,64 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.Equal(text, tree.GetRoot().ToFullString());
         Assert.HasCount(33, tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>());
+    }
+
+    [Theory]
+    [InlineData(">>>> a", "<blockquote>\n<blockquote>\n<blockquote>\n<p>&gt; a</p>\n</blockquote>\n</blockquote>\n</blockquote>\n")]
+    [InlineData("- - - a", "<ul>\n<li>\n<ul>\n<li>- a</li>\n</ul>\n</li>\n</ul>\n")]
+    [InlineData("*a *b *c *d* c* b* a*", "<p><em>a <em>b <em>c *d* c</em> b</em> a</em></p>\n")]
+    [InlineData("![a ![b ![c ![d](u) c](u) b](u) a](u)", "<p><img src=\"u\" alt=\"a b c ![d](u) c b a\" /></p>\n")]
+    public void ConstructsNestedInMoreConstructsThanTheLimitAreText(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { MaximumNestingDepth = 2 });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
+    [InlineData(">", " a")]
+    [InlineData("- ", "a")]
+    [InlineData("> - ", "a")]
+    [InlineData("*a ", "b")]
+    [InlineData("~~a ", "b")]
+    [InlineData("![", "a")]
+    public void DeeplyNestedConstructsDoNotExhaustTheStack(string open, string content)
+    {
+        var close = open switch
+        {
+            "*a " => " a*",
+            "~~a " => " a~~",
+            "![" => "](u)",
+            _ => "",
+        };
+        var text = string.Concat(Enumerable.Repeat(open, 50_000)) + content + string.Concat(Enumerable.Repeat(close, 50_000));
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced | MarkdownExtensions.GitHubFlavored });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.NotEmpty(MarkdownHtmlRenderer.ToHtml(tree));
+        Assert.NotEmpty(MarkdownPlainTextRenderer.ToPlainText(tree));
+        Assert.NotEmpty(MarkdownFormatter.FormatText(tree, options: null));
+    }
+
+    [Fact]
+    public void MaximumNestingDepthReadsDeeperBlocksAsText()
+    {
+        #region MarkdownParseOptions_MaximumNestingDepth
+        var markdown = new string('>', 10_000) + " text";
+
+        // The block quotes nested in more than 2 block quotes are text: the tree is 3 block quotes deep
+        var options = new MarkdownParseOptions { MaximumNestingDepth = 2 };
+        var tree = MarkdownSyntaxTree.ParseText(markdown, options);
+        Assert.HasCount(3, tree.GetRoot().DescendantNodes().OfType<MarkdownBlockQuoteSyntax>());
+        Assert.Equal(markdown, tree.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void MaximumNestingDepthMustBePositive()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MarkdownParseOptions { MaximumNestingDepth = 0 });
     }
 
     [Fact]

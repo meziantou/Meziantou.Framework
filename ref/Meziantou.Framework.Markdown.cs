@@ -712,6 +712,7 @@ namespace Meziantou.Framework.Markdown
         public Meziantou.Framework.Markdown.MarkdownExtensions Extensions { get => throw null; init { } }
         public static Meziantou.Framework.Markdown.MarkdownParseOptions GitHubFlavored { get => throw null; }
         public Meziantou.Framework.Markdown.MarkdownJiraLinkOptions JiraLinks { get => throw null; init { } }
+        public int MaximumNestingDepth { get => throw null; init { } }
         public Meziantou.Framework.Markdown.MarkdownPipeTableOptions PipeTableOptions { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownSyntaxExtension> SyntaxExtensions { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Markdown.MarkdownParseOptions? other) => throw null;

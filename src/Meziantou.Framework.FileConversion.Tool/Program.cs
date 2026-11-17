@@ -236,7 +236,7 @@ internal static class Program
         {
             try
             {
-                TextDocumentConverter.CreatePipeline(result.GetValue(markdownExtensionsOption) ?? "", disableHtml: false);
+                TextDocumentConverter.CreateOptions(result.GetValue(markdownExtensionsOption) ?? "", disableHtml: false);
             }
             catch (ArgumentException ex)
             {

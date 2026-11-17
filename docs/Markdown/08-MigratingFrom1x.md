@@ -47,6 +47,7 @@ the HTML is written. Both are immutable records: create them once and reuse them
 | `UseGenericAttributes` | [GenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownExtensions.GenericAttributes); the attribute filter is [AttributeFilter](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.AttributeFilter) |
 | `UseSoftlineBreakAsHardlineBreak` | [HardLineBreaks](cref:Meziantou.Framework.Markdown.MarkdownExtensions.HardLineBreaks) |
 | `DisableHtml` | [DisableHtml](cref:Meziantou.Framework.Markdown.MarkdownParseOptions.DisableHtml) |
+| `MaximumNestingDepth` | [MaximumNestingDepth](cref:Meziantou.Framework.Markdown.MarkdownParseOptions.MaximumNestingDepth): a deeper block or inline is text, where 1.x threw an `ArgumentException` |
 | `UseReferralLinks` | [LinkRel](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.LinkRel) |
 | `UseNonAsciiNoEscape` | [EscapeNonAsciiUrlCharacters](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.EscapeNonAsciiUrlCharacters) set to `false` |
 | `UsePragmaLines` | [PragmaLines](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.PragmaLines) |

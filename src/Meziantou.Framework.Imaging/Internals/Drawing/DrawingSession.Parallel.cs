@@ -86,23 +86,53 @@ internal sealed partial class DrawingSession
     /// <returns><see langword="false"/> when the runs are to be composited on the calling thread: nothing was done.</returns>
     private bool TryPaintRowsInParallel(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, double alphaFactor)
     {
-        var rasterizer = _rasterizer!;
-        var workerCount = GetPaintWorkerCount(_image.Configuration.MaxDegreeOfParallelism, rasterizer.EstimatedPixels);
-        if (workerCount <= 1)
+        if (!TryGetParallelPaint(color, evaluator, mode, blend, opacity, alphaFactor, out var workerCount, out var needsCoverageRow, out var needsAlphaRow, out var recordsPieces))
             return false;
 
-        // The rows that come as pieces of boundary are not copied: the workers compute their coverages
-        var recordsPieces = rasterizer.CanRecordPieces && !TestDisablePieces;
-        if (!recordsPieces && IsWrittenFasterThanCopied(color, evaluator, mode, blend, opacity))
-            return false;
-
-        var needsCoverageRow = _clipDepth != 0 || opacity != CoverageRasterizer.FullCoverage;
-        var needsAlphaRow = evaluator is not null && alphaFactor != 1;
         if (!PreparePaintWorkers(workerCount, evaluator, needsCoverageRow, needsAlphaRow, recordsPieces))
             return false;
 
-        PaintRowsInParallel(new PaintParameters(color, mode, blend, opacity, alphaFactor, workerCount, rasterizer.IsFullyCovered, TestBatchObserver));
+        PaintRowsInParallel(new PaintParameters(color, mode, blend, opacity, alphaFactor, workerCount, _rasterizer!.IsFullyCovered, TestBatchObserver));
         return true;
+    }
+
+    /// <summary>
+    /// Rents the scratch of the workers that <see cref="TryPaintRowsInParallel"/> would use for the shape that was prepared,
+    /// without painting it: a call that draws several shapes (the parts of a text) prepares them all before its first
+    /// pixel write.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
+    private void ReservePaintWorkers(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, double alphaFactor)
+    {
+        if (!TryGetParallelPaint(color, evaluator, mode, blend, CoverageRasterizer.FullCoverage, alphaFactor, out var workerCount, out var needsCoverageRow, out var needsAlphaRow, out var recordsPieces))
+            return;
+
+        var paintWorkers = EnsurePaintWorkers(workerCount);
+        for (var i = 0; i < workerCount; i++)
+        {
+            (paintWorkers[i] ??= new PaintWorker()).EnsureScratch(_image.Owner.Scope, Width, needsCoverageRow, needsAlphaRow, recordsPieces);
+        }
+
+        if (recordsPieces)
+        {
+            _rasterizer!.ReservePieces();
+        }
+    }
+
+    /// <summary>Gets whether the shape that was prepared is composited by several workers, and what their scratch is.</summary>
+    private bool TryGetParallelPaint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, double alphaFactor, out int workerCount, out bool needsCoverageRow, out bool needsAlphaRow, out bool recordsPieces)
+    {
+        var rasterizer = _rasterizer!;
+        workerCount = GetPaintWorkerCount(_image.Configuration.MaxDegreeOfParallelism, rasterizer.EstimatedPixels);
+        needsCoverageRow = _clipDepth != 0 || opacity != CoverageRasterizer.FullCoverage;
+        needsAlphaRow = evaluator is not null && alphaFactor != 1;
+
+        // The rows that come as pieces of boundary are not copied: the workers compute their coverages
+        recordsPieces = rasterizer.CanRecordPieces && !TestDisablePieces;
+        if (workerCount <= 1)
+            return false;
+
+        return recordsPieces || !IsWrittenFasterThanCopied(color, evaluator, mode, blend, opacity);
     }
 
     /// <summary>
@@ -243,15 +273,7 @@ internal sealed partial class DrawingSession
     private bool PreparePaintWorkers(int workerCount, PaintEvaluator? evaluator, bool needsCoverageRow, bool needsAlphaRow, bool recordsPieces)
     {
         var scope = _image.Owner.Scope;
-        if (_paintWorkers is null || _paintWorkers.Length < workerCount)
-        {
-            var previous = _paintWorkers;
-            var workers = new PaintWorker[workerCount];
-            previous?.CopyTo(workers, 0);
-            _paintWorkers = workers;
-        }
-
-        var paintWorkers = _paintWorkers;
+        var paintWorkers = EnsurePaintWorkers(workerCount);
         try
         {
             for (var i = 0; i < workerCount; i++)
@@ -273,19 +295,19 @@ internal sealed partial class DrawingSession
                 }
             }
 
+            // A shape whose rows come as pieces is composited by the workers
+            if (recordsPieces)
+            {
+                _rasterizer!.RecordPieces();
+            }
+
             if (evaluator is not null)
             {
-                // The scratch that only saves time comes last: it never takes the room of the scratch a worker needs
+                // The scratch that only saves time comes last: it never takes the room of the scratch the call needs
                 for (var i = 0; i < workerCount; i++)
                 {
                     paintWorkers[i].Evaluator!.PrepareOptionalScratch();
                 }
-            }
-
-            // Last: a shape whose rows come as pieces is composited by the workers
-            if (recordsPieces)
-            {
-                _rasterizer!.RecordPieces();
             }
         }
         catch
@@ -295,6 +317,19 @@ internal sealed partial class DrawingSession
         }
 
         return true;
+    }
+
+    /// <summary>Gets the workers, with room for at least a number of them: the workers already created are kept.</summary>
+    private PaintWorker[] EnsurePaintWorkers(int workerCount)
+    {
+        if (_paintWorkers is null || _paintWorkers.Length < workerCount)
+        {
+            var workers = new PaintWorker[workerCount];
+            _paintWorkers?.CopyTo(workers, 0);
+            _paintWorkers = workers;
+        }
+
+        return _paintWorkers;
     }
 
     private void ReleasePaintEvaluators(int workerCount)

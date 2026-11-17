@@ -677,6 +677,44 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void AnAllocationFailureAtAnyRentalOfAParallelTextLeavesTheImageUnchanged()
+    {
+        // The small text of the first style is composited on the calling thread, before the large text of the second one,
+        // whose rows come as pieces of boundary to the workers: their scratch and the storage of the pieces are rented
+        // before the first style is painted
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var small = new TextStyle(font, 12) { Brush = new SolidBrush(new Rgba32(200, 0, 0)) };
+        var large = new TextStyle(font, 96) { Brush = new SolidBrush(new Rgba32(20, 30, 120)) };
+        var text = new RichTextBuilder().Append("ab ", small).Append(string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. ", 6)), large).Build();
+        var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 1000 });
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = 4 };
+        var completed = false;
+        for (var failing = 0; !completed; failing++)
+        {
+            Assert.True(failing < 128, "Too many rentals for one text");
+            var pool = new SlabPool();
+            using var image = new Image<Rgba32>(configuration, new Size(1000, 700), new AllocationScope(configuration.Limits, pool), layoutOptions: null);
+            var pixels = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            var live = image.Owner.Scope.LiveBytes;
+            var rentals = 0;
+            pool.RentFailureInjector = _ => rentals++ == failing ? new InjectedAllocationFailureException() : null;
+            try
+            {
+                image.Draw(canvas => canvas.FillText(new SolidBrush(new Rgba32(0, 0, 0)), layout, new PointD(0, 0)), Ct);
+                completed = true;
+            }
+            catch (InjectedAllocationFailureException)
+            {
+                Assert.Equal(pixels, DrawingTestSupport.ReadSamples(image.Frames[0]));
+            }
+
+            pool.RentFailureInjector = null;
+            Assert.Equal(live, image.Owner.Scope.LiveBytes);
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+        }
+    }
+
+    [Fact]
     public void DrawingWithSeveralThreadsGivesThePixelsOfOne()
     {
         // The configuration of the image lets its draw calls composite large shapes on several threads

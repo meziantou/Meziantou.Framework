@@ -1779,6 +1779,18 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <exception cref="ImageResourceLimitException">The storage of the pieces exceeds the allocation limit.</exception>
     public bool RecordPieces()
     {
+        if (!ReservePieces())
+            return false;
+
+        _recordsPieces = true;
+        return true;
+    }
+
+    /// <summary>Rents the storage of the pieces of boundary of a row, without recording them: a call rents it before its first pixel write.</summary>
+    /// <returns><see langword="false"/> when the rows of the shape come as their coverages: aliased, or a rectangle of whole pixels.</returns>
+    /// <exception cref="ImageResourceLimitException">The storage of the pieces exceeds the allocation limit.</exception>
+    public bool ReservePieces()
+    {
         if (!CanRecordPieces)
             return false;
 
@@ -1788,7 +1800,6 @@ internal sealed class CoverageRasterizer : IDisposable
             _pieceBytes = _pieces.RawBuffer;
         }
 
-        _recordsPieces = true;
         return true;
     }
 

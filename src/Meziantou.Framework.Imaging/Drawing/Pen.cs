@@ -268,6 +268,28 @@ public sealed class Pen
     }
 
     /// <summary>
+    /// Gets where the outline of what the pen draws around the inside of a curve is: at half its width along the normals
+    /// of the curve, and along its tangents, the square caps of its dashes. Not when it can be anywhere within the reach
+    /// of the curve (<see cref="GetCurveReach"/>): the round caps of dashes, or markers.
+    /// </summary>
+    /// <param name="widthFactor">What the width is multiplied by: 2 for a stroke of which one side is kept.</param>
+    /// <param name="across">The distance from the curve along its normals.</param>
+    /// <param name="along">The distance from the curve along its tangents.</param>
+    internal bool TryGetCurveOutline(double widthFactor, out double across, out double along)
+    {
+        across = StrokeWidth * widthFactor / 2;
+        along = 0;
+        if (HasMarkers)
+            return false;
+
+        if (!IsDashed)
+            return true;
+
+        along = LineCap == LineCap.Square ? across : 0;
+        return LineCap != LineCap.Round;
+    }
+
+    /// <summary>
     /// Gets a rectangle that contains what the pen paints when it strokes a path that a rectangle contains, without
     /// markers: the rectangle spread by the reach of the stroke on the side of the path it is on.
     /// </summary>

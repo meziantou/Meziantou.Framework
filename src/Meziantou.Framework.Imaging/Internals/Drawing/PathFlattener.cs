@@ -30,7 +30,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// uniform parameters; an arc is halved while its chord is further from it than the tolerance over the factor on the
 /// triangle that contains it. A part of the plane that is not seen is cut with few chords, which stay in the convex
 /// hull of its control points. The factor of a part that holds an end of the curve is the one around its end, where a
-/// miter can reach further (<see cref="PathSink.GetEndScale"/>); a closed ellipse has no end.
+/// miter can reach further (<see cref="PathSink.GetEndScale"/>); a closed ellipse has no end. The factor of another part is
+/// the one where the outline of its stroke lands (<see cref="PathSink.GetCurveScale"/>), from the sides of its control
+/// polygon: those of a Bézier curve, or the tangents at the ends of an arc.
 /// </para>
 /// <para>Only additions, multiplications, divisions and square roots are used: the vertices do not depend on the platform.</para>
 /// </remarks>
@@ -246,7 +248,7 @@ internal static class PathFlattener
     /// </summary>
     private static void ProjectedQuadratic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, CurveEnds ends, int depth, ref bool started)
     {
-        var scale = GetScale(sink, ends, Math.Min(x0, Math.Min(x1, x2)), Math.Min(y0, Math.Min(y1, y2)), Math.Max(x0, Math.Max(x1, x2)), Math.Max(y0, Math.Max(y1, y2)));
+        var scale = GetScale(sink, ends, Math.Min(x0, Math.Min(x1, x2)), Math.Min(y0, Math.Min(y1, y2)), Math.Max(x0, Math.Max(x1, x2)), Math.Max(y0, Math.Max(y1, y2)), x1 - x0, y1 - y0, x2 - x1, y2 - y1, 0, 0);
         var count = GetSegmentCount(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2) * scale / (4 * sink.Tolerance));
         if (count > ProjectedSegmentCount && depth < MaxArcDepth)
         {
@@ -277,7 +279,7 @@ internal static class PathFlattener
     private static void ProjectedCubic(PathSink sink, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3, CurveEnds ends, int depth, ref bool started)
     {
         var deviation = Math.Max(Length(x0 - (2 * x1) + x2, y0 - (2 * y1) + y2), Length(x1 - (2 * x2) + x3, y1 - (2 * y2) + y3));
-        var scale = GetScale(sink, ends, Math.Min(Math.Min(x0, x1), Math.Min(x2, x3)), Math.Min(Math.Min(y0, y1), Math.Min(y2, y3)), Math.Max(Math.Max(x0, x1), Math.Max(x2, x3)), Math.Max(Math.Max(y0, y1), Math.Max(y2, y3)));
+        var scale = GetScale(sink, ends, Math.Min(Math.Min(x0, x1), Math.Min(x2, x3)), Math.Min(Math.Min(y0, y1), Math.Min(y2, y3)), Math.Max(Math.Max(x0, x1), Math.Max(x2, x3)), Math.Max(Math.Max(y0, y1), Math.Max(y2, y3)), x1 - x0, y1 - y0, x2 - x1, y2 - y1, x3 - x2, y3 - y2);
         var count = GetSegmentCount(3 * deviation * scale / (4 * sink.Tolerance));
         if (count > ProjectedSegmentCount && depth < MaxArcDepth)
         {
@@ -354,7 +356,8 @@ internal static class PathFlattener
         var y1 = centerY + ((uy * bx) + (vy * by));
         var tx = centerX + (((ux * mx) + (vx * my)) * toTangents);
         var ty = centerY + (((uy * mx) + (vy * my)) * toTangents);
-        var scale = GetScale(sink, ends, Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)));
+        // The arc is a rational quadratic curve of control point t, whose tangents are in the cone of t - p0 and p1 - t
+        var scale = GetScale(sink, ends, Math.Min(x0, Math.Min(x1, tx)), Math.Min(y0, Math.Min(y1, ty)), Math.Max(x0, Math.Max(x1, tx)), Math.Max(y0, Math.Max(y1, ty)), tx - x0, ty - y0, x1 - tx, y1 - ty, 0, 0);
         if (!(GetLargestRadius(ux, uy, vx, vy) * scale * (1 - (length / 2)) > sink.Tolerance))
             return;
 
@@ -366,9 +369,12 @@ internal static class PathFlattener
         ProjectedArcInterior(sink, centerX, centerY, ux, uy, vx, vy, mx, my, bx, by, ends & CurveEnds.End, depth + 1, ref smooth);
     }
 
-    /// <summary>Gets the factor of the transformation on the box of a part of a curve: the one around an end of the curve when the part holds it.</summary>
-    private static double GetScale(PathSink sink, CurveEnds ends, double minX, double minY, double maxX, double maxY)
-        => ends == CurveEnds.None ? sink.GetScale(minX, minY, maxX, maxY) : sink.GetEndScale(minX, minY, maxX, maxY);
+    /// <summary>
+    /// Gets the factor of the transformation on a part of a curve, given by its box and the sides of its control polygon:
+    /// the one around an end of the curve when the part holds it, the one where its outline lands otherwise.
+    /// </summary>
+    private static double GetScale(PathSink sink, CurveEnds ends, double minX, double minY, double maxX, double maxY, double ax, double ay, double bx, double by, double cx, double cy)
+        => ends == CurveEnds.None ? sink.GetCurveScale(minX, minY, maxX, maxY, ax, ay, bx, by, cx, cy) : sink.GetEndScale(minX, minY, maxX, maxY);
 
     /// <summary>
     /// Gets the largest distance from the center of the ellipse of two conjugate half-diameters to one of its points: the

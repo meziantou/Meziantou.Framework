@@ -1044,7 +1044,14 @@ internal sealed partial class DrawingSession : IDisposable
         var isPlacedFirst = IsPlacedBeforeStroke(pen);
         var hasOutputTransform = (_hasTransform || _isProjective) && !isPlacedFirst;
         var scale = hasOutputTransform ? _transformScale : 1;
-        ProjectiveView? projection = hasOutputTransform && UsesProjectiveGeometry ? GeometryView.Inflate(0, pen.GetCurveReach(widthFactor), pen.GetStrokeReach(widthFactor)) : null;
+        ProjectiveView? projection = null;
+        if (hasOutputTransform && UsesProjectiveGeometry)
+        {
+            // The curves are cut for where the outline of their stroke lands, not for everything the pen reaches
+            var view = GeometryView.Inflate(0, pen.GetCurveReach(widthFactor), pen.GetStrokeReach(widthFactor));
+            projection = pen.TryGetCurveOutline(widthFactor, out var across, out var along) ? view.WithOutline(across, along) : view;
+        }
+
         if (projection is { } outputProjection)
         {
             stroker.SetOutput(outputProjection);

@@ -6,7 +6,7 @@
     <RootNamespace>Meziantou.Framework.Markdown</RootNamespace>
     <Description>A CommonMark and GitHub Flavored Markdown parser for .NET, with the extensions of Markdig, an HTML renderer and a formatter. Its immutable syntax tree keeps every character of the text it was parsed from.</Description>
     <PackageTags>markdown, commonmark, gfm, md, html, md2html, parser, syntax-tree</PackageTags>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

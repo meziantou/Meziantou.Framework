@@ -65,6 +65,7 @@ public partial class HtmlInputElement : IEditableTextControl
     private bool _dirtyCheckedness;
     private bool _indeterminate;
     private readonly List<File> _selectedFiles = [];
+    private IReadOnlyList<FileApi.FileSystemEntry> _webkitEntries = [];
 
     /// <summary>
     /// The selected coordinate of an image button (https://html.spec.whatwg.org/multipage/input.html#concept-input-type-image-coordinate):
@@ -163,6 +164,7 @@ public partial class HtmlInputElement : IEditableTextControl
         SetCheckedness(HasAttributeWithLocalName("checked"));
         _selectedFiles.Clear();
         _fileList = null;
+        _webkitEntries = [];
         SanitizeValue();
     }
 
@@ -365,6 +367,7 @@ public partial class HtmlInputElement : IEditableTextControl
 
                     _selectedFiles.Clear();
                     _fileList = null;
+                    _webkitEntries = [];
                     break;
             }
         }
@@ -644,7 +647,39 @@ public partial class HtmlInputElement : IEditableTextControl
             _selectedFiles.Clear();
             _selectedFiles.AddRange(value);
             _fileList = value;
+            _webkitEntries = [];
         }
+    }
+
+    /// <summary>Gets or sets whether the file input selects a directory: the files of the directory, with their <see cref="File.WebkitRelativePath"/>.</summary>
+    /// <seealso href="https://wicg.github.io/entries-api/#dom-htmlinputelement-webkitdirectory"/>
+    [IdlMember("webkitdirectory", "https://wicg.github.io/entries-api/#dom-htmlinputelement-webkitdirectory")]
+    public bool Webkitdirectory
+    {
+        get => Reflection.GetBoolean(this, "webkitdirectory");
+        set => Reflection.SetBoolean(this, "webkitdirectory", value);
+    }
+
+    /// <summary>Gets the entries of the files and the directories that were dropped on the file input (empty for the files selected otherwise).</summary>
+    /// <seealso href="https://wicg.github.io/entries-api/#dom-htmlinputelement-webkitentries"/>
+    [IdlMember("webkitEntries", "https://wicg.github.io/entries-api/#dom-htmlinputelement-webkitentries")]
+    public IReadOnlyList<FileApi.FileSystemEntry> WebkitEntries => _webkitEntries;
+
+    /// <summary>
+    /// Selects files as the user does (https://html.spec.whatwg.org/multipage/input.html#update-the-file-selection), e.g. by
+    /// dropping them on the input: the trusted input and change events are fired.
+    /// </summary>
+    internal void SelectFilesFromUser(IReadOnlyList<File> files, IReadOnlyList<FileApi.FileSystemEntry> entries)
+    {
+        if (_type != InputType.File)
+            return;
+
+        _selectedFiles.Clear();
+        _selectedFiles.AddRange(files);
+        _fileList = null;
+        _webkitEntries = entries.ToArray();
+        EventDispatcher.Dispatch(new Event("input", new EventInit { Bubbles = true, Composed = true }) { IsTrusted = true }, this);
+        EventDispatcher.Dispatch(new Event("change", new EventInit { Bubbles = true }) { IsTrusted = true }, this);
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/input.html#dom-input-list</summary>

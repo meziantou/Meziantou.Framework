@@ -250,31 +250,104 @@ internal sealed partial class PageSession
         }
     }
 
-    /// <summary>The drag events of a drag intercepted by the client: the drag operation of the page continues with the moves of the mouse.</summary>
+    /// <summary>
+    /// The drag events sent by the client: the events of a drag intercepted by the client (the drag operation of the page
+    /// continues with the moves of the mouse), or of a drag from outside the page with the data of the event (the files are
+    /// read from the disk of the server).
+    /// </summary>
     private void DispatchDragEvent(JsonElement parameters)
     {
         var input = GetInput(parameters);
+        var mouse = input.Mouse;
         var x = parameters.GetRequiredDouble("x");
         var y = parameters.GetRequiredDouble("y");
-        switch (parameters.GetRequiredString("type"))
+        var type = parameters.GetRequiredString("type");
+        if (type is "dragEnter" or "dragOver" or "drop" && mouse.DragOperation is null)
+        {
+            if (!parameters.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
+                throw ProtocolException.InvalidParameters("data: the drag data is required when no drag is in progress");
+
+            input.BeginDragAt(mouse, x, y, ReadDragData(data, static (dragData, path) => dragData.AddFromDisk(path)));
+            if (type == "drop")
+            {
+                mouse.Up(0);
+            }
+
+            return;
+        }
+
+        switch (type)
         {
             case "dragEnter":
             case "dragOver":
-                input.Mouse.Move(x, y);
+                mouse.Move(x, y);
                 break;
 
             case "drop":
-                input.Mouse.Move(x, y);
-                input.Mouse.Up(0);
+                mouse.Move(x, y);
+                mouse.Up(0);
                 break;
 
             case "dragCancel":
-                input.Keyboard.Down("Escape");
-                input.Keyboard.Up("Escape");
+                input.CancelDrag(mouse);
                 break;
 
             default:
                 throw ProtocolException.InvalidParameters("type: unknown drag event type");
         }
+    }
+
+    /// <summary>
+    /// Converts the drag data of the protocol (<c>Input.DragData</c>): the strings of its items, its files (added by
+    /// <paramref name="addFile"/>, from the disk of the server), and the allowed operations.
+    /// </summary>
+    internal static DragData ReadDragData(JsonElement data, Action<DragData, string> addFile)
+    {
+        var result = new DragData
+        {
+            EffectAllowed = GetEffectAllowed(data.GetInt32("dragOperationsMask") ?? 0xFFFF),
+        };
+
+        foreach (var item in data.GetArray("items"))
+        {
+            if (item.ValueKind != JsonValueKind.Object)
+                throw ProtocolException.InvalidParameters("items: an item is not an object");
+
+            result.SetString(item.GetRequiredString("mimeType"), item.GetRequiredString("data"));
+        }
+
+        foreach (var file in data.GetArray("files"))
+        {
+            var path = file.ValueKind == JsonValueKind.String ? file.GetString()! : throw ProtocolException.InvalidParameters("files: a path is not a string");
+            try
+            {
+                addFile(result, path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                throw new ProtocolException("Cannot read the file " + path + ": " + ex.Message, ex);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>The effectAllowed of the operations of the protocol (<c>dragOperationsMask</c>): Copy = 1, Link = 2, Move = 16.</summary>
+    private static string GetEffectAllowed(int mask)
+    {
+        var copy = (mask & 1) != 0;
+        var link = (mask & 2) != 0;
+        var move = (mask & 16) != 0;
+        return (copy, link, move) switch
+        {
+            (true, true, true) => "all",
+            (true, true, false) => "copyLink",
+            (true, false, true) => "copyMove",
+            (false, true, true) => "linkMove",
+            (true, false, false) => "copy",
+            (false, true, false) => "link",
+            (false, false, true) => "move",
+            _ => "none",
+        };
     }
 }

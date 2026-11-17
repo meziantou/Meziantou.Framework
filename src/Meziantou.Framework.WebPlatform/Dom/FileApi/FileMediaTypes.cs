@@ -1,7 +1,7 @@
-namespace Meziantou.Framework.WebPlatform.DevTools.Targets;
+namespace Meziantou.Framework.WebPlatform.Dom.FileApi;
 
 /// <summary>
-/// The media types of the files selected by path (<c>DOM.setFileInputFiles</c>), from their extension, as the browsers do for
+/// The media types of the files read from the disk (<c>DOM.setFileInputFiles</c> of DevTools, <see cref="DragData.AddFromDisk"/>), from their extension, as the browsers do for
 /// the common types (an unknown extension is an empty type).
 /// </summary>
 internal static class FileMediaTypes

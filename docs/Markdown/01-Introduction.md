@@ -1,11 +1,11 @@
 ---
 title: Introduction
-description: A CommonMark and GitHub Flavored Markdown parser for .NET, whose syntax tree keeps every character of the text, with an HTML renderer, the extensions of Markdig and a formatter.
+description: A CommonMark and GitHub Flavored Markdown parser for .NET, whose syntax tree keeps every character of the text, with an HTML renderer, extensions and a formatter.
 ---
 
 `Meziantou.Framework.Markdown` parses Markdown and converts it to HTML in .NET. It follows
 [CommonMark](https://commonmark.org/) 0.31.2 and [GitHub Flavored Markdown](https://github.github.com/gfm/), and its
-extensions add the syntaxes of [Markdig](https://github.com/xoofx/markdig), such as alerts, footnotes, definition lists
+extensions add other syntaxes, such as alerts, footnotes, definition lists
 and grid tables.
 
 The syntax tree keeps every character of the text it was parsed from, whitespace and markers included: a document is
@@ -20,7 +20,7 @@ written back exactly, and an edit only changes the text of what it replaces. The
 - **Control the HTML**: make the URLs absolute, rewrite them, add `rel` to the links, or map the lines of the source to
   the elements. See [Rendering](04-Rendering.md).
 - **Enable extensions**: tables, task lists, alerts, footnotes, heading identifiers, emojis, mathematics, diagrams, YAML
-  front matter and more. See [Extensions](05-Extensions.md).
+  front matter and more. See [Extensions](05-Extensions/01-Overview.md).
 - **Format a document** in a consistent style, without changing its HTML. See [Formatting](06-Formatting.md).
 - **Render the Markdown of your users** safely. See [Security](07-Security.md).
 

@@ -124,6 +124,12 @@ public abstract class MarkdownSyntaxVisitor
 
     /// <summary>Visits a <see cref="MarkdownRawHtmlSyntax"/>.</summary>
     public virtual void VisitMarkdownRawHtml(MarkdownRawHtmlSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownExtensionInlineSyntax"/>.</summary>
+    public virtual void VisitMarkdownExtensionInline(MarkdownExtensionInlineSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownExtensionBlockSyntax"/>.</summary>
+    public virtual void VisitMarkdownExtensionBlock(MarkdownExtensionBlockSyntax node) => DefaultVisit(node);
 }
 
 /// <summary>Visits a Markdown node, calling the method that matches its type, and returns a result.</summary>
@@ -248,4 +254,10 @@ public abstract class MarkdownSyntaxVisitor<TResult>
 
     /// <summary>Visits a <see cref="MarkdownRawHtmlSyntax"/>.</summary>
     public virtual TResult? VisitMarkdownRawHtml(MarkdownRawHtmlSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownExtensionInlineSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownExtensionInline(MarkdownExtensionInlineSyntax node) => DefaultVisit(node);
+
+    /// <summary>Visits a <see cref="MarkdownExtensionBlockSyntax"/>.</summary>
+    public virtual TResult? VisitMarkdownExtensionBlock(MarkdownExtensionBlockSyntax node) => DefaultVisit(node);
 }

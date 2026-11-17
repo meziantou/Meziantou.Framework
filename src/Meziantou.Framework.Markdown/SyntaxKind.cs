@@ -79,6 +79,18 @@ public enum SyntaxKind
     FigureFenceToken,
     FooterMarkerToken,
 
+    /// <summary>A marker of a <see cref="MarkdownExtensionInlineSyntax"/> or of a <see cref="MarkdownExtensionBlockSyntax"/>, such as the <c>@</c> of a mention or a run of a delimiter extension.</summary>
+    ExtensionMarkerToken,
+
+    /// <summary>Text of a <see cref="MarkdownExtensionInlineSyntax"/> or of a <see cref="MarkdownExtensionBlockSyntax"/>.</summary>
+    ExtensionTextToken,
+
+    /// <summary>A fence of a <see cref="MarkdownExtensionBlockSyntax"/> of a <see cref="MarkdownFencedBlockExtension"/>.</summary>
+    ExtensionFenceToken,
+
+    /// <summary>A line between the fences of a <see cref="MarkdownExtensionBlockSyntax"/>, with its line ending.</summary>
+    ExtensionLineToken,
+
     // Blocks
     Document,
     BlockQuote,
@@ -112,6 +124,9 @@ public enum SyntaxKind
     FigureCaption,
     Footer,
 
+    /// <summary>A block of a <see cref="MarkdownFencedBlockExtension"/> or of a <see cref="MarkdownParagraphExtension"/>.</summary>
+    ExtensionBlock,
+
     // Inlines
     Emphasis,
     StrongEmphasis,
@@ -134,4 +149,7 @@ public enum SyntaxKind
     Citation,
     JiraLink,
     MarkdigAutolink,
+
+    /// <summary>A construct of a <see cref="MarkdownInlineExtension"/> or of a <see cref="MarkdownDelimiterExtension"/>.</summary>
+    ExtensionInline,
 }

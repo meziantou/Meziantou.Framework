@@ -92,6 +92,18 @@ internal sealed class InlineParser
 
     private readonly SearchValues<char> _textStopCharacters;
 
+    // The syntax extensions of the options, the options that they read, and the parts of the construct that an extension reports
+    private readonly SyntaxExtensionSet? _syntaxExtensions;
+    private readonly MarkdownParseOptions _options;
+    private readonly List<ExtensionRange> _extensionRanges = [];
+
+    /// <summary>Gets or sets the states of the syntax extensions for the document, which the block parser shares.</summary>
+    public SyntaxExtensionStates? States { get; set; }
+
+    // The content of the constructs of extensions nested deeper than this is text, so that parsing it cannot exhaust the stack
+    private const int MaximumExtensionDepth = 32;
+    private int _extensionDepth;
+
     public InlineParser(Dictionary<string, bool> references, MarkdownParseOptions options)
     {
         var extensions = options.Extensions;
@@ -114,7 +126,52 @@ internal sealed class InlineParser
         _cjkFriendly = extensions.HasFlag(MarkdownExtensions.CjkFriendlyEmphasis);
         _markdigAutolinks = extensions.HasFlag(MarkdownExtensions.MarkdigAutolinks) ? options.AutolinkOptions : null;
         _pipeTableOptions = options.PipeTableOptions;
+        _options = options;
+        _syntaxExtensions = options.SyntaxExtensionSet;
+        if (_syntaxExtensions is { HasDelimiters: true })
+        {
+            CheckDelimiterExtensions(_syntaxExtensions, options);
+        }
+
         _textStopCharacters = GetTextStopCharacters();
+    }
+
+    // A delimiter extension cannot use a character that an enabled extension reads inline
+    private static void CheckDelimiterExtensions(SyntaxExtensionSet syntaxExtensions, MarkdownParseOptions options)
+    {
+        var extensions = options.Extensions;
+        foreach (var extension in syntaxExtensions.Extensions)
+        {
+            if (extension is not MarkdownDelimiterExtension delimiter)
+            {
+                continue;
+            }
+
+            var conflict = delimiter.Character switch
+            {
+                '~' => extensions & (MarkdownExtensions.Strikethrough | MarkdownExtensions.Subscript),
+                '^' => extensions & MarkdownExtensions.Superscript,
+                '+' => extensions & MarkdownExtensions.Inserted,
+                '=' => extensions & MarkdownExtensions.Marked,
+                ':' => extensions & (MarkdownExtensions.CustomContainers | MarkdownExtensions.Autolinks),
+                '"' => extensions & (MarkdownExtensions.Citations | MarkdownExtensions.SmartyPants),
+                '\'' or '>' or '.' or '-' => extensions & MarkdownExtensions.SmartyPants,
+                '$' => extensions & MarkdownExtensions.Mathematics,
+                '{' or '}' => extensions & MarkdownExtensions.GenericAttributes,
+                '|' => extensions & (MarkdownExtensions.Tables | MarkdownExtensions.PipeTables | MarkdownExtensions.GridTables),
+                _ => MarkdownExtensions.None,
+            };
+
+            if (conflict == MarkdownExtensions.None && extensions.HasFlag(MarkdownExtensions.Emoji) && options.EmojiMapping.IsFirstCharacter(delimiter.Character))
+            {
+                conflict = MarkdownExtensions.Emoji;
+            }
+
+            if (conflict != MarkdownExtensions.None)
+            {
+                throw new ArgumentException($"The delimiter extension '{delimiter.Name}' uses the character '{delimiter.Character}', which {conflict} reads.", nameof(options));
+            }
+        }
     }
 
     private SearchValues<char> GetTextStopCharacters()
@@ -132,6 +189,7 @@ internal sealed class InlineParser
         AppendIf(_markdigAutolinks is not null, "hfmtw");
         AppendIf(_smartyPants, "'\">.");
         AppendIf(_citations, "\"");
+        AppendIf(_syntaxExtensions is not null, _syntaxExtensions?.TriggerCharacters ?? "");
         if (_emoji is not null)
         {
             foreach (var c in _emoji.FirstCharacters)
@@ -675,24 +733,27 @@ internal sealed class InlineParser
             }
         }
 
-        // The text of the row, where the attributes are whitespace, is copied with the text before it
+        // The text of the row, where the attributes are whitespace, is copied from the start of the row, which is at textOffset in
+        // the copy: the text of a subject can be the whole source
         var text = _text;
+        var textOffset = 0;
         if (attributes is not null)
         {
-            var characters = _text.ToCharArray(0, end);
+            var characters = _text.ToCharArray(start, end - start);
             foreach (var (attributesStart, attributesEnd) in attributes)
             {
                 if (isDelimiterRow)
                 {
-                    PipeTableScanner.BlankAttributes(characters, start, attributesStart, attributesEnd);
+                    PipeTableScanner.BlankAttributes(characters, 0, attributesStart - start, attributesEnd - start);
                 }
                 else
                 {
-                    characters.AsSpan(attributesStart, attributesEnd - attributesStart).Fill(' ');
+                    characters.AsSpan(attributesStart - start, attributesEnd - attributesStart).Fill(' ');
                 }
             }
 
             text = new string(characters);
+            textOffset = start;
             if (isDelimiterRow)
             {
                 row.Attributes.AddRange(attributes);
@@ -702,7 +763,7 @@ internal sealed class InlineParser
         var cellStart = start;
         for (var i = 0; i < pipes.Count; i++)
         {
-            if (i == 0 && PipeTableScanner.IsWhitespace(text, start, pipes[i]))
+            if (i == 0 && PipeTableScanner.IsWhitespace(text, start - textOffset, pipes[i] - textOffset))
             {
                 AddRowAttributes(start, pipes[i]);
                 cellStart = pipes[i] + 1;
@@ -713,7 +774,7 @@ internal sealed class InlineParser
             cellStart = pipes[i] + 1;
         }
 
-        if (!PipeTableScanner.IsWhitespace(text, cellStart, end))
+        if (!PipeTableScanner.IsWhitespace(text, cellStart - textOffset, end - textOffset))
         {
             AddCell(cellStart, end);
         }
@@ -743,7 +804,7 @@ internal sealed class InlineParser
         void AddCell(int cellStart, int cellEnd)
         {
             // A hard line break at the end of the cell is in the cell: the cell starts after it, as in Markdig
-            var cell = PipeTableScanner.Trim(isDelimiterRow ? text : _text, cellStart, cellEnd);
+            var cell = isDelimiterRow ? TrimRowText(cellStart, cellEnd) : PipeTableScanner.Trim(_text, cellStart, cellEnd);
             if (cell.End < cellEnd && _text[cell.End] == '\n' && cell.End > cell.Start && _text[cell.End - 1] == '\\')
             {
                 cell.End++;
@@ -773,11 +834,17 @@ internal sealed class InlineParser
 
         void AddDelimiterToken(int tokenStart, int tokenEnd)
         {
-            var token = PipeTableScanner.Trim(text, tokenStart, tokenEnd);
+            var token = TrimRowText(tokenStart, tokenEnd);
             if (token.End > token.Start)
             {
                 row.Cells.Add(token);
             }
+        }
+
+        (int Start, int End) TrimRowText(int trimStart, int trimEnd)
+        {
+            var (trimmedStart, trimmedEnd) = PipeTableScanner.Trim(text, trimStart - textOffset, trimEnd - textOffset);
+            return (trimmedStart + textOffset, trimmedEnd + textOffset);
         }
     }
 
@@ -869,6 +936,7 @@ internal sealed class InlineParser
         }
 
         // The generic attributes of the row are for the table: Markdig does not add them to the inlines
+        // The copies of the line start at the line, which is at lineStart in them: the text of a subject can be the whole source
         var lineStart = delimiters[lineBreakIndex].End;
         char[]? withoutAttributes = null;
         char[]? columnsText = null;
@@ -877,10 +945,10 @@ internal sealed class InlineParser
             if (node.Kind == SyntaxKind.GenericAttributes)
             {
                 // The text of the row must be the one of a delimiter row, and the columns are read after the attributes
-                withoutAttributes ??= _text.ToCharArray();
-                withoutAttributes.AsSpan(node.Start, node.End - node.Start).Fill(' ');
-                (columnsText ??= _text.ToCharArray()).AsSpan(node.Start, node.End - node.Start).Fill(' ');
-                PipeTableScanner.BlankAttributes(columnsText, lineStart, node.Start, node.End);
+                withoutAttributes ??= _text.ToCharArray(lineStart, _end - lineStart);
+                withoutAttributes.AsSpan(node.Start - lineStart, node.End - node.Start).Fill(' ');
+                (columnsText ??= _text.ToCharArray(lineStart, _end - lineStart)).AsSpan(node.Start - lineStart, node.End - node.Start).Fill(' ');
+                PipeTableScanner.BlankAttributes(columnsText, 0, node.Start - lineStart, node.End - lineStart);
             }
             else if (node.Kind is not (SyntaxKind.PipeToken or SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken) || (node.Kind == SyntaxKind.TextToken && node.IsDelimiterRun))
             {
@@ -889,8 +957,8 @@ internal sealed class InlineParser
         }
 
         var lineEnd = _text.AsSpan(lineStart, _end - lineStart).IndexOf('\n') is >= 0 and var length ? lineStart + length : _end;
-        var text = withoutAttributes is null ? _text : new string(withoutAttributes);
-        if (!PipeTableScanner.IsDelimiterRowText(text, lineStart, lineEnd))
+        var (text, textOffset) = withoutAttributes is null ? (_text, 0) : (new string(withoutAttributes), lineStart);
+        if (!PipeTableScanner.IsDelimiterRowText(text, lineStart - textOffset, lineEnd - textOffset))
         {
             return null;
         }
@@ -904,7 +972,12 @@ internal sealed class InlineParser
         }
 
         var hasLineEnd = index < count;
-        return PipeTableScanner.ReadColumns(columnsText is null ? text : new string(columnsText), lineStart, hasLineEnd ? delimiters[index].Start : lineEnd, pipes, hasLineEnd);
+        var columnsEnd = hasLineEnd ? delimiters[index].Start : lineEnd;
+
+        // The copies are made together: without attributes, the columns are read in the text
+        return columnsText is null
+            ? PipeTableScanner.ReadColumns(_text, lineStart, columnsEnd, pipes, hasLineEnd)
+            : PipeTableScanner.ReadColumns(new string(columnsText), 0, columnsEnd - lineStart, pipes.ConvertAll(pipe => pipe - lineStart), hasLineEnd);
     }
 
     private void Begin(Subject subject, int start, int end, bool trimEnd)
@@ -1082,6 +1155,21 @@ internal sealed class InlineParser
             AppendText(_pos, _pos + 1).IsDelimiterRun = true;
             _pos++;
             return;
+        }
+
+        // The syntax extensions are read before the built-in syntaxes
+        if (_syntaxExtensions is not null)
+        {
+            if (_syntaxExtensions.GetInlineExtensions(c) is { } inlineExtensions && ParseInlineExtension(inlineExtensions))
+            {
+                return;
+            }
+
+            if (_syntaxExtensions.GetDelimiterIndex(c) >= 0)
+            {
+                HandleDelimiter(c);
+                return;
+            }
         }
 
         // Markdig reads the emoji before the other inlines, except the escapes and the links
@@ -1524,6 +1612,7 @@ internal sealed class InlineParser
     // The characters where a construct of an extension can start: a tilde, the colon of a URL, the start of www.
     private bool IsExtensionCharacter(char c) => c switch
     {
+        _ when _syntaxExtensions is not null && _syntaxExtensions.IsTrigger(c) => true,
         _ when _emoji is not null && _emoji.IsFirstCharacter(c) && !char.IsLetterOrDigit(_pos > _inlineStart ? _text[_pos - 1] : '\0') => true,
         '~' => _strikethrough || _subscript,
         '^' => _superscript,
@@ -2036,6 +2125,140 @@ internal sealed class InlineParser
     // Inline math between $ or $$, as Markdig reads it: the opening is after whitespace or punctuation, the closing has at
     // least as many $ and is before whitespace or punctuation, and spaces after the opening need spaces before the closing.
     // A $ after a backslash is text of the math. The math does not span lines.
+    // A construct of an inline extension at its trigger character: the first extension of the character that reads one
+    private bool ParseInlineExtension(MarkdownInlineExtension[] extensions)
+    {
+        var previous = _pos > _inlineStart ? _text[_pos - 1] : '\0';
+        foreach (var extension in extensions)
+        {
+            _extensionRanges.Clear();
+            var index = _syntaxExtensions!.GetIndex(extension);
+            var context = new MarkdownInlineParseContext(_text.AsSpan(_pos, _end - _pos), previous, _options, _extensionRanges, States, index);
+            if (!extension.TryParse(ref context))
+            {
+                continue;
+            }
+
+            if (context.Length == 0)
+            {
+                throw new InvalidOperationException($"The inline extension '{extension.Name}' read a construct without calling {nameof(MarkdownInlineParseContext.Complete)}.");
+            }
+
+            // The content of the construct can have constructs of extensions, which report their own parts
+            AppendExtensionInline(index, context.Length, [.. _extensionRanges]);
+            return true;
+        }
+
+        return false;
+    }
+
+    // The node of a construct of an inline extension: its parts, and text for the characters between them
+    private void AppendExtensionInline(int index, int length, ExtensionRange[] ranges)
+    {
+        var start = _pos;
+        var end = start + length;
+        var node = NewNode(SyntaxKind.ExtensionInline, start, end);
+        _root.Append(node);
+        var position = start;
+        var first = true;
+        foreach (var range in ranges)
+        {
+            var rangeStart = start + range.Start;
+            var rangeEnd = rangeStart + range.Length;
+            if (rangeStart > position)
+            {
+                AppendExtensionTokens(node, SyntaxKind.ExtensionTextToken, position, rangeStart, index, ref first);
+            }
+
+            if (range.Kind == ExtensionRangeKind.Inlines && _extensionDepth < MaximumExtensionDepth)
+            {
+                ParseExtensionContent(node, rangeStart, rangeEnd);
+            }
+            else
+            {
+                AppendExtensionTokens(node, range.Kind == ExtensionRangeKind.Marker ? SyntaxKind.ExtensionMarkerToken : SyntaxKind.ExtensionTextToken, rangeStart, rangeEnd, index, ref first);
+            }
+
+            position = rangeEnd;
+        }
+
+        if (position < end)
+        {
+            AppendExtensionTokens(node, SyntaxKind.ExtensionTextToken, position, end, index, ref first);
+        }
+
+        _pos = end;
+    }
+
+    // The tokens of a part of a construct, split at the line endings. The first token of the construct has the index of the
+    // extension: it starts at the trigger character, which is not a line ending.
+    private void AppendExtensionTokens(InlineNode parent, SyntaxKind kind, int start, int end, int index, ref bool first)
+    {
+        var lineStart = start;
+        for (var i = start; i <= end; i++)
+        {
+            if (i < end && _text[i] != '\n')
+            {
+                continue;
+            }
+
+            if (i > lineStart)
+            {
+                var token = NewNode(kind, lineStart, i);
+                if (first)
+                {
+                    token.Value = index + 1;
+                    first = false;
+                }
+
+                parent.Append(token);
+            }
+
+            if (i < end)
+            {
+                parent.Append(NewNode(SyntaxKind.LineEndingToken, i, i + 1));
+                lineStart = i + 1;
+            }
+        }
+    }
+
+    // The content of a construct, read as inlines on their own: the delimiters and the brackets around the construct do not
+    // match the ones in it, and its pipes are text in a pipe table
+    private void ParseExtensionContent(InlineNode parent, int start, int end)
+    {
+        var root = _root;
+        var previousEnd = _end;
+        var brackets = _brackets;
+        var stackBottom = _delimiters;
+        var scanningPipeTable = _scanningPipeTable;
+        var pipeTableCell = _pipeTableCell;
+        _root = parent;
+        _pos = start;
+        _end = end;
+        _brackets = null;
+        _scanningPipeTable = false;
+        _pipeTableCell = false;
+        _extensionDepth++;
+        try
+        {
+            while (_pos < _end)
+            {
+                ParseInline();
+            }
+
+            ProcessEmphasis(stackBottom);
+        }
+        finally
+        {
+            _extensionDepth--;
+            _root = root;
+            _end = previousEnd;
+            _brackets = brackets;
+            _scanningPipeTable = scanningPipeTable;
+            _pipeTableCell = pipeTableCell;
+        }
+    }
+
     private bool ParseMath()
     {
         var open = _pos;
@@ -2295,6 +2518,7 @@ internal sealed class InlineParser
 
     private bool IsEmphasisCharacter(char c) => c switch
     {
+        _ when _syntaxExtensions is not null && _syntaxExtensions.GetDelimiterIndex(c) >= 0 => true,
         '*' or '_' => true,
         '~' => _strikethrough || _subscript,
         '^' => _superscript,
@@ -2579,15 +2803,17 @@ internal sealed class InlineParser
     private static bool IsMathPunctuation(char c) => c == '\0' || (c <= 127 ? char.IsAsciiLetterOrDigit(c) is false && c > ' ' && c != '\x7f' : char.IsPunctuation(c) || char.IsSymbol(c));
 
     // The extra emphasis of Markdig: ~ when subscript is on, ^, ++, == and the :: of custom containers
+    // A delimiter extension can use these characters when their extension is disabled
     private bool IsExtraEmphasis(char c) => c switch
     {
-        '~' => _subscript,
+        '~' => _subscript || _syntaxExtensions?.GetDelimiterIndex(c) >= 0,
         '^' or '+' or '=' or ':' or '"' => true,
-        _ => false,
+        _ => _syntaxExtensions?.GetDelimiterIndex(c) >= 0,
     };
 
     private int GetMinimumCount(char c) => c switch
     {
+        _ when _syntaxExtensions?.GetDelimiterIndex(c) is >= 0 and var index => ((MarkdownDelimiterExtension)_syntaxExtensions.Extensions[index]).MinimumCount,
         '~' when _subscript => 1,
         '~' => 2,
         '+' or '=' or ':' or '"' => 2,
@@ -2596,6 +2822,7 @@ internal sealed class InlineParser
 
     private int GetMaximumCount(char c) => c switch
     {
+        _ when _syntaxExtensions?.GetDelimiterIndex(c) is >= 0 and var index => ((MarkdownDelimiterExtension)_syntaxExtensions.Extensions[index]).MaximumCount,
         '~' => _strikethrough ? 2 : 1,
         '^' => 1,
         _ => 2,
@@ -3058,8 +3285,10 @@ internal sealed class InlineParser
             closer.Count -= use;
 
             // The delimiters used are the ones next to the content: the end of the opener and the start of the closer
+            var extensionIndex = _syntaxExtensions?.GetDelimiterIndex(closer.Character) ?? -1;
             var kind = closer.Character switch
             {
+                _ when extensionIndex >= 0 => SyntaxKind.ExtensionInline,
                 '~' when tilde || use == 2 => SyntaxKind.Strikethrough,
                 '~' => SyntaxKind.Subscript,
                 '^' => SyntaxKind.Superscript,
@@ -3069,9 +3298,18 @@ internal sealed class InlineParser
                 '"' => SyntaxKind.Citation,
                 _ => use == 1 ? SyntaxKind.Emphasis : SyntaxKind.StrongEmphasis,
             };
-            var delimiterKind = kind == SyntaxKind.Strikethrough ? SyntaxKind.StrikethroughDelimiterToken : SyntaxKind.EmphasisDelimiterToken;
+            var delimiterKind = kind switch
+            {
+                SyntaxKind.Strikethrough => SyntaxKind.StrikethroughDelimiterToken,
+                SyntaxKind.ExtensionInline => SyntaxKind.ExtensionMarkerToken,
+                _ => SyntaxKind.EmphasisDelimiterToken,
+            };
             var emphasis = NewNode(kind, openerNode.End - use, closerNode.Start + use);
-            emphasis.Append(NewNode(delimiterKind, openerNode.End - use, openerNode.End));
+            var openingDelimiter = NewNode(delimiterKind, openerNode.End - use, openerNode.End);
+
+            // The first token of the construct of a delimiter extension has the index of the extension
+            openingDelimiter.Value = extensionIndex + 1;
+            emphasis.Append(openingDelimiter);
             openerNode.End -= use;
             var current = openerNode.Next;
             while (current is not null && current != closerNode)

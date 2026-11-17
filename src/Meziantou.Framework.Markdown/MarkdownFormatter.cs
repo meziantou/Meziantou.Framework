@@ -148,7 +148,7 @@ public static class MarkdownFormatter
             length += line.Length;
         }
 
-        return string.Create(checked((int)length), (lines, newLine), static (span, state) =>
+        return string.Create(checked((int)length), (lines, newLine), (span, state) =>
         {
             foreach (var line in state.lines)
             {
@@ -985,7 +985,8 @@ public static class MarkdownFormatter
 
             // A cell whose text is on several lines, such as a link of Markdig that spans rows, is kept as it is, and so is a
             // cell next to a pipe when what is next to its text changes what it is
-            var contextSensitive = (parseOptions.Extensions & ContextSensitiveInlines) != MarkdownExtensions.None;
+            // An inline extension reads the character before its trigger character too
+            var contextSensitive = (parseOptions.Extensions & ContextSensitiveInlines) != MarkdownExtensions.None || parseOptions.SyntaxExtensions.Count > 0;
             foreach (var row in table.ChildNodes().OfType<MarkdownTableRowSyntax>())
             {
                 foreach (var cell in row.Cells)

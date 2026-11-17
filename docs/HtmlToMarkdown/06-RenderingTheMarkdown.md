@@ -23,7 +23,7 @@ Assert.Contains("<td><del>1.50</del> 1.20</td>", html, StringComparison.Ordinal)
 <!-- endref -->
 
 [MarkdownExtensions.Advanced](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Advanced) enables all four, with
-other extensions: see [Extensions](../Markdown/05-Extensions.md) to enable them one by one.
+other extensions: see [Extensions](../Markdown/05-Extensions/01-Overview.md) to enable them one by one.
 
 | The converter writes | Extension of Meziantou.Framework.Markdown |
 | --- | --- |

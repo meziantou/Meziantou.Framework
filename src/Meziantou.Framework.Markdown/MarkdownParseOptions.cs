@@ -15,7 +15,7 @@ public sealed record MarkdownParseOptions
     /// <summary>Gets how <see cref="MarkdownExtensions.AutoIdentifiers"/> makes the identifiers of the headings.</summary>
     public MarkdownAutoIdentifierOptions AutoIdentifierOptions { get; init; } = MarkdownAutoIdentifierOptions.Default;
 
-    /// <summary>Gets the shortcodes and the smileys that <see cref="MarkdownExtensions.Emoji"/> reads: by default, the ones of Markdig.</summary>
+    /// <summary>Gets the shortcodes and the smileys that <see cref="MarkdownExtensions.Emoji"/> reads: by default, the shortcodes of GitHub and the common smileys.</summary>
     public MarkdownEmojiMapping EmojiMapping { get; init; } = MarkdownEmojiMapping.Default;
 
     /// <summary>Gets a value indicating whether a block quote in a container, such as a list item, can be an alert. By default, only the block quotes of the document are.</summary>
@@ -33,4 +33,33 @@ public sealed record MarkdownParseOptions
     /// <summary>Gets a value indicating whether HTML is text: no HTML block or inline HTML is recognized, and the renderer escapes it.</summary>
     /// <remarks>Autolinks, such as <c>&lt;https://example.com&gt;</c>, are still links.</remarks>
     public bool DisableHtml { get; init; }
+
+    /// <summary>
+    /// Gets the syntaxes that the parser reads in addition to CommonMark and to <see cref="Extensions"/>: inline, delimiter,
+    /// fenced block and paragraph extensions. On a trigger character, the extensions are tried in order, before the built-in
+    /// syntaxes, and the paragraph extensions are offered each paragraph in order.
+    /// </summary>
+    /// <remarks>
+    /// Options with syntax extensions are equal only to their copies made with a <see langword="with"/> expression that keeps
+    /// the syntax extensions.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// The list contains <see langword="null"/>, an extension twice, two extensions of the same name, two delimiter extensions
+    /// of the same character, or an extension of another kind.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">The list is <see langword="null"/>.</exception>
+    public IReadOnlyList<MarkdownSyntaxExtension> SyntaxExtensions
+    {
+        get => _syntaxExtensions?.Extensions ?? [];
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            _syntaxExtensions = value.Count == 0 ? null : new Parsing.SyntaxExtensionSet([.. value], nameof(value));
+        }
+    }
+
+    // The syntax extensions indexed for the parser, or null when there is none
+    private Parsing.SyntaxExtensionSet? _syntaxExtensions;
+
+    internal Parsing.SyntaxExtensionSet? SyntaxExtensionSet => _syntaxExtensions;
 }

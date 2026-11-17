@@ -13,10 +13,10 @@ public sealed class MarkdownEmojiMapping
     // The lengths of the shortcodes and the smileys by their first character, the longest first
     private readonly Dictionary<char, int[]> _lengthsByFirstCharacter;
 
-    /// <summary>Gets the shortcodes and the smileys of Markdig.</summary>
+    /// <summary>Gets the shortcodes of GitHub and the arrows, and the common smileys, such as <c>:)</c>, <c>;)</c> and <c>&lt;3</c>.</summary>
     public static MarkdownEmojiMapping Default { get; } = new(EmojiData.GetDefaultEmojiShortcodeToUnicode(), EmojiData.GetDefaultSmileyToEmojiShortcode());
 
-    /// <summary>Gets the shortcodes of Markdig, without smileys.</summary>
+    /// <summary>Gets the shortcodes of GitHub and the arrows, without smileys.</summary>
     public static MarkdownEmojiMapping DefaultWithoutSmileys { get; } = new(EmojiData.GetDefaultEmojiShortcodeToUnicode(), new Dictionary<string, string>(StringComparer.Ordinal));
 
     /// <summary>Creates a mapping from shortcodes to emoji, and from smileys to shortcodes.</summary>

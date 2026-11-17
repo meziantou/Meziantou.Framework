@@ -64,6 +64,14 @@ internal sealed class PooledStringBuilder : IDisposable
         return this;
     }
 
+    public void Insert(int index, ReadOnlySpan<char> value)
+    {
+        EnsureCapacity(value.Length);
+        _buffer.AsSpan(index, _length - index).CopyTo(_buffer.AsSpan(index + value.Length));
+        value.CopyTo(_buffer.AsSpan(index));
+        _length += value.Length;
+    }
+
     public ReadOnlySpan<char> AsSpan() => _buffer.AsSpan(0, _length);
 
     public void Clear() => _length = 0;

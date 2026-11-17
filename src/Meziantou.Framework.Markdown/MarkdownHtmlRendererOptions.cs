@@ -61,6 +61,12 @@ public sealed record MarkdownHtmlRendererOptions
     /// <summary>Gets how the images of audio, video, and of the sites that host them are rendered with <see cref="MarkdownExtensions.MediaLinks"/>.</summary>
     public MarkdownMediaLinkOptions MediaLinks { get; init; } = MarkdownMediaLinkOptions.Default;
 
+    /// <summary>
+    /// Gets the renderers that write some nodes instead of the built-in rendering, such as the code blocks of a language. Each
+    /// block and each inline is offered to them in order, and the first one that writes it wins.
+    /// </summary>
+    public IReadOnlyList<MarkdownHtmlNodeRenderer> NodeRenderers { get; init; } = [];
+
     /// <summary>Gets whether an attribute only describes the content: whatever its value, it cannot run script or load a resource.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public static bool IsSafeAttributeName(string name)

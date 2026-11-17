@@ -30,10 +30,10 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     public SyntaxToken EndOfFileToken => GetToken(SyntaxKind.EndOfFileToken);
 
     /// <summary>Gets the link reference definitions of the document, in the order of the text.</summary>
-    public IEnumerable<MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions => DescendantNodes(IsBlockContainer).OfType<MarkdownLinkReferenceDefinitionSyntax>();
+    public IEnumerable<MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions => GetBlocks<MarkdownLinkReferenceDefinitionSyntax>();
 
     // The nodes whose children are blocks, where definitions can be
-    internal static bool IsBlockContainer(SyntaxNode node) => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownCustomContainerSyntax or MarkdownDefinitionListSyntax or MarkdownDefinitionItemSyntax or MarkdownFigureSyntax or MarkdownFooterSyntax;
+    internal static bool IsBlockContainer(SyntaxNode node) => node is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListSyntax or MarkdownListItemSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownCustomContainerSyntax or MarkdownDefinitionListSyntax or MarkdownDefinitionItemSyntax or MarkdownFigureSyntax or MarkdownFooterSyntax or MarkdownExtensionBlockSyntax;
 
     /// <summary>Finds the definition of a footnote: the first one with the same label, compared as CommonMark compares link labels.</summary>
     /// <param name="label">The label, with its <c>^</c>.</param>

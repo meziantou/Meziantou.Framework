@@ -76,6 +76,9 @@ public sealed class MarkdownHeadingSyntax : MarkdownBlockSyntax
                 case MarkdownEmphasisExtraSyntax extra:
                     AppendIdentifierText(extra.Inlines, builder);
                     break;
+                case MarkdownExtensionInlineSyntax extension:
+                    AppendIdentifierText(extension.Inlines, builder);
+                    break;
                 case MarkdownLinkSyntax link:
                     AppendIdentifierText(link.Text, builder);
                     break;

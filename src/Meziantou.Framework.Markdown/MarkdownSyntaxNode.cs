@@ -191,7 +191,7 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
             var token = child.AsToken();
             switch ((SyntaxKind)token.RawKind)
             {
-                case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken:
+                case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken or SyntaxKind.ExtensionTextToken:
                     builder.Append(GetTokenText(token));
                     break;
                 case SyntaxKind.EscapedCharacterToken:

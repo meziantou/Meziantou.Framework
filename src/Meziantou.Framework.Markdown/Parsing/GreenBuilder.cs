@@ -24,6 +24,7 @@ internal sealed class GreenBuilder
     private static readonly Green.SyntaxToken?[]?[] AsciiTokens = new Green.SyntaxToken?[]?[(int)SyntaxKind.Document];
 
     private readonly string _text;
+    private readonly MarkdownSyntaxExtension[]? _syntaxExtensions;
     private readonly List<TriviaSpan> _triviaSpans;
     private readonly TreeBuffer _elements;
     private readonly GreenNodeStack _trivia = new();
@@ -35,9 +36,10 @@ internal sealed class GreenBuilder
     // the cached one, and the cached token itself when it has no trivia and no value. Documents repeat many tokens, such as the
     // fences and the info strings of the code blocks, the lines of code, and the delimiters. The cache is lossy, as the string
     // table of Roslyn: a token replaces the one of the same hash, so that it costs a fixed array per thread, not an entry per
-    // distinct text.
+    // distinct text. The tokens are short, so that a thread keeps at most about 1 MB: the ones that repeat, such as fences,
+    // lines of code and delimiters, are rarely longer.
     private const int TokenCacheSize = 4096;
-    private const int MaximumCachedTokenLength = 256;
+    private const int MaximumCachedTokenLength = 64;
 
     [ThreadStatic]
     private static CachedToken[]? s_tokenCache;
@@ -48,17 +50,18 @@ internal sealed class GreenBuilder
     private int _previousEnd;
     private int _triviaSpanIndex;
 
-    private GreenBuilder(string text, TreeBuffer elements, List<TriviaSpan> triviaSpans)
+    private GreenBuilder(string text, TreeBuffer elements, List<TriviaSpan> triviaSpans, MarkdownSyntaxExtension[]? syntaxExtensions)
     {
         _text = text;
+        _syntaxExtensions = syntaxExtensions;
         _triviaSpans = triviaSpans;
         _elements = elements;
     }
 
     /// <summary>Builds the tree of a document, the first element, which the other elements are the descendants of.</summary>
-    public static GreenNode Build(string text, TreeBuffer elements, List<TriviaSpan> triviaSpans)
+    public static GreenNode Build(string text, TreeBuffer elements, List<TriviaSpan> triviaSpans, MarkdownSyntaxExtension[]? syntaxExtensions)
     {
-        var builder = new GreenBuilder(text, elements, triviaSpans);
+        var builder = new GreenBuilder(text, elements, triviaSpans, syntaxExtensions);
         var document = builder._elements[0];
         var end = 1 + document.Value;
         for (var index = 1; index < end;)
@@ -170,6 +173,12 @@ internal sealed class GreenBuilder
             else
             {
                 text = GetString(element.Start, element.End);
+            }
+
+            // The first token of the construct of a syntax extension has the name of the extension, whose index the value is
+            if (element.Value != 0 && element.Kind is SyntaxKind.ExtensionMarkerToken or SyntaxKind.ExtensionTextToken or SyntaxKind.ExtensionFenceToken)
+            {
+                return new Green.SyntaxTokenWithValue<string>((int)element.Kind, text, _syntaxExtensions![element.Value - 1].Name, text, leading, trailing, isMissing: false);
             }
 
             if (element.Value != 0)

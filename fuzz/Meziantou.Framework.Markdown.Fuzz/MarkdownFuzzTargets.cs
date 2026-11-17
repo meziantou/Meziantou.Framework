@@ -47,6 +47,22 @@ public static class MarkdownFuzzTargets
         EscapeNonAsciiUrlCharacters = false,
     };
 
+    // Inline extensions whose content is text, markers or inlines, and a delimiter extension, with GFM or with every extension
+    // whose characters they do not use
+    private static readonly GlossaryExtension Glossary = new();
+    private static readonly MarkdownSyntaxExtension[] SampleSyntaxExtensions =
+    [
+        new MentionExtension(), new SpanExtension(), new GlossaryTermExtension(Glossary), new WikiLinkExtension(), new MarkdownDelimiterExtension("highlight", '%'), new MarkdownDelimiterExtension("spoiler", '|', minimumCount: 1, maximumCount: 3),
+        Glossary, new FenceExtension("admonition", "!!!", MarkdownFencedBlockContent.Blocks) { ParseInfoAsInlines = true }, new FenceExtension("raw", "%%%", MarkdownFencedBlockContent.RawLines) { CanInterruptParagraph = false }, new TranscriptExtension(),
+    ];
+    private static readonly MarkdownParseOptions SyntaxExtensionOptions = new() { SyntaxExtensions = SampleSyntaxExtensions };
+    private static readonly MarkdownParseOptions GfmSyntaxExtensionOptions = new() { Extensions = MarkdownExtensions.GitHubFlavored & ~MarkdownExtensions.Tables, SyntaxExtensions = SampleSyntaxExtensions };
+    private static readonly MarkdownParseOptions AllSyntaxExtensionOptions = AllExtensionsWithoutHtml with { Extensions = AllExtensionsWithoutHtml.Extensions & ~(MarkdownExtensions.Tables | MarkdownExtensions.GridTables), SyntaxExtensions = SampleSyntaxExtensions };
+
+    private static readonly string[] SyntaxExtensionTokens = [.. ExtensionTokens, "@", "@a-b", "a@b", "{{", "}}", "{{a}}", "[[", "]]", "[[a]]", "%", "%%", "%%%", "%%a%%", "|", "||", "|||", "!!!", "!!! note\n", "\n!!!\n", "%%%\n", "%%% glossary\n", "A: b\n", "Alice: ", "\nBob: ", "[A]"];
+
+    private static readonly MarkdownHtmlNodeRenderer[] NodeRenderers = [new DecliningNodeRenderer(), new DefaultNodeRenderer()];
+
     private static readonly string[] EscaperTokens = ["\\", "`", "``", "```", "~~~", "*", "_", "[", "]", "(", ")", "<", ">", "&", "&amp;", "&#35;", "\"", "'", "|", "#", "-", "=", "!", " ", "\t", "\n", "\r\n", "\n\n", "\u00A0", "\u0000", "\u0085", "https://"];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -56,6 +72,7 @@ public static class MarkdownFuzzTargets
         new("markdown-extensions", data => Parse(data, (data.Length % 4) switch { 0 => AllExtensions, 2 => AllExtensionsWithPipeTableOptions, _ => AllExtensionsWithoutHtml })) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
         new("markdown-escaper", Escape) { Seeds = GetEscaperSeeds, Dictionary = EscaperTokens },
         new("markdown-formatter", Format) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
+        new("markdown-syntax-extensions", ParseWithSyntaxExtensions) { Seeds = GetSyntaxExtensionSeeds, Dictionary = SyntaxExtensionTokens },
     ];
 
     private static readonly MarkdownParseOptions[] FormatterParseOptions = [MarkdownParseOptions.Default, MarkdownParseOptions.GitHubFlavored, AllExtensions, AllExtensionsWithPipeTableOptions, AllExtensionsWithoutHtml];
@@ -140,6 +157,60 @@ public static class MarkdownFuzzTargets
     // The line endings of Markdown: string.ReplaceLineEndings also replaces U+0085, U+2028 and U+2029, which are text
     private static string ToMarkdownLineEndings(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
 
+    // The constructs of the syntax extensions agree with their nodes, and the renderers write them
+    private static void ParseWithSyntaxExtensions(ReadOnlySpan<byte> data)
+    {
+        var options = (data.Length % 3) switch { 0 => SyntaxExtensionOptions, 1 => GfmSyntaxExtensionOptions, _ => AllSyntaxExtensionOptions };
+        Parse(data, options);
+
+        var text = FuzzText.Decode(data);
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        foreach (var node in tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionBlockSyntax>())
+        {
+            FuzzAssert.True(Array.Exists(SampleSyntaxExtensions, extension => extension.Name == node.Name), $"The block at {node.Span} has the name {FuzzAssert.Format(node.Name)}: {FuzzAssert.Format(text)}");
+            FuzzAssert.True(node.Markers.Count > 0 || node.Texts.Count > 0, $"The block {node.Name} at {node.Span} has no marker and no text: {FuzzAssert.Format(text)}");
+            FuzzAssert.True(node.IsFenced == node.Name is "admonition" or "raw" or "glossary", $"The block {node.Name} at {node.Span} is fenced: {node.IsFenced}: {FuzzAssert.Format(text)}");
+            _ = (node.Info, node.Content, node.Lines, node.Blocks, node.Texts, node.GetPlainText());
+        }
+
+        foreach (var node in tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>())
+        {
+            FuzzAssert.True(Array.Exists(SampleSyntaxExtensions, extension => extension.Name == node.Name), $"The construct at {node.Span} has the name {FuzzAssert.Format(node.Name)}: {FuzzAssert.Format(text)}");
+            FuzzAssert.True(node.Markers.Count > 0, $"The construct {node.Name} at {node.Span} has no marker: {FuzzAssert.Format(text)}");
+            _ = (node.Texts, node.Text, node.GetPlainText());
+        }
+
+        _ = MarkdownHtmlRenderer.ToHtml(tree, SyntaxExtensionRendererOptions);
+        _ = MarkdownPlainTextRenderer.ToPlainText(tree, SyntaxExtensionRendererOptions);
+        _ = MarkdownFormatter.Format(tree);
+    }
+
+    private static readonly MarkdownHtmlRendererOptions SyntaxExtensionRendererOptions = new() { NodeRenderers = [new SyntaxExtensionRenderer()] };
+
+    // The seeds of the unit tests of the syntax extensions, and the examples of the extensions
+    private static IEnumerable<FuzzSeed> GetSyntaxExtensionSeeds()
+    {
+        string[] texts =
+        [
+            "Thanks @octo-cat, and *@hubot*!", "Mail me@example.com", "Some %%important *and* urgent%% text, *nested %%both* ways%%.", "a {{*b* [c](d)}} e", "[a {{b]}}(c)", "*a {{b* c}}",
+            "[a {{b}} c](d)", "{{a {{b}} c}}", "{{a", "`{{a}}` \\{{b}}", "> {{a\n> *b*}} c", "[[Home page]] and [a link](b)", "- [[Home\n  page]] x\n", "# See [[Home]]", "a [[b]] c",
+            "* @a %%b%%\n\n|x|y|\n|-|-|\n|@c|%%d%%|\n", "*a %%b* c%%", "%%a *b%% c*", "%%%a%%% %%b %%c%% d%%", "|a| ||b|| |||c||| ||||d||||", "@a{{@b [[c]] %%d%%}}|e|",
+            "!!! warning\nDo not *push* on Friday.\n\n- Really.\n!!!\n", "> %%% chart\n>   bar: <1>\n> *2*\n> %%%\n\nafter\n", "%%%\na\n", "> %%%\n> a\nb\n", "  %%%\n    a\n %%%\n", "%%%\n%%% x\n%%%\n",
+            "text\n%%%\na\n%%%\n", "    %%%\n", "!!! note\n```\ncode\n!!!\nafter\n", "!!! A *warning* \nb\n!!!\n", "The meeting went like this:\nAlice: Can we ship on *Friday*?\nBob: Only if the tests pass.\nThen we went for lunch.\n",
+            "Alice: a\nBob: b\nx\nCarol: c\nDan: d\ny\n", "[r]: /u\nAlice: [r]\nBob: b\n", "Alice: a\nBob: b\n===\n", "> Alice: a\nBob:   *b*  \n", "Call the [API] from a [link](https://example.com).\n\n%%% glossary\nAPI: Application programming interface\n%%%\n",
+            "[A] [B]\n\n%%% glossary\nA: a\n%%%\n\n%%% glossary\nB: b\n%%%\n", "- !!! x\n  Alice: a\n  Bob: b\n  !!!\n", "[^1]: %%%\n    a\n\n    %%%\n",
+        ];
+        for (var i = 0; i < texts.Length; i++)
+        {
+            yield return FuzzSeed.FromText($"syntax-extensions-{i + 1}", texts[i]);
+        }
+
+        foreach (var seed in GetExtensionSeeds())
+        {
+            yield return seed;
+        }
+    }
+
     private static IEnumerable<FuzzSeed> GetEscaperSeeds()
     {
         string[] texts = ["plain text", "*test* **test** ***test*** _test_ ~test~", "1. test", "- test", "> test", "# header", "---", "===", "[test](url) ![test](url)", "&quot; &#35; &amp", "<div> <https://example.com> <a@b.c>", "`code` ``code``", "C:\\path\\file.txt \\\\ \\", "a | b", "a\n# b\n- c\n> d", "\u00E9 \u2713", "`teste```testr`", " a ", "a(b", "<a>", "a\"b'c", "a\n\nb", "```\ncode\n```", "    ```"];
@@ -191,6 +262,17 @@ public static class MarkdownFuzzTargets
             var ids = System.Text.RegularExpressions.Regex.Matches(html, "id=\"(?<id>pragma-line-[0-9]+)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)).Select(match => match.Groups["id"].Value).ToList();
             FuzzAssert.True(ids.Count == ids.Distinct(StringComparer.Ordinal).Count(), $"A pragma line is the id of two elements: {FuzzAssert.Format(text)}");
             _ = tree.GetRoot().FindClosestLine(text.Length % 7);
+
+            // Node renderers that decline every node, or that write the built-in rendering of every node, change nothing
+            var optionsPlainText = MarkdownPlainTextRenderer.ToPlainText(tree, RendererOptions);
+            foreach (var renderer in NodeRenderers)
+            {
+                var withRenderer = RendererOptions with { NodeRenderers = [renderer] };
+                var rendered = MarkdownHtmlRenderer.ToHtml(tree, withRenderer);
+                FuzzAssert.True(rendered == html, $"The node renderer {renderer.GetType().Name} changes the HTML {FuzzAssert.Format(html)} to {FuzzAssert.Format(rendered)}: {FuzzAssert.Format(text)}");
+                var renderedPlainText = MarkdownPlainTextRenderer.ToPlainText(tree, withRenderer);
+                FuzzAssert.True(renderedPlainText == optionsPlainText, $"The node renderer {renderer.GetType().Name} changes the plain text {FuzzAssert.Format(optionsPlainText)} to {FuzzAssert.Format(renderedPlainText)}: {FuzzAssert.Format(text)}");
+            }
         }
 
         CheckTypedApi(tree, text);
@@ -340,6 +422,239 @@ public static class MarkdownFuzzTargets
             number++;
             var text = markdown.Count == 0 ? "" : (string.Join('\n', markdown) + "\n").Replace('→', '\t');
             yield return FuzzSeed.FromText($"{prefix}-{number}", text);
+        }
+    }
+
+    private sealed class DecliningNodeRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer) => false;
+    }
+
+    private sealed class DefaultNodeRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            writer.WriteDefault(node);
+            return true;
+        }
+    }
+
+    // @name, unless the @ follows a letter or a digit
+    private sealed class MentionExtension() : MarkdownInlineExtension("mention", "@")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            if (char.IsLetterOrDigit(context.PreviousCharacter))
+            {
+                return false;
+            }
+
+            var length = 1;
+            while (length < context.Text.Length && (char.IsAsciiLetterOrDigit(context.Text[length]) || context.Text[length] == '-'))
+            {
+                length++;
+            }
+
+            if (length == 1)
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 1);
+            context.AddText(1, length - 1);
+            context.Complete(length);
+            return true;
+        }
+    }
+
+    // {{content}}, whose content is inlines, with balanced braces
+    private sealed class SpanExtension() : MarkdownInlineExtension("span", "{")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var text = context.Text;
+            if (!text.StartsWith("{{", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var depth = 0;
+            for (var i = 0; i < text.Length - 1; i++)
+            {
+                if (text[i] == '{' && text[i + 1] == '{')
+                {
+                    depth++;
+                    i++;
+                }
+                else if (text[i] == '}' && text[i + 1] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        context.AddMarker(0, 2);
+                        if (i > 2)
+                        {
+                            context.AddInlines(2, i - 2);
+                        }
+
+                        context.AddMarker(i, 2);
+                        context.Complete(i + 2);
+                        return true;
+                    }
+
+                    i++;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    // [[page]], whose text can span lines
+    private sealed class WikiLinkExtension() : MarkdownInlineExtension("wiki", "[")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var text = context.Text;
+            var end = text.IndexOf("]]", StringComparison.Ordinal);
+            if (!text.StartsWith("[[", StringComparison.Ordinal) || end < 3)
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 2);
+            context.AddText(2, end - 2);
+            context.AddMarker(end, 2);
+            context.Complete(end + 2);
+            return true;
+        }
+    }
+
+    // !!! or %%% fences
+    private sealed class FenceExtension(string name, string fence, MarkdownFencedBlockContent content) : MarkdownFencedBlockExtension(name, fence[..1], content)
+    {
+        public override int TryOpen(ReadOnlySpan<char> line) => line.StartsWith(fence, StringComparison.Ordinal) ? fence.Length : 0;
+
+        public override int TryClose(ReadOnlySpan<char> line, ReadOnlySpan<char> openingFence) => line.StartsWith(openingFence, StringComparison.Ordinal) ? openingFence.Length : 0;
+    }
+
+    // %%% glossary, then lines "Term: definition", which the state of the document records
+    private sealed class GlossaryExtension() : MarkdownFencedBlockExtension("glossary", "%", MarkdownFencedBlockContent.RawLines)
+    {
+        public override object? CreateState() => new HashSet<string>(StringComparer.Ordinal);
+
+        public override int TryOpen(ReadOnlySpan<char> line) => line.StartsWith("%%% glossary", StringComparison.Ordinal) ? 3 : 0;
+
+        public override int TryClose(ReadOnlySpan<char> line, ReadOnlySpan<char> openingFence) => line.StartsWith("%%%", StringComparison.Ordinal) ? 3 : 0;
+
+        public override void OnClosed(ref MarkdownFencedBlockContext context)
+        {
+            var terms = (HashSet<string>)context.State!;
+            for (var i = 0; i < context.LineCount; i++)
+            {
+                var line = context.GetLine(i);
+                if (line.IndexOf(": ", StringComparison.Ordinal) is > 0 and var colon)
+                {
+                    terms.Add(line[..colon].ToString());
+                }
+            }
+        }
+    }
+
+    // [Term], when the glossary defines the term
+    private sealed class GlossaryTermExtension(GlossaryExtension glossary) : MarkdownInlineExtension("glossary-term", "[")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var end = context.Text.IndexOf(']');
+            if (end < 2 || !((HashSet<string>)context.GetState(glossary)!).Contains(context.Text[1..end].ToString()))
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 1);
+            context.AddText(1, end - 1);
+            context.AddMarker(end, 1);
+            context.Complete(end + 1);
+            return true;
+        }
+    }
+
+    // The runs of two lines or more "Speaker: message" of a paragraph, whose speakers are text and whose messages are inlines
+    private sealed class TranscriptExtension() : MarkdownParagraphExtension("transcript")
+    {
+        public override bool TryConvert(ref MarkdownParagraphConvertContext context)
+        {
+            var first = -1;
+            var count = 0;
+            for (var i = 0; i < context.LineCount; i++)
+            {
+                var line = context.GetLine(i);
+                var colon = line.IndexOf(": ", StringComparison.Ordinal);
+                if (colon <= 0 || line[..colon].ContainsAnyExceptInRange('A', 'z'))
+                {
+                    if (first >= 0)
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                first = first < 0 ? i : first;
+                context.AddText(i, 0, colon);
+                context.AddMarker(i, colon, 1);
+                if (line.Length > colon + 2)
+                {
+                    context.AddInlines(i, colon + 2, line.Length - colon - 2);
+                }
+
+                count++;
+            }
+
+            if (count < 2)
+            {
+                return false;
+            }
+
+            context.Complete(first, count);
+            return true;
+        }
+    }
+
+    // Writes every construct of a syntax extension with the writer: its markers, its text and its inlines, or a block in a <div>
+    private sealed class SyntaxExtensionRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is MarkdownExtensionBlockSyntax block)
+            {
+                writer.EnsureNewLine();
+                writer.WriteRawHtml("<div class=\"");
+                writer.WriteAttributeValue(block.Name);
+                writer.WriteRawHtml("\"");
+                writer.WriteAttributes(block);
+                writer.WriteRawHtml(">\n");
+                writer.WriteDefault(block);
+                writer.EnsureNewLine();
+                writer.WriteRawHtml("</div>\n");
+                return true;
+            }
+
+            if (node is not MarkdownExtensionInlineSyntax extension)
+            {
+                return false;
+            }
+
+            writer.WriteRawHtml("<span class=\"");
+            writer.WriteAttributeValue(extension.Name);
+            writer.WriteRawHtml("\"");
+            writer.WriteAttributes(extension);
+            writer.WriteRawHtml(">");
+            writer.WriteText(extension.Markers[0].Text);
+            writer.WriteInlines(extension.Inlines);
+            writer.WriteRawHtml("</span>");
+            return true;
         }
     }
 }

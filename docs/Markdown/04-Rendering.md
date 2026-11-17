@@ -1,6 +1,6 @@
 ---
 title: Rendering
-description: Render a document as HTML or as plain text, and change the URLs, the attributes and the ids of the elements.
+description: Render a document as HTML or as plain text, change the URLs, the attributes and the ids of the elements, and write some nodes yourself.
 ---
 
 ## Render HTML
@@ -69,3 +69,150 @@ Assert.Equal("Title\nSome bold text and a link.\nFirst\nSecond\n", MarkdownPlain
 ```
 <!-- endref -->
 
+## Write some nodes yourself
+
+A [MarkdownHtmlNodeRenderer](cref:Meziantou.Framework.Markdown.MarkdownHtmlNodeRenderer) writes the HTML of some nodes
+instead of the renderer, such as the code blocks of a language or the custom containers of a name. Add it to
+[NodeRenderers](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.NodeRenderers): each block and each inline
+is offered to the node renderers in order, and the first one whose
+[TryWrite](cref:Meziantou.Framework.Markdown.MarkdownHtmlNodeRenderer.TryWrite(Meziantou.Framework.Markdown.MarkdownSyntaxNode,Meziantou.Framework.Markdown.MarkdownHtmlWriter))
+returns `true` writes it. The others are written as usual. The parts of a block that are written with it, such as the
+items of a list and the rows of a table, are not offered.
+
+The node renderer writes with a [MarkdownHtmlWriter](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter):
+
+- [WriteText](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteText(System.ReadOnlySpan{System.Char})) escapes
+  text, and [WriteAttributeValue](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteAttributeValue(System.ReadOnlySpan{System.Char}))
+  escapes the value of an attribute.
+- [WriteRawHtml](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteRawHtml(System.ReadOnlySpan{System.Char}))
+  writes HTML as it is.
+- [WriteUrl](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteUrl(System.String)) writes a URL as the links
+  have it, with [BaseUrl](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.BaseUrl) and
+  [LinkRewriter](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.LinkRewriter).
+- [WriteAttributes](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteAttributes(Meziantou.Framework.Markdown.MarkdownSyntaxNode,System.String))
+  writes the attributes of the element of the node: its [generic attributes](05-Extensions/15-GenericAttributes.md), and
+  its pragma line.
+- [WriteBlocks](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteBlocks(System.Collections.Generic.IEnumerable{Meziantou.Framework.Markdown.MarkdownBlockSyntax}))
+  and [WriteInlines](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteInlines(System.Collections.Generic.IEnumerable{Meziantou.Framework.Language.SyntaxNodeOrToken}))
+  write the content of the node, offering its nodes to the node renderers.
+- [EnsureNewLine](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.EnsureNewLine) starts a new line, as the renderer
+  does between blocks.
+
+This node renderer writes the code blocks of the language `chart` as a `<canvas>` that a script draws:
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlNodeRenderer_Chart;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Writes the code blocks of the language "chart" as a <canvas> that a script draws
+private sealed class ChartRenderer : MarkdownHtmlNodeRenderer
+{
+    public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+    {
+        if (node is not MarkdownCodeBlockSyntax { Info: "chart" } code)
+        {
+            return false;
+        }
+
+        writer.EnsureNewLine();
+        writer.WriteRawHtml("<canvas class=\"chart\" data-spec=\"");
+        writer.WriteAttributeValue(code.Code);
+        writer.WriteRawHtml("\"></canvas>");
+
+        // Plain text has the text of the chart
+        if (writer.IsPlainText)
+        {
+            writer.WriteText(code.Code);
+        }
+
+        writer.EnsureNewLine();
+        return true;
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlRenderer_NodeRenderers;format=md-fenced-code-block;dedent=true -->
+````csharp
+var tree = MarkdownSyntaxTree.ParseText("```chart\nbar: 1, 2, 3\n```\n\n```cs\nvar a = 1;\n```\n");
+var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new ChartRenderer()] };
+
+// The chart is written by the node renderer, the other code block as usual
+Assert.Equal("<canvas class=\"chart\" data-spec=\"bar: 1, 2, 3\n\"></canvas>\n<pre><code class=\"language-cs\">var a = 1;\n</code></pre>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+
+// The plain text has the text of the chart, without its HTML
+Assert.Equal("bar: 1, 2, 3\nvar a = 1;\n", MarkdownPlainTextRenderer.ToPlainText(tree, options));
+````
+<!-- endref -->
+
+[WriteDefault](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteDefault(Meziantou.Framework.Markdown.MarkdownSyntaxNode))
+writes a node as the renderer writes it, to add HTML around it. These node renderers write the
+[custom containers](05-Extensions/19-CustomContainers.md) named `details` as a `<details>` element, and the tables in a
+`<div>` that scrolls:
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlNodeRenderer_Default;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Writes the custom containers named "details" as a <details> element, whose arguments are the summary
+private sealed class DetailsRenderer : MarkdownHtmlNodeRenderer
+{
+    public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+    {
+        if (node is not MarkdownCustomContainerSyntax { Name: "details" } container)
+        {
+            return false;
+        }
+
+        writer.EnsureNewLine();
+        writer.WriteRawHtml("<details");
+        writer.WriteAttributes(container);
+        writer.WriteRawHtml("><summary>");
+        writer.WriteText(container.Arguments);
+        writer.WriteRawHtml("</summary>\n");
+        writer.WriteBlocks(container.Blocks);
+        writer.EnsureNewLine();
+        writer.WriteRawHtml("</details>\n");
+        return true;
+    }
+}
+
+// Writes the tables as usual, in a <div> that scrolls
+private sealed class ScrollableTableRenderer : MarkdownHtmlNodeRenderer
+{
+    public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+    {
+        if (node is not MarkdownTableSyntax)
+        {
+            return false;
+        }
+
+        writer.EnsureNewLine();
+        writer.WriteRawHtml("<div class=\"table-scroll\">\n");
+        writer.WriteDefault(node);
+        writer.EnsureNewLine();
+        writer.WriteRawHtml("</div>\n");
+        return true;
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlRenderer_NodeRenderersDefault;format=md-fenced-code-block;dedent=true -->
+```csharp
+var parseOptions = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.CustomContainers };
+var tree = MarkdownSyntaxTree.ParseText(":::details Show the prices\n| Fruit | Price |\n|---|---|\n| Apple | *1* |\n:::\n", parseOptions);
+var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new DetailsRenderer(), new ScrollableTableRenderer()] };
+
+Assert.Equal("<details><summary>Show the prices</summary>\n<div class=\"table-scroll\">\n<table>\n<thead>\n<tr>\n<th>Fruit</th>\n<th>Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Apple</td>\n<td><em>1</em></td>\n</tr>\n</tbody>\n</table>\n</div>\n</details>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+```
+<!-- endref -->
+
+The renderer still writes what a node adds to the blocks around it: the checkbox of a task list item starts the HTML of
+its first paragraph, and the links back to the references of a footnote follow the HTML of its last paragraph.
+
+[MarkdownPlainTextRenderer](cref:Meziantou.Framework.Markdown.MarkdownPlainTextRenderer) uses the node renderers too.
+Then [IsPlainText](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.IsPlainText) is `true`: the text is written as it
+is, and the HTML, the attributes and the URLs are not written.
+
+The HTML of [WriteRawHtml](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter.WriteRawHtml(System.ReadOnlySpan{System.Char}))
+is not checked: the [options that protect against untrusted Markdown](07-Security.md) apply to the Markdown, not to
+the HTML of node renderers. Write the text of the document with `WriteText` or `WriteAttributeValue`.
+
+One node renderer writes every document, possibly on several threads at once: keep no state between calls.

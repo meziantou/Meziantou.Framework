@@ -8,6 +8,6 @@ internal static class MarkdownParser
     {
         using var elements = new TreeBuffer(Math.Max(256, text.Length / 8));
         var triviaSpans = BlockParser.Parse(text, options, elements, cell);
-        return GreenBuilder.Build(text, elements, triviaSpans);
+        return GreenBuilder.Build(text, elements, triviaSpans, options.SyntaxExtensionSet?.Extensions);
     }
 }

@@ -100,8 +100,8 @@ Assert.Equal("Title\r\n===\r\n\r\n* a\r\n* b\r\n\r\n~~~cs\r\nvar x = 1;\r\n~~~\r
 
 The formatter keeps what the HTML depends on: a list keeps its blank lines, as they make it loose; two lists that follow
 each other get different markers, as they would be one list otherwise; a thematic break after a paragraph is `***`, as
-`---` would make the paragraph a heading; and a setext heading of several lines stays a setext heading. The extensions of
-Markdig add their own cases: the pipe tables, the grid tables and the definition lists keep the blank lines around them,
+`---` would make the paragraph a heading; and a setext heading of several lines stays a setext heading. The extensions add
+their own cases: the pipe tables, the grid tables and the definition lists keep the blank lines around them,
 and a table whose cells have attributes, or a pipe that is text, is not aligned.
 
 The formatter checks that the formatted text renders as the same HTML. When it does not, which can happen with rare

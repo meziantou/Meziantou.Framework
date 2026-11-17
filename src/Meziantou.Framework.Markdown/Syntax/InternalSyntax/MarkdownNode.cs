@@ -89,6 +89,8 @@ internal sealed class MarkdownNode : GreenNode
             SyntaxKind.FootnoteReference => new Markdown.MarkdownFootnoteReferenceSyntax(this, parent, position),
             SyntaxKind.GenericAttributes => new Markdown.MarkdownGenericAttributesSyntax(this, parent, position),
             SyntaxKind.MathInline => new Markdown.MarkdownMathInlineSyntax(this, parent, position),
+            SyntaxKind.ExtensionInline => new Markdown.MarkdownExtensionInlineSyntax(this, parent, position),
+            SyntaxKind.ExtensionBlock => new Markdown.MarkdownExtensionBlockSyntax(this, parent, position),
             SyntaxKind.Subscript or SyntaxKind.Superscript or SyntaxKind.Inserted or SyntaxKind.Marked or SyntaxKind.CustomContainerInline or SyntaxKind.Citation => new Markdown.MarkdownEmphasisExtraSyntax(this, parent, position),
             SyntaxKind.CodeSpan => new Markdown.MarkdownCodeSpanSyntax(this, parent, position),
             SyntaxKind.Link or SyntaxKind.Image => new Markdown.MarkdownLinkSyntax(this, parent, position),

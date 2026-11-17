@@ -11,6 +11,11 @@ internal sealed class BlockParser
 {
     private const int CodeIndent = 4;
 
+    // The kind of the block of a fenced block extension of raw lines while the blocks are read: a token kind, which no block
+    // has. Its own kind lets the checks of the kinds that run for each line, such as AcceptsLines, cover it without another
+    // comparison. The tree has an ExtensionBlock.
+    private const SyntaxKind RawExtensionBlock = SyntaxKind.ExtensionLineToken;
+
     // The empty cells that complete the short rows of a GFM table, as cmark-gfm limits them: once a table has more, its next
     // line is not a row. Without the limit, a header of many columns followed by many short rows makes the HTML grow
     // quadratically with the text.
@@ -39,6 +44,12 @@ internal sealed class BlockParser
     private bool _keepsGridTable;
     private bool _atEnd;
     private readonly InlineParser _inlineParser;
+
+    // The syntax extensions of the options, their states for the document, and the parts that a paragraph extension reports
+    private readonly MarkdownParseOptions _options;
+    private readonly SyntaxExtensionSet? _syntaxExtensions;
+    private readonly SyntaxExtensionStates? _states;
+    private readonly List<ParagraphExtensionRange> _paragraphRanges = [];
 
     // The nodes and tokens of the tree, which the blocks are converted to once they are all read
     private readonly TreeBuffer _tree;
@@ -80,7 +91,10 @@ internal sealed class BlockParser
         _tip = _document;
         _oldTip = _document;
         _lastMatchedContainer = _document;
-        _inlineParser = new InlineParser(_references, options) { MaximumAbbreviationExpansion = Math.Max(100_000, text.Length) };
+        _options = options;
+        _syntaxExtensions = options.SyntaxExtensionSet;
+        _states = _syntaxExtensions is null ? null : new SyntaxExtensionStates(_syntaxExtensions);
+        _inlineParser = new InlineParser(_references, options) { MaximumAbbreviationExpansion = Math.Max(100_000, text.Length), States = _states };
     }
 
     /// <param name="cell">For the content of a cell of a grid table, the context of the table.</param>
@@ -119,7 +133,7 @@ internal sealed class BlockParser
             parser.ParseBlocks();
 
             // The definitions of a paragraph are blocks before it, and a paragraph of definitions only is not one
-            if (parser._document.Children is not [{ Kind: SyntaxKind.Paragraph, IsEmpty: false, DefinitionsOrNull: null or [] } paragraph])
+            if (parser._document.Children is not [{ Kind: SyntaxKind.Paragraph, IsEmpty: false, DefinitionsOrNull: null or [], ExtensionSegments: null } paragraph])
             {
                 return false;
             }
@@ -266,13 +280,14 @@ internal sealed class BlockParser
         while (!matchedLeaf)
         {
             FindNextNonspace();
-            if (!_indented && !IsMaybeSpecial(Peek(_nextNonspace)) && !IsMaybeExtension(container, Peek(_nextNonspace)))
+            if (!_indented && !IsMaybeSpecial(Peek(_nextNonspace)) && !IsMaybeExtension(container, Peek(_nextNonspace)) && _syntaxExtensions?.GetFencedBlockExtensions(Peek(_nextNonspace)) is null)
             {
                 AdvanceNextNonspace();
                 break;
             }
 
-            var result = TryStart(container);
+            // The fenced block extensions are tried before the built-in blocks
+            var result = _syntaxExtensions is not null && !_indented && _syntaxExtensions.GetFencedBlockExtensions(Peek(_nextNonspace)) is { } fencedExtensions && TryStartFencedExtension(container, fencedExtensions) ? 2 : TryStart(container);
             if (result == 0)
             {
                 AdvanceNextNonspace();
@@ -317,11 +332,12 @@ internal sealed class BlockParser
         _skipAddLine = false;
     }
 
-    private static bool AcceptsLines(SyntaxKind kind) => kind is SyntaxKind.Paragraph or SyntaxKind.IndentedCodeBlock or SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock or SyntaxKind.HtmlBlock or SyntaxKind.GridTable;
+
+    private static bool AcceptsLines(SyntaxKind kind) => kind is SyntaxKind.Paragraph or SyntaxKind.IndentedCodeBlock or SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock or SyntaxKind.HtmlBlock or SyntaxKind.GridTable or RawExtensionBlock;
 
     private static bool CanContain(SyntaxKind parent, SyntaxKind child) => parent switch
     {
-        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition or SyntaxKind.CustomContainer or SyntaxKind.DefinitionItem or SyntaxKind.Figure or SyntaxKind.Footer => child is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem),
+        SyntaxKind.Document or SyntaxKind.BlockQuote or SyntaxKind.ListItem or SyntaxKind.FootnoteDefinition or SyntaxKind.CustomContainer or SyntaxKind.DefinitionItem or SyntaxKind.Figure or SyntaxKind.Footer or SyntaxKind.ExtensionBlock => child is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem),
         SyntaxKind.List => child == SyntaxKind.ListItem,
         SyntaxKind.DefinitionList => child == SyntaxKind.DefinitionItem,
         _ => false,
@@ -614,7 +630,7 @@ internal sealed class BlockParser
                     leaf = open;
                 }
 
-                if (leaf.Kind is not (SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock))
+                if (leaf.Kind is not (SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock or RawExtensionBlock))
                 {
                     // A blank line closes the blocks of the footnote, and the footnote takes it
                     if (_blank)
@@ -645,6 +661,9 @@ internal sealed class BlockParser
 
             case SyntaxKind.Paragraph:
                 return _blank ? 1 : 0;
+
+            case SyntaxKind.ExtensionBlock or RawExtensionBlock:
+                return ContinueFencedExtension(block);
 
             case SyntaxKind.Table:
                 // A row has at least one cell: a line with only a pipe ends the table
@@ -1279,7 +1298,7 @@ internal sealed class BlockParser
             paragraph = _tip;
             _allClosed = true;
         }
-        else if (container.LastChild is { Kind: SyntaxKind.Paragraph, Open: false, IsEmpty: false, DefinitionsOrNull: null } closed && container.Kind is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem or SyntaxKind.FootnoteDefinition))
+        else if (container.LastChild is { Kind: SyntaxKind.Paragraph, Open: false, IsEmpty: false, DefinitionsOrNull: null, ExtensionSegments: null } closed && container.Kind is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem or SyntaxKind.FootnoteDefinition))
         {
             paragraph = closed;
         }
@@ -1696,6 +1715,15 @@ internal sealed class BlockParser
         {
             case SyntaxKind.Paragraph:
                 ParseDefinitions(block);
+                if (_syntaxExtensions?.ParagraphExtensions is not null)
+                {
+                    ConvertParagraphLines(block);
+                }
+
+                break;
+
+            case SyntaxKind.ExtensionBlock or RawExtensionBlock:
+                CloseFencedExtension(block);
                 break;
 
             case SyntaxKind.GridTable:
@@ -1705,6 +1733,10 @@ internal sealed class BlockParser
                     block.Kind = SyntaxKind.Paragraph;
                     block.GridLineCount = block.LineCount;
                     ParseDefinitions(block);
+                    if (_syntaxExtensions?.ParagraphExtensions is not null)
+                    {
+                        ConvertParagraphLines(block);
+                    }
                 }
 
                 break;
@@ -1803,8 +1835,43 @@ internal sealed class BlockParser
     {
         switch (block.Kind)
         {
+            case SyntaxKind.ExtensionBlock or RawExtensionBlock:
+            {
+                // The opening fence and its info, the lines or the blocks, then the closing fence
+                var node = _tree.StartNode(SyntaxKind.ExtensionBlock);
+                _tree.AddRange(block.LeadingOrNull);
+                if (block.InfoInlines && block.InfoRange is var (infoStart, infoEnd) && infoEnd > infoStart)
+                {
+                    _inlineParser.Parse(Subject.FromLines(_text, [new Line(infoStart, infoEnd, infoEnd, 0)]), _tree);
+                }
+
+                if (block.Kind == RawExtensionBlock)
+                {
+                    foreach (var line in GetLines(block))
+                    {
+                        _tree.AddLineToken(SyntaxKind.ExtensionLineToken, line.Start, line.EolEnd, line.VirtualSpaces);
+                    }
+                }
+                else
+                {
+                    foreach (var child in block.Children)
+                    {
+                        Convert(child);
+                    }
+                }
+
+                _tree.AddRange(block.TrailingOrNull);
+                _tree.EndNode(node);
+                return;
+            }
+
             case SyntaxKind.Paragraph or SyntaxKind.SetextHeading:
                 _tree.AddRange(block.DefinitionsOrNull);
+                if (block.ExtensionSegments is { } segments)
+                {
+                    ConvertSegments(segments);
+                    return;
+                }
 
                 if (block == _alertParagraph)
                 {
@@ -1925,12 +1992,289 @@ internal sealed class BlockParser
         }
     }
 
+    // The opening fence of a fenced block extension, the first one of the character that reads the line: the rest of the line is
+    // the info, and the lines of the block follow
+    private bool TryStartFencedExtension(Block container, MarkdownFencedBlockExtension[] extensions)
+    {
+        var interruptsParagraph = container.Kind == SyntaxKind.Paragraph || (!_allClosed && !_blank && _tip.Kind == SyntaxKind.Paragraph);
+        var line = _text.AsSpan(_nextNonspace, _lineEnd - _nextNonspace);
+        foreach (var extension in extensions)
+        {
+            if (interruptsParagraph && !extension.CanInterruptParagraph)
+            {
+                continue;
+            }
+
+            var length = extension.TryOpen(line);
+            if (length <= 0)
+            {
+                continue;
+            }
+
+            if (length > line.Length)
+            {
+                throw new InvalidOperationException($"The fenced block extension '{extension.Name}' read an opening fence of {length} characters on a line of {line.Length}.");
+            }
+
+            var index = _syntaxExtensions!.GetIndex(extension);
+            CloseUnmatchedBlocks();
+            var raw = extension.Content == MarkdownFencedBlockContent.RawLines;
+            var block = AddChild(raw ? RawExtensionBlock : SyntaxKind.ExtensionBlock);
+            block.ExtensionIndex = index;
+            block.InfoInlines = extension.ParseInfoAsInlines;
+            block.FenceOffset = _indent;
+            AdvanceNextNonspace();
+            var fenceEnd = _offset + length;
+            block.OpeningFence = (_offset, length);
+            block.Leading.Add(BuildElement.Token(SyntaxKind.ExtensionFenceToken, _offset, fenceEnd, value: index + 1));
+
+            // The info is the rest of the line, without the whitespace around it
+            var infoStart = fenceEnd;
+            var infoEnd = _lineEnd;
+            while (infoStart < infoEnd && Scanners.IsSpaceOrTab(_text[infoStart]))
+            {
+                infoStart++;
+            }
+
+            while (infoEnd > infoStart && Scanners.IsSpaceOrTab(_text[infoEnd - 1]))
+            {
+                infoEnd--;
+            }
+
+            block.InfoRange = (infoStart, infoEnd);
+            if (infoEnd > infoStart && !block.InfoInlines)
+            {
+                block.Leading.Add(BuildElement.Token(SyntaxKind.InfoStringToken, infoStart, infoEnd));
+            }
+
+            // The rest of the line is the opening fence: no block starts after it
+            AdvanceOffset(_lineEnd - _offset, columns: false);
+            _skipAddLine = raw;
+            return true;
+        }
+
+        return false;
+    }
+
+    // A closing fence closes the block and the blocks in it, even a code block. The indentation of the opening fence is removed
+    // from the raw lines, as from the lines of a fenced code block.
+    private int ContinueFencedExtension(Block block)
+    {
+        var extension = (MarkdownFencedBlockExtension)_syntaxExtensions!.Extensions[block.ExtensionIndex];
+        if (_indent <= 3 && !_blank)
+        {
+            var line = _text.AsSpan(_nextNonspace, _lineEnd - _nextNonspace);
+            var (openingStart, openingLength) = block.OpeningFence;
+            var length = extension.TryClose(line, _text.AsSpan(openingStart, openingLength));
+            if (length > line.Length)
+            {
+                throw new InvalidOperationException($"The fenced block extension '{extension.Name}' read a closing fence of {length} characters on a line of {line.Length}.");
+            }
+
+            if (length > 0 && line[length..].Trim(" \t").IsEmpty)
+            {
+                while (_tip != block)
+                {
+                    Finalize(_tip);
+                }
+
+                block.Trailing.Add(BuildElement.Token(SyntaxKind.ExtensionFenceToken, _nextNonspace, _nextNonspace + length));
+                Finalize(block);
+                return 2;
+            }
+        }
+
+        if (block.Kind == RawExtensionBlock)
+        {
+            for (var i = block.FenceOffset; i > 0 && Scanners.IsSpaceOrTab(Peek(_offset)); i--)
+            {
+                AdvanceOffset(1, columns: true);
+            }
+        }
+
+        return 0;
+    }
+
+    // The block of a fenced block extension is closed: the extension can record it in its state
+    private void CloseFencedExtension(Block block)
+    {
+        var extension = (MarkdownFencedBlockExtension)_syntaxExtensions!.Extensions[block.ExtensionIndex];
+        var (openingStart, openingLength) = block.OpeningFence;
+        var (infoStart, infoEnd) = block.InfoRange;
+        var context = new MarkdownFencedBlockContext(_text, _text.AsSpan(openingStart, openingLength), _text.AsSpan(infoStart, infoEnd - infoStart), block.Kind == RawExtensionBlock ? GetLines(block) : default, _options, _states, block.ExtensionIndex);
+        extension.OnClosed(ref context);
+    }
+
+    // Offers the lines of a closed paragraph to the paragraph extensions: the lines that one takes are a block of the extension,
+    // the lines before them stay a paragraph, and the lines after them are offered again
+    private void ConvertParagraphLines(Block paragraph)
+    {
+        if (_syntaxExtensions?.ParagraphExtensions is not { } extensions || paragraph.IsEmpty)
+        {
+            return;
+        }
+
+        // The content starts after the link reference definitions, on the first line that ends after its start: the content
+        // can start at the line ending of the last definition, which the definition count of the paragraph does not count
+        var end = paragraph.LineStart + paragraph.LineCount;
+        var contentStart = paragraph.Subject!.ToSourceStart(paragraph.ContentStart);
+        var first = paragraph.LineStart;
+        while (first < end && _lines[first].End <= contentStart)
+        {
+            first++;
+        }
+
+        List<ParagraphSegment>? segments = null;
+        while (first < end)
+        {
+            var lines = _lines.AsSpan(first, end - first);
+            ParagraphSegment? found = null;
+            foreach (var extension in extensions)
+            {
+                _paragraphRanges.Clear();
+                var index = _syntaxExtensions.GetIndex(extension);
+                var context = new MarkdownParagraphConvertContext(_text, lines, _options, _paragraphRanges, _states, index);
+                if (!extension.TryConvert(ref context))
+                {
+                    continue;
+                }
+
+                if (context.CompletedLineCount == 0)
+                {
+                    throw new InvalidOperationException($"The paragraph extension '{extension.Name}' read a block without calling {nameof(MarkdownParagraphConvertContext.Complete)}.");
+                }
+
+                var ranges = new ParagraphExtensionRange[_paragraphRanges.Count];
+                for (var i = 0; i < ranges.Length; i++)
+                {
+                    ranges[i] = _paragraphRanges[i] with { Line = _paragraphRanges[i].Line + first };
+                }
+
+                found = new ParagraphSegment(index, first + context.FirstLine, context.CompletedLineCount, ranges);
+                break;
+            }
+
+            if (found is null)
+            {
+                break;
+            }
+
+            segments ??= [];
+            if (found.LineStart > first)
+            {
+                segments.Add(ParagraphSegment.Paragraph(first, found.LineStart - first));
+            }
+
+            segments.Add(found);
+            first = found.LineStart + found.LineCount;
+        }
+
+        if (segments is null)
+        {
+            return;
+        }
+
+        if (first < end)
+        {
+            segments.Add(ParagraphSegment.Paragraph(first, end - first));
+        }
+
+        paragraph.ExtensionSegments = segments;
+    }
+
+    // A paragraph that paragraph extensions split: their blocks, and the paragraphs around them
+    private void ConvertSegments(List<ParagraphSegment> segments)
+    {
+        foreach (var segment in segments)
+        {
+            if (segment.Ranges is null)
+            {
+                ConvertParagraphSegment(_lines.AsSpan(segment.LineStart, segment.LineCount));
+            }
+            else
+            {
+                ConvertExtensionSegment(segment);
+            }
+        }
+    }
+
+    // Lines of a paragraph that a paragraph extension split, which are a paragraph, or a pipe table
+    private void ConvertParagraphSegment(ReadOnlySpan<Line> lines)
+    {
+        var subject = Subject.FromLines(_text, lines);
+        if (HasExtension(MarkdownExtensions.PipeTables) && subject.From(subject.Start).Contains('|'))
+        {
+            ConvertPipeTables(subject, subject.Start, trimEnd: true);
+            return;
+        }
+
+        var node = _tree.StartNode(SyntaxKind.Paragraph);
+        _inlineParser.Parse(subject, _tree);
+        _tree.EndNode(node);
+    }
+
+    // The block of a paragraph extension: its parts, line by line, and text for the characters between them that are not
+    // whitespace. The first token has the index of the extension: the first part is a marker or text.
+    private void ConvertExtensionSegment(ParagraphSegment segment)
+    {
+        var node = _tree.StartNode(SyntaxKind.ExtensionBlock);
+        var ranges = segment.Ranges!;
+        var first = true;
+        var rangeIndex = 0;
+        for (var lineIndex = segment.LineStart; lineIndex < segment.LineStart + segment.LineCount; lineIndex++)
+        {
+            var line = _lines[lineIndex];
+            var position = line.Start;
+            for (; rangeIndex < ranges.Length && ranges[rangeIndex].Line == lineIndex; rangeIndex++)
+            {
+                var range = ranges[rangeIndex];
+                var start = line.Start + range.Start;
+                var end = start + range.Length;
+                AddExtensionText(position, start, segment.ExtensionIndex, ref first);
+                if (range.Kind == ExtensionRangeKind.Inlines)
+                {
+                    _inlineParser.Parse(Subject.FromLines(_text, [new Line(start, end, end, 0)]), _tree);
+                }
+                else
+                {
+                    _tree.AddToken(range.Kind == ExtensionRangeKind.Marker ? SyntaxKind.ExtensionMarkerToken : SyntaxKind.ExtensionTextToken, start, end, value: first ? segment.ExtensionIndex + 1 : 0);
+                    first = false;
+                }
+
+                position = end;
+            }
+
+            AddExtensionText(position, line.End, segment.ExtensionIndex, ref first);
+        }
+
+        _tree.EndNode(node);
+    }
+
+    private void AddExtensionText(int start, int end, int index, ref bool first)
+    {
+        while (start < end && Scanners.IsSpaceOrTab(_text[start]))
+        {
+            start++;
+        }
+
+        while (end > start && Scanners.IsSpaceOrTab(_text[end - 1]))
+        {
+            end--;
+        }
+
+        if (end > start)
+        {
+            _tree.AddToken(SyntaxKind.ExtensionTextToken, start, end, value: first ? index + 1 : 0);
+            first = false;
+        }
+    }
+
     // The first paragraph of the quote that starts with [!, letters, and ], followed by spaces and a line break or its end
     private bool FindAlertParagraph(Block quote)
     {
         foreach (var child in quote.Children)
         {
-            if (child.Kind != SyntaxKind.Paragraph || child.IsEmpty || child.Subject is not { } subject)
+            if (child.Kind != SyntaxKind.Paragraph || child.IsEmpty || child.ExtensionSegments is not null || child.Subject is not { } subject)
             {
                 continue;
             }
@@ -2408,10 +2752,53 @@ internal sealed class BlockParser
         public Subject? Subject { get; set; }
 
         public bool IsEmpty { get; set; }
+
+        // A block of a fenced block extension: the index of the extension, its opening fence, and its info, which can be read as
+        // inlines
+        public int ExtensionIndex
+        {
+            get => _extra is null ? default : _extra.ExtensionIndex;
+            set => Extra.ExtensionIndex = value;
+        }
+
+        public bool InfoInlines
+        {
+            get => _extra is not null && _extra.InfoInlines;
+            set => Extra.InfoInlines = value;
+        }
+
+        public (int Start, int Length) OpeningFence
+        {
+            get => _extra is null ? default : _extra.OpeningFence;
+            set => Extra.OpeningFence = value;
+        }
+
+        public (int Start, int End) InfoRange
+        {
+            get => _extra is null ? default : _extra.InfoRange;
+            set => Extra.InfoRange = value;
+        }
+
+        // A paragraph that paragraph extensions split: its blocks and its paragraphs
+        public List<ParagraphSegment>? ExtensionSegments
+        {
+            get => _extra?.ExtensionSegments;
+            set => Extra.ExtensionSegments = value;
+        }
     }
 
     private sealed class BlockExtra
     {
+        public int ExtensionIndex { get; set; }
+
+        public bool InfoInlines { get; set; }
+
+        public (int Start, int Length) OpeningFence { get; set; }
+
+        public (int Start, int End) InfoRange { get; set; }
+
+        public List<ParagraphSegment>? ExtensionSegments { get; set; }
+
         public char FenceChar { get; set; }
 
         public int FenceLength { get; set; }

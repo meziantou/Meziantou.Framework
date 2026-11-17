@@ -86,6 +86,200 @@ public sealed class MarkdownSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void DocumentationExample_Tables()
+    {
+        #region MarkdownSyntaxTree_Tables
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Tables };
+        var tree = MarkdownSyntaxTree.ParseText("| Fruit | Price |\n| :---- | ----: |\n| Apple | 1 |\n| Pear |\n", options);
+        var table = Assert.IsType<MarkdownTableSyntax>(tree.GetRoot().Blocks.Single());
+
+        Assert.Equal([MarkdownTableAlignment.Left, MarkdownTableAlignment.Right], table.Alignments);
+        Assert.Equal("Fruit", table.HeaderRow!.Cells[0].GetPlainText());
+        Assert.Equal(["Apple", "1"], table.Rows[0].Cells.Select(cell => cell.GetPlainText()));
+
+        // The row with fewer cells than the header gets empty cells
+        Assert.Equal("<table>\n<thead>\n<tr>\n<th align=\"left\">Fruit</th>\n<th align=\"right\">Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td align=\"left\">Apple</td>\n<td align=\"right\">1</td>\n</tr>\n<tr>\n<td align=\"left\">Pear</td>\n<td align=\"right\"></td>\n</tr>\n</tbody>\n</table>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Strikethrough()
+    {
+        #region MarkdownSyntaxTree_Strikethrough
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Strikethrough };
+        var tree = MarkdownSyntaxTree.ParseText("The meeting is ~~Monday~~ Tuesday.\n", options);
+
+        var strikethrough = tree.GetRoot().DescendantNodes().OfType<MarkdownStrikethroughSyntax>().Single();
+        Assert.Equal("Monday", strikethrough.GetPlainText());
+        Assert.Equal("<p>The meeting is <del>Monday</del> Tuesday.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TaskLists()
+    {
+        #region MarkdownSyntaxTree_TaskLists
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.TaskLists };
+        var tree = MarkdownSyntaxTree.ParseText("- [x] Write the draft\n- [ ] Review it\n", options);
+
+        var items = tree.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().ToList();
+        Assert.True(items[0].IsTask);
+        Assert.True(items[0].IsChecked);
+        Assert.False(items[1].IsChecked);
+        Assert.Equal("<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> Write the draft</li>\n<li><input disabled=\"\" type=\"checkbox\"> Review it</li>\n</ul>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Autolinks()
+    {
+        #region MarkdownSyntaxTree_Autolinks
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Autolinks };
+        var tree = MarkdownSyntaxTree.ParseText("See www.example.com, https://example.com/docs or contact@example.com.\n", options);
+
+        var links = tree.GetRoot().DescendantNodes().OfType<MarkdownAutolinkSyntax>().ToList();
+        Assert.Equal(["http://www.example.com", "https://example.com/docs", "mailto:contact@example.com"], links.Select(link => link.Destination));
+        Assert.Equal("<p>See <a href=\"http://www.example.com\">www.example.com</a>, <a href=\"https://example.com/docs\">https://example.com/docs</a> or <a href=\"mailto:contact@example.com\">contact@example.com</a>.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TagFilter()
+    {
+        #region MarkdownHtmlRenderer_TagFilter
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.TagFilter };
+        var tree = MarkdownSyntaxTree.ParseText("<script>alert(1)</script>\n\nSome <b>bold</b> text\n", options);
+
+        // The < of the filtered tags is escaped, the other tags are written as they are
+        Assert.Equal("&lt;script>alert(1)&lt;/script>\n<p>Some <b>bold</b> text</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EmphasisExtras()
+    {
+        #region MarkdownSyntaxTree_EmphasisExtras
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.EmphasisExtras };
+        var tree = MarkdownSyntaxTree.ParseText("H~2~O, 2^10^, ++added++, ==marked== and ~~removed~~\n", options);
+
+        var styles = tree.GetRoot().DescendantNodes().OfType<MarkdownEmphasisExtraSyntax>().Select(node => node.Style);
+        Assert.Equal([MarkdownEmphasisExtraStyle.Subscript, MarkdownEmphasisExtraStyle.Superscript, MarkdownEmphasisExtraStyle.Inserted, MarkdownEmphasisExtraStyle.Marked], styles);
+        Assert.Equal("<p>H<sub>2</sub>O, 2<sup>10</sup>, <ins>added</ins>, <mark>marked</mark> and <del>removed</del></p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_HardLineBreaks()
+    {
+        #region MarkdownSyntaxTree_HardLineBreaks
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.HardLineBreaks };
+        var tree = MarkdownSyntaxTree.ParseText("Roses are red,\nViolets are blue.\n", options);
+
+        Assert.Equal("<p>Roses are red,<br />\nViolets are blue.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_YamlFrontMatter()
+    {
+        #region MarkdownSyntaxTree_YamlFrontMatter
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.YamlFrontMatter };
+        var tree = MarkdownSyntaxTree.ParseText("---\ntitle: Hello\ntags: [a, b]\n---\n# Hello\n", options);
+
+        var frontMatter = Assert.IsType<MarkdownFrontMatterSyntax>(tree.GetRoot().Blocks[0]);
+        Assert.Equal("title: Hello\ntags: [a, b]\n", frontMatter.Yaml);
+
+        // The renderer does not write the front matter
+        Assert.Equal("<h1>Hello</h1>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Mathematics()
+    {
+        #region MarkdownSyntaxTree_Mathematics
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Mathematics };
+        var tree = MarkdownSyntaxTree.ParseText("The energy is $E = mc^2$.\n\n$$\n\\sum_{i=1}^n i\n$$\n", options);
+
+        Assert.Equal("E = mc^2", tree.GetRoot().DescendantNodes().OfType<MarkdownMathInlineSyntax>().Single().Math);
+        Assert.Equal("\\sum_{i=1}^n i\n", Assert.IsType<MarkdownMathBlockSyntax>(tree.GetRoot().Blocks[1]).Math);
+        Assert.Equal("<p>The energy is <span class=\"math\">\\(E = mc^2\\)</span>.</p>\n<div class=\"math\">\n\\[\n\\sum_{i=1}^n i\n\\]</div>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Abbreviations()
+    {
+        #region MarkdownSyntaxTree_Abbreviations
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Abbreviations };
+        var tree = MarkdownSyntaxTree.ParseText("*[HTML]: Hypertext Markup Language\n\nHTML is the language of the web, not XHTML.\n", options);
+
+        var abbreviation = tree.GetRoot().DescendantNodes().OfType<MarkdownAbbreviationSyntax>().Single();
+        Assert.Equal("Hypertext Markup Language", abbreviation.Definition!.Title);
+
+        // The definition is not written, and only whole words are abbreviations
+        Assert.Equal("<p><abbr title=\"Hypertext Markup Language\">HTML</abbr> is the language of the web, not XHTML.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Footnotes()
+    {
+        #region MarkdownSyntaxTree_Footnotes
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes };
+        var tree = MarkdownSyntaxTree.ParseText("Markdown was created in 2004[^1].\n\n[^1]: By John Gruber.\n", options);
+
+        var reference = tree.GetRoot().DescendantNodes().OfType<MarkdownFootnoteReferenceSyntax>().Single();
+        Assert.Equal("By John Gruber.", reference.Definition!.GetPlainText());
+        Assert.Equal("<p>Markdown was created in 2004<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a>.</p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p>By John Gruber.<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GenericAttributes()
+    {
+        #region MarkdownSyntaxTree_GenericAttributes
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes };
+        var tree = MarkdownSyntaxTree.ParseText("# Introduction {#intro .lead}\n\nSee [the docs](https://example.com){title=\"Documentation\" onclick=\"run()\"}.\n\n{.note}\nA note.\n", options);
+
+        var attributes = tree.GetRoot().DescendantNodes().OfType<MarkdownGenericAttributesSyntax>().First();
+        Assert.Equal("intro", attributes.Id);
+        Assert.Equal(["lead"], attributes.Classes);
+        Assert.IsType<MarkdownHeadingSyntax>(attributes.Target);
+
+        // The renderer does not write the event handlers
+        Assert.Equal("<h1 id=\"intro\" class=\"lead\">Introduction</h1>\n<p>See <a href=\"https://example.com\" title=\"Documentation\">the docs</a>.</p>\n<p class=\"note\">A note.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Alerts()
+    {
+        #region MarkdownSyntaxTree_Alerts
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts };
+        var tree = MarkdownSyntaxTree.ParseText("> [!WARNING]\n> Back up your files first.\n", options);
+
+        var alert = Assert.IsType<MarkdownAlertSyntax>(tree.GetRoot().Blocks.Single());
+        Assert.Equal("WARNING", alert.AlertKind);
+
+        var html = MarkdownHtmlRenderer.ToHtml(tree);
+        Assert.StartsWith("<div class=\"markdown-alert markdown-alert-warning\">\n<p class=\"markdown-alert-title\"><svg", html);
+        Assert.EndsWith("</svg>Warning</p>\n<p>Back up your files first.</p>\n</div>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Diagrams()
+    {
+        #region MarkdownSyntaxTree_Diagrams
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Diagrams };
+        var tree = MarkdownSyntaxTree.ParseText("```mermaid\ngraph LR\n  A --> B\n```\n\n```nomnoml\n[A]->[B]\n```\n", options);
+
+        Assert.Equal("<pre class=\"mermaid\">graph LR\n  A --> B\n</pre>\n<div class=\"nomnoml\">[A]->[B]\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("a")]
@@ -794,6 +988,10 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("<3 -> <=> `:)` \\:)\n", "<p>\u2764\uFE0F \u2192 \u21D4 <code>:)</code> :)</p>\n")]
     [InlineData("a :* b *c :* d*\n", "<p>a \U0001F617 b <em>c :</em> d*</p>\n")]
     [InlineData("*:)*\n", "<p><em>\U0001F603</em></p>\n")]
+    [InlineData(":thumbsup: :man_with_turban:\n", "<p>\U0001F44D \U0001F473\u200D\u2642\uFE0F</p>\n")]
+    [InlineData("a :-* b X-) c :-| d\n", "<p>a \U0001F617 b \U0001F606 c \U0001F610 d</p>\n")]
+    [InlineData(":p :-s :Z :@\n", "<p>\U0001F61B \U0001F612 \U0001F612 \U0001F621</p>\n")]
+    [InlineData("</3 <- =>\n", "<p>\U0001F494 \u2190 \u21D2</p>\n")]
     public void RendersEmoji(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Emoji });
@@ -815,13 +1013,40 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
-    public void ReadmeExample_FiguresFootersCitations()
+    public void DocumentationExample_Figures()
     {
-        #region MarkdownSyntaxTree_FiguresFootersCitations
-        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Figures | MarkdownExtensions.Footers | MarkdownExtensions.Citations };
-        var tree = MarkdownSyntaxTree.ParseText("^^^\n![Logo](logo.png)\n^^^ The *logo*\n\n^^ From \"\"The Book\"\"\n", options);
+        #region MarkdownSyntaxTree_Figures
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Figures };
+        var tree = MarkdownSyntaxTree.ParseText("^^^\n![Logo](logo.png)\n^^^ The *logo*\n", options);
 
-        Assert.Equal("<figure>\n<p><img src=\"logo.png\" alt=\"Logo\" /></p>\n<figcaption>The <em>logo</em></figcaption>\n</figure>\n<footer>From <cite>The Book</cite></footer>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        var figure = Assert.IsType<MarkdownFigureSyntax>(tree.GetRoot().Blocks.Single());
+        Assert.Equal("The logo", figure.Blocks.OfType<MarkdownFigureCaptionSyntax>().Single().GetPlainText());
+        Assert.Equal("<figure>\n<p><img src=\"logo.png\" alt=\"Logo\" /></p>\n<figcaption>The <em>logo</em></figcaption>\n</figure>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Footers()
+    {
+        #region MarkdownSyntaxTree_Footers
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footers };
+        var tree = MarkdownSyntaxTree.ParseText("> Simplicity is prerequisite for reliability.\n^^ Edsger W. Dijkstra\n", options);
+
+        Assert.IsType<MarkdownFooterSyntax>(tree.GetRoot().Blocks[1]);
+        Assert.Equal("<blockquote>\n<p>Simplicity is prerequisite for reliability.</p>\n</blockquote>\n<footer>Edsger W. Dijkstra</footer>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Citations()
+    {
+        #region MarkdownSyntaxTree_Citations
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Citations };
+        var tree = MarkdownSyntaxTree.ParseText("As \"\"The Pragmatic Programmer\"\" says.\n", options);
+
+        var citation = tree.GetRoot().DescendantNodes().OfType<MarkdownEmphasisExtraSyntax>().Single();
+        Assert.Equal(MarkdownEmphasisExtraStyle.Citation, citation.Style);
+        Assert.Equal("<p>As <cite>The Pragmatic Programmer</cite> says.</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
         #endregion
     }
 
@@ -1028,6 +1253,54 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.Equal(text, tree.GetRoot().ToFullString());
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
+    [InlineData("clip.MOV", "<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/quicktime\" src=\"clip.MOV\"></source></video></p>\n")]
+    [InlineData("https://example.com/a/song.m4a?x=1", "<p><audio width=\"500\" controls=\"\"><source type=\"audio/mp4\" src=\"https://example.com/a/song.m4a?x=1\"></source></audio></p>\n")]
+    [InlineData("voice.opus", "<p><audio width=\"500\" controls=\"\"><source type=\"audio/ogg\" src=\"voice.opus\"></source></audio></p>\n")]
+    [InlineData("old.avi", "<p><img src=\"old.avi\" alt=\"\" /></p>\n")]
+    [InlineData("photo.avif", "<p><img src=\"photo.avif\" alt=\"\" /></p>\n")]
+    [InlineData("noextension", "<p><img src=\"noextension\" alt=\"\" /></p>\n")]
+    public void MediaLinksRenderTheFormatsThatBrowsersPlay(string destination, string html)
+    {
+        var tree = MarkdownSyntaxTree.ParseText($"![]({destination})\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.MediaLinks });
+
+        Assert.Equal(html, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void MediaLinksUseTheExtensionsOfTheOptions()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("![](old.avi) ![](song.mp3)\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.MediaLinks });
+        var options = new MarkdownHtmlRendererOptions { MediaLinks = MarkdownMediaLinkOptions.Default with { ExtensionToMimeType = new Dictionary<string, string>(StringComparer.Ordinal) { [".avi"] = "video/x-msvideo" } } };
+
+        Assert.Equal("<p><video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/x-msvideo\" src=\"old.avi\"></source></video> <img src=\"song.mp3\" alt=\"\" /></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+    }
+
+    [Theory]
+    [InlineData("https://www.youtube.com/shorts/6BUptHVuvyI", "https://www.youtube.com/embed/6BUptHVuvyI", "youtubeshort")]
+    [InlineData("https://www.youtube.com/watch/?v=a&t=5&v=b", "https://www.youtube.com/embed/a?start=5", "youtube")]
+    [InlineData("https://m.www.youtube.com/WATCH?v=a", "https://www.youtube.com/embed/a", "youtube")]
+    [InlineData("https://www.youtube.com/embed/a?start=1", "https://www.youtube.com/embed/a?start=1", "youtube")]
+    [InlineData("https://youtu.be/a?t=1", "https://www.youtube.com/embed/a?start=1", "youtube")]
+    [InlineData("https://vimeo.com/channels/staff/8607834", "https://player.vimeo.com/video/8607834", "vimeo")]
+    [InlineData("https://ok.ru/video/1", "https://ok.ru/videoembed/1", "odnoklassniki")]
+    [InlineData("https://music.yandex.ru/album/1/track/2/extra", "https://music.yandex.ru/iframe/#track/2/1/", "yandex")]
+    [InlineData("https://www.youtube.com/watch?t=5", null, null)]
+    [InlineData("https://www.youtube.com/watchlist?v=a", null, null)]
+    [InlineData("https://www.youtube.com.example.org/watch?v=a", null, null)]
+    [InlineData("https://youtu.be/", null, null)]
+    [InlineData("https://vimeo.com/", null, null)]
+    [InlineData("https://music.yandex.ru/album/1/track/", null, null)]
+    public void MediaHostsMakeTheUrlsOfTheirIframes(string url, string? iframeUrl, string? iframeClass)
+    {
+        var host = IMarkdownMediaHost.KnownHosts.FirstOrDefault(host => host.TryHandle(new Uri(url), isSchemaRelative: false, out _));
+        string? actual = null;
+        _ = host?.TryHandle(new Uri(url), isSchemaRelative: false, out actual);
+
+        Assert.Equal(iframeUrl, actual);
+        Assert.Equal(iframeClass, host?.Class);
     }
 
     [Fact]
@@ -1441,6 +1714,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("$x$ and $y$\n$z$")]
     [InlineData("# a\n{g}\n\"|{.c}|-|\n|:-|")]
     [InlineData("{.c} a | b\n- | -\n{.d} c | d")]
+    [InlineData("x\n\ny\n\n| a {.c} | b |\n| - {.e} | -: |\n| c | d {.f} |\n{.g}\n\n{.h} a | b\n{.i} - | -\nc | d")]
     [InlineData("# a {#b}\nc {.d}\n")]
     [InlineData("a\n\n  b\n  c\n\n> d\n> e")]
     [InlineData("<a@b.c>\na@b.c\n:smile: x")]
@@ -1534,6 +1808,504 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.Equal("Title\nSome bold text and a link.\nFirst\nSecond\n", MarkdownPlainTextRenderer.ToPlainText(tree));
         #endregion
+    }
+
+    [Fact]
+    public void RendersNodesWithNodeRenderers()
+    {
+        #region MarkdownHtmlRenderer_NodeRenderers
+        var tree = MarkdownSyntaxTree.ParseText("```chart\nbar: 1, 2, 3\n```\n\n```cs\nvar a = 1;\n```\n");
+        var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new ChartRenderer()] };
+
+        // The chart is written by the node renderer, the other code block as usual
+        Assert.Equal("<canvas class=\"chart\" data-spec=\"bar: 1, 2, 3\n\"></canvas>\n<pre><code class=\"language-cs\">var a = 1;\n</code></pre>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+
+        // The plain text has the text of the chart, without its HTML
+        Assert.Equal("bar: 1, 2, 3\nvar a = 1;\n", MarkdownPlainTextRenderer.ToPlainText(tree, options));
+        #endregion
+    }
+
+    [Fact]
+    public void RendersNodesWithTheDefaultRendering()
+    {
+        #region MarkdownHtmlRenderer_NodeRenderersDefault
+        var parseOptions = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.CustomContainers };
+        var tree = MarkdownSyntaxTree.ParseText(":::details Show the prices\n| Fruit | Price |\n|---|---|\n| Apple | *1* |\n:::\n", parseOptions);
+        var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new DetailsRenderer(), new ScrollableTableRenderer()] };
+
+        Assert.Equal("<details><summary>Show the prices</summary>\n<div class=\"table-scroll\">\n<table>\n<thead>\n<tr>\n<th>Fruit</th>\n<th>Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Apple</td>\n<td><em>1</em></td>\n</tr>\n</tbody>\n</table>\n</div>\n</details>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("- [x] done\n- [ ] todo\n\n  more\n")]
+    [InlineData("A[^1] and B[^1].\n\n[^1]: The note.\n\n    Its code.\n\n[^2]: Second.\n")]
+    [InlineData("# Title {#id .c}\n\n{.d}\n> quote *a* **b** `c` <span>d</span> [e](f \"g\") ![h](i)\n\n1. one\n2. two\n\n| a | b |\n|---|---|\n| 1 | 2 |\n")]
+    [InlineData("Term\n:   Definition\n\n:::note\ntext\n:::\n\n> [!NOTE]\n> Alert\n\n$$\nx\n$$\n\n<div>html</div>\n\n---\n")]
+    [InlineData("+---+---+\n| a | *b* |\n+===+===+\n| c | d |\n+---+---+\n")]
+    [InlineData(":::x\n[a]: /url\nb [a]\n:::\n\n:::\n[^1]: c\n:::\n")]
+    [InlineData("^^ This is a footer\n^^ <title>multi-line")]
+    public void NodeRenderersThatDeclineOrWriteTheDefaultRenderingChangeNothing(string text)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, AllExtensionsWithoutMarkdigTables);
+        foreach (var options in (MarkdownHtmlRendererOptions[])[new(), new() { PragmaLines = true }])
+        {
+            var html = MarkdownHtmlRenderer.ToHtml(tree, options);
+            var plainText = MarkdownPlainTextRenderer.ToPlainText(tree, options);
+            foreach (var renderer in (MarkdownHtmlNodeRenderer[])[new DecliningRenderer(), new DefaultRenderer()])
+            {
+                var withRenderer = options with { NodeRenderers = [renderer] };
+                Assert.Equal(html, MarkdownHtmlRenderer.ToHtml(tree, withRenderer));
+                Assert.Equal(plainText, MarkdownPlainTextRenderer.ToPlainText(tree, withRenderer));
+            }
+        }
+    }
+
+    [Fact]
+    public void NodeRenderersAreOfferedEveryBlockAndInline()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a *b*\n\n- c\n- d **e**\n\n> f `g`\n");
+        var renderer = new DecliningRenderer();
+        _ = MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { NodeRenderers = [renderer] });
+
+        Assert.Equal(["Heading", "Emphasis", "List", "Paragraph", "Paragraph", "Emphasis", "BlockQuote", "Paragraph", "CodeSpan"], renderer.Offered);
+    }
+
+    [Fact]
+    public void NodeRenderersWriteTheCheckboxOfTaskListItemsBeforeTheParagraph()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("- [x] a\n\n- [ ] b\n", MarkdownParseOptions.GitHubFlavored);
+        var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new ParagraphRenderer()] };
+
+        Assert.Equal("<ul>\n<li>\n<input checked=\"\" disabled=\"\" type=\"checkbox\"> <div class=\"p\">a</div>\n</li>\n<li>\n<input disabled=\"\" type=\"checkbox\"> <div class=\"p\">b</div>\n</li>\n</ul>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+    }
+
+    [Fact]
+    public void NodeRenderersWriteTheBackLinksOfFootnotesAfterTheLastParagraph()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("A[^1].\n\n[^1]: Note.\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes });
+        var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new ParagraphRenderer()] };
+
+        Assert.Equal("<div class=\"p\">A<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a>.</div>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<div class=\"p\">Note.</div>\n<p><a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+    }
+
+    [Fact]
+    public void NodeRenderersWriteUrlsAndAttributesAsTheRenderer()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("Hi @octo-cat {.mention}\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes });
+        var options = new MarkdownHtmlRendererOptions
+        {
+            BaseUrl = new Uri("https://example.com/"),
+            LinkRewriter = url => url + "?ref=md",
+            NodeRenderers = [new MentionParagraphRenderer()],
+        };
+
+        Assert.Equal("<p class=\"text mention\">Hi <a href=\"https://example.com/users/octo-cat%C3%A9?ref=md\">@octo-cat&lt;&gt;</a></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+        Assert.Equal("Hi @octo-cat<>\n", MarkdownPlainTextRenderer.ToPlainText(tree, options));
+    }
+
+    [Fact]
+    public void ParsesInlineExtensions()
+    {
+        #region MarkdownSyntaxTree_InlineExtension
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new MentionExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("Thanks @octo-cat, and *@hubot*!", options);
+        var mention = tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>().First();
+
+        Assert.Equal("mention", mention.Name);
+        Assert.Equal(["@"], mention.Markers.Select(marker => marker.Text));
+        Assert.Equal("octo-cat", mention.Text);
+
+        // By default, the text of the construct is written without its markers
+        Assert.Equal("<p>Thanks octo-cat, and <em>hubot</em>!</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+        // A node renderer writes other HTML
+        var rendererOptions = new MarkdownHtmlRendererOptions { NodeRenderers = [new MentionRenderer()] };
+        Assert.Equal("<p>Thanks <a class=\"mention\" href=\"/users/octo-cat\">@octo-cat</a>, and <em><a class=\"mention\" href=\"/users/hubot\">@hubot</a></em>!</p>\n", MarkdownHtmlRenderer.ToHtml(tree, rendererOptions));
+
+        // An email address is not a mention: the extension reads the character before the @
+        Assert.Equal("<p>Mail me@example.com</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("Mail me@example.com", options), rendererOptions));
+        #endregion
+    }
+
+    [Fact]
+    public void ParsesDelimiterExtensions()
+    {
+        #region MarkdownSyntaxTree_DelimiterExtension
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new MarkdownDelimiterExtension("highlight", '%')] };
+        var tree = MarkdownSyntaxTree.ParseText("Some %%important *and* urgent%% text, *nested %%both* ways%%.", options);
+        var highlight = tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>().Single();
+
+        Assert.Equal("highlight", highlight.Name);
+        Assert.Equal(["%%", "%%"], highlight.Markers.Select(marker => marker.Text));
+
+        // The runs take part in the emphasis: the second highlight is text, as the second == would be
+        var rendererOptions = new MarkdownHtmlRendererOptions { NodeRenderers = [new HighlightRenderer()] };
+        Assert.Equal("<p>Some <mark>important <em>and</em> urgent</mark> text, <em>nested %%both</em> ways%%.</p>\n", MarkdownHtmlRenderer.ToHtml(tree, rendererOptions));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("a ==b== c")]
+    [InlineData("*a ==b* c==")]
+    [InlineData("==a *b== c*")]
+    [InlineData("===a=== ==b ==c== d==")]
+    [InlineData("==a **b==** c=")]
+    [InlineData("x==y==z and == a == and ==\nb==")]
+    public void DelimiterExtensionsMatchAsTheBuiltInExtraEmphasis(string text)
+    {
+        var marked = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Marked });
+        var extension = MarkdownSyntaxTree.ParseText(text.Replace('=', '%'), new MarkdownParseOptions { SyntaxExtensions = [new MarkdownDelimiterExtension("marked", '%')] });
+        var rendererOptions = new MarkdownHtmlRendererOptions { NodeRenderers = [new HighlightRenderer()] };
+
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(marked), MarkdownHtmlRenderer.ToHtml(extension, rendererOptions).Replace('%', '='));
+        Assert.Equal(text.Replace('=', '%'), extension.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void DelimiterExtensionsCanUseTheCharactersOfDisabledExtensions()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new MarkdownDelimiterExtension("sub", '~', minimumCount: 1, maximumCount: 1), new MarkdownDelimiterExtension("sup", '^', minimumCount: 1, maximumCount: 1), new MarkdownDelimiterExtension("quote", '"')] };
+        var tree = MarkdownSyntaxTree.ParseText("H~2~O, x^2^ and \"\"a quote\"\"", options);
+
+        Assert.Equal(["sub", "sup", "quote"], tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>().Select(node => node.Name));
+        Assert.Equal("<p>H2O, x2 and a quote</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
+    [InlineData("a {{*b* [c](d)}} e", "<p>a <span><em>b</em> <a href=\"d\">c</a></span> e</p>\n")]
+    [InlineData("[a {{b]}}(c)", "<p>[a <span>b]</span>(c)</p>\n")]
+    [InlineData("*a {{b* c}}", "<p>*a <span>b* c</span></p>\n")]
+    [InlineData("[a {{b}} c](d)", "<p><a href=\"d\">a <span>b</span> c</a></p>\n")]
+    [InlineData("{{a {{b}} c}}", "<p><span>a <span>b</span> c</span></p>\n")]
+    [InlineData("{{a", "<p>{{a</p>\n")]
+    [InlineData("`{{a}}` \\{{b}}", "<p><code>{{a}}</code> {{b}}</p>\n")]
+    [InlineData("> {{a\n> *b*}} c", "<blockquote>\n<p><span>a\n<em>b</em></span> c</p>\n</blockquote>\n")]
+    public void InlineExtensionsParseTheirContentOnItsOwn(string text, string html)
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new SpanExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(html, MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { NodeRenderers = [new SpanRenderer()] }));
+    }
+
+    [Fact]
+    public void InlineExtensionsAreTriedBeforeTheBuiltInSyntaxes()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new WikiLinkExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("[[Home page]] and [a link](b)", options);
+
+        Assert.Equal("<p>Home page and <a href=\"b\">a link</a></p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        Assert.Equal("Home page and a link\n", MarkdownPlainTextRenderer.ToPlainText(tree));
+        Assert.Equal("Home page", tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>().Single().GetPlainText());
+    }
+
+    [Fact]
+    public void InlineExtensionsKeepTheirTextOnSeveralLines()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new WikiLinkExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("- [[Home\n  page]] x\n", options);
+        var link = tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>().Single();
+
+        Assert.Equal("Home\npage", link.Text);
+        Assert.Equal(["Home", "page"], link.Texts.Select(token => token.Text));
+        Assert.Equal("- [[Home\n  page]] x\n", tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void InlineExtensionsHaveAHeadingIdentifier()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers, SyntaxExtensions = [new WikiLinkExtension()] };
+
+        Assert.Equal("<h1 id=\"see-home\">See Home</h1>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("# See [[Home]]", options)));
+    }
+
+    [Fact]
+    public void InlineExtensionsNestedDeeplyAreText()
+    {
+        var text = new string('{', 200) + "a" + new string('}', 200);
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { SyntaxExtensions = [new SpanExtension()] });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.HasCount(33, tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>());
+    }
+
+    [Fact]
+    public void InlineExtensionsAreVisited()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("a [[b]] c", new MarkdownParseOptions { SyntaxExtensions = [new WikiLinkExtension()] });
+        var walker = new CountingWalker();
+        walker.Visit(tree.GetRoot());
+
+        Assert.Equal(3, walker.Count);
+    }
+
+    [Fact]
+    public void InlineExtensionsMustCompleteTheirConstructs()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new ParseHandlerExtension("bad", "@", (ref MarkdownInlineParseContext context) => true)] };
+
+        Assert.Throws<InvalidOperationException>(() => MarkdownSyntaxTree.ParseText("a @b", options));
+    }
+
+    [Fact]
+    public void InlineExtensionsReportValidParts()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownInlineParseContext context) => context.AddInlines(0, 1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownInlineParseContext context) => context.AddText(0, 0)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownInlineParseContext context) => context.AddText(0, 4)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownInlineParseContext context) =>
+        {
+            context.AddMarker(0, 2);
+            context.AddText(1, 1);
+        }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownInlineParseContext context) =>
+        {
+            context.AddMarker(0, 2);
+            context.Complete(1);
+        }));
+        Assert.Throws<InvalidOperationException>(() => Parse((ref MarkdownInlineParseContext context) =>
+        {
+            context.Complete(1);
+            context.AddText(1, 1);
+        }));
+
+        static void Parse(ParseHandler handler) => MarkdownSyntaxTree.ParseText("@ab", new MarkdownParseOptions { SyntaxExtensions = [new ParseHandlerExtension("bad", "@", (ref MarkdownInlineParseContext context) =>
+        {
+            handler(ref context);
+            return true;
+        })] });
+    }
+
+    [Fact]
+    public void SyntaxExtensionsAreValidated()
+    {
+        Assert.Throws<ArgumentException>(() => new MentionExtension("", "@"));
+        Assert.Throws<ArgumentException>(() => new MentionExtension("a", ""));
+        Assert.Throws<ArgumentException>(() => new MentionExtension("a", "@ "));
+        Assert.Throws<ArgumentException>("character", () => new MarkdownDelimiterExtension("a", '*'));
+        Assert.Throws<ArgumentException>("character", () => new MarkdownDelimiterExtension("a", 'a'));
+        Assert.Throws<ArgumentException>("character", () => new MarkdownDelimiterExtension("a", 'é'));
+        Assert.Throws<ArgumentOutOfRangeException>("maximumCount", () => new MarkdownDelimiterExtension("a", '%', minimumCount: 2, maximumCount: 1));
+
+        var mention = new MentionExtension();
+        Assert.Throws<ArgumentException>("value", () => new MarkdownParseOptions { SyntaxExtensions = [mention, mention] });
+        Assert.Throws<ArgumentException>("value", () => new MarkdownParseOptions { SyntaxExtensions = [mention, new MentionExtension()] });
+        Assert.Throws<ArgumentException>("value", () => new MarkdownParseOptions { SyntaxExtensions = [new MarkdownDelimiterExtension("a", '%'), new MarkdownDelimiterExtension("b", '%')] });
+        Assert.Throws<ArgumentException>("value", () => new MarkdownParseOptions { SyntaxExtensions = [null!] });
+
+        // A delimiter extension cannot use a character of an enabled extension
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Marked, SyntaxExtensions = [new MarkdownDelimiterExtension("a", '=')] };
+        Assert.Throws<ArgumentException>("options", () => MarkdownSyntaxTree.ParseText("a", options));
+        Assert.Equal("<p>a</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("a", options with { Extensions = MarkdownExtensions.None })));
+    }
+
+    [Fact]
+    public void FormatterKeepsInlineExtensions()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables, SyntaxExtensions = [new MentionExtension(), new MarkdownDelimiterExtension("highlight", '%')] };
+        var tree = MarkdownSyntaxTree.ParseText("* @a %%b%%\n\n|x|y|\n|-|-|\n|@c|%%d%%|\n", options);
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+        Assert.HasCount(2, formatted.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>().Where(node => node.Name == "mention"));
+    }
+
+    [Fact]
+    public void ParsesFencedBlockExtensions()
+    {
+        #region MarkdownSyntaxTree_FencedBlockExtension
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new AdmonitionExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("!!! warning\nDo not *push* on Friday.\n\n- Really.\n!!!\n", options);
+        var admonition = Assert.IsType<MarkdownExtensionBlockSyntax>(tree.GetRoot().Blocks.Single());
+
+        Assert.Equal("admonition", admonition.Name);
+        Assert.Equal("warning", admonition.Info);
+        Assert.Equal(["!!!", "!!!"], admonition.Markers.Select(marker => marker.Text));
+
+        // By default, the blocks are written without the fences
+        Assert.Equal("<p>Do not <em>push</em> on Friday.</p>\n<ul>\n<li>Really.</li>\n</ul>\n", MarkdownHtmlRenderer.ToHtml(tree));
+
+        var rendererOptions = new MarkdownHtmlRendererOptions { NodeRenderers = [new AdmonitionRenderer()] };
+        Assert.Equal("<div class=\"admonition warning\">\n<p>Do not <em>push</em> on Friday.</p>\n<ul>\n<li>Really.</li>\n</ul>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree, rendererOptions));
+        #endregion
+    }
+
+    [Fact]
+    public void ParsesFencedBlockExtensionsOfRawLines()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new RawFenceExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("> %%% chart\n>   bar: <1>\n> *2*\n> %%%\n\nafter\n", options);
+        var block = tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionBlockSyntax>().Single();
+
+        Assert.Equal("chart", block.Info);
+        Assert.Equal("  bar: <1>\n*2*\n", block.Content);
+        Assert.HasCount(2, block.Lines);
+        Assert.Equal("> %%% chart\n>   bar: <1>\n> *2*\n> %%%\n\nafter\n", tree.GetRoot().ToFullString());
+        Assert.Equal("<blockquote>\n<pre><code>  bar: &lt;1&gt;\n*2*\n</code></pre>\n</blockquote>\n<p>after</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        Assert.Equal("  bar: <1>\n*2*\nafter\n", MarkdownPlainTextRenderer.ToPlainText(tree));
+    }
+
+    [Theory]
+    [InlineData("%%%\na\n", "<pre><code>a\n</code></pre>\n")]
+    [InlineData("> %%%\n> a\nb\n", "<blockquote>\n<pre><code>a\n</code></pre>\n</blockquote>\n<p>b</p>\n")]
+    [InlineData("  %%%\n    a\n %%%\n", "<pre><code>  a\n</code></pre>\n")]
+    [InlineData("%%%\n%%% x\n%%%\n", "<pre><code>%%% x\n</code></pre>\n")]
+    [InlineData("text\n%%%\na\n%%%\n", "<p>text</p>\n<pre><code>a\n</code></pre>\n")]
+    [InlineData("    %%%\n", "<pre><code>%%%\n</code></pre>\n")]
+    public void FencedBlockExtensionsEndAsFencedCodeBlocks(string text, string html)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { SyntaxExtensions = [new RawFenceExtension()] });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(html, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void FencedBlockExtensionsCloseTheirBlocks()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("!!! note\n```\ncode\n!!!\nafter\n", new MarkdownParseOptions { SyntaxExtensions = [new AdmonitionExtension()] });
+
+        Assert.Equal("<pre><code>code\n</code></pre>\n<p>after</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void FencedBlockExtensionsCanLeaveParagraphs()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new RawFenceExtension { CanInterruptParagraph = false }] };
+
+        Assert.Equal("<p>text\n%%%\na</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("text\n%%%\na\n", options)));
+        Assert.Equal("<p>text</p>\n<pre><code>a\n</code></pre>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("text\n\n%%%\na\n", options)));
+    }
+
+    [Fact]
+    public void FencedBlockExtensionsReadTheirInfoAsInlines()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("!!! A *warning* \nb\n!!!\n", new MarkdownParseOptions { SyntaxExtensions = [new AdmonitionExtension { ParseInfoAsInlines = true }] });
+        var block = Assert.IsType<MarkdownExtensionBlockSyntax>(tree.GetRoot().Blocks.Single());
+
+        Assert.Equal("A *warning*", block.Info);
+        Assert.Single(block.Inlines.Select(inline => inline.AsNode()).OfType<MarkdownEmphasisSyntax>());
+        Assert.Equal("!!! A *warning* \nb\n!!!\n", tree.GetRoot().ToFullString());
+        Assert.Equal("<div class=\"admonition A warning\">\n<p>b</p>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { NodeRenderers = [new AdmonitionRenderer()] }));
+    }
+
+    [Fact]
+    public void ParsesParagraphExtensions()
+    {
+        #region MarkdownSyntaxTree_ParagraphExtension
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new TranscriptExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("The meeting went like this:\nAlice: Can we ship on *Friday*?\nBob: Only if the tests pass.\nThen we went for lunch.\n", options);
+        var blocks = tree.GetRoot().Blocks;
+
+        // The converter took the lines of the transcript: the lines around them are paragraphs
+        Assert.HasCount(3, blocks);
+        var transcript = Assert.IsType<MarkdownExtensionBlockSyntax>(blocks[1]);
+        Assert.Equal("transcript", transcript.Name);
+        Assert.Equal(["Alice", "Bob"], transcript.Texts.Select(speaker => speaker.Text));
+
+        var rendererOptions = new MarkdownHtmlRendererOptions { NodeRenderers = [new TranscriptRenderer()] };
+        Assert.Equal("<p>The meeting went like this:</p>\n<dl class=\"transcript\">\n<dt>Alice</dt><dd>Can we ship on <em>Friday</em>?</dd>\n<dt>Bob</dt><dd>Only if the tests pass.</dd>\n</dl>\n<p>Then we went for lunch.</p>\n", MarkdownHtmlRenderer.ToHtml(tree, rendererOptions));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("Alice: a\nBob: b\n", "<p>Alicea\nBobb</p>\n")]
+    [InlineData("x\nAlice: a\n", "<p>x\nAlice: a</p>\n")]
+    [InlineData("Alice: a\nBob: b\nx\nCarol: c\nDan: d\ny\n", "<p>Alicea\nBobb</p>\n<p>x</p>\n<p>Carolc\nDand</p>\n<p>y</p>\n")]
+    [InlineData("[r]: /u\nAlice: [r]\nBob: b\n", "<p>Alice<a href=\"/u\">r</a>\nBobb</p>\n")]
+    [InlineData("Alice: a\nBob: b\n===\n", "<h1>Alice: a\nBob: b</h1>\n")]
+    [InlineData("[r]:/u\n===\nAlice: a\nBob: b\n", "<p>===</p>\n<p>Alicea\nBobb</p>\n")]
+    [InlineData("> Alice: a\nBob:   *b*  \n", "<blockquote>\n<p>Alicea\nBob<em>b</em></p>\n</blockquote>\n")]
+    [InlineData("no speakers\n", "<p>no speakers</p>\n")]
+    public void ParagraphExtensionsSplitParagraphs(string text, string html)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { SyntaxExtensions = [new TranscriptExtension()] });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(html, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Fact]
+    public void ParagraphExtensionsReportValidParts()
+    {
+        Assert.Throws<InvalidOperationException>(() => Parse((ref MarkdownParagraphConvertContext context) => context.AddInlines(0, 0, 1)));
+        Assert.Throws<InvalidOperationException>(() => Parse((ref MarkdownParagraphConvertContext context) => context.Complete(0, 1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownParagraphConvertContext context) => context.AddText(0, 0, 4)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownParagraphConvertContext context) => context.AddText(2, 0, 1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownParagraphConvertContext context) =>
+        {
+            context.AddText(1, 0, 1);
+            context.AddText(0, 0, 1);
+        }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Parse((ref MarkdownParagraphConvertContext context) =>
+        {
+            context.AddText(1, 0, 1);
+            context.Complete(0, 1);
+        }));
+        Assert.Throws<InvalidOperationException>(() => MarkdownSyntaxTree.ParseText("abc\nd", new MarkdownParseOptions { SyntaxExtensions = [new ConvertHandlerExtension((ref MarkdownParagraphConvertContext context) => true)] }));
+
+        static void Parse(ConvertHandler handler) => MarkdownSyntaxTree.ParseText("abc\nd", new MarkdownParseOptions { SyntaxExtensions = [new ConvertHandlerExtension((ref MarkdownParagraphConvertContext context) =>
+        {
+            handler(ref context);
+            return true;
+        })] });
+    }
+
+    [Fact]
+    public void BlockExtensionsShareTheirStateWithInlineExtensions()
+    {
+        #region MarkdownSyntaxTree_ExtensionState
+        var glossary = new GlossaryExtension();
+        var options = new MarkdownParseOptions { SyntaxExtensions = [glossary, new GlossaryTermExtension(glossary)] };
+        var tree = MarkdownSyntaxTree.ParseText("Call the [API] from a [link](https://example.com).\n\n%%% glossary\nAPI: Application programming interface\n%%%\n", options);
+
+        // The glossary is read before the inlines, so a term can be used before its definition
+        var rendererOptions = new MarkdownHtmlRendererOptions { NodeRenderers = [new GlossaryRenderer()] };
+        Assert.Equal("<p>Call the <abbr title=\"Application programming interface\">API</abbr> from a <a href=\"https://example.com\">link</a>.</p>\n", MarkdownHtmlRenderer.ToHtml(tree, rendererOptions));
+        #endregion
+    }
+
+    [Fact]
+    public void ExtensionStatesAreCreatedOncePerDocument()
+    {
+        var counting = new CountingStateExtension();
+        var options = new MarkdownParseOptions { SyntaxExtensions = [counting] };
+        _ = MarkdownSyntaxTree.ParseText("a\n\nb\n\n> c", options);
+        _ = MarkdownSyntaxTree.ParseText("d", options);
+
+        Assert.Equal(2, counting.StateCount);
+        Assert.Equal(4, counting.ParagraphCount);
+
+        var glossary = new GlossaryExtension();
+        Assert.Throws<ArgumentException>("extension", () => MarkdownSyntaxTree.ParseText("[A]", new MarkdownParseOptions { SyntaxExtensions = [new GlossaryTermExtension(glossary)] }));
+    }
+
+    [Fact]
+    public void BlockExtensionsAreVisitedAndFormatted()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new AdmonitionExtension(), new RawFenceExtension(), new TranscriptExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("!!! note\n* a\n!!!\n%%%\n  b\n%%%\nx\nAlice: *c*\nBob: d\n", options);
+        var walker = new CountingWalker();
+        walker.Visit(tree.GetRoot());
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.HasCount(3, tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionBlockSyntax>());
+
+        // The document, the admonition, its list, item and paragraph, the raw block, the paragraph, the transcript and its emphasis
+        Assert.Equal(9, walker.Count);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+        Assert.Equal(tree.GetRoot().GetPlainText(), formatted.GetRoot().GetPlainText());
+    }
+
+    [Fact]
+    public void NodeRenderersCanOnlyWriteTheDefaultRenderingOfBlocksAndInlines()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("| a |\n|---|\n| b |\n", MarkdownParseOptions.GitHubFlavored);
+        var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new RowRenderer()] };
+
+        Assert.Throws<ArgumentException>("node", () => MarkdownHtmlRenderer.ToHtml(tree, options));
     }
 
     [Theory]
@@ -2198,5 +2970,545 @@ public sealed class MarkdownSyntaxTreeTests
 
             return base.VisitToken(token);
         }
+    }
+
+    private static readonly MarkdownParseOptions AllExtensionsWithoutMarkdigTables = new() { Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension) & ~MarkdownExtensions.PipeTables };
+
+    #region MarkdownHtmlNodeRenderer_Chart
+    // Writes the code blocks of the language "chart" as a <canvas> that a script draws
+    private sealed class ChartRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownCodeBlockSyntax { Info: "chart" } code)
+            {
+                return false;
+            }
+
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("<canvas class=\"chart\" data-spec=\"");
+            writer.WriteAttributeValue(code.Code);
+            writer.WriteRawHtml("\"></canvas>");
+
+            // Plain text has the text of the chart
+            if (writer.IsPlainText)
+            {
+                writer.WriteText(code.Code);
+            }
+
+            writer.EnsureNewLine();
+            return true;
+        }
+    }
+    #endregion
+
+    #region MarkdownHtmlNodeRenderer_Default
+    // Writes the custom containers named "details" as a <details> element, whose arguments are the summary
+    private sealed class DetailsRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownCustomContainerSyntax { Name: "details" } container)
+            {
+                return false;
+            }
+
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("<details");
+            writer.WriteAttributes(container);
+            writer.WriteRawHtml("><summary>");
+            writer.WriteText(container.Arguments);
+            writer.WriteRawHtml("</summary>\n");
+            writer.WriteBlocks(container.Blocks);
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("</details>\n");
+            return true;
+        }
+    }
+
+    // Writes the tables as usual, in a <div> that scrolls
+    private sealed class ScrollableTableRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownTableSyntax)
+            {
+                return false;
+            }
+
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("<div class=\"table-scroll\">\n");
+            writer.WriteDefault(node);
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("</div>\n");
+            return true;
+        }
+    }
+    #endregion
+
+    private sealed class DecliningRenderer : MarkdownHtmlNodeRenderer
+    {
+        public List<string> Offered { get; } = [];
+
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            Offered.Add(node.GetType().Name["Markdown".Length..^"Syntax".Length]);
+            return false;
+        }
+    }
+
+    private sealed class DefaultRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            writer.WriteDefault(node);
+            return true;
+        }
+    }
+
+    private sealed class ParagraphRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownParagraphSyntax paragraph)
+            {
+                return false;
+            }
+
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("<div class=\"p\">");
+            writer.WriteInlines(paragraph.Inlines);
+            writer.WriteRawHtml("</div>\n");
+            return true;
+        }
+    }
+
+    // Writes "@name" at the end of a paragraph as a link to the user, with a name that needs escaping
+    private sealed class MentionParagraphRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownParagraphSyntax paragraph)
+            {
+                return false;
+            }
+
+            var text = paragraph.GetPlainText().Trim();
+            var at = text.IndexOf('@', StringComparison.Ordinal);
+            writer.WriteRawHtml("<p");
+            writer.WriteAttributes(paragraph, "text");
+            writer.WriteRawHtml(">");
+            writer.WriteText(text.AsSpan(0, at));
+            writer.WriteRawHtml("<a href=\"");
+            writer.WriteUrl("users/" + text[(at + 1)..] + "é");
+            writer.WriteRawHtml("\">");
+            writer.WriteText(text[at..] + "<>");
+            writer.WriteRawHtml("</a></p>");
+            writer.EnsureNewLine();
+            return true;
+        }
+    }
+
+    private sealed class RowRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is MarkdownTableSyntax table)
+            {
+                writer.WriteDefault(table.Rows[0]);
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    #region MarkdownInlineExtension_Mention
+    // Reads @name, where the name is letters, digits and dashes, unless the @ follows a letter or a digit, as in an email address
+    private sealed class MentionExtension(string name = "mention", string triggerCharacters = "@") : MarkdownInlineExtension(name, triggerCharacters)
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            if (char.IsLetterOrDigit(context.PreviousCharacter))
+            {
+                return false;
+            }
+
+            var length = 1;
+            while (length < context.Text.Length && (char.IsAsciiLetterOrDigit(context.Text[length]) || context.Text[length] == '-'))
+            {
+                length++;
+            }
+
+            if (length == 1)
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 1);
+            context.AddText(1, length - 1);
+            context.Complete(length);
+            return true;
+        }
+    }
+
+    // Writes the mentions as links to the page of the user
+    private sealed class MentionRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownExtensionInlineSyntax { Name: "mention" } mention)
+            {
+                return false;
+            }
+
+            writer.WriteRawHtml("<a class=\"mention\" href=\"");
+            writer.WriteUrl("/users/" + mention.Text);
+            writer.WriteRawHtml("\">");
+            writer.WriteText("@" + mention.Text);
+            writer.WriteRawHtml("</a>");
+            return true;
+        }
+    }
+    #endregion
+
+    #region MarkdownDelimiterExtension_Highlight
+    // Writes the constructs of the delimiter extensions as <mark> elements
+    private sealed class HighlightRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownExtensionInlineSyntax highlight || highlight.Markers is not [{ Text: ['%', ..] }, ..])
+            {
+                return false;
+            }
+
+            writer.WriteRawHtml("<mark>");
+            writer.WriteInlines(highlight.Inlines);
+            writer.WriteRawHtml("</mark>");
+            return true;
+        }
+    }
+    #endregion
+
+    // {{content}}, whose content is inlines
+    private sealed class SpanExtension() : MarkdownInlineExtension("span", "{")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var text = context.Text;
+            if (!text.StartsWith("{{", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            // The closing braces that balance the opening ones
+            var depth = 0;
+            for (var i = 0; i < text.Length - 1; i++)
+            {
+                if (text[i] == '{' && text[i + 1] == '{')
+                {
+                    depth++;
+                    i++;
+                }
+                else if (text[i] == '}' && text[i + 1] == '}')
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        context.AddMarker(0, 2);
+                        if (i > 2)
+                        {
+                            context.AddInlines(2, i - 2);
+                        }
+
+                        context.AddMarker(i, 2);
+                        context.Complete(i + 2);
+                        return true;
+                    }
+
+                    i++;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private sealed class SpanRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownExtensionInlineSyntax { Name: "span" } span)
+            {
+                return false;
+            }
+
+            writer.WriteRawHtml("<span>");
+            writer.WriteInlines(span.Inlines);
+            writer.WriteRawHtml("</span>");
+            return true;
+        }
+    }
+
+    // [[page]], whose text is the name of a page
+    private sealed class WikiLinkExtension() : MarkdownInlineExtension("wiki", "[")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var text = context.Text;
+            var end = text.IndexOf("]]", StringComparison.Ordinal);
+            if (!text.StartsWith("[[", StringComparison.Ordinal) || end < 3)
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 2);
+            context.AddText(2, end - 2);
+            context.AddMarker(end, 2);
+            context.Complete(end + 2);
+            return true;
+        }
+    }
+
+    private delegate void ParseHandler(ref MarkdownInlineParseContext context);
+
+    private delegate bool TryParseHandler(ref MarkdownInlineParseContext context);
+
+    private sealed class ParseHandlerExtension(string name, string triggerCharacters, TryParseHandler handler) : MarkdownInlineExtension(name, triggerCharacters)
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context) => handler(ref context);
+    }
+
+    #region MarkdownFencedBlockExtension_Admonition
+    // !!! kind, the blocks of the admonition, then !!!
+    private sealed class AdmonitionExtension() : MarkdownFencedBlockExtension("admonition", "!", MarkdownFencedBlockContent.Blocks)
+    {
+        public override int TryOpen(ReadOnlySpan<char> line) => line.StartsWith("!!!", StringComparison.Ordinal) ? 3 : 0;
+
+        public override int TryClose(ReadOnlySpan<char> line, ReadOnlySpan<char> openingFence) => line.StartsWith(openingFence, StringComparison.Ordinal) ? openingFence.Length : 0;
+    }
+
+    // Writes the admonitions as a <div> whose classes are the kind of the admonition
+    private sealed class AdmonitionRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownExtensionBlockSyntax { Name: "admonition" } admonition)
+            {
+                return false;
+            }
+
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("<div");
+            writer.WriteAttributes(admonition, "admonition " + admonition.Info.Replace("*", "", StringComparison.Ordinal));
+            writer.WriteRawHtml(">\n");
+            writer.WriteBlocks(admonition.Blocks);
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("</div>\n");
+            return true;
+        }
+    }
+    #endregion
+
+    // %%% info, raw lines, then %%%
+    private sealed class RawFenceExtension() : MarkdownFencedBlockExtension("raw", "%", MarkdownFencedBlockContent.RawLines)
+    {
+        public override int TryOpen(ReadOnlySpan<char> line) => line.StartsWith("%%%", StringComparison.Ordinal) ? 3 : 0;
+
+        public override int TryClose(ReadOnlySpan<char> line, ReadOnlySpan<char> openingFence) => line.StartsWith(openingFence, StringComparison.Ordinal) ? openingFence.Length : 0;
+    }
+
+    #region MarkdownParagraphExtension_Transcript
+    // The lines "Speaker: message" of a paragraph: the first run of them is a transcript, whose speakers are text and whose
+    // messages are inlines
+    private sealed class TranscriptExtension() : MarkdownParagraphExtension("transcript")
+    {
+        public override bool TryConvert(ref MarkdownParagraphConvertContext context)
+        {
+            var first = -1;
+            var count = 0;
+            for (var i = 0; i < context.LineCount; i++)
+            {
+                var line = context.GetLine(i);
+                var colon = line.IndexOf(": ", StringComparison.Ordinal);
+                var speaker = colon > 0 ? line[..colon] : [];
+                if (speaker.IsEmpty || speaker.ContainsAnyExceptInRange('A', 'z') || speaker.ContainsAnyInRange('[', '`'))
+                {
+                    if (first >= 0)
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                if (first < 0)
+                {
+                    first = i;
+                }
+
+                context.AddText(i, 0, colon);
+                context.AddMarker(i, colon, 1);
+                context.AddInlines(i, colon + 2, line.Length - colon - 2);
+                count++;
+            }
+
+            // A transcript has two lines or more
+            if (count < 2)
+            {
+                return false;
+            }
+
+            context.Complete(first, count);
+            return true;
+        }
+    }
+
+    // Writes a transcript as a <dl>: the speakers are the terms, and the messages the definitions
+    private sealed class TranscriptRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownExtensionBlockSyntax { Name: "transcript" } transcript)
+            {
+                return false;
+            }
+
+            writer.EnsureNewLine();
+            writer.WriteRawHtml("<dl class=\"transcript\">\n");
+            var message = new List<SyntaxNodeOrToken>();
+            foreach (var child in transcript.ChildNodesAndTokens())
+            {
+                if (child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.ExtensionTextToken)
+                {
+                    WriteMessage(writer, message);
+                    writer.WriteRawHtml("<dt>");
+                    writer.WriteText(child.AsToken().Text);
+                    writer.WriteRawHtml("</dt>");
+                }
+                else if (!(child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.ExtensionMarkerToken))
+                {
+                    message.Add(child);
+                }
+            }
+
+            WriteMessage(writer, message);
+            writer.WriteRawHtml("</dl>\n");
+            return true;
+        }
+
+        private static void WriteMessage(MarkdownHtmlWriter writer, List<SyntaxNodeOrToken> message)
+        {
+            if (message.Count > 0)
+            {
+                writer.WriteRawHtml("<dd>");
+                writer.WriteInlines(message);
+                writer.WriteRawHtml("</dd>\n");
+                message.Clear();
+            }
+        }
+    }
+    #endregion
+
+    #region MarkdownSyntaxExtension_Glossary
+    // %%% glossary, then lines "Term: definition": the definitions are recorded in the state of the document
+    private sealed class GlossaryExtension() : MarkdownFencedBlockExtension("glossary", "%", MarkdownFencedBlockContent.RawLines)
+    {
+        public override object? CreateState() => new Dictionary<string, string>(StringComparer.Ordinal);
+
+        public override int TryOpen(ReadOnlySpan<char> line) => line.StartsWith("%%% glossary", StringComparison.Ordinal) ? 3 : 0;
+
+        public override int TryClose(ReadOnlySpan<char> line, ReadOnlySpan<char> openingFence) => line.StartsWith("%%%", StringComparison.Ordinal) ? 3 : 0;
+
+        public override void OnClosed(ref MarkdownFencedBlockContext context)
+        {
+            var definitions = (Dictionary<string, string>)context.State!;
+            for (var i = 0; i < context.LineCount; i++)
+            {
+                var line = context.GetLine(i);
+                if (line.IndexOf(": ", StringComparison.Ordinal) is > 0 and var colon)
+                {
+                    definitions[line[..colon].ToString()] = line[(colon + 2)..].ToString();
+                }
+            }
+        }
+    }
+
+    // [Term], when the glossary defines the term: other brackets are read as usual, such as the ones of a link
+    private sealed class GlossaryTermExtension(GlossaryExtension glossary) : MarkdownInlineExtension("glossary-term", "[")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var end = context.Text.IndexOf(']');
+            var definitions = (Dictionary<string, string>)context.GetState(glossary)!;
+            if (end < 2 || (end + 1 < context.Text.Length && context.Text[end + 1] is '(' or '[') || !definitions.ContainsKey(context.Text[1..end].ToString()))
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 1);
+            context.AddText(1, end - 1);
+            context.AddMarker(end, 1);
+            context.Complete(end + 1);
+            return true;
+        }
+    }
+
+    // Writes the terms as <abbr> elements, and nothing for the glossary
+    private sealed class GlossaryRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            switch (node)
+            {
+                case MarkdownExtensionBlockSyntax { Name: "glossary" }:
+                    return true;
+
+                case MarkdownExtensionInlineSyntax { Name: "glossary-term" } term:
+                    var glossary = term.SyntaxTree!.GetRoot().DescendantNodes().OfType<MarkdownExtensionBlockSyntax>().Where(block => block.Name == "glossary");
+                    var definition = glossary.SelectMany(block => block.Content.Split('\n')).FirstOrDefault(line => line.StartsWith(term.Text + ": ", StringComparison.Ordinal));
+                    writer.WriteRawHtml("<abbr title=\"");
+                    writer.WriteAttributeValue(definition is null ? "" : definition[(term.Text.Length + 2)..]);
+                    writer.WriteRawHtml("\">");
+                    writer.WriteText(term.Text);
+                    writer.WriteRawHtml("</abbr>");
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+    }
+    #endregion
+
+    // Counts the states it creates, and the paragraphs it is offered, through its state
+    private sealed class CountingStateExtension() : MarkdownParagraphExtension("counting")
+    {
+        public int StateCount { get; private set; }
+
+        public int ParagraphCount { get; private set; }
+
+        public override object? CreateState()
+        {
+            StateCount++;
+            return new object();
+        }
+
+        public override bool TryConvert(ref MarkdownParagraphConvertContext context)
+        {
+            Assert.NotNull(context.State);
+            ParagraphCount++;
+            return false;
+        }
+    }
+
+    private delegate void ConvertHandler(ref MarkdownParagraphConvertContext context);
+
+    private delegate bool TryConvertHandler(ref MarkdownParagraphConvertContext context);
+
+    private sealed class ConvertHandlerExtension(TryConvertHandler handler) : MarkdownParagraphExtension("convert")
+    {
+        public override bool TryConvert(ref MarkdownParagraphConvertContext context) => handler(ref context);
     }
 }

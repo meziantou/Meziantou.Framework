@@ -156,6 +156,14 @@ namespace Meziantou.Framework.Markdown
         public override string GetPlainText() => throw null;
     }
 
+    public sealed class MarkdownDelimiterExtension : Meziantou.Framework.Markdown.MarkdownSyntaxExtension
+    {
+        public char Character { get => throw null; }
+        public int MaximumCount { get => throw null; }
+        public int MinimumCount { get => throw null; }
+        public MarkdownDelimiterExtension(string name, char character, int minimumCount = 2, int maximumCount = 2) { }
+    }
+
     public sealed class MarkdownDocumentSyntax : Meziantou.Framework.Markdown.MarkdownSyntaxNode
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
@@ -218,6 +226,33 @@ namespace Meziantou.Framework.Markdown
         public static string EscapeTableCell(string text) => throw null;
     }
 
+    public sealed class MarkdownExtensionBlockSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public string Content { get => throw null; }
+        public string Info { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> Inlines { get => throw null; }
+        public bool IsFenced { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Lines { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Markers { get => throw null; }
+        public string Name { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Texts { get => throw null; }
+        public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
+        public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public override string GetPlainText() => throw null;
+    }
+
+    public sealed class MarkdownExtensionInlineSyntax : Meziantou.Framework.Markdown.MarkdownInlineSyntax
+    {
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> Inlines { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Markers { get => throw null; }
+        public string Name { get => throw null; }
+        public string Text { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Texts { get => throw null; }
+        public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
+        public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+    }
+
     [System.Flags]
     public enum MarkdownExtensions : long
     {
@@ -259,6 +294,35 @@ namespace Meziantou.Framework.Markdown
         CjkFriendlyEmphasis = 2147483648L,
         Bootstrap = 4294967296L,
         Globalization = 8589934592L,
+    }
+
+    public enum MarkdownFencedBlockContent
+    {
+        RawLines = 0,
+        Blocks = 1,
+    }
+
+    public ref struct MarkdownFencedBlockContext
+    {
+        public System.ReadOnlySpan<char> Info { get => throw null; }
+        public int LineCount { get => throw null; }
+        public System.ReadOnlySpan<char> OpeningFence { get => throw null; }
+        public Meziantou.Framework.Markdown.MarkdownParseOptions Options { get => throw null; }
+        public object? State { get => throw null; }
+        public System.ReadOnlySpan<char> GetLine(int index) => throw null;
+        public object? GetState(Meziantou.Framework.Markdown.MarkdownSyntaxExtension extension) => throw null;
+    }
+
+    public abstract class MarkdownFencedBlockExtension : Meziantou.Framework.Markdown.MarkdownSyntaxExtension
+    {
+        public bool CanInterruptParagraph { get => throw null; init { } }
+        public Meziantou.Framework.Markdown.MarkdownFencedBlockContent Content { get => throw null; }
+        public bool ParseInfoAsInlines { get => throw null; init { } }
+        public string TriggerCharacters { get => throw null; }
+        protected MarkdownFencedBlockExtension(string name, string triggerCharacters, Meziantou.Framework.Markdown.MarkdownFencedBlockContent content) { }
+        public virtual void OnClosed(ref Meziantou.Framework.Markdown.MarkdownFencedBlockContext context) { }
+        public abstract int TryClose(System.ReadOnlySpan<char> line, System.ReadOnlySpan<char> openingFence);
+        public abstract int TryOpen(System.ReadOnlySpan<char> line);
     }
 
     public sealed class MarkdownFigureCaptionSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
@@ -402,6 +466,11 @@ namespace Meziantou.Framework.Markdown
         public override string GetPlainText() => throw null;
     }
 
+    public abstract class MarkdownHtmlNodeRenderer
+    {
+        public abstract bool TryWrite(Meziantou.Framework.Markdown.MarkdownSyntaxNode node, Meziantou.Framework.Markdown.MarkdownHtmlWriter writer);
+    }
+
     public static class MarkdownHtmlRenderer
     {
         public static string ToHtml(Meziantou.Framework.Markdown.MarkdownSyntaxTree tree) => throw null;
@@ -417,6 +486,7 @@ namespace Meziantou.Framework.Markdown
         public string? LinkRel { get => throw null; init { } }
         public System.Func<string, string>? LinkRewriter { get => throw null; init { } }
         public Meziantou.Framework.Markdown.MarkdownMediaLinkOptions MediaLinks { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownHtmlNodeRenderer> NodeRenderers { get => throw null; init { } }
         public bool PragmaLines { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Markdown.MarkdownSmartyPant, string> SmartyPants { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions? other) => throw null;
@@ -426,6 +496,42 @@ namespace Meziantou.Framework.Markdown
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions? left, Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions? right) => throw null;
         public static bool operator !=(Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions? left, Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions? right) => throw null;
+    }
+
+    public sealed class MarkdownHtmlWriter
+    {
+        public bool IsPlainText { get => throw null; }
+        public Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions Options { get => throw null; }
+        public void EnsureNewLine() { }
+        public void WriteAttributeValue(System.ReadOnlySpan<char> value) { }
+        public void WriteAttributes(Meziantou.Framework.Markdown.MarkdownSyntaxNode node, string? classes = null) { }
+        public void WriteBlocks(System.Collections.Generic.IEnumerable<Meziantou.Framework.Markdown.MarkdownBlockSyntax> blocks) { }
+        public void WriteDefault(Meziantou.Framework.Markdown.MarkdownSyntaxNode node) { }
+        public void WriteInlines(System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> inlines) { }
+        public void WriteRawHtml(System.ReadOnlySpan<char> html) { }
+        public void WriteText(System.ReadOnlySpan<char> text) { }
+        public void WriteUrl(string url) { }
+    }
+
+    public abstract class MarkdownInlineExtension : Meziantou.Framework.Markdown.MarkdownSyntaxExtension
+    {
+        public string TriggerCharacters { get => throw null; }
+        protected MarkdownInlineExtension(string name, string triggerCharacters) { }
+        public abstract bool TryParse(ref Meziantou.Framework.Markdown.MarkdownInlineParseContext context);
+    }
+
+    public ref struct MarkdownInlineParseContext
+    {
+        public readonly int Length { get => throw null; }
+        public readonly Meziantou.Framework.Markdown.MarkdownParseOptions Options { get => throw null; }
+        public readonly char PreviousCharacter { get => throw null; }
+        public readonly object? State { get => throw null; }
+        public readonly System.ReadOnlySpan<char> Text { get => throw null; }
+        public void AddInlines(int start, int length) { }
+        public void AddMarker(int start, int length) { }
+        public void AddText(int start, int length) { }
+        public void Complete(int length) { }
+        public readonly object? GetState(Meziantou.Framework.Markdown.MarkdownSyntaxExtension extension) => throw null;
     }
 
     public abstract class MarkdownInlineSyntax : Meziantou.Framework.Markdown.MarkdownSyntaxNode
@@ -566,6 +672,27 @@ namespace Meziantou.Framework.Markdown
         UpperRoman = 4,
     }
 
+    public ref struct MarkdownParagraphConvertContext
+    {
+        public readonly int CompletedLineCount { get => throw null; }
+        public readonly int FirstLine { get => throw null; }
+        public readonly int LineCount { get => throw null; }
+        public readonly Meziantou.Framework.Markdown.MarkdownParseOptions Options { get => throw null; }
+        public readonly object? State { get => throw null; }
+        public void AddInlines(int line, int start, int length) { }
+        public void AddMarker(int line, int start, int length) { }
+        public void AddText(int line, int start, int length) { }
+        public void Complete(int firstLine, int lineCount) { }
+        public readonly System.ReadOnlySpan<char> GetLine(int index) => throw null;
+        public readonly object? GetState(Meziantou.Framework.Markdown.MarkdownSyntaxExtension extension) => throw null;
+    }
+
+    public abstract class MarkdownParagraphExtension : Meziantou.Framework.Markdown.MarkdownSyntaxExtension
+    {
+        protected MarkdownParagraphExtension(string name) { }
+        public abstract bool TryConvert(ref Meziantou.Framework.Markdown.MarkdownParagraphConvertContext context);
+    }
+
     public sealed class MarkdownParagraphSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
         public Meziantou.Framework.Language.ChildSyntaxList Inlines { get => throw null; }
@@ -586,6 +713,7 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.MarkdownParseOptions GitHubFlavored { get => throw null; }
         public Meziantou.Framework.Markdown.MarkdownJiraLinkOptions JiraLinks { get => throw null; init { } }
         public Meziantou.Framework.Markdown.MarkdownPipeTableOptions PipeTableOptions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownSyntaxExtension> SyntaxExtensions { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Markdown.MarkdownParseOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -643,6 +771,12 @@ namespace Meziantou.Framework.Markdown
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
+    public abstract class MarkdownSyntaxExtension
+    {
+        public string Name { get => throw null; }
+        public virtual object? CreateState() => throw null;
+    }
+
     public abstract class MarkdownSyntaxNode : Meziantou.Framework.Language.SyntaxNode
     {
         public new Meziantou.Framework.Markdown.MarkdownSyntaxNode? Parent { get => throw null; }
@@ -696,6 +830,8 @@ namespace Meziantou.Framework.Markdown
         public virtual void VisitMarkdownDocument(Meziantou.Framework.Markdown.MarkdownDocumentSyntax node) { }
         public virtual void VisitMarkdownEmphasis(Meziantou.Framework.Markdown.MarkdownEmphasisSyntax node) { }
         public virtual void VisitMarkdownEmphasisExtra(Meziantou.Framework.Markdown.MarkdownEmphasisExtraSyntax node) { }
+        public virtual void VisitMarkdownExtensionBlock(Meziantou.Framework.Markdown.MarkdownExtensionBlockSyntax node) { }
+        public virtual void VisitMarkdownExtensionInline(Meziantou.Framework.Markdown.MarkdownExtensionInlineSyntax node) { }
         public virtual void VisitMarkdownFigure(Meziantou.Framework.Markdown.MarkdownFigureSyntax node) { }
         public virtual void VisitMarkdownFigureCaption(Meziantou.Framework.Markdown.MarkdownFigureCaptionSyntax node) { }
         public virtual void VisitMarkdownFooter(Meziantou.Framework.Markdown.MarkdownFooterSyntax node) { }
@@ -740,6 +876,8 @@ namespace Meziantou.Framework.Markdown
         public virtual TResult? VisitMarkdownDocument(Meziantou.Framework.Markdown.MarkdownDocumentSyntax node) => throw null;
         public virtual TResult? VisitMarkdownEmphasis(Meziantou.Framework.Markdown.MarkdownEmphasisSyntax node) => throw null;
         public virtual TResult? VisitMarkdownEmphasisExtra(Meziantou.Framework.Markdown.MarkdownEmphasisExtraSyntax node) => throw null;
+        public virtual TResult? VisitMarkdownExtensionBlock(Meziantou.Framework.Markdown.MarkdownExtensionBlockSyntax node) => throw null;
+        public virtual TResult? VisitMarkdownExtensionInline(Meziantou.Framework.Markdown.MarkdownExtensionInlineSyntax node) => throw null;
         public virtual TResult? VisitMarkdownFigure(Meziantou.Framework.Markdown.MarkdownFigureSyntax node) => throw null;
         public virtual TResult? VisitMarkdownFigureCaption(Meziantou.Framework.Markdown.MarkdownFigureCaptionSyntax node) => throw null;
         public virtual TResult? VisitMarkdownFooter(Meziantou.Framework.Markdown.MarkdownFooterSyntax node) => throw null;
@@ -889,57 +1027,63 @@ namespace Meziantou.Framework.Markdown
         JiraLinkToken = 62,
         FigureFenceToken = 63,
         FooterMarkerToken = 64,
-        Document = 65,
-        BlockQuote = 66,
-        List = 67,
-        ListItem = 68,
-        ThematicBreak = 69,
-        AtxHeading = 70,
-        SetextHeading = 71,
-        FencedCodeBlock = 72,
-        IndentedCodeBlock = 73,
-        HtmlBlock = 74,
-        Paragraph = 75,
-        LinkReferenceDefinition = 76,
-        Table = 77,
-        PipeTable = 78,
-        GridTable = 79,
-        TableHeaderRow = 80,
-        TableDelimiterRow = 81,
-        TableRow = 82,
-        TableCell = 83,
-        FrontMatter = 84,
-        MathBlock = 85,
-        Alert = 86,
-        AbbreviationDefinition = 87,
-        FootnoteDefinition = 88,
-        CustomContainer = 89,
-        DefinitionList = 90,
-        DefinitionItem = 91,
-        DefinitionTerm = 92,
-        Figure = 93,
-        FigureCaption = 94,
-        Footer = 95,
-        Emphasis = 96,
-        StrongEmphasis = 97,
-        CodeSpan = 98,
-        Link = 99,
-        Image = 100,
-        Autolink = 101,
-        RawHtml = 102,
-        Strikethrough = 103,
-        ExtendedAutolink = 104,
-        Subscript = 105,
-        Superscript = 106,
-        Inserted = 107,
-        Marked = 108,
-        MathInline = 109,
-        Abbreviation = 110,
-        FootnoteReference = 111,
-        GenericAttributes = 112,
-        CustomContainerInline = 113,
-        Citation = 114,
-        JiraLink = 115,
-        MarkdigAutolink = 116,
+        ExtensionMarkerToken = 65,
+        ExtensionTextToken = 66,
+        ExtensionFenceToken = 67,
+        ExtensionLineToken = 68,
+        Document = 69,
+        BlockQuote = 70,
+        List = 71,
+        ListItem = 72,
+        ThematicBreak = 73,
+        AtxHeading = 74,
+        SetextHeading = 75,
+        FencedCodeBlock = 76,
+        IndentedCodeBlock = 77,
+        HtmlBlock = 78,
+        Paragraph = 79,
+        LinkReferenceDefinition = 80,
+        Table = 81,
+        PipeTable = 82,
+        GridTable = 83,
+        TableHeaderRow = 84,
+        TableDelimiterRow = 85,
+        TableRow = 86,
+        TableCell = 87,
+        FrontMatter = 88,
+        MathBlock = 89,
+        Alert = 90,
+        AbbreviationDefinition = 91,
+        FootnoteDefinition = 92,
+        CustomContainer = 93,
+        DefinitionList = 94,
+        DefinitionItem = 95,
+        DefinitionTerm = 96,
+        Figure = 97,
+        FigureCaption = 98,
+        Footer = 99,
+        ExtensionBlock = 100,
+        Emphasis = 101,
+        StrongEmphasis = 102,
+        CodeSpan = 103,
+        Link = 104,
+        Image = 105,
+        Autolink = 106,
+        RawHtml = 107,
+        Strikethrough = 108,
+        ExtendedAutolink = 109,
+        Subscript = 110,
+        Superscript = 111,
+        Inserted = 112,
+        Marked = 113,
+        MathInline = 114,
+        Abbreviation = 115,
+        FootnoteReference = 116,
+        GenericAttributes = 117,
+        CustomContainerInline = 118,
+        Citation = 119,
+        JiraLink = 120,
+        MarkdigAutolink = 121,
+        ExtensionInline = 122,
     }
 }

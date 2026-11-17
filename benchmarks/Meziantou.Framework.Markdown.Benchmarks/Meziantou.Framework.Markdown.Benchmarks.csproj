@@ -22,7 +22,7 @@
          table and links), and a page of the documentation (code blocks, lists, links) -->
     <EmbeddedResource Include="../../tests/Meziantou.Framework.Markdown.Tests/Specs/CommonMark.md" LogicalName="CommonMark.md" Link="Documents/CommonMark.md" />
     <EmbeddedResource Include="../../README.md" LogicalName="Readme.md" Link="Documents/Readme.md" />
-    <EmbeddedResource Include="../../docs/Markdown/05-Extensions.md" LogicalName="Docs.md" Link="Documents/Docs.md" />
+    <EmbeddedResource Include="../../docs/Markdown/04-Rendering.md" LogicalName="Docs.md" Link="Documents/Docs.md" />
   </ItemGroup>
 
 </Project>

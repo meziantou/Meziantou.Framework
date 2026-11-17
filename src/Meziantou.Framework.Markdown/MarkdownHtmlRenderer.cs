@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -144,9 +146,20 @@ public static class MarkdownHtmlRenderer
         return writer;
     }
 
-    // Whether a node of the kind is under the node, read from the green tree, which does not create the nodes it visits
-    private sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions) : IDisposable
+    internal sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions) : IDisposable
     {
+        // The node renderers of the options, and the writer they write with, created for the first node they are offered
+        private readonly IReadOnlyList<MarkdownHtmlNodeRenderer> _nodeRenderers = rendererOptions.NodeRenderers;
+        private readonly bool _hasNodeRenderers = rendererOptions.NodeRenderers.Count > 0;
+        private MarkdownHtmlWriter? _nodeWriter;
+
+        // The node that MarkdownHtmlWriter.WriteDefault writes: it is not offered to the node renderers again. And the last node
+        // that it wrote, whose state of the blocks around it is the one of the built-in rendering.
+        private MarkdownSyntaxNode? _defaultNode;
+        private MarkdownSyntaxNode? _lastDefaultNode;
+
+        public MarkdownHtmlRendererOptions RendererOptions => rendererOptions;
+
         // The generic attributes of the nodes, merged as Markdig merges them, and the classes of the attributes of the first line of a
         // block, which come before the classes of the block
         // The empty cells added to the short rows of the pipe tables of the document, at most MaximumAutocompletedCells as in Markdig
@@ -818,13 +831,26 @@ public static class MarkdownHtmlRenderer
             }
         }
 
-        private void WriteBlock(MarkdownBlockSyntax block)
+        public void WriteBlock(MarkdownBlockSyntax block)
         {
-            if (_pragmaAnchors is not null && !HasPragmaAnchorInside(block) && _pragmaAnchors.ContainsKey(block))
+            // WriteDefault writes the block that a node renderer is writing: its anchor is written, and the renderers declined it
+            if (ReferenceEquals(_defaultNode, block))
             {
-                Cr();
-                AppendPragmaAnchor(block);
-                Markup.Append('\n');
+                _defaultNode = null;
+            }
+            else
+            {
+                if (_pragmaAnchors is not null && !HasPragmaAnchorInside(block) && _pragmaAnchors.ContainsKey(block))
+                {
+                    Cr();
+                    AppendPragmaAnchor(block);
+                    Markup.Append('\n');
+                }
+
+                if (_hasNodeRenderers && !(block is MarkdownParagraphSyntax attributes && _attributes is not null && IsAttributesParagraph(attributes)) && TryWriteBlockWithNodeRenderers(block))
+                {
+                    return;
+                }
             }
 
             switch (block)
@@ -868,6 +894,7 @@ public static class MarkdownHtmlRenderer
                     if (paragraph == _backLinksParagraph)
                     {
                         Markup.Append(_backLinks);
+                        _backLinks = null;
                     }
 
                     if (inFooter)
@@ -1073,10 +1100,182 @@ public static class MarkdownHtmlRenderer
                 case MarkdownTableSyntax table:
                     WriteTable(table);
                     break;
+
+                case MarkdownExtensionBlockSyntax extension:
+                    WriteExtensionBlock(extension);
+                    break;
             }
         }
 
         // The footnotes that are referred to, at the end of the document, each one with the links back to its references
+        private bool TryWriteBlockWithNodeRenderers(MarkdownBlockSyntax block)
+        {
+            var start = _output.Length;
+            _lastDefaultNode = null;
+            if (!TryWriteWithNodeRenderers(block))
+            {
+                return false;
+            }
+
+            // A block that the node renderer wrote with WriteDefault updated the state itself, and a block that wrote nothing
+            // leaves the next block first in its container
+            if (!ReferenceEquals(_lastDefaultNode, block) && _output.Length != start)
+            {
+                _firstInContainer = false;
+            }
+
+            if (block is MarkdownParagraphSyntax)
+            {
+                // The checkbox of a task list item starts its first paragraph: it starts what the node renderer wrote
+                if (_pendingCheckbox is not null)
+                {
+                    if (start < _output.Length && _output.AsSpan()[start] == '\n')
+                    {
+                        start++;
+                    }
+
+                    _output.Insert(start, _pendingCheckbox);
+                    _pendingCheckbox = null;
+                }
+
+                // The links back to the references of a footnote end its last paragraph, or a paragraph of their own, unless
+                // the node renderer wrote the paragraph with WriteDefault, which wrote them
+                if (block == _backLinksParagraph && _backLinks is not null)
+                {
+                    Cr();
+                    Markup.Append("<p>").Append(_backLinks).Append("</p>");
+                    Cr();
+                    _backLinks = null;
+                }
+            }
+
+            return true;
+        }
+
+        private bool TryWriteWithNodeRenderers(MarkdownSyntaxNode node)
+        {
+            var writer = _nodeWriter ??= new MarkdownHtmlWriter(this);
+            foreach (var renderer in _nodeRenderers)
+            {
+                if (renderer.TryWrite(node, writer))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void WriteDefault(MarkdownSyntaxNode node)
+        {
+            var previous = _defaultNode;
+            _defaultNode = node;
+            try
+            {
+                switch (node)
+                {
+                    case MarkdownBlockSyntax block:
+                        WriteBlock(block);
+                        break;
+                    case MarkdownInlineSyntax inline:
+                        WriteInline(inline);
+                        break;
+                }
+            }
+            finally
+            {
+                _defaultNode = previous;
+                _lastDefaultNode = node;
+            }
+        }
+
+        public void WriteInlineSequence(IEnumerable<SyntaxNodeOrToken> inlines)
+        {
+            if (inlines is ChildSyntaxList list)
+            {
+                WriteInlines(list);
+                return;
+            }
+
+            foreach (var child in inlines)
+            {
+                if (child.AsNode() is MarkdownInlineSyntax inline)
+                {
+                    if (inline is not MarkdownGenericAttributesSyntax)
+                    {
+                        WriteInline(inline);
+                    }
+                }
+                else if (child.IsToken)
+                {
+                    WriteToken(child.AsToken());
+                }
+            }
+        }
+
+        public void AppendMarkup(ReadOnlySpan<char> html) => Markup.Append(html);
+
+        public void AppendAttributeValue(ReadOnlySpan<char> value) => AppendAttributeEscaped(value);
+
+        public void AppendUrl(string url) => AppendAttributeEscaped(NormalizeUrl(url));
+
+        public void AppendNodeAttributes(MarkdownSyntaxNode node, string? classes) => AppendAttributes(node, trailingClasses: classes);
+
+        public void EnsureNewLine() => Cr();
+
+        // The block of a syntax extension that no node renderer writes: its lines in <pre><code>, its blocks, or its text and its
+        // inlines in <p>, without its markers and its info. The text of a line starts on a new line.
+        private void WriteExtensionBlock(MarkdownExtensionBlockSyntax extension)
+        {
+            if (extension.Lines.Count > 0)
+            {
+                CrUnlessFirstInContainer();
+                Markup.Append("<pre><code");
+                AppendAttributes(extension);
+                Markup.Append('>');
+                AppendEscaped(extension.Content);
+                Markup.Append("</code></pre>");
+                Cr();
+                return;
+            }
+
+            if (extension.IsFenced)
+            {
+                WriteBlocks(extension.Blocks);
+                return;
+            }
+
+            CrUnlessFirstInContainer(paragraph: true);
+            Markup.Append("<p");
+            AppendAttributes(extension);
+            Markup.Append('>');
+            SyntaxNodeOrToken previous = default;
+            foreach (var child in extension.Inlines)
+            {
+                if (previous.RawKind != 0 && previous.ToFullString().EndsWith("\n", StringComparison.Ordinal))
+                {
+                    _output.Append('\n');
+                }
+
+                if (child.AsNode() is MarkdownInlineSyntax inline)
+                {
+                    if (inline is not MarkdownGenericAttributesSyntax)
+                    {
+                        WriteInline(inline);
+                    }
+                }
+                else
+                {
+                    WriteToken(child.AsToken());
+                }
+
+                previous = child;
+            }
+
+            Markup.Append("</p>");
+            Cr();
+        }
+
         public void WriteFootnotes(MarkdownDocumentSyntax document)
         {
             // A document with footnotes has the list of the footnotes, even when none is referred to, as 1.x writes it
@@ -1596,7 +1795,7 @@ public static class MarkdownHtmlRenderer
         {
             switch ((SyntaxKind)token.RawKind)
             {
-                case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken:
+                case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken or SyntaxKind.ExtensionTextToken:
                     AppendEscaped(GetText(token));
                     break;
                 case SyntaxKind.EscapedCharacterToken:
@@ -1635,6 +1834,15 @@ public static class MarkdownHtmlRenderer
 
         private void WriteInline(MarkdownInlineSyntax inline)
         {
+            if (ReferenceEquals(_defaultNode, inline))
+            {
+                _defaultNode = null;
+            }
+            else if (_hasNodeRenderers && TryWriteWithNodeRenderers(inline))
+            {
+                return;
+            }
+
             switch (inline)
             {
                 case MarkdownEmphasisSyntax emphasis:
@@ -1732,6 +1940,11 @@ public static class MarkdownHtmlRenderer
                     Markup.Append("</a>");
                     break;
                 }
+
+                case MarkdownExtensionInlineSyntax extension:
+                    // The construct of a syntax extension that no node renderer writes: its text and its inlines, without its markers
+                    WriteInlines(extension.ChildNodesAndTokens(), keepTrailingLineBreak: true, skippedKind: SyntaxKind.ExtensionMarkerToken);
+                    break;
 
                 case MarkdownRawHtmlSyntax html:
                     AppendHtml(html.Html);
@@ -1868,7 +2081,7 @@ public static class MarkdownHtmlRenderer
 
             var path = uri.IsAbsoluteUri ? uri.GetComponents(UriComponents.Path, UriFormat.Unescaped) : uri.ToString();
             var lastDot = path.AsSpan().LastIndexOf('.');
-            if (lastDot < 0 || !mediaOptions.ExtensionToMimeType.TryGetValue(path[lastDot..], out var mimeType))
+            if (lastDot < 0 || !TryGetMimeType(mediaOptions.ExtensionToMimeType, path.AsSpan(lastDot), out var mimeType))
             {
                 return false;
             }
@@ -1951,6 +2164,9 @@ public static class MarkdownHtmlRenderer
                         case MarkdownEmphasisExtraSyntax extra:
                             WriteAltText(extra.Inlines);
                             continue;
+                        case MarkdownExtensionInlineSyntax extension:
+                            WriteAltText(extension.Inlines);
+                            continue;
                         case MarkdownLinkSyntax link:
                             WriteAltText(link.Text);
                             continue;
@@ -1961,6 +2177,17 @@ public static class MarkdownHtmlRenderer
                 ((MarkdownSyntaxNode)(child.Parent ?? throw new InvalidOperationException())).AppendPlainText([child], text);
                 AppendEscaped(text.ToString());
             }
+        }
+
+        // A frozen dictionary, such as the default one, looks the extension up without allocating it
+        private static bool TryGetMimeType(IReadOnlyDictionary<string, string> extensionToMimeType, ReadOnlySpan<char> extension, [NotNullWhen(true)] out string? mimeType)
+        {
+            if (extensionToMimeType is FrozenDictionary<string, string> frozen && frozen.TryGetAlternateLookup<ReadOnlySpan<char>>(out var lookup))
+            {
+                return lookup.TryGetValue(extension, out mimeType);
+            }
+
+            return extensionToMimeType.TryGetValue(extension.ToString(), out mimeType);
         }
 
         private void AppendTitle(string? title)
@@ -2198,7 +2425,7 @@ public static class MarkdownHtmlRenderer
         }
 
         // Text, which plain text writes as it is
-        private void AppendEscaped(ReadOnlySpan<char> text)
+        public void AppendEscaped(ReadOnlySpan<char> text)
         {
             while (!text.IsEmpty)
             {

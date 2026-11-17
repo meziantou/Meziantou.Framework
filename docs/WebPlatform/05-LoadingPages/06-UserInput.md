@@ -101,6 +101,47 @@ Assert.Equal((210, 155), input.MapFromVisualViewport(20, 10));
 ```
 <!-- endref -->
 
+For a pinch of the touch screen, create a touch pointer for each finger and move them. Each finger in contact is a
+pointer with its own `pointerId` (the first one is the primary pointer), and the `touches` of the touch events are the
+fingers in contact. When the fingers start to pinch, their pointers get `pointercancel`; the `scrollend` event of the
+visual viewport is fired when the last finger is released.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/UserInputTests.cs;region=WebPlatform_TwoFingers;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext();
+var document = context.Navigate("https://example.com/", _ => """
+    <!DOCTYPE html>
+    <style>body { margin: 0 }</style>
+    <p>Hello world</p>
+    """);
+
+var touchCounts = new List<int>();
+document.AddEventListener("touchstart", e => touchCounts.Add(((TouchEvent)e).Touches.Count));
+
+// Each touch pointer is a finger: Down() starts its contact at its position
+var input = context.Input;
+var finger1 = input.CreatePointer("touch");
+var finger2 = input.CreatePointer("touch");
+finger1.Move(300, 300);
+finger1.Down();
+finger2.Move(500, 300);
+finger2.Down();
+
+// The touches of a touch event are the fingers in contact
+Assert.Equal([1, 2], touchCounts);
+
+// The fingers move apart: the distance between them doubles, so the visual viewport is zoomed 2x, and the point
+// under their middle (400, 300) moves under their new middle (500, 300)
+finger2.Move(700, 300);
+var visualViewport = document.DefaultView!.VisualViewport!;
+Assert.Equal(2, visualViewport.Scale);
+Assert.Equal((150, 150), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+
+finger2.Up();
+finger1.Up();
+```
+<!-- endref -->
+
 The zoom is between 1 and 5. The `maximum-scale` of the viewport `meta` element lowers this limit, and a page with
 `user-scalable=no` cannot be zoomed. On a mobile device ([ViewportOptions.IsMobile](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.IsMobile)), the pinch zoom multiplies the scale of the page.
 While the page is zoomed in, the wheel, the keys, a touch pan and `scrollIntoView()` scroll the visual viewport to the edge

@@ -318,6 +318,8 @@
       "web-share",
       "webmcp",
       "entries-api",
+      "js",
+      "js-self-profiling",
       "badging",
       "battery-status",
       "screen-wake-lock",

@@ -124,16 +124,9 @@ public static class FileConversionFuzzTargets
     private static void MarkdownToHtml(ReadOnlySpan<byte> data)
     {
         var markdown = FuzzInput.ReadText(data);
-        string html;
-        try
-        {
-            html = TextDocumentConverter.MarkdownToHtml(markdown, "default <title>", new ConversionSettings(), fragment: false).Html;
-        }
-        catch (ArgumentException)
-        {
-            // A document nested too deeply
-            return;
-        }
+
+        // The constructs nested too deeply are text: the conversion does not fail
+        var html = TextDocumentConverter.MarkdownToHtml(markdown, "default <title>", new ConversionSettings(), fragment: false).Html;
 
         FuzzAssert.True(html.StartsWith("<!DOCTYPE html>\n<html>\n<head>\n", StringComparison.Ordinal), "The HTML document does not start with its head");
         FuzzAssert.True(html.EndsWith("</body>\n</html>\n", StringComparison.Ordinal), "The HTML document does not end with its body");

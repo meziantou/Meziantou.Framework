@@ -11,10 +11,10 @@ namespace Meziantou.Framework.Language;
 /// same way, so a caller sees a flat sequence of nodes and tokens and never a list of its own.
 /// </para>
 /// <para>
-/// Reading a child walks the slots to find it, so it costs more than an array lookup, and enumerating pays that
-/// walk once per step rather than carrying a running position from one to the next. The walk is short -- it is over
-/// the slots of the node, not over the children of a list -- and the position of a child already created is read
-/// straight off it.
+/// Reading a child by index walks the slots to find it, so it costs more than an array lookup. The walk is short -- it
+/// is over the slots of the node, not over the children of a list -- and the position of a child already created is
+/// read straight off it. Enumerating does not walk: the enumerator carries the slot and the position of the current
+/// child to the next one.
 /// </para>
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
@@ -109,7 +109,12 @@ public readonly struct ChildSyntaxList : IReadOnlyList<SyntaxNodeOrToken>, IEqua
             return new SyntaxNodeOrToken(node, greenChild, node.GetChildPosition(slotIndex), index);
         }
 
-        // The slot holds a list, so the answer is one of its children.
+        // The slot holds a list, so the answer is one of its children. A token needs no red node, nor the red list.
+        if (greenChild.GetRequiredSlot(remaining) is { IsToken: true } greenToken)
+        {
+            return new SyntaxNodeOrToken(node, greenToken, position + greenChild.GetSlotOffset(remaining), index);
+        }
+
         if (node.GetNodeSlot(slotIndex) is { } redList)
         {
             if (redList.GetNodeSlot(remaining) is { } redElement)
@@ -159,24 +164,108 @@ public readonly struct ChildSyntaxList : IReadOnlyList<SyntaxNodeOrToken>, IEqua
     }
 
     /// <summary>Walks a <see cref="ChildSyntaxList"/> without allocating.</summary>
+    /// <remarks>
+    /// The enumerator keeps the slot of the current child, its index in the list of the slot, and its position, so that each
+    /// step moves to the next child instead of walking the slots again from the first one.
+    /// </remarks>
     public struct Enumerator : IEnumerator<SyntaxNodeOrToken>
     {
         private readonly SyntaxNode? _node;
         private readonly int _count;
         private int _index;
 
+        // The slot of the current child, the slot itself when it is not a list, its index in the list, and its position
+        private int _slot;
+        private GreenNode? _slotGreen;
+        private int _listIndex;
+        private int _position;
+
         internal Enumerator(SyntaxNode? node, int count)
         {
             _node = node;
             _count = count;
             _index = -1;
+            _slot = -1;
         }
 
-        public readonly SyntaxNodeOrToken Current => ItemInternal(_node!, _index);
+        public readonly SyntaxNodeOrToken Current
+        {
+            get
+            {
+                var node = _node!;
+                var slotGreen = _slotGreen!;
+                if (!slotGreen.IsList)
+                {
+                    if (node.GetNodeSlot(_slot) is { } red)
+                        return red;
+
+                    return new SyntaxNodeOrToken(node, slotGreen, _position, _index);
+                }
+
+                // A token needs no red node, nor the red list
+                var element = slotGreen.GetRequiredSlot(_listIndex);
+                if (!element.IsToken && node.GetNodeSlot(_slot) is { } redList && redList.GetNodeSlot(_listIndex) is { } redElement)
+                    return redElement;
+
+                return new SyntaxNodeOrToken(node, element, _position, _index);
+            }
+        }
+
         readonly object IEnumerator.Current => Current;
 
-        public bool MoveNext() => ++_index < _count;
-        public void Reset() => _index = -1;
+        public bool MoveNext()
+        {
+            if (_index + 1 >= _count)
+            {
+                _index = _count;
+                return false;
+            }
+
+            if (_index >= 0)
+            {
+                // The next child is the next one of the list, or the first child of the next slot
+                if (_slotGreen!.IsList)
+                {
+                    _position += _slotGreen.GetRequiredSlot(_listIndex).FullWidth;
+                    if (++_listIndex < _slotGreen.SlotCount)
+                    {
+                        _index++;
+                        return true;
+                    }
+                }
+                else
+                {
+                    _position += _slotGreen.FullWidth;
+                }
+            }
+            else
+            {
+                _position = _node!.Position;
+            }
+
+            // An empty list has no children: its width is 0, so the position does not change
+            var green = _node!.Green;
+            do
+            {
+                _slot++;
+                _slotGreen = green.GetSlot(_slot);
+            }
+            while (_slotGreen is null || (_slotGreen.IsList && _slotGreen.SlotCount == 0));
+
+            _listIndex = 0;
+            _index++;
+            return true;
+        }
+
+        public void Reset()
+        {
+            _index = -1;
+            _slot = -1;
+            _slotGreen = null;
+            _listIndex = 0;
+            _position = 0;
+        }
+
         public readonly void Dispose() { }
     }
 

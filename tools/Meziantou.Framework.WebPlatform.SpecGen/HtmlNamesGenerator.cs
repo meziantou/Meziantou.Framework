@@ -212,6 +212,31 @@ internal static class HtmlNamesGenerator
             throw new InvalidOperationException("Too many trie nodes");
 
         context.WriteFile(context.Source("Html", "Parsing", "NamedCharacterReferences.g.cs"), writer.ToString());
+        GenerateMarkdownEntities(context, entities);
+    }
+
+    // The entities that Meziantou.Framework.Markdown reads: CommonMark requires the semicolon, so the legacy names without it
+    // are not entities in Markdown
+    private static void GenerateMarkdownEntities(GeneratorContext context, SortedDictionary<string, string> entities)
+    {
+        var markdownEntities = entities.Where(entity => entity.Key.EndsWith(';', StringComparison.Ordinal)).ToList();
+        var writer = new CodeWriter("tests/Meziantou.Framework.WebPlatform.SpecData/html/entities.json");
+        writer.Line("using System.Collections.Frozen;").Line();
+        writer.Line("namespace Meziantou.Framework.Markdown.Parsing;").Line();
+        using (writer.Block("static partial class HtmlEntities"))
+        {
+            writer.Line($"/// <summary>Gets the characters of the {markdownEntities.Count.ToString(CultureInfo.InvariantCulture)} entities, by their name without <c>&amp;</c> and <c>;</c>.</summary>");
+            writer.Line("public static FrozenDictionary<string, string> Entities { get; } = new Dictionary<string, string>(StringComparer.Ordinal)");
+            writer.Line("{");
+            foreach (var (name, value) in markdownEntities)
+            {
+                writer.Line($"    [{CodeWriter.Literal(name[..^1])}] = {CodeWriter.Literal(value)},");
+            }
+
+            writer.Line("}.ToFrozenDictionary(StringComparer.Ordinal);");
+        }
+
+        context.WriteFile(Path.Combine(context.Root, "src", "Meziantou.Framework.Markdown", "Parsing", "HtmlEntities.g.cs"), writer.ToString());
     }
 
     private static void WriteArray(CodeWriter writer, string name, string type, IEnumerable<int> values)

@@ -13,11 +13,18 @@ if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
 
 var outputFilePath = root / "src" / "Meziantou.Framework.HtmlToMarkdown" / "EmojiShortcodeMappings.g.cs";
 
-var githubMappings = await LoadGitHubMappings();
-var unicodeMappings = await LoadUnicodeMappings();
+// The shortcodes that the emoji extension of Meziantou.Framework.Markdown reads: every shortcode of GitHub, aliases included
+var markdownOutputFilePath = root / "src" / "Meziantou.Framework.Markdown" / "Parsing" / "EmojiShortcodes.g.cs";
 
-var output = GenerateCode(githubMappings, unicodeMappings);
-if (await WriteTextIfChanged(outputFilePath, output))
+var githubShortcodes = await LoadGitHubShortcodes();
+var githubMappings = GetEmojiToShortcode(githubShortcodes);
+var emojiTest = await DownloadEmojiTest();
+var unicodeMappings = LoadUnicodeMappings(emojiTest);
+
+var updated = await WriteTextIfChanged(outputFilePath, GenerateCode(githubMappings, unicodeMappings));
+var markdownShortcodes = ToFullyQualified(githubShortcodes, emojiTest);
+updated |= await WriteTextIfChanged(markdownOutputFilePath, GenerateMarkdownCode(markdownShortcodes, ResolveSmileys(markdownShortcodes, emojiTest)));
+if (updated)
 {
     Console.WriteLine("The file has been updated");
     return 1;
@@ -25,7 +32,8 @@ if (await WriteTextIfChanged(outputFilePath, output))
 
 return 0;
 
-static async Task<Dictionary<string, string>> LoadGitHubMappings()
+// The shortcodes of GitHub that are Unicode emoji, by shortcode: the other ones are images, such as :octocat:
+static async Task<SortedDictionary<string, string>> LoadGitHubShortcodes()
 {
     using var request = new HttpRequestMessage(HttpMethod.Get, GitHubEmojisUrl);
     request.Headers.UserAgent.Add(new ProductInfoHeaderValue("Meziantou.Framework.HtmlToMarkdown.Emoji.Generator", "1.0"));
@@ -44,13 +52,24 @@ static async Task<Dictionary<string, string>> LoadGitHubMappings()
     var data = JsonSerializer.Deserialize<Dictionary<string, string>>(payload)
         ?? throw new InvalidOperationException("Failed to deserialize GitHub emojis mapping");
 
-    var result = new Dictionary<string, string>(StringComparer.Ordinal);
-    foreach (var keyValuePair in data.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
+    var result = new SortedDictionary<string, string>(StringComparer.Ordinal);
+    foreach (var keyValuePair in data)
     {
-        var shortcode = ":" + keyValuePair.Key + ":";
-        if (!TryParseGitHubEmojiFromUrl(keyValuePair.Value, out var emoji))
-            continue;
+        if (TryParseGitHubEmojiFromUrl(keyValuePair.Value, out var emoji))
+        {
+            result[":" + keyValuePair.Key + ":"] = emoji;
+        }
+    }
 
+    return result;
+}
+
+// The first shortcode of each emoji, in the order of the names of the shortcodes
+static Dictionary<string, string> GetEmojiToShortcode(SortedDictionary<string, string> shortcodes)
+{
+    var result = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var (shortcode, emoji) in shortcodes.OrderBy(entry => entry.Key.Trim(':'), StringComparer.Ordinal))
+    {
         if (result.TryGetValue(emoji, out var existingShortcode))
         {
             if (string.CompareOrdinal(shortcode, existingShortcode) < 0)
@@ -67,12 +86,88 @@ static async Task<Dictionary<string, string>> LoadGitHubMappings()
     return result;
 }
 
-static async Task<Dictionary<string, string>> LoadUnicodeMappings()
+static async Task<string> DownloadEmojiTest()
 {
     using var response = await SharedHttpClient.Instance.GetAsync(UnicodeEmojiTestUrl);
     response.EnsureSuccessStatusCode();
+    return await response.Content.ReadAsStringAsync();
+}
 
-    var content = await response.Content.ReadAsStringAsync();
+// The names of the images of GitHub leave out the zero width joiners and the variation selectors of the emoji: the emoji is
+// the fully-qualified sequence of emoji-test.txt that has the same other code points
+static SortedDictionary<string, string> ToFullyQualified(SortedDictionary<string, string> shortcodes, string emojiTest)
+{
+    var fullyQualified = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var rawLine in emojiTest.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        var semicolonIndex = line.IndexOf(';', StringComparison.Ordinal);
+        var hashIndex = line.IndexOf('#', StringComparison.Ordinal);
+        if (line.StartsWith('#', StringComparison.Ordinal) || semicolonIndex <= 0 || hashIndex <= semicolonIndex || line[(semicolonIndex + 1)..hashIndex].Trim() != "fully-qualified")
+            continue;
+
+        if (TryParseCodePointSequence(line[..semicolonIndex].Trim(), out var emoji))
+        {
+            fullyQualified.TryAdd(RemoveJoinersAndSelectors(emoji), emoji);
+        }
+    }
+
+    var result = new SortedDictionary<string, string>(StringComparer.Ordinal);
+    foreach (var (shortcode, emoji) in shortcodes)
+    {
+        result[shortcode] = fullyQualified.GetValueOrDefault(RemoveJoinersAndSelectors(emoji)) ?? emoji;
+    }
+
+    return result;
+
+    static string RemoveJoinersAndSelectors(string emoji) => emoji.Replace("\u200D", "", StringComparison.Ordinal).Replace("\uFE0F", "", StringComparison.Ordinal);
+}
+
+// The shortcode of the emoji of each smiley: the emoji is the fully-qualified sequence of its name in emoji-test.txt, and the
+// shortcode the first one of GitHub for it
+static SortedDictionary<string, string> ResolveSmileys(SortedDictionary<string, string> shortcodes, string emojiTest)
+{
+    var emojiByName = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var rawLine in emojiTest.Split('\n'))
+    {
+        var line = rawLine.Trim();
+        var semicolonIndex = line.IndexOf(';', StringComparison.Ordinal);
+        var hashIndex = line.IndexOf('#', StringComparison.Ordinal);
+        if (line.StartsWith('#', StringComparison.Ordinal) || semicolonIndex <= 0 || hashIndex <= semicolonIndex || line[(semicolonIndex + 1)..hashIndex].Trim() != "fully-qualified")
+            continue;
+
+        // # 😃 E0.6 grinning face with big eyes
+        var metadata = line[(hashIndex + 1)..].Trim().Split(' ', 3, StringSplitOptions.RemoveEmptyEntries);
+        if (metadata.Length == 3 && TryParseCodePointSequence(line[..semicolonIndex].Trim(), out var emoji))
+        {
+            emojiByName.TryAdd(metadata[2], emoji);
+        }
+    }
+
+    var shortcodeByEmoji = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var (shortcode, emoji) in shortcodes)
+    {
+        shortcodeByEmoji.TryAdd(emoji, shortcode);
+    }
+
+    var result = new SortedDictionary<string, string>(StringComparer.Ordinal);
+    foreach (var (smiley, emojiName) in Smileys.All)
+    {
+        if (!emojiByName.TryGetValue(emojiName, out var emoji))
+            throw new InvalidOperationException($"The emoji '{emojiName}' of the smiley '{smiley}' is not in emoji-test.txt");
+
+        if (!shortcodeByEmoji.TryGetValue(emoji, out var shortcode))
+            throw new InvalidOperationException($"The emoji '{emojiName}' of the smiley '{smiley}' has no shortcode on GitHub");
+
+        if (!result.TryAdd(smiley, shortcode))
+            throw new InvalidOperationException($"The smiley '{smiley}' is defined twice");
+    }
+
+    return result;
+}
+
+static Dictionary<string, string> LoadUnicodeMappings(string content)
+{
     var candidates = new Dictionary<string, (string Shortcode, int Priority)>(StringComparer.Ordinal);
     foreach (var rawLine in content.Split('\n'))
     {
@@ -204,6 +299,39 @@ static string GenerateCode(IReadOnlyDictionary<string, string> githubMappings, I
     AppendDictionary(sb, dictionaryName: "GitHub", sourceComment: GitHubEmojisUrl, githubMappings);
     sb.AppendLine();
     AppendDictionary(sb, dictionaryName: "Unicode", sourceComment: UnicodeEmojiTestUrl, unicodeMappings);
+    sb.AppendLine("}");
+    return sb.ToString();
+}
+
+static string GenerateMarkdownCode(SortedDictionary<string, string> shortcodes, SortedDictionary<string, string> smileys)
+{
+    var sb = new StringBuilder();
+    sb.AppendLine("// <auto-generated />");
+    sb.AppendLine("#nullable enable");
+    sb.AppendLine();
+    sb.AppendLine("namespace Meziantou.Framework.Markdown.Parsing;");
+    sb.AppendLine();
+    sb.AppendLine("static partial class EmojiData");
+    sb.AppendLine("{");
+    sb.AppendLine($"    // Source: {GitHubEmojisUrl}, the shortcodes that are Unicode emoji");
+    sb.AppendLine("    private static Dictionary<string, string> GetGitHubShortcodes() => new(" + shortcodes.Count.ToString(CultureInfo.InvariantCulture) + ", StringComparer.Ordinal)");
+    sb.AppendLine("    {");
+    foreach (var (shortcode, emoji) in shortcodes)
+    {
+        sb.AppendLine($"        [\"{EscapeString(shortcode)}\"] = \"{EscapeString(emoji)}\",");
+    }
+
+    sb.AppendLine("    };");
+    sb.AppendLine();
+    sb.AppendLine($"    // Source: tools/Meziantou.Framework.HtmlToMarkdown.Emoji.Generator/Smileys.cs, whose emoji are resolved with {UnicodeEmojiTestUrl}");
+    sb.AppendLine("    private static Dictionary<string, string> GetUnicodeSmileys() => new(" + smileys.Count.ToString(CultureInfo.InvariantCulture) + ", StringComparer.Ordinal)");
+    sb.AppendLine("    {");
+    foreach (var (smiley, shortcode) in smileys)
+    {
+        sb.AppendLine($"        [\"{EscapeString(smiley)}\"] = \"{EscapeString(shortcode)}\",");
+    }
+
+    sb.AppendLine("    };");
     sb.AppendLine("}");
     return sb.ToString();
 }

@@ -1,4 +1,4 @@
 title: Markdown
-description: A CommonMark compliant, extensible Markdown processor for .NET, with a syntax tree, HTML rendering and roundtrip.
+description: Parse CommonMark, GitHub Flavored Markdown and its extensions into a syntax tree that keeps every character, render it as HTML or plain text, edit it, and format it.
 packageIds:
 - Meziantou.Framework.Markdown

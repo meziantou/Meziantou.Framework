@@ -5,7 +5,7 @@ description: Render the converted Markdown back to HTML with Meziantou.Framework
 
 The Markdown that the converter writes follows CommonMark, plus four common extensions: pipe tables, task lists,
 strikethrough (`~~`) and definition lists. A renderer that only implements CommonMark shows these as text. With
-[Meziantou.Framework.Markdown](../Markdown/01-Introduction.md), enable them in the pipeline:
+[Meziantou.Framework.Markdown](../Markdown/01-Introduction.md), enable them in the parse options:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/MarkdownRoundTrippingTests.cs;region=HtmlToMarkdown_RoundTrip;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -17,24 +17,21 @@ Assert.Equal("""
     """, markdown);
 
 // Pipe tables and strikethrough are extensions of CommonMark: enable them to render the Markdown
-var pipeline = new MarkdownPipelineBuilder()
-    .UseAdvancedExtensions()
-    .Build();
-var html = MarkdownConverter.ToHtml(markdown, pipeline);
+var html = MarkdownConverter.ToHtml(markdown, new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced });
 Assert.Contains("<td><del>1.50</del> 1.20</td>", html, StringComparison.Ordinal);
 ```
 <!-- endref -->
 
-`UseAdvancedExtensions` enables all four, with other extensions: see
-[Extensions](../Markdown/04-Extensions/01-Overview.md) to enable them one by one.
+[MarkdownExtensions.Advanced](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Advanced) enables all four, with
+other extensions: see [Extensions](../Markdown/05-Extensions/01-Overview.md) to enable them one by one.
 
 | The converter writes | Extension of Meziantou.Framework.Markdown |
 | --- | --- |
-| Pipe tables, from `table` | [Pipe tables](../Markdown/04-Extensions/02-Tables.md#pipe-tables) |
-| Task lists, from checkboxes | [Task lists](../Markdown/04-Extensions/05-Blocks.md#task-lists) |
-| `~~`, from `del`, `s` and `strike` | [Strikethrough](../Markdown/04-Extensions/04-TextFormatting.md#strikethrough-and-other-emphasis) |
-| Definition lists, from `dl` | [Definition lists](../Markdown/04-Extensions/05-Blocks.md#definition-lists) |
-| Shortcodes, with [EmojiShortcodeMode](cref:Meziantou.Framework.EmojiShortcodeMode) | [Emojis](../Markdown/04-Extensions/04-TextFormatting.md#emojis), not enabled by `UseAdvancedExtensions` |
+| Pipe tables, from `table` | [PipeTables](cref:Meziantou.Framework.Markdown.MarkdownExtensions.PipeTables) |
+| Task lists, from checkboxes | [TaskLists](cref:Meziantou.Framework.Markdown.MarkdownExtensions.TaskLists) |
+| `~~`, from `del`, `s` and `strike` | [Strikethrough](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Strikethrough) |
+| Definition lists, from `dl` | [DefinitionLists](cref:Meziantou.Framework.Markdown.MarkdownExtensions.DefinitionLists) |
+| Shortcodes, with [EmojiShortcodeMode](cref:Meziantou.Framework.EmojiShortcodeMode) | [Emoji](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Emoji), not enabled by [Advanced](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Advanced) |
 
 ## Round trip
 
@@ -45,8 +42,7 @@ Converting HTML to Markdown and rendering it again usually gives an equivalent H
   `section`...) are replaced by their content;
 - the whitespace is collapsed, outside of the code blocks;
 - a list can change between tight and loose, so its items gain or lose their `p` elements;
-- the renderer writes its own markup, such as the `thead` and `tbody` of a table, or the attributes of a task list
-  checkbox.
+- the renderer writes its own markup, such as the `thead` and `tbody` of a table, or the alignment of its cells.
 
 The unknown elements written as raw HTML are rendered again as they are, when the renderer allows raw HTML. Read
-[Security](../Markdown/10-Security.md) before you render Markdown that comes from untrusted HTML.
+[Security](../Markdown/07-Security.md) before you render Markdown that comes from untrusted HTML.

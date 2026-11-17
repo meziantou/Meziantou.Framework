@@ -9,11 +9,13 @@ namespace Meziantou.Framework.Language.Syntax;
 /// </remarks>
 internal sealed class SyntaxListNode : SyntaxNode
 {
-    private readonly SyntaxNode?[] _children;
+    // The red nodes of the elements, created when the first one is: a list of tokens has none
+    private SyntaxNode?[]? _children;
 
     internal SyntaxListNode(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
-        => _children = new SyntaxNode?[green.SlotCount];
+    {
+    }
 
     internal override SyntaxNode? GetNodeSlot(int index)
     {
@@ -21,8 +23,19 @@ internal sealed class SyntaxListNode : SyntaxNode
         if (Green.GetSlot(index) is not { IsToken: false })
             return null;
 
-        return GetRedElement(ref _children[index], index);
+        var children = Volatile.Read(ref _children);
+        if (children is null)
+        {
+            // The array that won the race, not the one this thread created, so every caller caches in the same one
+            children = Interlocked.CompareExchange(ref _children, new SyntaxNode?[Green.SlotCount], comparand: null) ?? _children;
+        }
+
+        return GetRedElement(ref children[index], index);
     }
 
-    internal override SyntaxNode? GetCachedSlot(int index) => _children[index];
+    internal override SyntaxNode? GetCachedSlot(int index) => Volatile.Read(ref _children)?[index];
+
+    // The green list knows where its children are: walking back to the previous red sibling is linear for the tokens of a list,
+    // which have none, and makes enumerating a long list of tokens quadratic
+    internal override int GetChildPosition(int index) => Position + Green.GetSlotOffset(index);
 }

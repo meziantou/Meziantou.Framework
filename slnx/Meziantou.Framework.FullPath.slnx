@@ -153,7 +153,6 @@
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/Meziantou.Framework.JavaScriptEngine.NpmPackages.csproj" />
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj" />
     <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark.csproj" />
-    <Project Path="../tests/Meziantou.Framework.Markdown.Tests/Meziantou.Framework.Markdown.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Pdf.TestHarness/Meziantou.Framework.Pdf.TestHarness.csproj" />
     <Project Path="../tests/Meziantou.Framework.ResxSourceGenerator.Tests/Meziantou.Framework.ResxSourceGenerator.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />

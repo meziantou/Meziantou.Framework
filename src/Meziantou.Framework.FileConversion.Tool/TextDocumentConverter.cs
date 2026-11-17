@@ -1,7 +1,5 @@
 using System.Net;
 using Meziantou.Framework.Markdown;
-using Meziantou.Framework.Markdown.Extensions.Yaml;
-using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.WebPlatform;
 
 namespace Meziantou.Framework.FileConversionTool;
@@ -9,20 +7,80 @@ namespace Meziantou.Framework.FileConversionTool;
 /// <summary>Converts Markdown documents to HTML, and HTML documents to Markdown.</summary>
 internal static class TextDocumentConverter
 {
-    /// <summary>Creates the Markdown pipeline of the extensions of <c>--markdown-extensions</c>, such as <c>advanced+emojis</c>.</summary>
+    /// <summary>Creates the Markdown options of the extensions of <c>--markdown-extensions</c>, such as <c>advanced+emojis</c>.</summary>
     /// <exception cref="ArgumentException">An extension is not valid.</exception>
-    public static MarkdownPipeline CreatePipeline(string extensions, bool disableHtml)
+    public static (MarkdownParseOptions ParseOptions, MarkdownHtmlRendererOptions RendererOptions) CreateOptions(string extensions, bool disableHtml)
     {
-        var builder = new MarkdownPipelineBuilder().Configure(extensions);
-
         // The front matter holds metadata, such as the title: it is not content
-        builder.UseYamlFrontMatter();
-        if (disableHtml)
+        var flags = MarkdownExtensions.YamlFrontMatter;
+        var pipeTables = false;
+        var escapeNonAscii = true;
+        List<string>? linkRel = null;
+        foreach (var extension in extensions.Split('+', StringSplitOptions.RemoveEmptyEntries))
         {
-            builder.DisableHtml();
+            switch (extension.ToLowerInvariant())
+            {
+                case "common" or "yaml":
+                    break;
+                case "nohtml":
+                    disableHtml = true;
+                    break;
+                case "nonascii-noescape":
+                    escapeNonAscii = false;
+                    break;
+                case "nofollowlinks" or "noopenerlinks" or "noreferrerlinks":
+                    (linkRel ??= []).Add(extension[..^"links".Length].ToLowerInvariant());
+                    break;
+                case "pipetables":
+                    pipeTables = true;
+                    break;
+                default:
+                    flags |= extension.ToLowerInvariant() switch
+                    {
+                        "advanced" => MarkdownExtensions.Advanced,
+                        "alerts" => MarkdownExtensions.Alerts,
+                        "gfm-pipetables" => MarkdownExtensions.Tables,
+                        "emphasisextras" => MarkdownExtensions.EmphasisExtras,
+                        "listextras" => MarkdownExtensions.ListExtras,
+                        "hardlinebreak" => MarkdownExtensions.HardLineBreaks,
+                        "footnotes" => MarkdownExtensions.Footnotes,
+                        "footers" => MarkdownExtensions.Footers,
+                        "citations" => MarkdownExtensions.Citations,
+                        "attributes" => MarkdownExtensions.GenericAttributes,
+                        "gridtables" => MarkdownExtensions.GridTables,
+                        "abbreviations" => MarkdownExtensions.Abbreviations,
+                        "emojis" => MarkdownExtensions.Emoji,
+                        "definitionlists" => MarkdownExtensions.DefinitionLists,
+                        "customcontainers" => MarkdownExtensions.CustomContainers,
+                        "figures" => MarkdownExtensions.Figures,
+                        "mathematics" => MarkdownExtensions.Mathematics,
+                        "bootstrap" => MarkdownExtensions.Bootstrap,
+                        "medialinks" => MarkdownExtensions.MediaLinks,
+                        "smartypants" => MarkdownExtensions.SmartyPants,
+                        "autoidentifiers" => MarkdownExtensions.AutoIdentifiers,
+                        "tasklists" => MarkdownExtensions.TaskLists,
+                        "diagrams" => MarkdownExtensions.Diagrams,
+                        "autolinks" => MarkdownExtensions.MarkdigAutolinks,
+                        "globalization" => MarkdownExtensions.Globalization,
+                        "cjk-friendly-emphasis" => MarkdownExtensions.CjkFriendlyEmphasis,
+                        _ => throw new ArgumentException($"Invalid extension `{extension}` from `{extensions}`", nameof(extensions)),
+                    };
+                    break;
+            }
         }
 
-        return builder.Build();
+        if (pipeTables)
+        {
+            flags |= MarkdownExtensions.PipeTables;
+        }
+
+        var parseOptions = new MarkdownParseOptions { Extensions = flags, DisableHtml = disableHtml };
+        var rendererOptions = new MarkdownHtmlRendererOptions
+        {
+            EscapeNonAsciiUrlCharacters = escapeNonAscii,
+            LinkRel = linkRel is null ? null : string.Join(' ', linkRel.Distinct(StringComparer.Ordinal)),
+        };
+        return (parseOptions, rendererOptions);
     }
 
     /// <summary>Converts a Markdown document to HTML: a complete document, or the content of its body.</summary>
@@ -31,13 +89,12 @@ internal static class TextDocumentConverter
     /// <param name="settings">The settings.</param>
     /// <param name="fragment">Whether only the content of the body is written, without <c>&lt;html&gt;</c>, <c>&lt;head&gt;</c> and <c>&lt;body&gt;</c>.</param>
     /// <returns>The HTML, and the title of the document.</returns>
-    /// <exception cref="ArgumentException">The document is nested too deeply.</exception>
     public static (string Html, string Title) MarkdownToHtml(string markdown, string defaultTitle, ConversionSettings settings, bool fragment)
     {
-        var pipeline = CreatePipeline(settings.MarkdownExtensions, settings.MarkdownDisableHtml);
-        var document = MarkdownConverter.Parse(markdown, pipeline);
-        var body = document.ToHtml(pipeline);
-        var title = settings.HtmlTitle ?? GetTitle(markdown, document, pipeline) ?? defaultTitle;
+        var (parseOptions, rendererOptions) = CreateOptions(settings.MarkdownExtensions, settings.MarkdownDisableHtml);
+        var tree = MarkdownSyntaxTree.ParseText(markdown, parseOptions);
+        var body = MarkdownHtmlRenderer.ToHtml(tree, rendererOptions);
+        var title = settings.HtmlTitle ?? GetTitle(tree) ?? defaultTitle;
         if (fragment)
             return (body, title);
 
@@ -69,13 +126,13 @@ internal static class TextDocumentConverter
     }
 
     /// <summary>Gets the title of a Markdown document: the <c>title</c> of its YAML front matter, or the text of its first heading.</summary>
-    internal static string? GetTitle(string markdown, MarkdownDocument document, MarkdownPipeline pipeline)
+    internal static string? GetTitle(MarkdownSyntaxTree tree)
     {
-        if (document.Descendants<YamlFrontMatterBlock>().FirstOrDefault() is { } frontMatter)
+        var root = tree.GetRoot();
+        if (root.DescendantNodes().OfType<MarkdownFrontMatterSyntax>().FirstOrDefault() is { } frontMatter)
         {
-            foreach (var line in (frontMatter.Lines.Lines ?? []).Take(frontMatter.Lines.Count))
+            foreach (var text in frontMatter.Yaml.Split('\n'))
             {
-                var text = line.Slice.ToString();
                 if (!text.StartsWith("title:", StringComparison.Ordinal))
                     continue;
 
@@ -90,9 +147,9 @@ internal static class TextDocumentConverter
             }
         }
 
-        if (document.Descendants<HeadingBlock>().FirstOrDefault() is { } heading && heading.Span.Start >= 0 && heading.Span.End < markdown.Length)
+        if (root.DescendantNodes().OfType<MarkdownHeadingSyntax>().FirstOrDefault() is { } heading)
         {
-            var title = MarkdownConverter.ToPlainText(markdown[heading.Span.Start..(heading.Span.End + 1)], pipeline).Trim();
+            var title = heading.GetPlainText().Trim();
             if (title.Length > 0)
                 return title.ReplaceLineEndings(" ");
         }

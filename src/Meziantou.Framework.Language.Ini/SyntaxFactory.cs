@@ -379,9 +379,13 @@ public static class SyntaxFactory
             return entry;
 
         // A git value that ends the text with a backslash would continue on the next line once the line ends: a blank
-        // line ends it there.
-        if (options.IsGit && entry.GetLastToken() is { RawKind: (int)SyntaxKind.ValueToken } last && Green.Lexer.EndsWithLineContinuation(last.Text))
+        // line ends it there. A value that ends the text with a backslash and a carriage return continues on a line that
+        // a line feed would only complete: a second line feed ends it.
+        if (options.IsGit && entry.GetLastToken() is { RawKind: (int)SyntaxKind.ValueToken } last
+            && (Green.Lexer.EndsWithLineContinuation(last.Text) || (last.Text is [.., '\r'] &&string.Equals(endOfLine.ToFullString(), "\n", StringComparison.Ordinal))))
+        {
             return entry.WithTrailingTrivia([.. trailing, endOfLine, endOfLine]);
+        }
 
         return entry.WithTrailingTrivia([.. trailing, endOfLine]);
     }

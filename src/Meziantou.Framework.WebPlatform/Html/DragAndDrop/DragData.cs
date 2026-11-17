@@ -137,6 +137,7 @@ public sealed class DragDataFile : DragDataEntry
         Content = content;
         Type = type ?? FileMediaTypes.GetMediaType(name);
         LastModified = lastModified;
+        LastModifiedMilliseconds = lastModified?.ToUnixTimeMilliseconds();
     }
 
     /// <summary>A file of a File object of a drag data store (e.g. a file that a script added to a <c>DataTransfer</c>).</summary>
@@ -145,7 +146,12 @@ public sealed class DragDataFile : DragDataEntry
     {
         Content = file.Data;
         Type = file.Type;
-        LastModified = DateTimeOffset.FromUnixTimeMilliseconds(file.LastModified);
+        // The lastModified of a File can be out of the range of DateTimeOffset (e.g. new File([], 'a', { lastModified: 1e15 }))
+        LastModifiedMilliseconds = file.LastModified;
+        if (file.LastModified >= DateTimeOffset.MinValue.ToUnixTimeMilliseconds() && file.LastModified <= DateTimeOffset.MaxValue.ToUnixTimeMilliseconds())
+        {
+            LastModified = DateTimeOffset.FromUnixTimeMilliseconds(file.LastModified);
+        }
         SourceFile = file;
     }
 
@@ -161,13 +167,16 @@ public sealed class DragDataFile : DragDataEntry
     /// <summary>Gets the last modification date of the file, or null for the time of the drop.</summary>
     public DateTimeOffset? LastModified { get; }
 
+    /// <summary>The last modification date of the file in milliseconds since the Unix epoch (the value of a File object, which may be out of the range of <see cref="DateTimeOffset"/>), or null.</summary>
+    internal long? LastModifiedMilliseconds { get; }
+
     /// <summary>Creates the File object of the file, for a drop at <paramref name="now"/> (milliseconds since the Unix epoch).</summary>
     internal FileApi.File CreateFile(long now, string? relativePath = null)
     {
         if (SourceFile is not null && relativePath is null)
             return SourceFile;
 
-        var file = FileApi.File.Create(Content.ToArray(), Infra.InfraAscii.ToAsciiLowercase(Type), Name, LastModified?.ToUnixTimeMilliseconds() ?? now);
+        var file = FileApi.File.Create(Content.ToArray(), Infra.InfraAscii.ToAsciiLowercase(Type), Name, LastModifiedMilliseconds ?? now);
         file.WebkitRelativePathValue = relativePath;
         return file;
     }

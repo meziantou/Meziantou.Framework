@@ -69,6 +69,9 @@ public sealed class KeyboardInput
     private readonly List<string> _pressedKeys = [];
     private readonly HashSet<string> _modifiers = new(StringComparer.Ordinal);
 
+    /// <summary>The keys pressed during a drag-and-drop operation: the drag consumes them, so their releases are not given to the page either.</summary>
+    private readonly HashSet<string> _keysConsumedByDrag = new(StringComparer.Ordinal);
+
     internal KeyboardInput(UserInput input)
     {
         _input = input;
@@ -110,6 +113,7 @@ public sealed class KeyboardInput
         // During a drag-and-drop operation, the keys go to the drag (not to the page): Escape cancels it
         if (_input.Mouse.DragOperation is not null)
         {
+            _keysConsumedByDrag.Add(key.Key);
             if (key.Key == "Escape")
             {
                 _input.CancelDrag(_input.Mouse);
@@ -181,6 +185,10 @@ public sealed class KeyboardInput
         {
             UpdateInputModifiers();
         }
+
+        // The release of a key pressed during a drag (e.g. the Escape that canceled it) goes to the drag too
+        if (_keysConsumedByDrag.Remove(key.Key) || _input.Mouse.DragOperation is not null)
+            return;
 
         if (GetTarget() is not { } target)
             return;

@@ -204,7 +204,7 @@ public sealed class DragAndDropTests : IDisposable
     {
         var document = Load(Style + "<div id=source draggable=true></div><div id=target></div>");
         document.GetElementById("target")!.AddEventListener("dragover", e => e.PreventDefault());
-        var events = Log(document, "dragleave", "drop", "dragend", "keydown");
+        var events = Log(document, "dragleave", "drop", "dragend", "keydown", "keyup");
         string? dropEffect = null;
         document.AddEventListener("dragend", e => dropEffect = ((DragEvent)e).DataTransfer!.DropEffect);
 
@@ -212,10 +212,16 @@ public sealed class DragAndDropTests : IDisposable
         input.Mouse.Move(50, 50);
         input.Mouse.Down();
         input.Mouse.Move(50, 150);
-        input.Keyboard.Press("Escape");
-        input.Mouse.Up();
 
-        Assert.Equal(["dragleave@target", "dragend@source"], events);
+        // The drag consumes the keys pressed during it, and their releases, even after Escape ends it
+        input.Keyboard.Press("a");
+        input.Keyboard.Down("b");
+        input.Keyboard.Press("Escape");
+        input.Keyboard.Up("b");
+        input.Mouse.Up();
+        input.Keyboard.Press("c");
+
+        Assert.Equal(["dragleave@target", "dragend@source", "keydown@", "keyup@"], events);
         Assert.Equal("none", dropEffect);
     }
 
@@ -411,6 +417,8 @@ public sealed class DragAndDropTests : IDisposable
             dataTransfer.items.add(file);
             dataTransfer.items.add(new File(['x'], 'b.txt'));
             dataTransfer.items.add('text', 'text/plain');
+            dataTransfer.items.add(new File([], 'future.txt', { lastModified: 1e15 }));
+            dataTransfer.items[3].webkitGetAsEntry().file(f => log.push('lastModified:' + f.lastModified));
             const entry = dataTransfer.items[0].webkitGetAsEntry();
             log.push(entry.fullPath + ':' + (dataTransfer.items[2].webkitGetAsEntry() === null));
             entry.file(f => log.push('same:' + (f === file)));
@@ -418,7 +426,7 @@ public sealed class DragAndDropTests : IDisposable
             </script>
             """);
 
-        Assert.Equal("/a.txt:true|same:true|root:/a.txt,/b.txt", Evaluate(document, "log.join('|')"));
+        Assert.Equal("/a.txt:true|lastModified:1000000000000000|same:true|root:/a.txt,/b.txt,/future.txt", Evaluate(document, "log.join('|')"));
     }
 
     [Fact]

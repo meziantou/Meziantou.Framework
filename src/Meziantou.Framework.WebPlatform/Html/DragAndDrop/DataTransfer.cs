@@ -121,7 +121,7 @@ internal sealed class DragDataStore
         switch (entry)
         {
             case DragDataFile file:
-                var time = file.LastModified?.ToUnixTimeMilliseconds() ?? DropTime;
+                var time = file.LastModifiedMilliseconds ?? DropTime;
                 backend.CreateEntry(HandlesOrigin, path, FileSystemHandleKind.File, time);
                 backend.WriteFile(HandlesOrigin, path, 0, file.Content.Span, time);
                 break;

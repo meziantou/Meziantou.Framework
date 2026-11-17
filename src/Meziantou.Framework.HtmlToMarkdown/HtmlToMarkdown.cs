@@ -666,6 +666,8 @@ public static class HtmlToMarkdown
         groups.AddRange(bodyGroups);
         groups.AddRange(footerGroups);
 
+        // The table and the tables it contains copy no content when the table is written as raw HTML
+        var remainingDuplicatedTableContentLength = state.RemainingDuplicatedTableContentLength;
         var rows = BuildTableGrid(groups, state, out var hasSpans, out var hasBlocks);
         if (rows.Count == 0)
             return "";
@@ -674,7 +676,10 @@ public static class HtmlToMarkdown
         {
             var headerRowCount = headerGroups.Sum(group => group.Count);
             if (hasBlocks || headerRowCount > 1 || (hasSpans && state.Options.TableSpanHandling is TableSpanHandling.Ignore))
+            {
+                state.RemainingDuplicatedTableContentLength = remainingDuplicatedTableContentLength;
                 return GetRawHtml(table);
+            }
         }
 
         var duplicateSpans = state.Options.TableSpanHandling is TableSpanHandling.Duplicate;

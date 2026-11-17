@@ -1238,6 +1238,47 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void GridTableCellsHaveTheAttributesOfBootstrapAndOfTheDirectionOfTheText()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("+--------------+\n| ![a](b.png)  |\n+--------------+\n| # \u05E9\u05DC\u05D5\u05DD     |\n+--------------+\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables | MarkdownExtensions.Bootstrap | MarkdownExtensions.Globalization });
+        var html = MarkdownHtmlRenderer.ToHtml(tree);
+
+        Assert.Contains("<img src=\"b.png\" class=\"img-fluid\" alt=\"a\" />", html, StringComparison.Ordinal);
+        Assert.Contains("<h1 dir=\"rtl\">", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GridTablesInCellsCountInTheNestingDepth()
+    {
+        string[] lines = ["a"];
+        for (var i = 0; i < 6; i++)
+        {
+            var width = lines.Max(line => line.Length) + 2;
+            var border = "+" + new string('-', width) + "+";
+            lines = [border, .. lines.Select(line => "| " + line.PadRight(width - 1) + "|"), border];
+        }
+
+        var text = string.Join('\n', lines) + "\n";
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables };
+        Assert.Equal(6, CountTables(MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options))));
+        Assert.Equal(3, CountTables(MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options with { MaximumNestingDepth = 2 }))));
+
+        static int CountTables(string html) => html.Split("<table>").Length - 1;
+    }
+
+    [Theory]
+    [InlineData("[r]: /url\t\n\n[r]\n")]
+    [InlineData("[r]: /url \"t\"\t \n\n[r]\n")]
+    [InlineData("[r]:\t/url\t\n\n[r]\n")]
+    public void LinkReferenceDefinitionsEndWithSpacesOrTabs(string text)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.StartsWith("<p><a href=\"/url\"", MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GridTableCellEditsKeepTheDefinitionsOfTheTable()
     {
         var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables };
@@ -1937,6 +1978,21 @@ public sealed class MarkdownSyntaxTreeTests
                 Assert.Equal(plainText, MarkdownPlainTextRenderer.ToPlainText(tree, withRenderer));
             }
         }
+    }
+
+    [Theory]
+    [InlineData("+---+\n| a |\n+---+\n", "<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td><div class=\"p\">a</div>\n</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("Term\n:   a\n", "<dl>\n<dt>Term</dt>\n<dd>\n<div class=\"p\">a</div>\n</dd>\n</dl>\n")]
+    public void NodeRenderersAreOfferedTheParagraphsOfCellsAndDefinitions(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables | MarkdownExtensions.DefinitionLists });
+        var html = MarkdownHtmlRenderer.ToHtml(tree);
+        foreach (var renderer in (MarkdownHtmlNodeRenderer[])[new DecliningRenderer(), new DefaultRenderer()])
+        {
+            Assert.Equal(html, MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { NodeRenderers = [renderer] }));
+        }
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { NodeRenderers = [new ParagraphRenderer()] }));
     }
 
     [Fact]

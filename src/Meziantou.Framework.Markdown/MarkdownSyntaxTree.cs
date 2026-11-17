@@ -32,11 +32,14 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
 
     // The content of a cell of a grid table of the tree. Markdig does not close the blocks of a cell that the last line of the table
     // spans: a grid table that ends it is kept, even when it has no row.
-    internal static MarkdownSyntaxTree ParseCell(string text, MarkdownSyntaxTree? container, bool isClosed)
+    // For the content of a cell, the blocks it is in, in this tree and the trees around it
+    internal int CellDepth => _cell?.Depth ?? 0;
+
+    internal static MarkdownSyntaxTree ParseCell(string text, MarkdownSyntaxTree? container, bool isClosed, int depth)
     {
         var options = container?.Options ?? MarkdownParseOptions.Default;
         string[] labels = [.. container?.GetRoot().LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)) ?? []];
-        var cell = new CellContext(labels, KeepsGridTable: !isClosed);
+        var cell = new CellContext(labels, KeepsGridTable: !isClosed, depth);
         var green = MarkdownParser.Parse(text, options, cell);
         return new MarkdownSyntaxTree(SourceText.From(text), options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), container?.FilePath, container, cell);
     }

@@ -1108,7 +1108,7 @@ internal sealed class InlineParser
         definitions[definition] = BuildElement.Node(SyntaxKind.LinkReferenceDefinition, definitions.Count - definition - 1);
 
         // The end of the line is part of the definition
-        while (_pos < _end && _text[_pos] == ' ')
+        while (_pos < _end && _text[_pos] is ' ' or '\t')
         {
             _pos++;
         }
@@ -1121,10 +1121,11 @@ internal sealed class InlineParser
         return _pos;
     }
 
+    // Only spaces or tabs follow on the line
     private bool IsAtLineEnd()
     {
         var position = _pos;
-        while (position < _end && _text[position] == ' ')
+        while (position < _end && _text[position] is ' ' or '\t')
         {
             position++;
         }

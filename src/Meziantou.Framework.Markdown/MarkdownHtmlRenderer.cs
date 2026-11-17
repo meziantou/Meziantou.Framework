@@ -116,16 +116,7 @@ public static class MarkdownHtmlRenderer
     private static Writer Write(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options, bool plainText)
     {
         var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
-        // Finding the targets of the attributes walks every node and token: skip it for the documents that have none
-        if (tree.GetRoot().HasGenericAttributes)
-        {
-            writer.CollectAttributes(tree.GetRoot());
-        }
-
-        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.Bootstrap) || tree.Options.Extensions.HasFlag(MarkdownExtensions.Globalization))
-        {
-            writer.CollectExtraAttributes(tree.GetRoot());
-        }
+        writer.CollectAllAttributes(tree);
 
         if (options?.PragmaLines is true && !plainText)
         {
@@ -236,6 +227,22 @@ public static class MarkdownHtmlRenderer
 
         // The classes and the properties that Bootstrap and the direction of the text add after the generic attributes
         private Dictionary<SyntaxNode, (List<string> Classes, List<KeyValuePair<string, string?>> Properties)>? _extraAttributes;
+
+        // The attributes of the nodes of a document: the generic attributes, and the ones of Bootstrap and of the direction of the
+        // text. The content of a grid cell is a document of its own, which its writer reads.
+        public void CollectAllAttributes(MarkdownSyntaxTree tree)
+        {
+            // Finding the targets of the attributes walks every node and token: skip it for the documents that have none
+            if (tree.GetRoot().HasGenericAttributes)
+            {
+                CollectAttributes(tree.GetRoot());
+            }
+
+            if (tree.Options.Extensions.HasFlag(MarkdownExtensions.Bootstrap) || tree.Options.Extensions.HasFlag(MarkdownExtensions.Globalization))
+            {
+                CollectExtraAttributes(tree.GetRoot());
+            }
+        }
 
         public void CollectExtraAttributes(MarkdownDocumentSyntax document)
         {
@@ -796,7 +803,7 @@ public static class MarkdownHtmlRenderer
                 Markup.Append('>');
                 if (blocks is [MarkdownParagraphSyntax paragraph] && item.BlankLineCount == 0)
                 {
-                    WriteInlines(paragraph.Inlines);
+                    WriteUnwrappedParagraph(paragraph);
                     Markup.Append("</dd>");
                     Cr();
                     continue;
@@ -858,6 +865,10 @@ public static class MarkdownHtmlRenderer
             {
                 case MarkdownParagraphSyntax paragraph when _attributes is not null && IsAttributesParagraph(paragraph):
                     // Its attributes are for the next block
+                    break;
+
+                case MarkdownParagraphSyntax paragraph when ReferenceEquals(paragraph, _unwrappedParagraph):
+                    WriteInlines(paragraph.Inlines);
                     break;
 
                 case MarkdownParagraphSyntax paragraph:
@@ -1144,6 +1155,32 @@ public static class MarkdownHtmlRenderer
             }
 
             return true;
+        }
+
+        // The paragraph that is the only block of a grid cell or of a definition, which is written without <p>: the node renderers
+        // can write it, and its default rendering is its inlines
+        private MarkdownParagraphSyntax? _unwrappedParagraph;
+
+        private void WriteUnwrappedParagraph(MarkdownParagraphSyntax paragraph)
+        {
+            if (_hasNodeRenderers)
+            {
+                var previous = _unwrappedParagraph;
+                _unwrappedParagraph = paragraph;
+                try
+                {
+                    if (TryWriteWithNodeRenderers(paragraph))
+                    {
+                        return;
+                    }
+                }
+                finally
+                {
+                    _unwrappedParagraph = previous;
+                }
+            }
+
+            WriteInlines(paragraph.Inlines);
         }
 
         private bool TryWriteWithNodeRenderers(MarkdownSyntaxNode node)
@@ -1635,14 +1672,10 @@ public static class MarkdownHtmlRenderer
         private string RenderCell(MarkdownSyntaxTree content)
         {
             using var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
-            if (content.GetRoot().HasGenericAttributes)
-            {
-                writer.CollectAttributes(content.GetRoot());
-            }
-
+            writer.CollectAllAttributes(content);
             if (content.GetRoot().Blocks is [MarkdownParagraphSyntax paragraph] && !(writer._attributes is not null && writer.IsAttributesParagraph(paragraph)))
             {
-                writer.WriteInlines(paragraph.Inlines);
+                writer.WriteUnwrappedParagraph(paragraph);
             }
             else
             {

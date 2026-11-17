@@ -54,10 +54,11 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
 
         var columns = grid.Columns.Select(column => new MarkdownGridTableColumn(column.Alignment, (float)(column.End - column.Start - 1) * 100.0f / totalWidth)).ToArray();
         var outer = SyntaxTree as MarkdownSyntaxTree;
+        var depth = (outer?.CellDepth ?? 0) + Ancestors().Count(ancestor => ancestor is MarkdownBlockSyntax) + 1;
         var rows = grid.Rows.Select(row => new MarkdownGridTableRow(row.IsHeader, [.. row.Cells.Select(cell =>
         {
             var text = string.Join('\n', cell.Segments.Select(segment => lines[segment.Line][segment.Start..segment.End]));
-            return new MarkdownGridTableCell(cell.ColumnIndex, cell.ColumnSpan, cell.RowSpan, text, outer, cell.IsClosed, cell.Segments.Count > 0 ? cell.Segments[0].Line : -1);
+            return new MarkdownGridTableCell(cell.ColumnIndex, cell.ColumnSpan, cell.RowSpan, text, outer, cell.IsClosed, cell.Segments.Count > 0 ? cell.Segments[0].Line : -1, depth);
         })], row.Line)).ToArray();
         _layout = (columns, rows);
         return _layout.Value;

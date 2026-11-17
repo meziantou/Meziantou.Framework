@@ -37,7 +37,8 @@ public sealed record MarkdownParseOptions
     /// </summary>
     /// <remarks>
     /// The limit keeps the tree shallow enough to be built, walked and rendered without exhausting the stack, whatever the
-    /// text, such as thousands of <c>&gt;</c> or of <c>*</c>.
+    /// text, such as thousands of <c>&gt;</c> or of <c>*</c>. The blocks of the content of a grid table cell are in the table
+    /// and its containers, so grid tables nested in cells count too.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
     public int MaximumNestingDepth

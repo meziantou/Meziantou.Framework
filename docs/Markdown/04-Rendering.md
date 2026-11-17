@@ -77,7 +77,8 @@ instead of the renderer, such as the code blocks of a language or the custom con
 is offered to the node renderers in order, and the first one whose
 [TryWrite](cref:Meziantou.Framework.Markdown.MarkdownHtmlNodeRenderer.TryWrite(Meziantou.Framework.Markdown.MarkdownSyntaxNode,Meziantou.Framework.Markdown.MarkdownHtmlWriter))
 returns `true` writes it. The others are written as usual. The parts of a block that are written with it, such as the
-items of a list and the rows of a table, are not offered.
+items of a list and the rows of a table, are not offered. A paragraph written without `<p>`, the only block of a grid
+table cell or of a definition, is offered too: its default rendering is its inlines.
 
 The node renderer writes with a [MarkdownHtmlWriter](cref:Meziantou.Framework.Markdown.MarkdownHtmlWriter):
 

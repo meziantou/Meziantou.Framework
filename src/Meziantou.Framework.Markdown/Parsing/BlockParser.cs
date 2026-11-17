@@ -27,6 +27,9 @@ internal sealed class BlockParser
     private readonly bool _allowNestedAlerts;
     private readonly int _maximumNestingDepth;
 
+    // The blocks that the document is in: for the content of a cell, the grid tables and their containers
+    private int _baseDepth;
+
     // The alert being converted, which a quote in it cannot be, and the paragraph that starts with its kind
     private bool _inAlert;
     private Block? _alertParagraph;
@@ -103,7 +106,7 @@ internal sealed class BlockParser
     /// <summary>Adds the nodes and tokens of the text to <paramref name="tree"/>, the document first. Returns the trivia that is not whitespace.</summary>
     public static List<TriviaSpan> Parse(string text, MarkdownParseOptions options, TreeBuffer tree, CellContext? cell = null)
     {
-        var parser = new BlockParser(text, options, tree) { _keepsGridTable = cell?.KeepsGridTable ?? false };
+        var parser = new BlockParser(text, options, tree) { _keepsGridTable = cell?.KeepsGridTable ?? false, _baseDepth = cell?.Depth ?? 0 };
         foreach (var label in cell?.References ?? [])
         {
             parser._references.TryAdd(label, value: true);
@@ -284,7 +287,7 @@ internal sealed class BlockParser
             FindNextNonspace();
 
             // A block nested in more blocks than the limit is text, so that the tree stays shallow enough to walk
-            if (container.Depth > _maximumNestingDepth)
+            if (container.Depth + _baseDepth > _maximumNestingDepth)
             {
                 AdvanceNextNonspace();
                 break;

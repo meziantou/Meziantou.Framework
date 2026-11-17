@@ -181,9 +181,9 @@ internal static class TextExamples
     // Kept as long as the application draws: the masks computed by a drawing are reused by the next ones
     private static readonly GlyphCache LabelGlyphs = new(maxBytes: 4 * 1024 * 1024);
 
-    public static void DrawTimingTable(string fontPath, string outputPath)
+    // The masks of a cache are found again for the same Font object: load the font once, and keep it with the cache
+    public static void DrawTimingTable(Font font, string outputPath)
     {
-        var font = Font.Load(fontPath);
         var ink = new SolidBrush(new Rgba32(40, 40, 40));
         using var image = new Image<Rgba32>(400, 230, new Rgba32(255, 255, 255));
         image.Draw(canvas =>

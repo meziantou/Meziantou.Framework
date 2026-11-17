@@ -1616,11 +1616,13 @@ public sealed class DrawingTextTests
         var path = new VectorPathBuilder().MoveTo(3, 30).QuadraticBezierTo(60, 0, 117, 30).Build();
         var subpixel = TextLayout.Create("Wave To.", new TextStyle(font, 21.5), new TextLayoutOptions { SubpixelRendering = TextSubpixelRendering.Rgb });
         var pen = new Pen(Translucent, 1.3);
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(120, 0), [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 255))]);
         foreach (var draw in new DrawingAction[]
         {
             canvas => canvas.Transform(turn, turned => turned.FillText(Translucent, words, new PointD(3.3, 5.6))),
             canvas => canvas.FillText(Translucent, words, path),
             canvas => canvas.FillText(new Rgba32(10, 10, 10), subpixel, new PointD(3.3, 5.6)),
+            canvas => canvas.FillText(gradient, subpixel, new PointD(3.3, 5.6)),
             canvas => canvas.StrokeText(pen, words, new PointD(3.3, 5.6)),
         })
         {
@@ -1629,6 +1631,10 @@ public sealed class DrawingTextTests
             Assert.Equal(shape, Render(PixelFormat.Rgb24, 120, 50, canvas => canvas.GlyphMasks(cache: null, draw)));
         }
 
+        // A text with subpixel rendering on gray levels falls back to gray levels, and is still one shape
+        DrawingAction gray = canvas => canvas.FillText(Translucent, subpixel, new PointD(3.3, 5.6));
+        Assert.Equal(Render(PixelFormat.Gray8, 120, 50, gray), Render(PixelFormat.Gray8, 120, 50, canvas => canvas.GlyphMasks(cache: null, gray)));
+
         // Once the callback returns, a text is one shape again
         var oneShape = Render(PixelFormat.Rgb24, 120, 50, canvas => canvas.FillText(Translucent, words, new PointD(3.3, 5.6)));
         Assert.Equal(oneShape, Render(PixelFormat.Rgb24, 120, 50, canvas =>
@@ -1636,6 +1642,42 @@ public sealed class DrawingTextTests
             canvas.GlyphMasks(cache: null, masked => masked.GlyphMasks(new GlyphCache(1 << 20), _ => { }));
             canvas.FillText(Translucent, words, new PointD(3.3, 5.6));
         }));
+    }
+
+    [Fact]
+    public void GlyphMasksChargeTheCacheOfTheScopeToTheImage()
+    {
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var layout = TextLayout.Create("Wave To. Every mask of the scope", font, 21.5);
+        DrawingAction draw = canvas => canvas.FillText(Translucent, layout, new PointD(3.3, 25.6));
+
+        // The masks of the cache of a scope that was given none count in the live bytes of the image until the callback returns
+        using var image = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0));
+        long inside = 0;
+        long after = 0;
+        image.Draw(
+            canvas =>
+            {
+                canvas.GlyphMasks(cache: null, masked =>
+                {
+                    draw(masked);
+                    inside = image.Owner.Scope.LiveBytes;
+                });
+                after = image.Owner.Scope.LiveBytes;
+            },
+            Ct);
+        Assert.True(inside - after >= 64 * 1024, $"{inside - after} bytes are charged for the masks");
+
+        // Under a limit that leaves no room for them, the masks are not kept: the text is drawn, with the same pixels
+        using var measured = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0));
+        measured.Draw(canvas => canvas.GlyphMasks(new GlyphCache(1 << 20), draw), Ct);
+        var peak = measured.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        using var tight = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak + 1024 } });
+        tight.Draw(canvas => canvas.GlyphMasks(cache: null, draw), Ct);
+        var expected = DrawingTestSupport.ReadSamples(measured.Frames[0]);
+        Assert.Contains(expected, sample => sample != 0);
+        Assert.Equal(expected, DrawingTestSupport.ReadSamples(tight.Frames[0]));
+        Assert.Equal(DrawingTestSupport.ReadSamples(image.Frames[0]), expected);
     }
 
     /// <summary>Draws the glyphs of a layout of upright glyphs with <see cref="DrawingCanvas.FillGlyphs"/>, one run after the other.</summary>

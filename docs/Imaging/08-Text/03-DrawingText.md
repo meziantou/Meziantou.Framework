@@ -323,9 +323,9 @@ coverage mask, computed once for each position in a pixel, as browsers draw text
 // Kept as long as the application draws: the masks computed by a drawing are reused by the next ones
 private static readonly GlyphCache LabelGlyphs = new(maxBytes: 4 * 1024 * 1024);
 
-public static void DrawTimingTable(string fontPath, string outputPath)
+// The masks of a cache are found again for the same Font object: load the font once, and keep it with the cache
+public static void DrawTimingTable(Font font, string outputPath)
 {
-    var font = Font.Load(fontPath);
     var ink = new SolidBrush(new Rgba32(40, 40, 40));
     using var image = new Image<Rgba32>(400, 230, new Rgba32(255, 255, 255));
     image.Draw(canvas =>
@@ -355,8 +355,10 @@ public static void DrawTimingTable(string fontPath, string outputPath)
   the text is a little less exact, with sharper baselines. Each glyph is drawn over the ones before it, so a translucent
   text is darker where two glyphs touch.
 - The masks are kept in the [GlyphCache](cref:Meziantou.Framework.Imaging.Typography.GlyphCache) you give, which you can
-  share between drawings and threads, or in a cache that is emptied when the callback returns (pass `null`). The pixels
-  are the same whatever the cache holds.
+  share between drawings and threads, or in a cache of up to 8 MiB that is emptied when the callback returns (pass
+  `null`). That cache counts against
+  [MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes): a mask that
+  does not fit is not kept. The pixels are the same whatever the cache holds.
 - Both [FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) overloads that draw at a point use
   the masks. A text that is turned or skewed, a text on a path and a text with subpixel rendering are filled as one
   shape, as outside the callback.

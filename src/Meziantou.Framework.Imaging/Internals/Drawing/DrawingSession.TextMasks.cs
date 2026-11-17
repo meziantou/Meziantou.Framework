@@ -37,7 +37,7 @@ internal sealed partial class DrawingSession
     {
         _cancellationToken.ThrowIfCancellationRequested();
         var previous = _textGlyphMasks;
-        _textGlyphMasks = cache ?? (_scopeGlyphMasks ??= new GlyphCache(ScopeGlyphMaskBytes));
+        _textGlyphMasks = cache ?? (_scopeGlyphMasks ??= new GlyphCache(ScopeGlyphMaskBytes, _image.Owner.Scope));
         return previous;
     }
 
@@ -65,25 +65,36 @@ internal sealed partial class DrawingSession
         var isLineVertical = swapsAxes ^ layout.IsVertical;
 
         // Every rental happens before the first pixel is written: the text is drawn a first time without being painted
+        var cache = _textGlyphMasks;
         _isPreparing = true;
         try
         {
-            DrawTextFromMasks(brush, layout, origin.X, origin.Y, isLineVertical);
+            try
+            {
+                DrawTextFromMasks(brush, layout, origin.X, origin.Y, isLineVertical, cache);
+            }
+            catch (ImageResourceLimitException) when (cache is { IsCharged: true })
+            {
+                // The masks the scope keeps leave no room for the buffers of this text: they are released, and the masks
+                // of this text are not kept
+                cache.Clear();
+                cache = null;
+                DrawTextFromMasks(brush, layout, origin.X, origin.Y, isLineVertical, cache);
+            }
         }
         finally
         {
             _isPreparing = false;
         }
 
-        DrawTextFromMasks(brush, layout, origin.X, origin.Y, isLineVertical);
+        DrawTextFromMasks(brush, layout, origin.X, origin.Y, isLineVertical, cache);
         return true;
     }
 
-    private void DrawTextFromMasks(Brush brush, TextLayout layout, double originX, double originY, bool isLineVertical)
+    private void DrawTextFromMasks(Brush brush, TextLayout layout, double originX, double originY, bool isLineVertical, GlyphCache? cache)
     {
         DrawTextBackgrounds(layout, originX, originY, measure: null, options: null);
 
-        var cache = _textGlyphMasks;
         var scratch = _glyphScratch ??= new GlyphScratch(_image.Owner.Scope);
         Brush? preparedBrush = null;
         DrawingColor color = default;

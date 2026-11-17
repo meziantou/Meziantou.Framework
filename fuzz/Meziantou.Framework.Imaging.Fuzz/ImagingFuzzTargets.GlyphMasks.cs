@@ -29,9 +29,10 @@ public static partial class ImagingFuzzTargets
 
     /// <summary>
     /// The texts of a <see cref="DrawingCanvas.GlyphMasks(GlyphCache, DrawingAction)"/> scope: the pixels are the same
-    /// without a cache, with an empty cache and with the cache the previous drawing filled, and a horizontal layout that
-    /// is not hinted and has no decoration gets the pixels that <see cref="DrawingCanvas.FillGlyphs"/> gives its glyphs at
-    /// their origins, one run after the other. The input is a byte of size (6 to 37.875 pixels per em), a byte of the
+    /// without a cache, with an empty cache, with the cache the previous drawing filled and under a limit of the live bytes
+    /// that leaves little room for the cache of the scope, and a horizontal layout that is not hinted and has no decoration
+    /// gets the pixels that <see cref="DrawingCanvas.FillGlyphs"/> gives its glyphs at their origins, one run after the
+    /// other. The input is a byte of size (6 to 37.875 pixels per em), a byte of the
     /// horizontal and one of the vertical position of the layout (in 1/64 of a pixel from 2), a byte of options (bit 0:
     /// synthetic bold, bit 1: synthetic oblique, bits 2 and 3: the hinting, none, light or full, bit 4: vertical lines,
     /// bit 5: hard edges, bit 6: a canvas that swaps the axes, bit 7: an underline and a translucent paint), then the text.
@@ -81,22 +82,29 @@ public static partial class ImagingFuzzTargets
         var brush = new SolidBrush(isDecorated ? new Rgba32(250, 120, 10, 150) : new Rgba32(20, 40, 250));
         var transform = swapsAxes ? new AffineTransform(0, 1, -1, 0, GlyphMaskCanvas, 0) : new AffineTransform(1, 0, 0, 1, 0, 0);
 
-        Rgba32[] Draw(GlyphCache? cache) => Render(canvas => canvas.Transform(transform, moved => moved.Antialiasing(!isAliased, edges => edges.GlyphMasks(cache, masked => masked.FillText(brush, layout, origin)))));
+        Rgba32[] Draw(GlyphCache? cache, long? limit, out long peak) => Render(canvas => canvas.Transform(transform, moved => moved.Antialiasing(!isAliased, edges => edges.GlyphMasks(cache, masked => masked.FillText(brush, layout, origin)))), limit, out peak);
 
-        var uncached = Draw(cache: null);
+        var uncached = Draw(cache: null, limit: null, out _);
         var cache = new GlyphCache(1 << 24);
-        FuzzAssert.True(uncached.AsSpan().SequenceEqual(Draw(cache)), "The masks of an empty cache do not give the pixels of the masks without a cache");
-        FuzzAssert.True(uncached.AsSpan().SequenceEqual(Draw(cache)), "The masks of a cache do not give the pixels of the masks without a cache");
+        FuzzAssert.True(uncached.AsSpan().SequenceEqual(Draw(cache, limit: null, out var peak)), "The masks of an empty cache do not give the pixels of the masks without a cache");
+        FuzzAssert.True(uncached.AsSpan().SequenceEqual(Draw(cache, limit: null, out _)), "The masks of a cache do not give the pixels of the masks without a cache");
+
+        // The cache of a scope that was given none is charged to the image: under a limit that leaves little room for it,
+        // its masks are released or not kept, and the pixels are the same
+        FuzzAssert.True(uncached.AsSpan().SequenceEqual(Draw(cache: null, peak + 1024, out _)), "The masks of a scope under a limit do not give the pixels of the masks without a limit");
         if (isVertical || isDecorated || hinting != TextHinting.None)
             return;
 
-        var runs = Render(canvas => canvas.Transform(transform, moved => moved.Antialiasing(!isAliased, edges => FillGlyphRuns(edges, brush, layout, origin))));
+        var runs = Render(canvas => canvas.Transform(transform, moved => moved.Antialiasing(!isAliased, edges => FillGlyphRuns(edges, brush, layout, origin))), limit: null, out _);
         FuzzAssert.True(uncached.AsSpan().SequenceEqual(runs), "The glyphs of a layout drawn from masks are not those of a glyph run");
 
-        static Rgba32[] Render(DrawingAction action)
+        static Rgba32[] Render(DrawingAction action, long? limit, out long peak)
         {
-            using var image = new Image<Rgba32>(GlyphMaskCanvas, GlyphMaskCanvas);
+            using var image = limit is { } bytes
+                ? new Image<Rgba32>(GlyphMaskCanvas, GlyphMaskCanvas, new Rgba32(0, 0, 0, 0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = bytes } })
+                : new Image<Rgba32>(GlyphMaskCanvas, GlyphMaskCanvas);
             image.Draw(action);
+            peak = image.Owner.Scope.GetDiagnostics().PeakLiveBytes;
             var pixels = new Rgba32[GlyphMaskCanvas * GlyphMaskCanvas];
             image.Frames[0].CopyPixelDataTo(pixels);
             return pixels;

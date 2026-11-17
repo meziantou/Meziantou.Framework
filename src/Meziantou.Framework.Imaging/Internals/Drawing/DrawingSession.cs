@@ -738,7 +738,7 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.SubpixelRendering != TextSubpixelRendering.None && TryFillSubpixelText(brush, layout, origin))
             return;
 
-        if (_textGlyphMasks is not null && TryFillTextFromMasks(brush, layout, origin))
+        if (_textGlyphMasks is not null && layout.SubpixelRendering == TextSubpixelRendering.None && TryFillTextFromMasks(brush, layout, origin))
             return;
 
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)

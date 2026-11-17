@@ -4916,12 +4916,12 @@ public sealed class DocumentationExampleTests : IDisposable
     [Fact]
     public void DrawTimingTableDrawsTheSamePixelsOnceTheMasksAreCached()
     {
-        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
         var first = GetPath("timings-1.png");
         var second = GetPath("timings-2.png");
-        Assert.False(TextLayout.Create("0123456789. ms", Font.Load(fontPath), 13).HasMissingGlyphs);
-        TextExamples.DrawTimingTable(fontPath, first);
-        TextExamples.DrawTimingTable(fontPath, second);
+        Assert.False(TextLayout.Create("0123456789. ms", font, 13).HasMissingGlyphs);
+        TextExamples.DrawTimingTable(font, first);
+        TextExamples.DrawTimingTable(font, second);
 
         // The second drawing copies the masks the first one computed: the pixels are the same
         using var image = Image.Load<Rgba32>(first);

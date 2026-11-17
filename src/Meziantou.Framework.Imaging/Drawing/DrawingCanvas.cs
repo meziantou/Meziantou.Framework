@@ -2450,8 +2450,9 @@ public readonly ref struct DrawingCanvas
     /// </para>
     /// <para>
     /// The masks are kept in <paramref name="cache"/>, which can be shared by several canvases and threads to reuse them
-    /// from one drawing to the next, or in a cache of up to 8 MiB that is emptied when the callback returns. A mask is
-    /// allocated when it is computed; the pixels are the same whatever the cache holds.
+    /// from one drawing to the next, or in a cache of up to 8 MiB that is emptied when the callback returns. The bytes of
+    /// that cache count against <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> of the image: a mask that does not
+    /// fit is not kept. A mask is allocated when it is computed; the pixels are the same whatever the cache holds.
     /// </para>
     /// </remarks>
     /// <param name="cache">The cache of the masks, or <see langword="null"/> for one that lives until the callback returns.</param>

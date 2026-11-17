@@ -166,8 +166,8 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   have a single tile, unless they are grids, frames wider than 4,096 pixels or files encoded with
   `AvifEncoder.AutoTiling`, so they decode with less parallelism than files with several tiles. The HEIC encoder writes
   the rows of a large still image as wavefront rows, which the decoder decodes concurrently.
-- Drawing composites the shapes, images and layers that may cover at least 131,072 pixels with several threads, by
-  batches of rows, except those painted with an opaque solid color: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
+- Drawing computes the coverages of the shapes, images and layers that may cover at least 131,072 pixels, and
+  composites them, with several threads, by batches of rows: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
 - The other decoders and encoders and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image. The TIFF encoder keeps
@@ -198,21 +198,27 @@ public static void DrawPoster(string outputPath)
 ```
 <!-- endref -->
 
-- The calling thread computes the coverage of each row of a shape, and hands batches of rows to the other threads,
-  which paint and composite them. Fills, strokes, images, image brushes, patterns, gradients and the end of a layer
-  are drawn this way when their rows may cover at least 131,072 pixels; smaller shapes stay on the calling thread.
-- The pixels are the same as with one thread, and so is the error when a draw call fails.
-- Paints that cost more per pixel gain the most: gradients, images that are turned, scaled or sampled with
+- The calling thread sweeps the rows of a shape, from top to bottom, and finds where the boundary of the shape crosses
+  each row. It hands batches of rows to the other threads, which compute the coverages of the pixels from the boundary,
+  then paint and composite them. Fills, strokes, images, image brushes, patterns, gradients and the end of a layer are
+  drawn this way when their rows may cover at least 131,072 pixels; smaller shapes stay on the calling thread.
+- The pixels are the same as with one thread, and so is the error when a draw call fails: the threads add the same
+  areas in the same order.
+- Large shapes with simple outlines gain the most, and so do the paints that cost more per pixel: gradients, images
+  that are turned, scaled or sampled with
   [ImageSampling.Bicubic](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Bicubic), translucent colors and
-  layers. An opaque solid color, or a solid color with
-  [CompositeMode.Source](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Source), is drawn on the calling
-  thread, unless it is clipped or has an opacity: handing its rows to other threads costs about as much as writing its
-  pixels.
+  layers. The sweep stays on one thread: a shape whose rows cross many edges, such as a long text drawn as one shape,
+  gains less. A row that crosses more than about a thousand pieces of boundary has its coverages computed by the calling
+  thread.
+- Without antialiasing, the calling thread computes the coverages. Such a shape, painted with an opaque solid color or a
+  solid color with [CompositeMode.Source](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Source), is drawn on
+  the calling thread, unless it is clipped or has an opacity: handing its rows to other threads costs about as much as
+  writing its pixels.
 - A rectangle on whole pixels painted with such a color is not swept row by row: its first row is composited, and its
   pixels are copied to the other rows. Filling it, or clearing the canvas, costs about what writing the pixels costs.
 - Texts, clip masks, shadows, blurs and filters, and gradients mixed in a
   [paint profile](07-Drawing/06-RenderingQuality.md#draw-colors-of-a-color-profile), are drawn on the calling thread.
-- Each thread needs about 128 KB and 40 bytes per pixel of the width of the canvas, counted by
+- Each thread needs about 320 KB and 52 bytes per pixel of the width of the canvas, counted by
   [ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes).
   Set the value to 1, the default, to draw on the calling thread only.
 

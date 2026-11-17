@@ -1178,11 +1178,17 @@ internal sealed partial class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        // A shape that is only prepared rents what it needs, and changes no pixel
-        if (Prepare(brush, fillRule, out var color, out var evaluator) && !_isPreparing)
+        if (!Prepare(brush, fillRule, out var color, out var evaluator))
+            return;
+
+        // A shape that is only prepared rents what it needs, the scratch of the workers included, and changes no pixel
+        if (_isPreparing)
         {
-            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
+            ReservePaintWorkers(color, evaluator, brush.CompositeMode, brush.BlendMode, brush.Opacity);
+            return;
         }
+
+        Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
     }
 
     /// <summary>Composites every row of the sweep that was prepared onto every frame.</summary>

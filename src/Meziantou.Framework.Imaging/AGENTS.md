@@ -1345,8 +1345,8 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     run the same samples whatever they were (`DrawingKernels.IsUniformOverFullCoverage`: an opaque color, or a color
     with `CompositeMode.Source`, through `TryCompositeFullRuns`), `DrawingSession.TryPaintUniformRectangle` composites
     the first row and copies its pixel to the other rows (`ReplicateUniformRun`), checking the cancellation every
-    `RowsPerCancellationCheck` rows as the sweep does. The same paints never go to the parallel workers
-    (`IsWrittenFasterThanCopied`): copying the coverages to a batch costs what writing the pixels costs.
+    `RowsPerCancellationCheck` rows as the sweep does. The same paints never go to the parallel workers when the rows
+    come as coverages (`IsWrittenFasterThanCopied`): copying the coverages to a batch costs what writing the pixels costs.
     `DrawingFuzzTests.WholePixelRectanglesPaintLikeTheirPolygons` compares it with the sweep of the same rectangle.
   - The glyphs of a line of text share their baseline and their x-height: the events of one height are spread over the
     whole sweep line, and the walk that follows them spans it. The walk passes quickly over the edges whose winding
@@ -1360,6 +1360,16 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     next change (`WalkBetweenChanges`): -20 % instructions on a page of text. Recording every change cost 1.5 % on
     short lines (100 labels). The spans of the sweep are taken once per row (`SweepSpans`), not at each access, and
     the edges of the sweep line are copies in the scratch of their slots (`SlotEdges`), which stay in the cache.
+  - The sweep carries its state (the order of the sweep line, the slots, the pending crossings, which crossings were
+    found late) from one row to the next: a band of rows cannot be swept apart and give the same sums. What a row
+    gives is the ordered list of the pieces of boundary that `AddBoundary` accumulates, a pure function of the piece and
+    the difference row. With several workers (`DrawingSession.Parallel.cs`), `RecordPieces` makes the sweep log those
+    pieces (at most `MaxPiecesPerRow` per row; past that the row is accumulated by the sweep from its first piece), and
+    the workers replay them in order (`ReplayPieces`: the same `Accumulate` and `FlushRow` as the sweep), so the
+    coverages are the same bit for bit while the work in proportion to the width runs in parallel. Opaque solid fills
+    go to the workers this way too; only the coverage runs (whole-pixel rectangles, aliased shapes, overflowing rows)
+    are copied to the batches. `TestDisablePieces` hands coverages only, `PieceLimit` lowers the limit for the tests,
+    and `DrawingFuzzTests.TheSweepSkipsOnlyWhatCannotChange` and the `imaging-sweep-pieces` target compare both paths.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules). A floating-point frame is
     composited by `FloatDrawingKernels` instead (the same formulas in double precision, not rounded to a grid).

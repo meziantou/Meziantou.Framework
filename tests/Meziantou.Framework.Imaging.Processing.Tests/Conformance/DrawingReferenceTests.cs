@@ -387,6 +387,86 @@ public sealed class DrawingReferenceTests
         }
     }
 
+    [Theory]
+    [InlineData(9.3, 0.37, 0.61, FillRule.NonZero)]
+    [InlineData(23.7, 0.5, 0.25, FillRule.EvenOdd)]
+    public void ThePiecesOfBoundaryOfTheRowsGiveTheCoveragesOfTheSweep(double size, double originX, double originY, FillRule fillRule)
+    {
+        // The sweep may give the pieces of boundary of each row instead of its coverages, for workers to accumulate them
+        // (CoverageRasterizer.RecordPieces): accumulated in their order, they give the coverages of the sweep, bit for bit.
+        // A row with more pieces than the limit is accumulated by the sweep, from the first piece; the comb has more
+        // pieces on each row than the default limit
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var text = string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. Ty fi \u20AC42! The quick brown fox jumps over the lazy dog. ", 4));
+        var layout = TextLayout.Create(text, new TextStyle(font, size), new TextLayoutOptions { MaxWidth = 300 });
+        var paragraph = layout.ToPath(new PointD(originX, originY));
+        var builder = new VectorPathBuilder().MoveTo(0.5, 1.25);
+        for (var i = 1; i <= 2400; i++)
+        {
+            builder.LineTo(0.5 + (i * 0.13), i % 2 == 0 ? 1.25 : 40.5);
+        }
+
+        var comb = builder.Close().Build();
+        const int Width = 320;
+        var height = (int)Math.Ceiling(layout.Height) + 2;
+        var expected = Rasterize(recordsPieces: false, pieceLimit: CoverageRasterizer.MaxPiecesPerRow, out var pieceRows, out var sweptRows);
+        Assert.NotEmpty(expected);
+        Assert.Equal(0, pieceRows);
+        foreach (var limit in new[] { CoverageRasterizer.MaxPiecesPerRow, 7, 1, 0 })
+        {
+            var runs = Rasterize(recordsPieces: true, limit, out pieceRows, out sweptRows);
+            Assert.Equal(expected, runs);
+            Assert.True(limit != CoverageRasterizer.MaxPiecesPerRow || pieceRows > 0, "No row came as pieces");
+            Assert.True(sweptRows > 0, $"No row was accumulated by the sweep with a limit of {limit}");
+        }
+
+        List<string> Rasterize(bool recordsPieces, int pieceLimit, out int pieceRows, out int sweptRows)
+        {
+            var scope = AllocationScope.Create(configuration: null);
+            using var edges = new EdgeBuilder(scope, Width, height);
+            var sink = new FillSink(edges);
+            PathFlattener.Flatten(paragraph, sink);
+            PathFlattener.Flatten(comb, sink);
+            sink.End();
+            using var rasterizer = new CoverageRasterizer(scope, Width, height) { PieceLimit = pieceLimit };
+            var runs = new List<string>();
+            var accumulation = new double[Width + 2];
+            var coverage = new uint[Width];
+            pieceRows = 0;
+            sweptRows = 0;
+            if (rasterizer.Begin(edges, fillRule, CancellationToken.None))
+            {
+                if (recordsPieces)
+                {
+                    Assert.True(rasterizer.RecordPieces());
+                }
+
+                while (rasterizer.MoveNext())
+                {
+                    if (!rasterizer.HasPieces)
+                    {
+                        sweptRows++;
+                        runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+                        continue;
+                    }
+
+                    pieceRows++;
+                    Assert.True(rasterizer.Pieces.Length > 0 && rasterizer.Pieces.Length % CoverageRasterizer.ValuesPerPiece == 0);
+                    Assert.InRange(rasterizer.PieceColumns, 1, Width);
+                    if (CoverageRasterizer.ReplayPieces(rasterizer.Pieces, accumulation, coverage, Width, out var x, out var count))
+                    {
+                        runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{x}:{string.Join(',', coverage.AsSpan(x, count).ToArray())}"));
+                    }
+
+                    // The difference row is all zeros again for the next row
+                    Assert.All(accumulation, value => Assert.Equal(0, value));
+                }
+            }
+
+            return runs;
+        }
+    }
+
     [Fact]
     public void TheEventsOfARowAreSortedByHeightThenBySlot()
     {

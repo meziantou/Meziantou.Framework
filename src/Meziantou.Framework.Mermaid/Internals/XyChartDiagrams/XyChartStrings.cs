@@ -89,9 +89,11 @@ internal static class XyChartStrings
         {
             var c = value[i];
 
-            // The spaces at the ends would be trimmed, the line breaks normalized, and %% read as a directive or a comment
+            // The spaces at the ends would be trimmed, the line breaks normalized, %% read as a directive or a comment,
+            // and "` read as the start of a Markdown string
             var encode = c is '"' or '#' || char.IsControl(c) || c is '\u2028' or '\u2029' or '\ufeff'
                 || (c == '%' && i + 1 < value.Length && value[i + 1] == '%')
+                || (c == '`' && i is 0)
                 || i < first || i >= last;
             if (encode)
             {

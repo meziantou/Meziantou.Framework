@@ -19,8 +19,8 @@ description: "The results of the web-platform-tests of hr-time, and why the test
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -31,7 +31,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`clamped-time-origin-isolated.https.html`](https://wpt.fyi/results/hr-time/clamped-time-origin-isolated.https.html) | Pass | 1 / 1 |  |  |
 | [`clamped-time-origin.html`](https://wpt.fyi/results/hr-time/clamped-time-origin.html) | Pass | 1 / 1 |  |  |
 | [`cross-origin-isolated-timing-attack.https.html`](https://wpt.fyi/results/hr-time/cross-origin-isolated-timing-attack.https.html) | Pass | 1 / 1 |  |  |
-| [`idlharness.any.js`](https://wpt.fyi/results/hr-time/idlharness.any.js) | Fail | 90 / 93 |  | *No reason documented* |
+| [`idlharness.any.js`](https://wpt.fyi/results/hr-time/idlharness.any.js) | Fail | 90 / 93 | TEST BUG | 1 of 31 subtests (in every global): `interfaces/hr-time.idl` extends `AudioWorkletGlobalScope` with a partial interface, but the dependencies of the test are only `html` and `dom`, not `webaudio` where `AudioWorkletGlobalScope` is defined, so idlharness fails "Partial interface AudioWorkletGlobalScope: original interface defined" whatever the implementation |
 | [`monotonic-clock.any.js`](https://wpt.fyi/results/hr-time/monotonic-clock.any.js) | Pass | 4 / 4 |  |  |
 | [`navigation-start-post-before-unload.html`](https://wpt.fyi/results/hr-time/navigation-start-post-before-unload.html) | Pass | 1 / 1 |  |  |
 | [`performance-tojson.html`](https://wpt.fyi/results/hr-time/performance-tojson.html) | Pass | 1 / 1 |  |  |

@@ -19,12 +19,12 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 7
   - `layout`: 7
 - **TEST RUNNER**: 4
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -86,7 +86,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/caret-color-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-invalid.html) | Pass | 17 / 17 |  |  |
 | [`parsing/caret-color-valid.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-valid.html) | Pass | 12 / 12 |  |  |
 | [`parsing/cursor-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-computed.html) | Fail | 36 / 39 | TEST BUG | expects gradients to be valid `cursor` images, which css/css-ui/parsing/cursor-invalid.html rejects (the grammar only accepts `<url>`/`<url-set>`), and two of its expected values are malformed (a missing parenthesis, `pointer` instead of `crosshair`) |
-| [`parsing/cursor-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-invalid.html) | Fail | 14 / 15 |  | *No reason documented* |
+| [`parsing/cursor-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-invalid.html) | Fail | 14 / 15 | BUG | 1 of 15 subtests: the options of an `image-set()` cursor image are not checked: `<url-set>` only accepts URLs and strings (https://drafts.csswg.org/css-ui-4/#typedef-cursor-url-set), but `IsValidCursor` accepts any `image-set()`, so `image-set(linear-gradient(red) 1x), pointer` is valid |
 | [`parsing/cursor-valid.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-valid.html) | Pass | 48 / 48 |  |  |
 | [`parsing/field-sizing-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/field-sizing-computed.html) | Pass | 2 / 2 |  |  |
 | [`parsing/field-sizing-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/field-sizing-invalid.html) | Pass | 7 / 7 |  |  |

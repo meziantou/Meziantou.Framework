@@ -19,9 +19,9 @@ description: "The results of the web-platform-tests of css/css-variables, and wh
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -30,7 +30,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css-variable-change-style-001.html`](https://wpt.fyi/results/css/css-variables/css-variable-change-style-001.html) | Pass | 9 / 9 |  |  |
 | [`css-variable-change-style-002.html`](https://wpt.fyi/results/css/css-variables/css-variable-change-style-002.html) | Pass | 3 / 3 |  |  |
 | [`custom-properties-inherit.html`](https://wpt.fyi/results/css/css-variables/custom-properties-inherit.html) | Pass | 1 / 1 |  |  |
-| [`empty-custom-property-serialization.html`](https://wpt.fyi/results/css/css-variables/empty-custom-property-serialization.html) | Fail | 2 / 4 |  | *No reason documented* |
+| [`empty-custom-property-serialization.html`](https://wpt.fyi/results/css/css-variables/empty-custom-property-serialization.html) | Fail | 2 / 4 | BUG | 2 of 4 subtests: `setProperty()` with a value made of white space (`" "`, the serialization of an empty custom property) stores an empty value, serialized as the empty string instead of `" "` (https://drafts.csswg.org/css-variables-1/#serializing-custom-props, w3c/csswg-drafts#9847): only the declarations parsed from a declaration block (`--empty:;`) get the space |
 | [`missing-closing-nested-fallback.html`](https://wpt.fyi/results/css/css-variables/missing-closing-nested-fallback.html) | Pass | 1 / 1 |  |  |
 | [`revert-in-fallback.html`](https://wpt.fyi/results/css/css-variables/revert-in-fallback.html) | Pass | 4 / 4 |  |  |
 | [`revert-layer-in-fallback.html`](https://wpt.fyi/results/css/css-variables/revert-layer-in-fallback.html) | Pass | 4 / 4 |  |  |

@@ -19,12 +19,11 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 7
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 63
+- **NOT IMPLEMENTED**: 64
 - **TEST RUNNER**: 33
 - **FLAKY**: 2
-- *No reason documented*: 4
 
 ## Stable tests
 
@@ -538,7 +537,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`path/interfaces/getPathSegmentAtLength-invalid.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-invalid.html) | Pass | 5 / 5 |  |  |
 | [`path/interfaces/getPathSegmentAtLength-segments.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-segments.html) | Pass | 9 / 9 |  |  |
 | [`path/interfaces/setPathData-during-animation.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-during-animation.html) | Pass | 1 / 1 |  |  |
-| [`path/interfaces/setPathData-malformed.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-malformed.html) | Fail | 10 / 22 |  | *No reason documented* |
+| [`path/interfaces/setPathData-malformed.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-malformed.html) | Fail | 10 / 22 | BUG | 12 of 22 subtests: `setPathData()` turns a non-zero large-arc or sweep flag of an `A` or `a` segment into 1 (`SvgPathData.FromSegments`); a flag is `0` or `1` (`flag ::= ("0"\|"1")`, https://w3c.github.io/svgwg/specs/paths/#PathDataBNF) and `setPathData()` is equivalent to setting `d` to the serialized segments, whose error handling stops at the invalid arc, so only the `M` segment must remain |
 | [`path/interfaces/setPathData-mutation-observer.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-mutation-observer.html) | Pass | 2 / 2 |  |  |
 | [`path/interfaces/setPathData-overrides-d.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-overrides-d.html) | Pass | 3 / 3 |  |  |
 | [`path/interfaces/setPathData-plain-object.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-plain-object.html) | Pass | 4 / 4 |  |  |
@@ -1103,7 +1102,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/reftests/non-scaling-stroke-outer-svg-transform.html`](https://wpt.fyi/results/svg/painting/reftests/non-scaling-stroke-outer-svg-transform.html) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/non-scaling-stroke-paint-server-transform.html`](https://wpt.fyi/results/svg/painting/reftests/non-scaling-stroke-paint-server-transform.html) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/non-scaling-stroke-precision-loss.html`](https://wpt.fyi/results/svg/painting/reftests/non-scaling-stroke-precision-loss.html) | Pass | 1 / 1 |  |  |
-| [`painting/reftests/non-scaling-stroke-text-css-transform.html`](https://wpt.fyi/results/svg/painting/reftests/non-scaling-stroke-text-css-transform.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`painting/reftests/non-scaling-stroke-text-css-transform.html`](https://wpt.fyi/results/svg/painting/reftests/non-scaling-stroke-text-css-transform.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `vector-effect: non-scaling-stroke` on SVG text: the glyphs are stroked with the width in the user space of the text (`Painter.SvgText.cs` ignores the `NonScaling` flag of the stroke style, which only the shapes apply), so the `scale(2)` of the group doubles the stroke of `Hello` (16 px on the screen instead of 8 px) |
 | [`painting/reftests/non-scaling-stroke-with-none-preserve-aspect-ratio.html`](https://wpt.fyi/results/svg/painting/reftests/non-scaling-stroke-with-none-preserve-aspect-ratio.html) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-context-001.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-context-001.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-context-002.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-context-002.svg) | Pass | 1 / 1 |  |  |
@@ -1124,7 +1123,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/reftests/paint-fill-attr-oklab.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-oklab.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-oklch.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-oklch.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-prophoto-rgb.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-prophoto-rgb.svg) | Pass | 1 / 1 |  |  |
-| [`painting/reftests/paint-fill-attr-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rec2020.svg) | Fail | 0 / 1 |  | *No reason documented* |
+| [`painting/reftests/paint-fill-attr-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rec2020.svg) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the reftest now uses the pure 2.4 gamma of the current CSS Color 4 draft (https://drafts.csswg.org/css-color-4/#predefined-rec2020): `color(rec2020 0.4203502 0.5829114 0.5022449)` is painted `rgb(85, 163, 138)` instead of `#339377` (the maximum difference, 34); see `css/css-color/parsing/color-computed-relative-color.html` |
 | [`painting/reftests/paint-fill-attr-rgb-legacy-percent.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rgb-legacy-percent.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-rgb-legacy.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rgb-legacy.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-rgb-modern.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rgb-modern.svg) | Pass | 1 / 1 |  |  |
@@ -1144,7 +1143,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/reftests/paint-fill-oklab.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-oklab.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-oklch.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-oklch.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-prophoto-rgb.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-prophoto-rgb.svg) | Pass | 1 / 1 |  |  |
-| [`painting/reftests/paint-fill-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rec2020.svg) | Fail | 0 / 1 |  | *No reason documented* |
+| [`painting/reftests/paint-fill-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rec2020.svg) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the reftest now uses the pure 2.4 gamma of the current CSS Color 4 draft (https://drafts.csswg.org/css-color-4/#predefined-rec2020): `color(rec2020 0.4203502 0.5829114 0.5022449)` is painted `rgb(85, 163, 138)` instead of `#339377` (the maximum difference, 34); see `css/css-color/parsing/color-computed-relative-color.html` |
 | [`painting/reftests/paint-fill-rgb-legacy-percent.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rgb-legacy-percent.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-rgb-legacy.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rgb-legacy.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-rgb-modern.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rgb-modern.svg) | Pass | 1 / 1 |  |  |

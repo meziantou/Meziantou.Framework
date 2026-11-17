@@ -19,10 +19,9 @@ description: "The results of the web-platform-tests of css/css-borders, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 8
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 4
-- *No reason documented*: 2
 
 ## Stable tests
 
@@ -168,7 +167,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/parsing/border-right-radius-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-right-radius-valid.html) | Pass | 8 / 8 |  |  |
 | [`tentative/parsing/border-shape-computed.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-computed.html) | Pass | 22 / 22 |  |  |
 | [`tentative/parsing/border-shape-invalid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-invalid.html) | Pass | 12 / 12 |  |  |
-| [`tentative/parsing/border-shape-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-valid.html) | Fail | 11 / 12 |  | *No reason documented* |
+| [`tentative/parsing/border-shape-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-valid.html) | Fail | 11 / 12 | BUG | 1 of 12 subtests: the specified value of `border-shape` keeps the reference boxes as specified, including the default `border-box` of the outer shape (`circle() border-box circle() content-box`), where the shortest serialization omits it (`circle() circle() content-box`); only the computed value omits the default boxes |
 | [`tentative/parsing/border-top-radius-computed.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-top-radius-computed.html) | Pass | 6 / 6 |  |  |
 | [`tentative/parsing/border-top-radius-invalid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-top-radius-invalid.html) | Pass | 10 / 10 |  |  |
 | [`tentative/parsing/border-top-radius-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-top-radius-valid.html) | Pass | 8 / 8 |  |  |
@@ -294,7 +293,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`border-radius-012.html`](https://wpt.fyi/results/css/css-borders/border-radius-012.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-013.html`](https://wpt.fyi/results/css/css-borders/border-radius-013.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-clip-001.html`](https://wpt.fyi/results/css/css-borders/border-radius-clip-001.html) | Pass | 1 / 1 |  |  |
-| [`border-radius-clip-002.htm`](https://wpt.fyi/results/css/css-borders/border-radius-clip-002.htm) | Fail | 0 / 1 |  | *No reason documented* |
+| [`border-radius-clip-002.htm`](https://wpt.fyi/results/css/css-borders/border-radius-clip-002.htm) | Fail | 0 / 1 | BUG | only the antialiased edges of what is painted differ, or a box is painted 1px away (not analyzed individually; the causes fixed with #461 are not involved: the Ahem glyphs are not antialiased, the joins of the sides of the borders, the glyphs of the highlights painted once, the slices of the border images, the transformed rectangles that are almost on the pixels) |
 | [`border-radius-clipping-002.html`](https://wpt.fyi/results/css/css-borders/border-radius-clipping-002.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-clipping-with-transform-001.html`](https://wpt.fyi/results/css/css-borders/border-radius-clipping-with-transform-001.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-currentcolor.html`](https://wpt.fyi/results/css/css-borders/border-radius-currentcolor.html) | Pass | 1 / 1 |  |  |

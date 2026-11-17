@@ -19,11 +19,10 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **TEST BUG**: 45
+- **BUG**: 6
+- **TEST BUG**: 46
 - **NOT IMPLEMENTED**: 9
 - **TEST RUNNER**: 3
-- *No reason documented*: 6
 
 ## Stable tests
 
@@ -1635,7 +1634,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`white-space/text-wrap-balance-line-clamp-009.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-line-clamp-009.html) | Pass | 1 / 1 |  |  |
 | [`white-space/text-wrap-balance-line-clamp-010.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-line-clamp-010.html) | Pass | 1 / 1 |  |  |
 | [`white-space/text-wrap-balance-line-clamp-011.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-line-clamp-011.html) | Pass | 1 / 1 |  |  |
-| [`white-space/text-wrap-balance-line-clamp-012.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-line-clamp-012.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`white-space/text-wrap-balance-line-clamp-012.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-line-clamp-012.html) | Fail | 0 / 1 | BUG | the content fits in the 3 lines of `line-clamp: 3` (it is not clamped), but its lines are balanced with the block ellipsis reserved on the last one (`abcdefghi` fills the line): no narrower width fits, so the lines keep their greedy breaks (`1 2 3 4 5 / 6 7 8`) instead of `1 2 3 4 / 5 6 7 8` (https://drafts.csswg.org/css-text-4/#valdef-text-wrap-style-balance) |
 | [`white-space/text-wrap-balance-overflow-001.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-overflow-001.html) | Pass | 1 / 1 |  |  |
 | [`white-space/text-wrap-balance-overflow-002.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-overflow-002.html) | Pass | 1 / 1 |  |  |
 | [`white-space/text-wrap-balance-text-indent-001.html`](https://wpt.fyi/results/css/css-text/white-space/text-wrap-balance-text-indent-001.html) | Pass | 1 / 1 |  |  |
@@ -1787,9 +1786,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`white-space/white-space-trim-discard-before-after.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-before-after.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-discard-before.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-before.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-discard-inner-001.xht`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner-001.xht) | Pass | 1 / 1 |  |  |
-| [`white-space/white-space-trim-discard-inner-block.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner-block.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`white-space/white-space-trim-discard-inner-block.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner-block.html) | Fail | 0 / 1 | BUG | `white-space-trim: discard-inner` on a block container discards all the white space at the start and the end of its content, where only the white space up to the last segment break before the first non-white-space character (and from the first segment break after the last one) is discarded (https://drafts.csswg.org/css-text-4/#valdef-white-space-trim-discard-inner): the indentation of the first line and the white space without a segment break are removed |
 | [`white-space/white-space-trim-discard-inner-preserved.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner-preserved.html) | Pass | 1 / 1 |  |  |
-| [`white-space/white-space-trim-discard-inner.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`white-space/white-space-trim-discard-inner.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner.html) | Fail | 0 / 1 | BUG | `white-space-trim: discard-inner` on an inline box that contains only white space (`g <span> </span>h`, `i<span> </span> j`): the collapsible space before or after the box, with which its inner space collapses, is discarded too, where it must be kept (https://drafts.csswg.org/css-text-4/#white-space-trim: only the white space inside the box is discarded) |
 | [`white-space/white-space-trim-dynamic.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-generated-content.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-generated-content.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-inline-block-dynamic.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-inline-block-dynamic.html) | Pass | 1 / 1 |  |  |
@@ -1882,9 +1881,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`word-break/word-break-break-all-inline-010.tentative.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-break-all-inline-010.tentative.html) | Pass | 1 / 1 |  |  |
 | [`word-break/word-break-break-word-overflow-wrap-interactions.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-break-word-overflow-wrap-interactions.html) | Pass | 1 / 1 |  |  |
 | [`word-break/word-break-keep-all-000.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-000.html) | Pass | 1 / 1 |  |  |
-| [`word-break/word-break-keep-all-001.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-001.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`word-break/word-break-keep-all-002.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-002.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`word-break/word-break-keep-all-003.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-003.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`word-break/word-break-keep-all-001.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-001.html) | Fail | 0 / 1 | BUG | with `overflow-wrap: normal`, the soft wrap opportunities that `word-break: keep-all` suppresses become emergency opportunities (`LineBreaker`), taken whenever the line overflows: in the 1ch wide box, the Japanese text is broken between its ideographs and kana, where the restrictions may only be relaxed "if there are no otherwise-acceptable break points in the line" (https://drafts.csswg.org/css-text-4/#valdef-overflow-wrap-normal) and the test (rewritten by WebKit, w3c/csswg-drafts#14627) expects breaks only after the ideographic commas |
+| [`word-break/word-break-keep-all-002.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-002.html) | Fail | 0 / 1 | BUG | with `overflow-wrap: normal`, the soft wrap opportunities that `word-break: keep-all` suppresses become emergency opportunities (`LineBreaker`), taken whenever the line overflows: in the 1ch wide box, the Korean words are broken between their syllables, where the restrictions may only be relaxed "if there are no otherwise-acceptable break points in the line" (https://drafts.csswg.org/css-text-4/#valdef-overflow-wrap-normal) and the test (rewritten by WebKit, w3c/csswg-drafts#14627) expects breaks only at the spaces |
+| [`word-break/word-break-keep-all-003.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-003.html) | Fail | 0 / 1 | TEST BUG | expects `word-break: keep-all` to suppress the dictionary-based line breaks of Thai (the test rewritten by WebKit, w3c/csswg-drafts#14627 is open), while the opportunities between letters are only suppressed "except where opportunities exist due to dictionary-based breaking" (https://drafts.csswg.org/css-text-4/#valdef-word-break-keep-all): `บอกว่า`, `ไปกลับ` and `(ชั้นประหยัด)` are broken between their words in the 1ch wide box |
 | [`word-break/word-break-keep-all-005.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-005.html) | Pass | 1 / 1 |  |  |
 | [`word-break/word-break-keep-all-006.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-006.html) | Pass | 1 / 1 |  |  |
 | [`word-break/word-break-keep-all-007.html`](https://wpt.fyi/results/css/css-text/word-break/word-break-keep-all-007.html) | Pass | 1 / 1 |  |  |

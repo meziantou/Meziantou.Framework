@@ -19,11 +19,10 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 3
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 7
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -212,7 +211,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`microtask-queuing/queue-microtask-exceptions.any.js`](https://wpt.fyi/results/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js) | Pass | 3 / 3 |  |  |
 | [`microtask-queuing/queue-microtask.any.js`](https://wpt.fyi/results/html/webappapis/microtask-queuing/queue-microtask.any.js) | Pass | 15 / 15 |  |  |
 | [`microtask-queuing/queue-microtask.window.js`](https://wpt.fyi/results/html/webappapis/microtask-queuing/queue-microtask.window.js) | Pass | 2 / 2 |  |  |
-| [`scripting/event-loops/document-without-browsing-context.window.js`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/document-without-browsing-context.window.js) | Fail | 6 / 7 |  | *No reason documented* |
+| [`scripting/event-loops/document-without-browsing-context.window.js`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/document-without-browsing-context.window.js) | Fail | 6 / 7 | BUG | 1 of 7 subtests: the template contents owner document has no event loop (`Document.EventLoop` uses the window of the document or of its `OriginDocument`, and the template contents owner document only has a `RealmDocument`), so a mutation of template contents queues no mutation observer microtask: the observer is not notified before the next microtask (https://dom.spec.whatwg.org/#queue-a-mutation-observer-compound-microtask) |
 | [`scripting/event-loops/microtask_after_raf.html`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/microtask_after_raf.html) | Pass | 1 / 1 |  |  |
 | [`scripting/event-loops/microtask_after_script.html`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/microtask_after_script.html) | Pass | 1 / 1 |  |  |
 | [`scripting/event-loops/microtask_before_prepare_the_script_element-01.html`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/microtask_before_prepare_the_script_element-01.html) | Pass | 1 / 1 |  |  |

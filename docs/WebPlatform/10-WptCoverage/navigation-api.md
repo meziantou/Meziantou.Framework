@@ -19,10 +19,9 @@ description: "The results of the web-platform-tests of navigation-api, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 4
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 10
-- *No reason documented*: 3
+- **NOT IMPLEMENTED**: 11
 
 ## Stable tests
 
@@ -197,7 +196,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`navigate-event/signal-abort-window-stop-in-onnavigate.html`](https://wpt.fyi/results/navigation-api/navigate-event/signal-abort-window-stop-in-onnavigate.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/signal-abort-window-stop.html`](https://wpt.fyi/results/navigation-api/navigate-event/signal-abort-window-stop.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/sourceElement-cross-origin.sub.html`](https://wpt.fyi/results/navigation-api/navigate-event/sourceElement-cross-origin.sub.html) | Pass | 1 / 1 |  |  |
-| [`navigate-event/sourceElement-shadow-tree.html`](https://wpt.fyi/results/navigation-api/navigate-event/sourceElement-shadow-tree.html) | Timeout | 0 / 3 |  | *No reason documented* |
+| [`navigate-event/sourceElement-shadow-tree.html`](https://wpt.fyi/results/navigation-api/navigate-event/sourceElement-shadow-tree.html) | Timeout | 0 / 3 | NOT IMPLEMENTED | the activation of the `<a>` elements of a `<use>` shadow tree (a click on the instance does not follow the link): the first subtest clicks the `<use>` element and waits for a `navigate` event that is never fired, so it times out and the 2 subtests of the shadow roots do not run |
 | [`navigate-event/traverseTo-detach.html`](https://wpt.fyi/results/navigation-api/navigate-event/traverseTo-detach.html) | Pass | 1 / 1 |  |  |
 | [`navigation-activation/activation-after-bfcache-coop-coep.https.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html) | Pass | 12 / 12 |  |  |
 | [`navigation-activation/activation-after-bfcache-cross-origin-clears-from.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-cross-origin-clears-from.html) | Pass | 1 / 1 |  |  |
@@ -391,9 +390,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ordering-and-transition/location-href-intercept-reentrant.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/location-href-intercept-reentrant.html) | Pass | 2 / 2 |  |  |
 | [`ordering-and-transition/location-href-intercept-reject.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/location-href-intercept-reject.html) | Pass | 2 / 2 |  |  |
 | [`ordering-and-transition/location-href-intercept.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/location-href-intercept.html) | Pass | 2 / 2 |  |  |
-| [`ordering-and-transition/navigate-204-205-download-then-same-document.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html) | Fail | 0 / 3 |  | *No reason documented* |
+| [`ordering-and-transition/navigate-204-205-download-then-same-document.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html) | Fail | 0 / 3 | BUG | the API method tracker of a `navigate()` to another document that is not intercepted stays the ongoing API method tracker after the `navigate` event ("If endResultIsSameDocument is false and apiMethodTracker is non-null, then clean up apiMethodTracker", https://html.spec.whatwg.org/multipage/nav-history-apis.html#inner-navigate-event-firing-algorithm), so aborting the ongoing navigation when the second navigation starts rejects the `committed` and `finished` promises of the first `navigate()` (`committed rejected 1`, `finished rejected 1`), which must stay pending; here the first navigation is to a 204 or 205 response or a download, and its promises are rejected when the same-document `navigate("#1")` aborts it |
 | [`ordering-and-transition/navigate-canceled.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-canceled.html) | Pass | 1 / 1 |  |  |
-| [`ordering-and-transition/navigate-cross-document-double.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-double.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`ordering-and-transition/navigate-cross-document-double.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-double.html) | Fail | 0 / 1 | BUG | the API method tracker of a `navigate()` to another document that is not intercepted stays the ongoing API method tracker after the `navigate` event ("If endResultIsSameDocument is false and apiMethodTracker is non-null, then clean up apiMethodTracker", https://html.spec.whatwg.org/multipage/nav-history-apis.html#inner-navigate-event-firing-algorithm), so aborting the ongoing navigation when the second navigation starts rejects the `committed` and `finished` promises of the first `navigate()` (`committed rejected 1`, `finished rejected 1`), which must stay pending |
 | [`ordering-and-transition/navigate-cross-document-event-order-with-pagehide.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-event-order-with-pagehide.html) | Pass | 1 / 1 |  |  |
 | [`ordering-and-transition/navigate-cross-document-event-order.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-event-order.html) | Pass | 1 / 1 |  |  |
 | [`ordering-and-transition/navigate-double-intercept.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-double-intercept.html) | Pass | 2 / 2 |  |  |

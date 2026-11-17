@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of css/css-font-loading, and
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -47,7 +47,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fontfaceset-update-after-stylesheet-change.html`](https://wpt.fyi/results/css/css-font-loading/fontfaceset-update-after-stylesheet-change.html) | Pass | 1 / 1 |  |  |
 | [`fontfacesetloadevent-constructor.html`](https://wpt.fyi/results/css/css-font-loading/fontfacesetloadevent-constructor.html) | Pass | 2 / 2 |  |  |
 | [`historical.html`](https://wpt.fyi/results/css/css-font-loading/historical.html) | Pass | 1 / 1 |  |  |
-| [`idlharness.https.html`](https://wpt.fyi/results/css/css-font-loading/idlharness.https.html) | Fail | 145 / 147 |  | *No reason documented* |
+| [`idlharness.https.html`](https://wpt.fyi/results/css/css-font-loading/idlharness.https.html) | Fail | 145 / 147 | NOT IMPLEMENTED | 2 of 147 subtests: the `variant` attribute of `FontFace` (https://drafts.csswg.org/css-font-loading/#dom-fontface-variant) |
 | [`nonexistent-file-url.html`](https://wpt.fyi/results/css/css-font-loading/nonexistent-file-url.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests

@@ -19,13 +19,12 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 5
 - **TEST BUG**: 6
-- **NOT IMPLEMENTED**: 55
+- **NOT IMPLEMENTED**: 56
 - **TEST RUNNER**: 26
 - **OUT OF SCOPE**: 1
 - **FLAKY**: 1
-- *No reason documented*: 3
 
 ## Stable tests
 
@@ -46,7 +45,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`prefetch/document-rules-details-element.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-details-element.https.html) | Pass | 2 / 2 |  |  |
 | [`prefetch/document-rules-pending-stylesheet.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-pending-stylesheet.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/document-rules-visibility.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-visibility.https.html) | Error | 4 / 6 | TEST BUG | the customized built-in `<a>` element calls `attachShadow()` in its constructor, which throws a `NotSupportedError` (`a` is not a valid shadow host, https://dom.spec.whatwg.org/#valid-shadow-host-name); `createElement()` reports the exception, so the harness errors and the last two subtests time out or do not run |
-| [`prefetch/document-rules.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules.https.html) | Fail | 18 / 21 |  | *No reason documented* |
+| [`prefetch/document-rules.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules.https.html) | Fail | 18 / 21 | BUG | the 3 variants with a lone surrogate (`hrefMatchesLoneSurrogateObject`, `hrefMatchesLoneSurrogateString`, `invalidRuleWithLoneSurrogate`): the speculation rules are parsed with System.Text.Json, whose `JsonElement.GetString()` throws an `InvalidOperationException` ("Cannot read invalid UTF-16 JSON text as string") for the escaped lone surrogate `\uDEAD`; the exception escapes to the script that inserts the rules (an `Error`), while JSON allows lone surrogates and the specification converts the strings to scalar value strings (the lone surrogate becomes U+FFFD) |
 | [`prefetch/duplicate-urls.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/duplicate-urls.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/fragment.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/fragment.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/implicit-source.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/implicit-source.https.html) | Pass | 1 / 1 |  |  |
@@ -224,8 +223,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`activation-header/prefetch-activation-beacon.tentative.https.html`](https://wpt.fyi/results/speculation-rules/activation-header/prefetch-activation-beacon.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `on-prefetch-activation` response header of the tentative tests (a beacon sent when the prefetched or prerendered document is activated): a Chromium experiment that no specification defines |
 | [`activation-header/prerender-activation-beacon.tentative.https.html`](https://wpt.fyi/results/speculation-rules/activation-header/prerender-activation-beacon.tentative.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the `on-prefetch-activation` response header of the tentative tests (a beacon sent when the prefetched or prerendered document is activated): a Chromium experiment that no specification defines |
 | [`inline-speculation-rules-base-url-errors.tentative.html`](https://wpt.fyi/results/speculation-rules/inline-speculation-rules-base-url-errors.tentative.html) | Pass | 1 / 1 |  |  |
-| [`prefetch/clear-prefetch-cache-after-clear-site-data-cross-site.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cross-site.tentative.https.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`prefetch/document-rules-scope.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-scope.tentative.https.html) | Fail | 1 / 2 |  | *No reason documented* |
+| [`prefetch/clear-prefetch-cache-after-clear-site-data-cross-site.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cross-site.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the network partitioning of the `"prefetchCache"` type of `Clear-Site-Data` (tentative): `NavigationalPrefetch.ProcessClearSiteData` discards the prefetch records of every document of the origin of the response in the browsing context group, so the response of a cross-site iframe also discards the prefetch of the top-level document, and its navigation is not prefetched (`Sec-Purpose` is undefined) |
+| [`prefetch/document-rules-scope.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/document-rules-scope.tentative.https.html) | Fail | 1 / 2 | BUG | the `documentScopeDescendant` variant: `selector_matches` matches the selectors with `Element.matches()`, whose scoping root is the link itself, so `:scope a` does not match the links; the document rule selector predicate matches with the scoping root set to the root of the link, the document (https://html.spec.whatwg.org/multipage/speculative-loading.html#dr-predicate-matches) |
 | [`prefetch/list-rule-eagerness-conservative-pointerdown-preventdefault.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/list-rule-eagerness-conservative-pointerdown-preventdefault.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`prefetch/list-rule-eagerness-eager-hover.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/list-rule-eagerness-eager-hover.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/tentative/cookie-indices.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/tentative/cookie-indices.https.html) | Timeout | 0 / 6 | TEST BUG, NOT IMPLEMENTED | the redirect variants request `prefetch/tentative/resources/random_redirect.py`, which does not exist (the handler is in `prefetch/resources`); the `Cookie-Indices` response header (a prefetch is not discarded when the cookies it names changed since); the test also fails in Chromium |

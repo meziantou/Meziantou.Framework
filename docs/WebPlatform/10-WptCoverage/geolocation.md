@@ -20,8 +20,7 @@ description: "The results of the web-platform-tests of geolocation, and why the 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 2
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
@@ -47,7 +46,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`non-secure-contexts.http.html`](https://wpt.fyi/results/geolocation/non-secure-contexts.http.html) | Pass | 4 / 4 |  |  |
 | [`permission.https.html`](https://wpt.fyi/results/geolocation/permission.https.html) | Pass | 1 / 1 |  |  |
 | [`tojson.https.window.js`](https://wpt.fyi/results/geolocation/tojson.https.window.js) | Pass | 1 / 1 |  |  |
-| [`watchPosition-accuracyMode.https.html`](https://wpt.fyi/results/geolocation/watchPosition-accuracyMode.https.html) | Fail | 1 / 2 |  | *No reason documented* |
+| [`watchPosition-accuracyMode.https.html`](https://wpt.fyi/results/geolocation/watchPosition-accuracyMode.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | 1 of 2 subtests: the `accuracyMode` member of `PositionOptions` (approximate positions), which is not in the vendored IDL of the Geolocation specification |
 | [`watchPosition_TypeError.https.html`](https://wpt.fyi/results/geolocation/watchPosition_TypeError.https.html) | Pass | 7 / 7 |  |  |
 | [`watchPosition_permission_deny.https.html`](https://wpt.fyi/results/geolocation/watchPosition_permission_deny.https.html) | Pass | 2 / 2 |  |  |
 | [`watchposition-timeout.https.window.js`](https://wpt.fyi/results/geolocation/watchposition-timeout.https.window.js) | Pass | 1 / 1 |  |  |

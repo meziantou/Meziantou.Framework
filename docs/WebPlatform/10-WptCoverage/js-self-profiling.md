@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of js-self-profiling, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 26 | 1 | 0% |
-| [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
+| [Stable](#stable-tests) | 0 | 26 | 0 | 0% |
+| Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **27** | **1** | **0%** |
+| **All** | **0** | **26** | **0** | **0%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **NOT IMPLEMENTED**: 26
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -43,7 +42,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`js-profiling-mode/eager.https.html`](https://wpt.fyi/results/js-self-profiling/js-profiling-mode/eager.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
 | [`js-profiling-mode/lazy.https.html`](https://wpt.fyi/results/js-self-profiling/js-profiling-mode/lazy.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
 | [`js-profiling-mode/unknown.https.html`](https://wpt.fyi/results/js-self-profiling/js-profiling-mode/unknown.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
-| [`marker-vm-state.https.html`](https://wpt.fyi/results/js-self-profiling/marker-vm-state.https.html) | Disabled | – |  | *No reason documented* |
+| [`marker-vm-state.https.html`](https://wpt.fyi/results/js-self-profiling/marker-vm-state.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
 | [`max-buffer-size.window.js`](https://wpt.fyi/results/js-self-profiling/max-buffer-size.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
 | [`time-domain.window.js`](https://wpt.fyi/results/js-self-profiling/time-domain.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
 | [`with-document-policy/dedicated-worker-blob.https.html`](https://wpt.fyi/results/js-self-profiling/with-document-policy/dedicated-worker-blob.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
@@ -52,9 +51,3 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`with-document-policy/dedicated-worker-no-policy.https.html`](https://wpt.fyi/results/js-self-profiling/with-document-policy/dedicated-worker-no-policy.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
 | [`with-document-policy/dedicated-worker.https.html`](https://wpt.fyi/results/js-self-profiling/with-document-policy/dedicated-worker.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
 | [`without-document-policy/disabled.https.html`](https://wpt.fyi/results/js-self-profiling/without-document-policy/disabled.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |
-
-## Tentative tests
-
-| Test | Result | Subtests | Kind | Description |
-|---|---|--:|---|---|
-| [`tentative/marker-vm-state.https.html`](https://wpt.fyi/results/js-self-profiling/tentative/marker-vm-state.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | JS Self-Profiling API (`Profiler`) |

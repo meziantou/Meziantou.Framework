@@ -20,14 +20,13 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 2
-- **TEST BUG**: 28
+- **TEST BUG**: 29
 - **NOT IMPLEMENTED**: 52
 - **REQUIRES**: 3
   - `layout`: 2
   - `workers`: 1
 - **TEST RUNNER**: 16
 - **FLAKY**: 2
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -95,7 +94,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/cors/cors-preflight-redirect.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-redirect.any.js) | Pass | 30 / 30 |  |  |
 | [`api/cors/cors-preflight-referrer.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-referrer.any.js) | Pass | 24 / 24 |  |  |
 | [`api/cors/cors-preflight-response-validation.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-response-validation.any.js) | Pass | 4 / 4 |  |  |
-| [`api/cors/cors-preflight-safelist-value-size.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-safelist-value-size.any.js) | Fail | 8 / 10 |  | *No reason documented* |
+| [`api/cors/cors-preflight-safelist-value-size.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-safelist-value-size.any.js) | Fail | 8 / 10 | TEST BUG | 1 of 5 subtests (in the window and the dedicated worker): "fetch" appends `Accept: */*` to the header list of a request without `Accept` before the CORS-preflight (https://fetch.spec.whatwg.org/#fetching, step 12), and the CORS-unsafe request-header names count every CORS-safelisted header in the size above 1024 bytes (https://fetch.spec.whatwg.org/#cors-unsafe-request-header-names): with 1200 bytes of `Content-Language`, the preflight asks for `accept,content-language`, but the preflight response of the test only allows `content-language`, so the fetch fails with a `TypeError` (the test expects the `Accept` header added by the user agent not to be counted, as in Chromium) |
 | [`api/cors/cors-preflight-star.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-star.any.js) | Pass | 68 / 68 |  |  |
 | [`api/cors/cors-preflight-status.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-status.any.js) | Pass | 54 / 54 |  |  |
 | [`api/cors/cors-preflight-unterminated-body.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-unterminated-body.any.js) | Pass | 2 / 2 |  |  |

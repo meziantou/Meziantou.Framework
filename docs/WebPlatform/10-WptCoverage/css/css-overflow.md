@@ -19,10 +19,9 @@ description: "The results of the web-platform-tests of css/css-overflow, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 8
 - **TEST BUG**: 18
 - **NOT IMPLEMENTED**: 2
-- *No reason documented*: 6
 
 ## Stable tests
 
@@ -343,9 +342,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`line-clamp/block-ellipsis-040.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-040.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-041.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-041.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-042.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-042.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/block-ellipsis-043.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-043.tentative.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`line-clamp/block-ellipsis-044.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-044.tentative.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`line-clamp/block-ellipsis-045.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-045.tentative.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`line-clamp/block-ellipsis-043.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-043.tentative.html) | Fail | 0 / 1 | BUG | when no soft wrap opportunity of the last line before the clamp point leaves room for the block ellipsis (a word wider than the line), the whole word is removed and the ellipsis is at the start of the line, where the characters must be removed off the end of the line until the ellipsis fits (https://drafts.csswg.org/css-overflow-4/#block-ellipsis): `XXX…` is expected |
+| [`line-clamp/block-ellipsis-044.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-044.tentative.html) | Fail | 0 / 1 | BUG | when no soft wrap opportunity of the last line before the clamp point leaves room for the block ellipsis (a word wider than the line, `white-space: pre`), the whole word is removed and the ellipsis is at the start of the line, where the characters must be removed off the end of the line until the ellipsis fits (https://drafts.csswg.org/css-overflow-4/#block-ellipsis): `XXX…` is expected |
+| [`line-clamp/block-ellipsis-045.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-045.tentative.html) | Fail | 0 / 1 | BUG | when the characters are removed off the end of the last line before the clamp point to fit the block ellipsis (no soft wrap opportunity leaves room for it), the preserved spaces at the end of what remains (`white-space: pre`) are removed too, so the ellipsis is 50px too far left; the non-collapsible spaces are kept (https://drafts.csswg.org/css-overflow-4/#block-ellipsis) |
 | [`line-clamp/block-ellipsis-bidi-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-bidi-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/block-ellipsis-bidi-002.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-bidi-002.html) | Fail | 0 / 1 | TEST BUG | the test sizes its box in `ch` for Arabic letters that are as wide as the `0` of the monospace font (a monospace Arabic font): the glyphs of the Arabic fallback font (Scheherazade, as the proportional fonts of the browsers) are narrower, so one more word fits on the clamped line before the ellipsis (fails in every browser) |
 | [`line-clamp/block-ellipsis-bidi-003.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/block-ellipsis-bidi-003.html) | Fail | 0 / 1 | TEST BUG | the test sizes its box in `ch` for Arabic letters that are as wide as the `0` of the monospace font (a monospace Arabic font): the glyphs of the Arabic fallback font (Scheherazade, as the proportional fonts of the browsers) are narrower, so one more word fits on the clamped line before the ellipsis (fails in every browser) |
@@ -904,9 +903,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scrollbar-gutter-fixedpos-003.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fixedpos-003.html) | Pass | 1 / 1 |  |  |
 | [`scrollbar-gutter-fixedpos-004.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fixedpos-004.html) | Pass | 1 / 1 |  |  |
 | [`scrollbar-gutter-fixedpos-005.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fixedpos-005.html) | Pass | 1 / 1 |  |  |
-| [`scrollbar-gutter-fullscreen-001.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fullscreen-001.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`scrollbar-gutter-fullscreen-002.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fullscreen-002.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`scrollbar-gutter-fullscreen-003.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fullscreen-003.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`scrollbar-gutter-fullscreen-001.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fullscreen-001.html) | Fail | 0 / 1 | BUG | the fullscreen element (top layer, `position: fixed` and as large as the viewport) and its `::backdrop` are laid out and painted inside the scrollbar gutters that the root reserves with `scrollbar-gutter: stable both-edges` (15px on each side), where they must cover the whole viewport, gutters included (https://drafts.csswg.org/css-overflow-3/#scrollbar-gutter-property, w3c/csswg-drafts#9904) |
+| [`scrollbar-gutter-fullscreen-002.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fullscreen-002.html) | Fail | 0 / 1 | BUG | the fullscreen element (top layer, `position: fixed` and as large as the viewport) and its `::backdrop` are laid out and painted inside the scrollbar gutters that the root reserves with `scrollbar-gutter: stable both-edges` (15px on each side), where they must cover the whole viewport, gutters included (https://drafts.csswg.org/css-overflow-3/#scrollbar-gutter-property, w3c/csswg-drafts#9904) |
+| [`scrollbar-gutter-fullscreen-003.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fullscreen-003.html) | Fail | 0 / 1 | BUG | the fullscreen element (top layer, `position: fixed` and as large as the viewport) and its `::backdrop` are laid out and painted inside the scrollbar gutters that the root reserves with `scrollbar-gutter: stable both-edges` (15px on each side), where they must cover the whole viewport, gutters included (https://drafts.csswg.org/css-overflow-3/#scrollbar-gutter-property, w3c/csswg-drafts#9904): the two squares at the edges of the element are 15px inside |
 | [`scrollbar-gutter-fullscreen-004.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-fullscreen-004.html) | Pass | 1 / 1 |  |  |
 | [`scrollbar-gutter-root-both-edges.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-root-both-edges.html) | Pass | 1 / 1 |  |  |
 | [`scrollbar-gutter-root.html`](https://wpt.fyi/results/css/css-overflow/scrollbar-gutter-root.html) | Pass | 1 / 1 |  |  |

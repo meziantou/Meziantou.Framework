@@ -21,9 +21,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 5
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 7
+- **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 4
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -32,7 +31,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`br-clear-all-000.html`](https://wpt.fyi/results/css/css-ruby/br-clear-all-000.html) | Pass | 1 / 1 |  |  |
 | [`br-clear-all-001.html`](https://wpt.fyi/results/css/css-ruby/br-clear-all-001.html) | Pass | 1 / 1 |  |  |
 | [`br-clear-all-002.html`](https://wpt.fyi/results/css/css-ruby/br-clear-all-002.html) | Pass | 1 / 1 |  |  |
-| [`break-within-bases/overflow-wrap-break-word.html`](https://wpt.fyi/results/css/css-ruby/break-within-bases/overflow-wrap-break-word.html) | Fail | 5 / 10 |  | *No reason documented* |
+| [`break-within-bases/overflow-wrap-break-word.html`](https://wpt.fyi/results/css/css-ruby/break-within-bases/overflow-wrap-break-word.html) | Fail | 5 / 10 | NOT IMPLEMENTED | 5 of 10 subtests: the line breaks inside the ruby bases (https://drafts.csswg.org/css-ruby-1/#break-within): a ruby column is a unit of the line breaking (its items are the items of its bases followed by the items of its annotations), so breaking it needs the bases and the annotations to be broken at different positions on each line; Chrome only |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-ruby/inheritance.html) | Pass | 8 / 8 |  |  |
 | [`line-break-around-ruby-001.html`](https://wpt.fyi/results/css/css-ruby/line-break-around-ruby-001.html) | Pass | 6 / 6 |  |  |
 | [`line-break-around-ruby-preserved-space.html`](https://wpt.fyi/results/css/css-ruby/line-break-around-ruby-preserved-space.html) | Pass | 9 / 9 |  |  |

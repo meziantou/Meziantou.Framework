@@ -19,8 +19,8 @@ description: "The results of the web-platform-tests of event-timing, and why the
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 5
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -103,5 +103,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`keydown-without-paint.tentative.html`](https://wpt.fyi/results/event-timing/keydown-without-paint.tentative.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`keydown-without-paint.tentative.html`](https://wpt.fyi/results/event-timing/keydown-without-paint.tentative.html) | Fail | 0 / 1 | TEST BUG | the tentative test expects the duration of a `keydown` that causes no repaint to end at most 8 ms after the `processingEnd` of the last `keydown` (Chromium flushes these entries from a posted task); the specification sets the duration to the rendering timestamp of the next rendering update (https://w3c.github.io/event-timing/#dispatch-pending-event-timing-entries), which runs at the next frame, 15.5 ms after `processingEnd` (`217.7` instead of at most `210.2`) |
 | [`target-selector.tentative.html`](https://wpt.fyi/results/event-timing/target-selector.tentative.html) | Fail | 4 / 5 | NOT IMPLEMENTED | the tentative path format of `targetSelector` (e.g. `BODY > DIV:nth-child(1)`), which `querySelectorAll()` must accept: the algorithm of the specification gives `IMG[src=/images/green.png]` for an image without id, whose attribute value is not quoted (an invalid selector); the 4 other subtests pass (no browser implements `targetSelector` on wpt.fyi) |

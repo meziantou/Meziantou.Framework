@@ -19,9 +19,8 @@ description: "The results of the web-platform-tests of webmcp, and why the tests
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 8
+- **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 29
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -90,7 +89,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`imperative/model_context.https.html`](https://wpt.fyi/results/webmcp/imperative/model_context.https.html) | Fail | 2 / 4 | TEST BUG | `executeTool()` resolves with the JSON serialization of the result of the tool, so a tool that returns `'hello'` gives `'"hello"'` (https://webmachinelearning.github.io/webmcp/#invoke-the-execute-callback); the test expects the string itself, as Chromium does, which the editors confirmed is a bug of Chromium and of the tests (https://github.com/webmachinelearning/webmcp/issues/361) |
 | [`imperative/non-secure.html`](https://wpt.fyi/results/webmcp/imperative/non-secure.html) | Pass | 1 / 1 |  |  |
 | [`imperative/object-arguments.https.html`](https://wpt.fyi/results/webmcp/imperative/object-arguments.https.html) | Fail | 0 / 1 | TEST BUG | `executeTool()` resolves with the JSON serialization of the result of the tool, so a tool that returns `'hello'` gives `'"hello"'` (https://webmachinelearning.github.io/webmcp/#invoke-the-execute-callback); the test expects the string itself, as Chromium does, which the editors confirmed is a bug of Chromium and of the tests (https://github.com/webmachinelearning/webmcp/issues/361) |
-| [`imperative/opaque-origin-tools.https.html`](https://wpt.fyi/results/webmcp/imperative/opaque-origin-tools.https.html) | Fail | 1 / 5 |  | *No reason documented* |
+| [`imperative/opaque-origin-tools.https.html`](https://wpt.fyi/results/webmcp/imperative/opaque-origin-tools.https.html) | Fail | 1 / 5 | TEST BUG | 4 of 5 subtests: the test expects a document whose origin is opaque to execute its own tools (and the tools of another document of the same opaque origin); the specification rejects `executeTool()` with a `NotSupportedError` when the origin of the tool is an opaque origin (https://webmachinelearning.github.io/webmcp/#dom-modelcontext-executetool, https://github.com/webmachinelearning/webmcp/issues/349), as the library does |
 | [`imperative/permissions-policy.https.html`](https://wpt.fyi/results/webmcp/imperative/permissions-policy.https.html) | Fail | 7 / 8 | NOT IMPLEMENTED | `ModelContext.resumeTool()` of the continuations proposal (https://github.com/webmachinelearning/webmcp/blob/main/continuations-explainer.md), which the specification does not define: the other subtests pass |
 | [`imperative/register-tool-input-schema-registers-same-name.https.html`](https://wpt.fyi/results/webmcp/imperative/register-tool-input-schema-registers-same-name.https.html) | Pass | 1 / 1 |  |  |
 | [`imperative/register-tool-title.https.html`](https://wpt.fyi/results/webmcp/imperative/register-tool-title.https.html) | Pass | 3 / 3 |  |  |

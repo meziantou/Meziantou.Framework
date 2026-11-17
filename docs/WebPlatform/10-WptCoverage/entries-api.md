@@ -19,14 +19,14 @@ description: "The results of the web-platform-tests of entries-api, and why the 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- *No reason documented*: 2
+- **BUG**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`filesystemdirectoryentry-getDirectory.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getDirectory.html) | Fail | 9 / 10 |  | *No reason documented* |
-| [`filesystemdirectoryentry-getFile.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getFile.html) | Fail | 11 / 12 |  | *No reason documented* |
+| [`filesystemdirectoryentry-getDirectory.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getDirectory.html) | Fail | 9 / 10 | BUG | 1 of 10 subtests: `getDirectory("\\")` rejects with a `NotFoundError` instead of a `TypeMismatchError`: `EntriesPath.IsValid` only rejects the empty names and NUL, while a name must not contain `\` either (https://wicg.github.io/entries-api/#names-paths) |
+| [`filesystemdirectoryentry-getFile.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getFile.html) | Fail | 11 / 12 | BUG | 1 of 12 subtests: `getFile("\\")` rejects with a `NotFoundError` instead of a `TypeMismatchError`: `EntriesPath.IsValid` only rejects the empty names and NUL, while a name must not contain `\` either (https://wicg.github.io/entries-api/#names-paths) |
 | [`filesystemdirectoryreader.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryreader.html) | Pass | 4 / 4 |  |  |
 | [`filesystementry-getParent.html`](https://wpt.fyi/results/entries-api/filesystementry-getParent.html) | Pass | 2 / 2 |  |  |
 | [`idlharness.window.js`](https://wpt.fyi/results/entries-api/idlharness.window.js) | Pass | 68 / 68 |  |  |

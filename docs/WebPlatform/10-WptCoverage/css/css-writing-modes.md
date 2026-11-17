@@ -19,10 +19,9 @@ description: "The results of the web-platform-tests of css/css-writing-modes, an
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 5
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 1
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -910,7 +909,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`orthogonal-cell-001.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-001.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-cell-rowspan-001.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-001.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-cell-rowspan-002.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-002.html) | Pass | 1 / 1 |  |  |
-| [`orthogonal-cell-rowspan-003.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-003.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`orthogonal-cell-rowspan-003.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-003.html) | Fail | 0 / 1 | BUG | a table with collapsed borders whose cell with a vertical writing mode (`vertical-rl`, `vertical-lr`, `sideways-lr`) spans several rows: the table is 6px wider and the content of the cell 3px further to the right than with the same borders and padding on a horizontal cell (the reference), so the half collapsed borders of the left and right sides of the orthogonal cell are not resolved as in a horizontal cell (cause not analyzed further) |
 | [`orthogonal-child-with-border.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-child-with-border.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-child-with-padding.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-child-with-padding.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-container-query-in-shrink-to-fit-flex.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-container-query-in-shrink-to-fit-flex.html) | Pass | 1 / 1 |  |  |

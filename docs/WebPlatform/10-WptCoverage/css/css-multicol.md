@@ -19,16 +19,15 @@ description: "The results of the web-platform-tests of css/css-multicol, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 4
 - **NOT IMPLEMENTED**: 1
-- *No reason documented*: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`abspos-in-inline-containing-block-after-spanner.html`](https://wpt.fyi/results/css/css-multicol/abspos-in-inline-containing-block-after-spanner.html) | Pass | 2 / 2 |  |  |
-| [`abspos-in-inline-containing-block-fragmentation.html`](https://wpt.fyi/results/css/css-multicol/abspos-in-inline-containing-block-fragmentation.html) | Fail | 0 / 2 |  | *No reason documented* |
+| [`abspos-in-inline-containing-block-fragmentation.html`](https://wpt.fyi/results/css/css-multicol/abspos-in-inline-containing-block-fragmentation.html) | Fail | 0 / 2 | BUG | the lines of an absolutely positioned box whose containing block is an inline box (`<span style="position: relative">` on the third line of a multi-column container) are not fragmented at the column boundary: with `top: 0`, its first line is 5px down the first column (the offset of the inline box in its line, without the 60px of the lines before it) instead of 65px, and with auto insets its lines stay in the first column instead of moving to the top of the second one |
 | [`abspos-size-contained-in-inline-containing-block-balanced.html`](https://wpt.fyi/results/css/css-multicol/abspos-size-contained-in-inline-containing-block-balanced.html) | Pass | 2 / 2 |  |  |
 | [`animation/column-count-interpolation.html`](https://wpt.fyi/results/css/css-multicol/animation/column-count-interpolation.html) | Pass | 198 / 198 |  |  |
 | [`animation/column-rule-color-interpolation.html`](https://wpt.fyi/results/css/css-multicol/animation/column-rule-color-interpolation.html) | Pass | 152 / 152 |  |  |

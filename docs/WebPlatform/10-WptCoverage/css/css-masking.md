@@ -20,10 +20,9 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 2
-- **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 3
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 4
 - **FLAKY**: 1
-- *No reason documented*: 2
 
 ## Stable tests
 
@@ -70,7 +69,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/clip-path-computed.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-path-computed.html) | Pass | 21 / 21 |  |  |
 | [`parsing/clip-path-invalid.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-path-invalid.html) | Pass | 44 / 44 |  |  |
 | [`parsing/clip-path-shape-parsing.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-path-shape-parsing.html) | Pass | 44 / 44 |  |  |
-| [`parsing/clip-path-valid.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-path-valid.html) | Fail | 54 / 58 |  | *No reason documented* |
+| [`parsing/clip-path-valid.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-path-valid.html) | Fail | 54 / 58 | NOT IMPLEMENTED | 4 of 58 subtests: the one-value `<radial-size>` of `ellipse()` (`ellipse(3%)`, `ellipse(closest-side)`): css-shapes-1 `ellipse()` takes a `<radial-size>`, which https://drafts.csswg.org/css-images-4/#radial-size extends to `<radial-extent>{1,2} \| <length-percentage [0,∞]>{1,2}`; the grammar of the library requires two radii (`ellipse( [ <radial-radius>{2} ]? [ at <position> ]? )`) |
 | [`parsing/clip-rule-computed.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-rule-computed.html) | Pass | 2 / 2 |  |  |
 | [`parsing/clip-rule-invalid.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-rule-invalid.html) | Pass | 2 / 2 |  |  |
 | [`parsing/clip-rule-valid.html`](https://wpt.fyi/results/css/css-masking/parsing/clip-rule-valid.html) | Pass | 2 / 2 |  |  |
@@ -90,7 +89,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/mask-repeat-invalid.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-repeat-invalid.html) | Pass | 6 / 6 |  |  |
 | [`parsing/mask-repeat-valid.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-repeat-valid.html) | Pass | 24 / 24 |  |  |
 | [`parsing/mask-shorthand-serialization.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-shorthand-serialization.html) | Pass | 4 / 4 |  |  |
-| [`parsing/mask-shorthand.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-shorthand.html) | Fail | 78 / 84 |  | *No reason documented* |
+| [`parsing/mask-shorthand.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-shorthand.html) | Fail | 78 / 84 | TEST BUG | 6 of 84 subtests: the expected longhands of `mask` do not include `mask-border-mode`, which the shorthand resets with the other `mask-border-*` longhands (https://drafts.fxtf.org/css-masking/#the-mask: "also resets mask-border", whose longhands include `mask-border-mode`; WPT css/css-masking/mask-shorthand-subproperties-reset.html expects it reset); the browsers do not support `mask-border-mode` |
 | [`parsing/mask-size-computed.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-size-computed.html) | Pass | 16 / 16 |  |  |
 | [`parsing/mask-size-invalid.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-size-invalid.html) | Pass | 3 / 3 |  |  |
 | [`parsing/mask-size-valid.html`](https://wpt.fyi/results/css/css-masking/parsing/mask-size-valid.html) | Pass | 9 / 9 |  |  |

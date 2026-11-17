@@ -49,30 +49,29 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,994 | 30,126 | 1,920 | 96% |
-| [Tentative](#tentative-tests) | 1,454 | 3,226 | 662 | 57% |
+| [Stable](#stable-tests) | 26,994 | 30,126 | 1,919 | 96% |
+| [Tentative](#tentative-tests) | 1,454 | 3,225 | 662 | 57% |
 | [Reftests](#reftests) | 28,583 | 29,841 | 149 | 96% |
 | [Crash tests](#crash-tests) | 2,054 | 2,128 | 62 | 99% |
-| **All** | **59,085** | **65,321** | **2,793** | **94%** |
+| **All** | **59,085** | **65,320** | **2,792** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 162
-- **TEST BUG**: 1,064
-- **NOT IMPLEMENTED**: 3,852
+- **BUG**: 231
+- **TEST BUG**: 1,078
+- **NOT IMPLEMENTED**: 3,977
 - **REQUIRES**: 764
   - `hardware`: 579
   - `layout`: 23
   - `media`: 21
   - `user-input`: 149
   - `workers`: 2
-- **TEST RUNNER**: 193
+- **TEST RUNNER**: 198
 - **OUT OF SCOPE**: 210
 - **FLAKY**: 19
 - **PERFORMANCE**: 8
-- *No reason documented*: 210
 
 ## Stable tests
 
@@ -274,7 +273,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`is-input-pending`](is-input-pending.md) | 10 | 10 | 0 | 100% |
 | [`jpegxl`](jpegxl.md) | 11 | 12 | 0 | 92% |
 | [`js`](js.md) | 16 | 26 | 1 | 64% |
-| [`js-self-profiling`](js-self-profiling.md) | 0 | 26 | 1 | 0% |
+| [`js-self-profiling`](js-self-profiling.md) | 0 | 26 | 0 | 0% |
 | [`keyboard-lock`](keyboard-lock.md) | 7 | 7 | 0 | 100% |
 | [`keyboard-map`](keyboard-map.md) | 8 | 8 | 0 | 100% |
 | [`largest-contentful-paint`](largest-contentful-paint.md) | 64 | 67 | 0 | 96% |
@@ -421,7 +420,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 328 | 331 | 0 | 99% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,994** | **30,126** | **1,920** | **96%** |
+| **Total (343 sections)** | **26,994** | **30,126** | **1,919** | **96%** |
 
 ## Tentative tests
 
@@ -524,7 +523,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`IndexedDB`](IndexedDB.md#tentative-tests) | 0 | 1 | 0 | 0% |
 | [`input-events`](input-events.md#tentative-tests) | 0 | 9 | 0 | 0% |
 | [`is-input-pending`](is-input-pending.md#tentative-tests) | 0 | 2 | 0 | 0% |
-| [`js-self-profiling`](js-self-profiling.md#tentative-tests) | 0 | 1 | 0 | 0% |
 | [`largest-contentful-paint`](largest-contentful-paint.md#tentative-tests) | 4 | 8 | 0 | 50% |
 | [`long-animation-frame`](long-animation-frame.md#tentative-tests) | 1 | 13 | 0 | 8% |
 | [`mathml`](mathml.md#tentative-tests) | 1 | 2 | 0 | 50% |
@@ -593,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (166 sections)** | **1,454** | **3,226** | **662** | **57%** |
+| **Total (165 sections)** | **1,454** | **3,225** | **662** | **57%** |
 
 ## Reftests
 

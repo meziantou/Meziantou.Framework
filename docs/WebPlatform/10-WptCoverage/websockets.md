@@ -21,9 +21,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 14
-- **TEST RUNNER**: 1
+- **TEST RUNNER**: 2
 - **OUT OF SCOPE**: 2
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -92,7 +91,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js) | Pass | 1 / 1 |  |  |
 | [`back-forward-cache-with-open-websocket-connection.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection.window.js) | Pass | 1 / 1 |  |  |
 | [`basic-auth.any.js`](https://wpt.fyi/results/websockets/basic-auth.any.js) | Pass | 6 / 6 |  |  |
-| [`binary/001.html`](https://wpt.fyi/results/websockets/binary/001.html) | Fail | 3 / 4 |  | *No reason documented* |
+| [`binary/001.html`](https://wpt.fyi/results/websockets/binary/001.html) | Fail | 3 / 4 | TEST RUNNER | the `?wpt_flags=websocket-h3` variant: the runner does not emulate the WebSocket over HTTP/3 server of wptserve, whose port `websocket-h3-https` is not in the ports of `WptServer`, so `{{ports[websocket-h3-https][0]}}` of `constants.sub.js` is not substituted and the URL `wss://web-platform.test:{{ports[websocket-h3-https][0]}}/echo` is invalid |
 | [`binary/002.html`](https://wpt.fyi/results/websockets/binary/002.html) | Pass | 3 / 3 |  |  |
 | [`binary/004.html`](https://wpt.fyi/results/websockets/binary/004.html) | Pass | 3 / 3 |  |  |
 | [`binary/005.html`](https://wpt.fyi/results/websockets/binary/005.html) | Pass | 3 / 3 |  |  |

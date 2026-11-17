@@ -120,18 +120,18 @@
       "js-profiling-mode=unknown (invalid token) should not allow profiling": "FAIL"
     }
   },
+  "js-self-profiling/marker-vm-state.https.html": {
+    "total": 1,
+    "failures": {
+      "Script execution samples have a script marker in cross-origin-isolated documents": "FAIL"
+    }
+  },
   "js-self-profiling/max-buffer-size.window.js": {
     "total": 3,
     "failures": {
       "ensure samplebufferfull is fired on full profiler": "FAIL",
       "max buffer size is not exceeded": "FAIL",
       "max buffer size must be defined": "FAIL"
-    }
-  },
-  "js-self-profiling/tentative/marker-vm-state.https.html": {
-    "total": 1,
-    "failures": {
-      "markers logged correctly": "FAIL"
     }
   },
   "js-self-profiling/time-domain.window.js": {

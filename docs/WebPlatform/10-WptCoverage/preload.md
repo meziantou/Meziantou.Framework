@@ -19,9 +19,9 @@ description: "The results of the web-platform-tests of preload, and why the test
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 3
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 1
-- *No reason documented*: 3
 
 ## Stable tests
 
@@ -32,7 +32,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`avoid-delaying-onload-link-preload-style.html`](https://wpt.fyi/results/preload/avoid-delaying-onload-link-preload-style.html) | Pass | 1 / 1 |  |  |
 | [`avoid-delaying-onload-link-preload.html`](https://wpt.fyi/results/preload/avoid-delaying-onload-link-preload.html) | Pass | 1 / 1 |  |  |
 | [`avoid-prefetching-on-text-plain.html`](https://wpt.fyi/results/preload/avoid-prefetching-on-text-plain.html) | Pass | 1 / 1 |  |  |
-| [`cross-origin-link-header-on-subresource.sub.html`](https://wpt.fyi/results/preload/cross-origin-link-header-on-subresource.sub.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`cross-origin-link-header-on-subresource.sub.html`](https://wpt.fyi/results/preload/cross-origin-link-header-on-subresource.sub.html) | Fail | 0 / 1 | BUG | the `Link` headers of the responses of the subresources preload their resources (`LinkPreload.ProcessSubresourceLinkHeaders`, called by the main fetch for every response); the HTML Standard only processes the `Link` headers of the response of a document (https://html.spec.whatwg.org/multipage/semantics.html#processing-link-headers), and the tests now expect the subresource `Link` headers to be ignored |
 | [`delaying-onload-link-preload-after-discovery.html`](https://wpt.fyi/results/preload/delaying-onload-link-preload-after-discovery.html) | Pass | 1 / 1 |  |  |
 | [`download-resources.html`](https://wpt.fyi/results/preload/download-resources.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-adding-preload-imagesrcset.html`](https://wpt.fyi/results/preload/dynamic-adding-preload-imagesrcset.html) | Pass | 1 / 1 |  |  |
@@ -40,7 +40,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dynamic-adding-preload.html`](https://wpt.fyi/results/preload/dynamic-adding-preload.html) | Pass | 1 / 1 |  |  |
 | [`link-blob-url-revoked.window.js`](https://wpt.fyi/results/preload/link-blob-url-revoked.window.js) | Pass | 4 / 4 |  |  |
 | [`link-header-modulepreload.html`](https://wpt.fyi/results/preload/link-header-modulepreload.html) | Pass | 1 / 1 |  |  |
-| [`link-header-on-subresource.html`](https://wpt.fyi/results/preload/link-header-on-subresource.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`link-header-on-subresource.html`](https://wpt.fyi/results/preload/link-header-on-subresource.html) | Fail | 0 / 1 | BUG | the `Link` headers of the responses of the subresources preload their resources (`LinkPreload.ProcessSubresourceLinkHeaders`, called by the main fetch for every response); the HTML Standard only processes the `Link` headers of the response of a document (https://html.spec.whatwg.org/multipage/semantics.html#processing-link-headers), and the tests now expect the subresource `Link` headers to be ignored |
 | [`link-header-preload-delay-onload.html`](https://wpt.fyi/results/preload/link-header-preload-delay-onload.html) | Pass | 1 / 1 |  |  |
 | [`link-header-preload-imagesrcset.html`](https://wpt.fyi/results/preload/link-header-preload-imagesrcset.html) | Pass | 1 / 1 |  |  |
 | [`link-header-preload-non-html.html`](https://wpt.fyi/results/preload/link-header-preload-non-html.html) | Pass | 5 / 5 |  |  |
@@ -104,7 +104,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`preload-referrer-policy-subresource-header.tentative.html`](https://wpt.fyi/results/preload/preload-referrer-policy-subresource-header.tentative.html) | Fail | 0 / 196 |  | *No reason documented* |
+| [`preload-referrer-policy-subresource-header.tentative.html`](https://wpt.fyi/results/preload/preload-referrer-policy-subresource-header.tentative.html) | Fail | 0 / 196 | BUG | the `Link` headers of the responses of the subresources preload their resources (`LinkPreload.ProcessSubresourceLinkHeaders`, called by the main fetch for every response); the HTML Standard only processes the `Link` headers of the response of a document (https://html.spec.whatwg.org/multipage/semantics.html#processing-link-headers), and the tests now expect the subresource `Link` headers to be ignored: every subtest of the 4 variants finds the referrer of the preload in the stash (`NO-REFERER`) |
 
 ## Reftests
 

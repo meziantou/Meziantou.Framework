@@ -19,8 +19,8 @@ description: "The results of the web-platform-tests of css/css-display, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 52
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -170,7 +170,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`display-math-on-pseudo-elements-002.html`](https://wpt.fyi/results/css/css-display/display-math-on-pseudo-elements-002.html) | Pass | 1 / 1 |  |  |
 | [`display-none-inline-img.html`](https://wpt.fyi/results/css/css-display/display-none-inline-img.html) | Pass | 1 / 1 |  |  |
 | [`display-on-svg-text-content-element.html`](https://wpt.fyi/results/css/css-display/display-on-svg-text-content-element.html) | Pass | 1 / 1 |  |  |
-| [`display-table-cell-on-button.html`](https://wpt.fyi/results/css/css-display/display-table-cell-on-button.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`display-table-cell-on-button.html`](https://wpt.fyi/results/css/css-display/display-table-cell-on-button.html) | Fail | 0 / 1 | BUG | a `button` with a layout-internal `display` (`table-cell`) is laid out as a block-level box (the two buttons are stacked), where a replaced element or a widget with a layout-internal display has a used display of `inline` (https://drafts.csswg.org/css-display-3/#layout-specific-display): the buttons are inline-level boxes aligned at the bottom of the line |
 | [`order-dynamic.html`](https://wpt.fyi/results/css/css-display/order-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`run-in/counter-increment-applies-to-011.xht`](https://wpt.fyi/results/css/css-display/run-in/counter-increment-applies-to-011.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/counter-reset-applies-to-011.xht`](https://wpt.fyi/results/css/css-display/run-in/counter-reset-applies-to-011.xht) | Pass | 1 / 1 |  |  |

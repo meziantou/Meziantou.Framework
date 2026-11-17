@@ -20,8 +20,8 @@ description: "The results of the web-platform-tests of css/css-highlight-api, an
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 4
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -52,7 +52,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`Highlight-type-attribute.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/Highlight-type-attribute.tentative.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-animation-properties.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-animation-properties.tentative.html) | Fail | 0 / 66 |  | *No reason documented* |
+| [`custom-highlight-animation-properties.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-animation-properties.tentative.html) | Fail | 0 / 66 | TEST BUG | expects the `animation-*`, `transition-*` and `opacity` declarations of the highlight pseudo-elements (`::highlight()`, `::selection`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`) in their computed style: only `color`, `background-color`, `text-decoration`, `text-shadow`, the stroke and fill properties and the custom properties apply to them (https://drafts.csswg.org/css-pseudo-4/#highlight-styling), the others are copied from the originating element, so the library ignores these declarations |
 | [`custom-highlight-universal-escaped-star.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-escaped-star.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-parsing-and-computed-style.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-parsing-and-computed-style.tentative.html) | Pass | 10 / 10 |  |  |
 

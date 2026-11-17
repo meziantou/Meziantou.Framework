@@ -21,10 +21,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 3
 - **REQUIRES**: 2
   - `layout`: 2
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -310,7 +309,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`position/position-invalid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-invalid.tentative.html) | Pass | 21 / 21 |  |  |
 | [`position/position-valid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-valid.tentative.html) | Pass | 34 / 34 |  |  |
 | [`random-alias-property.tentative.html`](https://wpt.fyi/results/css/css-values/random-alias-property.tentative.html) | Pass | 1 / 1 |  |  |
-| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Fail | 172 / 177 |  | *No reason documented* |
+| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Fail | 172 / 177 | NOT IMPLEMENTED | 5 of 177 subtests: the `ua-early-` prefix of the cache keys of the `random()` functions evaluated during the substitution of an arbitrary substitution function (a typed `attr()`, https://drafts.csswg.org/css-values-5/#random-caching), with their own index that increases across the substitutions of the declaration: they get the `ua-` keys of the other `random()` functions of the property |
 | [`random-in-animations.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-animations.tentative.html) | Pass | 37 / 37 |  |  |
 | [`random-in-container-query.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-container-query.tentative.html) | Pass | 9 / 9 |  |  |
 | [`random-in-custom-function.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-custom-function.tentative.html) | Pass | 63 / 63 |  |  |

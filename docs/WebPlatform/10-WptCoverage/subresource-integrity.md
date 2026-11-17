@@ -19,16 +19,16 @@ description: "The results of the web-platform-tests of subresource-integrity, an
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 14
+- **BUG**: 1
+- **TEST BUG**: 16
 - **NOT IMPLEMENTED**: 1
-- *No reason documented*: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`integrity-policy/blocked-url-redirect.https.html`](https://wpt.fyi/results/subresource-integrity/integrity-policy/blocked-url-redirect.https.html) | Timeout | 0 / 1 |  | *No reason documented* |
-| [`integrity-policy/blocked-url-service-worker.https.html`](https://wpt.fyi/results/subresource-integrity/integrity-policy/blocked-url-service-worker.https.html) | Timeout | 0 / 1 |  | *No reason documented* |
+| [`integrity-policy/blocked-url-redirect.https.html`](https://wpt.fyi/results/subresource-integrity/integrity-policy/blocked-url-redirect.https.html) | Timeout | 0 / 1 | BUG, TEST BUG | the `blockedURL` of an `integrity-violation` report is the current URL of the request (`IntegrityPolicy.ReportViolation` uses `request.CurrentUrl`, and the policy is checked again for each URL of a redirect chain), while it is the URL of the request, the first URL of its URL list (https://w3c.github.io/webappsec-subresource-integrity/#report-violation): a report for a redirected script exposes the URL of the redirect target; the `Integrity-Policy-Report-Only` header of `resources/report-only-frame.html` has no `endpoints`, and "report violation" only generates a report for each endpoint of the policy (https://w3c.github.io/webappsec-subresource-integrity/#report-violation), so the `ReportingObserver` of the frame never gets an `integrity-violation` report and the test waits for it until it times out |
+| [`integrity-policy/blocked-url-service-worker.https.html`](https://wpt.fyi/results/subresource-integrity/integrity-policy/blocked-url-service-worker.https.html) | Timeout | 0 / 1 | TEST BUG | the `Integrity-Policy-Report-Only` header of `resources/report-only-frame.html` has no `endpoints`, and "report violation" only generates a report for each endpoint of the policy (https://w3c.github.io/webappsec-subresource-integrity/#report-violation), so the `ReportingObserver` of the frame never gets an `integrity-violation` report and the test waits for it until it times out |
 | [`integrity-policy/parsing.html`](https://wpt.fyi/results/subresource-integrity/integrity-policy/parsing.html) | Pass | 22 / 22 |  |  |
 | [`integrity-policy/preload-script-with-integrity.https.html`](https://wpt.fyi/results/subresource-integrity/integrity-policy/preload-script-with-integrity.https.html) | Pass | 1 / 1 |  |  |
 | [`integrity-policy/script.https.html`](https://wpt.fyi/results/subresource-integrity/integrity-policy/script.https.html) | Pass | 24 / 24 |  |  |

@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of html/cross-origin-opener-
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -145,6 +145,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`reporting/access-reporting/reporting-observer-no-endpoint.tentative.html`](https://wpt.fyi/results/html/cross-origin-opener-policy/reporting/access-reporting/reporting-observer-no-endpoint.tentative.html) | Fail | 1 / 2 |  | *No reason documented* |
+| [`reporting/access-reporting/reporting-observer-no-endpoint.tentative.html`](https://wpt.fyi/results/html/cross-origin-opener-policy/reporting/access-reporting/reporting-observer-no-endpoint.tentative.html) | Fail | 1 / 2 | NOT IMPLEMENTED | 1 of 2 subtests: the tentative delivery of the `coop-access-violation` reports to the `ReportingObserver`s of a window whose `Cross-Origin-Opener-Policy-Report-Only` has no reporting endpoint: the HTML Standard reports an access only when the opener policy has a reporting endpoint (https://html.spec.whatwg.org/multipage/browsers.html#coop-check-access-report), as the library does |
 | [`reporting/tentative/access-to-noopener-page-from-no-coop-ro.https.html`](https://wpt.fyi/results/html/cross-origin-opener-policy/reporting/tentative/access-to-noopener-page-from-no-coop-ro.https.html) | Pass | 2 / 2 |  |  |
 | [`tentative/noopener/coop-noopener-allow-popups-restrict-properties.https.html`](https://wpt.fyi/results/html/cross-origin-opener-policy/tentative/noopener/coop-noopener-allow-popups-restrict-properties.https.html) | Pass | 2 / 2 |  |  |

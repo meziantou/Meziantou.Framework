@@ -20,10 +20,9 @@ description: "The results of the web-platform-tests of content-security-policy, 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 21
+- **NOT IMPLEMENTED**: 22
 - **TEST RUNNER**: 1
 - **OUT OF SCOPE**: 7
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -695,7 +694,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`script-src/script-src-strict_dynamic_javascript_uri.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_javascript_uri.html) | Pass | 1 / 1 |  |  |
 | [`script-src/script-src-strict_dynamic_meta_tag.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_meta_tag.html) | Pass | 4 / 4 |  |  |
 | [`script-src/script-src-strict_dynamic_modulepreload_integrity_mismatch.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_modulepreload_integrity_mismatch.html) | Fail | 2 / 6 | NOT IMPLEMENTED | a parser-inserted module script allowed by `strict-dynamic` through a policy hash of its `integrity` attribute runs the module of a `modulepreload` entry whose integrity was not verified against that metadata (the module map hit skips the integrity check of the script element); the test expects it to be blocked with a `script-src-elem` violation |
-| [`script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html) | Fail | 2 / 3 |  | *No reason documented* |
+| [`script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html) | Fail | 2 / 3 | NOT IMPLEMENTED | 1 of 3 subtests: a parser-inserted module script that `strict-dynamic` blocks runs the module that a `modulepreload` of the same URL put in the module map: "fetch a single module script" returns the module of the module map without fetching it (https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-single-module-script), so the content security policy of the request is not checked; the test expects it to be blocked with a `script-src-elem` violation, as `script-src-strict_dynamic_modulepreload_integrity_mismatch.html` |
 | [`script-src/script-src-strict_dynamic_new_function.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_new_function.html) | Pass | 1 / 1 |  |  |
 | [`script-src/script-src-strict_dynamic_non_parser_inserted.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_non_parser_inserted.html) | Pass | 4 / 4 |  |  |
 | [`script-src/script-src-strict_dynamic_non_parser_inserted_incorrect_nonce.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_non_parser_inserted_incorrect_nonce.html) | Pass | 1 / 1 |  |  |

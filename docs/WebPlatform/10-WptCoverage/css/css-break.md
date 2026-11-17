@@ -19,10 +19,9 @@ description: "The results of the web-platform-tests of css/css-break, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **BUG**: 5
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 6
-- *No reason documented*: 4
 
 ## Stable tests
 
@@ -38,7 +37,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`flexbox/auto-block-size-with-max-block-size.html`](https://wpt.fyi/results/css/css-break/flexbox/auto-block-size-with-max-block-size.html) | Pass | 52 / 52 |  |  |
 | [`grid/grid-lanes/column-forced-breaks-margins.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-forced-breaks-margins.html) | Pass | 6 / 6 |  |  |
 | [`grid/grid-lanes/column-forced-breaks-overflow.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/column-forced-breaks-overflow.html) | Pass | 4 / 4 |  |  |
-| [`grid/grid-lanes/row-breaks-018.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-018.html) | Fail | 0 / 2 |  | *No reason documented* |
+| [`grid/grid-lanes/row-breaks-018.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-018.html) | Fail | 0 / 2 | BUG | a row of a row grid lanes container whose monolithic item (`writing-mode: vertical-lr` or `overflow: hidden`, 150px) overflows the first column (https://drafts.csswg.org/css-grid-3/#pagination): the parallel item of the row is not fragmented (one box fragment), where it is expected to fill the first column (100px) and to resume with an empty fragment at the top of the second column, the overflow of the monolithic item taking no space in the next row fragment |
 | [`hit-test-hidden-overflow.html`](https://wpt.fyi/results/css/css-break/hit-test-hidden-overflow.html) | Pass | 4 / 4 |  |  |
 | [`hit-test-inline-fragmentation-with-border-radius.html`](https://wpt.fyi/results/css/css-break/hit-test-inline-fragmentation-with-border-radius.html) | Pass | 36 / 36 |  |  |
 | [`hit-test-transformed-inline.html`](https://wpt.fyi/results/css/css-break/hit-test-transformed-inline.html) | Pass | 4 / 4 |  |  |
@@ -784,7 +783,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid/grid-lanes/row-breaks-001.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-001.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-002.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-002.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-003.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-003.html) | Pass | 1 / 1 |  |  |
-| [`grid/grid-lanes/row-breaks-004.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-004.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`grid/grid-lanes/row-breaks-004.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-004.html) | Fail | 0 / 1 | BUG | a forced break (`break-before: column`) inside an item of a row with a fixed size (`grid-template-rows: 60px ...`) of a row grid lanes container fragments the row: the rest of the item and of its parallel item continue in the second column, followed by the next row, and the row with the forced break goes to the third column, where the fixed row stays in the first column (the content after the break overflows it into the second column) and the next row follows it there (https://drafts.csswg.org/css-grid-3/#pagination) |
 | [`grid/grid-lanes/row-breaks-005.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-005.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-006.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-006.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-007.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-007.html) | Pass | 1 / 1 |  |  |
@@ -793,11 +792,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid/grid-lanes/row-breaks-010.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-010.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-011.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-011.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-012.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-012.html) | Pass | 1 / 1 |  |  |
-| [`grid/grid-lanes/row-breaks-013.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-013.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`grid/grid-lanes/row-breaks-013.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-013.html) | Fail | 0 / 1 | BUG | the forced break before the second item of a row of a row grid lanes container (`break-before: column`) is lost when the first item of the row has `break-before: avoid`: the row starts in the first column and is broken, where the forced break wins over the avoid value of the same break point and moves the whole row to the second column (https://drafts.csswg.org/css-break-3/#forced-breaks, https://drafts.csswg.org/css-grid-3/#pagination) |
 | [`grid/grid-lanes/row-breaks-014.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-014.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-015.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-015.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-breaks-016.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-016.html) | Pass | 1 / 1 |  |  |
-| [`grid/grid-lanes/row-breaks-017.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-017.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`grid/grid-lanes/row-breaks-017.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-breaks-017.html) | Fail | 0 / 1 | BUG | an item of a row grid lanes container with a negative block-start margin (`margin-top: -100px`, the second row starts at the top of the second column) is placed by its margin in the fragmentation flow, so it is painted in the first column (50px down) instead of at the start of the fragment of its row, at the top of the second column (https://drafts.csswg.org/css-grid-3/#pagination) |
 | [`grid/grid-lanes/row-grid-lanes-oof-fragmentation-001.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-001.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-grid-lanes-oof-fragmentation-002.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-002.html) | Pass | 1 / 1 |  |  |
 | [`grid/grid-lanes/row-grid-lanes-oof-fragmentation-003.html`](https://wpt.fyi/results/css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-003.html) | Pass | 1 / 1 |  |  |

@@ -19,10 +19,9 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 10
 - **TEST BUG**: 6
 - **FLAKY**: 1
-- *No reason documented*: 4
 
 ## Stable tests
 
@@ -30,7 +29,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`animations/background-color-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-color-interpolation.html) | Pass | 172 / 172 |  |  |
 | [`animations/background-color-transition-colormix.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-color-transition-colormix.html) | Pass | 1 / 1 |  |  |
-| [`animations/background-image-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-image-interpolation.html) | Fail | 420 / 492 |  | *No reason documented* |
+| [`animations/background-image-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-image-interpolation.html) | Fail | 420 / 492 | BUG | 72 of 492 subtests: `background-image` (and `list-style-image`) is transitioned without `transition-behavior: allow-discrete` (`CssInterpolationKind.Image` in `CssAnimationTypes.cs`, "transitionable but interpolated discretely, like in browsers"), so the transitions show the start value before the middle; its animation type is discrete (https://drafts.csswg.org/css-backgrounds-3/#background-image), and a discrete property does not transition without `allow-discrete` (https://drafts.csswg.org/css-transitions-2/#transition-behavior-property), as the test expects since web-platform-tests/wpt commit 24c4209 |
 | [`animations/background-position-composition.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-position-composition.html) | Pass | 70 / 70 |  |  |
 | [`animations/background-position-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-position-interpolation.html) | Pass | 196 / 196 |  |  |
 | [`animations/background-position-origin-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-position-origin-interpolation.html) | Pass | 280 / 280 |  |  |
@@ -96,9 +95,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/background-color-invalid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-color-invalid.html) | Pass | 3 / 3 |  |  |
 | [`parsing/background-color-valid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-color-valid.html) | Pass | 9 / 9 |  |  |
 | [`parsing/background-computed.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-computed.html) | Pass | 39 / 39 |  |  |
-| [`parsing/background-image-computed.sub.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-image-computed.sub.html) | Fail | 62 / 64 |  | *No reason documented* |
-| [`parsing/background-image-invalid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-image-invalid.html) | Fail | 28 / 30 |  | *No reason documented* |
-| [`parsing/background-image-valid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-image-valid.html) | Fail | 31 / 35 |  | *No reason documented* |
+| [`parsing/background-image-computed.sub.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-image-computed.sub.html) | Fail | 62 / 64 | BUG | 2 of 64 subtests: the canonical serialization of the gradients: a unitless zero color stop position is kept as `0` instead of `0px`, and the default `ellipse` shape is kept before a size keyword (`radial-gradient(ellipse closest-side, ...)` instead of `radial-gradient(closest-side, ...)`); only `ellipse` alone or followed by two lengths is omitted (`CssSerializer.Gradients.cs`) |
+| [`parsing/background-image-invalid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-image-invalid.html) | Fail | 28 / 30 | BUG | 2 of 30 subtests: the prose restrictions of the shape of `radial-gradient()` (https://drafts.csswg.org/css-images-3/#radial-gradient-syntax) are not checked: `circle 10px 10px` (a circle takes one length) and `ellipse 10px` (an ellipse takes two lengths or a keyword) match the grammar `[ <radial-shape> \|\| <radial-size> ]` and are accepted |
+| [`parsing/background-image-valid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-image-valid.html) | Fail | 31 / 35 | BUG | 4 of 35 subtests: the canonical serialization of the gradients (`CssSerializer.Gradients.cs`): a unitless zero color stop position is kept as `0` instead of `0px`, the direction `to top left` keeps its specified order instead of `to left top`, and the default shape is kept before a size (`ellipse closest-side`, `circle 10px` instead of `closest-side`, `10px`) |
 | [`parsing/background-invalid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-invalid.html) | Pass | 2 / 2 |  |  |
 | [`parsing/background-origin-computed.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-origin-computed.html) | Pass | 7 / 7 |  |  |
 | [`parsing/background-origin-invalid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-origin-invalid.html) | Pass | 4 / 4 |  |  |

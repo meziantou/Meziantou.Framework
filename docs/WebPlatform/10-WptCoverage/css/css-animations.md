@@ -19,15 +19,15 @@ description: "The results of the web-platform-tests of css/css-animations, and w
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 4
-- *No reason documented*: 2
+- **BUG**: 1
+- **NOT IMPLEMENTED**: 5
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`KeyframeEffect-getKeyframes-cross-document.html`](https://wpt.fyi/results/css/css-animations/KeyframeEffect-getKeyframes-cross-document.html) | Fail | 0 / 6 |  | *No reason documented* |
-| [`KeyframeEffect-getKeyframes-non-css-animation.html`](https://wpt.fyi/results/css/css-animations/KeyframeEffect-getKeyframes-non-css-animation.html) | Fail | 0 / 5 |  | *No reason documented* |
+| [`KeyframeEffect-getKeyframes-cross-document.html`](https://wpt.fyi/results/css/css-animations/KeyframeEffect-getKeyframes-cross-document.html) | Fail | 0 / 6 | NOT IMPLEMENTED | `getKeyframes()` of a CSS animation returns the specified values of the `@keyframes` rule (`var()` is not substituted, the custom properties are listed) instead of computed values: `currentcolor` is returned where the test expects the color of the target in another document (iframe, adopted element, display-locked subtree) |
+| [`KeyframeEffect-getKeyframes-non-css-animation.html`](https://wpt.fyi/results/css/css-animations/KeyframeEffect-getKeyframes-non-css-animation.html) | Fail | 0 / 5 | BUG | the keyframe effect of a CSS animation keeps the keyframes generated from `@keyframes` (the generated initial keyframe with the computed values of the target) after it is detached from the `CSSAnimation` (moved to an `Animation`, `effect = null` then reattached) and when the target has no computed style (`display: none`), where only the keyframes of the rule are expected; `getKeyframes()` on such an effect also flushes the style, which starts a transition |
 | [`animate-with-background-color-oklch-002.html`](https://wpt.fyi/results/css/css-animations/animate-with-background-color-oklch-002.html) | Pass | 2 / 2 |  |  |
 | [`animate-with-color-mix-2.html`](https://wpt.fyi/results/css/css-animations/animate-with-color-mix-2.html) | Pass | 1 / 1 |  |  |
 | [`animate-with-color-mix.html`](https://wpt.fyi/results/css/css-animations/animate-with-color-mix.html) | Pass | 6 / 6 |  |  |

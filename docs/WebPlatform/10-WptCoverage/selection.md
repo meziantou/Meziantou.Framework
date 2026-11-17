@@ -19,9 +19,8 @@ description: "The results of the web-platform-tests of selection, and why the te
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 10
+- **TEST BUG**: 11
 - **NOT IMPLEMENTED**: 3
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -151,7 +150,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selection-direction-on-triple-click.tentative.html`](https://wpt.fyi/results/selection/selection-direction-on-triple-click.tentative.html) | Pass | 1 / 1 |  |  |
 | [`selection-range-in-shadow-after-the-shadow-removed.tentative.html`](https://wpt.fyi/results/selection/selection-range-in-shadow-after-the-shadow-removed.tentative.html) | Fail | 0 / 8 | TEST BUG | the tentative test selects the text of a shadow tree and reads the range with `getRangeAt(0)` before it removes the host: the Selection API returns null from `anchorNode` and `focusNode`, 0 from `rangeCount` and throws an `IndexSizeError` from `getRangeAt()` when the anchor or the focus is not in the document tree (https://w3c.github.io/selection-api/#dom-selection-rangecount), and `addRange()` ignores a range whose root is not the document |
 | [`shadow-dom/tentative/Range-isPointInRange.html`](https://wpt.fyi/results/selection/shadow-dom/tentative/Range-isPointInRange.html) | Fail | 1 / 2 | TEST BUG | 1 of 2 subtests: the tentative test reads `getRangeAt(0)` of a selection collapsed in a shadow tree (`setBaseAndExtent()` with the focus in the shadow tree, after the anchor): the Selection API returns null from `anchorNode` and `focusNode`, 0 from `rangeCount` and throws an `IndexSizeError` from `getRangeAt()` when the anchor or the focus is not in the document tree (https://w3c.github.io/selection-api/#dom-selection-rangecount) |
-| [`shadow-dom/tentative/Selection-anchor-focus-rescoping.tentative.html`](https://wpt.fyi/results/selection/shadow-dom/tentative/Selection-anchor-focus-rescoping.tentative.html) | Fail | 5 / 21 |  | *No reason documented* |
+| [`shadow-dom/tentative/Selection-anchor-focus-rescoping.tentative.html`](https://wpt.fyi/results/selection/shadow-dom/tentative/Selection-anchor-focus-rescoping.tentative.html) | Fail | 5 / 21 | TEST BUG | 16 of 21 subtests: the tentative test ("for investigation only", https://github.com/w3c/selection-api/issues/361) expects `anchorNode` and `focusNode` of a selection in a shadow tree to be rescoped to the parent of the shadow host, as `getComposedRanges()` does; the Selection API returns null from `anchorNode` and `focusNode`, 0 from `rangeCount` and throws an `IndexSizeError` from `getRangeAt()` when the anchor or the focus is not in the document tree (https://w3c.github.io/selection-api/#dom-selection-rangecount); the test says that no browser passes it |
 | [`shadow-dom/tentative/Selection-collapse-and-extend.html`](https://wpt.fyi/results/selection/shadow-dom/tentative/Selection-collapse-and-extend.html) | Pass | 4 / 4 |  |  |
 | [`shadow-dom/tentative/Selection-deleteFromDocument-around-shadow.html`](https://wpt.fyi/results/selection/shadow-dom/tentative/Selection-deleteFromDocument-around-shadow.html) | Fail | 30 / 31 | TEST BUG | 1 of 31 subtests: the tentative test reads `getRangeAt(0)` of a selection whose focus is in a shadow tree: the Selection API returns null from `anchorNode` and `focusNode`, 0 from `rangeCount` and throws an `IndexSizeError` from `getRangeAt()` when the anchor or the focus is not in the document tree (https://w3c.github.io/selection-api/#dom-selection-rangecount), and `addRange()` ignores a range whose root is not the document |
 | [`shadow-dom/tentative/Selection-direction.html`](https://wpt.fyi/results/selection/shadow-dom/tentative/Selection-direction.html) | Pass | 7 / 7 |  |  |

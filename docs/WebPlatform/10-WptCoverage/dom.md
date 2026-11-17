@@ -19,12 +19,11 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **BUG**: 2
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 25
 - **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -643,7 +642,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/node-realm-preserved-across-frameless-adoption.html`](https://wpt.fyi/results/dom/nodes/node-realm-preserved-across-frameless-adoption.html) | Pass | 4 / 4 |  |  |
 | [`nodes/post-connection-steps-shadow-tree.html`](https://wpt.fyi/results/dom/nodes/post-connection-steps-shadow-tree.html) | Pass | 1 / 1 |  |  |
 | [`nodes/prepend-on-Document.html`](https://wpt.fyi/results/dom/nodes/prepend-on-Document.html) | Pass | 5 / 5 |  |  |
-| [`nodes/processing-instruction-attributes-clone-and-range.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes-clone-and-range.html) | Fail | 88 / 136 |  | *No reason documented* |
+| [`nodes/processing-instruction-attributes-clone-and-range.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes-clone-and-range.html) | Fail | 88 / 136 | BUG | 48 of 136 subtests (12 per source): `cloneContents()` and `extractContents()` of a range that starts or ends in a processing instruction set the data of the clone to a substring with `SetDataCore` (`Range.cs`), which does not update the attributes of the processing instruction from its data (https://dom.spec.whatwg.org/#update-attributes-from-data): the clone keeps the attributes of the original (`["a", "x"]`); the subtests of a live range collapsed by `setAttribute()`, `removeAttribute()` or `toggleAttribute()` fail the same way when they clone the range |
 | [`nodes/processing-instruction-attributes.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes.html) | Fail | 169 / 199 | NOT IMPLEMENTED | the attributes of the processing instructions created by the XML parser (`<?target attr="value"?>` in XML documents) |
 | [`nodes/query-target-in-load-event.html`](https://wpt.fyi/results/dom/nodes/query-target-in-load-event.html) | Pass | 1 / 1 |  |  |
 | [`nodes/querySelector-empty-id.html`](https://wpt.fyi/results/dom/nodes/querySelector-empty-id.html) | Pass | 1 / 1 |  |  |

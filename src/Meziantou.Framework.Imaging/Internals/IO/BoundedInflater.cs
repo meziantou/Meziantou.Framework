@@ -85,7 +85,7 @@ internal static class BoundedInflater
         if (compressed.IsEmpty)
             return null;
 
-        var input = ArrayPool<byte>.Shared.Rent(compressed.Length + SyntheticZlibHeader.Length);
+        var input = ArrayPool<byte>.Shared.Rent(compressed.Length);
         var chunk = ArrayPool<byte>.Shared.Rent(ChunkSize);
         try
         {

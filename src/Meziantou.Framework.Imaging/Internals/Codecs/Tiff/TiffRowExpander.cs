@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -56,7 +58,7 @@ internal sealed class TiffRowExpander : IDisposable
     /// <summary>Creates the expander of rows of <paramref name="width"/> pixels of a page: a part of its rows (a region).</summary>
     /// <param name="page">The page.</param>
     /// <param name="inkConversion">The conversion of the inks of a CMYK page to RGB; <see langword="null"/> for the other pages.</param>
-    /// <param name="scope">The scope charged for the lookup table of a palette and the scratch row of 16-bit inks.</param>
+    /// <param name="scope">The scope charged for the lookup table of a palette, the scratch row of 16-bit inks and the decoded entries of the lookup tables of the conversion (released on disposal).</param>
     /// <param name="width">The number of pixels of a row to expand, at most the width of the page.</param>
     /// <param name="nativeInks">Whether the inks of a CMYK page without alpha are expanded as CMYK pixels instead of being converted.</param>
     public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope, int width, bool nativeInks = false)
@@ -70,7 +72,7 @@ internal sealed class TiffRowExpander : IDisposable
         ArgumentOutOfRangeException.ThrowIfGreaterThan(width, page.Size.Width);
         _page = page;
         _width = width;
-        _inkConversion = inkConversion;
+        _inkConversion = inkConversion?.BindLookupTables(scope);
         _nativeInks = nativeInks;
         SourcePixelFormat = nativeInks ? GetCmykPixelFormat(page) : page.SourcePixelFormat;
         if (page.IsPalette)
@@ -143,6 +145,7 @@ internal sealed class TiffRowExpander : IDisposable
 
     public void Dispose()
     {
+        _inkConversion?.ReleaseLookupTables();
         _palette?.Dispose();
         _palette = null;
         _inks?.Dispose();
@@ -353,7 +356,28 @@ internal sealed class TiffRowExpander : IDisposable
             return;
         }
 
-        for (var x = 0; x < _width; x++)
+        var start = 0;
+        if (bytesPerSample == 4 && colors == 3 && !hasAlpha && samplesPerPixel == 3 && Vector128.IsHardwareAccelerated)
+        {
+            // RGB 32-bit samples: the three words of a pixel, read with the first word of the next one, whose place gets
+            // the alpha of 1 (the last pixel is left to the loop below)
+            var words = unsafe(MemoryMarshal.Cast<byte, uint>(stored[..(_width * 12)]));
+            var isAlpha = Vector128.Create(0, 0, 0, uint.MaxValue);
+            var one = Vector128.Create(BitConverter.SingleToUInt32Bits(1f));
+            var reverse = bigEndian == BitConverter.IsLittleEndian;
+            for (; start + 1 < _width; start++)
+            {
+                var pixel = Vector128.Create(words.Slice(start * 3, 4));
+                if (reverse)
+                {
+                    pixel = Vector128.Shuffle(pixel.AsByte(), Vector128.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12)).AsUInt32();
+                }
+
+                Vector128.ConditionalSelect(isAlpha, one, pixel).CopyTo(singles.Slice(start * 4, 4));
+            }
+        }
+
+        for (var x = start; x < _width; x++)
         {
             var source = stored.Slice(x * pixelLength, pixelLength);
             var target = singles.Slice(x * 4, 4);
@@ -370,6 +394,7 @@ internal sealed class TiffRowExpander : IDisposable
         => bigEndian ? BinaryPrimitives.ReadUInt16BigEndian(bytes) : BinaryPrimitives.ReadUInt16LittleEndian(bytes);
 
     /// <summary>Reads a 24- or 32-bit floating-point sample as the bits of the single-precision number of the same value.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static uint ReadSingleBits(ReadOnlySpan<byte> bytes, int length, bool bigEndian)
     {
         if (length == 4)

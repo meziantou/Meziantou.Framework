@@ -63,7 +63,10 @@ public sealed class TimingAndMetadataConformanceTests
         {
             Assert.Null(expected.ContentLightLevel);
             Assert.Null(expected.MasteringDisplay);
-            Assert.Null(expected.PixelAspectRatio);
+            if (fixture.Entry.Format is not "dpx")
+            {
+                Assert.Null(expected.PixelAspectRatio);
+            }
         }
 
         if (fixture.Entry.Format is "avif" or "heic")
@@ -87,9 +90,17 @@ public sealed class TimingAndMetadataConformanceTests
             Assert.Equal(expected.Orientation, fields.TransformOrientation);
             Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
         }
-        else if (fixture.Entry.Format == "exr")
+        else if (fixture.Entry.Format is "dpx" or "cin")
         {
-            // The chromaticities of an OpenEXR file: a CICP description for BT.2020 and P3, the linear transfer function for BT.709
+            // The orientation code of a DPX or Cineon image header, and the television transfer and colorimetry of a DPX
+            // image element, when ITU-T H.273 has code points for them, as its color description
+            Assert.Equal(expected.Orientation, fields.TransformOrientation);
+            Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
+        }
+        else if (fixture.Entry.Format is "exr" or "hdr" or "dds")
+        {
+            // The chromaticities of an OpenEXR file and the primaries of a Radiance HDR file: a CICP description for BT.2020
+            // and P3, the linear transfer function for BT.709; the sRGB description of the _SRGB formats of a DDS file
             Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
         }
         else
@@ -430,17 +441,18 @@ public sealed class TimingAndMetadataConformanceTests
         Assert.Equal(metadata.Resolution, png.Resolution);
         Assert.Equal(metadata.ExifProfile is not null || metadata.Orientation != ExifOrientation.TopLeft, png.Exif is not null);
 
-        // GIF stores only comments: strict throws, DiscardUnsupported drops, Strip writes nothing
-        var hasUnsupportedForGif = metadata.IccProfile is not null || metadata.ExifProfile is not null || metadata.XmpProfile is not null || metadata.Resolution is not null
+        // GIF stores comments, an RGB ICC profile and an XMP packet: strict throws for the rest, DiscardUnsupported drops it,
+        // Strip writes nothing
+        var hasUnsupportedForGif = metadata.ExifProfile is not null || metadata.Resolution is not null
             || metadata.Orientation != ExifOrientation.TopLeft || metadata.TextEntries.Any(entry => entry.Keyword != ImageTextEntry.CommentKeyword || entry.LanguageTag is not null);
         Assert.True(hasUnsupportedForGif);
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, ImageFormat.Gif, MetadataHandling.Strict, size));
         Assert.Equal(ImageFormat.Gif, exception.Format);
         Assert.StartsWith("Metadata: ", exception.Feature, StringComparison.Ordinal);
         var gif = MetadataWritePlan.Create(metadata, ImageFormat.Gif, MetadataHandling.DiscardUnsupported, size);
-        Assert.Null(gif.IccProfile);
+        Assert.Equal(metadata.IccProfile?.ColorSpace == IccProfileColorSpace.Rgb ? metadata.IccProfile : null, gif.IccProfile);
         Assert.Null(gif.Exif);
-        Assert.Null(gif.XmpProfile);
+        Assert.Same(metadata.XmpProfile, gif.XmpProfile);
         Assert.Null(gif.Resolution);
         Assert.All(gif.TextEntries, entry => Assert.Equal(ImageTextEntry.CommentKeyword, entry.Keyword));
         var stripped = MetadataWritePlan.Create(metadata, ImageFormat.Png, MetadataHandling.Strip, size);

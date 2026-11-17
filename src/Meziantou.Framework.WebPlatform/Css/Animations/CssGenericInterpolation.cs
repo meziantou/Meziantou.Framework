@@ -160,7 +160,7 @@ internal static class CssGenericInterpolation
     {
         foreach (var value in values)
         {
-            if (IsRepeat(value, out var function) && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } count, ..] && InfraAscii.EqualsIgnoreAsciiCase(count.Token.Value, "auto"))
+            if (IsRepeat(value, out var function) && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } count, ..] && InfraAscii.EqualsIgnoreAsciiCase(count.Value, "auto"))
                 return true;
         }
 
@@ -181,7 +181,7 @@ internal static class CssGenericInterpolation
                 && ValueMatcher.SplitAtCommas(ValueMatcher.RemoveWhitespace(function.Value)) is { Count: >= 2 } arguments
                 && arguments[0] is [CssPreservedToken { Type: CssTokenType.Number } count])
             {
-                for (var repetition = 0; repetition < (int)count.Token.NumericValue && result.Count < MaxValues; repetition++)
+                for (var repetition = 0; repetition < (int)count.NumericValue && result.Count < MaxValues; repetition++)
                 {
                     for (var i = 1; i < arguments.Count; i++)
                     {
@@ -312,7 +312,7 @@ internal static class CssGenericInterpolation
     }
 
     private static bool IsTrackListKeyword(List<CssComponentValue> value) => value is [CssPreservedToken { Type: CssTokenType.Ident }]
-        || (value is [CssPreservedToken { Type: CssTokenType.Ident } ident, ..] && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "subgrid"));
+        || (value is [CssPreservedToken { Type: CssTokenType.Ident } ident, ..] && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "subgrid"));
 
     /// <summary>Returns the tracks of a track list, and the line names before each track and after the last one (null when there is none).</summary>
     private static List<CssComponentValue> GetTracks(List<CssComponentValue> value, out List<string?> names)
@@ -395,10 +395,10 @@ internal static class CssGenericInterpolation
         switch (a)
         {
             case CssPreservedToken { Type: CssTokenType.Ident } identA:
-                if (b is not CssPreservedToken { Type: CssTokenType.Ident } identB || !InfraAscii.EqualsIgnoreAsciiCase(identA.Token.Value, identB.Token.Value))
+                if (b is not CssPreservedToken { Type: CssTokenType.Ident } identB || !InfraAscii.EqualsIgnoreAsciiCase(identA.Value, identB.Value))
                     return false;
 
-                builder.Append(CssSerializer.SerializeIdentifier(identA.Token.Value));
+                builder.Append(CssSerializer.SerializeIdentifier(identA.Value));
                 return true;
 
             case CssFunction functionA:
@@ -483,7 +483,7 @@ internal static class CssGenericInterpolation
     /// <summary>Returns whether a component is a color (including currentcolor).</summary>
     public static bool IsColor(CssComponentValue value) => value switch
     {
-        CssPreservedToken { Type: CssTokenType.Ident } ident => InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "currentcolor") || CssColor.Parse(value) is not null,
+        CssPreservedToken { Type: CssTokenType.Ident } ident => InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "currentcolor") || CssColor.Parse(value) is not null,
         CssPreservedToken { Type: CssTokenType.Hash } => CssColor.Parse(value) is not null,
         CssFunction function => CssColor.Parse(value) is not null || IsColorDependingOnCurrentColor(function),
         _ => false,
@@ -578,13 +578,13 @@ internal static class CssGenericInterpolation
             return false;
 
         var terms = ValueMatcher.RemoveWhitespace(function.Value);
-        if (terms is not [var first, CssPreservedToken { Type: CssTokenType.Delim } sign, var second] || sign.Token.Value is not ("+" or "-"))
+        if (terms is not [var first, CssPreservedToken { Type: CssTokenType.Delim } sign, var second] || sign.Value is not ("+" or "-"))
             return false;
 
         if (!TryGetNumber(first, out var firstValue, out var firstUnit) || !TryGetNumber(second, out var secondValue, out var secondUnit))
             return false;
 
-        if (sign.Token.Value == "-")
+        if (sign.Value == "-")
         {
             secondValue = -secondValue;
         }
@@ -614,20 +614,20 @@ internal static class CssGenericInterpolation
         switch (component)
         {
             case CssPreservedToken { Type: CssTokenType.Number } number:
-                value = number.Token.NumericValue;
+                value = number.NumericValue;
                 unit = "";
                 return true;
             case CssPreservedToken { Type: CssTokenType.Percentage } percentage:
-                value = percentage.Token.NumericValue;
+                value = percentage.NumericValue;
                 unit = "%";
                 return true;
             case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                value = dimension.Token.NumericValue;
-                unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
+                value = dimension.NumericValue;
+                unit = InfraAscii.ToAsciiLowercase(dimension.Value);
                 return true;
 
             // An infinite value of a keyframe (calc(infinity * 1px)): it is interpolated, then clamped
-            case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "calc") && function.Value.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && (ident.Token.IsIdent("infinity") || ident.Token.IsIdent("-infinity")))
+            case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "calc") && function.Value.Exists(v => v is CssPreservedToken { Type: CssTokenType.Ident } ident && (ident.IsIdent("infinity") || ident.IsIdent("-infinity")))
                 && CssCalc.Evaluate(function, CssCalcContext.Default) is { IsNumeric: true, Value: var infinite, Unit: var infiniteUnit } && double.IsInfinity(infinite):
                 value = infinite;
                 unit = infiniteUnit;

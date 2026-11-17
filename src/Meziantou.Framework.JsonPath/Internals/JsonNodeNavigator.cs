@@ -32,6 +32,12 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
         return new JsonNodeNavigator();
     }
 
+    /// <summary>
+    /// The names of a <see cref="JsonObject"/> are distinct, even ordinally when the object ignores case. A lookup finds
+    /// the one property with the name.
+    /// </summary>
+    internal override bool PropertyLookupMatchesEnumeration => true;
+
     public override JsonPathNodeKind GetKind(JsonNode? value)
     {
         return value switch

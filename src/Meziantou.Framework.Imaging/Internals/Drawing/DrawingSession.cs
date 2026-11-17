@@ -738,6 +738,9 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.SubpixelRendering != TextSubpixelRendering.None && TryFillSubpixelText(brush, layout, origin))
             return;
 
+        if (_textGlyphMasks is not null && layout.SubpixelRendering == TextSubpixelRendering.None && TryFillTextFromMasks(brush, layout, origin))
+            return;
+
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
@@ -777,27 +780,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var emboldener = GetEmboldener(layout);
-        if (layout.HasBackgrounds)
-        {
-            // Under the whole text: the background of a style never hides the glyphs of another one
-            for (var i = 0; i < layout.BrushCount; i++)
-            {
-                if (layout.GetBrush(i) is not { } background)
-                    continue;
-
-                if (measure is null)
-                {
-                    layout.EmitBackgrounds(BeginFill(), originX, originY, i);
-                }
-                else
-                {
-                    layout.EmitBackgroundsOnPath(BeginFill(), measure, options!, i);
-                }
-
-                Render(background, FillRule.NonZero);
-            }
-        }
-
+        DrawTextBackgrounds(layout, originX, originY, measure, options);
         for (var i = 0; i < layout.BrushCount; i++)
         {
             FillFrameWhenCovered(measure is null
@@ -807,6 +790,37 @@ internal sealed partial class DrawingSession : IDisposable
         }
 
         DrawColorGlyphs(brush, layout, originX, originY, measure, options, paint: !_isPreparing);
+        StrokeTextOutlines(layout, originX, originY, measure, options);
+    }
+
+    /// <summary>Fills the backgrounds of the styles of a text: under the whole text, so that the background of a style never hides the glyphs of another one.</summary>
+    private void DrawTextBackgrounds(TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        if (!layout.HasBackgrounds)
+            return;
+
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            if (layout.GetBrush(i) is not { } background)
+                continue;
+
+            if (measure is null)
+            {
+                layout.EmitBackgrounds(BeginFill(), originX, originY, i);
+            }
+            else
+            {
+                layout.EmitBackgroundsOnPath(BeginFill(), measure, options!, i);
+            }
+
+            Render(background, FillRule.NonZero);
+        }
+    }
+
+    /// <summary>Strokes the glyphs of the styles of a text that have a pen, once the text is filled.</summary>
+    private void StrokeTextOutlines(TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
         for (var i = 0; i < layout.OutlineCount; i++)
         {
             var pen = layout.GetOutline(i);
@@ -928,6 +942,8 @@ internal sealed partial class DrawingSession : IDisposable
         _strokeRecorder = null;
         _colorSurface?.Dispose();
         _colorSurface = null;
+        _maskRow?.Dispose();
+        _maskRow = null;
         _foregroundGradient?.Dispose();
         _foregroundGradient = null;
         _glyphScratch?.Dispose();
@@ -1162,11 +1178,17 @@ internal sealed partial class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        // A shape that is only prepared rents what it needs, and changes no pixel
-        if (Prepare(brush, fillRule, out var color, out var evaluator) && !_isPreparing)
+        if (!Prepare(brush, fillRule, out var color, out var evaluator))
+            return;
+
+        // A shape that is only prepared rents what it needs, the scratch of the workers included, and changes no pixel
+        if (_isPreparing)
         {
-            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
+            ReservePaintWorkers(color, evaluator, brush.CompositeMode, brush.BlendMode, brush.Opacity);
+            return;
         }
+
+        Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
     }
 
     /// <summary>Composites every row of the sweep that was prepared onto every frame.</summary>
@@ -1194,13 +1216,69 @@ internal sealed partial class DrawingSession : IDisposable
     {
         RemoveStaleThumbnail();
         var rasterizer = _rasterizer!;
+        if (evaluator is null && opacity == CoverageRasterizer.FullCoverage && _clipDepth == 0 && rasterizer.IsFullyCovered && TryPaintUniformRectangle(new DrawingSource(color, mode, blend, _transfer, _curves) { IsFullyCovered = true }))
+            return;
+
         if (TryPaintRowsInParallel(color, evaluator, mode, blend, opacity, alphaFactor))
             return;
 
         while (rasterizer.MoveNext())
         {
-            PaintSpan(color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor);
+            PaintSpan(worker: null, color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor, rasterizer.IsFullyCovered);
         }
+    }
+
+    /// <summary>
+    /// Paints a rectangle of whole pixels with a paint that gives every pixel it covers the same samples, whatever they
+    /// were: the first row is composited, and its pixels are copied to the other rows. The pixels are those the rows
+    /// would get one by one, without the cost of a composition per row; the rows are written on the calling thread, as
+    /// fast as the memory takes them, which workers would not speed up.
+    /// </summary>
+    /// <returns><see langword="false"/> when the paint gives the pixels samples that depend on them: nothing was done.</returns>
+    private bool TryPaintUniformRectangle(scoped in DrawingSource source)
+    {
+        var rasterizer = _rasterizer!;
+        var length = rasterizer.Count;
+        for (var i = 0; i < _frames.Length; i++)
+        {
+            if (!_frames[i].IsUniformOverFullCoverage(source, length))
+                return false;
+        }
+
+        if (!rasterizer.MoveNext())
+            return true;
+
+        var top = rasterizer.Y;
+        var x = rasterizer.X;
+        CompositeRun(worker: null, top, x, rasterizer.Coverage, source);
+        var (bottom, end) = rasterizer.TakeRemainingRectangleRows();
+        try
+        {
+            // The rows go by groups between two checks of the cancellation, each on every frame
+            const int Check = ProcessingKernels.RowsPerCancellationCheck;
+            while (bottom < end)
+            {
+                if (bottom % Check == 0)
+                {
+                    _cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                var next = Math.Min(end, ((bottom / Check) + 1) * Check);
+                for (var i = 0; i < _storages.Length; i++)
+                {
+                    DrawingKernels.ReplicateUniformRun(_storages[i], top, bottom, next, x, length);
+                }
+
+                bottom = next;
+            }
+        }
+        finally
+        {
+            // The rows written before a cancellation are drawn
+            MarkDrawn(x, top, x + length, bottom);
+        }
+
+        return true;
     }
 
     private void RemoveStaleThumbnail()
@@ -1217,21 +1295,29 @@ internal sealed partial class DrawingSession : IDisposable
     private void PaintSpan(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor = 1)
         => PaintSpan(worker: null, color, evaluator, mode, blend, opacity, y, x, coverage, alphaFactor);
 
-    /// <summary>Paints the coverages of a run of pixels of a row, with the scratch of a worker or, without one, the scratch of the session.</summary>
-    private void PaintSpan(PaintWorker? worker, DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor)
+    /// <summary>
+    /// Paints the coverages of a run of pixels of a row, with the scratch of a worker or, without one, the scratch of the
+    /// session. <c>isFullyCovered</c> says that every coverage of the run is <see cref="CoverageRasterizer.FullCoverage"/>.
+    /// </summary>
+    private void PaintSpan(PaintWorker? worker, DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor, bool isFullyCovered = false)
     {
-        if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _, worker?.CoverageRow ?? _clipRow))
-            return;
+        if (_clipDepth != 0)
+        {
+            isFullyCovered = false;
+            if (!ApplyClip(y, ref x, ref coverage, out _, worker?.CoverageRow ?? _clipRow))
+                return;
+        }
 
         if (opacity != CoverageRasterizer.FullCoverage)
         {
+            isFullyCovered = false;
             coverage = ApplyOpacity(coverage, opacity, worker?.CoverageRow ?? _clipRow);
         }
 
         // A paint that gives the whole row one color is composited as a single color: the same formulas
         if (evaluator is null)
         {
-            CompositeRun(worker, y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
+            CompositeRun(worker, y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves) { IsFullyCovered = isFullyCovered });
             return;
         }
 
@@ -1243,7 +1329,7 @@ internal sealed partial class DrawingSession : IDisposable
                 rowColor = rowColor with { Alpha = ScaleAlpha(rowColor.Alpha, alphaFactor) };
             }
 
-            CompositeRun(worker, y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves));
+            CompositeRun(worker, y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves) { IsFullyCovered = isFullyCovered });
             return;
         }
 
@@ -1350,7 +1436,7 @@ internal sealed partial class DrawingSession : IDisposable
 
         if (brush is SolidBrush solid)
         {
-            if (solid.FloatColor is { } floatColor && _frames[0].PixelFormat is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf)
+            if (solid.FloatColor is { } floatColor && PixelFormats.IsFloatingPoint(_frames[0].PixelFormat))
             {
                 var floatPaint = _floatSolidPaint ??= new FloatSolidEvaluator(_image.Owner.Scope);
                 floatPaint.Prepare(floatColor, Width);

@@ -171,9 +171,19 @@ internal static class MedianFilter
             return;
         }
 
-        // Every band reads its halos from the original pixels: load them all before the first row is rewritten
+        // Every band reads its halos from the original pixels: load them all before the first row is rewritten (each
+        // worker loads the halos of its band into its own keys)
         var workers = plan.Workers;
-        for (var band = 0; band < workers; band++)
+        if (workers == 1)
+        {
+            LoadHalos(0);
+        }
+        else
+        {
+            RowBands.RunParallelInBandOrder(workers, LoadHalos);
+        }
+
+        void LoadHalos(int band)
         {
             var keys = plan.GetKeys(band);
             var start = plan.GetBandStart(band);
@@ -549,11 +559,21 @@ internal static class MedianFilter
         where TSample : unmanaged
         where TKey : unmanaged, IBinaryInteger<TKey>, IUnsignedNumber<TKey>
     {
-        // Every band reads its halos from the original pixels: load them all before the first row is rewritten
+        // Every band reads its halos from the original pixels: load them all before the first row is rewritten (each
+        // worker loads the halos of its band into its own keys)
         var workers = plan.Workers;
         var paddedLength = plan.PaddedLength;
         var radius = plan.Radius;
-        for (var band = 0; band < workers; band++)
+        if (workers == 1)
+        {
+            LoadHalos(0);
+        }
+        else
+        {
+            RowBands.RunParallelInBandOrder(workers, LoadHalos);
+        }
+
+        void LoadHalos(int band)
         {
             var keys = GetNetworkKeys<TKey>(plan, band);
             var start = plan.GetBandStart(band);

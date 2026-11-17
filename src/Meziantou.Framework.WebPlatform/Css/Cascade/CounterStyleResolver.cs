@@ -79,7 +79,7 @@ internal sealed class CounterStyleResolver
     {
         return ValueMatcher.TrimWhitespace(value) switch
         {
-            [CssPreservedToken { Type: CssTokenType.Ident } name] => Resolve(name.Token.Value, treeScope),
+            [CssPreservedToken { Type: CssTokenType.Ident } name] => Resolve(name.Value, treeScope),
             [CssFunction function] => CounterStyle.Create(function),
             _ => null,
         };

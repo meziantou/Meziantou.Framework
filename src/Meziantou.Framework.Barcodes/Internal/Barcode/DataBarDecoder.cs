@@ -119,6 +119,12 @@ internal static class DataBarDecoder
         if (start + 45 > line.Count || !RunPatterns.Matches(line, start + 43, [1, 1]))
             return null;
 
+        // The guards: a space of a module before the first bar, and of 5 modules after the last one (the end of the line can
+        // be there). The patterns of other symbols and of text can pass the weak check of this symbology without them.
+        var module = line.GetWidth(start, 45) / 73;
+        if (line.Runs[start - 1] < module * 0.75 || (start + 45 < line.Count && line.Runs[start + 45] < module * 4))
+            return null;
+
         Span<int> widths = stackalloc int[28];
         if (!TryReadLimitedCharacter(line, start + 1, widths[..14], out var left) || !TryReadLimitedCharacter(line, start + 29, widths[14..], out var right))
             return null;

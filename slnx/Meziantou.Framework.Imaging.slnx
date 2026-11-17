@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Imaging.Fuzz/Meziantou.Framework.Imaging.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -18,6 +20,9 @@
     <Project Path="../tests/Meziantou.Framework.Imaging.Avif.Tests/Meziantou.Framework.Imaging.Avif.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.AvifEncoder.Tests/Meziantou.Framework.Imaging.AvifEncoder.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Bmp.Tests/Meziantou.Framework.Imaging.Bmp.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Dds.Tests/Meziantou.Framework.Imaging.Dds.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Dng.Tests/Meziantou.Framework.Imaging.Dng.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Dpx.Tests/Meziantou.Framework.Imaging.Dpx.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Exr.Tests/Meziantou.Framework.Imaging.Exr.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Gif.Tests/Meziantou.Framework.Imaging.Gif.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Heic.Tests/Meziantou.Framework.Imaging.Heic.Tests.csproj" />
@@ -28,10 +33,13 @@
     <Project Path="../tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Jpeg2000.Tests/Meziantou.Framework.Imaging.Jpeg2000.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.JpegXl.Tests/Meziantou.Framework.Imaging.JpegXl.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Ktx2.Tests/Meziantou.Framework.Imaging.Ktx2.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Png.Tests/Meziantou.Framework.Imaging.Png.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Processing.Tests/Meziantou.Framework.Imaging.Processing.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Psd.Tests/Meziantou.Framework.Imaging.Psd.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Radiance.Tests/Meziantou.Framework.Imaging.Radiance.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.TestHarness/Meziantou.Framework.Imaging.TestHarness.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Tests/Meziantou.Framework.Imaging.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" />

@@ -32,11 +32,23 @@ internal static class Binding_DataTransferItem<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.DataTransferItem>(t, Binding);
         var result = o.GetAsFile(); return r.Wrap(result);
     }
+    private static TValue Op_webkitGetAsEntry(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.DataTransferItem>(t, Binding);
+        var result = o.WebkitGetAsEntry(); return r.Wrap(result);
+    }
+    private static TValue Op_getAsFileSystemHandle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.DataTransferItem>(t, Binding);
+        var result = o.GetAsFileSystemHandle(); return r.ToPromise(result, static (r, value) => r.Wrap(value));
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "kind", Get_kind, null);
         r.DefineAttribute(instanceTarget, "type", Get_type, null);
         r.DefineOperation(instanceTarget, "getAsString", 1, Op_getAsString);
         r.DefineOperation(instanceTarget, "getAsFile", 0, Op_getAsFile);
+        r.DefineOperation(instanceTarget, "webkitGetAsEntry", 0, Op_webkitGetAsEntry);
+        r.DefineOperation(instanceTarget, "getAsFileSystemHandle", 0, Op_getAsFileSystemHandle, returnsPromise: true);
     }
 }

@@ -1,4 +1,4 @@
 using BenchmarkDotNet.Running;
 using Meziantou.Framework.Barcodes.Benchmarks;
 
-BenchmarkSwitcher.FromAssembly(typeof(PngBenchmarks).Assembly).Run(args);
+BenchmarkSwitcher.FromAssembly(typeof(RenderingBenchmarks).Assembly).Run(args);

@@ -509,7 +509,7 @@ internal sealed class CounterStyle
 
         // https://drafts.csswg.org/css-counter-styles-3/#counter-style-system: symbolic when the descriptor is omitted
         var system = rule.GetDescriptorValue("system") ?? [];
-        var keyword = system is [CssPreservedToken { Type: CssTokenType.Ident } ident, ..] ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : "symbolic";
+        var keyword = system is [CssPreservedToken { Type: CssTokenType.Ident } ident, ..] ? InfraAscii.ToAsciiLowercase(ident.Value) : "symbolic";
         CounterStyle? extended = null;
         long firstSymbolValue = 1;
         CounterStyleSystem algorithm;
@@ -517,7 +517,7 @@ internal sealed class CounterStyle
         {
             // "If a @counter-style uses the extends system, it must not contain a symbols or additive-symbols descriptor"
             case "extends" when system is [_, CssPreservedToken { Type: CssTokenType.Ident } extendedName] && symbols.Length == 0 && additiveSymbols.Length == 0:
-                extended = resolveExtended(new CounterStyleReference(predefined ? extendedName.Token.Value : NormalizeName(extendedName.Token.Value), scope, predefined));
+                extended = resolveExtended(new CounterStyleReference(predefined ? extendedName.Value : NormalizeName(extendedName.Value), scope, predefined));
                 algorithm = extended.System;
                 break;
 
@@ -548,7 +548,7 @@ internal sealed class CounterStyle
         var pad = ParsePad(rule.GetDescriptorValue("pad"));
         var range = rule.GetDescriptorValue("range");
         var fallback = rule.GetDescriptorValue("fallback") is [CssPreservedToken { Type: CssTokenType.Ident } fallbackName]
-            ? new CounterStyleReference(predefined ? fallbackName.Token.Value : NormalizeName(fallbackName.Token.Value), scope, predefined)
+            ? new CounterStyleReference(predefined ? fallbackName.Value : NormalizeName(fallbackName.Value), scope, predefined)
             : (CounterStyleReference?)null;
 
         return new CounterStyle(name)
@@ -580,7 +580,7 @@ internal sealed class CounterStyle
         var system = CounterStyleSystem.Symbolic;
         if (arguments is [CssPreservedToken { Type: CssTokenType.Ident } type, ..])
         {
-            switch (InfraAscii.ToAsciiLowercase(type.Token.Value))
+            switch (InfraAscii.ToAsciiLowercase(type.Value))
             {
                 case "cyclic":
                     system = CounterStyleSystem.Cyclic;
@@ -610,7 +610,7 @@ internal sealed class CounterStyle
             if (arguments[i] is not CssPreservedToken { Type: CssTokenType.String } symbol)
                 return null;
 
-            symbols[i] = symbol.Token.Value;
+            symbols[i] = symbol.Value;
         }
 
         if (symbols.Length < (system is CounterStyleSystem.Numeric or CounterStyleSystem.Alphabetic ? 2 : 1))
@@ -637,7 +637,7 @@ internal sealed class CounterStyle
         return symbols;
     }
 
-    private static string? GetSymbol(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.String or CssTokenType.Ident } token ? token.Token.Value : null;
+    private static string? GetSymbol(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.String or CssTokenType.Ident } token ? token.Value : null;
 
     private static (long Weight, string Symbol)[]? ParseAdditiveSymbols(List<CssComponentValue>? value)
     {
@@ -714,7 +714,7 @@ internal sealed class CounterStyle
         switch (value)
         {
             case CssPreservedToken { Type: CssTokenType.Number } number:
-                result = (long)number.Token.NumericValue;
+                result = (long)number.NumericValue;
                 return true;
 
             case CssFunction function when CssCalc.Evaluate(function, CalcContext) is { IsResolved: true, Unit: "" } calc && !double.IsNaN(calc.Value):

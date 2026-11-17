@@ -32,7 +32,7 @@ data of the file it was read from.
 ## In this section
 
 - [Opening documents](02-OpeningDocuments.md): files, streams and arrays, passwords, read options and repaired files.
-- [Extracting text](03-ExtractingText.md): the text of a page, and search a document.
+- [Extracting text](03-ExtractingText.md): the text of a page, search a document, and extract ruled tables.
 - [Modifying documents](04-ModifyingDocuments.md): stamp the pages, draw under their content, add watermarks, add and remove pages, full and incremental saves.
 - [The object model](05-ObjectModel.md): read and change the objects of a document directly.
 - [Errors and limits](06-ErrorsAndLimits.md): the exceptions, and how to open the files of untrusted users.
@@ -40,3 +40,4 @@ data of the file it was read from.
   stamp a page on others.
 - [Extracting images](08-ExtractingImages.md): the images of a page, where they are, and their pixels.
 - [Forms](09-Forms.md): create, read, fill and flatten the fields of an interactive form.
+- [Form scripts](10-FormScripts.md): read the scripts of a form, and run its calculations in a sandbox.

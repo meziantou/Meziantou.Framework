@@ -37,10 +37,10 @@ internal static class AztecDecoder
             if (!IsSize(size, compact))
                 continue;
 
+            // The orientation marks are read through the transform: only the orientations that match are transformed
             for (var transform = 0; transform < MatrixTransforms.Count; transform++)
             {
-                oriented[transform] ??= MatrixTransforms.Apply(modules, transform);
-                candidates.Add((GetOrientationScore(oriented[transform], compact), transform, compact));
+                candidates.Add((GetOrientationScore(modules, transform, compact), transform, compact));
             }
         }
 
@@ -55,6 +55,7 @@ internal static class AztecDecoder
 
             // Report the failure of the orientation that matches best
             var builder = new DecodedDataBuilder();
+            oriented[transform] ??= MatrixTransforms.Apply(modules, transform);
             var failure = TryDecodeOriented(oriented[transform], compact, builder, out correctedErrorCount);
             if (failure is null)
             {
@@ -82,7 +83,7 @@ internal static class AztecDecoder
 
     // The orientation marks at the corners of the mode message ring: 3 dark modules at the top left, 2 at the top right,
     // 1 at the bottom right, none at the bottom left
-    private static int GetOrientationScore(bool[,] modules, bool compact)
+    private static int GetOrientationScore(bool[,] modules, int transform, bool compact)
     {
         var size = modules.GetLength(0);
         var c = size / 2;
@@ -98,7 +99,7 @@ internal static class AztecDecoder
         var score = 0;
         foreach (var (x, y, dark) in marks)
         {
-            if (Get(modules, x, y) == dark)
+            if (MatrixTransforms.Get(modules, transform, y, x) == dark)
             {
                 score++;
             }
@@ -288,6 +289,9 @@ internal static class AztecDecoder
                             if (!ReadBinaryShift())
                                 return null;
 
+                            // ISO/IEC 24778, 7.3.1.2: the sequence ends in the mode the B/S was invoked from, even a
+                            // shifted one (D/L U/S B/S continues in Upper)
+                            mode = current;
                             break;
                     }
 

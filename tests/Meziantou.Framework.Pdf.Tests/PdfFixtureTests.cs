@@ -97,6 +97,10 @@ public sealed class PdfFixtureTests
         var saved = PdfDocument.Open(document.ToByteArray(), new PdfReadOptions { Password = expected.Password });
         Assert.False(saved.IsRepaired);
         Assert.Equal(document.Pages.Select(page => page.ExtractText()), saved.Pages.Select(page => page.ExtractText()));
+
+        // ... and the writer is deterministic: written again, the output has the same bytes
+        var roundTrip = PdfRoundTripValidator.Validate(document, readOptions: new PdfReadOptions { Password = expected.Password });
+        Assert.True(roundTrip.Succeeded, roundTrip.Failure?.ToString());
     }
 
     [Fact]

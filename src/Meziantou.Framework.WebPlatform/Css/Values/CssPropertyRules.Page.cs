@@ -24,7 +24,7 @@ internal static partial class CssPropertyRules
         if (!significant.TrueForAll(value => value is CssPreservedToken { Type: CssTokenType.Ident }))
             return null;
 
-        var keywords = significant.ConvertAll(value => InfraAscii.ToAsciiLowercase(((CssPreservedToken)value).Token.Value));
+        var keywords = significant.ConvertAll(value => InfraAscii.ToAsciiLowercase(((CssPreservedToken)value).Value));
         if (keywords is [var first, var second] && first is "portrait" or "landscape")
         {
             keywords = [second, first];

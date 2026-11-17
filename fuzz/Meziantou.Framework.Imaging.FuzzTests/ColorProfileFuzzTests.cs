@@ -101,10 +101,11 @@ public sealed class ColorProfileFuzzTests
 
     private static List<FuzzSeed> GetSeeds()
     {
-        // The external profiles of the corpus; its synthetic profiles are built below with the others
+        // The external profiles of the corpus and its iccMAX profiles (built by iccFromXml); its other synthetic profiles are
+        // built below with the others
         var root = FixtureRoot.GetDirectory();
         var manifest = FixtureManifestLoader.Load(root / FixtureRoot.ManifestFileName);
-        List<FuzzSeed> seeds = [.. (manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external").Select(profile => new FuzzSeed(profile.Id, File.ReadAllBytes(root / profile.File.Path)))];
+        List<FuzzSeed> seeds = [.. (manifest.ColorProfiles ?? []).Where(profile => profile.Provenance.Origin == "external" || profile.Provenance.Generator?.Contains("iccFromXml", StringComparison.Ordinal) == true).Select(profile => new FuzzSeed(profile.Id, File.ReadAllBytes(root / profile.File.Path)))];
         seeds.AddRange(new (string Id, IccProfile Profile)[]
         {
             ("builtin/srgb", IccProfile.Srgb),
@@ -120,6 +121,8 @@ public sealed class ColorProfileFuzzTests
             ("synthetic/gray-paper", IccTestProfiles.GrayPaper()),
             ("synthetic/rgb-scanner", IccTestProfiles.RgbScanner()),
             ("synthetic/gray-printer-mab", IccTestProfiles.GrayPrinterLutAToB()),
+            ("synthetic/named-lab-v2", IccTestProfiles.NamedColorLabV2()),
+            ("synthetic/named-xyz-v4", IccTestProfiles.NamedColorXyzV4()),
         }.Select(seed => new FuzzSeed(seed.Id, seed.Profile.Data.ToArray())));
         if (seeds.Count < 15)
             throw new InvalidOperationException("The corpus has no color profile.");
@@ -165,6 +168,9 @@ public sealed class ColorProfileFuzzTests
         }
 
         var options = new IccColorTransformOptions { Intent = Intents[variant & 3], BlackPointCompensation = (variant & 4) != 0 };
+        if (profile.ProfileClass == IccProfileClass.NamedColor)
+            return CheckNamedColors(profile, options, out outcome);
+
         var other = profile.ColorSpace == IccProfileColorSpace.Gray ? IccProfile.SrgbGray : IccProfile.Srgb;
         foreach (var (source, destination) in new[] { (profile, other), (other, profile), (profile, profile) })
         {
@@ -190,6 +196,56 @@ public sealed class ColorProfileFuzzTests
 
             if (CheckSamples(source, destination, transform.Convert, transform) is { } failure)
                 return failure;
+
+            if (CheckBatches(source, destination, options) is { } batchFailure)
+                return batchFailure;
+        }
+
+        return null;
+    }
+
+    // The colors of a named color profile: read, found by their name, converted to sRGB in [0, 1]
+    private static FuzzFailure? CheckNamedColors(IccProfile profile, IccColorTransformOptions options, out string outcome)
+    {
+        IccNamedColorTransform transform;
+        try
+        {
+            transform = IccNamedColorTransform.Create(profile, IccProfile.Srgb, options);
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException)
+        {
+            outcome = exception.GetType().Name;
+            return null;
+        }
+        catch (Exception exception)
+        {
+            outcome = "?";
+            return FuzzFailure.FromException("create-named", exception);
+        }
+
+        outcome = "converted";
+        var colors = transform.Colors;
+        var rgb = new float[3];
+        for (var i = 0; i < colors.Count; i++)
+        {
+            var color = colors[i];
+            if (color.DeviceValues.Count != colors.DeviceChannelCount)
+                return FuzzFailure.Property("named-device-values", $"The color {i} has {color.DeviceValues.Count} device values instead of {colors.DeviceChannelCount}.");
+
+            if (colors.IndexOf(color.Name) is var index && (index < 0 || index > i))
+                return FuzzFailure.Property("named-lookup", $"The color {i} is not found by its name.");
+
+            try
+            {
+                transform.Convert(color, rgb);
+            }
+            catch (Exception exception)
+            {
+                return FuzzFailure.FromException("convert-named", exception);
+            }
+
+            if (rgb.Any(value => !(value >= 0f && value <= 1f)))
+                return FuzzFailure.Property("named-range", "A converted named color is not in [0, 1].");
         }
 
         return null;
@@ -246,6 +302,78 @@ public sealed class ColorProfileFuzzTests
         {
             return FuzzFailure.FromException("convert-integer", exception);
         }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Converts 8-bit and 16-bit colors in one call (several batches and, with a lookup table, the cache of the 8-bit colors
+    /// and the decoded entries of the table once enough colors use it, charged to a scope) and one color at a time with
+    /// another transform: the samples must be the same, and releasing the tables returns the scope to zero.
+    /// </summary>
+    private static FuzzFailure? CheckBatches(IccProfile source, IccProfile destination, IccColorTransformOptions options)
+    {
+        IccColorTransform all;
+        IccColorTransform single;
+        try
+        {
+            all = IccColorTransform.Create(source, destination, options);
+            single = IccColorTransform.Create(source, destination, options);
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("create-batches", exception);
+        }
+
+        // Runs of one color and colors on the faces of the cells (0 and the maximum), then other colors
+        const int Colors = 300;
+        var sourceChannels = all.SourceChannelCount;
+        var destinationChannels = all.DestinationChannelCount;
+        var bytes = new byte[Colors * sourceChannels];
+        var words = new ushort[bytes.Length];
+        var state = 0x2545F491u;
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            state = (state * 1664525) + 1013904223;
+            var color = i / sourceChannels;
+            var value = color < 40 ? (color / 8 * 37) + (i % sourceChannels) : (state >> 29) switch { 0 => 0, 1 => 255, _ => (int)(state >> 24) };
+            bytes[i] = (byte)value;
+            words[i] = (ushort)((value * 257) ^ (state & 0x3F));
+        }
+
+        var scope = new Internals.AllocationScope(new ImageResourceLimits());
+        var pipeline = all.Pipeline.BindLookupTables(scope);
+        try
+        {
+            var expectedBytes = new byte[Colors * destinationChannels];
+            var expectedWords = new ushort[expectedBytes.Length];
+            for (var i = 0; i < Colors; i++)
+            {
+                single.Convert(bytes.AsSpan(i * sourceChannels, sourceChannels), expectedBytes.AsSpan(i * destinationChannels, destinationChannels));
+                single.Convert(words.AsSpan(i * sourceChannels, sourceChannels), expectedWords.AsSpan(i * destinationChannels, destinationChannels));
+            }
+
+            var actualBytes = new byte[expectedBytes.Length];
+            var actualWords = new ushort[expectedWords.Length];
+            Internals.ColorConversionKernels.Convert<byte, Internals.IccByteSample>(pipeline, bytes, actualBytes, sourceChannels, destinationChannels);
+            Internals.ColorConversionKernels.Convert<ushort, Internals.IccUInt16Sample>(pipeline, words, actualWords, sourceChannels, destinationChannels);
+            if (!actualBytes.AsSpan().SequenceEqual(expectedBytes))
+                return FuzzFailure.Property("batch-bytes", "Colors converted in one call differ from colors converted one at a time.");
+
+            if (!actualWords.AsSpan().SequenceEqual(expectedWords))
+                return FuzzFailure.Property("batch-words", "Colors converted in one call differ from colors converted one at a time.");
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("convert-batches", exception);
+        }
+        finally
+        {
+            pipeline.ReleaseLookupTables();
+        }
+
+        if (scope.LiveBytes != 0)
+            return FuzzFailure.Property("batch-release", "Releasing the lookup tables leaves bytes charged to the scope.");
 
         return null;
     }

@@ -117,6 +117,7 @@ internal sealed partial class DrawingSession
         session.CanvasWidth = CanvasWidth;
         session.CanvasHeight = CanvasHeight;
         session._curveTolerance = _curveTolerance;
+        session._textGlyphMasks = _textGlyphMasks;
         session.RestoreCompositingSpace(_compositingSpace);
         if (_isAliased)
         {

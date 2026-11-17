@@ -253,7 +253,7 @@ public sealed class QRCode
     /// Assert.Equal((6, 7), (symbols[6].StructuredAppend!.Index, symbols[6].StructuredAppend!.Count));
     ///
     /// // Print the symbols in order, side by side
-    /// var images = symbols.Select(symbol =&gt; symbol.ToPng(new QRCodePngOptions { ModuleSize = 4 })).ToList();
+    /// var documents = symbols.Select(symbol =&gt; symbol.ToSvg(new QRCodeRenderOptions { ModuleSize = 4 })).ToList();
     /// </code>
     /// </example>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not a defined <see cref="Barcodes.ErrorCorrectionLevel"/> value.</exception>

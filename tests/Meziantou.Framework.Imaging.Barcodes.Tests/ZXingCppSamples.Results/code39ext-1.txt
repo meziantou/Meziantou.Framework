@@ -1,0 +1,6 @@
+1.png	0	symbol 0	read
+1.png	180	symbol 0	read
+2.png	0	symbol 0	read
+2.png	180	symbol 0	read
+wide.png	0	symbol 0	read
+wide.png	180	symbol 0	read

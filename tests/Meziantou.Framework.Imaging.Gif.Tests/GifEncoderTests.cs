@@ -156,6 +156,123 @@ public sealed class GifEncoderTests
         Assert.True(interlacedGif.Images[0].Interlaced);
     }
 
+    [Theory]
+    [InlineData(false, DitheringMode.None)]
+    [InlineData(true, DitheringMode.None)]
+    [InlineData(false, DitheringMode.FloydSteinberg)]
+    [InlineData(true, DitheringMode.FloydSteinberg)]
+    [InlineData(false, DitheringMode.Bayer4x4)]
+    public void LossyToleranceBoundsTheErrorItAddsToEachPixel(bool interlaced, DitheringMode dithering)
+    {
+        // A photo with a transparent rectangle: the transparent pixels stay transparent, and each opaque pixel is at most the
+        // tolerance farther from its source color than the entry the color reduction gave it
+        using var image = Photo(96, 64, seed: 9);
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 20; y < 30; y++)
+            {
+                pixels.GetRowSpan(y)[10..40].Clear();
+            }
+        });
+
+        var quantization = new QuantizeOptions { Dithering = dithering };
+        var lossless = Encode(image, new GifEncoder { Interlaced = interlaced, Quantization = quantization });
+        var reference = ReferenceGif.Parse(lossless).DecodeDisplayedFrames()[0];
+        var source = ImageSnapshots.CaptureFrame(image.Frames[0]);
+        var previousLength = lossless.Length;
+        foreach (var tolerance in new[] { 30, 300, GifEncoder.MaxLossyTolerance })
+        {
+            var encoder = new GifEncoder { Interlaced = interlaced, Quantization = quantization, LossyTolerance = tolerance };
+            var gif = Encode(image, encoder);
+            Assert.Equal(gif, Encode(image, encoder));
+            Assert.HasCountLessThan(previousLength, gif);
+            previousLength = gif.Length;
+
+            var lossy = ReferenceGif.Parse(gif).DecodeDisplayedFrames()[0];
+            for (var y = 0; y < image.Height; y++)
+            {
+                for (var x = 0; x < image.Width; x++)
+                {
+                    Assert.Equal(reference.GetSample(x, y, 3), lossy.GetSample(x, y, 3));
+                    if (reference.GetSample(x, y, 3) != 0)
+                    {
+                        var added = SquaredDistance(source, lossy, x, y) - SquaredDistance(source, reference, x, y);
+                        Assert.True(added <= tolerance, $"tolerance {tolerance}: pixel ({x}, {y}) is {added} farther");
+                    }
+                }
+            }
+
+            // The library decoder reads the same pixels
+            using var decoded = Image.Load<Rgba32>(gif);
+            Assert.Equal(lossy.Span.ToArray(), ImageSnapshots.CaptureFrame(decoded.Frames[0]).Span.ToArray());
+        }
+    }
+
+    [Fact]
+    public void LossyToleranceKeepsExactPalettesAndIsValidated()
+    {
+        // A frame whose colors fit its palette is reproduced exactly whatever the tolerance
+        using var exact = Distinct(100, transparent: true);
+        Assert.Equal(Encode(exact, new GifEncoder()), Encode(exact, new GifEncoder { LossyTolerance = GifEncoder.MaxLossyTolerance }));
+
+        // A writer to a non-seekable stream produces the same bytes as an eager save
+        using var image = Photo(48, 40, seed: 3);
+        var encoder = new GifEncoder { LossyTolerance = 100 };
+        using var stream = new TestOutputStream();
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(image.Width, image.Height) { Encoder = encoder, ExpectedFrameCount = 1 }))
+        {
+            writer.WriteFrame(image.Frames[0]);
+            writer.Complete();
+        }
+
+        Assert.Equal(Encode(image, encoder), stream.ToArray());
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new GifEncoder { LossyTolerance = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new GifEncoder { LossyTolerance = GifEncoder.MaxLossyTolerance + 1 });
+    }
+
+    [Fact]
+    public void LossyToleranceKeepsTheDisplayedFramesOfOptimizedAnimations()
+    {
+        // Animated frames with regions: each displayed frame keeps its transparency and its bound
+        using var animation = Photo(40, 32, seed: 4);
+        animation.AppendFrame();
+        animation.AppendFrame();
+        animation.Frames[1].ProcessPixelRows(pixels =>
+        {
+            for (var y = 5; y < 15; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 8; x < 30; x++)
+                {
+                    row[x] = new Rgba32((byte)(x * 7), (byte)(y * 9), 40, 255);
+                }
+            }
+        });
+        animation.Frames[2].ProcessPixelRows(pixels => pixels.GetRowSpan(3)[2..20].Clear());
+
+        foreach (var optimize in new[] { false, true })
+        {
+            var lossless = ReferenceGif.Parse(Encode(animation, new GifEncoder { OptimizeFrames = optimize })).DecodeDisplayedFrames();
+            var lossy = ReferenceGif.Parse(Encode(animation, new GifEncoder { OptimizeFrames = optimize, LossyTolerance = 200 })).DecodeDisplayedFrames();
+            Assert.HasCount(3, lossy);
+            for (var i = 0; i < 3; i++)
+            {
+                var source = ImageSnapshots.CaptureFrame(animation.Frames[i]);
+                for (var y = 0; y < animation.Height; y++)
+                {
+                    for (var x = 0; x < animation.Width; x++)
+                    {
+                        Assert.Equal(lossless[i].GetSample(x, y, 3), lossy[i].GetSample(x, y, 3));
+                        if (lossless[i].GetSample(x, y, 3) != 0)
+                        {
+                            Assert.True(SquaredDistance(source, lossy[i], x, y) <= SquaredDistance(source, lossless[i], x, y) + 200, $"frame {i}, pixel ({x}, {y})");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     [Fact]
     public void FloydSteinbergDitheringPreservesTheLocalAverageColor()
     {
@@ -467,7 +584,7 @@ public sealed class GifEncoderTests
     }
 
     [Fact]
-    public void CommentsAreTheOnlyMetadataAndFollowThePolicy()
+    public void CommentsAnIccProfileAndAnXmpPacketAreTheOnlyMetadataAndFollowThePolicy()
     {
         using var image = CreateAnimation(PixelFormat.Rgba32, 3, 2, frameCount: 2, colorsPerFrame: 4, seed: 1);
         var longComment = new string('é', 600); // Latin-1, several sub-blocks
@@ -487,11 +604,51 @@ public sealed class GifEncoderTests
         // follow MetadataHandling: Strict throws before any output, DiscardUnsupported drops them, Strip writes nothing
         image.Metadata.TextEntries.Add(new ImageTextEntry(ImageTextEntry.CommentKeyword, "snow ☃"));
         Assert.Equal("Metadata: text entry 'Comment'", Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new ThrowingStream(), new GifEncoder())).Feature);
-        image.Metadata.XmpProfile = new XmpProfile(new MetadataBlob("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>"u8));
         image.Metadata.Resolution = new ImageResolution(72, 72);
         Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new ThrowingStream(), new GifEncoder()));
         Assert.Equal(["first", "", longComment], ReferenceGif.Parse(Encode(image, new GifEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported })).Comments);
         Assert.Empty(ReferenceGif.Parse(Encode(image, new GifEncoder { MetadataHandling = MetadataHandling.Strip })).Comments);
+    }
+
+    [Fact]
+    public void AnIccProfileAndAnXmpPacketAreWrittenAsApplicationExtensions()
+    {
+        using var image = CreateAnimation(PixelFormat.Rgba32, 3, 2, frameCount: 1, colorsPerFrame: 4, seed: 2);
+        var profile = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+        var padding = new string('x', 700);
+        var packet = Encoding.UTF8.GetBytes($"<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?><x:xmpmeta xmlns:x=\"adobe:ns:meta/\" a=\"{padding}\"/><?xpacket end=\"w\"?>");
+        image.Metadata.IccProfile = profile;
+        image.Metadata.XmpProfile = new XmpProfile(new MetadataBlob(packet));
+        image.Metadata.TextEntries.Add(new ImageTextEntry(ImageTextEntry.CommentKeyword, "c"));
+        var gif = Encode(image, new GifEncoder());
+
+        // Before the first image: ICCRGBG1012 with the profile in data sub-blocks, then XMP DataXMP with the packet as it is
+        // and the 257-byte magic trailer of the XMP specification (part 3), so that a reader that walks the bytes as data
+        // sub-blocks reaches the block terminator
+        Assert.Equal(["Loop", "Application", "Application", "Comment", "GCE", "Image"], ReferenceGif.Parse(gif).Blocks);
+        byte[] iccHeader = [0x21, 0xFF, 0x0B, .. "ICCRGBG1012"u8];
+        byte[] xmpHeader = [0x21, 0xFF, 0x0B, .. "XMP DataXMP"u8];
+        var icc = gif.AsSpan().IndexOf(iccHeader);
+        var xmp = gif.AsSpan().IndexOf(xmpHeader);
+        Assert.True(icc > 0 && xmp > icc);
+        var joined = new List<byte>();
+        var position = icc + 14;
+        while (gif[position] != 0)
+        {
+            joined.AddRange(gif.AsSpan(position + 1, gif[position]));
+            position += 1 + gif[position];
+        }
+
+        Assert.Equal(profile.Data.ToArray(), joined);
+        Assert.Equal(xmp, position + 1);
+        var stored = gif.AsSpan(xmp + 14, packet.Length + 258).ToArray();
+        Assert.Equal(packet, stored[..packet.Length]);
+        Assert.Equal([0x01, .. Enumerable.Range(0, 256).Select(i => (byte)(255 - i)), 0x00], stored[packet.Length..]);
+
+        using var decoded = Image.Load(gif);
+        Assert.Equal(profile.Data.ToArray(), decoded.Metadata.IccProfile!.Data.ToArray());
+        Assert.Equal(packet, decoded.Metadata.XmpProfile!.Data.ToArray());
+        Assert.Equal(["c"], decoded.Metadata.TextEntries.Select(entry => entry.Value));
     }
 
     [Theory]
@@ -1108,6 +1265,18 @@ public sealed class GifEncoderTests
         }
 
         return total / (image.Width / 8 * (image.Height / 8) * 3);
+    }
+
+    private static int SquaredDistance(RawPixelBuffer a, RawPixelBuffer b, int x, int y)
+    {
+        var total = 0;
+        for (var c = 0; c < 3; c++)
+        {
+            var difference = a.GetSample(x, y, c) - b.GetSample(x, y, c);
+            total += difference * difference;
+        }
+
+        return total;
     }
 
     private static void Fill(ImageFrame<Rgba32> frame, Func<int, int, Rgba32> color)

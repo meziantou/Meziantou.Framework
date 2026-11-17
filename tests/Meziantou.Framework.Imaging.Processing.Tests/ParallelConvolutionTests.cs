@@ -374,6 +374,8 @@ public sealed class ParallelConvolutionTests
             image => image.OilPaint(levels: 20, radius: 3, Ct),
             image => image.OilPaint(levels: 8, radius: 40, Ct),
             image => image.Flatten(new Rgba64(0x1234, 0x8000, 0xFEDC, 0xFFFF), Ct),
+            image => image.ApplyColorMatrix(ColorMatrix.CreateSepia(), Ct),
+            image => image.ApplyColorMatrix(ColorMatrix.CreateOpacity(0.4).Then(ColorMatrix.CreateHueRotation(140)), Ct),
         ];
 
         foreach (var effect in effects)
@@ -396,6 +398,68 @@ public sealed class ParallelConvolutionTests
             effect(image);
             return CopyBytes(image);
         }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void PixelConversionsDoNotDependOnTheWorkerCount()
+    {
+        var random = new Random(14);
+        var (width, height) = (300, 257);
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgba64, PixelFormat.RgbaFloat })
+        {
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+            if (format is PixelFormat.RgbaFloat)
+            {
+                // Out of range samples, clipped by the options
+                for (var i = 0; i < bytes.Length; i += sizeof(float))
+                {
+                    BitConverter.TryWriteBytes(bytes.AsSpan(i), (random.NextSingle() * 1.4f) - 0.2f);
+                }
+            }
+            else
+            {
+                random.NextBytes(bytes);
+            }
+
+            var options = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip, BackgroundColor = new Rgba64(0x1234, 0x8000, 0xFEDC, 0xFFFF) };
+            Func<Image, Image>[] conversions =
+            [
+                image => image.CloneAs<Rgb24>(options),
+                image => image.CloneAs<Rgba64>(options),
+                image => image.CloneAs<Gray8>(options),
+                image => image.CloneAs<RgbaHalf>(options),
+            ];
+
+            foreach (var conversion in conversions)
+            {
+                var expected = Convert(conversion, workers: 1);
+                foreach (var workers in new[] { 2, 3, 16 })
+                {
+                    Assert.Equal(expected, Convert(conversion, workers));
+                }
+            }
+
+            byte[] Convert(Func<Image, Image> conversion, int workers)
+            {
+                using var image = Import(bytes, width, height, format, workers);
+                using var converted = conversion(image);
+                return CopyBytes(converted);
+            }
+        }
+
+        // A sample that cannot be stored fails with the error of the first one, as with one worker
+        var floats = new float[width * height * 4];
+        floats.AsSpan().Fill(0.5f);
+        floats[(200 * width * 4) + 13] = 2;
+        floats[(100 * width * 4) + 21] = -1;
+        var floatBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(floats.AsSpan())).ToArray();
+        var messages = new[] { 1, 16 }.Select(workers =>
+        {
+            using var image = Import(floatBytes, width, height, PixelFormat.RgbaFloat, workers);
+            return Assert.Throws<UnsupportedImageFeatureException>(() => image.CloneAs<Rgba32>()).Message;
+        }).ToArray();
+        Assert.Equal(messages[0], messages[1]);
     }
 
     [Theory]
@@ -684,6 +748,57 @@ public sealed class ParallelConvolutionTests
         Assert.Equal(new Size(800, 600), image.Size);
         Assert.Equal(0, image.Owner.ActiveLeaseCount);
         Assert.Equal(PixelStorageBytes(image), image.Owner.Scope.LiveBytes);
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(7, 3)]
+    [InlineData(50, 8)]
+    [InlineData(3, 16)]
+    public void ItemsRunOnceEachOnAtMostTheWorkers(int items, int workers)
+    {
+        var runs = new int[items];
+        var usedWorkers = new ConcurrentDictionary<int, bool>();
+        RowBands.RunParallelInItemOrder(items, workers, (item, worker) =>
+        {
+            Interlocked.Increment(ref runs[item]);
+            usedWorkers[worker] = true;
+        });
+
+        Assert.All(runs, count => Assert.Equal(1, count));
+        Assert.All(usedWorkers.Keys, worker => Assert.InRange(worker, 0, Math.Min(items, workers) - 1));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheFailureOfItemsIsTheOneOfASequentialRun(bool canceled)
+    {
+        // Every item runs, and the exception is the one of the first item that failed, a cancellation first
+        var runs = 0;
+        var exception = Record.Exception(() => RowBands.RunParallelInItemOrder(40, 6, (item, _) =>
+        {
+            Interlocked.Increment(ref runs);
+            switch (item)
+            {
+                case 9:
+                    throw new InvalidOperationException("first");
+                case 30:
+                    throw new InvalidOperationException("second");
+                case 35 when canceled:
+                    throw new OperationCanceledException();
+            }
+        }));
+
+        Assert.Equal(40, runs);
+        if (canceled)
+        {
+            Assert.IsType<OperationCanceledException>(exception);
+        }
+        else
+        {
+            Assert.Equal("first", Assert.IsType<InvalidOperationException>(exception).Message);
+        }
     }
 
     private static Image<Rgba32> CreateImage(int width, int height, int workers, long? limit = null)

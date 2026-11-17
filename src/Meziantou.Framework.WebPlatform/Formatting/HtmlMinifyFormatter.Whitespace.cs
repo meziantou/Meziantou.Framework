@@ -514,7 +514,7 @@ public sealed partial class HtmlMinifyFormatter
 
                 if (text is null && value is CssPreservedToken { Type: CssTokenType.String } stringToken)
                 {
-                    text = stringToken.Token.Value;
+                    text = stringToken.Value;
                     continue;
                 }
 

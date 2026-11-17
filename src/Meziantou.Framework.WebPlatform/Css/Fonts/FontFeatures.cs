@@ -153,7 +153,7 @@ internal sealed class FontFeatureList : IEquatable<FontFeatureList>
         foreach (var entry in Cascade.CssValueComputer.SplitArguments(CssParser.ParseListOfComponentValues(value)))
         {
             var significant = ValueMatcher.RemoveWhitespace(entry);
-            if (significant is not [CssPreservedToken { Type: CssTokenType.String } tag, ..] || tag.Token.Value is not { Length: 4 } name)
+            if (significant is not [CssPreservedToken { Type: CssTokenType.String } tag, ..] || tag.Value is not { Length: 4 } name)
                 continue;
 
             var valid = true;
@@ -168,9 +168,9 @@ internal sealed class FontFeatureList : IEquatable<FontFeatureList>
             uint? featureValue = significant switch
             {
                 [_] => 1,
-                [_, CssPreservedToken { Type: CssTokenType.Number } number] when number.Token.NumericValue >= 0 => (uint)Math.Min(number.Token.NumericValue, uint.MaxValue),
-                [_, CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Token.Value.Equals("off", StringComparison.OrdinalIgnoreCase) => 0,
-                [_, CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Token.Value.Equals("on", StringComparison.OrdinalIgnoreCase) => 1,
+                [_, CssPreservedToken { Type: CssTokenType.Number } number] when number.NumericValue >= 0 => (uint)Math.Min(number.NumericValue, uint.MaxValue),
+                [_, CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Value.Equals("off", StringComparison.OrdinalIgnoreCase) => 0,
+                [_, CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Value.Equals("on", StringComparison.OrdinalIgnoreCase) => 1,
                 _ => null,
             };
 

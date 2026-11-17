@@ -131,9 +131,20 @@ public sealed class DefaultsTests
         var exr = new OpenExrEncoder();
         Assert.Equal(ImageFormat.OpenExr, exr.Format);
         Assert.Equal(OpenExrCompression.Zip, exr.Compression);
+        Assert.Null(exr.Tiling);
+        Assert.Equal(OpenExrLineOrder.IncreasingY, exr.LineOrder);
+        Assert.Equal(45f, exr.DwaCompressionLevel);
+        var tiling = new OpenExrTiling();
+        Assert.Equal((64, 64, OpenExrLevelMode.OneLevel, OpenExrLevelRounding.Down), (tiling.TileWidth, tiling.TileHeight, tiling.LevelMode, tiling.LevelRounding));
         Assert.Null(exr.PixelType);
         Assert.False(exr.AllowBitDepthReduction);
         Assert.Equal(MetadataHandling.Strict, exr.MetadataHandling);
+
+        var radiance = new RadianceEncoder();
+        Assert.Equal(ImageFormat.Radiance, radiance.Format);
+        Assert.Equal(RadianceCompression.RunLength, radiance.Compression);
+        Assert.Null(radiance.BackgroundColor);
+        Assert.Equal(MetadataHandling.Strict, radiance.MetadataHandling);
     }
 
     [Fact]
@@ -174,8 +185,18 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Compression = (Jpeg2000Compression)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Container = (Jpeg2000Container)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { BlockCoder = (Jpeg2000BlockCoder)2 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)10 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { LineOrder = (OpenExrLineOrder)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { DwaCompressionLevel = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { DwaCompressionLevel = float.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { DwaCompressionLevel = float.PositiveInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { TileWidth = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { TileHeight = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { LevelMode = (OpenExrLevelMode)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrTiling { LevelRounding = (OpenExrLevelRounding)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { PixelType = (OpenExrPixelType)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RadianceEncoder { Compression = (RadianceCompression)2 });
+        Assert.Throws<ArgumentException>(() => new RadianceEncoder { BackgroundColor = new Rgba64(0, 0, 0, 0) });
     }
 
     [Fact]
@@ -207,6 +228,8 @@ public sealed class DefaultsTests
         Assert.Equal(JpegXlCompression.Lossless, Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl")).Compression);
         Assert.Equal(OpenExrCompression.Zip, Assert.IsType<OpenExrEncoder>(ImageEncoder.FromPath("a.exr")).Compression);
         Assert.IsType<OpenExrEncoder>(ImageEncoder.FromPath("dir/a.EXR"));
+        Assert.Equal(RadianceCompression.RunLength, Assert.IsType<RadianceEncoder>(ImageEncoder.FromPath("a.hdr")).Compression);
+        Assert.IsType<RadianceEncoder>(ImageEncoder.FromPath("dir/a.PIC"));
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a.jp2")).Container);
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("dir/a.JP2")).Container);
         foreach (var extension in new[] { ".j2k", ".j2c", ".jpc", ".J2K" })
@@ -226,6 +249,12 @@ public sealed class DefaultsTests
         {
             Assert.Contains("can be read but not written", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a" + extension)).Message, StringComparison.Ordinal);
         }
+
+        // Photoshop documents: ".psb" names the large document format
+        Assert.False(Assert.IsType<PsdEncoder>(ImageEncoder.FromPath("a.psd")).LargeDocument);
+        Assert.True(Assert.IsType<PsdEncoder>(ImageEncoder.FromPath("a.PSB")).LargeDocument);
+        Assert.IsType<DngEncoder>(ImageEncoder.FromPath("a.dng"));
+        Assert.IsType<CineonEncoder>(ImageEncoder.FromPath("a.cin"));
 
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a.xyz"));
         Assert.Equal(HeicCompression.Lossless, Assert.IsType<HeicEncoder>(ImageEncoder.FromPath("a.heic")).Compression);
@@ -269,6 +298,7 @@ public sealed class DefaultsTests
         var jhc = Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromFileExtension("jhc"));
         Assert.Equal((Jpeg2000BlockCoder.HighThroughput, Jpeg2000Container.Codestream), (jhc.BlockCoder, jhc.Container));
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.FromFileExtension("cur")).Kind);
+        Assert.True(Assert.IsType<PsdEncoder>(ImageEncoder.FromFileExtension("psb")).LargeDocument);
         Assert.Throws<ArgumentNullException>("extension", () => ImageEncoder.FromFileExtension(null!));
         foreach (var invalid in new[] { "", ".", "xyz", ".xyz", "a.png", "..png", " .png" })
         {
@@ -279,6 +309,7 @@ public sealed class DefaultsTests
     [Fact]
     public void EveryFormatHasADefaultEncoder()
     {
+        // Every format is written
         foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom)))
         {
             var encoder = ImageEncoder.Create(format);
@@ -292,9 +323,18 @@ public sealed class DefaultsTests
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.Create(ImageFormat.Jpeg2000)).Container);
         Assert.Equal(IconKind.Icon, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Ico)).Kind);
         Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Cur)).Kind);
+        Assert.False(Assert.IsType<PsdEncoder>(ImageEncoder.Create(ImageFormat.Psd)).LargeDocument);
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Unknown));
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Custom));
+
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)999));
+
+        // The texture encoders write uncompressed texels by default: the format that keeps the pixels
+        Assert.Null(Assert.IsType<DdsEncoder>(ImageEncoder.Create(ImageFormat.Dds)).TextureFormat);
+        Assert.Null(Assert.IsType<Ktx2Encoder>(ImageEncoder.Create(ImageFormat.Ktx2)).TextureFormat);
+        Assert.Equal(TextureCompressionQuality.Thorough, new DdsEncoder().Quality);
+        Assert.Equal(Ktx2Supercompression.None, new Ktx2Encoder().Supercompression);
+        Assert.Equal(DdsHeaderVersion.Automatic, new DdsEncoder().HeaderVersion);
     }
 
     [Fact]

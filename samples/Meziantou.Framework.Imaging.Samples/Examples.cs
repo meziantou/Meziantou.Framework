@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
@@ -931,10 +932,39 @@ internal static class Examples
             });
         }
 
-        // Every sample is kept, including the colors of fully transparent pixels. An animation needs a seekable
-        // destination (the file size is patched at the end): a path, a FileStream or a MemoryStream.
+        // Every sample is kept, including the colors of fully transparent pixels. An animation written to a seekable
+        // destination (a path, a FileStream or a MemoryStream) streams its frames and patches the file size at the end.
         using var animation = Image.Load(animatedPath);
         animation.Save(animatedWebPPath, new WebPEncoder { Compression = WebPCompression.Lossless });
+    }
+    #endregion
+
+    /// <summary>WebP output tuned for graphics and 16-bit sources, and an animation sent to a non-seekable stream.</summary>
+    #region Imaging_SaveWebpOptions
+    public static void SaveWebPWithOptions(string chartPath, string chartWebPPath, string sixteenBitPath, string gradientWebPPath, string animatedPath, Stream responseStream)
+    {
+        using (var chart = Image.Load(chartPath))
+        {
+            chart.Save(chartWebPPath, new WebPEncoder
+            {
+                Compression = WebPCompression.Lossy,
+                Quality = 85,
+                SharpYuv = true, // planes chosen for the chroma upsampling of the decoder: sharper colored edges and text
+            });
+        }
+
+        using (var gradient = Image.Load(sixteenBitPath))
+        {
+            gradient.Save(gradientWebPPath, new WebPEncoder
+            {
+                AllowBitDepthReduction = true,  // WebP stores 8-bit samples only
+                DitherBitDepthReduction = true, // error diffusion instead of rounding: no bands in smooth gradients
+            });
+        }
+
+        // A non-seekable stream (an HTTP response) receives the whole animation at the end: it is kept in memory until then
+        using var animation = Image.Load(animatedPath);
+        animation.Save(responseStream, new WebPEncoder());
     }
     #endregion
 
@@ -1275,6 +1305,18 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A TIFF page in separate planes: the strips of each sample in turn.</summary>
+    #region Imaging_TiffSeparatePlanes
+    public static void SaveTiffInSeparatePlanes(string inputPath, string tiffPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // One strip set of red samples, then of green, blue and alpha samples (PlanarConfiguration = 2), each plane
+        // predicted and compressed on its own
+        image.Save(tiffPath, new TiffEncoder { SeparatePlanes = true, Predictor = TiffPredictor.HorizontalDifferencing });
+    }
+    #endregion
+
     /// <summary>A multi-size icon and a cursor: representations are alternatives, never animation frames.</summary>
     #region Imaging_IcoRepresentations
     public static Point WriteAndReadIcon(string inputPath, string iconPath, string cursorPath)
@@ -1580,16 +1622,40 @@ internal static class Examples
         // Its readers must support Part 15 of the standard, as OpenJPEG 2.5, FFmpeg and OpenJPH do.
         image.Save(jphPath);
 
-        // A codestream (.jhc) of at most 100 KB: the rate control chooses the lowest bit-plane of each code-block, and the
-        // output has a single quality layer.
+        // A codestream (.jhc) of at most 100 KB in two layers: the rate control chooses, for each code-block, the lowest
+        // bit-plane of its HT cleanup pass and its HT SigProp and HT MagRef refinement passes, and the first layer holds
+        // the code-blocks that reduce the error most for their bytes, up to 30 KB.
         image.Save(codestreamPath, new Jpeg2000Encoder
         {
             BlockCoder = Jpeg2000BlockCoder.HighThroughput,
             Compression = Jpeg2000Compression.Lossy,
             Quality = 100,
             Container = Jpeg2000Container.Codestream,
-            QualityLayers = [Jpeg2000QualityLayer.FromSize(100_000)],
+            QualityLayers = [Jpeg2000QualityLayer.FromSize(30_000), Jpeg2000QualityLayer.FromSize(100_000)],
             MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+    }
+    #endregion
+
+    /// <summary>JPEG 2000 for servers and viewers: precincts in a position progression, tile-parts and length markers.</summary>
+    #region Imaging_Jpeg2000PrecinctsAndTileParts
+    public static void SaveJpeg2000ForStreaming(string inputPath, string path)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Precincts of 256x256 coefficients at the full resolution and 128x128 below: the packets of each area of a tile
+        // are apart, and the RPCL order gives the image resolution by resolution, area by area. A tile-part starts at each
+        // resolution level, and the TLM and PLT marker segments list the lengths of the tile-parts and of the packets, so
+        // that a reader or a JPIP server finds the bytes of a resolution and of an area without reading the others.
+        image.Save(path, new Jpeg2000Encoder
+        {
+            PrecinctSizes = [new Size(256, 256), new Size(128, 128)],
+            ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl,
+            TilePartDivision = Jpeg2000TilePartDivision.Resolution,
+            WriteTilePartLengths = true,
+            WritePacketLengths = true,
+            TileWidth = 1024,
+            TileHeight = 1024,
         });
     }
     #endregion
@@ -1626,6 +1692,222 @@ internal static class Examples
         return Image.Load<Rgba32>(exrPath, new ImageDecodeOptions
         {
             Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
+    }
+    #endregion
+
+    /// <summary>OpenEXR: a tiled texture with its mipmap levels, and a lossy DWAB file for review copies.</summary>
+    #region Imaging_OpenExrTiledLossy
+    public static void SaveOpenExrTextureAndPreview(Image hdr, string texturePath, string reviewPath)
+    {
+        // Tiles of 64x64 pixels, with the mipmap levels a renderer reads: the encoder generates them by area average
+        hdr.Save(texturePath, new OpenExrEncoder
+        {
+            Compression = OpenExrCompression.Zip,
+            Tiling = new OpenExrTiling { TileWidth = 64, TileHeight = 64, LevelMode = OpenExrLevelMode.MipmapLevels },
+        });
+
+        // A lossy compression is only used when it is chosen: DWAB codes the colors as DCT blocks (alpha stays exact);
+        // a larger level gives a smaller file and larger errors
+        hdr.Save(reviewPath, new OpenExrEncoder { Compression = OpenExrCompression.Dwab, DwaCompressionLevel = 45 });
+    }
+    #endregion
+
+    /// <summary>Radiance HDR: an environment map in and out, its header variables, and its integer version.</summary>
+    #region Imaging_Radiance
+    public static (Image<Rgba32> Preview, double Exposure) ConvertRadiance(string hdrPath, string flatPath)
+    {
+        // Radiance HDR files load as RgbaFloat, in linear light: the pixels are the values the file stores
+        using var hdr = Image.Load<RgbaFloat>(hdrPath);
+
+        // The header is reported, never applied: divide by the exposure to get the radiances before it was adjusted
+        var exposure = hdr.Metadata.RadianceHeader?.Exposure ?? 1;
+
+        // Run-length encoded scanlines by default; flat ones on request. Each color is stored with 8 bits of mantissa
+        hdr.Save(flatPath, new RadianceEncoder { Compression = RadianceCompression.None });
+
+        // Integer pixels cannot hold the highlights: a typed load compresses them with a tone mapping
+        var preview = Image.Load<Rgba32>(hdrPath, new ImageDecodeOptions
+        {
+            Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
+        return (preview, exposure);
+    }
+    #endregion
+
+    /// <summary>DNG: a raw photo rendered, its raw mosaic before the demosaicing, and a display version.</summary>
+    #region Imaging_Dng
+    public static (Image<RgbaFloat> Rendering, Image<Rgba32> Display, string? Camera, float FirstLinearValue) ReadDng(string dngPath)
+    {
+        // DNG files render to RgbaFloat: scene-referred linear light (BT.709 primaries), the size of the default crop
+        var rendering = Image.Load<RgbaFloat>(dngPath);
+        var camera = rendering.Metadata.DngProperties?.UniqueCameraModel;
+
+        // The raw image before the demosaicing: the stored samples, the levels, the pattern and the linear values
+        using var raw = DngRawImage.Load(dngPath);
+        var row = new float[raw.ActiveArea.Width * raw.SamplesPerPixel];
+        raw.CopyLinearRow(0, row);
+
+        // The highlights are above 1: a display version tone maps them into 8-bit sRGB
+        var display = Image.Load<Rgba32>(dngPath, new ImageDecodeOptions
+        {
+            Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
+        return (rendering, display, camera, row[0]);
+    }
+    #endregion
+
+    /// <summary>DDS: the surfaces of a texture (mipmap levels, cube map faces, array elements, depth slices).</summary>
+    #region Imaging_DdsTexture
+    public static IReadOnlyList<string> ExportCubeFaces(string ddsPath, string outputDirectory)
+    {
+        // Image.Load gives the top level of the first face; a collection reaches every surface, decoded on demand
+        using var texture = ImageCollection.Load(ddsPath);
+        var written = new List<string>();
+        foreach (var entry in texture.Entries)
+        {
+            // Each entry says where it is in the texture: keep the full-size level of every face
+            if (entry.TextureSurface is not { MipLevel: 0, Face: { } face } surface)
+                continue;
+
+            var path = Path.Combine(outputDirectory, $"{surface.ArrayIndex}-{face}.png");
+            using var image = entry.Decode();
+            image.Save(path);
+            written.Add(path);
+        }
+
+        return written;
+    }
+    #endregion
+
+    /// <summary>DPX film scans: the code values as stored, the headers, and a copy with 10-bit components.</summary>
+    #region Imaging_Dpx
+    public static (string? TimeCode, DpxTransferCharacteristic Transfer) ConvertDpx(string dpxPath, string outputPath)
+    {
+        // 10-bit components load as Rgb48: each code value v is the 16-bit sample round(v × 65535 / 1023)
+        using var scan = Image.Load(dpxPath);
+
+        // The headers are reported: the time code, the film edge code, the frame rate, and how the code values encode
+        // light (printing densities are logarithmic: they are never converted implicitly)
+        var header = scan.Metadata.DpxHeader!;
+
+        // 10-bit components filled to 32-bit words with method A, big-endian; the orientation and the linear or BT.709
+        // labels are written too
+        scan.Save(outputPath, new DpxEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+        return (header.TimeCode, header.Transfer);
+    }
+    #endregion
+
+    /// <summary>Kodak Cineon film scans: read, then written as DPX, the format that succeeded Cineon.</summary>
+    #region Imaging_Cineon
+    public static int ConvertCineonToDpx(string cinPath, string dpxPath)
+    {
+        // The 10-bit printing densities of a Cineon file load as Rgb48, as stored
+        using var scan = Image.Load(cinPath);
+        var bits = scan.Metadata.CineonHeader!.BitsPerSample;
+        scan.Save(dpxPath, new DpxEncoder { BitDepth = bits == 10 ? 10 : null, AllowBitDepthReduction = true });
+        return bits;
+    }
+    #endregion
+
+    #region Imaging_CineonSave
+    public static void SaveCineon(string cinPath, string outputPath)
+    {
+        // The header of a loaded Cineon file (the film, the scanner, the designators and ranges of the channels) is copied
+        using var scan = Image.Load(cinPath);
+
+        // 10-bit code values by default for 8-bit pixels, packed one RGB pixel per 32-bit word (packing 5): 16-bit pixels are
+        // written with 16 bits unless the reduction is allowed
+        scan.Save(outputPath, new CineonEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+    }
+    #endregion
+
+    #region Imaging_PsdSave
+    public static void SavePsd(Image image, string psdPath, string psbPath)
+    {
+        // A flat document whose composite is the image; an image with transparency also gets one layer that holds it.
+        // PackBits rows by default; the ICC profile, EXIF, XMP and the resolution are written as image resources
+        image.Save(psdPath, new PsdEncoder { Compression = PsdCompression.RunLength });
+
+        // The large document format: selected by the extension or by LargeDocument, and always above 30,000 pixels per side
+        image.Save(psbPath);
+    }
+    #endregion
+
+    #region Imaging_DngSave
+    public static void SaveDng(Image image, string dngPath)
+    {
+        // Linear raw data whose camera color space is linear BT.709: the samples are stored as they are, with a table that
+        // maps sRGB samples to linear values. Lossless JPEG tiles (Deflate for floating-point samples)
+        image.Save(dngPath, new DngEncoder { Compression = DngCompression.LosslessJpeg, TileSize = 256 });
+    }
+    #endregion
+
+    #region Imaging_Ktx2
+    public static IReadOnlyList<string> ExportKtx2Levels(string ktx2Path, string outputDirectory)
+    {
+        // Image.Load decodes the base level of the first face of the first layer (or the frames of an animation)
+        using (var texture = Image.Load(ktx2Path))
+        {
+            texture.Save(Path.Combine(outputDirectory, "base.png"));
+        }
+
+        // Every level, layer, face and depth slice is an entry of a collection, decoded on demand
+        var files = new List<string>();
+        using var collection = ImageCollection.Load(ktx2Path);
+        foreach (var entry in collection.Entries)
+        {
+            if (entry.TextureSurface is { ArrayIndex: 0, Face: null or CubeMapFace.PositiveX, DepthSlice: 0, MipLevel: var level })
+            {
+                using var image = entry.Decode();
+                var path = Path.Combine(outputDirectory, $"level-{level}.png");
+                image.Save(path);
+                files.Add(path);
+            }
+        }
+
+        return files;
+    }
+    #endregion
+
+    /// <summary>DDS writing: a BC7 texture with its mipmaps, and a cube map from six images.</summary>
+    #region Imaging_DdsEncode
+    public static void SaveDdsTextures(string albedoPath, IReadOnlyList<string> skyFacePaths, string outputDirectory)
+    {
+        // A color texture: BC7 with sRGB colors, and the full chain of mipmaps averaged in linear light
+        using (var albedo = Image.Load(albedoPath))
+        {
+            albedo.Save(Path.Combine(outputDirectory, "albedo.dds"), new DdsEncoder
+            {
+                TextureFormat = DdsTextureFormat.Bc7UnormSrgb,
+                GenerateMipmaps = true,
+            });
+        }
+
+        // A cube map: the six faces (+X, -X, +Y, -Y, +Z, -Z) are the entries of a collection of texture surfaces
+        using var sky = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        for (var i = 0; i < 6; i++)
+        {
+            using var face = Image.Load(skyFacePaths[i]);
+            sky.Add(face, new TextureSurface(face: (CubeMapFace)i));
+        }
+
+        sky.Save(Path.Combine(outputDirectory, "sky.dds"), new DdsEncoder { TextureFormat = DdsTextureFormat.Bc1UnormSrgb, GenerateMipmaps = true });
+    }
+    #endregion
+
+    /// <summary>KTX 2.0 writing: an ASTC texture with its mip levels, supercompressed with ZLIB.</summary>
+    #region Imaging_Ktx2Encode
+    public static void SaveKtx2Texture(string inputPath, string outputPath)
+    {
+        // ASTC 6x6 blocks (3.56 bits per texel); an image labeled sRGB (the default) gives ASTC_6x6_SRGB_BLOCK
+        using var image = Image.Load(inputPath);
+        image.Save(outputPath, new Ktx2Encoder
+        {
+            TextureFormat = Ktx2TextureFormat.Astc6x6,
+            Quality = TextureCompressionQuality.Fast,
+            GenerateMipmaps = true,
+            Supercompression = Ktx2Supercompression.Zlib,
         });
     }
     #endregion
@@ -1978,6 +2260,18 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A PostScript Type 1 font, with the kerning of its AFM file.</summary>
+    #region Imaging_LoadType1Font
+    public static TextLayout LayOutWithType1Font(string pfbPath, string afmPath, string text)
+    {
+        // Font.Load reads a PFB or a PFA file like any other font file. The widths and the kerning of the font are in a
+        // separate AFM file: LoadType1 adds its kerning pairs to the font
+        var metrics = AfmFontMetrics.Load(File.ReadAllBytes(afmPath));
+        var font = Font.LoadType1(pfbPath, metrics);
+        return TextLayout.Create(text, new TextStyle(font, 24));
+    }
+    #endregion
+
     /// <summary>Installed fonts: load the face of a family closest to a style, in one call.</summary>
     /// <remarks>It reads the fonts installed on the machine: no test runs it.</remarks>
     #region Imaging_LoadInstalledFont
@@ -2015,6 +2309,25 @@ internal static class Examples
         });
 
         image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>Bitmap glyphs: save the image a font gives for the glyph of a character, such as an emoji.</summary>
+    #region Imaging_DecodeBitmapGlyph
+    public static void SaveGlyphImage(string fontPath, string outputPath)
+    {
+        // A font whose glyphs are images (sbix, CBDT, EBDT or bdat tables)
+        var font = Font.Load(fontPath);
+
+        // The image of the strike that suits the size, at the size of the strike; null when the glyph has no image
+        using var glyph = font.DecodeBitmapGlyph(new Rune(0x1F600), size: 64);
+        if (glyph is null)
+            return;
+
+        // Where the font places it: pixels from the origin of the glyph to the left, and from the baseline up to the
+        // top. A mask (IsMask) has no colors of its own: a text draws it with its color.
+        Console.WriteLine($"{glyph.Image.Width}x{glyph.Image.Height} at ({glyph.Left}, {glyph.Top}), {glyph.PixelsPerEmX} pixels per em");
+        glyph.Image.Save(outputPath);
     }
     #endregion
 

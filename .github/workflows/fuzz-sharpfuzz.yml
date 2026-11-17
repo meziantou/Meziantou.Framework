@@ -16,6 +16,7 @@ on:
         default: all
         options:
           - all
+          - aspnetcore-testing
           - atlassian-data-format
           - avatar
           - barcodes
@@ -23,11 +24,13 @@ on:
           - bloomfilter
           - charts
           - codeowners
+          - compression
           - csv
           - dependency-scanning
           - diagrams
           - dns
           - fast-enum-generator
+          - file-conversion
           - fonts
           - geo
           - geo-geopackage
@@ -40,12 +43,14 @@ on:
           - http-caching
           - http
           - htpasswd
+          - imaging
           - javascript-engine
           - jsonpath
           - language
           - markdown
           - media-tags
           - ntp
+          - pdf
           - pdf-vector-graphics
           - public-api-generator
           - robots-txt
@@ -102,6 +107,7 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
+      { "project": "Meziantou.AspNetCore.Testing.Fuzz",            "component": "aspnetcore-testing",    "day": 4 },
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Avatar.Fuzz",              "component": "avatar",                "day": 2 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
@@ -109,11 +115,13 @@ env:
       { "project": "Meziantou.Framework.BloomFilters.Fuzz",        "component": "bloomfilter",           "day": 6 },
       { "project": "Meziantou.Framework.Charts.Fuzz",              "component": "charts",                "day": 1 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
+      { "project": "Meziantou.Framework.Compression.Fuzz",         "component": "compression",           "day": 5 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz",  "component": "dependency-scanning",   "day": 0 },
       { "project": "Meziantou.Framework.Diagrams.Fuzz",            "component": "diagrams",              "day": 2 },
       { "project": "Meziantou.Framework.Dns.Fuzz",                 "component": "dns",                   "day": 0 },
       { "project": "Meziantou.Framework.FastEnumGenerator.Fuzz",   "component": "fast-enum-generator",   "day": 4 },
+      { "project": "Meziantou.Framework.FileConversion.Tool.Fuzz", "component": "file-conversion",       "day": 1 },
       { "project": "Meziantou.Framework.Fonts.Fuzz",               "component": "fonts",                 "day": 2 },
       { "project": "Meziantou.Framework.Geo.Fuzz",                 "component": "geo",                   "day": 6 },
       { "project": "Meziantou.Framework.Geo.GeoPackage.Fuzz",      "component": "geo-geopackage",        "day": 5 },
@@ -126,12 +134,14 @@ env:
       { "project": "Meziantou.Framework.Http.Caching.Fuzz",        "component": "http-caching",          "day": 2 },
       { "project": "Meziantou.Framework.Http.Fuzz",                "component": "http",                  "day": 3 },
       { "project": "Meziantou.Framework.Http.Htpasswd.Fuzz",       "component": "htpasswd",              "day": 1 },
+      { "project": "Meziantou.Framework.Imaging.Fuzz",             "component": "imaging",               "day": 4 },
       { "project": "Meziantou.Framework.JavaScriptEngine.Fuzz",     "component": "javascript-engine",     "day": 6 },
       { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },
       { "project": "Meziantou.Framework.Language.Fuzz",            "component": "language",              "day": 2 },
       { "project": "Meziantou.Framework.Markdown.Fuzz",            "component": "markdown",              "day": 2 },
       { "project": "Meziantou.Framework.MediaTags.Fuzz",           "component": "media-tags",            "day": 3 },
       { "project": "Meziantou.Framework.Ntp.Fuzz",                 "component": "ntp",                   "day": 0 },
+      { "project": "Meziantou.Framework.Pdf.Fuzz",                 "component": "pdf",                   "day": 0 },
       { "project": "Meziantou.Framework.Pdf.VectorGraphics.Fuzz",  "component": "pdf-vector-graphics",   "day": 5 },
       { "project": "Meziantou.Framework.PublicApiGenerator.Fuzz",  "component": "public-api-generator",  "day": 5 },
       { "project": "Meziantou.Framework.RobotsTxt.Fuzz",           "component": "robots-txt",            "day": 0 },

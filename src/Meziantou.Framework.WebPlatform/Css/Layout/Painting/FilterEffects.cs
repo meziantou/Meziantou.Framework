@@ -91,7 +91,7 @@ internal static class FilterEffects
 
         static bool ContainsCurrentColor(CssComponentValue value) => value switch
         {
-            CssPreservedToken { Type: CssTokenType.Ident } ident => Infra.InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "currentcolor"),
+            CssPreservedToken { Type: CssTokenType.Ident } ident => Infra.InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "currentcolor"),
             CssFunction nested => nested.Value.Exists(ContainsCurrentColor),
             CssSimpleBlock block => block.Value.Exists(ContainsCurrentColor),
             _ => false,

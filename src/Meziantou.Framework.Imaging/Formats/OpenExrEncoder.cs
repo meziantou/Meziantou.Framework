@@ -1,9 +1,10 @@
 namespace Meziantou.Framework.Imaging.Formats;
 
-/// <summary>Immutable settings for OpenEXR encoding (lossless, linear-light floating-point still images).</summary>
+/// <summary>Immutable settings for OpenEXR encoding (linear-light floating-point still images, lossless by default).</summary>
 /// <remarks>
 /// <para>
-/// The output is a single-part scan-line file whose data window and display window are the image. Floating-point pixels
+/// The output is a single-part file whose data window and display window are the image: scan lines, or tiles with
+/// <see cref="Tiling"/> (and, if requested, resolution levels generated from the image). Floating-point pixels
 /// may have values outside [0, 1], infinities and samples that are not numbers
 /// (<see cref="ImageEncoder.FloatingPointConversion"/> does not apply). Integer pixels are stored as the floating-point
 /// values of the conversion of <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> to <see cref="RgbaFloat"/>
@@ -14,7 +15,10 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// Colors are multiplied by the alpha that is written (rounded to the sample type) when it is not 0, and divided by it
 /// when decoded, as OpenEXR stores premultiplied colors and the library holds straight colors. Rounding and underflow can
 /// change them: lossless compression preserves the stored samples, not necessarily the source pixels (<see cref="RgbaHalf"/>
-/// pixels written as <see cref="OpenExrPixelType.Float"/> samples come back exactly). A zero alpha keeps
+/// pixels written as <see cref="OpenExrPixelType.Float"/> samples come back exactly), and lossy compression
+/// (<see cref="OpenExrCompression.Pxr24"/> with float samples, <see cref="OpenExrCompression.B44"/>,
+/// <see cref="OpenExrCompression.B44A"/>, <see cref="OpenExrCompression.Dwaa"/>, <see cref="OpenExrCompression.Dwab"/>)
+/// changes the stored samples too. A zero alpha keeps
 /// its colors without multiplication. Alpha is not limited to [0, 1]: a finite color that the multiplication takes beyond
 /// the range of the sample type, or that an alpha that is not finite makes infinite or not a number, is rejected with
 /// <see cref="UnsupportedImageFeatureException"/> before anything is written.
@@ -48,7 +52,10 @@ public sealed class OpenExrEncoder : ImageEncoder
     /// <inheritdoc />
     public override ImageFormat Format => ImageFormat.OpenExr;
 
-    /// <summary>Gets the compression of the chunks. Defaults to <see cref="OpenExrCompression.Zip"/>.</summary>
+    /// <summary>
+    /// Gets the compression of the chunks. Defaults to <see cref="OpenExrCompression.Zip"/> (lossless); the lossy compressions
+    /// are only used when they are chosen here.
+    /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="OpenExrCompression"/>.</exception>
     public OpenExrCompression Compression
     {
@@ -85,6 +92,51 @@ public sealed class OpenExrEncoder : ImageEncoder
     /// </summary>
     public bool AllowBitDepthReduction { get; init; }
 
+    /// <summary>
+    /// Gets the tile size and the resolution levels of tiled output, or <see langword="null"/> (the default) for scan-line
+    /// output.
+    /// </summary>
+    public OpenExrTiling? Tiling { get; init; }
+
+    /// <summary>
+    /// Gets the order of the chunks in the file. Defaults to <see cref="OpenExrLineOrder.IncreasingY"/>;
+    /// <see cref="OpenExrLineOrder.RandomY"/> is only valid with <see cref="Tiling"/>, and an encoding of scan lines with it
+    /// throws <see cref="ArgumentException"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="OpenExrLineOrder"/>.</exception>
+    public OpenExrLineOrder LineOrder
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The line order is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the compression level of <see cref="OpenExrCompression.Dwaa"/> and <see cref="OpenExrCompression.Dwab"/> output:
+    /// the larger, the smaller the file and the larger the errors (OpenEXR's <c>dwaCompressionLevel</c>; 0 keeps every DCT
+    /// coefficient that a half value stores). Defaults to 45, the default of OpenEXR. Ignored by the other compressions.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative, infinite or not a number.</exception>
+    public float DwaCompressionLevel
+    {
+        get;
+        init
+        {
+            if (!float.IsFinite(value) || value < 0)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The DWA compression level must be a finite value that is not negative.");
+
+            field = value;
+        }
+    } = 45;
+
     /// <summary>Gets a value indicating whether floating-point samples are stored without reduction to integer pixels: always for OpenEXR.</summary>
     internal override bool StoresFloatingPointSamples => true;
+
+    /// <summary>Gets a value indicating whether the output stores a format that widens: the floating-point gray formats are written as a luminance channel (<c>Y</c>), with alpha when they have one.</summary>
+    internal override bool StoresPixelFormat(PixelFormat format) => format is PixelFormat.GrayFloat or PixelFormat.GrayHalf or PixelFormat.LaFloat or PixelFormat.LaHalf || base.StoresPixelFormat(format);
 }

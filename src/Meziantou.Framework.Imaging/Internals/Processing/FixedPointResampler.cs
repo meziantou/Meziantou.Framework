@@ -30,10 +30,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// keeps the double-precision path.
 /// </para>
 /// <para>
-/// The sums are integers, so their order does not matter: the vector loops (AdvSimd <c>smlal</c>, SSE2 and AVX2
-/// <c>pmaddwd</c>) give the bits of the scalar loops (<c>VectorizedKernelTests</c>), whatever the hardware and the
-/// worker count. The result is the exact rounding of the double-precision path except for about 0.2% of the samples,
-/// which differ by one unit (the fixed-point weights and the 16-bit intermediate rows); none differs by more.
+/// The sums are integers, so their order does not matter: the vector loops (AdvSimd <c>smlal</c>, SSE2, AVX2 and AVX-512
+/// <c>pmaddwd</c>, 4-sample pixels read from their bytes on x64) give the bits of the scalar loops
+/// (<c>VectorizedKernelTests</c>), whatever the hardware and the worker count. The result is the exact rounding of the
+/// double-precision path except for about 0.2% of the samples, which differ by one unit (the fixed-point weights and the
+/// 16-bit intermediate rows); none differs by more.
 /// Pixels with translucent alpha are not filtered here: their colors are premultiplied, and dividing integer sums by a
 /// small alpha amplifies their rounding beyond one unit.
 /// </para>
@@ -101,6 +102,7 @@ internal static class FixedPointResampler
             offset += GetCount(plan, dy);
         }
 
+        var direct = CanResampleBytes(x, channels, (plan.XWeights!.Last - x.First + 1) * channels);
         var next = starts[start];
         for (var dy = start; dy < end; dy++)
         {
@@ -115,8 +117,16 @@ internal static class FixedPointResampler
             while (next <= last)
             {
                 var samples = source.GetRowSpanCore(next).Slice(x.First * channels, (plan.XWeights!.Last - x.First + 1) * channels);
-                LoadRow(samples, channels, working);
-                ResampleHorizontal(working, ring.Slice(next % ringSize * stride, rowLength), x, lanes, horizontalShift);
+                if (direct)
+                {
+                    ResampleHorizontalBytes(samples, ring.Slice(next % ringSize * stride, rowLength), x, horizontalShift);
+                }
+                else
+                {
+                    LoadRow(samples, channels, working);
+                    ResampleHorizontal(working, ring.Slice(next % ringSize * stride, rowLength), x, lanes, horizontalShift);
+                }
+
                 next++;
             }
 
@@ -231,6 +241,10 @@ internal static class FixedPointResampler
             {
                 ResampleHorizontal4AdvSimd(working, output, weights, shift);
             }
+            else if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+            {
+                ResampleHorizontal4Avx2(working, output, weights, shift);
+            }
             else if (Sse2.IsSupported)
             {
                 ResampleHorizontal4Sse2(working, output, weights, shift);
@@ -247,6 +261,83 @@ internal static class FixedPointResampler
         else
         {
             ResampleHorizontalScalar(working, output, weights, lanes, shift);
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether <see cref="ResampleHorizontalBytes"/> can read the 8-bit samples of a row directly,
+    /// without the 16-bit working row: 4-sample pixels on x64 with AVX2, when no padded window reads after the
+    /// <paramref name="sampleCount"/> samples of the row.
+    /// </summary>
+    internal static bool CanResampleBytes(FixedPointWeights weights, int channels, int sampleCount)
+        => IsByteRowAccelerated && !Resampler.TestForceScalar && channels is 4 && weights.SourceLength * 4 <= sampleCount;
+
+    /// <summary>Gets a value indicating whether the hardware supports <see cref="ResampleHorizontalBytes"/>: x64 with AVX2.</summary>
+    internal static bool IsByteRowAccelerated => !AdvSimd.IsSupported && Vector256.IsHardwareAccelerated && Avx2.IsSupported;
+
+    /// <summary>
+    /// <see cref="ResampleHorizontal"/> of 4-sample pixels read as 8-bit samples (<see cref="CanResampleBytes"/>), widened to
+    /// 16 bits as they are loaded: the result of <see cref="LoadRow"/> followed by <see cref="ResampleHorizontal"/>.
+    /// </summary>
+    internal static void ResampleHorizontalBytes(ReadOnlySpan<byte> samples, Span<short> output, FixedPointWeights weights, int shift)
+    {
+        // One pixel per iteration, as ResampleHorizontal4Avx2 with the samples zero-extended from bytes (vpmovzxbw)
+        var starts = weights.Starts;
+        var taps = weights.Taps;
+        var round = Vector128.Create(1 << (shift - 1));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(samples));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+        ref var weight = ref unsafe(MemoryMarshal.GetReference(weights.AllWeights));
+        var interleave = Vector256.Create((byte)0, 1, 8, 9, 2, 3, 10, 11, 4, 5, 12, 13, 6, 7, 14, 15, 0, 1, 8, 9, 2, 3, 10, 11, 4, 5, 12, 13, 6, 7, 14, 15);
+        var spread = Vector256.Create(0, 0, 0, 0, 1, 1, 1, 1);
+        var interleave512 = Vector512.Create(interleave, interleave);
+        var spread512 = Vector512.Create(0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3);
+        if (!CanResampleBytes(weights, 4, samples.Length) || output.Length < weights.OutputLength * 4 || taps % 2 != 0)
+            throw new ArgumentException("The row cannot be resampled from its bytes.", nameof(samples));
+
+        for (var dx = 0; dx < weights.OutputLength; dx++)
+        {
+            ref var pixel = ref unsafe(Unsafe.Add(ref input, starts[dx] * 4));
+            ref var w = ref unsafe(Unsafe.Add(ref weight, dx * taps));
+            var k = 0;
+            var wide = Vector256<int>.Zero;
+            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported)
+            {
+                var widest = Vector512<int>.Zero;
+                for (; k + 8 <= taps; k += 8)
+                {
+                    var bytes = unsafe(Vector256.LoadUnsafe(ref pixel, (nuint)(4 * k)));
+                    var samples16 = Avx512BW.Shuffle(Avx512BW.ConvertToVector512Int16(bytes).AsByte(), interleave512).AsInt16();
+                    var octet = unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref w, k))).AsInt32();
+                    var pairs = Avx512F.PermuteVar16x32(octet.ToVector256().ToVector512(), spread512).AsInt16();
+                    widest += Avx512BW.MultiplyAddAdjacent(samples16, pairs);
+                }
+
+                wide = widest.GetLower() + widest.GetUpper();
+            }
+
+            for (; k + 4 <= taps; k += 4)
+            {
+                var bytes = unsafe(Vector128.LoadUnsafe(ref pixel, (nuint)(4 * k)));
+                var samples16 = Avx2.Shuffle(Avx2.ConvertToVector256Int16(bytes).AsByte(), interleave).AsInt16();
+                var quad = Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<long>(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref w, k))))).AsInt32();
+                var pairs = Avx2.PermuteVar8x32(quad.ToVector256(), spread).AsInt16();
+                wide += Avx2.MultiplyAddAdjacent(samples16, pairs);
+            }
+
+            var sum = wide.GetLower() + wide.GetUpper();
+            if (k < taps)
+            {
+                var bytes = Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref pixel, 4 * k)))).AsByte();
+                var pair = Sse41.ConvertToVector128Int16(bytes);
+                var interleaved = Sse2.UnpackLow(pair, Sse2.ShiftRightLogical128BitLane(pair, 8));
+                var w2 = Vector128.Create(unsafe(Unsafe.ReadUnaligned<int>(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref w, k))))).AsInt16();
+                sum += Sse2.MultiplyAddAdjacent(interleaved, w2);
+            }
+
+            sum = Vector128.ShiftRightArithmetic(sum + round, shift);
+            var narrowed = Vector128.Narrow(sum, sum);
+            unsafe { Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref target, 4 * dx)), narrowed.AsInt64().ToScalar()); }
         }
     }
 
@@ -329,6 +420,66 @@ internal static class FixedPointResampler
         }
     }
 
+    // One pixel per iteration: 8 taps (AVX-512) or 4 taps (AVX2) per load. Within each 128-bit block, the lanes of its two
+    // taps are interleaved (pshufb) and multiplied by their pair of weights, broadcast to the block (vpermd), and added
+    // pairwise (pmaddwd): each block accumulates the 4 lanes of its taps, and the blocks are added at the end. A last pair of
+    // taps takes the SSE2 step
+    private static void ResampleHorizontal4Avx2(ReadOnlySpan<short> working, Span<short> output, FixedPointWeights weights, int shift)
+    {
+        var starts = weights.Starts;
+        var taps = weights.Taps;
+        var round = Vector128.Create(1 << (shift - 1));
+        ref var input = ref unsafe(MemoryMarshal.GetReference(working));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+        ref var weight = ref unsafe(MemoryMarshal.GetReference(weights.AllWeights));
+        var interleave = Vector256.Create((byte)0, 1, 8, 9, 2, 3, 10, 11, 4, 5, 12, 13, 6, 7, 14, 15, 0, 1, 8, 9, 2, 3, 10, 11, 4, 5, 12, 13, 6, 7, 14, 15);
+        var spread = Vector256.Create(0, 0, 0, 0, 1, 1, 1, 1);
+        var interleave512 = Vector512.Create(interleave, interleave);
+        var spread512 = Vector512.Create(0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3);
+        Debug.Assert(output.Length >= weights.OutputLength * 4 && working.Length >= weights.SourceLength * 4 && taps % 2 == 0);
+        for (var dx = 0; dx < weights.OutputLength; dx++)
+        {
+            ref var pixel = ref unsafe(Unsafe.Add(ref input, starts[dx] * 4));
+            ref var w = ref unsafe(Unsafe.Add(ref weight, dx * taps));
+            var k = 0;
+            var wide = Vector256<int>.Zero;
+            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported)
+            {
+                var widest = Vector512<int>.Zero;
+                for (; k + 8 <= taps; k += 8)
+                {
+                    var samples = Avx512BW.Shuffle(unsafe(Vector512.LoadUnsafe(ref pixel, (nuint)(4 * k))).AsByte(), interleave512).AsInt16();
+                    var octet = unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref w, k))).AsInt32();
+                    var pairs = Avx512F.PermuteVar16x32(octet.ToVector256().ToVector512(), spread512).AsInt16();
+                    widest += Avx512BW.MultiplyAddAdjacent(samples, pairs);
+                }
+
+                wide = widest.GetLower() + widest.GetUpper();
+            }
+
+            for (; k + 4 <= taps; k += 4)
+            {
+                var samples = Avx2.Shuffle(unsafe(Vector256.LoadUnsafe(ref pixel, (nuint)(4 * k))).AsByte(), interleave).AsInt16();
+                var quad = Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<long>(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref w, k))))).AsInt32();
+                var pairs = Avx2.PermuteVar8x32(quad.ToVector256(), spread).AsInt16();
+                wide += Avx2.MultiplyAddAdjacent(samples, pairs);
+            }
+
+            var sum = wide.GetLower() + wide.GetUpper();
+            if (k < taps)
+            {
+                var pair = unsafe(Vector128.LoadUnsafe(ref pixel, (nuint)(4 * k)));
+                var interleaved = Sse2.UnpackLow(pair, Sse2.ShiftRightLogical128BitLane(pair, 8));
+                var w2 = Vector128.Create(unsafe(Unsafe.ReadUnaligned<int>(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref w, k))))).AsInt16();
+                sum += Sse2.MultiplyAddAdjacent(interleaved, w2);
+            }
+
+            sum = Vector128.ShiftRightArithmetic(sum + round, shift);
+            var narrowed = Vector128.Narrow(sum, sum);
+            unsafe { Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref target, 4 * dx)), narrowed.AsInt64().ToScalar()); }
+        }
+    }
+
     // One gray pixel per iteration: 8 taps at a time, multiplied and added to 32-bit lanes, then summed
     private static void ResampleHorizontal1Vector128(ReadOnlySpan<short> working, Span<short> output, FixedPointWeights weights, int shift)
     {
@@ -338,7 +489,38 @@ internal static class FixedPointResampler
         ref var input = ref unsafe(MemoryMarshal.GetReference(working));
         ref var weight = ref unsafe(MemoryMarshal.GetReference(weights.AllWeights));
         Debug.Assert(output.Length >= weights.OutputLength && working.Length >= weights.SourceLength && taps % 8 == 0);
-        for (var dx = 0; dx < weights.OutputLength; dx++)
+        var dx = 0;
+        if (Ssse3.IsSupported && !AdvSimd.IsSupported)
+        {
+            // Four pixels per iteration, whose sums are reduced together (phaddd)
+            var round4 = Vector128.Create(round);
+            ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+            for (; dx + 4 <= weights.OutputLength; dx += 4)
+            {
+                ref var pixel0 = ref unsafe(Unsafe.Add(ref input, starts[dx]));
+                ref var pixel1 = ref unsafe(Unsafe.Add(ref input, starts[dx + 1]));
+                ref var pixel2 = ref unsafe(Unsafe.Add(ref input, starts[dx + 2]));
+                ref var pixel3 = ref unsafe(Unsafe.Add(ref input, starts[dx + 3]));
+                ref var w = ref unsafe(Unsafe.Add(ref weight, dx * taps));
+                var sum0 = Vector128<int>.Zero;
+                var sum1 = Vector128<int>.Zero;
+                var sum2 = Vector128<int>.Zero;
+                var sum3 = Vector128<int>.Zero;
+                for (var k = 0; k < taps; k += 8)
+                {
+                    sum0 += Sse2.MultiplyAddAdjacent(unsafe(Vector128.LoadUnsafe(ref pixel0, (nuint)k)), unsafe(Vector128.LoadUnsafe(ref w, (nuint)k)));
+                    sum1 += Sse2.MultiplyAddAdjacent(unsafe(Vector128.LoadUnsafe(ref pixel1, (nuint)k)), unsafe(Vector128.LoadUnsafe(ref w, (nuint)(taps + k))));
+                    sum2 += Sse2.MultiplyAddAdjacent(unsafe(Vector128.LoadUnsafe(ref pixel2, (nuint)k)), unsafe(Vector128.LoadUnsafe(ref w, (nuint)((2 * taps) + k))));
+                    sum3 += Sse2.MultiplyAddAdjacent(unsafe(Vector128.LoadUnsafe(ref pixel3, (nuint)k)), unsafe(Vector128.LoadUnsafe(ref w, (nuint)((3 * taps) + k))));
+                }
+
+                var sums = Ssse3.HorizontalAdd(Ssse3.HorizontalAdd(sum0, sum1), Ssse3.HorizontalAdd(sum2, sum3));
+                sums = Vector128.ShiftRightArithmetic(sums + round4, shift);
+                unsafe { Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref target, dx)), Vector128.Narrow(sums, sums).AsInt64().ToScalar()); }
+            }
+        }
+
+        for (; dx < weights.OutputLength; dx++)
         {
             ref var pixel = ref unsafe(Unsafe.Add(ref input, starts[dx]));
             ref var w = ref unsafe(Unsafe.Add(ref weight, dx * taps));
@@ -375,13 +557,20 @@ internal static class FixedPointResampler
             {
                 i = ResampleVerticalAdvSimd(ring, stride, firstSlot, ringSize, weights, output, shift);
             }
-            else if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
-            {
-                i = ResampleVerticalAvx2(ring, stride, firstSlot, ringSize, weights, output, shift);
-            }
             else if (Sse2.IsSupported)
             {
-                i = ResampleVerticalSse2(ring, stride, firstSlot, ringSize, weights, output, shift);
+                // Each loop leaves its tail to the narrower ones
+                if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported)
+                {
+                    i = ResampleVerticalAvx512(ring, stride, firstSlot, ringSize, weights, output, shift);
+                }
+
+                if (Vector256.IsHardwareAccelerated && Avx2.IsSupported)
+                {
+                    i = ResampleVerticalAvx2(ring, stride, firstSlot, ringSize, weights, output, shift, i);
+                }
+
+                i = ResampleVerticalSse2(ring, stride, firstSlot, ringSize, weights, output, shift, i);
             }
         }
 
@@ -443,14 +632,54 @@ internal static class FixedPointResampler
         return i;
     }
 
+    // 32 samples per iteration, as the AVX2 loop on four 128-bit blocks; the low 8 bytes of each block are then gathered
+    // (vpermq)
+    private static int ResampleVerticalAvx512(ReadOnlySpan<short> ring, int stride, int firstSlot, int ringSize, ReadOnlySpan<short> weights, Span<byte> output, int shift)
+    {
+        ref var rows = ref unsafe(MemoryMarshal.GetReference(ring));
+        ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+        var round = Vector512.Create(1 << (shift - 1));
+        var gather = Vector512.Create(0L, 2, 4, 6, 0, 2, 4, 6);
+        var i = 0;
+        for (; i + 32 <= output.Length; i += 32)
+        {
+            var low = Vector512<int>.Zero;
+            var high = Vector512<int>.Zero;
+            var slot = firstSlot;
+            for (var k = 0; k < weights.Length; k += 2)
+            {
+                var a = unsafe(Vector512.LoadUnsafe(ref Unsafe.Add(ref rows, (slot * stride) + i)));
+                slot = slot + 1 == ringSize ? 0 : slot + 1;
+                var b = Vector512<short>.Zero;
+                var pair = (int)(ushort)weights[k];
+                if (k + 1 < weights.Length)
+                {
+                    b = unsafe(Vector512.LoadUnsafe(ref Unsafe.Add(ref rows, (slot * stride) + i)));
+                    slot = slot + 1 == ringSize ? 0 : slot + 1;
+                    pair |= weights[k + 1] << 16;
+                }
+
+                var w = Vector512.Create(pair).AsInt16();
+                low += Avx512BW.MultiplyAddAdjacent(Avx512BW.UnpackLow(a, b), w);
+                high += Avx512BW.MultiplyAddAdjacent(Avx512BW.UnpackHigh(a, b), w);
+            }
+
+            var words = Avx512BW.PackSignedSaturate(Vector512.ShiftRightArithmetic(low + round, shift), Vector512.ShiftRightArithmetic(high + round, shift));
+            var bytes = Avx512BW.PackUnsignedSaturate(words, words);
+            unsafe { Avx512F.PermuteVar8x64(bytes.AsInt64(), gather).GetLower().AsByte().StoreUnsafe(ref target, (nuint)i); }
+        }
+
+        return i;
+    }
+
     // 16 samples per iteration: the rows of two taps interleaved lane by lane (within each 128-bit half), multiplied by the
     // pair of weights and added pairwise (pmaddwd); packing back with saturation restores the order of each half
-    private static int ResampleVerticalAvx2(ReadOnlySpan<short> ring, int stride, int firstSlot, int ringSize, ReadOnlySpan<short> weights, Span<byte> output, int shift)
+    private static int ResampleVerticalAvx2(ReadOnlySpan<short> ring, int stride, int firstSlot, int ringSize, ReadOnlySpan<short> weights, Span<byte> output, int shift, int start)
     {
         ref var rows = ref unsafe(MemoryMarshal.GetReference(ring));
         ref var target = ref unsafe(MemoryMarshal.GetReference(output));
         var round = Vector256.Create(1 << (shift - 1));
-        var i = 0;
+        var i = start;
         for (; i + 16 <= output.Length; i += 16)
         {
             var low = Vector256<int>.Zero;
@@ -483,12 +712,12 @@ internal static class FixedPointResampler
     }
 
     // 8 samples per iteration, as the AVX2 loop on one 128-bit half
-    private static int ResampleVerticalSse2(ReadOnlySpan<short> ring, int stride, int firstSlot, int ringSize, ReadOnlySpan<short> weights, Span<byte> output, int shift)
+    private static int ResampleVerticalSse2(ReadOnlySpan<short> ring, int stride, int firstSlot, int ringSize, ReadOnlySpan<short> weights, Span<byte> output, int shift, int start)
     {
         ref var rows = ref unsafe(MemoryMarshal.GetReference(ring));
         ref var target = ref unsafe(MemoryMarshal.GetReference(output));
         var round = Vector128.Create(1 << (shift - 1));
-        var i = 0;
+        var i = start;
         for (; i + 8 <= output.Length; i += 8)
         {
             var low = Vector128<int>.Zero;

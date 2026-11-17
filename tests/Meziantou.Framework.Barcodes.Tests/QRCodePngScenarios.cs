@@ -55,8 +55,8 @@ internal static class QRCodePngScenarios
         // ───── Rendering options ─────
         new("RenderSmallestModuleWithoutQuietZone", "SCAN ME") { ModuleSize = 1, QuietZoneModules = 0 },
         new("RenderLargeQuietZone", "SCAN ME") { ModuleSize = 1, QuietZoneModules = 16 },
-        new("RenderCustomColors", "SCAN ME") { ModuleSize = 3, DarkColor = Color.FromRgb(0x00, 0x33, 0x66), LightColor = Color.FromRgb(0xFF, 0xF8, 0xE7) },
-        new("RenderTransparentLightColor", "SCAN ME") { ModuleSize = 3, LightColor = Color.Transparent },
+        new("RenderCustomColors", "SCAN ME") { ModuleSize = 3, DarkPaint = new SceneColor(0x00, 0x33, 0x66), LightPaint = new SceneColor(0xFF, 0xF8, 0xE7) },
+        new("RenderTransparentLightColor", "SCAN ME") { ModuleSize = 3, LightPaint = SceneColor.Transparent },
 
         // ───── Micro QR and rMQR ─────
         new("MicroQRNumeric", "12345") { Type = QRCodeType.MicroQR, ErrorCorrectionLevel = ErrorCorrectionLevel.L, ModuleSize = 4 },
@@ -109,9 +109,9 @@ internal static class QRCodePngScenarios
 
         public int QuietZoneModules { get; init; } = 4;
 
-        public Color DarkColor { get; init; } = Color.Black;
+        public SceneColor DarkPaint { get; init; } = SceneColor.Black;
 
-        public Color LightColor { get; init; } = Color.White;
+        public SceneColor LightPaint { get; init; } = SceneColor.White;
 
         /// <summary>Gets whether a standard QR code reader is expected to decode the rendered image.</summary>
         /// <remarks>Micro QR and rMQR are outside what most readers, including ZXing, support.</remarks>
@@ -129,12 +129,12 @@ internal static class QRCodePngScenarios
 
         public byte[] CreatePng()
         {
-            return CreateQRCode().ToPng(new QRCodePngOptions
+            return CreateQRCode().ToPng(new QRCodeRenderOptions
             {
                 ModuleSize = ModuleSize,
                 QuietZoneModules = QuietZoneModules,
-                DarkColor = DarkColor,
-                LightColor = LightColor,
+                DarkPaint = DarkPaint,
+                LightPaint = LightPaint,
             });
         }
     }

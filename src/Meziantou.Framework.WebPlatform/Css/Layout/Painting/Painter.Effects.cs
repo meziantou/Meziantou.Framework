@@ -733,7 +733,7 @@ internal sealed partial class Painter
         var layers = new MaskLayer[images.Count];
         for (var i = 0; i < images.Count; i++)
         {
-            var image = images[i] is [var single] && !(single is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "none")) ? single : null;
+            var image = images[i] is [var single] && !(single is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "none")) ? single : null;
             if (image is not null && IsDisabledMaskElement(style.Element, image))
             {
                 image = null;

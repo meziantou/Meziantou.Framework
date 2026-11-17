@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
+using Meziantou.Framework.Imaging.TestHarness.Ktx2;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -1437,6 +1438,61 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveWebPWithOptionsWritesSharpLossyDitheredAndNonSeekableOutputs()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var chart = GetPath("chart.png");
+        using (var source = new Image<Rgba32>(32, 16, new Rgba32(0, 0, 255)))
+        {
+            source.Frames[0][10, 8] = new Rgba32(255, 0, 0);
+            source.Save(chart);
+        }
+
+        var gradientPath = GetPath("gradient.png");
+        using (var gradient = new Image<Rgba64>(64, 8))
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                for (var y = 0; y < 8; y++)
+                {
+                    gradient.Frames[0][x, y] = new Rgba64((ushort)(30000 + (x * 3)), 30000, 30000, 65535);
+                }
+            }
+
+            gradient.Save(gradientPath);
+        }
+
+        var chartWebP = GetPath("chart.webp");
+        var gradientWebP = GetPath("gradient.webp");
+        using var response = new NonSeekableMemoryStream();
+        Examples.SaveWebPWithOptions(chart, chartWebP, gradientPath, gradientWebP, apngPath, response);
+
+        using (var image = Image.Load<Rgb24>(chartWebP))
+        {
+            Assert.InRange(image.Frames[0][2, 2].B, 230, 255); // lossy, close to the blue background
+        }
+
+        using (var image = Image.Load<Rgb24>(gradientWebP))
+        {
+            // Lossless: each sample within one 8-bit step of its 16-bit value
+            for (var x = 0; x < 64; x++)
+            {
+                Assert.InRange((image.Frames[0][x, 4].R * 257) - (30000 + (x * 3)), -257, 257);
+            }
+        }
+
+        // The animation reached the non-seekable stream at completion
+        using var animation = Image.Load<Rgba32>(response.ToArray());
+        Assert.Equal(2, animation.Frames.Count);
+    }
+
+    /// <summary>A memory stream that reports it cannot seek, like an HTTP response.</summary>
+    private sealed class NonSeekableMemoryStream : MemoryStream
+    {
+        public override bool CanSeek => false;
+    }
+
+    [Fact]
     public void SaveAvifWritesALossyPhotoALosslessImageAndAnImageSequence()
     {
         var (apngPath, _) = BuildAnimation();
@@ -1501,6 +1557,239 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ExportCubeFacesWritesTheTopLevelOfEveryFace()
+    {
+        // A cube map of 2x2 faces with two levels, R8G8B8A8_UNORM: the texels of a face are its index
+        var data = new byte[6 * (4 + 1) * 4];
+        for (var face = 0; face < 6; face++)
+        {
+            data.AsSpan(face * 20 * 1, 20).Fill((byte)(face * 40));
+        }
+
+        var builder = TestHarness.Dds.DdsFileBuilder.Dx10(2, 2, 28, data);
+        builder.MiscFlag = 4;
+        builder.MipMapCount = 2;
+        var path = GetPath("cube.dds");
+        File.WriteAllBytes(path, builder.Build());
+
+        var written = Examples.ExportCubeFaces(path, _directory);
+        Assert.HasCount(6, written);
+        Assert.EndsWith("0-NegativeZ.png", written[5], StringComparison.Ordinal);
+        using var negativeZ = Image.Load<Rgba32>(written[5]);
+        Assert.Equal(new Size(2, 2), negativeZ.Size);
+        Assert.Equal(new Rgba32(200, 200, 200, 200), negativeZ.Frames[0][1, 1]);
+    }
+
+    [Fact]
+    public void ConvertDpxKeepsTheCodeValues()
+    {
+        var source = GetPath("scan.dpx");
+        using (var image = new Image<Rgb48>(4, 2))
+        {
+            image.Frames[0][1, 1] = new Rgb48(64, 32768, 65535);
+            image.Save(source, new DpxEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+        }
+
+        var output = GetPath("scan-copy.dpx");
+        var (timeCode, transfer) = Examples.ConvertDpx(source, output);
+        Assert.Null(timeCode);
+        Assert.Equal(DpxTransferCharacteristic.UserDefined, transfer);
+        using var copy = Image.Load<Rgb48>(output);
+        Assert.Equal(10, copy.Metadata.DpxHeader!.BitDepth);
+
+        // The 10-bit code values 1, 512 and 1023, scaled to 16 bits
+        Assert.Equal(new Rgb48(64, 32800, 65535), copy.Frames[0][1, 1]);
+    }
+
+    [Fact]
+    public void ConvertCineonToDpxWritesTheSamples()
+    {
+        var source = GetPath("scan.cin");
+        File.WriteAllBytes(source, GoldenCorpus.Default.Get("cin/rgb-10-be").ReadInput());
+        var output = GetPath("scan-from-cineon.dpx");
+        Assert.Equal(10, Examples.ConvertCineonToDpx(source, output));
+        using var cineon = Image.Load<Rgb48>(source);
+        using var dpx = Image.Load<Rgb48>(output);
+        Assert.Equal(cineon.Frames[0][2, 1], dpx.Frames[0][2, 1]);
+    }
+
+    [Fact]
+    public void SaveCineonCopiesTheHeaderAndTheCodeValues()
+    {
+        var source = GetPath("scan-header.cin");
+        File.WriteAllBytes(source, GoldenCorpus.Default.Get("cin/rgb-10-be").ReadInput());
+        var output = GetPath("scan-copy.cin");
+        Examples.SaveCineon(source, output);
+        using var original = Image.Load<Rgb48>(source);
+        using var copy = Image.Load<Rgb48>(output);
+        Assert.Equal(original.Frames[0][2, 1], copy.Frames[0][2, 1]);
+        Assert.Equal(10, copy.Metadata.CineonHeader!.BitsPerSample);
+        Assert.Equal(original.Metadata.CineonHeader!.ChannelDesignators, copy.Metadata.CineonHeader.ChannelDesignators);
+    }
+
+    [Fact]
+    public void SavePsdWritesALayerForTransparencyAndAPsbFile()
+    {
+        using var image = new Image<Rgba32>(6, 4, new Rgba32(10, 20, 30, 255));
+        image.Frames[0][2, 1] = new Rgba32(200, 100, 50, 0);
+        var psd = GetPath("document.psd");
+        var psb = GetPath("document.psb");
+        Examples.SavePsd(image, psd, psb);
+        var data = File.ReadAllBytes(psd);
+        Assert.Equal(1, data[5]);
+        Assert.Equal(2, File.ReadAllBytes(psb)[5]);
+        using var decoded = Image.Load<Rgba32>(psd);
+        Assert.Equal(new Rgba32(10, 20, 30, 255), decoded.Frames[0][0, 0]);
+        Assert.Equal(0, decoded.Frames[0][2, 1].A);
+    }
+
+    [Fact]
+    public void SaveDngWritesLinearRawData()
+    {
+        using var image = new Image<Rgb24>(300, 2, new Rgb24(255, 128, 0));
+        var dng = GetPath("photo.dng");
+        Examples.SaveDng(image, dng);
+        using var raw = DngRawImage.Load(dng);
+        Assert.False(raw.IsColorFilterArray);
+        var row = new float[300 * 3];
+        raw.CopyStoredRow(0, row);
+        Assert.Equal([255f, 128f, 0f], row.AsSpan(897, 3).ToArray());
+        using var rendering = Image.Load<RgbaFloat>(dng);
+        Assert.True(Math.Abs(rendering.Frames[0][299, 1].R - 1f) < 1e-4);
+    }
+
+    [Fact]
+    public void SaveOpenExrTextureAndPreviewWritesATiledMipmapAndALossyFile()
+    {
+        var texturePath = GetPath("texture.exr");
+        var reviewPath = GetPath("review.exr");
+        using (var hdr = new Image<RgbaHalf>(80, 40, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f)))
+        {
+            hdr.Frames[0][3, 2] = new RgbaHalf((Half)12f, (Half)6f, (Half)3f);
+            Examples.SaveOpenExrTextureAndPreview(hdr, texturePath, reviewPath);
+        }
+
+        // The tiled file keeps every sample; its header declares 64x64 tiles with mipmap levels
+        var texture = File.ReadAllBytes(texturePath);
+        Assert.Equal(0x02, texture[5] & 0x02);
+        Assert.True(texture.AsSpan().IndexOf("tiledesc\0"u8) > 0);
+        using (var decoded = Image.Load<RgbaHalf>(texture))
+        {
+            Assert.Equal(new RgbaHalf((Half)12f, (Half)6f, (Half)3f), decoded.Frames[0][3, 2]);
+            Assert.Equal(new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)2f), decoded.Frames[0][70, 30]);
+        }
+
+        // The review file declares DWAB (compression 9) and is close to the source away from the highlight
+        var review = File.ReadAllBytes(reviewPath);
+        var compression = review.AsSpan().IndexOf("compression\0compression\0"u8);
+        Assert.Equal(9, review[compression + 28]);
+        using (var decoded = Image.Load<RgbaFloat>(review))
+        {
+            Assert.Equal((80, 40), (decoded.Width, decoded.Height));
+            Assert.InRange(decoded.Frames[0][70, 30].B, 1.9f, 2.1f);
+            Assert.InRange(decoded.Frames[0][70, 30].R, 0.24f, 0.26f);
+        }
+    }
+
+    [Fact]
+    public void ConvertRadianceKeepsTheHighlightsAndReportsTheExposure()
+    {
+        var hdr = GetPath("environment.hdr");
+        using (var source = new Image<RgbaFloat>(8, 4, new RgbaFloat(0.25f, 0.5f, 1f, 1f)))
+        {
+            source.Frames[0][3, 2] = new RgbaFloat(12f, 6f, 3f, 1f);
+            source.Save(hdr);
+        }
+
+        var flat = GetPath("environment-flat.hdr");
+        var (preview, exposure) = Examples.ConvertRadiance(hdr, flat);
+        using (preview)
+        {
+            Assert.Equal(1d, exposure);
+            using (var copy = Image.Load<RgbaFloat>(flat))
+            {
+                // 12, 6 and 3 share the exponent of 12 exactly: the decoder reads the middle of the intervals of their mantissas
+                Assert.Equal(new RgbaFloat(12.03125f, 6.03125f, 3.03125f, 1f), copy.Frames[0][3, 2]);
+            }
+
+            // The highlight is the white of the tone mapping, and its hue is kept
+            var pixel = preview.Frames[0][3, 2];
+            Assert.Equal(255, pixel.R);
+            Assert.InRange(pixel.G, 120, 135);
+            Assert.True(preview.Frames[0][0, 0].B < 255);
+        }
+    }
+
+    [Fact]
+    public void SaveDdsTexturesWritesBc7AndACubeMap()
+    {
+        var albedo = GetPath("albedo.png");
+        using (var image = new Image<Rgba32>(8, 4))
+        {
+            image.Frames[0][1, 1] = new Rgba32(200, 100, 50, 255);
+            image.Save(albedo);
+        }
+
+        var faces = new List<string>();
+        for (var i = 0; i < 6; i++)
+        {
+            var path = GetPath($"face-{i}.png");
+            using var face = new Image<Rgba32>(4, 4);
+            face.Frames[0][0, 0] = new Rgba32((byte)(i * 40), 0, 0, 255);
+            face.Save(path);
+            faces.Add(path);
+        }
+
+        Examples.SaveDdsTextures(albedo, faces, _directory);
+        using (var texture = ImageCollection.Load(Path.Combine(_directory, "albedo.dds")))
+        {
+            Assert.Equal([new Size(8, 4), new Size(4, 2), new Size(2, 1), new Size(1, 1)], texture.Entries.Select(entry => entry.Size));
+        }
+
+        using var sky = ImageCollection.Load(Path.Combine(_directory, "sky.dds"));
+        Assert.Equal(6 * 3, sky.Count);
+        Assert.Equal(CubeMapFace.NegativeZ, sky[17].TextureSurface!.Face);
+    }
+
+    [Fact]
+    public void SaveKtx2TextureWritesAstcWithMipLevels()
+    {
+        var input = GetPath("astc-input.png");
+        using (var image = new Image<Rgba32>(12, 12))
+        {
+            image.Save(input);
+        }
+
+        var output = GetPath("texture-astc.ktx2");
+        Examples.SaveKtx2Texture(input, output);
+        using var texture = Image.Load(output);
+        Assert.Equal("ASTC_6x6_SRGB_BLOCK", texture.Metadata.Ktx2Header!.FormatName);
+        Assert.Equal(4, texture.Metadata.Ktx2Header.LevelCount);
+        Assert.Equal(3, texture.Metadata.Ktx2Header.SupercompressionScheme);
+    }
+
+    [Fact]
+    public void ExportKtx2LevelsWritesTheBaseImageAndEveryLevel()
+    {
+        // An sRGB texture of 4x2 and 2x1 texels, assembled from the KTX 2.0 specification
+        var builder = new Ktx2FileBuilder { VkFormat = 43, PixelWidth = 4, PixelHeight = 2, Dfd = Ktx2FileBuilder.Rgba8Dfd(true, 0, 1, 2, 15) };
+        builder.Levels.Add([.. Enumerable.Range(0, 32).Select(i => (byte)(i * 8))]);
+        builder.Levels.Add([255, 0, 0, 255, 0, 0, 255, 255]);
+        var path = GetPath("texture.ktx2");
+        File.WriteAllBytes(path, builder.Build());
+        var directory = Path.GetDirectoryName(path)!;
+
+        var files = Examples.ExportKtx2Levels(path, directory);
+        Assert.HasCount(2, files);
+        using var baseImage = Image.Load<Rgba32>(Path.Combine(directory, "base.png"));
+        Assert.Equal(new Size(4, 2), baseImage.Size);
+        Assert.Equal(new Rgba32(32, 40, 48, 56), baseImage.Frames[0][1, 0]);
+        using var level = Image.Load<Rgba32>(files[1]);
+        Assert.Equal(new Size(2, 1), level.Size);
+        Assert.Equal(new Rgba32(0, 0, 255, 255), level.Frames[0][1, 0]);
+    }
+
+    [Fact]
     public void SaveJpeg2000WritesALosslessFileAndALossyCodestream()
     {
         var photo = GetPath("photo16-resolution.png");
@@ -1562,9 +1851,44 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.Equal(pixels, decodedPixels);
         }
 
+        // Two layers: the first one alone decodes too
         Assert.InRange(new FileInfo(codestream).Length, 90_000, 100_000);
         using var lossy = Image.Load(codestream);
         Assert.Equal((640, 480), (lossy.Width, lossy.Height));
+        using var firstLayer = Image.Load(codestream, new ImageDecodeOptions { Configuration = new ImageConfiguration { Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = 1 } } });
+        Assert.Equal((640, 480), (firstLayer.Width, firstLayer.Height));
+    }
+
+    [Fact]
+    public void SaveJpeg2000ForStreamingWritesPrecinctsTilePartsAndLengthMarkers()
+    {
+        var input = GetPath("pattern-streaming.png");
+        var pixels = new Rgb24[1200 * 700];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (x, y) = (i % 1200, i / 1200);
+            pixels[i] = new Rgb24((byte)(x / 5), (byte)((x * y) >> 11), (byte)((x ^ y) & 0xFF));
+        }
+
+        using (var source = Image.ImportPixelData<Rgb24>(pixels, 1200, 700))
+        {
+            source.Save(input);
+        }
+
+        var path = GetPath("streaming.jp2");
+        Examples.SaveJpeg2000ForStreaming(input, path);
+
+        // Two tiles of six resolution levels: a tile-part per level; the file is lossless
+        var data = File.ReadAllBytes(path);
+        var structure = Meziantou.Framework.Imaging.TestHarness.Jpeg2000.ReferenceJpeg2000.Parse(data);
+        Assert.Equal(2, structure.TileCount);
+        Assert.Equal(12, structure.TileParts.Count);
+        Assert.True(structure.HasTilePartLengths && structure.HasPacketLengths);
+        Assert.All(structure.CodingStyles, style => Assert.True(style.HasPrecincts));
+        using var decoded = Image.Load<Rgb24>(path);
+        var decodedPixels = new Rgb24[pixels.Length];
+        decoded.Frames[0].CopyPixelDataTo(decodedPixels);
+        Assert.Equal(pixels, decodedPixels);
     }
 
     [Fact]
@@ -2272,6 +2596,36 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(ImageCollectionKind.Pages, collection.Kind);
         Assert.Equal(new Size(64, 64), collection[0].Size);
         Assert.Equal(new Size(32, 32), collection[1].Size);
+    }
+
+    [Fact]
+    public void SaveTiffInSeparatePlanesWritesOnePlanePerSample()
+    {
+        var pixels = new Rgba32[7 * 5];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)(i * 7), (byte)(255 - i), (byte)(i * i), (byte)(100 + i));
+        }
+
+        using var source = Image.ImportPixelData<Rgba32>(pixels, 7, 5);
+        var input = GetPath("planes.png");
+        source.Save(input);
+        var tiff = GetPath("planes.tif");
+        Examples.SaveTiffInSeparatePlanes(input, tiff);
+
+        // PlanarConfiguration (tag 284) of the first directory of the little-endian file is 2, and the pixels are the source ones
+        var file = File.ReadAllBytes(tiff);
+        var directory = BinaryPrimitives.ReadInt32LittleEndian(file.AsSpan(4));
+        var count = BinaryPrimitives.ReadUInt16LittleEndian(file.AsSpan(directory));
+        var planar = Enumerable.Range(0, count)
+            .Select(i => file.AsSpan(directory + 2 + (i * 12), 12).ToArray())
+            .Single(entry => BinaryPrimitives.ReadUInt16LittleEndian(entry) == 284);
+        Assert.Equal(2, BinaryPrimitives.ReadUInt16LittleEndian(planar.AsSpan(8)));
+
+        using var decoded = Image.Load<Rgba32>(tiff);
+        var actual = new Rgba32[pixels.Length];
+        decoded.Frames[0].CopyPixelDataTo(actual);
+        Assert.Equal(pixels, actual);
     }
 
     [Fact]
@@ -3673,6 +4027,154 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SeamCarveKeepsTheProtectedRegion()
+    {
+        // A flat background, a textured subject on the left and a smaller one on the right: halving the width keeps the
+        // protected subject whole
+        var input = GetPath("scene.png");
+        using (var source = new Image<Rgb24>(40, 10, new Rgb24(200, 220, 240)))
+        {
+            for (var y = 0; y < 10; y++)
+            {
+                for (var x = 2; x < 12; x++)
+                {
+                    source.Frames[0][x, y] = new Rgb24((byte)(40 + (45 * (((7 * x) + (3 * y)) % 5))), 60, 20);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var output = GetPath("banner.png");
+        ProcessingExamples.ResizeToBanner(input, output, new Rectangle(2, 0, 10, 10));
+
+        using var result = Image.Load<Rgb24>(output);
+        Assert.Equal(new Size(20, 10), result.Size);
+        var subjectPixels = 0;
+        for (var y = 0; y < 10; y++)
+        {
+            for (var x = 0; x < 20; x++)
+            {
+                if (result.Frames[0][x, y] != new Rgb24(200, 220, 240))
+                {
+                    subjectPixels++;
+                }
+            }
+        }
+
+        Assert.Equal(100, subjectPixels);
+    }
+
+    [Fact]
+    public void InpaintRemovesTheMaskedScratch()
+    {
+        // A uniform blue photo with a white scratch, and its mask
+        var photoPath = GetPath("scratched.png");
+        var maskPath = GetPath("scratch-mask.png");
+        using (var photo = new Image<Rgb24>(20, 12, new Rgb24(30, 60, 160)))
+        using (var mask = new Image<Gray8>(20, 12))
+        {
+            for (var x = 2; x < 18; x++)
+            {
+                photo.Frames[0][x, 6] = new Rgb24(255, 255, 255);
+                mask.Frames[0][x, 6] = new Gray8(255);
+            }
+
+            photo.Save(photoPath);
+            mask.Save(maskPath);
+        }
+
+        var output = GetPath("repaired.png");
+        ProcessingExamples.RemoveScratches(photoPath, maskPath, output);
+
+        using var result = Image.Load<Rgb24>(output);
+        for (var x = 0; x < 20; x++)
+        {
+            Assert.Equal(new Rgb24(30, 60, 160), result.Frames[0][x, 6]);
+        }
+    }
+
+    [Fact]
+    public void DetectLinesAndCornersFindTheSquare()
+    {
+        // A light square on a dark background: four lines (two horizontal, two vertical) and four corners
+        var input = GetPath("square.png");
+        using (var source = new Image<Rgb24>(60, 60, new Rgb24(20, 20, 20)))
+        {
+            for (var y = 15; y < 45; y++)
+            {
+                for (var x = 15; x < 45; x++)
+                {
+                    source.Frames[0][x, y] = new Rgb24(230, 230, 230);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var lines = ProcessingExamples.FindStraightLines(input);
+        Assert.Equal(4, lines.Take(4).Count(line => Math.Abs(line.Slope) is <= 2 or >= 88));
+
+        var corners = ProcessingExamples.FindCorners(input);
+        Assert.Equal(4, corners.Count);
+        Assert.All(corners, corner => Assert.True(Math.Abs(corner.X - 29.5) is > 12 and < 17 && Math.Abs(corner.Y - 29.5) is > 12 and < 17, $"{corner} is not a corner of the square"));
+    }
+
+    [Fact]
+    public void DeskewStraightensTheLinesOfText()
+    {
+        // Lines of words drawn on a page, scanned 4 degrees counterclockwise
+        var input = GetPath("skewed.png");
+        using (var page = new Image<Rgb24>(200, 160, new Rgb24(255, 255, 255)))
+        {
+            for (var line = 0; line < 7; line++)
+            {
+                for (var y = 20 + (line * 18); y < 26 + (line * 18); y++)
+                {
+                    for (var x = 20; x < 180; x++)
+                    {
+                        if (x % 21 < 16)
+                        {
+                            page.Frames[0][x, y] = new Rgb24(0, 0, 0);
+                        }
+                    }
+                }
+            }
+
+            page.Rotate(-4, new TransformOptions { CanvasMode = TransformCanvasMode.Keep, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+            page.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        Assert.InRange(ProcessingExamples.StraightenScan(input, output), -4.1, -3.9);
+        using var result = Image.Load(output);
+        Assert.InRange(result.Frames[0].EstimateSkew(), -0.1, 0.1);
+    }
+
+    [Fact]
+    public void AlignToReferenceIgnoresTheWrongMatches()
+    {
+        var input = GetPath("photo.png");
+        using (var photo = new Image<Rgb24>(64, 48, new Rgb24(10, 120, 200)))
+        {
+            photo.Save(input);
+        }
+
+        // The photo is the reference moved by (5, 3), and one match of five is wrong
+        PointD[] photoPoints = [new(10, 10), new(50, 12), new(48, 40), new(12, 38), new(30, 25), new(20, 20)];
+        PointD[] referencePoints = [new(5, 7), new(45, 9), new(43, 37), new(7, 35), new(25, 22), new(60, 2)];
+        var output = GetPath("aligned.png");
+        var estimate = ProcessingExamples.AlignToReference(input, output, photoPoints, referencePoints, new Size(64, 48));
+
+        Assert.Equal(5, estimate.InlierCount);
+        Assert.False(estimate.Inliers[5]);
+        Assert.True(estimate.Transform.TryTransform(new PointD(30, 30), out var moved));
+        Assert.InRange(moved.DistanceTo(new PointD(25, 27)), 0, 1e-6);
+        using var result = Image.Load<Rgb24>(output);
+        Assert.Equal(new Rgb24(10, 120, 200), result.Frames[0][20, 20]);
+    }
+
+    [Fact]
     public void RotateAndFlipTransposesThePixels()
     {
         // A quarter turn clockwise then a horizontal mirror moves the pixel (x, y) to (y, x)
@@ -4349,6 +4851,34 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LayOutWithType1FontAddsTheKerningOfTheAfmFile()
+    {
+        var pfbPath = GetPath("type1.pfb");
+        var afmPath = GetPath("type1.afm");
+        File.WriteAllBytes(pfbPath, CorpusGenerator.Common.FontType1Writer.Sample().WritePfb());
+        File.WriteAllText(afmPath, "StartFontMetrics 4.1\nStartKernData\nStartKernPairs 1\nKPX A O -50\nEndKernPairs\nEndKernData\nEndFontMetrics\n");
+
+        // A is 600 units wide and O 700, less 50 for the kerning pair, at 24 pixels per 1000 units
+        var layout = Examples.LayOutWithType1Font(pfbPath, afmPath, "AO");
+        Assert.Equal(1250 * 24 / 1000.0, layout.Width, 1e-9);
+    }
+
+    [Fact]
+    public void LayOutEvenlyFillsTheLinesOfAParagraphEvenly()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        const string Text = "The breaks of a paragraph are chosen together, so that its lines are evenly filled: a line can end before the text that would still fit.";
+        var layout = TextExamples.LayOutEvenly(fontPath, Text, 160);
+        var greedy = TextLayout.Create(Text, new TextStyle(Font.Load(fontPath), 16), new TextLayoutOptions { MaxWidth = 160 });
+
+        // Every line fits, and the room left at the end of the lines but the last one is not more than with greedy breaking
+        Assert.All(layout.Lines, line => Assert.True(line.Width <= 160));
+        Assert.True(GetRoom(layout) <= GetRoom(greedy) + 1e-9);
+
+        static double GetRoom(TextLayout layout) => layout.Lines.Take(layout.LineCount - 1).Sum(line => (160 - line.Width) * (160 - line.Width));
+    }
+
+    [Fact]
     public void DrawSyntheticStylesThickensAndSlantsTheRegularFont()
     {
         var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
@@ -4381,6 +4911,33 @@ public sealed class DocumentationExampleTests : IDisposable
             }
         });
         Assert.True(ink[1] > ink[0] * 2.5, $"The bold line has an ink of {ink[1]} and the regular one {ink[0]}");
+    }
+
+    [Fact]
+    public void DrawTimingTableDrawsTheSamePixelsOnceTheMasksAreCached()
+    {
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var first = GetPath("timings-1.png");
+        var second = GetPath("timings-2.png");
+        Assert.False(TextLayout.Create("0123456789. ms", font, 13).HasMissingGlyphs);
+        TextExamples.DrawTimingTable(font, first);
+        TextExamples.DrawTimingTable(font, second);
+
+        // The second drawing copies the masks the first one computed: the pixels are the same
+        using var image = Image.Load<Rgba32>(first);
+        using var cached = Image.Load<Rgba32>(second);
+        Assert.Equal((400, 230), (image.Width, image.Height));
+        var dark = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                Assert.Equal(image.Frames[0][x, y], cached.Frames[0][x, y]);
+                dark += image.Frames[0][x, y].R < 128 ? 1 : 0;
+            }
+        }
+
+        Assert.True(dark > 1000, $"{dark} dark pixels");
     }
 
     [Fact]
@@ -4548,6 +5105,20 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SpotColorGivesTheDisplayColorAndTheInks()
+    {
+        // A swatch book: a version 2 named color profile of CMYK inks with the prefix "PMS " and the suffix " C"
+        var swatchBook = GetPath("swatches.icc");
+        File.WriteAllBytes(swatchBook, IccTestProfiles.NamedColorLabV2().Data.ToArray());
+        var (rgb, inks) = ColorExamples.SpotColor(swatchBook, "PMS Process Cyan C");
+
+        // L* 55, a* -37, b* -50: a cyan on the display, and full cyan ink on the press
+        Assert.True(rgb[0] < 60 && rgb[1] > 120 && rgb[2] > 180, string.Join(' ', rgb));
+        Assert.Equal([1, 0, 0, 0], inks);
+        Assert.Throws<ArgumentException>("name", () => ColorExamples.SpotColor(swatchBook, "Process Cyan"));
+    }
+
+    [Fact]
     public void SaveGifThresholdsOrFlattensAlphaAndReducesColors()
     {
         // 1,024 colors whose alpha grows from 0 (left) to 248 (right), in steps of 8
@@ -4606,6 +5177,44 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveSmallerGifTradesErrorForSize()
+    {
+        // A photo-like image with more than 256 colors
+        var input = GetPath("photo.png");
+        using (var image = new Image<Rgb24>(96, 64))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24((byte)(128 + (100 * Math.Sin(x / 7d)) + ((x * y) % 9)), (byte)(255 * y / 64), (byte)(128 + (90 * Math.Cos((x + y) / 11d))));
+                    }
+                }
+            });
+
+            image.Save(input);
+        }
+
+        var gifPath = GetPath("smaller.gif");
+        FormatExamples.SaveSmallerGif(input, gifPath);
+
+        var losslessPath = GetPath("lossless.gif");
+        using (var image = Image.Load(input))
+        {
+            image.Save(losslessPath, new GifEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+        }
+
+        using var gif = Image.Load<Rgba32>(gifPath);
+        Assert.Equal(ImageFormat.Gif, gif.Metadata.SourceFormat);
+        var smallerSize = new FileInfo(gifPath).Length;
+        var losslessSize = new FileInfo(losslessPath).Length;
+        Assert.True(smallerSize < losslessSize, $"{smallerSize} bytes with the tolerance, {losslessSize} without");
+    }
+
+    [Fact]
     public void SavePngWithPrivateChunkReadsTheChunkBack()
     {
         var chunk = FormatExamples.SavePngWithPrivateChunk(GetPath("private-chunk.png"));
@@ -4614,6 +5223,47 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.True(chunk.IsPrivate);
         Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
         Assert.Equal("settings"u8.ToArray(), chunk.Data.ToArray());
+    }
+
+    [Fact]
+    public void SaveJpegXlLayersWritesAndReadsTheLayers()
+    {
+        var photoPath = GetPath("layers-photo.png");
+        var logoPath = GetPath("layers-logo.png");
+        using (var photo = new Image<Rgba32>(64, 48, new Rgba32(10, 20, 30, 255)))
+        using (var logo = new Image<Rgba32>(16, 12, new Rgba32(200, 0, 0, 128)))
+        {
+            photo.Save(photoPath);
+            logo.Save(logoPath);
+        }
+
+        var layeredPath = GetPath("layers.jxl");
+        Assert.Equal("Photo 64x48 at 0,0 (Replace), Logo 16x12 at 40,8 (Blend)", FormatExamples.SaveJpegXlLayers(photoPath, logoPath, layeredPath));
+
+        // The image the layers make: the logo over the photo, half transparent
+        using var image = Image.Load<Rgba32>(layeredPath);
+        Assert.Equal((64, 48, 1), (image.Width, image.Height, image.Frames.Count));
+        Assert.Equal(new Rgba32(10, 20, 30, 255), image.Frames[0][10, 10]);
+        var blended = image.Frames[0][45, 12];
+        Assert.Equal(255, blended.A);
+        Assert.InRange(blended.R, 104, 106);
+    }
+
+    [Fact]
+    public void SaveOptimizedJpegXlAnimationKeepsTheFrames()
+    {
+        var (apngPath, _) = BuildAnimation();
+        var jxlPath = GetPath("optimized.jxl");
+        Assert.True(FormatExamples.SaveOptimizedJpegXlAnimation(apngPath, jxlPath) > 0);
+
+        using var expected = Image.Load<Rgba32>(apngPath);
+        using var animation = Image.Load<Rgba32>(jxlPath);
+        Assert.Equal(expected.Frames.Count, animation.Frames.Count);
+        for (var i = 0; i < expected.Frames.Count; i++)
+        {
+            Assert.Equal(expected.Frames[i][63, 63], animation.Frames[i][63, 63]);
+            Assert.Equal(expected.Frames[i][0, 0], animation.Frames[i][0, 0]);
+        }
     }
 
     [Fact]
@@ -4813,6 +5463,36 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void CustomPixelExampleConvertsThroughTheStorageFormat()
+    {
+        var path = GetPath("colors.png");
+        using (var source = new Image<Rgba32>(2, 1, new Rgba32(255, 255, 255)))
+        {
+            source.Frames[0][1, 0] = new Rgba32(255, 0, 0, 0);
+            source.Save(path);
+        }
+
+        // The transparent pixel is flattened onto white: both pixels are white, whose chroma is neutral
+        var pixels = ExtensibilityExamples.ToYuv(path);
+        Assert.Equal([new ExtensibilityExamples.Yuv8(255, 128, 128), new ExtensibilityExamples.Yuv8(255, 128, 128)], pixels);
+    }
+
+    [Fact]
+    public void BufferAllocatorExampleReturnsEveryArray()
+    {
+        var input = GetPath("allocator-input.png");
+        using (var source = new Image<Rgb24>(128, 96, new Rgb24(10, 20, 30)))
+        {
+            source.Save(input);
+        }
+
+        Assert.Equal(0, ExtensibilityExamples.ResizeWithPinnedMemory(input, GetPath("allocator-output.png")));
+        // The resize keeps the aspect ratio of the 128x96 image
+        using var output = Image.Load(GetPath("allocator-output.png"));
+        Assert.Equal(new Size(64, 48), output.Size);
+    }
+
+    [Fact]
     public void CustomOperationExamplesProcessEveryPixelFormat()
     {
         using var image = new Image<Rgba32>(4, 4, new Rgba32(200, 100, 0, 255));
@@ -4823,6 +5503,21 @@ public sealed class DocumentationExampleTests : IDisposable
         using var uniform = new Image<Rgba32>(4, 4, new Rgba32(10, 20, 30, 77));
         ExtensibilityExamples.Emboss(uniform);
         Assert.Equal(new Rgba32(128, 128, 128, 77), uniform.Frames[0][2, 2]);
+    }
+
+    [Fact]
+    public void ProcessorExampleUpscalesEveryFrame()
+    {
+        using var image = new Image<Rgb24>(2, 1, new Rgb24(10, 20, 30));
+        image.Frames[0][1, 0] = new Rgb24(200, 100, 0);
+        image.InsertFrame(1, image.Frames[0]);
+        image.Frames[1].Metadata.Hotspot = new Point(1, 0);
+        ExtensibilityExamples.UpscalePixelArt(image, 3);
+
+        Assert.Equal(new Size(6, 3), image.Size);
+        Assert.All(Enumerable.Range(0, image.Frames.Count), i => Assert.Equal(new Rgb24(200, 100, 0), image.Frames[i][3, 2]));
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[1][2, 2]);
+        Assert.Equal(new Point(3, 0), image.Frames[1].Metadata.Hotspot);
     }
 
     [Fact]

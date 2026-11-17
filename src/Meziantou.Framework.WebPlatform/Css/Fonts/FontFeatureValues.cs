@@ -26,7 +26,7 @@ internal static class FontFeatureValues
         {
             switch (component)
             {
-                case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.Token.Value.Equals("historical-forms", StringComparison.OrdinalIgnoreCase):
+                case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.Value.Equals("historical-forms", StringComparison.OrdinalIgnoreCase):
                     features.Add(new FontFeature(OpenTypeTag.FromString("hist"), 1));
                     break;
 
@@ -50,7 +50,7 @@ internal static class FontFeatureValues
                     families ??= GetFamilies(style);
                     foreach (var argument in CssValueComputer.SplitArguments(function.Value))
                     {
-                        if (ValueMatcher.RemoveWhitespace(argument) is [CssPreservedToken { Type: CssTokenType.Ident } name] && FindValues(rules, families, type.Value, name.Token.Value) is { } values)
+                        if (ValueMatcher.RemoveWhitespace(argument) is [CssPreservedToken { Type: CssTokenType.Ident } name] && FindValues(rules, families, type.Value, name.Value) is { } values)
                         {
                             AddFeatures(type.Value, values, features);
                         }

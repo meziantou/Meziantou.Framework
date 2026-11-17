@@ -67,7 +67,7 @@ internal static class MotionPath
         foreach (var component in CssParser.ParseListOfComponentValues(value))
         {
             if (component is CssPreservedToken { Type: CssTokenType.Ident } ident)
-                return InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                return InfraAscii.ToAsciiLowercase(ident.Value);
         }
 
         return null;
@@ -345,7 +345,7 @@ internal static class MotionPath
         {
             switch (arguments[i])
             {
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "at"):
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "at"):
                     start = BasicShapePaths.ResolvePosition(arguments.GetRange(i + 1, arguments.Count - i - 1), referenceBox, 1);
                     if (start is null)
                         return null;
@@ -353,16 +353,16 @@ internal static class MotionPath
                     i = arguments.Count;
                     break;
 
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "contain"):
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "contain"):
                     contain = true;
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Ident } ident:
-                    size = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                    size = InfraAscii.ToAsciiLowercase(ident.Value);
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                    angle = ParseAngle(CssSerializer.SerializeNumber(dimension.Token.NumericValue) + InfraAscii.ToAsciiLowercase(dimension.Token.Value));
+                    angle = ParseAngle(CssSerializer.SerializeNumber(dimension.NumericValue) + InfraAscii.ToAsciiLowercase(dimension.Value));
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Number, Token.NumericValue: 0 }:

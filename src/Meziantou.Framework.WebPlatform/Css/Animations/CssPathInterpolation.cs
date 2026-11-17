@@ -76,7 +76,7 @@ internal static class CssPathInterpolation
         string? box = null;
         if (values is [CssFunction, CssPreservedToken { Type: CssTokenType.Ident } ident])
         {
-            box = ident.Token.Value.ToLowerInvariant();
+            box = ident.Value.ToLowerInvariant();
             values = [values[0]];
         }
 

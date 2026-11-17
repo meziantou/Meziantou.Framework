@@ -765,7 +765,7 @@ internal sealed partial class Painter
         if (fallback is "none")
             return null;
 
-        if (components[1] is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "currentcolor"))
+        if (components[1] is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "currentcolor"))
             return new DisplayPaint(GetColor(style, "color"));
 
         return DisplayColor.Parse(fallback) is { } fallbackColor ? new DisplayPaint(fallbackColor) : null;

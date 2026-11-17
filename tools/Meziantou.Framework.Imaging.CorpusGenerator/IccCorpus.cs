@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.CorpusGenerator.Infrastructure;
+using Meziantou.Prebuilt;
 
 namespace Meziantou.Framework.Imaging.CorpusGenerator;
 
@@ -50,6 +51,20 @@ namespace Meziantou.Framework.Imaging.CorpusGenerator;
 /// unchanged; with a CMYK output profile as a source (the one of macOS), it does too; and with the perceptual intent of
 /// a version 4 profile, LittleCMS compensates even without -b.
 /// </para>
+/// <para>
+/// Named color profiles (version 2 and 4, Common/IccProfileBuilder.cs) are converted by transicc, whose input is the index
+/// of each color; the vectors store that index as the source sample ("sourceSamples": "named-color-index"). LittleCMS
+/// ignores black point compensation for them, as the library does. Named colors in the CIEXYZ connection space are not
+/// in the corpus: LittleCMS 2.19 decodes their coordinates with the scale of the legacy CIELAB encoding (the media white
+/// comes out 0.4% brighter than white) and iccDEV 2.4.2.5 twice as bright, instead of the u1Fixed15Number of ICC.1:2022
+/// Table 66; the unit tests check them with hand-computed values.
+/// </para>
+/// <para>
+/// The version 5 (iccMAX) profiles are written as XML (Common/IccMaxProfileXml.cs) and built by iccFromXml of iccDEV, the
+/// reference implementation of ICC.2:2023, whose iccApplyNamedCmm converts their colors (IccCorpus.IccMax.cs). Its
+/// version 4 perceptual intent applies a black point scaling, as LittleCMS does: the iccMAX conversions use the
+/// colorimetric intents, and the perceptual intent between two iccMAX profiles only.
+/// </para>
 /// </remarks>
 internal static partial class IccCorpus
 {
@@ -72,6 +87,10 @@ internal static partial class IccCorpus
     private const string CurveBlackPointJustification = "Both systems take the black point from the tone curve and scale CIEXYZ toward white identically; only rounding differs.";
 
     private const string RampBlackPointJustification = "Both systems estimate the black point from the round trip of a lightness ramp, sampled at 256 points by LittleCMS and at 101 by the library.";
+
+    private const string IccDevJustification = "Same processing elements in both systems: iccDEV evaluates them in single precision, the library in double precision; the color lookup tables are interpolated multilinearly by both.";
+
+    private const string IccDevCalculatorJustification = "Same calculator functions in both systems, in single precision: only the precision of the curves and matrices around them and the order of the sums differ.";
 
     private static readonly Profile[] Profiles =
     [
@@ -133,6 +152,16 @@ internal static partial class IccCorpus
         new("icc/synthetic-gray-paper", IccProfileBuilder.GrayPaper, nameof(IccProfileBuilder.GrayPaper), 1, ["icc.version=4", "icc.model=monochrome", "icc.pcs=lab", "icc.space=gray", "icc.class=output", "icc.media-white", "icc.black-point"]),
         new("icc/synthetic-rgb-scanner", IccProfileBuilder.RgbScanner, nameof(IccProfileBuilder.RgbScanner), 3, ["icc.version=4", "icc.model=matrix", "icc.curve=gamma", "icc.space=rgb", "icc.class=input", "icc.media-white"]),
         new("icc/synthetic-gray-printer-lut8", IccProfileBuilder.GrayPrinterLut8, nameof(IccProfileBuilder.GrayPrinterLut8), 1, ["icc.version=2", "icc.model=lut8", "icc.pcs=lab", "icc.space=gray", "icc.direction=both", "icc.class=output", "icc.black-point"]),
+
+        // Named color profiles: the source samples of their conversions are the indexes of the colors
+        new("icc/synthetic-named-lab-v2", IccProfileBuilder.NamedColorLabV2, nameof(IccProfileBuilder.NamedColorLabV2), 1, ["icc.version=2", "icc.model=named-color", "icc.pcs=lab", "icc.space=cmyk", "icc.class=named-color"]),
+
+        // iccMAX profiles, built from XML by iccFromXml (IccCorpus.IccMax.cs)
+        new("icc/iccmax-rgb-xyz-mpe", IccMaxProfileXml.RgbXyzMpe, nameof(IccMaxProfileXml.RgbXyzMpe), 3, ["icc.version=5", "icc.model=mpe", "icc.mpe=curves", "icc.mpe=matrix", "icc.pcs=xyz", "icc.space=rgb", "icc.direction=both"]),
+        new("icc/iccmax-rgb-lab-calculator", IccMaxProfileXml.RgbLabCalculator, nameof(IccMaxProfileXml.RgbLabCalculator), 3, ["icc.version=5", "icc.model=mpe", "icc.mpe=calculator", "icc.pcs=lab", "icc.space=rgb", "icc.class=color-space", "icc.direction=both"]),
+        new("icc/iccmax-cmyk-lab-clut", IccMaxProfileXml.CmykLabClut, nameof(IccMaxProfileXml.CmykLabClut), 4, ["icc.version=5", "icc.model=mpe", "icc.mpe=clut", "icc.mpe=sampled-curves", "icc.pcs=lab", "icc.space=cmyk", "icc.class=output", "icc.direction=both", "icc.media-white", "icc.absolute-tags"]),
+        new("icc/iccmax-gray-xyz-absolute", IccMaxProfileXml.GrayXyzAbsolute, nameof(IccMaxProfileXml.GrayXyzAbsolute), 1, ["icc.version=5", "icc.model=mpe", "icc.mpe=formula-curves", "icc.pcs=xyz", "icc.space=gray", "icc.class=output", "icc.direction=both", "icc.media-white", "icc.absolute-tags"]),
+        new("icc/iccmax-named-lab", IccMaxProfileXml.NamedColors, nameof(IccMaxProfileXml.NamedColors), 1, ["icc.version=5", "icc.model=named-color", "icc.pcs=lab", "icc.space=cmyk", "icc.class=named-color"]),
     ];
 
     private static readonly Transform[] Transforms =
@@ -256,6 +285,27 @@ internal static partial class IccCorpus
         new("icc/sgrey-v4-to-synthetic-gray-paper-compensated", "icc/sgrey-v4", "icc/synthetic-gray-paper", 1, true, 3, 0.75, CurveBlackPointJustification),
         new("icc/sgrey-v4-to-synthetic-gray-printer-lut8-perceptual-compensated", "icc/sgrey-v4", "icc/synthetic-gray-printer-lut8", 0, true, 15, 5.0, RampBlackPointJustification),
         new("icc/synthetic-gray-printer-lut8-to-srgb-v4-perceptual-compensated", "icc/synthetic-gray-printer-lut8", "icc/srgb-v4", 0, true, 4, 0.75, RampBlackPointJustification),
+
+        // Named colors: the legacy CIELAB encoding, to RGB, gray and CMYK, and the absolute colorimetric intent
+        new("icc/synthetic-named-lab-v2-to-srgb-v4", "icc/synthetic-named-lab-v2", "icc/srgb-v4", 1, false, 4, 0.5, RoundingJustification),
+        new("icc/synthetic-named-lab-v2-to-synthetic-cmyk-lab-lut16-perceptual", "icc/synthetic-named-lab-v2", "icc/synthetic-cmyk-lab-lut16", 0, false, 4, 1.0, TableJustification),
+        new("icc/synthetic-named-lab-v2-to-sgrey-v4-absolute", "icc/synthetic-named-lab-v2", "icc/sgrey-v4", 3, false, 4, 0.5, RoundingJustification),
+
+        // iccMAX profiles, converted by iccDEV: each one from its device values and to them, with the colorimetric intents
+        new("icc/iccmax-rgb-xyz-mpe-to-srgb-v4", "icc/iccmax-rgb-xyz-mpe", "icc/srgb-v4", 1, false, 6, 0.5, IccDevJustification, IccDev: true),
+        new("icc/srgb-v4-to-iccmax-rgb-xyz-mpe", "icc/srgb-v4", "icc/iccmax-rgb-xyz-mpe", 1, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/iccmax-rgb-lab-calculator-to-srgb-v4", "icc/iccmax-rgb-lab-calculator", "icc/srgb-v4", 1, false, 6, 0.5, IccDevCalculatorJustification, IccDev: true),
+        new("icc/srgb-v4-to-iccmax-rgb-lab-calculator", "icc/srgb-v4", "icc/iccmax-rgb-lab-calculator", 1, false, 6, 0.5, IccDevCalculatorJustification, IccDev: true),
+        new("icc/iccmax-rgb-xyz-mpe-to-iccmax-rgb-lab-calculator-perceptual", "icc/iccmax-rgb-xyz-mpe", "icc/iccmax-rgb-lab-calculator", 0, false, 4, 0.5, IccDevCalculatorJustification, IccDev: true),
+        new("icc/iccmax-cmyk-lab-clut-to-srgb-v4", "icc/iccmax-cmyk-lab-clut", "icc/srgb-v4", 1, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/srgb-v4-to-iccmax-cmyk-lab-clut", "icc/srgb-v4", "icc/iccmax-cmyk-lab-clut", 1, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/iccmax-cmyk-lab-clut-to-srgb-v4-absolute", "icc/iccmax-cmyk-lab-clut", "icc/srgb-v4", 3, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/srgb-v4-to-iccmax-cmyk-lab-clut-absolute", "icc/srgb-v4", "icc/iccmax-cmyk-lab-clut", 3, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/iccmax-gray-xyz-absolute-to-sgrey-v4", "icc/iccmax-gray-xyz-absolute", "icc/sgrey-v4", 1, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/sgrey-v4-to-iccmax-gray-xyz-absolute", "icc/sgrey-v4", "icc/iccmax-gray-xyz-absolute", 1, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/iccmax-gray-xyz-absolute-to-sgrey-v4-absolute", "icc/iccmax-gray-xyz-absolute", "icc/sgrey-v4", 3, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/sgrey-v4-to-iccmax-gray-xyz-absolute-absolute", "icc/sgrey-v4", "icc/iccmax-gray-xyz-absolute", 3, false, 4, 0.5, IccDevJustification, IccDev: true),
+        new("icc/iccmax-named-lab-to-srgb-v4", "icc/iccmax-named-lab", "icc/srgb-v4", 1, false, 4, 0.5, IccDevJustification, IccDev: true),
     ];
 
     private static readonly string[] IntentNames = ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"];
@@ -267,6 +317,12 @@ internal static partial class IccCorpus
         var version = VersionRegex().Match(Encoding.UTF8.GetString(banner.Stdout) + Encoding.UTF8.GetString(banner.Stderr)).Groups[1].Value;
         if (version != PinnedLittleCms && !options.AcceptToolVersions)
             throw new FatalException($"transicc is LittleCMS '{version}' but the corpus is pinned to {PinnedLittleCms}. Review the differences, then rerun with --accept-tool-versions.");
+
+        // The iccDEV tools come from the meziantou/prebuilt release of the Meziantou.Prebuilt package
+        IccDev = new IccDevTools(
+            PrebuiltTools.IccFromXml.GetOrDownloadAsync(CancellationToken.None).GetAwaiter().GetResult(),
+            PrebuiltTools.IccApplyNamedCmm.GetOrDownloadAsync(CancellationToken.None).GetAwaiter().GetResult(),
+            PrebuiltTools.IccApplyNamedCmm.Version);
 
         var profilesDirectory = FullPath.FromPath(options.IccProfiles!);
         return CorpusDriver.Run(options, "mfi-icc-corpus-", output => Generate(output, profilesDirectory, transicc, version),
@@ -296,9 +352,9 @@ internal static partial class IccCorpus
         var paths = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var profile in Profiles)
         {
-            var data = profile.Build is null ? File.ReadAllBytes(profilesDirectory / profile.FileName) : profile.Build();
+            var data = profile.Build is not null ? profile.Build() : profile.Xml is not null ? BuildFromXml(profile.Xml()) : File.ReadAllBytes(profilesDirectory / profile.FileName);
             var hash = Bytes.Sha256Hex(data);
-            if (profile.Build is null && hash != profile.Sha256)
+            if (profile.Build is null && profile.Xml is null && hash != profile.Sha256)
                 throw new FatalException($"{profile.FileName} has sha256 {hash} but {profile.Sha256} is pinned (commit {ProfilesCommit} of {ProfilesRepository}).");
 
             var path = "icc/profiles/" + profile.FileName;
@@ -310,7 +366,16 @@ internal static partial class IccCorpus
             {
                 ["id"] = profile.Id,
                 ["file"] = new Obj { ["path"] = path, ["sha256"] = hash, ["role"] = "profile" },
-                ["provenance"] = profile.Build is null
+                ["provenance"] = profile.Xml is not null
+                    ? new Obj
+                    {
+                        ["origin"] = "generated",
+                        ["license"] = "CC0-1.0",
+                        ["author"] = "Meziantou.Framework contributors",
+                        ["generator"] = $"{XmlBuilderPath} ({profile.Function}), built by iccFromXml",
+                        ["tools"] = new List<string> { ToolSet.RuntimeLabel, $"iccFromXml (iccDEV {IccDev!.Version})" },
+                    }
+                    : profile.Build is null
                     ? new Obj
                     {
                         ["origin"] = "external",
@@ -335,16 +400,34 @@ internal static partial class IccCorpus
         {
             var source = Profiles.Single(profile => profile.Id == transform.Source);
             var destination = Profiles.Single(profile => profile.Id == transform.Destination);
-            var samples = source.Channels == 4 ? CreateGridPointSamples(File.ReadAllBytes(outDir / paths[source.Id]), transform.Intent) : CreateSamples(source.Channels);
+            var isNamed = source.Features.Contains("icc.class=named-color", StringComparer.Ordinal);
+            var names = isNamed ? GetColorNames(source) : null;
+            var samples = names is not null ? [.. Enumerable.Range(0, names.Length).Select(index => (ushort)index)]
+                : source.Channels == 4 && !transform.IccDev ? CreateGridPointSamples(File.ReadAllBytes(outDir / paths[source.Id]), transform.Intent)
+                : CreateSamples(source.Channels);
             var count = samples.Length / source.Channels;
-            List<string> command = [transicc, "-n", "-c0", "-t" + transform.Intent.ToString(CultureInfo.InvariantCulture)];
-            if (transform.BlackPointCompensation)
-                command.Add("-b");
-
             string sourcePath = outDir / paths[source.Id];
             string destinationPath = outDir / paths[destination.Id];
-            command.AddRange(["-i", sourcePath, "-o", destinationPath]);
-            var expected = Convert(command, samples, source.Channels, destination.Channels);
+            ushort[] expected;
+            string tool;
+            string displayCommand;
+            if (transform.IccDev)
+            {
+                (expected, displayCommand) = ConvertWithIccDev(outDir, transform, sourcePath, destinationPath, samples, names, source.Channels, destination.Channels);
+                displayCommand = displayCommand.Replace(sourcePath, paths[source.Id], StringComparison.Ordinal).Replace(destinationPath, paths[destination.Id], StringComparison.Ordinal);
+                tool = $"iccApplyNamedCmm (iccDEV {IccDev!.Version})";
+            }
+            else
+            {
+                List<string> command = [transicc, "-n", "-c0", "-t" + transform.Intent.ToString(CultureInfo.InvariantCulture)];
+                if (transform.BlackPointCompensation)
+                    command.Add("-b");
+
+                command.AddRange(["-i", sourcePath, "-o", destinationPath]);
+                expected = Convert(command, samples, isNamed ? 0 : source.Channels, destination.Channels);
+                displayCommand = string.Join(' ', ["transicc", .. command.Skip(1).Take(command.Count - 5), "-i", paths[source.Id], "-o", paths[destination.Id]]);
+                tool = $"transicc (LittleCMS {version})";
+            }
 
             var vectors = new byte[count * (source.Channels + destination.Channels) * 2];
             var position = 0;
@@ -360,7 +443,7 @@ internal static partial class IccCorpus
             var vectorsTarget = outDir / vectorsPath;
             vectorsTarget.CreateParentDirectory();
             File.WriteAllBytes(vectorsTarget, vectors);
-            transformEntries.Add(new Obj
+            var entry = new Obj
             {
                 ["id"] = transform.Id,
                 ["source"] = source.Id,
@@ -373,9 +456,9 @@ internal static partial class IccCorpus
                 ["vectors"] = new Obj { ["path"] = vectorsPath, ["sha256"] = Bytes.Sha256Hex(vectors), ["role"] = "vectors" },
                 ["reference"] = new Obj
                 {
-                    ["tool"] = $"transicc (LittleCMS {version})",
-                    ["command"] = string.Join(' ', ["transicc", .. command.Skip(1).Take(command.Count - 5), "-i", paths[source.Id], "-o", paths[destination.Id]]),
-                    ["generator"] = $"{ScriptPath} (Generate)",
+                    ["tool"] = tool,
+                    ["command"] = displayCommand,
+                    ["generator"] = transform.IccDev ? $"{IccMaxScriptPath} (ConvertWithIccDev)" : $"{ScriptPath} (Generate)",
                 },
                 ["comparison"] = new Obj
                 {
@@ -383,7 +466,13 @@ internal static partial class IccCorpus
                     ["maxMeanAbsoluteError"] = transform.MaxMeanAbsoluteError,
                     ["justification"] = transform.Justification,
                 },
-            });
+            };
+            if (isNamed)
+            {
+                entry["sourceSamples"] = "named-color-index";
+            }
+
+            transformEntries.Add(entry);
         }
 
         manifest["schemaVersion"] = CorpusDriver.SchemaVersion;
@@ -393,7 +482,11 @@ internal static partial class IccCorpus
         return profileEntries.Count + transformEntries.Count;
     }
 
-    /// <summary>Converts 16-bit samples with transicc: one color per line on its standard input, one per line on its output.</summary>
+    /// <summary>
+    /// Converts 16-bit samples with transicc: one color per line on its standard input, one per line on its output. With
+    /// no source channel, the samples are the indexes of the colors of a named color profile, which transicc reads and
+    /// echoes with the name of the color on the line before the converted samples.
+    /// </summary>
     private static ushort[] Convert(List<string> command, ushort[] samples, int sourceChannels, int destinationChannels)
     {
         // transicc reads and prints device values on a 0-255 scale, and ink percentages for CMYK
@@ -402,6 +495,12 @@ internal static partial class IccCorpus
         var input = new StringBuilder();
         for (var i = 0; i < samples.Length; i++)
         {
+            if (sourceChannels == 0)
+            {
+                input.Append(samples[i].ToString(CultureInfo.InvariantCulture)).Append('\n');
+                continue;
+            }
+
             input.Append((samples[i] * sourceScale / 65535).ToString("R", CultureInfo.InvariantCulture));
             input.Append((i + 1) % sourceChannels == 0 ? '\n' : ' ');
         }
@@ -409,8 +508,9 @@ internal static partial class IccCorpus
         var output = Proc.RunText(command, Encoding.ASCII.GetBytes(input.ToString()));
         var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(line => !line.StartsWith("LittleCMS", StringComparison.Ordinal) && !line.StartsWith("Copyright", StringComparison.Ordinal))
+            .Where(line => sourceChannels != 0 || double.TryParse(line.Split(' ')[0], NumberStyles.Float, CultureInfo.InvariantCulture, out _))
             .ToList();
-        var count = samples.Length / sourceChannels;
+        var count = sourceChannels == 0 ? samples.Length : samples.Length / sourceChannels;
         if (lines.Count != count)
             throw new ToolException($"transicc printed {lines.Count} colors for {count}: {string.Join(' ', command)}");
 
@@ -526,15 +626,22 @@ internal static partial class IccCorpus
     private static partial Regex VersionRegex();
 
     /// <param name="Build">The builder of a synthetic profile; <see langword="null"/> for an external profile, read from --icc-profiles.</param>
-    private sealed record Profile(string Id, string FileName, string? Sha256, int Channels, string[] Features, Func<byte[]>? Build = null, string? Function = null)
+    /// <param name="Xml">The XML of an iccMAX profile, built by iccFromXml.</param>
+    private sealed record Profile(string Id, string FileName, string? Sha256, int Channels, string[] Features, Func<byte[]>? Build = null, string? Function = null, Func<string>? Xml = null)
     {
         public Profile(string id, Func<byte[]> build, string function, int channels, string[] features)
             : this(id, id["icc/".Length..] + ".icc", null, channels, features, build, function)
+        {
+        }
+
+        public Profile(string id, Func<string> xml, string function, int channels, string[] features)
+            : this(id, id["icc/".Length..] + ".icc", null, channels, features, null, function, xml)
         {
         }
     }
 
     /// <param name="Intent">The ICC rendering intent number, 0 to 3.</param>
     /// <param name="MaxAbsoluteError">The tolerance in 16-bit units.</param>
-    private sealed record Transform(string Id, string Source, string Destination, int Intent, bool BlackPointCompensation, int MaxAbsoluteError, double MaxMeanAbsoluteError, string Justification);
+    /// <param name="IccDev">Whether the reference is iccApplyNamedCmm of iccDEV instead of transicc of LittleCMS.</param>
+    private sealed record Transform(string Id, string Source, string Destination, int Intent, bool BlackPointCompensation, int MaxAbsoluteError, double MaxMeanAbsoluteError, string Justification, bool IccDev = false);
 }

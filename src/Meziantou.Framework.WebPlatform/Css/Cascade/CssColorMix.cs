@@ -29,17 +29,17 @@ internal static class CssColorMix
         var space = "oklab";
         var hueMethod = HueMethod.Shorter;
         var index = 0;
-        if (arguments.Count > 0 && arguments[0] is [CssPreservedToken { Type: CssTokenType.Ident } inToken, CssPreservedToken { Type: CssTokenType.Ident } spaceToken, ..] && inToken.Token.IsIdent("in"))
+        if (arguments.Count > 0 && arguments[0] is [CssPreservedToken { Type: CssTokenType.Ident } inToken, CssPreservedToken { Type: CssTokenType.Ident } spaceToken, ..] && inToken.IsIdent("in"))
         {
-            space = InfraAscii.ToAsciiLowercase(spaceToken.Token.Value);
+            space = InfraAscii.ToAsciiLowercase(spaceToken.Value);
             if (space == "xyz")
             {
                 space = "xyz-d65";
             }
 
-            if (arguments[0].Count == 4 && arguments[0][2] is CssPreservedToken { Type: CssTokenType.Ident } hue && arguments[0][3] is CssPreservedToken { Type: CssTokenType.Ident } hueKeyword && hueKeyword.Token.IsIdent("hue") && CssColorConversion.IsPolar(space))
+            if (arguments[0].Count == 4 && arguments[0][2] is CssPreservedToken { Type: CssTokenType.Ident } hue && arguments[0][3] is CssPreservedToken { Type: CssTokenType.Ident } hueKeyword && hueKeyword.IsIdent("hue") && CssColorConversion.IsPolar(space))
             {
-                HueMethod? method = InfraAscii.ToAsciiLowercase(hue.Token.Value) switch
+                HueMethod? method = InfraAscii.ToAsciiLowercase(hue.Value) switch
                 {
                     "shorter" => HueMethod.Shorter,
                     "longer" => HueMethod.Longer,
@@ -75,7 +75,7 @@ internal static class CssColorMix
             {
                 if (!hasPercentage && value is CssPreservedToken { Type: CssTokenType.Percentage } percentageToken)
                 {
-                    percentage = percentageToken.Token.NumericValue;
+                    percentage = percentageToken.NumericValue;
                     hasPercentage = true;
                 }
                 else if (!hasPercentage && value is CssFunction math && CssCalc.IsMathFunction(math.Name))

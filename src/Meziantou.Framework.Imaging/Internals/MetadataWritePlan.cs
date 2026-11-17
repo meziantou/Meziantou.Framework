@@ -35,9 +35,10 @@ internal sealed class MetadataWritePlan
 
     private static readonly MetadataWritePlan Empty = new(null, null, null, [], null, ColorTransferFunction.Srgb);
 
-    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null, IReadOnlyList<PngChunk>? pngChunks = null)
+    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null, IReadOnlyList<PngChunk>? pngChunks = null, CineonHeader? cineonHeader = null)
     {
         PngChunks = pngChunks ?? [];
+        CineonHeader = cineonHeader;
         TransferFunction = transferFunction;
         Cicp = cicp;
         ContentLightLevel = contentLightLevel;
@@ -50,6 +51,12 @@ internal sealed class MetadataWritePlan
         Resolution = resolution;
         Orientation = orientation;
     }
+
+    /// <summary>
+    /// Gets the header fields a Cineon file copies (<see cref="ImageMetadata.CineonHeader"/>), or <see langword="null"/>: they
+    /// describe the film scan, and the Cineon encoder writes them unless the policy is <see cref="MetadataHandling.Strip"/>.
+    /// </summary>
+    public CineonHeader? CineonHeader { get; }
 
     /// <summary>
     /// Gets the orientation to write in the format's own orientation field (the TIFF <c>Orientation</c> tag), or
@@ -120,7 +127,7 @@ internal sealed class MetadataWritePlan
             return Empty;
 
         // A JPEG 2000 codestream that is not in a JP2 file stores no metadata
-        var capabilities = encoder is Jpeg2000Encoder { Container: Jpeg2000Container.Codestream } ? FormatCapabilities.Get(ImageFormat.Unknown) : FormatCapabilities.Get(format, pixelFormat);
+        var capabilities = encoder is Jpeg2000Encoder { Container: Jpeg2000Container.Codestream } ? FormatCapabilities.Get(ImageFormat.Unknown) : FormatCapabilities.Get(format, pixelFormat, encoder);
         var context = new PlanContext(format, handling);
 
         IccProfile? icc = null;
@@ -135,8 +142,8 @@ internal sealed class MetadataWritePlan
                 if (!MetadataValidation.TryValidateIccProfile(iccProfile.Data.Span, out var error))
                     throw new InvalidImageContentException("The ICC profile is malformed: " + error, format);
 
-                // WebP and BMP store RGB samples whatever the pixel format: a gray source is written as RGB
-                var labeled = format is ImageFormat.WebP or ImageFormat.Bmp && pixelFormat is { } source && PixelFormats.IsGrayscale(source) ? PixelFormat.Rgb24 : pixelFormat;
+                // WebP, BMP and GIF store RGB samples whatever the pixel format: a gray source is written as RGB
+                var labeled = format is ImageFormat.WebP or ImageFormat.Bmp or ImageFormat.Gif && pixelFormat is { } source && PixelFormats.IsGrayscale(source) ? PixelFormat.Rgb24 : pixelFormat;
                 if (labeled is { } pixels && !ColorProfileCompatibility.IsCompatible(iccProfile.ColorSpace, pixels))
                 {
                     context.Unsupported(string.Create(CultureInfo.InvariantCulture, $"ICC color profile declaring the {iccProfile.ColorSpace} color space for {pixels} pixels"));
@@ -203,6 +210,11 @@ internal sealed class MetadataWritePlan
                 {
                     context.Unsupported("XMP packet larger than one JPEG APP1 segment (extended XMP)");
                 }
+                else if (format == ImageFormat.Gif && xmpProfile.Data.Span.Contains((byte)0))
+                {
+                    // The packet is stored as it is and read as data sub-blocks: a 0x00 byte would end them
+                    context.Unsupported("XMP packet with a NUL character (a GIF stores the packet as it is)");
+                }
                 else
                 {
                     xmp = xmpProfile;
@@ -247,6 +259,12 @@ internal sealed class MetadataWritePlan
                     {
                         _ = ResolutionConversion.ToJp2Resolution(value);
                     }
+                    else if (format == ImageFormat.Psd)
+                    {
+                        // Fixed-point numbers of 16.16 bits: from 1/65536 to 32,767 pixels per inch
+                        if (!IsPsdResolution(value.HorizontalDpi) || !IsPsdResolution(value.VerticalDpi))
+                            throw new UnsupportedImageFeatureException("The resolution is outside the range of the PSD fields.", format, "Resolution");
+                    }
                     else
                     {
                         _ = ResolutionConversion.ToPngPhys(value);
@@ -274,24 +292,31 @@ internal sealed class MetadataWritePlan
         CicpColorDescription? storedCicp;
         if (capabilities.LinearOnly)
         {
-            // OpenEXR samples are linear light, described by the chromaticities of their primaries: the label of any other
-            // samples would change their meaning
+            // OpenEXR and Radiance HDR samples are linear light, described by the chromaticities of their primaries: the
+            // label of any other samples would change their meaning
             transferFunction = ColorTransferFunction.Linear;
             storedCicp = null;
             if (metadata.Cicp is { } exrCicp)
             {
-                if (exrCicp.TransferCharacteristics == 8 && exrCicp.ColorPrimaries is 1 or 9 or 11 or 12)
+                // DDS has no primaries (BT.709), KTX 2.0 those of its data format descriptor
+                var storable = format switch
+                {
+                    ImageFormat.Dds => exrCicp.ColorPrimaries is 1,
+                    ImageFormat.Ktx2 => Ktx2TextureWriter.CanStore(exrCicp),
+                    _ => exrCicp.ColorPrimaries is 1 or 9 or 11 or 12,
+                };
+                if (exrCicp.TransferCharacteristics == 8 && storable)
                 {
                     storedCicp = exrCicp;
                 }
                 else
                 {
-                    context.Unsupported("CICP color description other than linear BT.709, BT.2020 or P3 primaries (OpenEXR stores linear-light samples)");
+                    context.Unsupported($"CICP color description other than linear BT.709, BT.2020 or P3 primaries ({ImageFormatNames.Get(format)} stores linear-light samples)");
                 }
             }
             else if (metadata.TransferFunction != ColorTransferFunction.Linear && metadata.IccProfile is null)
             {
-                context.Unsupported("sRGB transfer function (OpenEXR stores linear-light samples: sRGB-encoded samples would be read as linear light)");
+                context.Unsupported($"sRGB transfer function ({ImageFormatNames.Get(format)} stores linear-light samples: sRGB-encoded samples would be read as linear light)");
             }
         }
         else
@@ -321,7 +346,13 @@ internal sealed class MetadataWritePlan
             storedCicp = capabilities.Cicp || (capabilities.CicpWithoutIcc && icc is null) ? metadata.Cicp : null;
             if (storedCicp is null && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
             {
-                if (capabilities.EnumeratedCicp && JpegXlEncoderColor.FromCicp(cicp) is not null)
+                var enumerated = format switch
+                {
+                    ImageFormat.Dpx => DpxFormat.FromCicp(cicp) is not null,
+                    ImageFormat.Ktx2 => Ktx2TextureWriter.CanStore(cicp),
+                    _ => JpegXlEncoderColor.FromCicp(cicp) is not null,
+                };
+                if (capabilities.EnumeratedCicp && enumerated)
                 {
                     storedCicp = cicp;
                 }
@@ -356,6 +387,12 @@ internal sealed class MetadataWritePlan
         }
 
         var orientation = capabilities.NativeOrientation ? metadata.Orientation : ExifOrientation.TopLeft;
+        if (format == ImageFormat.Ktx2 && Ktx2TextureWriter.GetOrientation(orientation) is null)
+        {
+            // KTXorientation flips the axes, it cannot transpose them
+            context.Unsupported("orientation that transposes the image (KTXorientation only flips the axes)");
+            orientation = ExifOrientation.TopLeft;
+        }
 
         // The encoder writes the image data again: a chunk that depends on it is only copied when the caller says it still
         // describes the image (PNG specification, section 14.2). The other formats have no raw chunks.
@@ -366,8 +403,11 @@ internal sealed class MetadataWritePlan
             pngChunks = [.. metadata.PngChunks.Where(chunk => chunk.IsSafeToCopy || writeUnsafe)];
         }
 
-        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio, pngChunks);
+        var cineonHeader = format == ImageFormat.Cineon ? metadata.CineonHeader : null;
+        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio, pngChunks, cineonHeader);
     }
+
+    private static bool IsPsdResolution(double dpi) => Math.Round(dpi * 65536, MidpointRounding.AwayFromZero) is >= 1 and <= int.MaxValue;
 
     private static bool ContainsKeyword(List<ImageTextEntry> entries, string keyword)
     {
@@ -421,7 +461,8 @@ internal sealed class MetadataWritePlan
         // PNG stores a CICP color description in a cICP chunk when no ICC profile is written, with the mastering display
         // (mDCV, which needs the cICP chunk) and the light levels (cLLI)
         private static readonly FormatCapabilities Png = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.PngKeywords, cicpWithoutIcc: true, contentLightLevel: true, masteringDisplay: true);
-        private static readonly FormatCapabilities Gif = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.CommentsOnly);
+        // GIF stores an ICC profile and an XMP packet in application extensions (ICCRGBG1012, XMP DataXMP)
+        private static readonly FormatCapabilities Gif = new(icc: true, exif: false, xmp: true, resolution: false, TextSupport.CommentsOnly);
         private static readonly FormatCapabilities Jpeg = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.JpegComments);
         private static readonly FormatCapabilities WebP = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None);
         private static readonly FormatCapabilities Bmp = new(icc: true, exif: false, xmp: false, resolution: true, TextSupport.None);
@@ -449,6 +490,28 @@ internal sealed class MetadataWritePlan
 
         // OpenEXR stores linear light only, with the chromaticities of its primaries (BT.709 without the attribute)
         private static readonly FormatCapabilities OpenExr = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
+        private static readonly FormatCapabilities Radiance = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
+
+        // DPX stores the orientation and the pixel aspect ratio in its image headers, and the transfer characteristics
+        // and colorimetric specifications of Tables 5A and 5B: linear light, BT.709 and the two BT.601 systems
+        // PSD stores its metadata as image resources; the samples of a 32-bit document without ICC profile are linear light
+        private static readonly FormatCapabilities Psd = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None);
+        private static readonly FormatCapabilities PsdFloatingPoint = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None, linearTransfer: true, impliesLinearTransfer: true);
+
+        // A DNG raw image stores linear values, labeled by a linearization table for integer samples
+        private static readonly FormatCapabilities Dng = new(icc: false, exif: false, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true);
+        private static readonly FormatCapabilities DngFloatingPoint = new(icc: false, exif: false, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, impliesLinearTransfer: true);
+
+        // Cineon stores the orientation of its pixels, and no other metadata (its header is copied from CineonHeader)
+        private static readonly FormatCapabilities Cineon = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, nativeOrientation: true);
+
+        private static readonly FormatCapabilities Dpx = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true, pixelAspectRatio: true);
+
+        // KTX 2.0 stores the transfer function and the primaries in its data format descriptor, and KTXorientation; its
+        // floating-point formats are linear light. DDS stores nothing but linear light for its floating-point formats
+        private static readonly FormatCapabilities Ktx2 = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);
+        private static readonly FormatCapabilities Ktx2FloatingPoint = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, linearOnly: true);
+        private static readonly FormatCapabilities DdsFloatingPoint = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
 
         private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false, bool impliesLinearTransfer = false, bool linearOnly = false)
         {
@@ -544,7 +607,26 @@ internal sealed class MetadataWritePlan
         /// <param name="pixelFormat">The pixel format of the written frames, or <see langword="null"/> when unknown.</param>
         /// <returns>The capabilities.</returns>
         public static FormatCapabilities Get(ImageFormat format, PixelFormat? pixelFormat)
-            => format == ImageFormat.Tiff && pixelFormat is { } written && PixelFormats.IsFloatingPoint(written) ? TiffFloatingPoint : Get(format);
+            => pixelFormat is { } written && PixelFormats.IsFloatingPoint(written) ? format switch
+            {
+                ImageFormat.Tiff => TiffFloatingPoint,
+                ImageFormat.Psd => PsdFloatingPoint,
+                ImageFormat.Dng => DngFloatingPoint,
+                _ => Get(format),
+            } : Get(format);
+
+        /// <summary>Gets the capabilities of a format for the pixels it writes with the settings of an encoder.</summary>
+        /// <param name="format">The output format.</param>
+        /// <param name="pixelFormat">The pixel format of the written frames, or <see langword="null"/> when unknown.</param>
+        /// <param name="encoder">The encoder settings, or <see langword="null"/>.</param>
+        /// <returns>The capabilities.</returns>
+        public static FormatCapabilities Get(ImageFormat format, PixelFormat? pixelFormat, ImageEncoder? encoder) => encoder switch
+        {
+            // The texture formats of floating-point or signed samples store linear light
+            DdsEncoder dds => DdsTextureWriter.IsFloatingPoint(dds.TextureFormat ?? DdsTextureWriter.GetDefaultFormat(pixelFormat ?? PixelFormat.Rgba32)) ? DdsFloatingPoint : None,
+            Ktx2Encoder ktx2 => Ktx2TextureWriter.IsFloatingPoint(ktx2.TextureFormat ?? Ktx2TextureWriter.GetDefaultFormat(pixelFormat ?? PixelFormat.Rgba32)) ? Ktx2FloatingPoint : Ktx2,
+            _ => Get(format, pixelFormat),
+        };
 
         public static FormatCapabilities Get(ImageFormat format) => format switch
         {
@@ -561,6 +643,12 @@ internal sealed class MetadataWritePlan
             ImageFormat.JpegXl => JpegXl,
             ImageFormat.Jpeg2000 => Jp2,
             ImageFormat.OpenExr => OpenExr,
+            ImageFormat.Radiance => Radiance,
+            ImageFormat.Dpx => Dpx,
+            ImageFormat.Psd => Psd,
+            ImageFormat.Dng => Dng,
+            ImageFormat.Cineon => Cineon,
+            ImageFormat.Ktx2 => Ktx2,
             _ => None,
         };
 

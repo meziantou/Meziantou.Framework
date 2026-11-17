@@ -1,0 +1,12 @@
+R17x139.png	0	symbol 0	missing
+R17x139.png	90	symbol 0	missing
+R17x139.png	180	symbol 0	missing
+R17x139.png	270	symbol 0	missing
+R7x43-H.png	0	symbol 0	read
+R7x43-H.png	90	symbol 0	read
+R7x43-H.png	180	symbol 0	read
+R7x43-H.png	270	symbol 0	read
+R7x43-H_inverted.png	0	symbol 0	read
+R7x43-H_inverted.png	90	symbol 0	read
+R7x43-H_inverted.png	180	symbol 0	read
+R7x43-H_inverted.png	270	symbol 0	read

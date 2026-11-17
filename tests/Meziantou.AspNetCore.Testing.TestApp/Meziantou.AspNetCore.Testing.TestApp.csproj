@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk.Web">
+  <!-- The application that the end-to-end tests of Meziantou.AspNetCore.Testing open with WebApplicationFactory<Program> -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <IsPackable>false</IsPackable>
+    <!-- The application has no static file; without this, its static web assets collide with the ones of the tests (the module of Blazor hot reload) -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+  </PropertyGroup>
+</Project>

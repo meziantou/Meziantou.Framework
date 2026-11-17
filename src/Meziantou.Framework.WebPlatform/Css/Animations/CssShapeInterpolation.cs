@@ -310,7 +310,7 @@ internal static class CssShapeInterpolation
         }
     }
 
-    private static bool IsIdent(CssComponentValue value, string name) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, name);
+    private static bool IsIdent(CssComponentValue value, string name) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, name);
 
     private static string Flag(string name, bool value) => name + "(" + (value ? "1" : "0") + ")";
 

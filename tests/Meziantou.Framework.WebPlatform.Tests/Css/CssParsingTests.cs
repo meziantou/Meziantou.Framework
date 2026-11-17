@@ -306,6 +306,34 @@ public sealed class CssParsingTests
         Assert.Equal(expected, Assert.Single(CssTokenizer.Tokenize(text)).NumericValue);
     }
 
+    // The short numbers are computed without double.Parse: the value has the same bits, including the sign of zero
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-0")]
+    [InlineData("+0")]
+    [InlineData("-0.0")]
+    [InlineData("0.1")]
+    [InlineData("0.3")]
+    [InlineData("-1.15")]
+    [InlineData("007")]
+    [InlineData("123456789012345")]
+    [InlineData("0.12345678901234")]
+    [InlineData("1.000000000000001")]
+    [InlineData("1234567890123456")]
+    [InlineData("9007199254740993")]
+    [InlineData("12345678901234567890123")]
+    [InlineData(".000000000000000000000000001")]
+    [InlineData("1e2")]
+    public void Number_HasTheBitsOfDoubleParse(string text)
+    {
+        var expected = double.Parse(text, CultureInfo.InvariantCulture);
+        foreach (var suffix in (string[])["", "%", "px", " "])
+        {
+            var token = CssTokenizer.Tokenize(text + suffix)[0];
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(token.NumericValue));
+        }
+    }
+
     private static void AssertJson(JsonNode? expected, JsonNode? actual, string input)
     {
         if (!JsonEquals(expected, actual))

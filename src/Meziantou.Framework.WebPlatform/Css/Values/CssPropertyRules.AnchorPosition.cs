@@ -20,13 +20,13 @@ internal static partial class CssPropertyRules
             if (i < significant.Count && significant[i] is not CssPreservedToken { Type: CssTokenType.Comma })
                 continue;
 
-            if (significant[start..i] is [CssPreservedToken { Type: CssTokenType.Ident } first, CssPreservedToken { Type: CssTokenType.Ident } second] && string.Equals(first.Token.Value, second.Token.Value, StringComparison.OrdinalIgnoreCase))
+            if (significant[start..i] is [CssPreservedToken { Type: CssTokenType.Ident } first, CssPreservedToken { Type: CssTokenType.Ident } second] && string.Equals(first.Value, second.Value, StringComparison.OrdinalIgnoreCase))
             {
                 result.Add(first);
                 changed = true;
             }
             else if (significant[start..i] is [CssPreservedToken { Type: CssTokenType.Ident } keyword1, CssPreservedToken { Type: CssTokenType.Ident } keyword2]
-                && (keyword1.Token.IsIdent("span-all") ? keyword2 : keyword2.Token.IsIdent("span-all") ? keyword1 : null) is { } unambiguous && !IsAmbiguousPositionAreaKeyword(unambiguous.Token.Value))
+                && (keyword1.IsIdent("span-all") ? keyword2 : keyword2.IsIdent("span-all") ? keyword1 : null) is { } unambiguous && !IsAmbiguousPositionAreaKeyword(unambiguous.Value))
             {
                 // "If only a single keyword is given, it behaves as if the second keyword is span-all if the given keyword is
                 // unambiguous about its axis": the single keyword is the canonical form
@@ -69,7 +69,7 @@ internal static partial class CssPropertyRules
         if (significant is not [CssPreservedToken { Type: CssTokenType.Ident } keyword])
             return null;
 
-        return keyword.Token.IsIdent("text-before-edge") ? "text-top" : keyword.Token.IsIdent("text-after-edge") ? "text-bottom" : null;
+        return keyword.IsIdent("text-before-edge") ? "text-top" : keyword.IsIdent("text-after-edge") ? "text-bottom" : null;
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ internal static partial class CssPropertyRules
     /// </summary>
     private static string? CanonicalizePositionVisibility(List<CssComponentValue> significant)
     {
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && single.Token.IsIdent("always"))
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && single.IsIdent("always"))
             return null;
 
         var valid = false;
@@ -90,11 +90,11 @@ internal static partial class CssPropertyRules
             if (value is not CssPreservedToken { Type: CssTokenType.Ident } keyword)
                 return null;
 
-            if (keyword.Token.IsIdent("anchor-valid") || keyword.Token.IsIdent("anchors-valid"))
+            if (keyword.IsIdent("anchor-valid") || keyword.IsIdent("anchors-valid"))
             {
                 valid = true;
             }
-            else if (keyword.Token.IsIdent("anchor-visible") || keyword.Token.IsIdent("anchors-visible"))
+            else if (keyword.IsIdent("anchor-visible") || keyword.IsIdent("anchors-visible"))
             {
                 visible = true;
             }

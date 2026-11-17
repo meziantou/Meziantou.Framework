@@ -101,6 +101,37 @@ internal static class JpegIdct
         }
     }
 
+    /// <summary>Clears the 64 quantized coefficients of a block.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ClearCoefficients(short[] coefficients)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ref var start = ref unsafe(MemoryMarshal.GetArrayDataReference(coefficients));
+        if (Vector512.IsHardwareAccelerated)
+        {
+            unsafe { Vector512<short>.Zero.StoreUnsafe(ref start); }
+            unsafe { Vector512<short>.Zero.StoreUnsafe(ref start, 32); }
+        }
+        else if (Vector256.IsHardwareAccelerated)
+        {
+            for (var i = 0; i < 64; i += 16)
+            {
+                unsafe { Vector256<short>.Zero.StoreUnsafe(ref start, (nuint)i); }
+            }
+        }
+        else if (Vector128.IsHardwareAccelerated)
+        {
+            for (var i = 0; i < 64; i += 8)
+            {
+                unsafe { Vector128<short>.Zero.StoreUnsafe(ref start, (nuint)i); }
+            }
+        }
+        else
+        {
+            coefficients.AsSpan(0, 64).Clear();
+        }
+    }
+
     /// <summary>Writes the samples of more than 8 bits of a block whose AC coefficients are all zero.</summary>
     /// <param name="dequantizedDc">The DC coefficient multiplied by its quantization value.</param>
     /// <param name="destination">The first sample of the block.</param>
@@ -1245,7 +1276,7 @@ internal static class JpegIdct
     /// <summary>
     /// The transform with AVX-512: the eight columns, then the eight rows at once. The column pass reads the rows of the block
     /// (lane <c>u</c> is column <c>u</c>) and its outputs stay in registers; they are transposed so that lane <c>y</c> is row
-    /// <c>y</c> for the row pass, and the samples of the rows 0 to 3, then 4 to 7, are written as <see cref="TransformAvx2"/> writes them.
+    /// <c>y</c> for the row pass, and the samples are written with the conversions of <see cref="TransformAvx2"/> (<see cref="StoreSamplesAvx512"/>).
     /// </summary>
     internal static void TransformAvx512(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
     {
@@ -1272,8 +1303,7 @@ internal static class JpegIdct
             Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
         }
 
-        StoreSamplesAvx2(o0.GetLower(), o1.GetLower(), o2.GetLower(), o3.GetLower(), o4.GetLower(), o5.GetLower(), o6.GetLower(), o7.GetLower(), ref output, stride);
-        StoreSamplesAvx2(o0.GetUpper(), o1.GetUpper(), o2.GetUpper(), o3.GetUpper(), o4.GetUpper(), o5.GetUpper(), o6.GetUpper(), o7.GetUpper(), ref unsafe(Unsafe.Add(ref output, 4 * stride)), stride);
+        StoreSamplesAvx512(o0, o1, o2, o3, o4, o5, o6, o7, ref output, stride);
 
         static Vector512<double> Load512(ref double block, int index) => unsafe(Vector512.LoadUnsafe(ref block, (nuint)index));
     }
@@ -1337,8 +1367,7 @@ internal static class JpegIdct
             Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
         }
 
-        StoreSamplesAvx2(o0.GetLower(), o1.GetLower(), o2.GetLower(), o3.GetLower(), o4.GetLower(), o5.GetLower(), o6.GetLower(), o7.GetLower(), ref output, stride);
-        StoreSamplesAvx2(o0.GetUpper(), o1.GetUpper(), o2.GetUpper(), o3.GetUpper(), o4.GetUpper(), o5.GetUpper(), o6.GetUpper(), o7.GetUpper(), ref unsafe(Unsafe.Add(ref output, 4 * stride)), stride);
+        StoreSamplesAvx512(o0, o1, o2, o3, o4, o5, o6, o7, ref output, stride);
 
         // The eight dequantized coefficients of a row: exact conversions to 32-bit integers, then to doubles
         static Vector512<double> Row(ref short source, ref double scales, int index)
@@ -1500,6 +1529,40 @@ internal static class JpegIdct
         unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 3 * stride), rows23.GetElement(1)); }
 
         static Vector128<int> ToInt32(Vector256<double> value) => Avx.ConvertToVector128Int32WithTruncation(Avx.Min(Avx.Floor(value + Vector256.Create(128.5)), Vector256.Create(255.0)));
+    }
+
+    /// <summary>
+    /// Writes the eight rows of samples of <see cref="TransformAvx512"/>: <c>o[n]</c> holds the sample <c>n</c> of the row
+    /// <c>k</c> in lane <c>k</c>. The values are rounded, clamped, converted and packed like <see cref="StoreSamplesAvx2"/>
+    /// does, eight rows at once.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreSamplesAvx512(Vector512<double> o0, Vector512<double> o1, Vector512<double> o2, Vector512<double> o3, Vector512<double> o4, Vector512<double> o5, Vector512<double> o6, Vector512<double> o7, ref byte destination, int stride)
+    {
+        // Block i of a pack: bytes n * 4 + k are the sample n (0..3, then 4..7) of the row 4 i + k
+        var first = Avx2.PackUnsignedSaturate(Avx2.PackSignedSaturate(ToInt32(o0), ToInt32(o1)), Avx2.PackSignedSaturate(ToInt32(o2), ToInt32(o3)));
+        var second = Avx2.PackUnsignedSaturate(Avx2.PackSignedSaturate(ToInt32(o4), ToInt32(o5)), Avx2.PackSignedSaturate(ToInt32(o6), ToInt32(o7)));
+
+        // Bytes k * 4 + n, then the two halves of each row together: rows 0, 1, 4, 5 and rows 2, 3, 6, 7
+        var byRow = Vector256.Create((byte)0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15);
+        first = Avx2.Shuffle(first, byRow);
+        second = Avx2.Shuffle(second, byRow);
+        var rows0145 = Avx2.UnpackLow(first.AsInt32(), second.AsInt32()).AsUInt64();
+        var rows2367 = Avx2.UnpackHigh(first.AsInt32(), second.AsInt32()).AsUInt64();
+        var rows01 = rows0145.GetLower();
+        var rows23 = rows2367.GetLower();
+        var rows45 = rows0145.GetUpper();
+        var rows67 = rows2367.GetUpper();
+        unsafe { Unsafe.WriteUnaligned(ref destination, rows01.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, stride), rows01.GetElement(1)); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 2 * stride), rows23.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 3 * stride), rows23.GetElement(1)); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 4 * stride), rows45.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 5 * stride), rows45.GetElement(1)); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 6 * stride), rows67.ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 7 * stride), rows67.GetElement(1)); }
+
+        static Vector256<int> ToInt32(Vector512<double> value) => Avx512F.ConvertToVector256Int32WithTruncation(Avx512F.Min(Vector512.Floor(value + Vector512.Create(128.5)), Vector512.Create(255.0)));
     }
 
     /// <summary>The transform with <see cref="Vector{T}"/>, <see cref="Vector{T}.Count"/> columns (then rows) at once.</summary>

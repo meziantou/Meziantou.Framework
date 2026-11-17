@@ -46,10 +46,10 @@ internal sealed record CssTimelineReference(CssTimelineKind Kind, string? Name =
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(item));
         switch (values)
         {
-            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.Token.IsIdent("none"):
+            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.IsIdent("none"):
                 return None;
-            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.Token.Value.StartsWith("--", StringComparison.Ordinal):
-                return new CssTimelineReference(CssTimelineKind.Named, ident.Token.Value);
+            case [CssPreservedToken { Type: CssTokenType.Ident } ident] when ident.Value.StartsWith("--", StringComparison.Ordinal):
+                return new CssTimelineReference(CssTimelineKind.Named, ident.Value);
             case [CssFunction function] when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "scroll"):
             {
                 var scroller = ScrollTimelineScroller.Nearest;
@@ -59,13 +59,13 @@ internal sealed record CssTimelineReference(CssTimelineKind Kind, string? Name =
                     if (argument is not CssPreservedToken { Type: CssTokenType.Ident } keyword)
                         continue;
 
-                    if (TryParseAxis(keyword.Token.Value, out var parsedAxis))
+                    if (TryParseAxis(keyword.Value, out var parsedAxis))
                     {
                         axis = parsedAxis;
                     }
                     else
                     {
-                        scroller = InfraAscii.ToAsciiLowercase(keyword.Token.Value) switch
+                        scroller = InfraAscii.ToAsciiLowercase(keyword.Value) switch
                         {
                             "root" => ScrollTimelineScroller.Root,
                             "self" => ScrollTimelineScroller.Self,
@@ -83,7 +83,7 @@ internal sealed record CssTimelineReference(CssTimelineKind Kind, string? Name =
                 var insets = new List<CssComponentValue>(2);
                 foreach (var argument in ValueMatcher.RemoveWhitespace(function.Value))
                 {
-                    if (argument is CssPreservedToken { Type: CssTokenType.Ident } keyword && TryParseAxis(keyword.Token.Value, out var parsedAxis))
+                    if (argument is CssPreservedToken { Type: CssTokenType.Ident } keyword && TryParseAxis(keyword.Value, out var parsedAxis))
                     {
                         axis = parsedAxis;
                     }
@@ -382,7 +382,7 @@ internal sealed class CssScrollTimelines
         var result = new List<string>();
         foreach (var item in ValueMatcher.SplitAtCommas(ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value))))
         {
-            result.Add(item is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? ident.Token.Value : CssSerializer.SerializeValue(item, property: null));
+            result.Add(item is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? ident.Value : CssSerializer.SerializeValue(item, property: null));
         }
 
         return result;

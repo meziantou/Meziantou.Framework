@@ -21,7 +21,7 @@ public sealed class CffFont
     private const int FontMatrixOperator = CffDictReader.Escape + 7;
     private const int FdArrayOperator = CffDictReader.Escape + 36;
 
-    private static readonly Lazy<string?[]> StandardEncoding = new(CreateStandardEncoding);
+    internal static readonly Lazy<string?[]> StandardEncoding = new(CreateStandardEncoding);
 
     private readonly byte[] _table;
     private readonly CffTable _cff;

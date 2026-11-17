@@ -6,12 +6,14 @@
 fuzz/Meziantou.Framework.WebPlatform.Fuzz/Seeds/mime/
 fuzz/Meziantou.Framework.WebPlatform.Fuzz/Seeds/webvtt/
 src/Meziantou.Framework.Fonts/Afm/StandardFonts/
+src/Meziantou.Framework.Fonts/Type1/GlyphList/
 src/Meziantou.Framework.Pdf/Fonts/GlyphList/
 src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/
 src/Meziantou.Framework.Unicode.Dictionaries/Data/*.dict
 src/Meziantou.Framework.WebPlatform/Unicode/Hyphenation/*.hyph
 tests/Meziantou.Framework.AtlassianDataFormat.Tests/TestData/third-party/
 tests/Meziantou.Framework.Charts.Tests/TestData/countries-110m.geojson
+tests/Meziantou.Framework.Imaging.Barcodes.Tests/ZXingCppSamples/
 tests/Meziantou.Framework.Mermaid.Tests/Corpus/
 tests/Meziantou.Framework.Geo.GeoParquet.Tests/TestData/
 tests/Meziantou.Framework.Geo.Tests/TestData/flatgeobuf/

@@ -4,7 +4,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Writes the headers of a codestream produced by the encoder (ISO/IEC 18181-1, annexes A and C): the image header, and
-/// the header and the table of contents of a frame that replaces the whole image.
+/// the header and the table of contents of a frame, which replaces the whole image or is a layer
+/// (<see cref="JpegXlFrameLayout"/>).
 /// </summary>
 internal static class JpegXlHeaderWriter
 {
@@ -85,16 +86,19 @@ internal static class JpegXlHeaderWriter
         writer.WriteBool(true);
     }
 
-    /// <summary>Writes the header of a regular frame that covers the image and replaces it.</summary>
+    /// <summary>Writes the header of a regular frame: by default, one that covers the image and replaces it.</summary>
     /// <param name="writer">The writer, at a byte boundary.</param>
     /// <param name="settings">How the frame is coded.</param>
     /// <param name="isXybEncoded">Whether the image is stored in XYB.</param>
     /// <param name="hasAlpha">Whether the image has an alpha channel.</param>
     /// <param name="duration">The duration in ticks, for an animation; otherwise <see langword="null"/>.</param>
     /// <param name="isLast">Whether the frame is the last one of the codestream.</param>
-    public static void WriteFrameHeader(LsbBitWriter writer, JpegXlFrameSettings settings, bool isXybEncoded, bool hasAlpha, uint? duration, bool isLast)
+    /// <param name="layout">The rectangle, the blending and the reference slots of the frame, or <see langword="null"/> for a frame that covers the image and replaces it.</param>
+    /// <param name="imageSize">The size of the image, which tells whether a frame with its own size covers it.</param>
+    public static void WriteFrameHeader(LsbBitWriter writer, JpegXlFrameSettings settings, bool isXybEncoded, bool hasAlpha, uint? duration, bool isLast, JpegXlFrameLayout? layout = null, Size imageSize = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        layout ??= JpegXlFrameLayout.Full;
         writer.WriteBool(false);
         writer.WriteBits(JpegXlFrameHeader.TypeRegular, 2);
         writer.WriteBool(settings.IsModular);
@@ -150,12 +154,21 @@ internal static class JpegXlHeaderWriter
             }
         }
 
-        // No custom size or origin, every channel replaces the image
-        writer.WriteBool(false);
-        writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+        // The position and the size of the frame, then the blending of the color channels and of the alpha channel, alike
+        writer.WriteBool(layout.HasCrop);
+        if (layout.HasCrop)
+        {
+            writer.WriteU32(PackSigned(layout.X0), 0, 8, 256, 11, 2304, 14, 18688, 30);
+            writer.WriteU32(PackSigned(layout.Y0), 0, 8, 256, 11, 2304, 14, 18688, 30);
+            writer.WriteU32((uint)layout.Width, 0, 8, 256, 11, 2304, 14, 18688, 30);
+            writer.WriteU32((uint)layout.Height, 0, 8, 256, 11, 2304, 14, 18688, 30);
+        }
+
+        var isPartial = layout.IsPartial(imageSize);
+        WriteBlendingInfo(writer, layout, hasAlpha, isPartial);
         if (hasAlpha)
         {
-            writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            WriteBlendingInfo(writer, layout, hasAlpha, isPartial);
         }
 
         if (duration is { } ticks)
@@ -166,16 +179,23 @@ internal static class JpegXlHeaderWriter
         writer.WriteBool(isLast);
         if (!isLast)
         {
-            // Not saved as a reference frame; a frame without duration that is not the last one could be referenced
-            writer.WriteBits(0, 2);
-            if ((duration ?? 0) == 0)
+            // The slot the frame is saved to once blended; a frame that can be referenced (a layer, or a frame saved to a slot
+            // other than 0) and that replaces the whole image says whether it is saved before its color transform: it is not
+            writer.WriteBits((uint)layout.SaveAsReference, 2);
+            var canBeReferenced = (duration ?? 0) == 0 || layout.SaveAsReference != 0;
+            if (canBeReferenced && layout.BlendMode == JpegXlBlendingInfo.ModeReplace && !isPartial)
             {
                 writer.WriteBool(false);
             }
         }
 
-        // No name; the edge-preserving filter with its default parameters but the strength of the first iteration, no extension
-        writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
+        // The name; the edge-preserving filter with its default parameters but the strength of the first iteration, no extension
+        writer.WriteU32((uint)layout.Name.Length, 0, 0, 0, 4, 16, 5, 48, 10);
+        foreach (var value in layout.Name)
+        {
+            writer.WriteBits(value, 8);
+        }
+
         writer.WriteBool(false);
         // No Gabor-like filter
         writer.WriteBool(false);
@@ -216,6 +236,31 @@ internal static class JpegXlHeaderWriter
         writer.WriteU64(0);
         writer.WriteU64(0);
     }
+
+    /// <summary>Writes a <c>BlendingInfo</c> bundle: the alpha channel of the modes that weight by alpha is the first extra channel, and the alpha values are not clamped.</summary>
+    private static void WriteBlendingInfo(LsbBitWriter writer, JpegXlFrameLayout layout, bool hasAlpha, bool isPartial)
+    {
+        var mode = layout.BlendMode;
+        writer.WriteU32((uint)mode, 0, 0, 1, 0, 2, 0, 3, 2);
+        var usesAlpha = hasAlpha && mode is JpegXlBlendingInfo.ModeBlend or JpegXlBlendingInfo.ModeMulAdd;
+        if (usesAlpha)
+        {
+            writer.WriteU32(0, 0, 0, 1, 0, 2, 0, 3, 3);
+        }
+
+        if (usesAlpha || mode == JpegXlBlendingInfo.ModeMul)
+        {
+            writer.WriteBool(false);
+        }
+
+        if (mode != JpegXlBlendingInfo.ModeReplace || isPartial)
+        {
+            writer.WriteBits((uint)layout.Source, 2);
+        }
+    }
+
+    /// <summary>Packs a signed integer (<c>PackSigned</c>): even values are positive, odd values negative.</summary>
+    private static uint PackSigned(int value) => value >= 0 ? (uint)value << 1 : ((uint)(-(long)value) << 1) - 1;
 
     /// <summary>Writes a table of contents that is not permuted.</summary>
     /// <param name="writer">The writer, after the frame header.</param>

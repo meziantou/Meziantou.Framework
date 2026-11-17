@@ -31,6 +31,7 @@ internal static class QRDecodeFuzzTargets
         new("barcodes-read-qrcode-roundtrip", ReadQRCodeRoundTripTarget) { Seeds = () => SeedTexts.Select((text, index) => FuzzSeed.FromText($"roundtrip-{index}", [(byte)index, (byte)(index * 37)], text)), Dictionary = ["HELLO", "0123456789", "https://", "日本"] },
         new("barcodes-read-2d-image", Read2DImageTarget) { Seeds = Get2DImageSeeds, Dictionary = ModuleTokens },
         new("barcodes-read-2d-roundtrip", Read2DRoundTripTarget) { Seeds = () => Barcode2DSeedTexts.Select((text, index) => FuzzSeed.FromText($"roundtrip-2d-{index}", [(byte)index, (byte)(index * 37)], text)), Dictionary = ["HELLO", "0123456789", "abc", "*>\r", "@^_"] },
+        new("barcodes-read-photo-roundtrip", ReadPhotoRoundTripTarget) { Seeds = GetPhotoSeeds, Dictionary = ["HELLO", "0123456789", "https://", "\x00\x00\x00\x00", "\xFF\xFF\xFF\xFF"] },
         new("barcodes-read-linear-image", ReadLinearImageTarget) { Seeds = GetLinearImageSeeds, Dictionary = ModuleTokens },
         new("barcodes-read-linear-roundtrip", ReadLinearRoundTripTarget) { Seeds = () => Enumerable.Range(0, 8).Select(index => FuzzSeed.FromText($"roundtrip-linear-{index}", [(byte)index, (byte)(index * 37)], index % 2 == 0 ? "590123412345" : "SKU-123")), Dictionary = ["0123456789", "ABC", "abc", "-. $/+%"] },
         new("barcodes-decode-linear", DecodeLinearTarget) { Seeds = GetLinearSeeds, Dictionary = ["\x01\x01\x01", "\x02\x02", "\x03", "\x04", "\x0A", "\x00"] },
@@ -401,7 +402,7 @@ internal static class QRDecodeFuzzTargets
     {
         foreach (var (name, qr) in new[] { ("standard", QRCode.Create("HELLO")), ("micro", QRCode.CreateMicroQR("12345")), ("rmqr", QRCode.CreateRMQR("HELLO")) })
         {
-            using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
+            using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 2, QuietZoneModules = 2 });
             yield return CreateImageSeed($"image-{name}", image);
         }
     }
@@ -448,7 +449,7 @@ internal static class QRDecodeFuzzTargets
         if (qr.Width * qr.Height > 80 * 80)
             return;
 
-        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 3 + (flags % 4) });
+        using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 3 + (flags % 4) });
         if ((flags & 0x30) is not 0)
         {
             image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
@@ -463,7 +464,7 @@ internal static class QRDecodeFuzzTargets
     {
         foreach (var (name, barcode) in new[] { ("datamatrix", Barcode2D.CreateDataMatrix("HELLO")), ("pdf417", Barcode2D.CreatePdf417("HELLO", new Pdf417Options { Columns = 1, RowHeight = 2 })), ("aztec", Barcode2D.CreateAztec("HELLO")) })
         {
-            using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 2, QuietZoneModules = 2 });
+            using var image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 2, QuietZoneModules = 2 });
             yield return CreateImageSeed($"image-2d-{name}", image);
         }
     }
@@ -510,7 +511,7 @@ internal static class QRDecodeFuzzTargets
         if (barcode.Width * barcode.Height > 100 * 100)
             return;
 
-        using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 3 + (flags % 4) });
+        using var image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 3 + (flags % 4) });
         if ((flags & 0x30) is not 0)
         {
             image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
@@ -525,7 +526,7 @@ internal static class QRDecodeFuzzTargets
     {
         foreach (var (name, barcode) in new[] { ("ean13", Barcode.CreateEan13("590123412345")), ("code128", Barcode.CreateCode128("AB12")), ("databar", Barcode.CreateGs1DataBarLimited("1501234567890")) })
         {
-            using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 8, QuietZoneModules = 4 });
+            using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 8, QuietZoneModules = 4 });
             yield return CreateImageSeed($"image-linear-{name}", image);
         }
     }
@@ -564,10 +565,11 @@ internal static class QRDecodeFuzzTargets
             return;
         }
 
-        if (barcode.Width > 400)
+        // The image reader reads ITF symbols of 6 digits or more: shorter ones are mostly the patterns of other things
+        if (barcode.Width > 400 || (barcode.Type is BarcodeType.Itf && barcode.Text.Length < 6))
             return;
 
-        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 2 + (flags % 3), ModuleHeight = 40 });
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 2 + (flags % 3), ModuleHeight = 40 });
         if ((flags & 0x30) is not 0)
         {
             image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });
@@ -576,5 +578,115 @@ internal static class QRDecodeFuzzTargets
         var results = image.ReadBarcodes();
         var expected = barcode.Type is BarcodeType.Ean13 && barcode.Text[0] == '0' ? barcode.Text[1..] : barcode.Text;
         FuzzAssert.True(results.Count is 1 && results[0].Text == expected, $"The {barcode.Type} barcode '{barcode.Text}' is read as [{string.Join(", ", results.Select(result => result.Result.Type + " " + result.Text))}]");
+    }
+
+    // The seeds of the photograph target: the 3 symbologies, with no distortion, then with each distortion
+    private static IEnumerable<FuzzSeed> GetPhotoSeeds()
+    {
+        byte[][] distortions = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [12, 0, 0, 20, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 128, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 200], [3, 30, 8, 0, 25, 4, 30, 6, 64, 120]];
+        for (var type = 0; type < 3; type++)
+        {
+            for (var index = 0; index < distortions.Length; index++)
+            {
+                yield return FuzzSeed.FromText($"photo-{type}-{index}", [(byte)type, (byte)index, .. distortions[index]], SeedTexts[index % SeedTexts.Length]);
+            }
+        }
+    }
+
+    // A QR code, Data Matrix or Aztec symbol, photographed: in perspective, turned, blurred, under uneven lighting. The
+    // readers may not read it, but what they read is its text: the error correction of these symbologies keeps the
+    // misreads out.
+    private static void ReadPhotoRoundTripTarget(ReadOnlySpan<byte> data)
+    {
+        var type = FuzzInput.ReadByte(ref data) % 3;
+        var moduleSize = 3 + (FuzzInput.ReadByte(ref data) % 4);
+        var corners = new byte[8];
+        for (var i = 0; i < corners.Length; i++)
+        {
+            corners[i] = FuzzInput.ReadByte(ref data);
+        }
+
+        var blur = FuzzInput.ReadByte(ref data);
+        var lighting = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        string expected;
+        Image<Rgba32> image;
+        try
+        {
+            switch (type)
+            {
+                case 0:
+                    var qr = QRCode.Create(text);
+                    if (qr.Width > 57)
+                        return;
+
+                    expected = QRCodeDecoder.Decode(qr).Text;
+                    image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = moduleSize });
+                    break;
+                default:
+                    var barcode = type is 1 ? Barcode2D.CreateDataMatrix(text) : Barcode2D.CreateAztec(text);
+                    if (barcode.Width > 60 || barcode.Height > 60)
+                        return;
+
+                    expected = Barcode2DDecoder.Decode(barcode).Text;
+                    image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = moduleSize });
+                    break;
+            }
+        }
+        catch (ArgumentException)
+        {
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
+        using (image)
+        {
+            // Each corner moves inward by up to a fifth of the side: the perspective of a photograph taken at an angle
+            var size = image.Width;
+            var maximum = size / 5.0;
+            double Offset(int index) => corners[index] / 255.0 * maximum;
+            var transform = ProjectiveTransform.CreateFromQuadrilateral(
+                new RectangleD(0, 0, image.Width, image.Height),
+                new PointD(Offset(0), Offset(1)),
+                new PointD(image.Width - Offset(2), Offset(3)),
+                new PointD(image.Width - Offset(4), image.Height - Offset(5)),
+                new PointD(Offset(6), image.Height - Offset(7)));
+            image.Transform(transform, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
+            if (blur > 0)
+            {
+                image.GaussianBlur(blur / 255.0 * moduleSize * 0.6);
+            }
+
+            // A shadow across the image: the luminance falls from left to right
+            if (lighting > 0)
+            {
+                var pixels = new Rgba32[image.Width * image.Height];
+                image.Frames[0].CopyPixelDataTo(pixels);
+                for (var i = 0; i < pixels.Length; i++)
+                {
+                    var factor = 1 - (lighting / 255.0 * 0.6 * (i % image.Width) / image.Width);
+                    var pixel = pixels[i];
+                    pixels[i] = new Rgba32((byte)(pixel.R * factor), (byte)(pixel.G * factor), (byte)(pixel.B * factor), pixel.A);
+                }
+
+                using var shaded = Image.ImportPixelData<Rgba32>(pixels, image.Width, image.Height);
+                AssertNoMisread(shaded, type, expected);
+                return;
+            }
+
+            AssertNoMisread(image, type, expected);
+        }
+    }
+
+    private static void AssertNoMisread(Image image, int type, string expected)
+    {
+        var texts = type is 0 ? image.ReadQRCodes().Select(result => result.Text) : image.ReadBarcodes2D().Select(result => result.Text);
+        foreach (var text in texts)
+        {
+            FuzzAssert.Equal(expected, text, "The text read in the photograph");
+        }
     }
 }

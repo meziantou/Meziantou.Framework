@@ -12,7 +12,7 @@ public sealed class MetadataWritePlanTests
     private static readonly Size Canvas = new(4, 3);
 
     // Only AVIF stores a content light level, a mastering display color volume and the shape of the pixels
-    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Avif or ImageFormat.Heic or ImageFormat.Png))];
+    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Avif or ImageFormat.Heic or ImageFormat.Png or ImageFormat.Dpx))];
 
     [Fact]
     public void ValidIccProfilePassesValidation()
@@ -107,9 +107,13 @@ public sealed class MetadataWritePlanTests
     public void GifRejectsUnsupportedMetadataInStrictModeAndDropsItOtherwise()
     {
         AssertUnsupported(new ImageMetadata { Orientation = ExifOrientation.BottomRight }, ImageFormat.Gif, "EXIF orientation other than TopLeft");
-        AssertUnsupported(new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB "))) }, ImageFormat.Gif, "ICC color profile");
         AssertUnsupported(new ImageMetadata { ExifProfile = new ExifProfile(new MetadataBlob(ExifTiff.CreateMinimal(ExifOrientation.TopLeft))) }, ImageFormat.Gif, "EXIF profile");
-        AssertUnsupported(new ImageMetadata { XmpProfile = new XmpProfile(new MetadataBlob("<x/>"u8)) }, ImageFormat.Gif, "XMP packet");
+        AssertUnsupported(new ImageMetadata { XmpProfile = new XmpProfile(new MetadataBlob("<x>\0</x>"u8)) }, ImageFormat.Gif, "XMP packet with a NUL character (a GIF stores the packet as it is)");
+
+        // An RGB profile and an XMP packet are stored (application extensions); GIF samples are RGB, also for gray pixels
+        var rgb = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB ")));
+        Assert.Same(rgb, MetadataWritePlan.Create(new ImageMetadata { IccProfile = rgb }, ImageFormat.Gif, MetadataHandling.Strict, Canvas, PixelFormat.Gray8).IccProfile);
+        AssertUnsupported(new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("GRAY"))) }, ImageFormat.Gif, "ICC color profile declaring the Gray color space for Rgb24 pixels", PixelFormat.Gray8);
         AssertUnsupported(new ImageMetadata { Resolution = new ImageResolution(72, 72) }, ImageFormat.Gif, "resolution");
         AssertUnsupported(WithText(new ImageTextEntry("Title", "t")), ImageFormat.Gif, "text entry 'Title'");
         AssertUnsupported(WithText(new ImageTextEntry(ImageTextEntry.CommentKeyword, "c", "en")), ImageFormat.Jpeg, "text entry 'Comment'");
@@ -125,7 +129,8 @@ public sealed class MetadataWritePlanTests
         var gif = MetadataWritePlan.Create(metadata, ImageFormat.Gif, MetadataHandling.DiscardUnsupported, Canvas);
         Assert.Equal([comment], gif.TextEntries);
         Assert.Null(gif.Exif);
-        Assert.Null(gif.IccProfile);
+        Assert.Same(metadata.IccProfile, gif.IccProfile);
+        Assert.Same(metadata.XmpProfile, gif.XmpProfile);
     }
 
     [Theory]
@@ -209,7 +214,7 @@ public sealed class MetadataWritePlanTests
 
         // A format that cannot store the payload never validates it: discarding wins
         var unsupported = new ImageMetadata { IccProfile = new IccProfile(new MetadataBlob(new byte[200])) };
-        Assert.Null(MetadataWritePlan.Create(unsupported, ImageFormat.Gif, MetadataHandling.DiscardUnsupported, Canvas).IccProfile);
+        Assert.Null(MetadataWritePlan.Create(unsupported, ImageFormat.Qoi, MetadataHandling.DiscardUnsupported, Canvas).IccProfile);
     }
 
     [Fact]
@@ -298,8 +303,8 @@ public sealed class MetadataWritePlanTests
     {
         foreach (var format in FormatsWithoutHighDynamicRangeFields)
         {
-            // OpenEXR stores linear light only: an sRGB label would be the first item it cannot store
-            var transfer = format == ImageFormat.OpenExr ? ColorTransferFunction.Linear : ColorTransferFunction.Srgb;
+            // OpenEXR and Radiance HDR store linear light only: an sRGB label would be the first item they cannot store
+            var transfer = format is ImageFormat.OpenExr or ImageFormat.Radiance ? ColorTransferFunction.Linear : ColorTransferFunction.Srgb;
             var lightLevel = new ImageMetadata { ContentLightLevel = new ContentLightLevel(1000, 400), TransferFunction = transfer };
             var display = new ImageMetadata { MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50), TransferFunction = transfer };
             var wide = new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(2, 1), TransferFunction = transfer };
@@ -319,24 +324,42 @@ public sealed class MetadataWritePlanTests
     }
 
     [Fact]
-    public void OpenExrStoresLinearLightOnly()
+    public void DpxStoresTheOrientationThePixelShapeAndTheTransfersOfItsTables()
+    {
+        var metadata = new ImageMetadata { Orientation = ExifOrientation.RightTop, PixelAspectRatio = new PixelAspectRatio(2, 1), Cicp = new CicpColorDescription(1, 1, 0, fullRange: true) };
+        var plan = MetadataWritePlan.Create(metadata, ImageFormat.Dpx, MetadataHandling.Strict, Canvas);
+        Assert.Equal(ExifOrientation.RightTop, plan.Orientation);
+        Assert.Equal(new PixelAspectRatio(2, 1), plan.PixelAspectRatio);
+        Assert.Equal(new CicpColorDescription(1, 1, 0, fullRange: true), plan.Cicp);
+        Assert.Equal(ColorTransferFunction.Linear, MetadataWritePlan.Create(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear }, ImageFormat.Dpx, MetadataHandling.Strict, Canvas).TransferFunction);
+
+        // A description Tables 5A and 5B have no code for, and the light levels, are metadata the format cannot store
+        AssertUnsupported(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true) }, ImageFormat.Dpx, "CICP color description (the samples would be read as sRGB)");
+        AssertUnsupported(new ImageMetadata { ContentLightLevel = new ContentLightLevel(1000, 400) }, ImageFormat.Dpx, "content light level");
+        AssertUnsupported(new ImageMetadata { MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50) }, ImageFormat.Dpx, "mastering display color volume");
+    }
+
+    [Theory]
+    [InlineData(ImageFormat.OpenExr, "OpenEXR")]
+    [InlineData(ImageFormat.Radiance, "Radiance HDR")]
+    public void LinearOnlyFormatsStoreLinearLightOnly(ImageFormat format, string name)
     {
         // The samples are linear light: the transfer function of another label would change their meaning
-        var plan = MetadataWritePlan.Create(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear }, ImageFormat.OpenExr, MetadataHandling.Strict, Canvas);
+        var plan = MetadataWritePlan.Create(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear }, format, MetadataHandling.Strict, Canvas);
         Assert.Equal(ColorTransferFunction.Linear, plan.TransferFunction);
         Assert.Null(plan.Cicp);
-        AssertUnsupported(new ImageMetadata(), ImageFormat.OpenExr, "sRGB transfer function (OpenEXR stores linear-light samples: sRGB-encoded samples would be read as linear light)");
-        AssertUnsupported(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true) }, ImageFormat.OpenExr, "CICP color description other than linear BT.709, BT.2020 or P3 primaries (OpenEXR stores linear-light samples)");
-        AssertUnsupported(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear, IccProfile = IccProfile.Srgb }, ImageFormat.OpenExr, "ICC color profile");
+        AssertUnsupported(new ImageMetadata(), format, $"sRGB transfer function ({name} stores linear-light samples: sRGB-encoded samples would be read as linear light)");
+        AssertUnsupported(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true) }, format, $"CICP color description other than linear BT.709, BT.2020 or P3 primaries ({name} stores linear-light samples)");
+        AssertUnsupported(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear, IccProfile = IccProfile.Srgb }, format, "ICC color profile");
 
         // Linear BT.2020, DCI-P3 and Display P3 are written as chromaticities, whatever the transfer function label
         foreach (byte primaries in new byte[] { 9, 11, 12 })
         {
             var cicp = new CicpColorDescription(primaries, 8, 0, fullRange: true);
-            Assert.Same(cicp, MetadataWritePlan.Create(new ImageMetadata { Cicp = cicp }, ImageFormat.OpenExr, MetadataHandling.Strict, Canvas).Cicp);
+            Assert.Same(cicp, MetadataWritePlan.Create(new ImageMetadata { Cicp = cicp }, format, MetadataHandling.Strict, Canvas).Cicp);
         }
 
-        Assert.Null(MetadataWritePlan.Create(new ImageMetadata(), ImageFormat.OpenExr, MetadataHandling.DiscardUnsupported, Canvas).Cicp);
+        Assert.Null(MetadataWritePlan.Create(new ImageMetadata(), format, MetadataHandling.DiscardUnsupported, Canvas).Cicp);
     }
 
     [Fact]
@@ -485,13 +508,13 @@ public sealed class MetadataWritePlanTests
         image.Save(new MemoryStream(), new JpegEncoder());
     }
 
-    private static void AssertUnsupported(ImageMetadata metadata, ImageFormat format, string feature)
+    private static void AssertUnsupported(ImageMetadata metadata, ImageFormat format, string feature, PixelFormat? pixelFormat = null)
     {
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, format, MetadataHandling.Strict, Canvas));
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => MetadataWritePlan.Create(metadata, format, MetadataHandling.Strict, Canvas, pixelFormat));
         Assert.Equal(format, exception.Format);
         Assert.Equal("Metadata: " + feature, exception.Feature);
         Assert.Contains("DiscardUnsupported", exception.Message, StringComparison.Ordinal);
-        _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.DiscardUnsupported, Canvas); // never throws for unsupported items
+        _ = MetadataWritePlan.Create(metadata, format, MetadataHandling.DiscardUnsupported, Canvas, pixelFormat); // never throws for unsupported items
     }
 
     private static ImageMetadata WithText(ImageTextEntry entry)

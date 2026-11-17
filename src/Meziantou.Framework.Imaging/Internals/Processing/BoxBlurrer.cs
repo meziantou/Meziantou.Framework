@@ -307,11 +307,16 @@ internal static class BoxBlurrer
             return;
         }
 
-        // Every band reads its halos from the original pixels: load them all before the first row is rewritten
+        // Every band reads its halos from the original pixels: load them all before the first row is rewritten (each
+        // worker loads the halos of its band into its own scratch)
         var workers = plan.Workers;
-        for (var band = 0; band < workers; band++)
+        if (workers == 1)
         {
-            LoadHalos<TSample>(storage, plan, alpha, band);
+            LoadHalos<TSample>(storage, plan, alpha, 0);
+        }
+        else
+        {
+            RowBands.RunParallelInBandOrder(workers, band => LoadHalos<TSample>(storage, plan, alpha, band));
         }
 
         if (workers == 1)

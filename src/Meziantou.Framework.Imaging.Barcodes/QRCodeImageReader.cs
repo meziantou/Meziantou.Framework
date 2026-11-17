@@ -15,13 +15,15 @@ public static class QRCodeImageReader
     /// <returns>The QR codes found, each once; empty when there is none.</returns>
     /// <remarks>
     /// <para>
-    /// The reader is made for clean images: generated, printed or scanned symbols, photographed straight on. It finds the
-    /// finder patterns of the symbols, which can be rotated, scaled, slightly blurred or in mild perspective, samples their
+    /// The reader reads generated, printed and scanned images, and photographs. It finds the finder patterns of the
+    /// symbols, which can be rotated, mirrored, scaled, blurred, unevenly lit or in perspective: the corners of the finder
+    /// patterns and the alignment patterns give the perspective of a symbol photographed at an angle. It samples their
     /// modules and decodes them with <see cref="QRCodeDecoder"/>. A transparent background reads as white.
     /// </para>
     /// <para>
-    /// A symbol needs its quiet zone and modules of at least 2 pixels. The pixels are classified as dark or light with
-    /// the Otsu threshold of the image, then with a local threshold (Sauvola) when no symbol is found.
+    /// A symbol needs its quiet zone and modules of at least 2 pixels. The pixels are classified as dark or light with a
+    /// local threshold (from the blocks of 8x8 pixels around them, which follows shadows and gradients), then with the
+    /// Otsu threshold of the image and a Sauvola threshold when no symbol is found.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
@@ -48,30 +50,12 @@ public static class QRCodeImageReader
         bool IsIncluded(QRCodeType type) => types is null || types.Contains(type);
 
         var results = new List<QRCodeImageResult>();
-        using var luminance = BinaryImage.GetLuminance(image);
-        foreach (var method in (ReadOnlySpan<ThresholdMethod>)[ThresholdMethod.Otsu, ThresholdMethod.Sauvola])
+        BinarizationPasses.Run(image, options.TryInverted, binary =>
         {
-            var binary = BinaryImage.Create(luminance, GetThresholdOptions(method, luminance), cancellationToken);
             QRCodeLocator.Locate(binary, IsIncluded, results, options.MaximumResults, cancellationToken);
-            if (options.TryInverted && results.Count is 0)
-            {
-                QRCodeLocator.Locate(binary.Invert(), IsIncluded, results, options.MaximumResults, cancellationToken);
-            }
-
-            if (results.Count > 0)
-                break;
-        }
+            return results.Count > 0;
+        }, cancellationToken);
 
         return results;
-    }
-
-    internal static ThresholdOptions GetThresholdOptions(ThresholdMethod method, Image image)
-    {
-        if (method is ThresholdMethod.Otsu)
-            return new ThresholdOptions { Method = ThresholdMethod.Otsu };
-
-        // The window spans a few modules of any reasonable size
-        var window = Math.Clamp((Math.Min(image.Width, image.Height) / 8) | 1, 15, 201);
-        return new ThresholdOptions { Method = ThresholdMethod.Sauvola, WindowSize = window };
     }
 }

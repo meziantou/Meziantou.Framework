@@ -248,6 +248,143 @@ internal static partial class FontSamples
         return font;
     }
 
+    public const int SvgA = 2;
+    public const int SvgB = 3;
+    public const int SvgC = 4;
+    public const int SvgD = 5;
+    public const int SvgE = 6;
+
+    /// <summary>
+    /// A font whose glyphs are SVG documents (the <c>SVG </c> table) made of rectangles on whole pixels at 16 pixels per
+    /// em: 1024 units per em, an ascent of 832 and a descent of 192, and a palette of two colors, opaque green and
+    /// opaque magenta.
+    /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item><description>A, advance 1024: the rectangle (128, 0)-(896, 768) in red, the rectangle (384, 256)-(640, 512) with the first color of the palette (<c>var(--color0, black)</c>), and its last row of 64 units in blue at an opacity of 0.5.</description></item>
+    /// <item><description>B, advance 512: two <c>use</c> elements of one rectangle of 384 by 256 units at x = 64, the upper one in the second color of the palette (<c>var(--color1, yellow)</c>), the lower one in cyan (<c>url(#missing) #00ffff</c>, the fallback of a gradient that does not exist).</description></item>
+    /// <item><description>C, advance 768: the root of a compressed document, whose <c>viewBox</c> moves its baseline to y = 1024: the rectangle (0, -192)-(768, 832) in blue, clipped to its left half (x &lt; 384).</description></item>
+    /// <item><description>D, advance 1024: a document that is not well-formed XML; its outline, the rectangle (128, 0)-(896, 768), is drawn instead.</description></item>
+    /// <item><description>E, advance 512: in the document of A and B, through a record of its own: the rectangle (0, 0)-(512, 512) filled with a horizontal gradient from black to blue in its box.</description></item>
+    /// <item><description>Every glyph also has an outline: the rectangle of its box, for what does not draw SVG glyphs.</description></item>
+    /// </list>
+    /// </remarks>
+    public static FontBuilder SvgBoxes()
+    {
+        var font = new FontBuilder
+        {
+            FamilyName = "Meziantou Svg Boxes",
+            PostScriptName = "MeziantouSvgBoxes-Regular",
+            UnitsPerEm = 1024,
+            Ascender = 832,
+            Descender = -192,
+            TypoAscender = 832,
+            TypoDescender = -192,
+            WinAscent = 832,
+            WinDescent = 192,
+            CapHeight = 768,
+            XHeight = 512,
+        };
+
+        font.AddGlyph(FontGlyph.Frame(512, 64, 0, 448, 768, 64));
+        font.AddGlyph(FontGlyph.Empty(512), ' ');
+        font.AddGlyph(FontGlyph.Rectangle(1024, 128, 0, 896, 768), 'A');
+        font.AddGlyph(FontGlyph.Rectangle(512, 64, 0, 448, 512), 'B');
+        font.AddGlyph(FontGlyph.Rectangle(768, 0, -192, 768, 832), 'C');
+        font.AddGlyph(FontGlyph.Rectangle(1024, 128, 0, 896, 768), 'D');
+        font.AddGlyph(FontGlyph.Rectangle(512, 0, 0, 512, 512), 'E');
+        font.ColorPalettes.Add([(0, 255, 0, 255), (255, 0, 255, 255)]);
+
+        var shared = System.Text.Encoding.UTF8.GetBytes("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+              <defs>
+                <rect id="half" x="64" y="0" width="384" height="256"/>
+                <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#000"/>
+                  <stop offset="100%" style="stop-color: rgb(0, 0, 255)"/>
+                </linearGradient>
+              </defs>
+              <!-- The ancestors of a glyph do not style it -->
+              <g fill="yellow">
+                <g id="glyph2" fill="red">
+                  <rect x="128" y="-768" width="768" height="768"/>
+                  <rect x="384" y="-512" width="256" height="256" fill="var(--color0, black)"/>
+                  <rect x="128" y="-64" width="768" height="64" fill="blue" fill-opacity="0.5"/>
+                </g>
+              </g>
+              <g id="glyph3" transform="translate(0,-512)">
+                <use xlink:href="#half" fill="var(--color1, yellow)"/>
+                <use xlink:href="#half" y="256" style="fill: url(#missing) #00ffff"/>
+              </g>
+              <path id="glyph6" d="M0 0V-512H512V0Z" fill="url(#fade)"/>
+            </svg>
+            """);
+        var root = System.Text.Encoding.UTF8.GetBytes("""
+            <svg xmlns="http://www.w3.org/2000/svg" id="glyph4" viewBox="0 1024 1024 1024">
+              <clipPath id="left"><rect x="0" y="0" width="384" height="4096"/></clipPath>
+              <rect x="0" y="192" width="768" height="1024" fill="#0000ff" clip-path="url(#left)"/>
+            </svg>
+            """);
+        var malformed = System.Text.Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"><g id=\"glyph5\">");
+        font.RawTables["SVG "] = WriteSvgTable([(SvgA, SvgB, shared), (SvgC, SvgC, Gzip(root)), (SvgD, SvgD, malformed), (SvgE, SvgE, shared)]);
+        return font;
+    }
+
+    /// <summary>Compresses a document with gzip, as the <c>SVG </c> table allows.</summary>
+    public static byte[] Gzip(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var gzip = new System.IO.Compression.GZipStream(output, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+        {
+            gzip.Write(data);
+        }
+
+        return output.ToArray();
+    }
+
+    /// <summary>Writes an <c>SVG </c> table: its header, its document records, then each document once (records can share one).</summary>
+    public static byte[] WriteSvgTable(IReadOnlyList<(int First, int Last, byte[] Document)> records)
+    {
+        var documents = new List<byte[]>();
+        foreach (var record in records)
+        {
+            if (!documents.Exists(document => ReferenceEquals(document, record.Document)))
+            {
+                documents.Add(record.Document);
+            }
+        }
+
+        var listLength = 2 + (12 * records.Count);
+        var offsets = new Dictionary<byte[], int>(ReferenceEqualityComparer.Instance);
+        var position = listLength;
+        foreach (var document in documents)
+        {
+            offsets[document] = position;
+            position += document.Length;
+        }
+
+        var table = new byte[10 + position];
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(table.AsSpan(2), 10);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(table.AsSpan(10), (ushort)records.Count);
+        for (var i = 0; i < records.Count; i++)
+        {
+            var entry = table.AsSpan(12 + (12 * i));
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(entry, (ushort)records[i].First);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(entry[2..], (ushort)records[i].Last);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(entry[4..], (uint)offsets[records[i].Document]);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(entry[8..], (uint)records[i].Document.Length);
+        }
+
+        foreach (var document in documents)
+        {
+            document.CopyTo(table, 10 + offsets[document]);
+        }
+
+        return table;
+    }
+
     /// <summary>
     /// The boxes font with bitmaps without colors (the <c>EBLC</c> and <c>EBDT</c> tables) for two sizes, which do not
     /// draw what the outlines draw.

@@ -51,8 +51,8 @@ namespace Meziantou.Framework.Imaging;
 /// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels, as
 /// <see cref="Pad"/> and <see cref="ExtendCanvas"/> write their padding color). Operations run on the calling thread, except that <see cref="Resize"/>,
 /// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, the sharpening,
-/// the edge detection, <see cref="Pixelate(Image, int, CancellationToken)"/>, <see cref="OilPaint(Image, int, int, CancellationToken)"/>
-/// and <see cref="Flatten(Image, Rgba64, CancellationToken)"/> may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/>
+/// the edge detection, <see cref="Pixelate(Image, int, CancellationToken)"/>, <see cref="OilPaint(Image, int, int, CancellationToken)"/>,
+/// <see cref="Flatten(Image, Rgba64, CancellationToken)"/> and <see cref="ConvertColorProfile"/> may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/>
 /// workers for large frames (identical results).
 /// </para>
 /// </remarks>
@@ -789,9 +789,10 @@ public static partial class ImageProcessingExtensions
     /// profile is applied: the colors of the matrix are those of the color space of the image.
     /// </para>
     /// <para>
-    /// The working storage (one row) is charged to the image and rented before a pixel changes. On cancellation, some
-    /// rows may already be converted, the same ones in every frame. To change the colors of a part of an image, or of
-    /// a drawing, see <see cref="DrawingCanvas.FilterBackdrop(ColorMatrix)"/> and
+    /// The working storage (one row per worker: up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers
+    /// split the rows of a frame of at least 65,536 pixels, with the same result) is charged to the image and rented
+    /// before a pixel changes. On cancellation, some rows may already be converted. To change the colors of a part of an
+    /// image, or of a drawing, see <see cref="DrawingCanvas.FilterBackdrop(ColorMatrix)"/> and
     /// <see cref="DrawingCanvas.Filter(ColorMatrix, DrawingAction)"/>.
     /// </para>
     /// </remarks>
@@ -1245,8 +1246,10 @@ public static partial class ImageProcessingExtensions
     /// CMYK images are rejected.
     /// </para>
     /// <para>
-    /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) by the scalar reference
-    /// conversion, on the calling thread. Alpha is copied unchanged and the color of transparent pixels is converted like
+    /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) with the results of the
+    /// scalar reference conversion. When the image configuration allows several workers
+    /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), the rows of a large frame are split into bands converted
+    /// concurrently; the result is identical to the single-worker result. Alpha is copied unchanged and the color of transparent pixels is converted like
     /// any other. Colors outside the destination gamut are clipped per channel.
     /// </para>
     /// <para>

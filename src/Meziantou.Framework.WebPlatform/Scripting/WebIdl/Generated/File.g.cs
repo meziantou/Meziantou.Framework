@@ -22,10 +22,12 @@ internal static class Binding_File<TAdapter, TValue> where TAdapter : struct, gl
 
     private static TValue Get_name(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.FileApi.File>(t, Binding); return r.FromString(o.Name); }
     private static TValue Get_lastModified(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.FileApi.File>(t, Binding); return r.FromNumber((double)o.LastModified); }
+    private static TValue Get_webkitRelativePath(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.FileApi.File>(t, Binding); return r.FromString(o.WebkitRelativePath); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "name", Get_name, null);
         r.DefineAttribute(instanceTarget, "lastModified", Get_lastModified, null);
+        r.DefineAttribute(instanceTarget, "webkitRelativePath", Get_webkitRelativePath, null);
     }
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)

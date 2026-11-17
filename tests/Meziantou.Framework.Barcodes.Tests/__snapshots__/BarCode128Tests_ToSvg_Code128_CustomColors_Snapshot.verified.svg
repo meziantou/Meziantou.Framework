@@ -1,1 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 3"><rect width="70" height="3" fill="#00ff00"/><path fill="#ff0000" d="M1 0h2v3h-2zM4 0h1v3h-1zM7 0h3v3h-3zM12 0h1v3h-1zM14 0h2v3h-2zM18 0h3v3h-3zM23 0h1v3h-1zM27 0h1v3h-1zM29 0h2v3h-2zM34 0h3v3h-3zM40 0h1v3h-1zM42 0h2v3h-2zM45 0h1v3h-1zM49 0h2v3h-2zM52 0h3v3h-3zM56 0h2v3h-2zM61 0h3v3h-3zM65 0h1v3h-1zM67 0h2v3h-2z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="70" height="3" viewBox="0 0 70 3" role="img" font-family="sans-serif">
+<rect x="0" y="0" width="70" height="3" fill="#00ff00"/>
+<path d="M1,0 L3,0 L3,3 L1,3 Z M4,0 L5,0 L5,3 L4,3 Z M7,0 L10,0 L10,3 L7,3 Z M12,0 L13,0 L13,3 L12,3 Z M14,0 L16,0 L16,3 L14,3 Z M18,0 L21,0 L21,3 L18,3 Z M23,0 L24,0 L24,3 L23,3 Z M27,0 L28,0 L28,3 L27,3 Z M29,0 L31,0 L31,3 L29,3 Z M34,0 L37,0 L37,3 L34,3 Z M40,0 L41,0 L41,3 L40,3 Z M42,0 L44,0 L44,3 L42,3 Z M45,0 L46,0 L46,3 L45,3 Z M49,0 L51,0 L51,3 L49,3 Z M52,0 L55,0 L55,3 L52,3 Z M56,0 L58,0 L58,3 L56,3 Z M61,0 L64,0 L64,3 L61,3 Z M65,0 L66,0 L66,3 L65,3 Z M67,0 L69,0 L69,3 L67,3 Z" fill="#ff0000"/>
+</svg>

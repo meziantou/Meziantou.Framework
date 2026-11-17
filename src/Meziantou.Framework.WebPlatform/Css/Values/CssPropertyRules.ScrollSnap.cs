@@ -12,7 +12,7 @@ internal static partial class CssPropertyRules
 
     /// <summary>https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-align: the omitted inline alignment is the block alignment (start start is start).</summary>
     private static string? CanonicalizeScrollSnapAlign(List<CssComponentValue> significant)
-        => significant is [CssPreservedToken { Type: CssTokenType.Ident } block, CssPreservedToken { Type: CssTokenType.Ident } inline] && string.Equals(block.Token.Value, inline.Token.Value, StringComparison.OrdinalIgnoreCase)
-            ? InfraAscii.ToAsciiLowercase(block.Token.Value)
+        => significant is [CssPreservedToken { Type: CssTokenType.Ident } block, CssPreservedToken { Type: CssTokenType.Ident } inline] && string.Equals(block.Value, inline.Value, StringComparison.OrdinalIgnoreCase)
+            ? InfraAscii.ToAsciiLowercase(block.Value)
             : null;
 }

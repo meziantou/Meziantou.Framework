@@ -235,7 +235,7 @@ internal static partial class CssSerializer
         return result;
     }
 
-    private static string? GetIdent(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+    private static string? GetIdent(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
 
     /// <summary>Serializes component values (whitespace excluded) separated by a space.</summary>
     private static string SerializeSequence(List<CssComponentValue> values, HashSet<string>? keywords)

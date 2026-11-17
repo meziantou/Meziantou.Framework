@@ -1,6 +1,10 @@
 ﻿@typeparam TRowData
 @using System.Linq.Expressions
 @implements IDisposable
+@{
+    // Register the column on each render: the grid collects its columns in the order they render
+    OwnerGrid?.AddColumn(this);
+}
 @code {
     /// <summary>Gets or sets the parent <see cref="DataGrid{TRowData}"/> component. This is set automatically via cascading parameter.</summary>
     [CascadingParameter]
@@ -27,14 +31,12 @@
     private RenderFragment? headerTemplate;
     private RenderFragment<TRowData>? cellTemplate;
 
-    // Add the column to the parent Grid component.
-    // OnInitialized is called only once in the component lifecycle
     protected override void OnInitialized()
     {
         if (OwnerGrid is null)
             throw new InvalidOperationException("The column must be a child of a DataGrid component");
 
-        OwnerGrid.AddColumn(this);
+        OwnerGrid.RegisterColumn(this);
     }
 
     public void Dispose()

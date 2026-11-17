@@ -132,11 +132,11 @@ internal sealed class CssColor
         switch (value)
         {
             case CssPreservedToken { Type: CssTokenType.Hash } hash:
-                return ParseHex(hash.Token.Value);
+                return ParseHex(hash.Value);
 
             case CssPreservedToken { Type: CssTokenType.Ident } ident:
             {
-                var name = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                var name = InfraAscii.ToAsciiLowercase(ident.Value);
                 if (name == "transparent")
                     return new CssColor("rgb", [0, 0, 0], 0, legacyRgb: true);
 
@@ -435,17 +435,17 @@ internal sealed class CssColor
                 if (values.Count == 0 || values[0] is not CssPreservedToken { Type: CssTokenType.Ident } space)
                     return null;
 
-                var spaceName = InfraAscii.ToAsciiLowercase(space.Token.Value);
+                var spaceName = InfraAscii.ToAsciiLowercase(space.Value);
 
                 // A custom color space (@color-profile): any number of channels
-                if (space.Token.Value.StartsWith("--", StringComparison.Ordinal))
+                if (space.Value.StartsWith("--", StringComparison.Ordinal))
                 {
                     var slashIndex = values.FindIndex(v => v is CssPreservedToken { Token: var t } && t.IsDelim('/'));
                     var channelCount = (slashIndex < 0 ? values.Count : slashIndex) - 1;
                     if (channelCount <= 0 || !TrySplitArguments(values[1..], channelCount, out var customChannels, out var customAlpha, out var customLegacy) || customLegacy || customChannels.Exists(c => c.Kind == 'a'))
                         return null;
 
-                    return new CssColor(space.Token.Value, [.. customChannels.ConvertAll(c => c.IsNone ? (double?)null : c.Kind == '%' ? c.Value / 100 : c.Value)], AlphaValue(customAlpha), legacyRgb: false);
+                    return new CssColor(space.Value, [.. customChannels.ConvertAll(c => c.IsNone ? (double?)null : c.Kind == '%' ? c.Value / 100 : c.Value)], AlphaValue(customAlpha), legacyRgb: false);
                 }
 
                 if (!PredefinedSpaces.Contains(spaceName))
@@ -560,7 +560,7 @@ internal sealed class CssColor
         var start = 0;
         if (name == "color")
         {
-            var space = InfraAscii.ToAsciiLowercase(((CssPreservedToken)values[0]).Token.Value);
+            var space = InfraAscii.ToAsciiLowercase(((CssPreservedToken)values[0]).Value);
             builder.Append("color(").Append(space == "xyz" ? "xyz-d65" : space).Append(' ');
             start = 1;
         }

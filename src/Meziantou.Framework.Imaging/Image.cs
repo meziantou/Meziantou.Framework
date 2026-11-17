@@ -197,20 +197,28 @@ public abstract partial class Image : IDisposable
         var destinationFormat = PixelFormats.GetPixelFormat<TPixel>();
         ThrowIfDisposed();
         var plan = PixelConversionPlan.Create(PixelFormat, destinationFormat, options, _metadata.IccProfile);
-        PrepareConversion(plan, GetAllFrames());
 
-        var result = new Image<TPixel>(_configuration, _size, scope: null, LayoutOptions);
+        // Floating-point samples cost far more to check and convert than to copy: their rows are split between workers.
+        // The integer conversions are about as fast as a copy of the rows, which more workers do not speed up
+        var workers = !plan.ConvertsCmykColors && (PixelFormats.IsFloatingPoint(PixelFormat) || PixelFormats.IsFloatingPoint(destinationFormat))
+            ? RowBands.GetWorkerCount(_size, _configuration.MaxDegreeOfParallelism)
+            : 1;
+        PrepareConversion(plan, GetAllFrames(), workers);
+        plan.MarkSourceValidated();
+
+        // Every row of the first frame is written before the image is returned: it is not zeroed
+        var result = new Image<TPixel>(_configuration, _size, scope: null, LayoutOptions, clearPixels: false);
         try
         {
-            ConvertFrame(_frames[0], result.FrameAt(0), plan);
+            ConvertFrame(_frames[0], result.FrameAt(0), plan, workers);
             for (var i = 1; i < _frames.Count; i++)
             {
-                ConvertFrame(_frames[i], result.AppendFrameUnchecked(), plan);
+                ConvertFrame(_frames[i], result.AppendFrameUnchecked(), plan, workers);
             }
 
             if (_poster is not null)
             {
-                ConvertFrame(_poster, result.AttachPosterFrameUnchecked(), plan);
+                ConvertFrame(_poster, result.AttachPosterFrameUnchecked(), plan, workers);
             }
 
             var metadata = _metadata.Clone();
@@ -230,6 +238,7 @@ public abstract partial class Image : IDisposable
     /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="PixelConversionOptions.Default"/>.</param>
     /// <returns>A new image owned by the caller.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new image is returned to the caller, which owns it.")]
     internal Image CloneAs(PixelFormat format, PixelConversionOptions? options) => format switch
     {
         PixelFormat.Rgba32 => CloneAs<Rgba32>(options),
@@ -250,6 +259,10 @@ public abstract partial class Image : IDisposable
         PixelFormat.Rgba1010102 => CloneAs<Rgba1010102>(options),
         PixelFormat.Cmyk32 => CloneAs<Cmyk32>(options),
         PixelFormat.Cmyk64 => CloneAs<Cmyk64>(options),
+        PixelFormat.GrayFloat => CloneAs<GrayFloat>(options),
+        PixelFormat.GrayHalf => CloneAs<GrayHalf>(options),
+        PixelFormat.LaFloat => CloneAs<LaFloat>(options),
+        PixelFormat.LaHalf => CloneAs<LaHalf>(options),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 
@@ -489,12 +502,13 @@ public abstract partial class Image : IDisposable
     /// <summary>Creates a typed frame over a storage of this image.</summary>
     private protected abstract ImageFrame CreateFrame(PixelStorage storage, FrameMetadata metadata);
 
-    /// <summary>Allocates a zeroed frame storage of the canvas size, charged to the scope of the image.</summary>
-    private protected PixelStorage AllocateFrameStorage()
-        => Owner.Allocate(_size.Width, _size.Height, PixelFormats.GetBytesPerPixel(PixelFormat), LayoutOptions);
+    /// <summary>Allocates a frame storage of the canvas size, charged to the scope of the image.</summary>
+    /// <param name="clear"><see langword="false"/> when the caller writes every row before anything reads them (see <see cref="PixelStorage.Create"/>).</param>
+    private protected PixelStorage AllocateFrameStorage(bool clear = true)
+        => Owner.Allocate(PixelStorageLayout.Create(_size.Width, _size.Height, PixelFormats.GetBytesPerPixel(PixelFormat), LayoutOptions), AllocationKind.ImagePixels, reservation: null, clear);
 
-    /// <summary>Attaches a zeroed frame at the end without structural checks (construction, clones, decoders).</summary>
-    private protected ImageFrame AppendFrameCore(FrameMetadata metadata) => AppendFrameCore(AllocateFrameStorage(), metadata);
+    /// <summary>Attaches a frame at the end without structural checks (construction, clones, decoders), zeroed unless <paramref name="clear"/> is <see langword="false"/>.</summary>
+    private protected ImageFrame AppendFrameCore(FrameMetadata metadata, bool clear = true) => AppendFrameCore(AllocateFrameStorage(clear), metadata);
 
     /// <summary>Attaches a frame over a storage of this image at the end without structural checks (wrapped memory).</summary>
     private protected ImageFrame AppendFrameCore(PixelStorage storage, FrameMetadata metadata)
@@ -631,18 +645,31 @@ public abstract partial class Image : IDisposable
     /// </summary>
     /// <param name="plan">The conversion.</param>
     /// <param name="frames">Every frame that is converted (the displayed frames and the poster of an image).</param>
+    /// <param name="workers">The number of workers that split the rows of each frame.</param>
     /// <exception cref="UnsupportedImageFeatureException">A pixel cannot be converted.</exception>
-    internal static void PrepareConversion(PixelConversionPlan plan, IReadOnlyList<ImageFrame> frames)
+    internal static void PrepareConversion(PixelConversionPlan plan, IReadOnlyList<ImageFrame> frames, int workers = 1)
     {
         if (plan.RequiresPeak)
         {
+            // The largest of the largest values of the bands: the same value whatever the bands
             var peak = 0d;
             foreach (var frame in frames)
             {
-                using var lease = frame.GetStorage().AcquireLease();
-                for (var y = 0; y < lease.Height; y++)
+                var storage = frame.GetStorage();
+                using var lease = storage.AcquireLease();
+                var height = lease.Height;
+                var peaks = new double[workers];
+                RunBands(workers, height, (band, start, end) =>
                 {
-                    peak = Math.Max(peak, PixelConverter.GetLargestFiniteColor(plan.SourceFormat, lease.GetRowBytes(y)));
+                    for (var y = start; y < end; y++)
+                    {
+                        peaks[band] = Math.Max(peaks[band], PixelConverter.GetLargestFiniteColor(plan.SourceFormat, storage.GetRowSpanCore(y)));
+                    }
+                });
+
+                foreach (var bandPeak in peaks)
+                {
+                    peak = Math.Max(peak, bandPeak);
                 }
             }
 
@@ -651,14 +678,30 @@ public abstract partial class Image : IDisposable
 
         if (plan.RequiresValidation)
         {
+            // The error of the first band that fails: the one of the first row that fails, as with one worker
             foreach (var frame in frames)
             {
-                using var lease = frame.GetStorage().AcquireLease();
-                for (var y = 0; y < lease.Height; y++)
+                var storage = frame.GetStorage();
+                using var lease = storage.AcquireLease();
+                RunBands(workers, lease.Height, (_, start, end) =>
                 {
-                    plan.ValidateRow(lease.GetRowBytes(y));
-                }
+                    for (var y = start; y < end; y++)
+                    {
+                        plan.ValidateRow(storage.GetRowSpanCore(y));
+                    }
+                });
             }
+        }
+
+        static void RunBands(int workers, int height, Action<int, int, int> rows)
+        {
+            if (workers == 1)
+            {
+                rows(0, 0, height);
+                return;
+            }
+
+            RowBands.RunParallelInBandOrder(workers, band => rows(band, RowBands.GetBandStart(height, band, workers), RowBands.GetBandStart(height, band + 1, workers)));
         }
     }
 
@@ -666,17 +709,34 @@ public abstract partial class Image : IDisposable
     /// <param name="source">The source frame.</param>
     /// <param name="destination">The destination frame, of the destination format of <paramref name="plan"/>.</param>
     /// <param name="plan">The conversion, prepared (<see cref="PrepareConversion"/>).</param>
-    internal static void ConvertFramePixels(ImageFrame source, ImageFrame destination, PixelConversionPlan plan) => ConvertFrame(source, destination, plan);
+    internal static void ConvertFramePixels(ImageFrame source, ImageFrame destination, PixelConversionPlan plan) => ConvertFrame(source, destination, plan, workers: 1);
 
-    private static void ConvertFrame(ImageFrame source, ImageFrame destination, PixelConversionPlan plan)
+    /// <summary>
+    /// Converts the pixels of a frame, its rows split between <paramref name="workers"/> workers (never a conversion of
+    /// colors between CMYK and other pixels, which has working rows): each row is converted alone, so the pixels are those
+    /// of one worker, and a row that fails gives the error of the first band that fails, as one worker would.
+    /// </summary>
+    private static void ConvertFrame(ImageFrame source, ImageFrame destination, PixelConversionPlan plan, int workers)
     {
         destination.MetadataCore = source.MetadataCore.Clone();
-        using var leases = PixelLeasePair.Acquire(source.GetStorage(), destination.GetStorage());
-        var input = leases.First;
-        var output = leases.Second;
-        for (var y = 0; y < input.Height; y++)
+        var sourceStorage = source.GetStorage();
+        var destinationStorage = destination.GetStorage();
+        using var leases = PixelLeasePair.Acquire(sourceStorage, destinationStorage);
+        var height = leases.First.Height;
+        if (workers == 1)
         {
-            plan.ConvertRow(input.GetRowBytes(y), output.GetRowBytes(y));
+            ConvertRows(sourceStorage, destinationStorage, plan, 0, height);
+            return;
+        }
+
+        RowBands.RunParallelInBandOrder(workers, band => ConvertRows(sourceStorage, destinationStorage, plan, RowBands.GetBandStart(height, band, workers), RowBands.GetBandStart(height, band + 1, workers)));
+
+        static void ConvertRows(PixelStorage source, PixelStorage destination, PixelConversionPlan plan, int start, int end)
+        {
+            for (var y = start; y < end; y++)
+            {
+                plan.ConvertRow(source.GetRowSpanCore(y), destination.GetRowSpanCore(y));
+            }
         }
     }
 

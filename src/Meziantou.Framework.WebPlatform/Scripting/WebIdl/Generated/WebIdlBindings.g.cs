@@ -231,7 +231,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["FileList"] = Binding_FileList<TAdapter, TValue>.Binding,
             ["FileReader"] = Binding_FileReader<TAdapter, TValue>.Binding,
             ["FileReaderSync"] = Binding_FileReaderSync<TAdapter, TValue>.Binding,
+            ["FileSystem"] = Binding_FileSystem<TAdapter, TValue>.Binding,
+            ["FileSystemDirectoryEntry"] = Binding_FileSystemDirectoryEntry<TAdapter, TValue>.Binding,
             ["FileSystemDirectoryHandle"] = Binding_FileSystemDirectoryHandle<TAdapter, TValue>.Binding,
+            ["FileSystemDirectoryReader"] = Binding_FileSystemDirectoryReader<TAdapter, TValue>.Binding,
+            ["FileSystemEntry"] = Binding_FileSystemEntry<TAdapter, TValue>.Binding,
+            ["FileSystemFileEntry"] = Binding_FileSystemFileEntry<TAdapter, TValue>.Binding,
             ["FileSystemFileHandle"] = Binding_FileSystemFileHandle<TAdapter, TValue>.Binding,
             ["FileSystemHandle"] = Binding_FileSystemHandle<TAdapter, TValue>.Binding,
             ["FileSystemSyncAccessHandle"] = Binding_FileSystemSyncAccessHandle<TAdapter, TValue>.Binding,
@@ -810,6 +815,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.CustomEventInit dictionaryDom_CustomEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CustomEventInit(r, dictionaryDom_CustomEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DeprecationReportBody dictionaryDom_DeprecationReportBody:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeprecationReportBody(r, dictionaryDom_DeprecationReportBody);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventInit dictionaryDom_DeviceMotionEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventInit(r, dictionaryDom_DeviceMotionEventInit);
                 return true;
@@ -842,6 +850,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbVersionChangeEventInit dictionaryDom_IdbVersionChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbVersionChangeEventInit(r, dictionaryDom_IdbVersionChangeEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.InterventionReportBody dictionaryDom_InterventionReportBody:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_InterventionReportBody(r, dictionaryDom_InterventionReportBody);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions dictionaryDom_MagnetometerSensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MagnetometerSensorOptions(r, dictionaryDom_MagnetometerSensorOptions);
@@ -1202,6 +1213,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.FileApi.BlobPropertyBag dictionaryDom_FileApi_BlobPropertyBag:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileApi_BlobPropertyBag(r, dictionaryDom_FileApi_BlobPropertyBag);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.FileApi.FileSystemFlags dictionaryDom_FileApi_FileSystemFlags:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileApi_FileSystemFlags(r, dictionaryDom_FileApi_FileSystemFlags);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.FileSystemCreateWritableOptions dictionaryDom_FileSystemCreateWritableOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileSystemCreateWritableOptions(r, dictionaryDom_FileSystemCreateWritableOptions);
@@ -2024,6 +2038,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileSystemFileHandle> taskSystem_Threading_Tasks_Task_Dom_FileSystemFileHandle_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileSystemFileHandle_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileSystemHandle> taskSystem_Threading_Tasks_Task_Dom_FileSystemHandle_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileSystemHandle_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileSystemSyncAccessHandle> taskSystem_Threading_Tasks_Task_Dom_FileSystemSyncAccessHandle_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileSystemSyncAccessHandle_, static (r, v) => r.Wrap(v));

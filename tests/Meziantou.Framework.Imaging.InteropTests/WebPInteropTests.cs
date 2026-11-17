@@ -8,6 +8,7 @@ using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
@@ -22,6 +23,9 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// exact alpha plane, and the library decodes it within one unit of dwebp;</description></item>
 /// <item><description>animations written with seek-and-patch (path and seekable stream, save and writer) are read by webpmux
 /// (frame parameters, loop count) and every frame decodes as intended;</description></item>
+/// <item><description>animations written to a non-seekable stream (held until completion) are read by webpmux and anim_dump;</description></item>
+/// <item><description>lossy output of <see cref="WebPEncoder.SharpYuv"/> is an ordinary VP8 stream (identical planes in dwebp and FFmpeg)
+/// whose RGB decoded by dwebp is closer to the source than without it, and dithered 16-bit reductions decode exactly;</description></item>
 /// <item><description>metadata chunks are extracted byte for byte by webpmux;</description></item>
 /// <item><description>the streams of the options and fallbacks that ordinary images do not reach (modes under a first-partition
 /// budget, with and without the skip flag, reduced alpha levels, near-lossless colors) decode the same way.</description></item>
@@ -297,6 +301,129 @@ public sealed class WebPInteropTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NonSeekableAnimationsAreReadByLibWebP(bool lossy)
+    {
+        var libwebp = await RequiredTools.LibWebPAsync();
+        var frames = CreateFrames(3, 18, 10);
+        try
+        {
+            using var image = frames[0].Clone();
+            for (var i = 1; i < frames.Length; i++)
+            {
+                image.AppendFrame(frames[i].Frames[0]);
+            }
+
+            foreach (var frame in image.Frames)
+            {
+                frame.Metadata.Duration = new FrameDuration(40, 1000);
+            }
+
+            image.Animation = new AnimationMetadata { TotalPlays = 2 };
+            var encoder = new WebPEncoder { Compression = lossy ? WebPCompression.Lossy : WebPCompression.Lossless, OptimizeFrames = true };
+            using var stream = new TestOutputStream { ForbidSynchronousWrites = true };
+            await image.SaveAsync(stream, encoder, XunitCancellationToken);
+            var path = InteropSettings.GetArtifactsDirectory("WebPInteropTests") / $"non-seekable-{(lossy ? "lossy" : "lossless")}.webp";
+            await File.WriteAllBytesAsync(path, stream.ToArray(), XunitCancellationToken);
+
+            var info = await libwebp.GetInfoAsync(path, XunitCancellationToken);
+            Assert.Equal((18, 10), (info.Width, info.Height));
+            Assert.Contains("animation", info.Features, StringComparison.Ordinal);
+            Assert.Equal(2, info.LoopCount);
+            Assert.Equal([40, 40, 40], info.Frames.Select(frame => frame.DurationMilliseconds));
+
+            using var decoded = Image.Load<Rgba32>(path);
+            var dumped = await libwebp.DumpAnimationAsync(path, XunitCancellationToken);
+            Assert.Equal(frames.Length, dumped.Count);
+            for (var i = 0; i < frames.Length; i++)
+            {
+                AssertVisibleWithin(ImageSnapshots.CaptureFrame(decoded.Frames[i]).Span, dumped[i].Rgba, maxError: lossy ? 1 : 0, $"frame {i}: library vs anim_dump");
+            }
+        }
+        finally
+        {
+            foreach (var frame in frames)
+            {
+                frame.Dispose();
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(50)]
+    [InlineData(90)]
+    public async Task SharpYuvOutputIsCloserToTheSourceInLibWebP(int quality)
+    {
+        var libwebp = await RequiredTools.LibWebPAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        const int Width = 160;
+        const int Height = 96;
+        var pixels = CreatePattern("stripes", Width, Height);
+        using var image = Image.ImportPixelData<Rgba32>(pixels, Width, Height);
+        var source = GetBytes(image);
+        var plainPath = await SaveAsync(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = quality }, $"sharp-yuv-off-q{quality}");
+        var sharpPath = await SaveAsync(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = quality, SharpYuv = true }, $"sharp-yuv-on-q{quality}");
+
+        // An ordinary VP8 stream: two independent decoders reconstruct the same planes
+        var planes = await libwebp.DecodeYuvAsync(sharpPath, XunitCancellationToken);
+        var ffmpegPlanes = await DecodeYuvWithFFmpegAsync(ffmpeg, sharpPath, Width, Height);
+        Assert.True(planes.AsSpan(0, ffmpegPlanes.Length).SequenceEqual(ffmpegPlanes), $"dwebp {libwebp.Version} and FFmpeg {ffmpeg.Version} reconstruct different planes.");
+
+        // dwebp's chroma upsampling turns the refined planes into colors closer to the source
+        var (_, _, plain) = await libwebp.DecodeAsync(plainPath, XunitCancellationToken);
+        var (_, _, sharp) = await libwebp.DecodeAsync(sharpPath, XunitCancellationToken);
+        var plainError = SquaredError(source, plain);
+        var sharpError = SquaredError(source, sharp);
+        Assert.True(sharpError < plainError * 0.95, $"Squared error {sharpError} with SharpYuv, {plainError} without (dwebp {libwebp.Version}).");
+
+        using var decoded = Image.Load<Rgba32>(sharpPath);
+        AssertVisibleWithin(sharp, ImageSnapshots.CaptureFrame(decoded.Frames[0]).Span, maxError: 1, "library vs dwebp");
+
+        static long SquaredError(byte[] expected, byte[] actual)
+        {
+            long sum = 0;
+            for (var i = 0; i < expected.Length; i++)
+            {
+                if (i % 4 != 3)
+                {
+                    var difference = expected[i] - actual[i];
+                    sum += difference * difference;
+                }
+            }
+
+            return sum;
+        }
+    }
+
+    [Fact]
+    public async Task DitheredSixteenBitOutputDecodesExactlyInLibWebPAndFFmpeg()
+    {
+        var libwebp = await RequiredTools.LibWebPAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        const int Width = 128;
+        const int Height = 24;
+        var pixels = new Rgba64[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var value = (ushort)(20000 + (x * 9) + (y * 3));
+                pixels[(y * Width) + x] = new Rgba64(value, (ushort)(65535 - value), (ushort)(value / 2), (ushort)(x < 8 ? 0 : 40000 + (x * 100)));
+            }
+        }
+
+        using var image = Image.ImportPixelData<Rgba64>(pixels, Width, Height);
+        var path = await SaveAsync(image, new WebPEncoder { AllowBitDepthReduction = true, DitherBitDepthReduction = true }, "dithered-16-bit");
+        using var decoded = Image.Load<Rgba32>(path);
+        var expected = ImageSnapshots.CaptureFrame(decoded.Frames[0]).Span.ToArray();
+        var (_, _, rgba) = await libwebp.DecodeAsync(path, XunitCancellationToken);
+        Assert.True(expected.AsSpan().SequenceEqual(rgba), $"dwebp {libwebp.Version} decodes different samples.");
+        var frames = await ffmpeg.DecodeToRawFramesAsync(path, "rgba", Width, Height, XunitCancellationToken);
+        Assert.True(expected.AsSpan().SequenceEqual(Assert.Single(frames)), $"FFmpeg {ffmpeg.Version} decodes different samples.");
+    }
+
     public static TheoryData<string, bool> OptimizedFrameAnimations()
     {
         var data = new TheoryData<string, bool>();
@@ -449,6 +576,7 @@ public sealed class WebPInteropTests
                     "alpha-ramp" => new Rgba32(30, 120, 220, (byte)(x * 255 / (width - 1))),
                     "gradient" => new Rgba32((byte)(x * 255 / (width - 1)), (byte)(y * 255 / (height - 1)), (byte)(x + y), 255),
                     "blocks" => colors[(((x / 16) * 7) + ((y / 16) * 13)) % colors.Length],
+                    "stripes" => ((x + (y / 8)) % (3 + (y / 8 % 4))) < 2 ? colors[(x / (1 + (y / 8 % 4))) % 7] : new Rgba32((byte)(y / 8 % 2 * 255), 0, (byte)(255 - (y / 8 % 2 * 255)), 255),
                     _ => throw new ArgumentOutOfRangeException(nameof(pattern)),
                 };
             }

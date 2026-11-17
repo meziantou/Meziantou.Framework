@@ -560,7 +560,7 @@ internal static class CssImageFetching
 
                     if (option.Image is CssPreservedToken { Type: CssTokenType.String } optionString)
                     {
-                        urls.Add((optionString.Token.Value, CssRequestModifiers.None));
+                        urls.Add((optionString.Value, CssRequestModifiers.None));
                     }
                     else
                     {
@@ -575,7 +575,7 @@ internal static class CssImageFetching
                     {
                         if (argument is CssPreservedToken { Type: CssTokenType.String } source)
                         {
-                            urls.Add((source.Token.Value, CssRequestModifiers.None));
+                            urls.Add((source.Value, CssRequestModifiers.None));
                         }
                         else
                         {

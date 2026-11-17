@@ -49,7 +49,7 @@ internal static class CssBackgrounds
         return CssSerializer.SerializeValue(withSpaces, CssPropertyRegistry.Get(property));
     }
 
-    private static string? GetKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+    private static string? GetKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
 
     /// <summary>
     /// Splits a &lt;bg-position&gt; into its horizontal and vertical components
@@ -211,7 +211,7 @@ internal static class CssBackgrounds
                     case 1:
                     {
                         // <bg-position> [ / <bg-size> ]?
-                        var slash = captured.FindIndex(v => v is CssPreservedToken token && token.Token.IsDelim('/'));
+                        var slash = captured.FindIndex(v => v is CssPreservedToken token && token.IsDelim('/'));
                         var positionValues = slash < 0 ? captured : captured[..slash];
                         if (ParsePosition(positionValues) is not { } position)
                             return null;

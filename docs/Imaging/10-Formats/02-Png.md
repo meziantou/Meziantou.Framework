@@ -29,7 +29,7 @@ pixel values to reduce them: an opaque [Rgba32](cref:Meziantou.Framework.Imaging
 | [AllowColorReduction](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.AllowColorReduction) | Lets [Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed) reduce the colors of an image that does not fit in 256 colors | `false` |
 | [Quantization](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Quantization) | How [Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed) reduces colors: number of colors, dithering, fixed palette (see [Color reduction](../06-Processing/08-ColorReduction.md)) | 256 colors, no dithering |
 | [Optimization](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Optimization) | [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the lossless options and writes the smallest file it finds; [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) only chooses the layout of a still image from its pixels | [None](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.None) |
-| [CompressionLevel](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.CompressionLevel) | The zlib level; ignored by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) | `Optimal` |
+| [CompressionLevel](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.CompressionLevel) | The zlib level; `Fastest` uses zlib level 2, whose Huffman codes fit the data (level 1 writes fixed codes, a third larger on photographs); ignored by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) | `Optimal` |
 | [Filter](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Filter) | The row filter strategy, or one fixed filter for every row | [Adaptive](cref:Meziantou.Framework.Imaging.Formats.PngFilter.Adaptive) |
 | [Interlaced](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Interlaced) | Adam7 interlacing: a viewer can show the image while it downloads (see [Show an image while it downloads](../05-LoadingAndSaving/06-ShowImagesWhileTheyDownload.md)) | `false` |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds the delays an APNG cannot store exactly (16-bit fractions); [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) |
@@ -161,7 +161,11 @@ See [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a
 
 ## Malformed files
 
-A malformed file is rejected with an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException). With
+A malformed file is rejected with an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException).
+The image data must be one complete zlib datastream that decompresses to exactly the scanlines of the image: a valid
+header, deflate data that ends with its final block, then its Adler-32 checksum, and no byte after it. The decoder
+knows where the deflate data ends, so it also rejects bytes between the deflate data and the checksum that happen to end
+with a matching checksum. With
 [lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept), two deviations that
 browsers tolerate are accepted:
 

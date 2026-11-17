@@ -95,6 +95,12 @@ public sealed class ImageInfoTests
 
         // The FLOAT and UINT samples of an OpenEXR file
         Assert.Equal(32, Create(ImageFormat.OpenExr, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 32).BitsPerComponent);
+
+        // The colors of a Radiance HDR file
+        Assert.Equal(32, Create(ImageFormat.Radiance, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 32).BitsPerComponent);
+
+        // The samples of a 32-bit PSD file
+        Assert.Equal(32, Create(ImageFormat.Psd, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 32).BitsPerComponent);
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaHalf, bitsPerComponent: 32));
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 64));
     }

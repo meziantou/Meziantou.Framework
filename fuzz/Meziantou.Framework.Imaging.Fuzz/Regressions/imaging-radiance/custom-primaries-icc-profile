@@ -1,0 +1,6 @@
+#?RADIANCE
+FORMAT=32-bit_rle_rgbe
+PRIMARIES=0.670 0.330 0.210 0.710 0.140 0.080 0.333 0.333
+
+-Y 1 +X 2
+Ä@ Å @Ä

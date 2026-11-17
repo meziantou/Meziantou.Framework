@@ -390,7 +390,7 @@ internal static class CssInterpolation
             if (argument is Syntax.CssPreservedToken { Type: Syntax.CssTokenType.Ident } ident)
             {
                 // (the position follows `at`)
-                if (ident.Token.IsIdent("at"))
+                if (ident.IsIdent("at"))
                     break;
 
                 return true;

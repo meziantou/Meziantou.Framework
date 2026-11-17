@@ -42,7 +42,7 @@ public sealed class HardeningTests
         Assert.Empty(block.Value);
 
         // The tokens after the skipped blocks are parsed
-        Assert.Equal("b", ((CssPreservedToken)values[^1]).Token.Value);
+        Assert.Equal("b", ((CssPreservedToken)values[^1]).Value);
     }
 
     [Theory]

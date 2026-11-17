@@ -22,6 +22,14 @@ internal sealed class ImageCodecContext
         Sequential = sequential;
     }
 
+    private ImageCodecContext(ImageCodecContext parent)
+    {
+        Configuration = parent.Configuration;
+        Tracker = new InputResourceTracker(parent.Configuration.Limits);
+        Scope = parent.Scope;
+        CancellationToken = parent.CancellationToken;
+    }
+
     public ImageConfiguration Configuration { get; }
 
     public ImageResourceLimits Limits => Configuration.Limits;
@@ -63,4 +71,11 @@ internal sealed class ImageCodecContext
     /// </summary>
     /// <returns><see langword="true"/> if the walker must return to the reader now.</returns>
     public bool TryConsumeYield() => Sequential?.TryConsumeYield() ?? false;
+
+    /// <summary>
+    /// Creates the context of a datastream embedded in the input of this one and decoded by the decoder of another format
+    /// (a JPEG XL tile of a DNG raw image): its buffers are charged to the scope of this context, and its own frames, pixels
+    /// and bytes to a tracker of its own, since the embedded image is not an image of the input.
+    /// </summary>
+    public ImageCodecContext ForEmbeddedDatastream() => new(this);
 }

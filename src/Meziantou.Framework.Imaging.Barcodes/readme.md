@@ -2,13 +2,13 @@
 
 Renders the QR codes, Data Matrix, PDF417 and Aztec symbols, and barcodes of [`Meziantou.Framework.Barcodes`](https://www.nuget.org/packages/Meziantou.Framework.Barcodes) as [`Meziantou.Framework.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.Imaging) images. The resulting `Image<Rgba32>` can be saved in any format the library supports (PNG, WebP, JPEG, GIF, AVIF, ...), resized, or drawn onto another image.
 
-`Meziantou.Framework.Barcodes` already writes PNG files on its own (`ToPng`), with no dependency. Use this package when you need another format or want to process the image further, or to read the codes of an image.
+The image is the scene of the code (`CreateScene` of `Meziantou.Framework.Barcodes`), drawn with `Meziantou.Framework.Imaging.VectorGraphics`: it is the same drawing as the SVG of `ToSvg`, with the same options, logo and human-readable text. Use this package for PNG files and the other image formats, to draw a code on an image, or to read the codes of an image.
 
 ## Usage
 
 The types are in the `Meziantou.Framework.Imaging.Barcodes` namespace. The examples also use the
-`Meziantou.Framework.Barcodes` (QR codes and barcodes), `Meziantou.Framework.Imaging` (images) and
-`Meziantou.Framework.Imaging.Formats` (encoders) namespaces.
+`Meziantou.Framework.Barcodes` (QR codes, barcodes and their options), `Meziantou.Framework.VectorGraphics` (colors and
+paints), `Meziantou.Framework.Imaging` (images) and `Meziantou.Framework.Imaging.Formats` (encoders) namespaces.
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_QRCodeToImage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -22,19 +22,19 @@ Assert.Equal((330, 330), (image.Width, image.Height));
 using var webp = new MemoryStream();
 image.Save(webp, new WebPEncoder());
 
-// Custom options, the same as the canvas drawing takes: any brush, and no background
-using var customImage = qrCode.ToImage(new QRCodeDrawingOptions
+// Custom options, the same as the SVG renderer takes: any paint, and no background
+using var customImage = qrCode.ToImage(new QRCodeRenderOptions
 {
     ModuleSize = 4,
     QuietZoneModules = 2,
-    DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
-    LightBrush = null,
+    DarkPaint = new SceneColor(0x00, 0x33, 0x66),
+    LightPaint = null,
 });
 Assert.Equal((116, 116), (customImage.Width, customImage.Height));
 Assert.Equal(Colors.Transparent, customImage.Frames[0][0, 0]);
 Assert.Equal(new Rgba32(0x00, 0x33, 0x66), customImage.Frames[0][8, 8]);
 
-// An indexed PNG stores the two colors in a palette, as ToPng does
+// An indexed PNG stores the two colors in a palette
 using var png = new MemoryStream();
 customImage.Save(png, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
 ```
@@ -45,7 +45,7 @@ Barcodes work the same way:
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_BarcodeToImage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var barcode = Barcode.CreateEan13("5901234123457");
-using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, ModuleHeight = 100 });
+using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 3, ModuleHeight = 100 });
 Assert.Equal((345, 100), (image.Width, image.Height));
 ```
 <!-- endref -->
@@ -53,7 +53,7 @@ Assert.Equal((345, 100), (image.Width, image.Height));
 ## Drawing on a canvas
 
 `DrawQRCode` and `DrawBarcode` draw on the `DrawingCanvas` of `Image.Draw`, as vector shapes: the transform, the clip and
-the layers of the canvas apply, and any `Brush` (solid, gradient, image, pattern) paints the modules. `MeasureQRCode` and
+the layers of the canvas apply, and any `ScenePaint` (color, gradient, pattern) paints the modules. `MeasureQRCode` and
 `MeasureBarcode` give the size of the drawing beforehand, to lay out the page. With `SnapToPixels` (the default), the
 module sizes and the position are rounded to whole pixels, so that every module has the same size and sharp edges.
 
@@ -61,7 +61,7 @@ module sizes and the position are rounded to whole pixels, so that every module 
 ```csharp
 using var ticket = new Image<Rgba32>(400, 200, Colors.White); // or Image.Load<Rgba32>("ticket.png")
 var qrCode = QRCode.Create("TICKET-0042");
-var options = new QRCodeDrawingOptions { ModuleSize = 4, QuietZoneModules = 2 };
+var options = new QRCodeRenderOptions { ModuleSize = 4, QuietZoneModules = 2 };
 
 // The size of the drawing, quiet zone included, to lay out the page before drawing
 var size = QRCodeImageRenderer.MeasureQRCode(qrCode, options);
@@ -78,19 +78,18 @@ ticket.Save(png, new PngEncoder());
 <!-- endref -->
 
 `DrawBarcode` draws the bars, and the human-readable text (`Barcode.Text`, with its check digit) under them when
-`BarcodeDrawingOptions.Font` is set, for example to the bundled OCR-B font:
+`BarcodeRenderOptions.Text` is set, in the bundled OCR-B font by default:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawBarcode;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var barcode = Barcode.CreateEan13("590123412345");
-var options = new BarcodeDrawingOptions
+var options = new BarcodeRenderOptions
 {
     ModuleWidth = 2,
     ModuleHeight = 60,
     QuietZoneModules = 9,
-    DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
-    Font = BarcodeFonts.OcrB, // prints barcode.Text, "5901234123457", under the bars
-    FontSize = 24,
+    DarkPaint = new SceneColor(0x00, 0x33, 0x66),
+    Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 24 }, // prints the digits of barcode.Text in groups under the bars
 };
 
 var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
@@ -145,7 +144,7 @@ Assert.Equal((BarcodeType.Ean13, "5901234123457"), (result.Result.Type, result.T
 
 ## Fonts
 
-`BarcodeFonts.OcrA` and `BarcodeFonts.OcrB` are the two fonts of optical character recognition, the ones usually
+`BarcodeFonts.OcrA` and `BarcodeFonts.OcrB`, in `Meziantou.Framework.Barcodes`, are the two fonts of optical character recognition, the ones usually
 printed under barcodes (OCR-B under EAN and UPC). They are generated from the character shapes of the standards, at their
 Size I and with their nominal stroke width, by `tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator`:
 
@@ -162,25 +161,7 @@ IJ, å, æ, ø, ij, ß) and §, ¤, £, ¥, ¨ and ´. The preferred shapes of t
 
 ## Options
 
-`ToImage` and the canvas drawing take the same options: `ToImage` renders the drawing on an image of its size.
-
-| `QRCodeDrawingOptions` | Default | Description |
-|------------------------|---------|-------------|
-| `ModuleSize` | 10 | Size of each module, in canvas units |
-| `QuietZoneModules` | 4 | Number of quiet zone modules around the QR code |
-| `DarkBrush` | black | Brush of dark modules, in canvas coordinates |
-| `LightBrush` | white | Brush of light modules and of the quiet zone; `null` keeps the background (transparent for `ToImage`) |
-| `SnapToPixels` | `true` | Round the module size and the position to whole units |
-
-| `BarcodeDrawingOptions` | Default | Description |
-|-------------------------|---------|-------------|
-| `ModuleWidth` | 2 | Width of each module, in canvas units |
-| `ModuleHeight` | 80 | Height of the bars, in canvas units |
-| `QuietZoneModules` | 10 | Number of quiet zone modules on the left and right sides |
-| `DarkBrush` | black | Brush of the bars, in canvas coordinates |
-| `LightBrush` | white | Brush of the spaces, of the quiet zone and of the text background; `null` keeps the background |
-| `SnapToPixels` | `true` | Round the module sizes and the position to whole units |
-| `Font` | `null` | Font of the human-readable text under the bars; `null` draws no text |
-| `FontSize` | 14 | Size of the text, in units per em |
-| `TextBrush` | `null` | Brush of the text; `null` uses `DarkBrush` |
-| `TextSpacing` | 2 | Space between the bars and the text |
+`ToImage`, `Measure*` and the canvas drawing take the options of every renderer of `Meziantou.Framework.Barcodes`
+(`QRCodeRenderOptions`, `BarcodeRenderOptions`, `Barcode2DRenderOptions`), and the `SceneImageOptions` of the image
+renderer, whose `Scale` draws more pixels per unit. The sizes are in canvas units: pixels, unless a transform or a scale
+applies.

@@ -11,9 +11,17 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
+    <!-- The PNG snapshots of the scenes, drawn by the image renderer -->
+    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <!-- The PDF example: the scenes are drawn by every scene renderer -->
+    <ProjectReference Include="../../src/Meziantou.Framework.Pdf.VectorGraphics/Meziantou.Framework.Pdf.VectorGraphics.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.VectorGraphics" />
   </ItemGroup>
 
   <ItemGroup>

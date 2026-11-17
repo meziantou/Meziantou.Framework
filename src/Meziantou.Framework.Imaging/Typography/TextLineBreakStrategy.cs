@@ -30,6 +30,12 @@ public enum TextLineBreakStrategy
     /// <see cref="TextLayoutOptions.MaxLines"/> or <see cref="TextLayoutOptions.MaxHeight"/> are cut afterwards: the
     /// breaks are not chosen to fit them. Laying out a long paragraph takes about twice as long as with greedy breaking.
     /// </para>
+    /// <para>
+    /// The work is bounded: choosing the breaks may measure 256 characters per character of the paragraph, plus a
+    /// million. A paragraph whose lines hold so many break opportunities that it would measure more, such as a long
+    /// paragraph in a very wide layout, is broken greedily from there. Among breaks of the same cost, the earliest ones
+    /// are kept: the result is deterministic.
+    /// </para>
     /// </remarks>
     Optimal = 1,
 }

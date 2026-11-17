@@ -126,6 +126,10 @@ public sealed class PngEncoder : ImageEncoder
     /// Gets the zlib compression level. Defaults to <see cref="System.IO.Compression.CompressionLevel.Optimal"/>. Ignored by
     /// <see cref="PngOptimization.MinimumSize"/>, which tries several levels and keeps the smallest data.
     /// </summary>
+    /// <remarks>
+    /// <see cref="System.IO.Compression.CompressionLevel.Fastest"/> uses zlib level 2: level 1 writes fixed Huffman codes, which
+    /// make filtered photographs about a third larger for little time saved.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="System.IO.Compression.CompressionLevel"/>.</exception>
     public CompressionLevel CompressionLevel
     {

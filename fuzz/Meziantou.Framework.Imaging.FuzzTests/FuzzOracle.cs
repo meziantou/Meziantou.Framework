@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// than a documented exception or a file;</description></item>
 /// <item><description>a collection of pages or representations (<see cref="ImageCollection"/>) describes and decodes the same
 /// entries from a span and from a stream, rejects the formats that store one image, and its default entry (the first page,
-/// or the largest representation) is the image of the eager load;</description></item>
+/// or the largest representation) is the image of the eager load (the first image of a Netpbm concatenation);</description></item>
 /// <item><description>a lossless encoder, chosen by the variant among the encoders that have a lossless mode, gives back the
 /// pixels of a corner of the first frame of a decoded image.</description></item>
 /// </list>
@@ -328,6 +328,11 @@ internal static class FuzzOracle
         if (format == ImageFormat.Jpeg && CheckJpegRegion(input, image, variant) is { Length: > 0 } region)
             return region;
 
+        // A color JPEG file loaded as Rgba32 has the samples of its Rgb24 decode with an opaque alpha: the color conversion
+        // writes RGBA pixels with a kernel of its own (the same arithmetic as the RGB one)
+        if (format == ImageFormat.Jpeg && CheckJpegRgba(input, image) is { Length: > 0 } rgba)
+            return rgba;
+
         // An area of an AVIF or HEIC image has the pixels of the full decode: whatever the decoders skip (the tiles of a grid,
         // the rows below the area, the AV1 tiles far from it) or decode again whole (an item that is not a single intra
         // picture), it succeeds when the full decode does
@@ -617,6 +622,30 @@ internal static class FuzzOracle
     }
 
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckJpegRgba(byte[] input, Image image)
+    {
+        if (image.PixelFormat != PixelFormat.Rgb24 || image.Frames.Count != 1)
+            return string.Empty;
+
+        using var rgba = Image.Load<Rgba32>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+        if (rgba.Size != image.Size || rgba.Frames.Count != 1)
+            return $"jpeg-rgba-geometry: the Rgba32 decode is {rgba.Size} with {rgba.Frames.Count} frame(s), the Rgb24 decode is {image.Size}";
+
+        var pixelCount = image.Width * image.Height;
+        var rgb = new byte[pixelCount * 3];
+        image.Frames[0].CopyPixelBytesTo(rgb);
+        var pixels = new byte[pixelCount * 4];
+        rgba.Frames[0].CopyPixelBytesTo(pixels);
+        for (var i = 0; i < pixelCount; i++)
+        {
+            if (pixels[4 * i] != rgb[3 * i] || pixels[(4 * i) + 1] != rgb[(3 * i) + 1] || pixels[(4 * i) + 2] != rgb[(3 * i) + 2] || pixels[(4 * i) + 3] != 255)
+                return $"jpeg-rgba-pixels: pixel {i % image.Width}, {i / image.Width} of the Rgba32 decode is not the Rgb24 pixel with an opaque alpha";
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
     private static string CheckLossyHeic(Image image, int variant)
     {
         // A corner of the first frame, at an effort and a quality of the variant: the efforts from 3 search the sample
@@ -695,6 +724,43 @@ internal static class FuzzOracle
 
         if (FrameSummary.Capture(expected.Frames[0]).PixelHash != FrameSummary.Capture(reloaded.Frames[0]).PixelHash)
             return $"lossless-round-trip-pixels: the {pixelFormat} image of {expected.Width}x{expected.Height} written as {encoder.Format} ({encoder.GetType().Name}, variant {variant}) does not decode to the same pixels";
+
+        if (encoder is TiffEncoder { Compression: TiffCompression.Deflate or TiffCompression.Lzw } tiff)
+            return CheckTiffWorkers(expected, tiff, variant);
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Returns an empty string, or "name: description" for a violated property; throws for exceptions. The corner repeated
+    /// over a page large enough for several workers (65,536 pixels) is written by 2 to 8 workers as by one: the batches of
+    /// strips the workers compress change neither the bytes nor the order of the strips.
+    /// </summary>
+    private static string CheckTiffWorkers(Image<Rgba64> corner, TiffEncoder encoder, int variant)
+    {
+        const int Side = 256;
+        var colors = new Rgba64[corner.Width * corner.Height];
+        corner.Frames[0].CopyPixelDataTo(colors);
+        var pixels = new Rgba64[Side * Side];
+        for (var y = 0; y < Side; y++)
+        {
+            for (var x = 0; x < Side; x++)
+            {
+                pixels[(y * Side) + x] = colors[((y % corner.Height) * corner.Width) + (x % corner.Width)];
+            }
+        }
+
+        var workers = 2 + (variant % 7);
+        byte[] Save(int maxDegreeOfParallelism)
+        {
+            using var page = Image.ImportPixelData<Rgba64>(pixels, Side, Side, configuration: new ImageConfiguration { MaxDegreeOfParallelism = maxDegreeOfParallelism });
+            using var output = new MemoryStream();
+            page.Save(output, encoder);
+            return output.ToArray();
+        }
+
+        if (!Save(1).AsSpan().SequenceEqual(Save(workers)))
+            return $"tiff-workers: the {Side}x{Side} page written as {encoder.Compression} TIFF ({encoder.RowsPerStrip} rows per strip) by {workers} workers differs from the file of one worker";
 
         return string.Empty;
     }
@@ -855,7 +921,11 @@ internal static class FuzzOracle
         // The collection tells the formats apart from the detection prefix: the detection of a file of the HEIF family
         // reads the brands that follow it when it has them, and reports a file type box the prefix cuts as AVIF
         var prefixFormat = Image.DetectFormat(input.AsSpan(0, Math.Min(input.Length, Image.FormatDetectionPrefixLength)));
-        var isCollection = detected is ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur;
+        var isCollection = detected is ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur or ImageFormat.Pnm or ImageFormat.Dds;
+
+        // A load and an identification of a Netpbm file read its first image only, and those of a DDS file its first
+        // surface: the collection also reads the images that follow it, which can be malformed or missing
+        var loadReadsEveryEntry = detected is not (ImageFormat.Pnm or ImageFormat.Dds);
         switch (fromSpan.Exception)
         {
             case null when !isCollection:
@@ -867,12 +937,12 @@ internal static class FuzzOracle
             case not null and not UnsupportedImageFeatureException when prefixFormat != ImageFormat.Unknown && !isCollection:
                 return $"collection-single-image: a {prefixFormat} input is rejected with {Describe(fromSpan.Exception)} instead of UnsupportedImageFeatureException";
 
-            case not null when eager.Succeeded && isCollection && full.Succeeded:
+            case not null when eager.Succeeded && isCollection && loadReadsEveryEntry && full.Succeeded:
                 return $"collection-failure-but-load: the eager load succeeded ({eager.Value}) but the collection {Describe(fromSpan.Exception)}";
         }
 
         // The collection and the full identification walk the same structure: every entry
-        if (isCollection && fromSpan.Succeeded != full.Succeeded && fromSpan.Exception is not ImageResourceLimitException && full.Exception is not ImageResourceLimitException)
+        if (isCollection && loadReadsEveryEntry && fromSpan.Succeeded != full.Succeeded && fromSpan.Exception is not ImageResourceLimitException && full.Exception is not ImageResourceLimitException)
             return $"collection-full-identify: the full identification {Describe(full.Exception)} but the collection {Describe(fromSpan.Exception)}";
 
         if (fromSpan.Exception is not null)
@@ -890,7 +960,7 @@ internal static class FuzzOracle
         // The default entry: the first page, or the largest representation (then the deepest, which the description of
         // an entry does not tell apart from the other representations of that size)
         var largest = fromSpan.Entries.Max(entry => (long)entry.Width * entry.Height);
-        List<int> candidates = detected == ImageFormat.Tiff ? [0] : Enumerable.Range(0, fromSpan.Entries.Count).Where(index => (long)fromSpan.Entries[index].Width * fromSpan.Entries[index].Height == largest).ToList();
+        List<int> candidates = detected is ImageFormat.Tiff or ImageFormat.Pnm or ImageFormat.Dds ? [0] : Enumerable.Range(0, fromSpan.Entries.Count).Where(index => (long)fromSpan.Entries[index].Width * fromSpan.Entries[index].Height == largest).ToList();
         if (candidates.Exists(index => index >= CollectionSummary.MaxDecodedEntries))
             return string.Empty;
 

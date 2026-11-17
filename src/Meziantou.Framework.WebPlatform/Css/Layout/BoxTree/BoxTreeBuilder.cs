@@ -1576,16 +1576,16 @@ internal sealed partial class BoxTreeBuilder
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.String } text:
-                    _text.Append(text.Token.Value);
+                    _text.Append(text.Value);
                     hasString = true;
                     break;
 
-                case CssPreservedToken slash when slash.Token.IsDelim('/'):
+                case CssPreservedToken slash when slash.IsDelim('/'):
                     FlushContentText(parent, style, element, pseudoElement);
                     return;
 
                 case CssPreservedToken { Type: CssTokenType.Ident } keyword:
-                    AppendQuote(style, keyword.Token.Value);
+                    AppendQuote(style, keyword.Value);
                     break;
 
                 case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "counter") || InfraAscii.EqualsIgnoreAsciiCase(function.Name, "counters"):
@@ -1690,7 +1690,7 @@ internal sealed partial class BoxTreeBuilder
         {
             if (value is CssPreservedToken { Type: CssTokenType.String } text)
             {
-                strings.Add(text.Token.Value);
+                strings.Add(text.Value);
             }
         }
 
@@ -1715,7 +1715,7 @@ internal sealed partial class BoxTreeBuilder
             if (arguments.Count < 2 || arguments[1] is not [CssPreservedToken { Type: CssTokenType.String } separatorToken])
                 return "";
 
-            separator = separatorToken.Token.Value;
+            separator = separatorToken.Value;
         }
 
         // https://drafts.csswg.org/css-lists-3/#counter-functions: "If the <counter-style> argument is omitted it defaults to decimal"
@@ -1723,8 +1723,8 @@ internal sealed partial class BoxTreeBuilder
         var styleIndex = isCounters ? 2 : 1;
         var counterStyle = (arguments.Count > styleIndex ? counters.ResolveCounterStyle(arguments[styleIndex], style, "content") : null) ?? CounterStyle.Decimal;
         return separator is not null
-            ? counters.GetCounters(element, pseudoElement, name.Token.Value, separator, counterStyle, style)
-            : counters.GetCounter(element, pseudoElement, name.Token.Value, counterStyle, style);
+            ? counters.GetCounters(element, pseudoElement, name.Value, separator, counterStyle, style)
+            : counters.GetCounter(element, pseudoElement, name.Value, counterStyle, style);
     }
 
     /// <summary>
@@ -1746,7 +1746,7 @@ internal sealed partial class BoxTreeBuilder
         {
             [CssPreservedToken { Type: CssTokenType.Url }] => content,
             [CssFunction function] when IsImageFunction(function.Name) => content,
-            [CssPreservedToken { Type: CssTokenType.Url } or CssFunction, CssPreservedToken slash, ..] when slash.Token.IsDelim('/') && (values[0] is not CssFunction f || IsImageFunction(f.Name)) => content[..content.IndexOf('/', StringComparison.Ordinal)].TrimEnd(),
+            [CssPreservedToken { Type: CssTokenType.Url } or CssFunction, CssPreservedToken slash, ..] when slash.IsDelim('/') && (values[0] is not CssFunction f || IsImageFunction(f.Name)) => content[..content.IndexOf('/', StringComparison.Ordinal)].TrimEnd(),
             _ => null,
         };
     }

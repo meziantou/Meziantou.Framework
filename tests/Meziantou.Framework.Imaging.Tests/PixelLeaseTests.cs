@@ -273,6 +273,39 @@ public sealed class PixelLeaseTests
         Assert.False(other.IsLeased);
     }
 
+    [Theory]
+    [InlineData(1, PixelStorageLayoutOptions.DefaultTargetSlabBytes)]
+    [InlineData(1, 50)]
+    [InlineData(4, 50)]
+    [InlineData(16, 1)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void CopiesBetweenStoragesOfTheSameLayoutCopyEveryRow(int rowAlignment, int targetSlabBytes)
+    {
+        var options = new PixelStorageLayoutOptions { RowAlignment = rowAlignment, TargetSlabBytes = targetSlabBytes };
+        var source = CreateOwner().Allocate(7, 11, 3, options);
+        var destination = CreateOwner().Allocate(7, 11, 3, options);
+        var random = new Random(42);
+        var pair = PixelLeasePair.Acquire(source, destination);
+        try
+        {
+            for (var y = 0; y < 11; y++)
+            {
+                random.NextBytes(pair.First.GetRowBytes(y));
+                pair.Second.GetRowBytes(y).Fill(0xCD);
+            }
+
+            pair.First.CopyTo(pair.Second);
+            for (var y = 0; y < 11; y++)
+            {
+                Assert.Equal(pair.First.GetRowBytes(y).ToArray(), pair.Second.GetRowBytes(y).ToArray());
+            }
+        }
+        finally
+        {
+            pair.Dispose();
+        }
+    }
+
     [Fact]
     public void LeaseSetsDeduplicateSortAndReleaseOnFailure()
     {

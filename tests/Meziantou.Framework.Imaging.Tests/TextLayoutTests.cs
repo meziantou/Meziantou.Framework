@@ -55,6 +55,22 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void AControlCharacterOfAWrappedLineIsLaidOutWhenTheGlyphsOfTheParagraphAreCompacted()
+    {
+        // A control character is an item without glyph. Wrapping shapes the items of a line again, and once the former
+        // glyphs are most of the list, it is compacted: the start of an item without glyph must stay within it. The
+        // synthetic bold changes the widths, so that the lines are broken where the list is compacted.
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var horizontal = TextLayout.Create("\u00C0la carte: \u0001\uDCF22!", new TextStyle(font, 35.125) { Synthesis = FontSynthesis.Bold }, new TextLayoutOptions { MaxWidth = 160 });
+        var vertical = TextLayout.Create("\u00C00li certe:fi \u0001\uFFFD2", new TextStyle(font, 28.75) { Synthesis = FontSynthesis.Bold }, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 160 });
+        foreach (var (layout, length) in new[] { (horizontal, 15), (vertical, 17) })
+        {
+            Assert.True(layout.LineCount > 1);
+            Assert.Equal(length, layout.Lines.Sum(line => line.Length));
+        }
+    }
+
+    [Fact]
     public void HintingIsOffByDefault()
     {
         Assert.Equal(TextHinting.None, TextLayoutOptions.Default.Hinting);
@@ -940,6 +956,130 @@ public sealed class TextLayoutTests
                 return room;
             }
         }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void OptimalLineBreakingHandlesMixedFontsBidiTextAndRuby()
+    {
+        // Random paragraphs of Latin words at two sizes, Hebrew words of another font, and ruby bases of ideographs:
+        // every line fits, the lines cover the text in order, no line ends inside a ruby base, and the room left at the
+        // end of the lines is never more than with greedy breaking.
+        var latin = new TextStyle(Boxes, 16);
+        var large = new TextStyle(Boxes, 24);
+        var hebrew = new TextStyle(Extended, 16);
+        var ideographs = new TextStyle(Ideographs, 16);
+        var annotations = new TextStyle(Ideographs, 8);
+        var random = new Random(5113);
+        for (var iteration = 0; iteration < 200; iteration++)
+        {
+            var builder = new RichTextBuilder();
+            var rubyRanges = new List<(int Start, int End)>();
+            var length = 0;
+            var wordCount = random.Next(1, 30);
+            for (var word = 0; word < wordCount; word++)
+            {
+                if (word > 0)
+                {
+                    builder.Append(" ", latin);
+                    length++;
+                }
+
+                var letters = random.Next(1, 4);
+                var kind = random.Next(4);
+                var value = new string(Enumerable.Range(0, letters).Select(_ => kind switch
+                {
+                    2 => "\u05D0\u05D1\u05D2"[random.Next(3)],
+                    3 => "\u4E00\u4E8C\u4E09"[random.Next(3)],
+                    _ => "ABC"[random.Next(3)],
+                }).ToArray());
+                switch (kind)
+                {
+                    case 0:
+                        builder.Append(value, latin);
+                        break;
+
+                    case 1:
+                        builder.Append(value, large);
+                        break;
+
+                    case 2:
+                        builder.Append(value, hebrew);
+                        break;
+
+                    default:
+                        builder.AppendRuby(value, ideographs, "\u4E00\u4E00", annotations);
+                        rubyRanges.Add((length, length + letters));
+                        break;
+                }
+
+                length += letters;
+            }
+
+            var text = builder.Build();
+            var width = random.Next(80, 201);
+            var greedy = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = width });
+            var optimal = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = width, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+            var position = 0;
+            foreach (var line in optimal.Lines)
+            {
+                Assert.Equal(position, line.Start);
+                Assert.True(line.Width <= width, $"{text.Text} in {width}: a line is {line.Width} pixels");
+                position += line.Length;
+                Assert.DoesNotContain(rubyRanges, range => position > range.Start && position < range.End);
+            }
+
+            Assert.Equal(text.Text.Length, position);
+            Assert.True(GetRoom(optimal) <= GetRoom(greedy) + 1e-9, $"{text.Text} in {width}");
+
+            double GetRoom(TextLayout layout)
+            {
+                var room = 0.0;
+                for (var i = 0; i < layout.LineCount - 1; i++)
+                {
+                    room += (width - layout.Lines[i].Width) * (width - layout.Lines[i].Width);
+                }
+
+                return room;
+            }
+        }
+    }
+
+    [Fact]
+    public void OptimalLineBreakingOfALongParagraphIsBounded()
+    {
+        // 40,000 break opportunities in a line that holds them all: each one could end a line, and choosing among all of
+        // them would measure the rest of the paragraph from each one, 800 million characters. The work is capped: the
+        // rest of the paragraph is broken greedily.
+        var text = string.Concat(Enumerable.Repeat("B ", 40_000));
+        var greedy = TextLayout.Create(text, Style, new TextLayoutOptions { MaxWidth = 1_000_000 });
+        var optimal = TextLayout.Create(text, Style, new TextLayoutOptions { MaxWidth = 1_000_000, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal(1, optimal.LineCount);
+        Assert.Equal(greedy.Lines, optimal.Lines);
+
+        // In a narrow width, the work stays within the cap: the breaks are still chosen together, and leave less room
+        // at the end of the lines than greedy breaking.
+        text = string.Concat(Enumerable.Repeat("BBB BB BB BBBBB ", 2_000));
+        greedy = TextLayout.Create(text, Style, new TextLayoutOptions { MaxWidth = 48 });
+        optimal = TextLayout.Create(text, Style, new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.True(GetRoom(optimal) < GetRoom(greedy));
+
+
+        // With less work allowed than the breaks of a paragraph need, the paragraph is broken greedily: "BBB BB", "BB",
+        // "BBBBB" instead of "BBB", "BB BB", "BBBBB"
+        var options = new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal };
+        Assert.Equal([0, 4, 10], TextLayout.Create("BBB BB BB BBBBB", Style, options).Lines.Select(line => line.Start));
+        Internals.TextLayoutEngine.OptimalWorkLimitOnCurrentThread = 10;
+        try
+        {
+            Assert.Equal([0, 7, 10], TextLayout.Create("BBB BB BB BBBBB", Style, options).Lines.Select(line => line.Start));
+        }
+        finally
+        {
+            Internals.TextLayoutEngine.OptimalWorkLimitOnCurrentThread = null;
+        }
+
+        static double GetRoom(TextLayout layout) => layout.Lines.Take(layout.LineCount - 1).Sum(line => (48 - line.Width) * (48 - line.Width));
     }
 
     [Fact]

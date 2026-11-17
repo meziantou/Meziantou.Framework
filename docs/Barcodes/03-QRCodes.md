@@ -41,8 +41,8 @@ var rmqr = QRCode.CreateRMQR("HELLO WORLD");
 Assert.Equal((1, 11, 11), (microQr.Version, microQr.Width, microQr.Height));
 Assert.Equal((27, 13), (rmqr.Width, rmqr.Height));
 
-var microPng = microQr.ToPng(new QRCodePngOptions { ModuleSize = 6, QuietZoneModules = 2 });
-var rmqrPng = rmqr.ToPng(new QRCodePngOptions { ModuleSize = 6, QuietZoneModules = 2 });
+using var microImage = microQr.ToImage(new QRCodeRenderOptions { ModuleSize = 6, QuietZoneModules = 2 });
+using var rmqrImage = rmqr.ToImage(new QRCodeRenderOptions { ModuleSize = 6, QuietZoneModules = 2 });
 ```
 <!-- endref -->
 
@@ -70,15 +70,15 @@ var high = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.H);
 Assert.Equal((2, 25), (low.Version, low.Width));
 Assert.Equal((4, 33), (high.Version, high.Width));
 
-var lowPng = low.ToPng(new QRCodePngOptions { ModuleSize = 4 });
-var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+using var lowImage = low.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
+using var highImage = high.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
 ```
 <!-- endref -->
 
 ![A QR code of version 2, with low error correction](images/ErrorCorrectionLow.png)
 ![The same data in a larger QR code of version 4, with high error correction](images/ErrorCorrectionHigh.png)
 
-- Use [H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) when a logo covers the middle of the code (see [the logo of the SVG renderer](06-SvgAndPng.md#add-a-logo)),
+- Use [H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) when a logo covers the middle of the code (see [Add a logo](06-SvgImagesAndPdf.md#add-a-logo)),
   or when the printed code can get dirty or scratched.
 - Not every kind supports every level. Micro QR versions M2 and M3 support [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) and [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M), M4 supports [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L), [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) and [Q](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.Q),
   and M1 only detects errors (its [ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel) is reported as [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L)). [CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) uses [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) by default.
@@ -118,7 +118,7 @@ Assert.Equal((15, 15), (microQr.Width, microQr.Height));
 Assert.Equal((43, 7), (rmqr.Width, rmqr.Height));
 
 // The size of the image is set by the renderer: 33 modules of 10 pixels, plus a quiet zone of 4 modules on each side
-var png = shortLabel.ToPng(new QRCodePngOptions { ModuleSize = 10 });
+using var image = shortLabel.ToImage(new QRCodeRenderOptions { ModuleSize = 10 });
 ```
 <!-- endref -->
 
@@ -284,7 +284,7 @@ Assert.Equal((0, 7), (symbols[0].StructuredAppend!.Index, symbols[0].StructuredA
 Assert.Equal((6, 7), (symbols[6].StructuredAppend!.Index, symbols[6].StructuredAppend!.Count));
 
 // Print the symbols in order, side by side
-var images = symbols.Select(symbol => symbol.ToPng(new QRCodePngOptions { ModuleSize = 4 })).ToList();
+var documents = symbols.Select(symbol => symbol.ToSvg(new QRCodeRenderOptions { ModuleSize = 4 })).ToList();
 ```
 <!-- endref -->
 

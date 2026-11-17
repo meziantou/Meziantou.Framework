@@ -36,6 +36,10 @@ public sealed class Jpeg2000EncoderTests
         Assert.Equal((0, 0), (encoder.TileWidth, encoder.TileHeight));
         Assert.Equal(5, encoder.DecompositionLevels);
         Assert.Equal(Jpeg2000BlockCoder.Standard, encoder.BlockCoder);
+        Assert.Empty(encoder.PrecinctSizes);
+        Assert.Equal(Jpeg2000TilePartDivision.None, encoder.TilePartDivision);
+        Assert.False(encoder.WriteTilePartLengths);
+        Assert.False(encoder.WritePacketLengths);
     }
 
     [Fact]
@@ -71,6 +75,16 @@ public sealed class Jpeg2000EncoderTests
         Assert.Equal((100L, null, false), (encoder.QualityLayers[0].Size, encoder.QualityLayers[0].BitsPerPixel, encoder.QualityLayers[0].IsComplete));
         Assert.Equal((null, 0.5, false), (Jpeg2000QualityLayer.FromBitsPerPixel(0.5).Size, Jpeg2000QualityLayer.FromBitsPerPixel(0.5).BitsPerPixel, Jpeg2000QualityLayer.FromBitsPerPixel(0.5).IsComplete));
         Assert.True(Jpeg2000QualityLayer.Complete.IsComplete);
+
+        Assert.Throws<ArgumentNullException>(() => new Jpeg2000Encoder { PrecinctSizes = null! });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { PrecinctSizes = [new Size(1, 2)] });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { PrecinctSizes = [new Size(2, 1)] });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { PrecinctSizes = [new Size(48, 64)] });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { PrecinctSizes = [new Size(65536, 64)] });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { PrecinctSizes = [new Size(0, 64)] });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { PrecinctSizes = Enumerable.Repeat(new Size(64, 64), 34).ToArray() });
+        Assert.Equal([new Size(2, 32768)], new Jpeg2000Encoder { PrecinctSizes = [new Size(2, 32768)] }.PrecinctSizes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { TilePartDivision = (Jpeg2000TilePartDivision)4 });
     }
 
     /// <summary>
@@ -750,9 +764,8 @@ public sealed class Jpeg2000EncoderTests
     }
 
     /// <summary>
-    /// A target of the high-throughput block coder is reached by choosing the lowest bit-plane of each code-block: the
-    /// output fits it, nearly reaches it (in steps of whole bit-planes), and a larger target leaves a smaller error. More
-    /// than one layer is refused.
+    /// A target of the high-throughput block coder is reached by choosing the HT set and the refinement passes of each
+    /// code-block: the output fits it, nearly reaches it, and a larger target leaves a smaller error.
     /// </summary>
     [Theory]
     [InlineData(Jpeg2000Compression.Lossy)]
@@ -776,9 +789,6 @@ public sealed class Jpeg2000EncoderTests
         // A target every bit-plane fits in keeps them all
         var complete = Save(source, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression });
         Assert.Equal(complete, Save(source, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression, QualityLayers = [Jpeg2000QualityLayer.FromSize(10_000_000)] }));
-
-        var layers = new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, QualityLayers = [Jpeg2000QualityLayer.FromSize(2_000), Jpeg2000QualityLayer.Complete] };
-        Assert.Throws<ArgumentException>(() => Save(source, layers));
     }
 
     [Theory]
@@ -851,6 +861,218 @@ public sealed class Jpeg2000EncoderTests
     /// The layers of an LRCP output follow each other: the packets of the first layers are the start of the codestream,
     /// whose cumulative length up to each layer fits its target, and each layer adds coding passes.
     /// </summary>
+    /// <summary>
+    /// Precincts of the sizes given from the highest resolution level down (the last one for the lower levels), in every
+    /// progression order, with tiles and both block coders: the COD marker segment holds them (Scod and one byte per
+    /// level, Table A.21), and the output decodes to the image.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, Jpeg2000BlockCoder.Standard)]
+    [InlineData(Jpeg2000ProgressionOrder.Rlcp, Jpeg2000BlockCoder.Standard)]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl, Jpeg2000BlockCoder.Standard)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl, Jpeg2000BlockCoder.Standard)]
+    [InlineData(Jpeg2000ProgressionOrder.Cprl, Jpeg2000BlockCoder.Standard)]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, Jpeg2000BlockCoder.HighThroughput)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl, Jpeg2000BlockCoder.HighThroughput)]
+    public void PrecinctsRoundTripExactlyInEveryProgressionOrder(Jpeg2000ProgressionOrder order, Jpeg2000BlockCoder blockCoder)
+    {
+        foreach (var (width, height, tileWidth, tileHeight) in new[] { (300, 230, 0, 0), (300, 230, 100, 115), (130, 129, 129, 128), (70, 3, 16, 0) })
+        {
+            using var source = CreateImage(width, height, seed: width + tileWidth + (int)order);
+            var encoder = new Jpeg2000Encoder
+            {
+                ProgressionOrder = order,
+                BlockCoder = blockCoder,
+                TileWidth = tileWidth,
+                TileHeight = tileHeight,
+                PrecinctSizes = [new Size(64, 32), new Size(16, 8), new Size(4, 2)],
+                QualityLayers = blockCoder == Jpeg2000BlockCoder.Standard ? [Jpeg2000QualityLayer.FromBitsPerPixel(1), Jpeg2000QualityLayer.Complete] : [],
+            };
+            var data = Save(source, encoder);
+            var context = $"{order} {blockCoder} {width}x{height} in tiles of {tileWidth}x{tileHeight}";
+            var reference = ReferenceJpeg2000.Parse(data);
+            Assert.All(reference.CodingStyles, style => Assert.True(style.HasPrecincts, context));
+
+            // The highest level has 64x32, the next one 16x8 and the lower ones 4x2: PPx in the low half of each byte
+            var levels = reference.CodingStyles[0].DecompositionLevels;
+            var cod = ReadMainHeader(reference.Codestream.ToArray()).First(segment => segment.Marker == 0xFF52).Payload;
+            Assert.Equal(1, cod[0] & 1);
+            byte[] expected = [.. Enumerable.Repeat((byte)0x12, Math.Max(0, levels - 1)), .. levels > 0 ? [(byte)0x34] : Array.Empty<byte>(), 0x56];
+            Assert.Equal(expected.TakeLast(levels + 1), cod.AsSpan(10).ToArray());
+
+            using var decoded = Image.Load<Rgba32>(data);
+            Assert.True(GetPixels(source.Frames[0]).AsSpan().SequenceEqual(GetPixels(decoded.Frames[0])), $"{context}: the decoded samples differ.");
+        }
+    }
+
+    /// <summary>
+    /// A lossy output codes its opacity reversibly through a COC marker segment, which holds the precincts too; precincts
+    /// as large as the levels give the bytes of an output without precincts, except the marker segments.
+    /// </summary>
+    [Fact]
+    public void PrecinctsAreInTheComponentStylesAndLargePrecinctsCodeAlike()
+    {
+        using var source = CreateImage(150, 97, seed: 3);
+        var data = Save(source, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Container = Jpeg2000Container.Codestream, PrecinctSizes = [new Size(32, 32)] });
+        var reference = ReferenceJpeg2000.Parse(data);
+        Assert.Equal(2, reference.CodingStyles.Count);
+        Assert.All(reference.CodingStyles, style => Assert.True(style.HasPrecincts));
+        var coc = ReadMainHeader(data).Single(segment => segment.Marker == 0xFF53).Payload;
+        Assert.Equal((3, 1), (coc[0], coc[1] & 1));
+        Assert.Equal(Enumerable.Repeat((byte)0x55, 6), coc.AsSpan(7).ToArray());
+
+        var plain = Save(source, new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream });
+        var large = Save(source, new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream, PrecinctSizes = [new Size(32768, 32768)] });
+        Assert.HasCount(plain.Length + 6, large);
+        Assert.Equal(plain.AsSpan(ReferenceJpeg2000.Parse(plain).TileParts[0].Offset + Jpeg2000HeaderLength).ToArray(), large.AsSpan(ReferenceJpeg2000.Parse(large).TileParts[0].Offset + Jpeg2000HeaderLength).ToArray());
+    }
+
+    /// <summary>
+    /// Small precincts cut the code-blocks (B.6): a precinct of 4x4 coefficients above the lowest level has code-blocks of
+    /// 2x2 in each sub-band, and the output still decodes to the image, with both block coders.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000BlockCoder.Standard)]
+    [InlineData(Jpeg2000BlockCoder.HighThroughput)]
+    public void SmallPrecinctsCutTheCodeBlocks(Jpeg2000BlockCoder blockCoder)
+    {
+        using var source = CreateImage(41, 23, seed: 9);
+        var data = Save(source, new Jpeg2000Encoder { BlockCoder = blockCoder, PrecinctSizes = [new Size(4, 4), new Size(2, 2)], DecompositionLevels = 2 });
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.True(GetPixels(source.Frames[0]).AsSpan().SequenceEqual(GetPixels(decoded.Frames[0])));
+        Assert.HasCountGreaterThan(Save(source, new Jpeg2000Encoder { BlockCoder = blockCoder, DecompositionLevels = 2 }).Length, data);
+    }
+
+    /// <summary>
+    /// Tile-parts start at each change of the divided dimension of the packets in the progression order (A.4.2): their
+    /// numbers (TPsot, TNsot) follow each other, the TLM marker segments give the length of each one (A.7.1), and the PLT
+    /// marker segments the length of each of its packets (A.7.3), which add up to its body. The output decodes to the image.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl, Jpeg2000TilePartDivision.Resolution, 6)]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, Jpeg2000TilePartDivision.Layer, 3)]
+    [InlineData(Jpeg2000ProgressionOrder.Cprl, Jpeg2000TilePartDivision.Component, 4)]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, Jpeg2000TilePartDivision.Resolution, 18)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl, Jpeg2000TilePartDivision.None, 1)]
+    public void TilePartsFollowTheDivisionAndTheirLengthsAreListed(Jpeg2000ProgressionOrder order, Jpeg2000TilePartDivision division, int partsOfTheFirstTile)
+    {
+        using var source = CreateImage(300, 230, seed: (int)order + (int)division);
+        foreach (var blockCoder in new[] { Jpeg2000BlockCoder.Standard, Jpeg2000BlockCoder.HighThroughput })
+        {
+            var encoder = new Jpeg2000Encoder
+            {
+                Container = Jpeg2000Container.Codestream,
+                BlockCoder = blockCoder,
+                ProgressionOrder = order,
+                TilePartDivision = division,
+                TileWidth = 256,
+                TileHeight = 128,
+                PrecinctSizes = [new Size(64, 64)],
+                WriteTilePartLengths = true,
+                WritePacketLengths = true,
+                QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(1), Jpeg2000QualityLayer.FromBitsPerPixel(4), Jpeg2000QualityLayer.Complete],
+            };
+            var data = Save(source, encoder);
+            var context = $"{order} {division} {blockCoder}";
+            var reference = ReferenceJpeg2000.Parse(data);
+            Assert.True(reference.HasTilePartLengths, context);
+            Assert.True(reference.HasPacketLengths, context);
+            Assert.Equal(partsOfTheFirstTile, reference.TileParts.Count(part => part.Tile == 0));
+            foreach (var group in reference.TileParts.GroupBy(part => part.Tile))
+            {
+                Assert.Equal(Enumerable.Range(0, group.Count()), group.Select(part => part.Part));
+                Assert.All(group, part => Assert.Equal(group.Count(), part.PartCount));
+            }
+
+            // TLM: Stlm gives one byte of tile index and 32-bit lengths
+            var tlm = ReadMainHeader(data).Single(segment => segment.Marker == 0xFF55).Payload;
+            Assert.Equal((0, 0x50), (tlm[0], tlm[1]));
+            var entries = tlm.AsSpan(2).ToArray().Chunk(5).Select(entry => (entry[0], (int)BinaryPrimitives.ReadUInt32BigEndian(entry.AsSpan(1)))).ToList();
+            Assert.Equal(reference.TileParts.Select(part => ((byte)part.Tile, part.Length)), entries);
+
+            // PLT: the lengths of the packets of each tile-part add up to its body
+            foreach (var part in reference.TileParts)
+            {
+                var lengths = ReadPacketLengths(data, part);
+                Assert.Equal(part.DataLength, lengths.Sum());
+                Assert.All(lengths, length => Assert.True(length > 0, context));
+            }
+
+            using var decoded = Image.Load<Rgba32>(data);
+            Assert.True(GetPixels(source.Frames[0]).AsSpan().SequenceEqual(GetPixels(decoded.Frames[0])), $"{context}: the decoded samples differ.");
+        }
+    }
+
+    /// <summary>A tile has at most 255 tile-parts: the division is refused before anything is written.</summary>
+    [Fact]
+    public void ATileHasAtMost255TileParts()
+    {
+        using var source = CreateImage(64, 64, seed: 1);
+        var encoder = new Jpeg2000Encoder
+        {
+            TilePartDivision = Jpeg2000TilePartDivision.Resolution,
+            QualityLayers = [.. Enumerable.Range(1, 50).Select(layer => Jpeg2000QualityLayer.FromSize(1000 * layer))],
+        };
+        var exception = Assert.Throws<ArgumentException>(() => Save(source, encoder));
+        Assert.Contains("255 tile-parts", exception.Message, StringComparison.Ordinal);
+
+        // In the RPCL order, the resolution levels are the outermost loop: one tile-part each
+        var progression = new Jpeg2000Encoder { TilePartDivision = encoder.TilePartDivision, QualityLayers = encoder.QualityLayers, ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl };
+        Assert.Equal(6, ReferenceJpeg2000.Parse(Save(source, progression)).TileParts.Count);
+    }
+
+    /// <summary>
+    /// Several layers of the high-throughput block coder: each code-block is in one layer with its whole HT set, so that
+    /// each layer fits its target (the tile-parts of the layers end where the layers end), decodes alone, improves the
+    /// image, and the last complete layer is the image.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000Compression.Lossless)]
+    [InlineData(Jpeg2000Compression.Lossy)]
+    public void HighThroughputLayersFitTheirTargetsAndDecodeAtEveryLayerCount(Jpeg2000Compression compression)
+    {
+        using var source = CreateLandscape();
+        var expected = GetBytes(source, PixelFormat.Rgb24);
+        int[] targets = [2_000, 6_000, 14_000];
+        foreach (var isComplete in new[] { true, false })
+        {
+            Jpeg2000QualityLayer[] layers = [.. targets.Select(target => Jpeg2000QualityLayer.FromSize(target)), .. isComplete ? [Jpeg2000QualityLayer.Complete] : Array.Empty<Jpeg2000QualityLayer>()];
+            var encoder = new Jpeg2000Encoder
+            {
+                BlockCoder = Jpeg2000BlockCoder.HighThroughput,
+                Compression = compression,
+                Quality = 100,
+                Container = Jpeg2000Container.Codestream,
+                QualityLayers = layers,
+                TilePartDivision = Jpeg2000TilePartDivision.Layer,
+            };
+            var data = Save(source, encoder);
+            var context = $"{compression}, complete: {isComplete}";
+            var reference = ReferenceJpeg2000.Parse(data);
+            Assert.Equal(layers.Length, reference.LayerCount);
+            Assert.Equal(layers.Length, reference.TileParts.Count);
+            for (var layer = 0; layer < targets.Length; layer++)
+            {
+                var end = reference.TileParts[layer].Offset + reference.TileParts[layer].Length + 2;
+                Assert.InRange(end, targets[layer] * 7 / 10, targets[layer]);
+            }
+
+            var previousError = double.MaxValue;
+            for (var limit = 1; limit <= layers.Length; limit++)
+            {
+                using var decoded = Image.Load(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = limit } } });
+                var error = GetRootMeanSquareError(expected, GetBytes(decoded, PixelFormat.Rgb24));
+                Assert.True(error < previousError, $"{context}, {limit} layer(s): error {error} after {previousError}.");
+                previousError = error;
+            }
+
+            if (isComplete && compression == Jpeg2000Compression.Lossless)
+            {
+                Assert.Equal(0, previousError);
+            }
+        }
+    }
+
     [Fact]
     public void EachLayerFitsItsTarget()
     {
@@ -980,6 +1202,36 @@ public sealed class Jpeg2000EncoderTests
     /// Reads the packet headers of a tile-part written without precincts or code-block styles and returns the length of each
     /// packet, header and body: the packet headers are read with the tag trees of B.10.2 and the length rules of B.10.7.
     /// </summary>
+    /// <summary>Reads the lengths of the PLT marker segments of a tile-part header (A.7.3): seven bits per byte, the high bit set when a byte follows.</summary>
+    private static List<int> ReadPacketLengths(byte[] data, ReferenceJpeg2000TilePart tilePart)
+    {
+        var lengths = new List<int>();
+        var position = tilePart.Offset + 12;
+        var value = 0;
+        while (BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(position)) != 0xFF93)
+        {
+            var marker = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(position));
+            var length = BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(position + 2));
+            if (marker == 0xFF58)
+            {
+                foreach (var b in data.AsSpan(position + 5, length - 3))
+                {
+                    value = (value << 7) | (b & 0x7F);
+                    if ((b & 0x80) == 0)
+                    {
+                        lengths.Add(value);
+                        value = 0;
+                    }
+                }
+            }
+
+            position += 2 + length;
+        }
+
+        Assert.Equal(0, value);
+        return lengths;
+    }
+
     private static List<int> GetPacketLengths(byte[] data, ReferenceJpeg2000TilePart tilePart, int packetCount, int componentCount, int levels)
     {
         var scope = new AllocationScope(new ImageResourceLimits());

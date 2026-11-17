@@ -48,7 +48,7 @@ internal sealed class TextGlyphHinter(TextHinting hinting) : IDisposable
             indexes.Add(key, value.Outline);
         }
 
-        return new HintedOutlines(_recorder.Build(), indexes);
+        return new HintedOutlines(_recorder.Build(), indexes, hinting);
     }
 
     public void Dispose()

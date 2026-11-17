@@ -1,6 +1,8 @@
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -578,11 +580,17 @@ public sealed class DrawingSessionTests
 
     private static readonly string[] ParallelSceneNames =
     [
-        "solid", "translucent", "aliased", "evenodd-star", "curves", "wide-stroke", "dashed-stroke", "clipped", "rectangle-clip",
+        "solid", "whole-pixel-rectangle", "translucent", "aliased", "evenodd-star", "curves", "wide-stroke", "dashed-stroke", "clipped", "rectangle-clip",
         "opacity-layer", "bounded-layer", "source-mode", "xor-mode", "multiply-blend", "horizontal-gradient", "vertical-gradient",
         "rotated-gradient", "radial-gradient", "sweep-gradient", "path-gradient", "dithered-gradient", "brush-opacity",
         "image", "scaled-image", "reduced-image", "bicubic-image", "image-brush", "pattern", "projected-image", "linear-light", "clear",
+        "solid-source-mode", "many-edges",
     ];
+
+    // A paint that gives the pixels it covers entirely the same samples, whatever they were, is composited on the calling
+    // thread when the rows come as coverages (a rectangle of whole pixels): the workers would write those pixels as fast
+    // as the calling thread copies their coverages to them. The rows of the other shapes come as pieces of boundary
+    private static readonly string[] CallingThreadSceneNames = ["whole-pixel-rectangle"];
 
     public static TheoryData<string, PixelFormat> ParallelScenes()
     {
@@ -614,10 +622,118 @@ public sealed class DrawingSessionTests
             foreach (var workers in new[] { 2, 3, 8 })
             {
                 var pixels = RenderParallelScene(scene, format, width, height, workers, out var batches);
-                Assert.True(batches > 0, $"{scene} {width}x{height} with {workers} workers was composited on the calling thread only.");
+                if (CallingThreadSceneNames.Contains(scene))
+                {
+                    Assert.Equal(0, batches);
+                }
+                else
+                {
+                    Assert.True(batches > 0, $"{scene} {width}x{height} with {workers} workers was composited on the calling thread only.");
+                }
+
                 Assert.True(expected.AsSpan().SequenceEqual(pixels), $"{scene} {width}x{height} with {workers} workers differs.");
             }
+
+            // The workers given the coverages of the rows rather than their pieces of boundary
+            DrawingSession.TestDisablePieces = true;
+            try
+            {
+                var pixels = RenderParallelScene(scene, format, width, height, workers: 3, out _);
+                Assert.True(expected.AsSpan().SequenceEqual(pixels), $"{scene} {width}x{height} with the coverages handed to 3 workers differs.");
+            }
+            finally
+            {
+                DrawingSession.TestDisablePieces = false;
+            }
         }
+    }
+
+    [Fact]
+    public void ParallelRasterizationGivesThePixelsOfOneThreadForAnyNumberOfWorkers()
+    {
+        // The sweep finds the pieces of boundary of the rows, and the workers accumulate them and composite the rows: the
+        // coverages are those of the sweep on one thread, for a text of many overlapping contours and a stroke whose
+        // pieces overlap
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var text = string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. Ty fi \u20AC42! The quick brown fox jumps over the lazy dog. ", 6));
+        var layout = TextLayout.Create(text, new TextStyle(font, 41.3), new TextLayoutOptions { MaxWidth = 1150 });
+        var curve = new VectorPathBuilder().MoveTo(3.3, 7.1).CubicBezierTo(1400, -300, -250, 1300, 1190, 890).QuadraticBezierTo(120, 800, 3.3, 600).Close().Build();
+        byte[]? expected = null;
+        foreach (var workers in new[] { 1, 2, 3, 5, 8, 16 })
+        {
+            using var image = new Image<Rgba32>(1200, 900, new Rgba32(250, 250, 240), new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Draw(
+                canvas =>
+                {
+                    canvas.FillText(new SolidBrush(new Rgba32(20, 30, 120, 230)), layout, new PointD(10.37, 3.61));
+                    canvas.Stroke(new Pen(new SolidBrush(new Rgba32(200, 40, 0, 150)), 33.3) { LineJoin = LineJoin.Round, DashPattern = [40, 9.5] }, curve);
+                    canvas.FillEllipse(new SolidBrush(new Rgba32(0, 120, 60)), new PointD(600, 450), 590.3, 440.7);
+                },
+                Ct);
+            var pixels = Bytes(image.Frames[0]);
+            expected ??= pixels;
+            Assert.True(expected.AsSpan().SequenceEqual(pixels), $"{workers} workers differ from one.");
+        }
+    }
+
+    [Fact]
+    public void AnAllocationFailureAtAnyRentalOfAParallelTextLeavesTheImageUnchanged()
+    {
+        // The small text of the first style is composited on the calling thread, before the large text of the second one,
+        // whose rows come as pieces of boundary to the workers: their scratch and the storage of the pieces are rented
+        // before the first style is painted
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var small = new TextStyle(font, 12) { Brush = new SolidBrush(new Rgba32(200, 0, 0)) };
+        var large = new TextStyle(font, 96) { Brush = new SolidBrush(new Rgba32(20, 30, 120)) };
+        var text = new RichTextBuilder().Append("ab ", small).Append(string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. ", 6)), large).Build();
+        var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 1000 });
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = 4 };
+        var completed = false;
+        for (var failing = 0; !completed; failing++)
+        {
+            Assert.True(failing < 128, "Too many rentals for one text");
+            var pool = new SlabPool();
+            using var image = new Image<Rgba32>(configuration, new Size(1000, 700), new AllocationScope(configuration.Limits, pool), layoutOptions: null);
+            var pixels = DrawingTestSupport.ReadSamples(image.Frames[0]);
+            var live = image.Owner.Scope.LiveBytes;
+            var rentals = 0;
+            pool.RentFailureInjector = _ => rentals++ == failing ? new InjectedAllocationFailureException() : null;
+            try
+            {
+                image.Draw(canvas => canvas.FillText(new SolidBrush(new Rgba32(0, 0, 0)), layout, new PointD(0, 0)), Ct);
+                completed = true;
+            }
+            catch (InjectedAllocationFailureException)
+            {
+                Assert.Equal(pixels, DrawingTestSupport.ReadSamples(image.Frames[0]));
+            }
+
+            pool.RentFailureInjector = null;
+            Assert.Equal(live, image.Owner.Scope.LiveBytes);
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+        }
+    }
+
+    [Fact]
+    public void APaintWithoutWorkersRentsNoScratchForWorkers()
+    {
+        // A gradient converted from a paint profile is evaluated on the calling thread: the parts of a large text painted
+        // with it rent no scratch for the workers, and the call fits where it fits with one thread
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(1000, 0), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255))]);
+        var small = new TextStyle(font, 12) { Brush = gradient };
+        var large = new TextStyle(font, 96) { Brush = gradient };
+        var text = new RichTextBuilder().Append("ab ", small).Append(string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. ", 6)), large).Build();
+        var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 1000 });
+        long GetPeak(int workers)
+        {
+            using var image = new Image<Rgba64>(1000, 700, new Rgba64(0, 0, 0, 65535), new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Metadata.Cicp = new CicpColorDescription(9, 1, 0, fullRange: true);
+            image.Draw(canvas => canvas.PaintProfile(IccProfile.Srgb, inner => inner.FillText(gradient, layout, new PointD(0, 0))), Ct);
+            return image.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        Assert.Equal(GetPeak(1), GetPeak(4));
     }
 
     [Fact]
@@ -687,12 +803,64 @@ public sealed class DrawingSessionTests
                 Ct);
             Assert.Equal(0, batches);
 
+            // An opaque color on a rectangle of whole pixels is written faster than it would be handed to workers, however
+            // large the rectangle
             image.Draw(static canvas => canvas.FillRectangle(White, new RectangleD(0, 0, 2000, 300)), Ct);
+            Assert.Equal(0, batches);
+
+            // The rows of other shapes come as their pieces of boundary, which the workers turn into coverages
+            image.Draw(static canvas => canvas.FillEllipse(White, new PointD(1000, 1000), 900, 900), Ct);
+            Assert.True(batches > 1);
+            batches = 0;
+
+            image.Draw(static canvas => canvas.FillRectangle(new SolidBrush(new Rgba32(255, 255, 255, 128)), new RectangleD(0, 0, 2000, 300)), Ct);
             Assert.True(batches > 1);
         }
         finally
         {
             DrawingSession.TestBatchObserver = null;
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Rgb48)]
+    [InlineData(PixelFormat.Gray16)]
+    [InlineData(PixelFormat.La16)]
+    [InlineData(PixelFormat.Bgr565)]
+    [InlineData(PixelFormat.RgbaFloat)]
+    public void AWholePixelRectangleOfOneColorPaintsTheRowsOfItsPolygon(PixelFormat format)
+    {
+        // The first row of the rectangle is composited and copied to the other rows (when the color gives every pixel the
+        // same samples); the polygon, with one more corner on its left side, is swept row by row
+        Rgba64[] colors = [new Rgba32(30, 120, 200), new Rgba32(30, 120, 200, 90), new Rgba32(0, 0, 0, 0), new Rgba64(1, 65534, 32768, 65535)];
+        foreach (var color in colors)
+        {
+            foreach (var mode in new[] { CompositeMode.SourceOver, CompositeMode.Source, CompositeMode.Xor })
+            {
+                foreach (var (left, top, right, bottom) in new[] { (3, 2, 60, 35), (-4, -3, 70, 40), (0, 0, 66, 37), (10, 5, 26, 6), (10, 5, 20, 30) })
+                {
+                    var brush = new SolidBrush(color) { CompositeMode = mode };
+                    var rectangle = Render(format, canvas => canvas.FillRectangle(brush, RectangleD.FromLTRB(left, top, right, bottom)));
+                    var polygon = Render(format, canvas => canvas.FillPolygon(brush, [new PointD(left, top), new PointD(right, top), new PointD(right, bottom), new PointD(left, bottom), new PointD(left, (top + bottom) / 2.0)]));
+                    Assert.True(rectangle.SequenceEqual(polygon), $"{format} {color} {mode} [{left}, {right}] x [{top}, {bottom}]");
+                }
+            }
+        }
+
+        static byte[] Render(PixelFormat format, DrawingAction action)
+        {
+            using var image = CreateParallelImage(format, 66, 37, new ImageConfiguration());
+            image.AppendFrame();
+
+            // A backdrop that is not uniform, with alpha
+            image.Draw(static canvas => canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(66, 37), [new GradientStop(0, new Rgba32(255, 10, 0, 40)), new GradientStop(1, new Rgba32(0, 250, 90, 230))])), Ct);
+            image.Draw(action, Ct);
+            return [.. Bytes(image.Frames[0]), .. Bytes(image.Frames[1])];
         }
     }
 
@@ -907,6 +1075,10 @@ public sealed class DrawingSessionTests
             case "solid":
                 canvas.FillRectangle(new SolidBrush(new Rgba32(30, 60, 90)), new RectangleD(0.25, 0.75, width - 0.5, height - 1.5));
                 break;
+            case "whole-pixel-rectangle":
+                // Not swept: every row is the same run of full coverage (CoverageRasterizer.TryGetWholePixelRectangle)
+                canvas.FillRectangle(new SolidBrush(new Rgba32(30, 60, 90)), new RectangleD(-3, 2, width - 1, height - 5));
+                break;
             case "translucent":
                 canvas.FillEllipse(translucent, center, width * 0.47, height * 0.46);
                 break;
@@ -942,6 +1114,9 @@ public sealed class DrawingSessionTests
                 canvas.Layer(new RectangleD(20, 30, width - 60, height - 50), 0.8, canvas => canvas.Fill(new RadialGradientBrush(center, width * 0.5, stops)), CompositeMode.SourceAtop, BlendMode.Screen);
                 break;
             case "source-mode":
+                canvas.FillEllipse(new LinearGradientBrush(new PointD(0, 0), new PointD(width, height), stops) { CompositeMode = CompositeMode.Source }, center, width * 0.45, height * 0.4);
+                break;
+            case "solid-source-mode":
                 canvas.FillEllipse(new SolidBrush(new Rgba32(10, 250, 10, 60)) { CompositeMode = CompositeMode.Source }, center, width * 0.45, height * 0.4);
                 break;
             case "xor-mode":
@@ -1013,6 +1188,17 @@ public sealed class DrawingSessionTests
                     canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(width, height), stops) { Opacity = 0.5 });
                 });
                 break;
+            case "many-edges":
+                // A comb whose rows cross more edges than CoverageRasterizer.MaxPiecesPerRow: the sweep accumulates them
+                var comb = new PointD[(2 * 700) + 2];
+                for (var i = 0; i <= 2 * 700; i++)
+                {
+                    comb[i] = new PointD(1.3 + (i * (width - 3.0) / (2 * 700)), i % 2 == 0 ? 2.25 : height - 3.5);
+                }
+
+                comb[^1] = new PointD(width * 0.5, -10);
+                canvas.FillPolygon(translucent, comb, FillRule.EvenOdd);
+                break;
             case "clear":
                 canvas.Clip(curve, canvas => canvas.Clear(new Rgba64(1000, 30000, 65535, 20000)));
                 break;
@@ -1031,6 +1217,8 @@ public sealed class DrawingSessionTests
         PixelFormat.La16 => new Image<La16>(width, height, configuration),
         PixelFormat.Bgr565 => new Image<Bgr565>(width, height, configuration),
         PixelFormat.RgbaFloat => new Image<RgbaFloat>(width, height, configuration),
+        PixelFormat.Rgb48 => new Image<Rgb48>(width, height, configuration),
+        PixelFormat.Gray16 => new Image<Gray16>(width, height, configuration),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is not a format of the parallel scenes."),
     };
 

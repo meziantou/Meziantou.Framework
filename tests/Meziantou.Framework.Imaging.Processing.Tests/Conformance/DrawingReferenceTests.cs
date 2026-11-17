@@ -1,7 +1,9 @@
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Drawing;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Resampling;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests.Conformance;
 
@@ -342,6 +344,194 @@ public sealed class DrawingReferenceTests
         PathFlattener.Quadratic(straight, 30, 15, 40, 15, 50, 15);
         straight.End();
         Assert.Equal([(0, 0), (30, 15), (50, 15)], straight.Contours[0].Points);
+    }
+
+    [Theory]
+    [InlineData(9.3, 0.37, 0.61, FillRule.NonZero)]
+    [InlineData(16, 0, 0, FillRule.NonZero)]
+    [InlineData(23.7, 0.5, 0.25, FillRule.EvenOdd)]
+    public void TheSweepOfAParagraphIsTheSweepThatWalksEveryEdge(double size, double originX, double originY, FillRule fillRule)
+    {
+        // The glyphs of a line share their baseline and their x-height: the events of a height are far apart on the sweep
+        // line, and the walk passes quickly over the edges between them (CoverageRasterizer.WalksEveryEdge), which must
+        // not change a single coverage
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var text = string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. Ty fi \u20AC42! The quick brown fox jumps over the lazy dog. ", 4));
+        var layout = TextLayout.Create(text, new TextStyle(font, size), new TextLayoutOptions { MaxWidth = 300 });
+        var path = layout.ToPath(new PointD(originX, originY));
+        const int Width = 320;
+        var height = (int)Math.Ceiling(layout.Height) + 2;
+        var exhaustive = Rasterize(walksEveryEdge: true);
+        var skipping = Rasterize(walksEveryEdge: false);
+        Assert.NotEmpty(exhaustive);
+        Assert.Equal(exhaustive, skipping);
+
+        List<string> Rasterize(bool walksEveryEdge)
+        {
+            var scope = AllocationScope.Create(configuration: null);
+            using var edges = new EdgeBuilder(scope, Width, height);
+            var sink = new FillSink(edges);
+            PathFlattener.Flatten(path, sink);
+            sink.End();
+            using var rasterizer = new CoverageRasterizer(scope, Width, height) { WalksEveryEdge = walksEveryEdge };
+            var runs = new List<string>();
+            if (rasterizer.Begin(edges, fillRule, CancellationToken.None))
+            {
+                while (rasterizer.MoveNext())
+                {
+                    runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+                }
+            }
+
+            return runs;
+        }
+    }
+
+    [Theory]
+    [InlineData(9.3, 0.37, 0.61, FillRule.NonZero)]
+    [InlineData(23.7, 0.5, 0.25, FillRule.EvenOdd)]
+    public void ThePiecesOfBoundaryOfTheRowsGiveTheCoveragesOfTheSweep(double size, double originX, double originY, FillRule fillRule)
+    {
+        // The sweep may give the pieces of boundary of each row instead of its coverages, for workers to accumulate them
+        // (CoverageRasterizer.RecordPieces): accumulated in their order, they give the coverages of the sweep, bit for bit.
+        // A row with more pieces than the limit is accumulated by the sweep, from the first piece; the comb has more
+        // pieces on each row than the default limit
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var text = string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. Ty fi \u20AC42! The quick brown fox jumps over the lazy dog. ", 4));
+        var layout = TextLayout.Create(text, new TextStyle(font, size), new TextLayoutOptions { MaxWidth = 300 });
+        var paragraph = layout.ToPath(new PointD(originX, originY));
+        var builder = new VectorPathBuilder().MoveTo(0.5, 1.25);
+        for (var i = 1; i <= 2400; i++)
+        {
+            builder.LineTo(0.5 + (i * 0.13), i % 2 == 0 ? 1.25 : 40.5);
+        }
+
+        var comb = builder.Close().Build();
+        const int Width = 320;
+        var height = (int)Math.Ceiling(layout.Height) + 2;
+        var expected = Rasterize(recordsPieces: false, pieceLimit: CoverageRasterizer.MaxPiecesPerRow, out var pieceRows, out var sweptRows);
+        Assert.NotEmpty(expected);
+        Assert.Equal(0, pieceRows);
+        foreach (var limit in new[] { CoverageRasterizer.MaxPiecesPerRow, 7, 1, 0 })
+        {
+            var runs = Rasterize(recordsPieces: true, limit, out pieceRows, out sweptRows);
+            Assert.Equal(expected, runs);
+            Assert.True(limit != CoverageRasterizer.MaxPiecesPerRow || pieceRows > 0, "No row came as pieces");
+            Assert.True(sweptRows > 0, $"No row was accumulated by the sweep with a limit of {limit}");
+        }
+
+        List<string> Rasterize(bool recordsPieces, int pieceLimit, out int pieceRows, out int sweptRows)
+        {
+            var scope = AllocationScope.Create(configuration: null);
+            using var edges = new EdgeBuilder(scope, Width, height);
+            var sink = new FillSink(edges);
+            PathFlattener.Flatten(paragraph, sink);
+            PathFlattener.Flatten(comb, sink);
+            sink.End();
+            using var rasterizer = new CoverageRasterizer(scope, Width, height) { PieceLimit = pieceLimit };
+            var runs = new List<string>();
+            var accumulation = new double[Width + 2];
+            var coverage = new uint[Width];
+            pieceRows = 0;
+            sweptRows = 0;
+            if (rasterizer.Begin(edges, fillRule, CancellationToken.None))
+            {
+                if (recordsPieces)
+                {
+                    Assert.True(rasterizer.RecordPieces());
+                }
+
+                while (rasterizer.MoveNext())
+                {
+                    if (!rasterizer.HasPieces)
+                    {
+                        sweptRows++;
+                        runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+                        continue;
+                    }
+
+                    pieceRows++;
+                    Assert.True(rasterizer.Pieces.Length > 0 && rasterizer.Pieces.Length % CoverageRasterizer.ValuesPerPiece == 0);
+                    Assert.InRange(rasterizer.PieceColumns, 1, Width);
+                    if (CoverageRasterizer.ReplayPieces(rasterizer.Pieces, accumulation, coverage, Width, out var x, out var count))
+                    {
+                        runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{x}:{string.Join(',', coverage.AsSpan(x, count).ToArray())}"));
+                    }
+
+                    // The difference row is all zeros again for the next row
+                    Assert.All(accumulation, value => Assert.Equal(0, value));
+                }
+            }
+
+            return runs;
+        }
+    }
+
+    [Fact]
+    public void TheEventsOfARowAreSortedByHeightThenBySlot()
+    {
+        // Short runs (insertion sort), long ones (partitions), many equal heights, and orders that partition badly. The
+        // heights of a row (equal or not) are sorted as packed integers, which -0 and the heights of the whole frame do not
+        // fit in
+        var random = new Random(Seed);
+        foreach (var count in new[] { 0, 1, 2, 3, 15, 16, 17, 31, 64, 200, 1000, 5000 })
+        {
+            for (var pattern = 0; pattern < 8; pattern++)
+            {
+                var keys = new double[count];
+                var slots = Enumerable.Range(0, count).OrderBy(_ => random.Next()).ToArray();
+                for (var i = 0; i < count; i++)
+                {
+                    keys[i] = pattern switch
+                    {
+                        0 => random.NextDouble(),
+                        1 => random.Next(4) / 4.0,
+                        2 => i / (double)Math.Max(count, 1),
+                        3 => (count - i) / (double)Math.Max(count, 1),
+                        4 => i % 2 == 0 ? i / (double)Math.Max(count, 1) : 1 - (i / (double)Math.Max(count, 1)),
+                        5 => 341 + random.NextDouble(),
+                        6 => 77 + (random.Next(8) / 8.0),
+                        _ => random.Next(3) switch { 0 => -0.0, 1 => 0.0, _ => random.NextDouble() },
+                    };
+                }
+
+                var isPackable = pattern is 5 or 6;
+
+                var expected = keys.Zip(slots).OrderBy(item => item.First).ThenBy(item => item.Second).ToArray();
+
+                // The default depth, then depths that hand the partitions over to the heap sort at once or after a few levels
+                foreach (var depthLimit in new int?[] { null, 0, 1, 3 })
+                {
+                    var sortedKeys = keys.ToArray();
+                    var sortedSlots = slots.ToArray();
+                    if (depthLimit is { } depth)
+                    {
+                        CoverageRasterizer.IntroSortEvents(sortedKeys, sortedSlots, depth);
+                    }
+                    else
+                    {
+                        CoverageRasterizer.SortEvents(sortedKeys, sortedSlots);
+                    }
+
+                    Assert.Equal(expected.Select(item => item.First), sortedKeys);
+                    Assert.Equal(expected.Select(item => item.Second), sortedSlots);
+                }
+
+                var packedKeys = keys.ToArray();
+                var packedSlots = slots.ToArray();
+                if (CoverageRasterizer.TrySortPacked(packedKeys, packedSlots))
+                {
+                    Assert.Equal(expected.Select(item => item.First), packedKeys);
+                    Assert.Equal(expected.Select(item => item.Second), packedSlots);
+                }
+                else
+                {
+                    Assert.False(isPackable && count > 0);
+                    Assert.Equal(keys, packedKeys);
+                    Assert.Equal(slots, packedSlots);
+                }
+            }
+        }
     }
 
     [Theory]
@@ -777,12 +967,51 @@ public sealed class DrawingReferenceTests
         return cases;
     }
 
+    [Theory]
+    [MemberData(nameof(StrokeCases))]
+    public void TheMergedPiecesOfAStrokeHaveTheAreaOfThePiecesKeptApart(string name)
+    {
+        var (_, path, pen) = CreateStrokeCases().Single(item => item.Name == name);
+
+        // The same shapes at a quarter of the size, to keep the exact reference fast
+        const int Size = 12;
+        var builder = new VectorPathBuilder();
+        PathFlattener.Flatten(path, new ScalingSink(builder, 0.25));
+        var small = builder.Build();
+        var smallPen = new Pen(pen.Brush, pen.Width / 4) { LineJoin = pen.LineJoin, LineCap = pen.LineCap, MiterLimit = pen.MiterLimit };
+
+        // The halves of sides that the pieces share cancel, and the joins of curves that their bodies contain are not made:
+        // the same area in every pixel, up to the rounding of the points where the sides are cut
+        var merged = GetStrokeEdges(small, smallPen, Size, Size);
+        var apart = GetStrokeEdges(small, smallPen, Size, Size, keepPiecesApart: true);
+        var mergedAreas = ReferenceCoverage.Compute([.. merged.Select(edge => new ReferenceEdge(edge.X0, edge.Y0, edge.X1, edge.Y1))], Size, Size, evenOdd: false);
+        var apartAreas = ReferenceCoverage.Compute([.. apart.Select(edge => new ReferenceEdge(edge.X0, edge.Y0, edge.X1, edge.Y1))], Size, Size, evenOdd: false);
+        var tolerance = Fraction.FromDouble(1e-9);
+        for (var i = 0; i < mergedAreas.Length; i++)
+        {
+            var difference = mergedAreas[i] - apartAreas[i];
+            if (!(difference <= tolerance && apartAreas[i] - mergedAreas[i] <= tolerance))
+            {
+                Assert.Fail(FormattableString.Invariant($"pixel {i}: the merged pieces differ by {(double)difference.Numerator / (double)difference.Denominator} from the pieces kept apart"));
+            }
+        }
+    }
+
     /// <summary>Runs the stroker of the library on a path and returns the directed edges of the pieces it fills.</summary>
-    private static List<(double X0, double Y0, double X1, double Y1)> GetStrokeEdges(VectorPath path, Pen pen, int width, int height)
+    private static List<(double X0, double Y0, double X1, double Y1)> GetStrokeEdges(VectorPath path, Pen pen, int width, int height, bool keepPiecesApart = false)
     {
         using var edges = new EdgeBuilder(AllocationScope.Create(configuration: null), width, height);
         var stroker = new Stroker(edges);
-        stroker.Configure(pen);
+        Stroker.KeepsPiecesApartOnCurrentThread = keepPiecesApart;
+        try
+        {
+            stroker.Configure(pen);
+        }
+        finally
+        {
+            Stroker.KeepsPiecesApartOnCurrentThread = false;
+        }
+
         PathFlattener.Flatten(path, stroker);
         var result = new List<(double X0, double Y0, double X1, double Y1)>();
         foreach (var edge in edges.Edges)

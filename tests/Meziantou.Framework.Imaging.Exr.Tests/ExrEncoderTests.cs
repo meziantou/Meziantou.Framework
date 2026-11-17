@@ -225,10 +225,17 @@ public sealed class ExrEncoderTests
     [Fact]
     public void InvalidSettingsAreRejected()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)10 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { PixelType = (OpenExrPixelType)2 });
         Assert.Equal(OpenExrCompression.Zip, new OpenExrEncoder().Compression);
         Assert.Null(new OpenExrEncoder().PixelType);
+
+        // A random order is only valid for tiles; nothing is written
+        using var image = new Image<RgbaHalf>(2, 2);
+        using var stream = new MemoryStream();
+        Assert.Throws<ArgumentException>(() => image.Save(stream, new OpenExrEncoder { LineOrder = OpenExrLineOrder.RandomY }));
+        Assert.Equal(0, stream.Length);
+        Assert.Equal(ImageFormat.OpenExr, Image.Identify(Encode(image, new OpenExrEncoder { LineOrder = OpenExrLineOrder.RandomY, Tiling = new OpenExrTiling() })).Format);
     }
 
     /// <summary>
@@ -242,6 +249,11 @@ public sealed class ExrEncoderTests
     [InlineData(OpenExrCompression.Zips)]
     [InlineData(OpenExrCompression.Zip)]
     [InlineData(OpenExrCompression.Piz)]
+    [InlineData(OpenExrCompression.Pxr24)]
+    [InlineData(OpenExrCompression.B44)]
+    [InlineData(OpenExrCompression.B44A)]
+    [InlineData(OpenExrCompression.Dwaa)]
+    [InlineData(OpenExrCompression.Dwab)]
     public void FilesWrittenByWorkersAreTheFilesOfOneWorker(OpenExrCompression compression)
     {
         const int Width = 300;
@@ -268,14 +280,17 @@ public sealed class ExrEncoderTests
             (configuration => Image.ImportPixelData<Gray16>(grays, Width, Height, configuration: configuration), null),
         })
         {
-            var encoder = new OpenExrEncoder { Compression = compression, PixelType = pixelType, AllowBitDepthReduction = pixelType is not null };
-            var expected = EncodeWith(1);
-            foreach (var workers in (int[])[2, 3, 16])
+            foreach (var tiling in new OpenExrTiling?[] { null, new() { TileWidth = 64, TileHeight = 40, LevelMode = OpenExrLevelMode.MipmapLevels } })
             {
-                Assert.Equal(expected, EncodeWith(workers));
+                var encoder = new OpenExrEncoder { Compression = compression, PixelType = pixelType, AllowBitDepthReduction = pixelType is not null, Tiling = tiling, LineOrder = OpenExrLineOrder.DecreasingY };
+                var expected = EncodeWith(encoder, 1);
+                foreach (var workers in (int[])[2, 3, 16])
+                {
+                    Assert.Equal(expected, EncodeWith(encoder, workers));
+                }
             }
 
-            byte[] EncodeWith(int workers)
+            byte[] EncodeWith(OpenExrEncoder encoder, int workers)
             {
                 using var image = pixels(new ImageConfiguration { MaxDegreeOfParallelism = workers });
                 image.Metadata.TransferFunction = ColorTransferFunction.Linear;
@@ -315,6 +330,35 @@ public sealed class ExrEncoderTests
             using var stream = new CancelingStream(cancellation, threshold: 50_000);
             await Assert.ThrowsAny<OperationCanceledException>(() => image.SaveAsync(stream, new OpenExrEncoder { Compression = OpenExrCompression.None }, cancellation.Token));
         }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.GrayHalf, PixelFormat.GrayHalf, 16)]
+    [InlineData(PixelFormat.GrayFloat, PixelFormat.GrayFloat, 32)]
+    [InlineData(PixelFormat.LaHalf, PixelFormat.LaFloat, 16)]
+    [InlineData(PixelFormat.LaFloat, PixelFormat.LaFloat, 32)]
+    public void FloatingPointGrayPixelsAreStoredAsALuminanceChannel(PixelFormat format, PixelFormat loadedFormat, int bits)
+    {
+        // Highlights and negative levels are kept; alphas that are powers of two premultiply exactly
+        LaFloat[] pixels = [new(0, 1), new(0.25f, 0.5f), new(0.5f, 0.25f), new(1, 1), new(2.5f, 0.5f), new(-0.75f, 1)];
+        using var source = Image.ImportPixelData<LaFloat>(pixels, 3, 2);
+        // The formats without alpha get the levels flattened onto black
+        using var image = source.CloneAs(format, new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+        image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        var data = Encode(image, new OpenExrEncoder());
+
+        var info = Image.Identify(data);
+        var hasAlpha = PixelFormats.HasAlpha(format);
+        Assert.Equal((loadedFormat, hasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale, bits), (info.PixelFormat, info.ColorModel, info.BitsPerComponent));
+
+        using var loaded = Image.Load(data);
+        Assert.Equal(loadedFormat, loaded.PixelFormat);
+        using var expected = image.CloneAs<LaFloat>();
+        using var actual = loaded.CloneAs<LaFloat>();
+        var (expectedPixels, actualPixels) = (new LaFloat[6], new LaFloat[6]);
+        expected.Frames[0].CopyPixelDataTo(expectedPixels);
+        actual.Frames[0].CopyPixelDataTo(actualPixels);
+        Assert.Equal(expectedPixels, actualPixels);
     }
 
     private static byte[] Encode(Image image, OpenExrEncoder encoder)
@@ -463,6 +507,298 @@ public sealed class ExrEncoderTests
             Assert.Contains("multiplied by its alpha", exception.Message, StringComparison.Ordinal);
             Assert.Equal(0, stream.Length);
         }
+    }
+
+    [Fact]
+    public void AnUncompressedTiledFileHasTheLayoutOfTheSpecification()
+    {
+        // 3x2 pixels in tiles of 2x2: two tiles, the right one clipped to 1x2
+        using var image = new Image<RgbaHalf>(3, 2);
+        image.Frames[0][2, 1] = new RgbaHalf((Half)1f, (Half)2f, (Half)3f, (Half)1f);
+        var data = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.None, Tiling = new OpenExrTiling { TileWidth = 2, TileHeight = 2 } });
+
+        Assert.Equal([0x76, 0x2F, 0x31, 0x01, 2, 2, 0, 0], data[..8]);
+        var attributes = ReadAttributes(data, out var tableOffset);
+        var tiles = attributes.Single(attribute => attribute.Name == "tiles");
+        Assert.Equal("tiledesc", tiles.Type);
+        Assert.Equal([2, 0, 0, 0, 2, 0, 0, 0, 0], tiles.Value);
+
+        // Each tile: its coordinates, its level, its size, then for each line A, B, G and R
+        var chunks = ReadTiles(data, tableOffset, 2);
+        Assert.Equal((0, 0, 0, 0), chunks[0].Coordinates);
+        Assert.HasCount(2 * 2 * 4 * 2, chunks[0].Data);
+        Assert.Equal((1, 0, 0, 0), chunks[1].Coordinates);
+        Assert.HasCount(1 * 2 * 4 * 2, chunks[1].Data);
+        Assert.Equal(data.Length, chunks[1].Offset + 20 + chunks[1].Data.Length);
+        var line = chunks[1].Data[8..];
+        Assert.Equal([(Half)1f, (Half)3f, (Half)2f, (Half)1f], new[] { 0, 2, 4, 6 }.Select(i => BinaryPrimitives.ReadHalfLittleEndian(line.AsSpan(i))));
+    }
+
+    public static TheoryData<OpenExrCompression, int, int, OpenExrLevelMode, OpenExrLevelRounding, OpenExrLineOrder> TiledCases()
+    {
+        var data = new TheoryData<OpenExrCompression, int, int, OpenExrLevelMode, OpenExrLevelRounding, OpenExrLineOrder>();
+        foreach (var compression in (OpenExrCompression[])[OpenExrCompression.None, OpenExrCompression.Rle, OpenExrCompression.Zips, OpenExrCompression.Zip, OpenExrCompression.Piz])
+        {
+            data.Add(compression, 16, 16, OpenExrLevelMode.OneLevel, OpenExrLevelRounding.Down, OpenExrLineOrder.IncreasingY);
+            data.Add(compression, 5, 3, OpenExrLevelMode.MipmapLevels, OpenExrLevelRounding.Down, OpenExrLineOrder.DecreasingY);
+            data.Add(compression, 7, 64, OpenExrLevelMode.RipmapLevels, OpenExrLevelRounding.Up, OpenExrLineOrder.RandomY);
+        }
+
+        data.Add(OpenExrCompression.Zip, 1, 1, OpenExrLevelMode.MipmapLevels, OpenExrLevelRounding.Up, OpenExrLineOrder.IncreasingY);
+        data.Add(OpenExrCompression.Piz, 100, 100, OpenExrLevelMode.RipmapLevels, OpenExrLevelRounding.Down, OpenExrLineOrder.DecreasingY);
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(TiledCases))]
+    public void TiledFilesStoreTheSamplesOfTheImage(OpenExrCompression compression, int tileWidth, int tileHeight, OpenExrLevelMode levelMode, OpenExrLevelRounding rounding, OpenExrLineOrder lineOrder)
+    {
+        // The full-resolution level decodes to the samples of the image, whatever the tiles, the levels and the order
+        foreach (var (width, height) in new[] { (1, 1), (37, 45), (64, 33) })
+        {
+            var random = new Random(width * height);
+            using var image = new Image<RgbaFloat>(width, height);
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    image.Frames[0][x, y] = new RgbaFloat((float)((random.NextDouble() * 8) - 2), x * 0.5f, y * 0.25f, (x % 3) * 0.5f);
+                }
+            }
+
+            using var half = image.CloneAs<RgbaHalf>();
+            var tiling = new OpenExrTiling { TileWidth = tileWidth, TileHeight = tileHeight, LevelMode = levelMode, LevelRounding = rounding };
+            var data = Encode(image, new OpenExrEncoder { Compression = compression, Tiling = tiling, LineOrder = lineOrder });
+            var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Assert.Equal((width, height), (info.Width, info.Height));
+            AssertSameBits(image, data);
+            AssertSameBits(half, Encode(half, new OpenExrEncoder { Compression = compression, Tiling = tiling, LineOrder = lineOrder }));
+        }
+    }
+
+    [Fact]
+    public void MipmapLevelsAreAreaAveragesOfTheStoredSamples()
+    {
+        // 5x4 pixels with alpha, levels rounded down: 2x2, then 1x1. The colors are premultiplied before they are averaged
+        using var image = new Image<RgbaFloat>(5, 4);
+        for (var y = 0; y < 4; y++)
+        {
+            for (var x = 0; x < 5; x++)
+            {
+                image.Frames[0][x, y] = new RgbaFloat(x + (10 * y), 1f, -x, (x + y) % 2 == 0 ? 1f : 0.5f);
+            }
+        }
+
+        var data = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.None, PixelType = OpenExrPixelType.Float, Tiling = new OpenExrTiling { TileWidth = 8, TileHeight = 8, LevelMode = OpenExrLevelMode.MipmapLevels } });
+        ReadAttributes(data, out var tableOffset);
+        var chunks = ReadTiles(data, tableOffset, 3);
+        Assert.Equal([(0, 0, 0, 0), (0, 0, 1, 1), (0, 0, 2, 2)], chunks.Select(chunk => chunk.Coordinates));
+        Assert.HasCount(2 * 2 * 4 * 4, chunks[1].Data);
+        Assert.HasCount(4 * 4, chunks[2].Data);
+
+        // The stored samples of the full resolution, then their area average over 2.5x2 pixels and over the whole image
+        double Stored(int x, int y, int component)
+        {
+            var pixel = image.Frames[0][x, y];
+            return component switch
+            {
+                0 => pixel.R * pixel.A,
+                1 => pixel.G * pixel.A,
+                2 => pixel.B * pixel.A,
+                _ => pixel.A,
+            };
+        }
+
+        double Average(double left, double right, double top, double bottom, int component)
+        {
+            double sum = 0;
+            for (var y = 0; y < 4; y++)
+            {
+                for (var x = 0; x < 5; x++)
+                {
+                    var width = Math.Max(0, Math.Min(right, x + 1) - Math.Max(left, x));
+                    var height = Math.Max(0, Math.Min(bottom, y + 1) - Math.Max(top, y));
+                    sum += width * height * Stored(x, y, component);
+                }
+            }
+
+            return sum / ((right - left) * (bottom - top));
+        }
+
+        // A, B, G, R in name order
+        int[] components = [3, 2, 1, 0];
+        for (var y = 0; y < 2; y++)
+        {
+            for (var c = 0; c < 4; c++)
+            {
+                for (var x = 0; x < 2; x++)
+                {
+                    var actual = BinaryPrimitives.ReadSingleLittleEndian(chunks[1].Data.AsSpan(4 * ((((y * 4) + c) * 2) + x)));
+                    Assert.Equal((float)Average(x * 2.5, (x + 1) * 2.5, y * 2, (y + 1) * 2, components[c]), actual, 5);
+                }
+            }
+        }
+
+        for (var c = 0; c < 4; c++)
+        {
+            Assert.Equal((float)Average(0, 5, 0, 4, components[c]), BinaryPrimitives.ReadSingleLittleEndian(chunks[2].Data.AsSpan(4 * c)), 5);
+        }
+    }
+
+    [Fact]
+    public void HalfLevelsAverageTheHalvesOfTheirParent()
+    {
+        // 4x1 opaque pixels: the 2x1 level stores the halves of 1.00048828125 (a tie, rounded to the even half 1) and
+        // 1.0009765625; the 1x1 level averages these halves, a tie again, not the unrounded averages (1.000732421875)
+        using var image = new Image<RgbaFloat>(4, 1);
+        float[] reds = [1f, 1.0009765625f, 1.0009765625f, 1.0009765625f];
+        for (var x = 0; x < 4; x++)
+        {
+            image.Frames[0][x, 0] = new RgbaFloat(reds[x], 0f, 0f, 1f);
+        }
+
+        var data = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.None, PixelType = OpenExrPixelType.Half, AllowBitDepthReduction = true, Tiling = new OpenExrTiling { TileWidth = 4, TileHeight = 4, LevelMode = OpenExrLevelMode.MipmapLevels } });
+        ReadAttributes(data, out var tableOffset);
+        var chunks = ReadTiles(data, tableOffset, 3);
+
+        // A, B, G, R in name order: R is the last plane of the line
+        Assert.Equal([(Half)1f, (Half)1.0009765625f], new[] { 12, 14 }.Select(i => BinaryPrimitives.ReadHalfLittleEndian(chunks[1].Data.AsSpan(i))));
+        Assert.Equal((Half)1f, BinaryPrimitives.ReadHalfLittleEndian(chunks[2].Data.AsSpan(6)));
+    }
+
+    [Fact]
+    public void RipmapLevelsHaveEveryPairOfSizes()
+    {
+        // 4x2 pixels: widths 4, 2, 1 and heights 2, 1, in the order of the rows of levels
+        using var image = new Image<RgbaHalf>(4, 2, new RgbaHalf((Half)0.5f, (Half)0.25f, (Half)2f, (Half)1f));
+        var data = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.None, Tiling = new OpenExrTiling { TileWidth = 2, TileHeight = 2, LevelMode = OpenExrLevelMode.RipmapLevels } });
+        ReadAttributes(data, out var tableOffset);
+        var chunks = ReadTiles(data, tableOffset, 8);
+        Assert.Equal([(0, 0, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (0, 0, 2, 0), (0, 0, 0, 1), (1, 0, 0, 1), (0, 0, 1, 1), (0, 0, 2, 1)], chunks.Select(chunk => chunk.Coordinates));
+        Assert.Equal(data.Length, chunks[^1].Offset + 20 + chunks[^1].Data.Length);
+
+        // A flat image has flat levels
+        foreach (var chunk in chunks)
+        {
+            Assert.Equal((Half)1f, BinaryPrimitives.ReadHalfLittleEndian(chunk.Data));
+            Assert.Equal((Half)0.5f, BinaryPrimitives.ReadHalfLittleEndian(chunk.Data.AsSpan(chunk.Data.Length - 2)));
+        }
+    }
+
+    [Fact]
+    public void ChunksAreWrittenInTheLineOrder()
+    {
+        // The offset table is in the order of the chunks; the file holds them from the bottom for DecreasingY
+        using var image = new Image<RgbaHalf>(4, 40);
+        foreach (var tiling in new OpenExrTiling?[] { null, new() { TileWidth = 2, TileHeight = 16 } })
+        {
+            var data = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.Piz, LineOrder = OpenExrLineOrder.DecreasingY, Tiling = tiling });
+            var attributes = ReadAttributes(data, out var tableOffset);
+            Assert.Equal([1], attributes.Single(attribute => attribute.Name == "lineOrder").Value);
+            var count = tiling is null ? 2 : 6;
+            var offsets = Enumerable.Range(0, count).Select(i => BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(tableOffset + (8 * i)))).ToArray();
+            Assert.Equal(tableOffset + (8 * count), offsets.Min());
+            Assert.True(offsets[^1] < offsets[0]);
+            using var back = Image.Load<RgbaHalf>(data);
+            Assert.Equal(image.Frames[0][3, 39], back.Frames[0][3, 39]);
+        }
+    }
+
+    public static TheoryData<OpenExrCompression, OpenExrPixelType, double> LossyCases() => new()
+    {
+        { OpenExrCompression.Pxr24, OpenExrPixelType.Half, 0 },
+        { OpenExrCompression.Pxr24, OpenExrPixelType.Float, 1.0 / 32768 },
+        { OpenExrCompression.B44, OpenExrPixelType.Half, 1.0 / 64 },
+        { OpenExrCompression.B44A, OpenExrPixelType.Half, 1.0 / 64 },
+        { OpenExrCompression.B44, OpenExrPixelType.Float, 0 },
+        { OpenExrCompression.Dwaa, OpenExrPixelType.Half, 0.05 },
+        { OpenExrCompression.Dwab, OpenExrPixelType.Half, 0.05 },
+        { OpenExrCompression.Dwaa, OpenExrPixelType.Float, 0.05 },
+    };
+
+    [Theory]
+    [MemberData(nameof(LossyCases))]
+    public void LossyCompressionsStaySmallAndCloseToTheSource(OpenExrCompression compression, OpenExrPixelType pixelType, double tolerance)
+    {
+        // A smooth opaque image with some noise: every sample within the relative tolerance; alpha is exact but for B44 halves
+        const int Width = 70;
+        const int Height = 45;
+        var random = new Random(70);
+        using var image = new Image<RgbaFloat>(Width, Height);
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var noise = (float)random.NextDouble() * 0.01f;
+                image.Frames[0][x, y] = new RgbaFloat(0.1f + (x / 70f) + noise, 0.5f + (0.4f * MathF.Sin(y / 7f)), 2f + (y / 45f), 1f);
+            }
+        }
+
+        foreach (var tiling in new OpenExrTiling?[] { null, new() { TileWidth = 32, TileHeight = 16 } })
+        {
+            var data = Encode(image, new OpenExrEncoder { Compression = compression, PixelType = pixelType, AllowBitDepthReduction = true, Tiling = tiling });
+            Assert.Equal([(byte)compression], ReadAttributes(data, out _).Single(attribute => attribute.Name == "compression").Value);
+            var lossless = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.None, PixelType = pixelType, AllowBitDepthReduction = true, Tiling = tiling });
+            if (tolerance > 0 && compression != OpenExrCompression.Pxr24)
+            {
+                Assert.HasCountLessThan(lossless.Length / 2, data);
+            }
+
+            using var back = Image.Load<RgbaFloat>(data);
+            using var source = Image.Load<RgbaFloat>(lossless);
+            for (var y = 0; y < Height; y++)
+            {
+                for (var x = 0; x < Width; x++)
+                {
+                    var expected = source.Frames[0][x, y];
+                    var actual = back.Frames[0][x, y];
+                    foreach (var (left, right) in new[] { (expected.R, actual.R), (expected.G, actual.G), (expected.B, actual.B), (expected.A, actual.A) })
+                    {
+                        Assert.True(Math.Abs(left - right) <= tolerance * Math.Max(1, Math.Abs(left)), $"({x}, {y}): {left} {right}");
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void TheDwaLevelTradesSizeForErrors()
+    {
+        // Larger levels give smaller files; the level is written as the dwaCompressionLevel attribute
+        var random = new Random(5);
+        using var image = new Image<RgbaFloat>(64, 64);
+        for (var y = 0; y < 64; y++)
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                image.Frames[0][x, y] = new RgbaFloat((float)random.NextDouble(), (x + y) / 128f, 0.5f, 1f);
+            }
+        }
+
+        var sizes = new List<int>();
+        foreach (var level in new[] { 0f, 45f, 300f })
+        {
+            var data = Encode(image, new OpenExrEncoder { Compression = OpenExrCompression.Dwab, DwaCompressionLevel = level, PixelType = OpenExrPixelType.Half, AllowBitDepthReduction = true });
+            Assert.Equal(level, BinaryPrimitives.ReadSingleLittleEndian(ReadAttributes(data, out _).Single(attribute => attribute.Name == "dwaCompressionLevel").Value));
+            sizes.Add(data.Length);
+        }
+
+        Assert.True(sizes[0] > sizes[1] && sizes[1] > sizes[2], string.Join(' ', sizes));
+    }
+
+    private static List<(long Offset, (int Tx, int Ty, int Lx, int Ly) Coordinates, byte[] Data)> ReadTiles(byte[] data, int tableOffset, int count)
+    {
+        var result = new List<(long, (int, int, int, int), byte[])>();
+        for (var i = 0; i < count; i++)
+        {
+            var offset = (int)BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(tableOffset + (8 * i)));
+            var fields = data.AsSpan(offset);
+            var coordinates = (BinaryPrimitives.ReadInt32LittleEndian(fields), BinaryPrimitives.ReadInt32LittleEndian(fields[4..]), BinaryPrimitives.ReadInt32LittleEndian(fields[8..]), BinaryPrimitives.ReadInt32LittleEndian(fields[12..]));
+            var size = BinaryPrimitives.ReadInt32LittleEndian(fields[16..]);
+            result.Add((offset, coordinates, fields.Slice(20, size).ToArray()));
+        }
+
+        return result;
     }
 
     private static List<(string Name, string Type, byte[] Value)> ReadAttributes(byte[] data, out int tableOffset)

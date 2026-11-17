@@ -3,10 +3,11 @@ title: Introduction
 description: Generate QR codes, Micro QR codes, rectangular Micro QR codes, Data Matrix, PDF417, Aztec and linear barcodes, and render them.
 ---
 
-`Meziantou.Framework.Barcodes` generates QR codes, Data Matrix, PDF417 and Aztec symbols, and linear barcodes in .NET, and renders them as SVG, as PNG files,
-or as text for a terminal. It is written entirely in C# and has no native dependency.
-`Meziantou.Framework.Imaging.Barcodes` adds the rendering to the images of
-[Meziantou.Framework.Imaging](../Imaging/01-Introduction.md): any image format, and drawing on existing images.
+`Meziantou.Framework.Barcodes` generates QR codes, Data Matrix, PDF417 and Aztec symbols, and linear barcodes in .NET, and renders them as vector
+scenes, as SVG documents, or as text for a terminal. It is written entirely in C# and has no native dependency.
+`Meziantou.Framework.Imaging.Barcodes` draws the same scenes as the images of
+[Meziantou.Framework.Imaging](../Imaging/01-Introduction.md): PNG and any other image format, and drawing on existing
+images. `Meziantou.Framework.Pdf.VectorGraphics` writes them in PDF documents.
 
 ## What you can do with it
 
@@ -18,10 +19,11 @@ or as text for a terminal. It is written entirely in C# and has no native depend
   5-digit add-ons), GS1 DataBar (Omnidirectional, Stacked, Limited, Expanded), Codabar and Interleaved 2 of 5. Check digits are computed or checked. See [Linear barcodes](04-LinearBarcodes.md).
 - **Build the content** of QR codes that phones understand: Wi-Fi networks, contacts, events, payments, two-factor
   authentication. See [QR code content](05-QRCodeContent.md).
-- **Render** as SVG or PNG with your colors and sizes, or as text in a terminal. See
-  [SVG and PNG](06-SvgAndPng.md) and [Terminal output](07-TerminalOutput.md).
-- **Draw on images** with any brush, and print the human-readable text under a barcode with the bundled OCR-A and
-  OCR-B fonts. See [Images](08-Images.md).
+- **Render** as SVG, PNG or PDF with your colors and sizes, a logo in the middle of a QR code, and the human-readable
+  text under a barcode with the bundled OCR-A and OCR-B fonts; or as text in a terminal. Every format draws the same
+  drawing, with the same options. See [SVG, images and PDF](06-SvgImagesAndPdf.md) and
+  [Terminal output](07-TerminalOutput.md).
+- **Draw on images** with any paint, gradients included. See [Images](08-Images.md).
 - **Read the codes of images**: QR codes, Data Matrix, PDF417, Aztec symbols and linear barcodes, or decode them from
   their modules or from scan lines, with error correction. See [Reading](10-Reading.md).
 
@@ -31,11 +33,11 @@ See [Limitations](11-Limitations.md) for what the packages do not do.
 
 | Package | Namespace | Contains |
 | --- | --- | --- |
-| `Meziantou.Framework.Barcodes` | [Meziantou.Framework.Barcodes](cref:Meziantou.Framework.Barcodes) | QR codes, Data Matrix, PDF417 and Aztec symbols, barcodes, content helpers, SVG, PNG and text renderers, decoders |
-| `Meziantou.Framework.Imaging.Barcodes` | [Meziantou.Framework.Imaging.Barcodes](cref:Meziantou.Framework.Imaging.Barcodes) | Rendering to images and drawing on a canvas, OCR fonts, reading the codes of images |
+| `Meziantou.Framework.Barcodes` | [Meziantou.Framework.Barcodes](cref:Meziantou.Framework.Barcodes) | QR codes, Data Matrix, PDF417 and Aztec symbols, barcodes, content helpers, scenes, SVG and text renderers, OCR fonts, decoders |
+| `Meziantou.Framework.Imaging.Barcodes` | [Meziantou.Framework.Imaging.Barcodes](cref:Meziantou.Framework.Imaging.Barcodes) | Rendering to images (PNG, WebP, JPEG...) and drawing on a canvas, reading the codes of images |
 
-`Meziantou.Framework.Barcodes` writes PNG files on its own. Add `Meziantou.Framework.Imaging.Barcodes` only when you
-need another format, effects such as gradients, or to draw a code on an existing image.
+Add `Meziantou.Framework.Imaging.Barcodes` for PNG files and the other image formats, or to draw a code on an existing
+image, and `Meziantou.Framework.Pdf.VectorGraphics` for PDF documents.
 
 ## Next steps
 

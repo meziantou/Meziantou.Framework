@@ -10,9 +10,9 @@ namespace Meziantou.Framework.Fonts;
 /// does not read gigabytes. A WOFF or WOFF2 file, whose tables are compressed, is loaded and expanded.
 /// </para>
 /// <para>
-/// A file the font code would not load is left out, whole: a face that is malformed, has no outlines nor color bitmaps
-/// (<c>CBDT</c> or <c>sbix</c>; a face whose only glyphs are in an <c>SVG </c> table cannot be drawn), or a file that
-/// cannot be read.
+/// A file the font code would not load is left out, whole: a face that is malformed, has no outlines nor bitmaps
+/// (<c>CBDT</c>, <c>sbix</c>, <c>EBDT</c> or <c>bdat</c>; a face whose only glyphs are in an <c>SVG </c> table cannot be
+/// drawn), or a file that cannot be read.
 /// </para>
 /// </remarks>
 internal static class SystemFontScanner
@@ -309,25 +309,28 @@ internal static class SystemFontScanner
         var directoryLength = SfntDirectory.GetLength(source.Read(offset, HeaderLength));
         var directory = SfntDirectory.ReadDirectory(source.Read(offset, directoryLength), source.Length);
 
-        // The tables every face has, and outlines or color bitmaps (the rule of WebPlatform's FontFile). Unlike FontFile,
-        // an SVG table does not count: the library does not draw SVG glyphs, so a face that only has them is left out.
-        if (!Has(directory, FontTags.Head) || !Has(directory, FontTags.Maxp) || !Has(directory, FontTags.Hhea) || !Has(directory, FontTags.Hmtx) || !Has(directory, FontTags.Cmap))
+        // The tables every face has (bhed replaces head in a font of Apple without outlines), and outlines or bitmaps.
+        // Unlike WebPlatform's FontFile, which follows the browsers, the bitmaps without colors count, and an SVG table
+        // does not: the library draws the former and not SVG glyphs, so a face that only has them is left out.
+        var headTag = Has(directory, FontTags.Head) || !Has(directory, FontTags.Bhed) ? FontTags.Head : FontTags.Bhed;
+        if (!Has(directory, headTag) || !Has(directory, FontTags.Maxp) || !Has(directory, FontTags.Hhea) || !Has(directory, FontTags.Hmtx) || !Has(directory, FontTags.Cmap))
             throw FontErrors.Invalid("a face does not have the required tables.");
 
         if (!(Has(directory, FontTags.Glyf) && Has(directory, FontTags.Loca)) && !Has(directory, FontTags.Cff) && !Has(directory, FontTags.Cff2)
-            && !Has(directory, FontTags.Cbdt) && !Has(directory, FontTags.Sbix))
+            && !Has(directory, FontTags.Cbdt) && !Has(directory, FontTags.Sbix) && !(Has(directory, FontTags.Eblc) && Has(directory, FontTags.Ebdt))
+            && !(Has(directory, FontTags.Bloc) && Has(directory, FontTags.Bdat)))
         {
-            throw FontErrors.Invalid("a face has no outlines nor color bitmaps.");
+            throw FontErrors.Invalid("a face has no outlines nor bitmaps.");
         }
 
         // head: OpenType specification, "head - Font Header Table".
-        var head = ReadTable(source, directory, FontTags.Head, maxLength: 54);
+        var head = ReadTable(source, directory, headTag, maxLength: 54);
         if (head.Length < 54 || FontBinary.UInt32(head, 12) != 0x5F0F3CF5)
-            throw FontErrors.InvalidTable(FontTags.Head, "does not have its magic number.");
+            throw FontErrors.InvalidTable(headTag, "does not have its magic number.");
 
         var unitsPerEm = FontBinary.UInt16(head, 18);
         if (unitsPerEm is < 16 or > 16384)
-            throw FontErrors.InvalidTable(FontTags.Head, $"declares {unitsPerEm} units per em; the valid range is 16 to 16384.");
+            throw FontErrors.InvalidTable(headTag, $"declares {unitsPerEm} units per em; the valid range is 16 to 16384.");
 
         var macStyle = FontBinary.UInt16(head, 44);
         var os2 = ReadTable(source, directory, FontTags.Os2, MaxOs2Length);

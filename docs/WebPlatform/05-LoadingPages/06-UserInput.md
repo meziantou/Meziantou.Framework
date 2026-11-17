@@ -101,6 +101,47 @@ Assert.Equal((210, 155), input.MapFromVisualViewport(20, 10));
 ```
 <!-- endref -->
 
+For a pinch of the touch screen, create a touch pointer for each finger and move them. Each finger in contact is a
+pointer with its own `pointerId` (the first one is the primary pointer), and the `touches` of the touch events are the
+fingers in contact. When the fingers start to pinch, their pointers get `pointercancel`; the `scrollend` event of the
+visual viewport is fired when the last finger is released.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/UserInputTests.cs;region=WebPlatform_TwoFingers;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext();
+var document = context.Navigate("https://example.com/", _ => """
+    <!DOCTYPE html>
+    <style>body { margin: 0 }</style>
+    <p>Hello world</p>
+    """);
+
+var touchCounts = new List<int>();
+document.AddEventListener("touchstart", e => touchCounts.Add(((TouchEvent)e).Touches.Count));
+
+// Each touch pointer is a finger: Down() starts its contact at its position
+var input = context.Input;
+var finger1 = input.CreatePointer("touch");
+var finger2 = input.CreatePointer("touch");
+finger1.Move(300, 300);
+finger1.Down();
+finger2.Move(500, 300);
+finger2.Down();
+
+// The touches of a touch event are the fingers in contact
+Assert.Equal([1, 2], touchCounts);
+
+// The fingers move apart: the distance between them doubles, so the visual viewport is zoomed 2x, and the point
+// under their middle (400, 300) moves under their new middle (500, 300)
+finger2.Move(700, 300);
+var visualViewport = document.DefaultView!.VisualViewport!;
+Assert.Equal(2, visualViewport.Scale);
+Assert.Equal((150, 150), (visualViewport.OffsetLeft, visualViewport.OffsetTop));
+
+finger2.Up();
+finger1.Up();
+```
+<!-- endref -->
+
 The zoom is between 1 and 5. The `maximum-scale` of the viewport `meta` element lowers this limit, and a page with
 `user-scalable=no` cannot be zoomed. On a mobile device ([ViewportOptions.IsMobile](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.IsMobile)), the pinch zoom multiplies the scale of the page.
 While the page is zoomed in, the wheel, the keys, a touch pan and `scrollIntoView()` scroll the visual viewport to the edge
@@ -110,6 +151,76 @@ only scroll the layout viewport.
 The positions of the input stay in the layout viewport, so the coordinates of `GetBoundingClientRect()` can still be
 clicked. To click a position of a screenshot taken while the page is zoomed in, convert it with
 [Input.MapFromVisualViewport(x, y)](cref:Meziantou.Framework.WebPlatform.Dom.UserInput.MapFromVisualViewport).
+
+## Drag and drop
+
+A move of the mouse with the primary button pressed on a draggable element (`draggable="true"`, a link, an image) or on
+the selection drags it, as in a browser: `dragstart` is fired at the element, then each move fires `drag`, `dragenter`,
+`dragleave` and `dragover`, and the release fires `drop` (when the `dragover` event of the target was canceled) and
+`dragend`. The pointer and mouse events are suppressed during the drag, and Escape cancels it. The events are trusted,
+the `DataTransfer` object follows the modes of the specification (the data set in `dragstart` can only be read in
+`drop`), and a text dropped in a text field or in editable content is inserted.
+
+To drop files and folders from outside the page, as when the user drags them from the file manager, describe them with
+a [DragData](cref:Meziantou.Framework.WebPlatform.Dom.DragData), then start the drag with
+[Mouse.BeginDrag(data)](cref:Meziantou.Framework.WebPlatform.Dom.PointerInput.BeginDrag) or drop them at once with
+[Input.Drop(x, y, data)](cref:Meziantou.Framework.WebPlatform.Dom.UserInput.Drop):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/DragAndDropTests.cs;region=WebPlatform_DropFiles;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext();
+var document = context.Navigate("https://example.com/", _ => """
+    <!DOCTYPE html>
+    <style>body { margin: 0 } #zone { width: 200px; height: 200px }</style>
+    <div id="zone"></div>
+    """);
+
+var dropped = new List<string>();
+var zone = document.GetElementById("zone")!;
+zone.AddEventListener("dragover", e => e.PreventDefault()); // The zone accepts the drop
+zone.AddEventListener("drop", e =>
+{
+    e.PreventDefault();
+    foreach (var file in ((DragEvent)e).DataTransfer!.Files)
+    {
+        dropped.Add(file.Name);
+    }
+});
+
+// The files and the folders that the user drags from the file manager (or DragData.AddFromDisk(path))
+var data = new DragData();
+data.AddFile("notes.txt", "hello"u8.ToArray());
+data.AddDirectory("photos").AddFile("cat.png", new byte[] { 0x89, 0x50, 0x4E, 0x47 });
+
+// The mouse enters the window with the button pressed, moves over the zone, and releases the button
+var mouse = context.Input.Mouse;
+mouse.Move(300, 300);
+mouse.BeginDrag(data);
+mouse.Move(100, 100);
+mouse.Up();
+Assert.Equal(["notes.txt", "photos"], dropped);
+
+// The same drop in one call
+context.Input.Drop(100, 100, data);
+Assert.Equal(["notes.txt", "photos", "notes.txt", "photos"], dropped);
+```
+<!-- endref -->
+
+| Member | Effect |
+| --- | --- |
+| `AddFile(name, content, type, lastModified)` | A file: its type is the type of its extension when you give none |
+| `AddDirectory(name)` | A folder: add its files and subfolders to the [DragDataDirectory](cref:Meziantou.Framework.WebPlatform.Dom.DragDataDirectory) it returns |
+| `AddFromDisk(path)` | A file or a folder of the disk, with its content (read when the method is called) |
+| `SetString(type, data)` | A string, such as the `text/plain` of a text dragged from another application |
+| `EffectAllowed` | The operations that the source allows (`all` by default) |
+
+A drag from outside the page fires `dragenter`, `dragover`, `dragleave` and `drop`, but no `dragstart`, `drag` or
+`dragend`. As in a browser, the page reads the files with `dataTransfer.files` and `items`, and the folders with the
+File and Directory Entries API (`item.webkitGetAsEntry()`, `createReader().readEntries()`, `getFile()`,
+`getDirectory()`) or with `item.getAsFileSystemHandle()`, which returns a handle to a copy of the dropped files: the page
+can change the copy, never your files. A drop on a file input selects the files (all of them with `multiple`, the files
+of the folders with `webkitdirectory`, with their `webkitRelativePath`) and fires `input` and `change`. A drop that the
+page does not accept does nothing: a browser would open the file.
 
 ## Keyboard
 

@@ -40,7 +40,7 @@ public sealed class File : Blob
     private static long GetCurrentTime() => (GlobalScope.Current?.EventLoop.TimeProvider ?? TimeProvider.System).GetUtcNow().ToUnixTimeMilliseconds();
 
     /// <summary>The serialization steps of File (https://w3c.github.io/FileAPI/#file-section): the bytes, the type, the name and the last modification date.</summary>
-    private protected override Blob CloneForStructuredSerialization() => new File(Content, Type, Name, LastModified);
+    private protected override Blob CloneForStructuredSerialization() => new File(Content, Type, Name, LastModified) { WebkitRelativePathValue = WebkitRelativePathValue };
 
     /// <summary>
     /// For the snapshot of a file of the origin private file system (https://fs.spec.whatwg.org/#dom-filesystemfilehandle-getfile):
@@ -57,4 +57,15 @@ public sealed class File : Blob
     /// <seealso href="https://w3c.github.io/FileAPI/#dfn-lastModified"/>
     [IdlMember("lastModified", "https://w3c.github.io/FileAPI/#dfn-lastModified")]
     public long LastModified { get; }
+
+    /// <summary>The path of a file selected in a directory, null for the other files.</summary>
+    internal string? WebkitRelativePathValue { get; set; }
+
+    /// <summary>
+    /// Gets the path of the file relative to the directory that was selected or dropped (e.g. <c>photos/2024/a.jpg</c>) in a
+    /// file input with the <c>webkitdirectory</c> attribute, or an empty string.
+    /// </summary>
+    /// <seealso href="https://wicg.github.io/entries-api/#dom-file-webkitrelativepath"/>
+    [IdlMember("webkitRelativePath", "https://wicg.github.io/entries-api/#dom-file-webkitrelativepath")]
+    public string WebkitRelativePath => WebkitRelativePathValue ?? "";
 }

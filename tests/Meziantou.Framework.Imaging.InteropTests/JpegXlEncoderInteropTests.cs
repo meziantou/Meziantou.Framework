@@ -343,6 +343,141 @@ public sealed class JpegXlEncoderInteropTests
         AssertRgba(source, reference.Rgba.Span, $"djxl {jxl.Version} decodes different samples.");
     }
 
+    /// <summary>
+    /// A still image of layers (<see cref="JpegXlLayeredImage"/>), with every blend mode, layers at negative offsets and
+    /// beyond the canvas, of several groups: jxlinfo lists each layer with its position, size and name (it calls every frame
+    /// of a still image a layer, the last one included), and djxl and jxl-oxide compose them into exactly the image the
+    /// library decodes. Blending is defined in floating point: djxl, jxl-oxide and the library compute it in single precision
+    /// in their own order, and the 16-bit samples of a blended layer differ by up to about 0.01 of a unit before they are
+    /// rounded (djxl and jxl-oxide too), which only changes a sample within 0.01 of a half, by one (1 of 240,000 samples here).
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, 3)]
+    [InlineData(PixelFormat.Rgba32, 7)]
+    [InlineData(PixelFormat.Rgba64, 5)]
+    [InlineData(PixelFormat.Rgb24, 0)]
+    [InlineData(PixelFormat.Gray8, 5)]
+    [InlineData(PixelFormat.Gray16, 2)]
+    public async Task LayersAreComposedExactlyByLibJxlAndJxlOxide(PixelFormat format, int effort)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var oxide = await RequiredTools.JxlOxideAsync();
+        var layout = ImageSnapshots.GetLayout(format);
+        (int Width, int Height, Point Offset, JpegXlBlendMode Mode, string? Name)[] layers =
+        [
+            (300, 200, default, JpegXlBlendMode.Replace, "Background"),
+            (60, 40, new Point(-10, -8), JpegXlBlendMode.Blend, "Top left"),
+            (290, 270, new Point(40, 30), JpegXlBlendMode.Add, null),
+            (31, 17, new Point(280, 190), JpegXlBlendMode.Multiply, "Corner"),
+            (80, 70, new Point(100, 60), JpegXlBlendMode.AlphaWeightedAdd, "Équipe ✓"),
+        ];
+        var path = InteropSettings.GetArtifactsDirectory(nameof(LayersAreComposedExactlyByLibJxlAndJxlOxide)) / $"layers-{format}-e{effort}.jxl";
+        using (var document = new JpegXlLayeredImage(300, 200))
+        {
+            for (var i = 0; i < layers.Length; i++)
+            {
+                using var image = EncoderSources.CreateImage(CreatePattern(layers[i].Width, layers[i].Height, layout, seed: i), format);
+                document.AddLayer(image, layers[i].Offset, layers[i].Mode, layers[i].Name);
+            }
+
+            document.Save(path, new JpegXlEncoder { Effort = effort });
+        }
+
+        var info = await jxl.GetInfoAsync(path, XunitCancellationToken);
+        Assert.False(info.IsAnimation);
+        Assert.Equal(layers.Length, info.Frames.Count);
+        for (var i = 0; i < layers.Length; i++)
+        {
+            var frame = info.Frames[i];
+            Assert.Equal((true, i == 0, layers[i].Offset.X, layers[i].Offset.Y, layers[i].Width, layers[i].Height, layers[i].Name), (frame.IsLayer, frame.IsFullSize, frame.X, frame.Y, frame.Width, frame.Height, frame.Name));
+        }
+
+        using var composite = Image.Load(path);
+        var expected = ImageSnapshots.CaptureFrame(composite.Frames[0]);
+        foreach (var (decoder, frames) in new[] { ($"djxl {jxl.Version}", await jxl.DecodeFramesAsync(path, XunitCancellationToken)), ($"jxl-oxide {oxide.Version}", await oxide.DecodeFramesAsync(path, XunitCancellationToken)) })
+        {
+            Assert.Equal((1, 200, 300, layout.ChannelCount), (frames.FrameCount, frames.Height, frames.Width, frames.ChannelCount));
+            AssertComposite(expected, frames, $"{format} (effort {effort}): {decoder} composes other samples than the library.");
+        }
+    }
+
+    /// <summary>
+    /// An animation written as the regions that change (<see cref="JpegXlEncoder.OptimizeFrames"/>): jxlinfo lists every frame
+    /// after the first one as a rectangle of the image, and djxl and jxl-oxide decode exactly the frames that were written.
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, false)]
+    [InlineData(PixelFormat.Rgb24, true)]
+    [InlineData(PixelFormat.Gray16, false)]
+    [InlineData(PixelFormat.Rgba64, false)]
+    public async Task OptimizedAnimationsAreDecodedExactlyByLibJxlAndJxlOxide(PixelFormat format, bool progressive)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var oxide = await RequiredTools.JxlOxideAsync();
+        const int Width = 300;
+        const int Height = 270;
+        const int Count = 4;
+        var layout = ImageSnapshots.GetLayout(format);
+        var bytesPerPixel = layout.ChannelCount * layout.BytesPerSample;
+        var background = CreatePattern(Width, Height, layout, seed: 0).Span.ToArray();
+        var sources = new RawPixelBuffer[Count];
+        var regions = new (int X, int Y, int Width, int Height)[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            // A rectangle of another pattern that moves over the background
+            var patch = CreatePattern(40, 30, layout, seed: 10 + i).Span;
+            var frame = background.ToArray();
+            regions[i] = (10 + (i * 60), 5 + (i * 50), 40, 30);
+            for (var y = 0; y < 30; y++)
+            {
+                patch.Slice(y * 40 * bytesPerPixel, 40 * bytesPerPixel).CopyTo(frame.AsSpan((((regions[i].Y + y) * Width) + regions[i].X) * bytesPerPixel));
+            }
+
+            sources[i] = RawPixelBuffer.Create(Width, Height, layout, frame);
+        }
+
+        var path = InteropSettings.GetArtifactsDirectory(nameof(OptimizedAnimationsAreDecodedExactlyByLibJxlAndJxlOxide)) / $"optimized-{format}{(progressive ? "-progressive" : "")}.jxl";
+        using (var image = EncoderSources.CreateImage(sources[0], format))
+        {
+            for (var i = 1; i < Count; i++)
+            {
+                using var next = EncoderSources.CreateImage(sources[i], format);
+                image.AppendFrame(next.Frames[0]);
+            }
+
+            foreach (var frame in image.Frames)
+            {
+                frame.Metadata.Duration = new FrameDuration(1, 10);
+            }
+
+            await image.SaveAsync(path, new JpegXlEncoder { OptimizeFrames = true, Progressive = progressive }, XunitCancellationToken);
+        }
+
+        var info = await jxl.GetInfoAsync(path, XunitCancellationToken);
+        Assert.True(info.IsAnimation);
+        Assert.Equal(Count, info.Frames.Count);
+        Assert.True(info.Frames[0].IsFullSize);
+        for (var i = 1; i < Count; i++)
+        {
+            // The bounding box of the two rectangles that change
+            var (previous, current) = (regions[i - 1], regions[i]);
+            var (left, top) = (Math.Min(previous.X, current.X), Math.Min(previous.Y, current.Y));
+            var (right, bottom) = (Math.Max(previous.X + previous.Width, current.X + current.Width), Math.Max(previous.Y + previous.Height, current.Y + current.Height));
+            var frame = info.Frames[i];
+            Assert.Equal((false, false, 100.0), (frame.IsLayer, frame.IsFullSize, frame.DurationMilliseconds));
+            Assert.True(frame.X >= left && frame.Y >= top && frame.X + frame.Width <= right && frame.Y + frame.Height <= bottom, $"Frame {i} is the rectangle ({frame.X}, {frame.Y}, {frame.Width}, {frame.Height}), outside the changes.");
+        }
+
+        foreach (var (decoder, frames) in new[] { ($"djxl {jxl.Version}", await jxl.DecodeFramesAsync(path, XunitCancellationToken)), ($"jxl-oxide {oxide.Version}", await oxide.DecodeFramesAsync(path, XunitCancellationToken)) })
+        {
+            Assert.Equal((Count, Height, Width, layout.ChannelCount), (frames.FrameCount, frames.Height, frames.Width, frames.ChannelCount), message: decoder);
+            for (var i = 0; i < Count; i++)
+            {
+                AssertSamples(sources[i], frames.ToIntegerSamples(i, layout.MaxSampleValue, out _), $"{decoder} decodes different samples for the frame {i}.");
+            }
+        }
+    }
+
     private static async Task WriteFramesAsync<TPixel>(Image image, Stream stream, ImageWriterOptions options)
         where TPixel : unmanaged
     {
@@ -373,6 +508,33 @@ public sealed class JpegXlEncoderInteropTests
                     if (expected != actual)
                     {
                         Assert.Fail($"{message} At ({x}, {y}), channel {channel}: expected {expected}, actual {actual}.");
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Compares a composed image with the floating-point output of a reference decoder: every sample is the rounded reference
+    /// sample, but for a sample within 0.01 of a half, which may be rounded either way.
+    /// </summary>
+    private static void AssertComposite(RawPixelBuffer expected, NpyFrames reference, string message)
+    {
+        var layout = expected.Layout;
+        var max = layout.MaxSampleValue;
+        for (var y = 0; y < expected.Height; y++)
+        {
+            for (var x = 0; x < expected.Width; x++)
+            {
+                for (var channel = 0; channel < layout.ChannelCount; channel++)
+                {
+                    var scaled = Math.Clamp((double)reference.GetSample(0, x, y, channel) * max, 0, max);
+                    var rounded = (int)Math.Round(scaled, MidpointRounding.AwayFromZero);
+                    var actual = expected.GetSample(x, y, channel);
+                    var isTie = Math.Abs(scaled - Math.Floor(scaled) - 0.5) < 0.01;
+                    if (actual != rounded && !(isTie && Math.Abs(actual - scaled) < 1))
+                    {
+                        Assert.Fail($"{message} At ({x}, {y}), channel {channel}: the library decodes {actual}, the reference {scaled:R}.");
                     }
                 }
             }

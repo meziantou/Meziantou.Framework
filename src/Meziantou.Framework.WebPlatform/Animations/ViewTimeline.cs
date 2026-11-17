@@ -161,7 +161,7 @@ public sealed class ViewTimeline : ScrollTimeline
     private static LengthPercentage? ParseInsetValue(CssComponentValue value, out bool valid)
     {
         valid = true;
-        if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("auto"))
+        if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("auto"))
             return null;
 
         if (TimelineRangeBoundary.TryParseAbsoluteOffset(value, out var offset))

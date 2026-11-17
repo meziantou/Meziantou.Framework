@@ -65,7 +65,7 @@ internal static class CssStyleValueReifier
     private static bool IsValid(string property, List<CssComponentValue> values, string source)
     {
         // An empty value is invalid, even for a custom property
-        if (ValueMatcher.RemoveWhitespace(values).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(values))
             return false;
 
         return CssStyleDeclaration.ParseValue(atRule: null, property, values, source.Trim(' ', '\t', '\n')) is not null;
@@ -139,7 +139,7 @@ internal static class CssStyleValueReifier
         {
             result.Add(ValueMatcher.RemoveWhitespace(iteration) switch
             {
-                [CssPreservedToken { Type: CssTokenType.Ident } ident] => new CssKeywordValue(ident.Token.Value),
+                [CssPreservedToken { Type: CssTokenType.Ident } ident] => new CssKeywordValue(ident.Value),
                 [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } number] => ReifyNumericValue(number, computed: false, lengthContext: false),
                 [CssFunction function] when CssCalc.IsMathFunction(function.Name) => ReifyNumericValue(function, computed: false, lengthContext: false, keepsMathStructure: true),
                 _ => null,
@@ -180,7 +180,7 @@ internal static class CssStyleValueReifier
             CssStyleValue? reified = null;
             if (!component.IsDataType || component.Name == "custom-ident")
             {
-                reified = itemValues is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? new CssKeywordValue(ident.Token.Value) : null;
+                reified = itemValues is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? new CssKeywordValue(ident.Value) : null;
             }
             else if (component.Name is "length" or "number" or "percentage" or "length-percentage" or "integer" or "angle" or "time" or "resolution")
             {
@@ -211,8 +211,8 @@ internal static class CssStyleValueReifier
         if (CssPropertyRegistry.IsCustomProperty(property) || ValueMatcher.ContainsSubstitutionFunction(significant))
             return [ReifyComponentList(values, source)];
 
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keyword.Token.Value)))
-            return [new CssKeywordValue(InfraAscii.ToAsciiLowercase(keyword.Token.Value))];
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(keyword.Value)))
+            return [new CssKeywordValue(InfraAscii.ToAsciiLowercase(keyword.Value))];
 
         var definition = CssPropertyRegistry.Get(property);
         if (definition is null || definition.IsShorthand)
@@ -220,7 +220,7 @@ internal static class CssStyleValueReifier
             // A shorthand is a direct CSSStyleValue, except text-align: it is a longhand for the Typed OM, whose keywords are
             // reified as identifiers, and a shorthand of text-align-all and text-align-last in CSS Text 4
             if (definition?.Name == "text-align" && significant is [CssPreservedToken { Type: CssTokenType.Ident } textAlign])
-                return [new CssKeywordValue(InfraAscii.ToAsciiLowercase(textAlign.Token.Value))];
+                return [new CssKeywordValue(InfraAscii.ToAsciiLowercase(textAlign.Value))];
 
             return [new CssStyleValue(property, GetText(values, source))];
         }
@@ -250,7 +250,7 @@ internal static class CssStyleValueReifier
 
         // A size of background-size or mask-size is serialized with its implicit auto (1px is 1px auto), but it is reified as
         // the single size, as in the browsers
-        if (property is "background-size" or "mask-size" && significant is [not CssPreservedToken { Type: CssTokenType.Ident }, CssPreservedToken { Type: CssTokenType.Ident } auto] && InfraAscii.EqualsIgnoreAsciiCase(auto.Token.Value, "auto"))
+        if (property is "background-size" or "mask-size" && significant is [not CssPreservedToken { Type: CssTokenType.Ident }, CssPreservedToken { Type: CssTokenType.Ident } auto] && InfraAscii.EqualsIgnoreAsciiCase(auto.Value, "auto"))
         {
             values = significant = [significant[0]];
         }
@@ -263,7 +263,7 @@ internal static class CssStyleValueReifier
                 // https://drafts.css-houdini.org/css-typed-om-1/#reify-ident
                 case CssPreservedToken { Type: CssTokenType.Ident } ident:
                 {
-                    var name = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                    var name = InfraAscii.ToAsciiLowercase(ident.Value);
                     if (info.Keywords.Contains(name))
                         return new CssKeywordValue(name);
 
@@ -276,11 +276,11 @@ internal static class CssStyleValueReifier
                         return new CssKeywordValue(name);
 
                     if (info.AcceptsCustomIdent)
-                        return new CssKeywordValue(ident.Token.Value);
+                        return new CssKeywordValue(ident.Value);
 
                     // A single <dashed-ident> (e.g. anchor-scope: --a) is reified as an identifier, even as the item of a list
-                    if (info.AcceptsDashedIdent && ident.Token.Value.StartsWith("--", StringComparison.Ordinal))
-                        return new CssKeywordValue(ident.Token.Value);
+                    if (info.AcceptsDashedIdent && ident.Value.StartsWith("--", StringComparison.Ordinal))
+                        return new CssKeywordValue(ident.Value);
 
                     break;
                 }
@@ -335,18 +335,18 @@ internal static class CssStyleValueReifier
         switch (value)
         {
             case CssPreservedToken { Type: CssTokenType.Number } number:
-                return lengthContext && number.Token.NumericValue == 0 ? new CssUnitValue(0, "px") : new CssUnitValue(number.Token.NumericValue, "number");
+                return lengthContext && number.NumericValue == 0 ? new CssUnitValue(0, "px") : new CssUnitValue(number.NumericValue, "number");
 
             case CssPreservedToken { Type: CssTokenType.Percentage } percentage:
-                return new CssUnitValue(percentage.Token.NumericValue, "percent");
+                return new CssUnitValue(percentage.NumericValue, "percent");
 
             case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
             {
-                var unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
+                var unit = InfraAscii.ToAsciiLowercase(dimension.Value);
                 if (CssUnits.GetBaseType(unit) is null)
                     return null;
 
-                var number = dimension.Token.NumericValue;
+                var number = dimension.NumericValue;
                 if (computed)
                 {
                     (number, unit) = CssUnits.ToCanonical(number, unit);
@@ -416,7 +416,7 @@ internal static class CssStyleValueReifier
             {
                 case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
                 {
-                    var unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
+                    var unit = InfraAscii.ToAsciiLowercase(dimension.Value);
                     if (CssUnits.GetBaseType(unit) is not null && CssUnits.ToCanonical(1, unit).Unit != unit)
                         return true;
 
@@ -486,7 +486,7 @@ internal static class CssStyleValueReifier
         hasOperation = false;
         for (var i = 0; i <= values.Count; i++)
         {
-            if (i < values.Count && !(values[i] is CssPreservedToken { Type: CssTokenType.Delim } delim && (delim.Token.IsDelim('+') || delim.Token.IsDelim('-'))))
+            if (i < values.Count && !(values[i] is CssPreservedToken { Type: CssTokenType.Delim } delim && (delim.IsDelim('+') || delim.IsDelim('-'))))
                 continue;
 
             if (ConvertProduct(values[start..i], out var productHasOperation) is not { } term)
@@ -496,7 +496,7 @@ internal static class CssStyleValueReifier
             terms.Add(negate ? new CssMathNegate(term) : term);
             if (i < values.Count)
             {
-                negate = ((CssPreservedToken)values[i]).Token.IsDelim('-');
+                negate = ((CssPreservedToken)values[i]).IsDelim('-');
                 hasOperation = true;
                 start = i + 1;
             }
@@ -518,10 +518,10 @@ internal static class CssStyleValueReifier
             var invert = false;
             if (i > 0)
             {
-                if (values[i - 1] is not CssPreservedToken { Type: CssTokenType.Delim } delim || !(delim.Token.IsDelim('*') || delim.Token.IsDelim('/')))
+                if (values[i - 1] is not CssPreservedToken { Type: CssTokenType.Delim } delim || !(delim.IsDelim('*') || delim.IsDelim('/')))
                     return null;
 
-                invert = delim.Token.IsDelim('/');
+                invert = delim.IsDelim('/');
                 hasOperation = true;
             }
 
@@ -610,7 +610,7 @@ internal static class CssStyleValueReifier
     {
         var arguments = function.Value;
         var comma = arguments.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Comma });
-        var name = ValueMatcher.RemoveWhitespace(comma < 0 ? arguments : arguments[..comma]) is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? ident.Token.Value : GetText(Trim(arguments), source);
+        var name = ValueMatcher.RemoveWhitespace(comma < 0 ? arguments : arguments[..comma]) is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? ident.Value : GetText(Trim(arguments), source);
         var fallback = comma < 0 ? null : ReifyComponentList(arguments[(comma + 1)..], source);
         return new CssVariableReferenceValue(name, fallback);
     }
@@ -695,7 +695,7 @@ internal static class CssStyleValueReifier
                 ("skew", 1 or 2) when Angle(0) is { } ax && Angle(1) is { } ay => new CssSkew(ax, ay),
                 ("skewx", 1) when Angle(0) is { } ax => new CssSkewX(ax),
                 ("skewy", 1) when Angle(0) is { } ay => new CssSkewY(ay),
-                ("perspective", 1) when arguments[0] is CssPreservedToken { Type: CssTokenType.Ident } ident => new CssPerspective(new CssKeywordValue(InfraAscii.ToAsciiLowercase(ident.Token.Value))),
+                ("perspective", 1) when arguments[0] is CssPreservedToken { Type: CssTokenType.Ident } ident => new CssPerspective(new CssKeywordValue(InfraAscii.ToAsciiLowercase(ident.Value))),
                 ("perspective", 1) when Length(0) is { } length => new CssPerspective(isRepresentation && length is CssMathSum { Values: [CssUnitValue single] } && arguments[0] is CssFunction { Value: var calc } && ValueMatcher.RemoveWhitespace(calc) is [CssPreservedToken { Type: CssTokenType.Dimension }] ? single : length),
                 _ => null,
             };

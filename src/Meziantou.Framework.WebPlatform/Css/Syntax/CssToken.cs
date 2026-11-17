@@ -43,7 +43,17 @@ internal readonly record struct CssToken
     public string Value { get; init; }
 
     /// <summary>The numeric value of number, percentage and dimension tokens.</summary>
-    public double NumericValue { get; init; }
+    public double NumericValue
+    {
+        get => BitConverter.Int64BitsToDouble(NumericBits);
+        init => NumericBits = BitConverter.DoubleToInt64Bits(value);
+    }
+
+    /// <summary>
+    /// The storage of <see cref="NumericValue"/>, or of <see cref="RangeStart"/> and <see cref="RangeEnd"/> for unicode-range
+    /// tokens (which have no numeric value): the token is copied for every token of a style sheet, so its size matters.
+    /// </summary>
+    internal long NumericBits { get; init; }
 
     /// <summary>True when the type flag of a number or dimension token is "integer".</summary>
     public bool IsInteger { get; init; }
@@ -55,9 +65,17 @@ internal readonly record struct CssToken
     public bool IsIdHash { get; init; }
 
     /// <summary>The start and end of a unicode-range token.</summary>
-    public int RangeStart { get; init; }
+    public int RangeStart
+    {
+        get => (int)(NumericBits >> 32);
+        init => NumericBits = (NumericBits & 0xFFFF_FFFFL) | ((long)value << 32);
+    }
 
-    public int RangeEnd { get; init; }
+    public int RangeEnd
+    {
+        get => (int)NumericBits;
+        init => NumericBits = (NumericBits & ~0xFFFF_FFFFL) | (uint)value;
+    }
 
     /// <summary>The position of the token in the preprocessed input.</summary>
     public int Start { get; init; }

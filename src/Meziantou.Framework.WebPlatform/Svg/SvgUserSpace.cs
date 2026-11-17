@@ -109,22 +109,22 @@ internal static class SvgUserSpace
 
         if (ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is [CssPreservedToken { Type: CssTokenType.Dimension } dimension])
         {
-            var unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
+            var unit = InfraAscii.ToAsciiLowercase(dimension.Value);
             if (unit is "em" or "rem")
             {
                 var fontSize = unit == "rem" ? (element.NodeDocument.DocumentElement is { } root ? GetStyle(root)?.FontSize : null) : GetStyle(element)?.FontSize;
-                return dimension.Token.NumericValue * (fontSize ?? CssValueComputer.MediumFontSize);
+                return dimension.NumericValue * (fontSize ?? CssValueComputer.MediumFontSize);
             }
 
             if (unit == "ex")
-                return dimension.Token.NumericValue * (GetStyle(element)?.GetFontRelativeLength(FontRelativeUnit.Ex) ?? (CssValueComputer.MediumFontSize * Css.Fonts.BundledFonts.DefaultRatios.XHeight));
+                return dimension.NumericValue * (GetStyle(element)?.GetFontRelativeLength(FontRelativeUnit.Ex) ?? (CssValueComputer.MediumFontSize * Css.Fonts.BundledFonts.DefaultRatios.XHeight));
 
-            if (CssCalc.TryConvertToCanonicalUnit(dimension.Token.NumericValue, unit, out var converted, out var canonicalUnit) && canonicalUnit == "px")
+            if (CssCalc.TryConvertToCanonicalUnit(dimension.NumericValue, unit, out var converted, out var canonicalUnit) && canonicalUnit == "px")
                 return converted;
 
             // The other relative units (cap, ch, ic, lh, the units of the root element, the viewport and container units)
             if (GetUnitSize(element, attribute: "", unit) is { } unitSize)
-                return dimension.Token.NumericValue * unitSize;
+                return dimension.NumericValue * unitSize;
         }
 
         return null;

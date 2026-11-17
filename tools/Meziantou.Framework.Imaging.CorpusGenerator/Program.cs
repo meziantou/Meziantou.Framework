@@ -39,7 +39,27 @@ const string Usage = """
         exr           OpenEXR fixtures: every compression, sample type, tiles and levels, windows, line orders and
                       chromaticities, malformed, unsupported and over-limit files (exr-from-raw and exr-to-raw, built with
                       OpenEXR, and the ffmpeg of the pinned meziantou/prebuilt release; the sample images of OpenEXR)
+        dng           DNG fixtures: color filter arrays and linear raw data, bit depths, compressions, predictors, tiles,
+                      the mapping to linear values, camera profiles, opcode lists, files rewritten by the DNG SDK,
+                      malformed, unsupported and over-limit files (assembled from the specification, and dng_validate of
+                      the pinned meziantou/prebuilt release; any OS)
+        hdr           Radiance HDR fixtures: flat, old and new run-length encoded scanlines, the eight orientations,
+                      header variables and primaries, XYZE, malformed and over-limit files (assembled from the
+                      specification, and the ffmpeg of the pinned meziantou/prebuilt release; any OS)
+        psd           PSD fixtures: the composite image of every color mode, depth and compression, merged alpha, PSB,
+                      image resources, malformed, unsupported and over-limit files (psd-tools and ImageMagick of the
+                      pinned meziantou/prebuilt release, and files assembled from the specification; any OS)
+        dds           DDS fixtures: every uncompressed DXGI and legacy pixel format, random and encoded BC1 to BC7 blocks,
+                      mipmaps, cube maps (partial ones included), arrays, volume textures, alpha modes, malformed,
+                      unsupported and over-limit files (Windows: texconv and texassemble of DirectXTex, oiiotool of
+                      OpenImageIO, ImageMagick and the ffmpeg of the pinned meziantou/prebuilt release)
+        dpx           DPX and Cineon fixtures: every descriptor, bit depth and packing method, both byte orders, the
+                      orientations, the headers, files of FFmpeg, ImageMagick and OpenImageIO, malformed, unsupported and
+                      over-limit files (assembled from the specifications, cross-checked with the ffmpeg, oiiotool and
+                      magick of the pinned meziantou/prebuilt release; any OS)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
+        ktx2          KTX 2.0 conformance files of tests/Meziantou.Framework.Imaging.Ktx2.Tests/Files and their reference
+                      digests: uncompressed, ETC2/EAC, ASTC, ETC1S and UASTC files of KTX-Software, astcenc and basisu (macOS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
         fonts         font files and the values independent font readers give for them: synthetic fonts built by
@@ -176,6 +196,18 @@ try
             return Jp2Corpus.Run(options);
         case "exr":
             return ExrCorpus.Run(options);
+        case "hdr":
+            return RadianceCorpus.Run(options);
+        case "psd":
+            return PsdCorpus.Run(options);
+        case "dng":
+            return DngCorpus.Run(options);
+        case "dds":
+            return DdsCorpus.Run(options);
+        case "dpx":
+            return DpxCorpus.Run(options);
+        case "ktx2":
+            return Ktx2Corpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

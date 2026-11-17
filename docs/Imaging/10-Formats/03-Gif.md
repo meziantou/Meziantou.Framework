@@ -14,7 +14,7 @@ and 16-bit samples, and the encoder needs no other setting to do it.
 | Files | GIF87a and GIF89a, global and local palettes, interlacing | GIF89a, one local palette per frame, optional interlacing |
 | Animations | Composited into full frames with exact durations (hundredths of a second) and the play count | Full frames, durations to the hundredth of a second, play count |
 | Transparency | The transparent color; cleared areas are transparent black | One transparent color: alpha is thresholded or flattened, never partial |
-| Metadata | Comments | Comments only |
+| Metadata | Comments, XMP and ICC profile | Comments, XMP and RGB ICC profile |
 
 Every GIF loads as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32). A frame whose colors fit its palette is written exactly; the others are reduced with the
 deterministic quantizer of [Quantize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Quantize).
@@ -55,8 +55,9 @@ public static void SaveGif(string inputPath, string gifPath, string flattenedGif
   others become opaque. Antialiased edges then look jagged on a background of another color.
 - With [GifAlphaMode.Flatten](cref:Meziantou.Framework.Imaging.Formats.GifAlphaMode.Flatten), every pixel is composited over [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.BackgroundColor), and the GIF is opaque. Without
   [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.BackgroundColor), saving throws an `ArgumentException`.
-- GIF only stores `Comment` text entries. An ICC profile, EXIF, XMP or a resolution follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which
-  rejects them by default: the example discards them.
+- GIF stores `Comment` text entries, an RGB ICC profile and an XMP packet (in the application extensions that
+  ImageMagick and exiftool write and read). EXIF, a resolution, a gray profile or an XMP packet with a NUL character
+  follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default: the example discards them.
 
 ## Options
 
@@ -66,11 +67,45 @@ public static void SaveGif(string inputPath, string gifPath, string flattenedGif
 | [AlphaThreshold](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.AlphaThreshold) | The alpha (8-bit scale) below which a pixel becomes transparent | 128 |
 | [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.BackgroundColor) | The opaque color [Flatten](cref:Meziantou.Framework.Imaging.Formats.GifAlphaMode.Flatten) composites over | `null` |
 | [Quantization](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.Quantization) | The number of colors per frame (2 to 256, the transparent entry included), the dithering, or a fixed palette for every frame | 256 colors, no dithering |
+| [LossyTolerance](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.LossyTolerance) | How much error the compression may add to each pixel of a frame whose colors are reduced, to make the file smaller (see below) | 0 |
 | [Interlaced](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.Interlaced) | Writes interlaced frames | `false` |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds durations to the nearest hundredth of a second (ties up); [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata GIF cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 [Dithering](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.Dithering) and [MaxColors](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.MaxColors) are obsolete aliases of `Quantization.Dithering` and `Quantization.MaxColors`.
+
+## Make files smaller
+
+A photo reduced to 256 colors compresses poorly: neighboring pixels often get different palette entries, and the LZW
+compression of GIF only shortens sequences of indices it has already seen. [LossyTolerance](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.LossyTolerance) lets the encoder give a
+pixel another entry that continues such a sequence when that entry is at most the tolerance farther from the color of
+the pixel than the entry the color reduction chose. The distance is the sum of the squares of the differences of the
+red, green and blue samples (8-bit scale):
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/FormatExamples.cs;region=Imaging_SaveSmallerGif;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveSmallerGif(string inputPath, string gifPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // A pixel may take a palette entry that is up to 100 farther (squared RGB distance) from its color than the entry
+    // the color reduction chose, when that entry continues the sequence being compressed
+    image.Save(gifPath, new GifEncoder
+    {
+        LossyTolerance = 100,
+        MetadataHandling = MetadataHandling.DiscardUnsupported,
+    });
+}
+```
+<!-- endref -->
+
+To choose a tolerance, start around 100, then raise it while the result still looks right to you, or lower it if fine
+detail smears horizontally: larger tolerances make smaller files and lose more quality. Compare the output with the
+source at the size it will be shown, ideally with a metric such as PSNR. At the same file size, a tolerance usually keeps
+more quality than fewer colors. Dithered frames benefit most, because the tolerance is measured against the source
+color, not the dithered one.
+A frame whose colors fit its palette is still written exactly, transparent pixels stay transparent, and the output is
+deterministic.
 
 ## Share one palette between frames
 
@@ -141,8 +176,11 @@ pixel each) and writes each frame when the next one is given, or when the output
 - A frame is at most 65,535 pixels per side.
 - Every frame is written as a full frame by default, so an animation that changes a small area stays large. Set
   [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.OptimizeFrames) to store only the rectangle that changes in each frame (see below).
-- The plain-text extension (text rendered by the viewer) is rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Other
-  unknown extensions, such as XMP or ICC application extensions, are skipped.
+- The plain-text extension (text rendered by the viewer) is rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). The
+  XMP (`XMP DataXMP`, written by exiftool) and ICC (`ICCRGBG1012`, written by ImageMagick) application extensions are
+  read as the XMP packet and the color profile of the image; other unknown extensions are skipped.
+- [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) and the readers of [Image.OpenReader](cref:Meziantou.Framework.Imaging.Image.OpenReader) see the metadata that precedes the first image; a
+  profile or a packet after it is only in the image of a load.
 - A GIF without its trailer, or with `0x00` bytes before its end, is rejected. The
   [lenient mode](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) reads these files, and
   skips plain-text extensions without drawing their text, as browsers and the reference decoders do. A file that ends

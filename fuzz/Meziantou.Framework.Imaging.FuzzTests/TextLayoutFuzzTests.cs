@@ -153,6 +153,7 @@ public sealed class TextLayoutFuzzTests
                 TabSize = random.Next(1, 9),
                 Trimming = (TextTrimming)random.Next(3),
                 FirstLineIndent = random.Chance(20) ? random.Next(-10, 20) : 0,
+                LineBreakStrategy = (TextLineBreakStrategy)random.Next(2),
             };
 
             executed++;
@@ -163,7 +164,7 @@ public sealed class TextLayoutFuzzTests
                 truncated += layout.IsTruncated ? 1 : 0;
                 if (Check(rich, options, layout) is { } defect)
                 {
-                    failures.Add($"iteration {iteration}: {defect}\n    text: {Escape(rich.Text)}\n    options: MaxWidth={options.MaxWidth} MaxHeight={options.MaxHeight} MaxLines={options.MaxLines} {options.Wrapping} {options.WordBreak} {options.LineBreak} {options.OverflowWrap} {options.Hyphenation} {options.Alignment} {options.Direction} {options.Trimming}");
+                    failures.Add($"iteration {iteration}: {defect}\n    text: {Escape(rich.Text)}\n    options: MaxWidth={options.MaxWidth} MaxHeight={options.MaxHeight} MaxLines={options.MaxLines} {options.Wrapping} {options.WordBreak} {options.LineBreak} {options.OverflowWrap} {options.Hyphenation} {options.Alignment} {options.Direction} {options.Trimming} {options.LineBreakStrategy}");
                     continue;
                 }
 

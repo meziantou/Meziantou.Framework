@@ -67,4 +67,19 @@ public enum PixelFormat
 
     /// <summary>16-bit cyan, magenta, yellow and black ink amounts in native endianness (<see cref="Imaging.Cmyk64"/>): device CMYK described by the CMYK profile of the image.</summary>
     Cmyk64 = 18,
+
+    /// <summary>
+    /// Single-precision floating-point gray level without alpha (<see cref="Imaging.GrayFloat"/>): linear light where 1 is the
+    /// reference white, with values outside [0, 1] allowed, like the colors of <see cref="RgbaFloat"/>.
+    /// </summary>
+    GrayFloat = 19,
+
+    /// <summary>Half-precision floating-point gray level without alpha (<see cref="Imaging.GrayHalf"/>), with the meaning of <see cref="GrayFloat"/>.</summary>
+    GrayHalf = 20,
+
+    /// <summary>Single-precision floating-point gray level and straight alpha components (<see cref="Imaging.LaFloat"/>), with the meaning of <see cref="RgbaFloat"/>.</summary>
+    LaFloat = 21,
+
+    /// <summary>Half-precision floating-point gray level and straight alpha components (<see cref="Imaging.LaHalf"/>), with the meaning of <see cref="RgbaFloat"/>.</summary>
+    LaHalf = 22,
 }

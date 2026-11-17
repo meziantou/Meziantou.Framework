@@ -1,0 +1,8 @@
+01.webp	0	symbol 0	read
+01.webp	180	symbol 0	read
+02.webp	0	symbol 0	read
+02.webp	180	symbol 0	read
+03!f.webp	0	symbol 0	read
+03!f.webp	180	symbol 0	read
+04.webp	0	symbol 0	missing
+04.webp	180	symbol 0	read

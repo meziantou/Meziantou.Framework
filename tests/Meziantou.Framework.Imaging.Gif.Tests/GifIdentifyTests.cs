@@ -87,7 +87,7 @@ public sealed class GifIdentifyTests
     {
         var data = new SyntheticImages.GifBuilder()
             .Header(2, 2)
-            .Extension(0xFF, [.. "XMP DataXMP"u8])
+            .Extension(0xFF, [.. "MGK8BIM0000"u8])
             .Extension(0x77, [1, 2, 3])
             .Image(0, 0, 2, 2)
             .Trailer()

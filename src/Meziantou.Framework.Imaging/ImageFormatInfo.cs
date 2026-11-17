@@ -50,6 +50,13 @@ public sealed class ImageFormatInfo
         new(ImageFormat.Heic, ["image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"], [".heic", ".heif", ".heics", ".heifs"]),
         new(ImageFormat.Jpeg2000, ["image/jp2", "image/jpx", "image/jph"], [".jp2", ".j2k", ".j2c", ".jpc", ".jpx", ".jpf", ".jph", ".jhc"]),
         new(ImageFormat.OpenExr, ["image/x-exr"], [".exr"]),
+        new(ImageFormat.Radiance, ["image/vnd.radiance", "image/x-hdr"], [".hdr", ".pic"]),
+        new(ImageFormat.Psd, ["image/vnd.adobe.photoshop", "application/x-photoshop", "image/x-photoshop"], [".psd", ".psb"]),
+        new(ImageFormat.Dng, ["image/x-adobe-dng", "image/dng"], [".dng"]),
+        new(ImageFormat.Dds, ["image/vnd-ms.dds", "image/x-dds"], [".dds"]),
+        new(ImageFormat.Dpx, ["image/dpx", "image/x-dpx"], [".dpx"]),
+        new(ImageFormat.Cineon, ["image/cineon", "image/x-cineon"], [".cin"]),
+        new(ImageFormat.Ktx2, ["image/ktx2"], [".ktx2"]),
     ];
 
     private static readonly ReadOnlyCollection<ImageFormatInfo> AllFormats = Array.AsReadOnly(Formats);
@@ -144,8 +151,9 @@ public sealed class ImageFormatInfo
     /// in lower case with their leading period, the preferred one first.
     /// </summary>
     /// <remarks>
-    /// Every extension selects an encoder in <see cref="ImageEncoder.FromFileExtension(string)"/>, except the JPEG 2000
-    /// extensions of files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format).
+    /// Every extension selects an encoder in <see cref="ImageEncoder.FromFileExtension(string)"/>, except the extensions of
+    /// files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format of JPEG 2000) and
+    /// <c>.ktx2</c> (KTX 2.0).
     /// </remarks>
     public IReadOnlyList<string> FileExtensions { get; }
 

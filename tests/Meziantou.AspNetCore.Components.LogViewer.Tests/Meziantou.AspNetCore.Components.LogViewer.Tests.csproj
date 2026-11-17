@@ -10,6 +10,12 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.AspNetCore.Components.LogViewer/Meziantou.AspNetCore.Components.LogViewer.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <ProjectReference Include="../../src/Meziantou.AspNetCore.Testing/Meziantou.AspNetCore.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The styles of the components, applied to the pages of the interactive tests -->
+    <None Include="../../src/Meziantou.AspNetCore.Components.LogViewer/*.razor.css" LinkBase="Styles" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

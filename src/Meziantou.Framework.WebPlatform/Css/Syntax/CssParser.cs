@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.WebPlatform.Css.Syntax;
 
 /// <summary>A rule or a declaration produced by the parser.</summary>
@@ -12,32 +14,41 @@ internal sealed class CssSyntaxError(string kind) : CssSyntaxNode
 }
 
 /// <summary>https://drafts.csswg.org/css-syntax-3/#at-rule</summary>
-internal sealed class CssAtRule(string name) : CssSyntaxNode
+internal sealed class CssAtRule(string name, List<CssComponentValue> prelude) : CssSyntaxNode
 {
     public string Name { get; } = name;
 
-    public List<CssComponentValue> Prelude { get; } = [];
+    public List<CssComponentValue> Prelude { get; } = prelude;
 
     /// <summary>The block (its component values), or null for a statement at-rule.</summary>
     public CssSimpleBlock? Block { get; set; }
 }
 
 /// <summary>https://drafts.csswg.org/css-syntax-3/#qualified-rule</summary>
-internal sealed class CssQualifiedRule : CssSyntaxNode
+internal sealed class CssQualifiedRule(List<CssComponentValue> prelude, CssSimpleBlock block) : CssSyntaxNode
 {
-    public List<CssComponentValue> Prelude { get; } = [];
+    public List<CssComponentValue> Prelude { get; } = prelude;
 
-    public CssSimpleBlock Block { get; set; } = new(CssTokenType.LeftCurlyBracket);
+    public CssSimpleBlock Block { get; set; } = block;
 }
 
 /// <summary>https://drafts.csswg.org/css-syntax-3/#declaration</summary>
-internal sealed class CssDeclaration(string name) : CssSyntaxNode
+/// <remarks>
+/// The value is a range of the component values the declaration was consumed from, which must not be modified: its list is
+/// only created when it is used, as the value of a declaration is often found in <see cref="Values.ParsedValueCache"/>.
+/// </remarks>
+internal sealed class CssDeclaration(string name, List<CssComponentValue> values, int start, int count, bool important) : CssSyntaxNode
 {
+    private List<CssComponentValue>? _value;
+
     public string Name { get; } = name;
 
-    public List<CssComponentValue> Value { get; } = [];
+    public List<CssComponentValue> Value => _value ??= values.GetRange(start, count);
 
-    public bool Important { get; set; }
+    /// <summary>The component values of <see cref="Value"/>, without creating its list.</summary>
+    public ReadOnlySpan<CssComponentValue> ValueSpan => _value is null ? CollectionsMarshal.AsSpan(values).Slice(start, count) : CollectionsMarshal.AsSpan(_value);
+
+    public bool Important { get; } = important;
 }
 
 /// <summary>
@@ -47,6 +58,9 @@ internal sealed class CssDeclaration(string name) : CssSyntaxNode
 internal sealed class CssComponentValueStream(List<CssComponentValue> values)
 {
     private int _index;
+
+    /// <summary>The component values of the stream.</summary>
+    public List<CssComponentValue> Values => values;
 
     public bool IsEmpty => _index >= values.Count;
 
@@ -84,12 +98,19 @@ internal static partial class CssParser
     public static List<CssSyntaxNode> ConsumeStylesheetContents(CssComponentValueStream input, bool reportErrors, bool topLevel = true)
     {
         var rules = new List<CssSyntaxNode>();
+        ConsumeStylesheetContents(input, rules, reportErrors, topLevel);
+        return rules;
+    }
+
+    /// <summary>Consumes the contents of a style sheet into a list (e.g. a list that is reused).</summary>
+    public static void ConsumeStylesheetContents(CssComponentValueStream input, List<CssSyntaxNode> rules, bool reportErrors, bool topLevel = true)
+    {
         while (true)
         {
             switch (input.Next)
             {
                 case null:
-                    return rules;
+                    return;
                 case CssPreservedToken { Type: CssTokenType.Whitespace }:
                 case CssPreservedToken { Type: CssTokenType.Cdo or CssTokenType.Cdc } when topLevel:
                     input.Discard();
@@ -120,57 +141,65 @@ internal static partial class CssParser
     public static CssAtRule? ConsumeAtRule(CssComponentValueStream input, bool nested)
     {
         var keyword = (CssPreservedToken)input.Consume();
-        var rule = new CssAtRule(keyword.Token.Value);
-        while (true)
+        var rule = new CssAtRule(keyword.Value, ConsumePrelude(input, stopToken: CssTokenType.Semicolon, nested));
+        switch (input.Next)
         {
-            switch (input.Next)
-            {
-                case null:
-                    return rule;
-                case CssPreservedToken { Type: CssTokenType.Semicolon }:
-                    input.Discard();
-                    return rule;
-                case CssPreservedToken { Type: CssTokenType.RightCurlyBracket } when nested:
-                    return rule;
-                case CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket } block:
-                    input.Discard();
-                    rule.Block = block;
-                    return rule;
-                default:
-                    rule.Prelude.Add(input.Consume());
-                    break;
-            }
+            case CssPreservedToken { Type: CssTokenType.Semicolon }:
+                input.Discard();
+                break;
+            case CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket } block:
+                input.Discard();
+                rule.Block = block;
+                break;
         }
+
+        return rule;
     }
+
+    /// <summary>
+    /// Consumes the prelude of a rule, up to a {}-block, the stop token, or a } in a nested context. The values are counted
+    /// first, so that the list is allocated once with its final size.
+    /// </summary>
+    private static List<CssComponentValue> ConsumePrelude(CssComponentValueStream input, CssTokenType? stopToken, bool nested)
+    {
+        var start = input.Mark();
+        while (input.Next is { } next && !IsEndOfPrelude(next, stopToken, nested))
+        {
+            input.Discard();
+        }
+
+        var end = input.Mark();
+        input.Restore(start);
+        var prelude = new List<CssComponentValue>(end - start);
+        while (input.Mark() < end)
+        {
+            prelude.Add(input.Consume());
+        }
+
+        return prelude;
+    }
+
+    private static bool IsEndOfPrelude(CssComponentValue value, CssTokenType? stopToken, bool nested) => value switch
+    {
+        CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket } => true,
+        CssPreservedToken token => token.Type == stopToken || (nested && token.Type == CssTokenType.RightCurlyBracket),
+        _ => false,
+    };
 
     /// <summary>https://drafts.csswg.org/css-syntax-3/#consume-qualified-rule</summary>
     public static CssQualifiedRule? ConsumeQualifiedRule(CssComponentValueStream input, CssTokenType? stopToken, bool nested)
     {
-        var rule = new CssQualifiedRule();
-        while (true)
-        {
-            switch (input.Next)
-            {
-                case null:
-                    return null;
-                case CssPreservedToken token when token.Type == stopToken:
-                    return null;
-                case CssPreservedToken { Type: CssTokenType.RightCurlyBracket } when nested:
-                    return null;
-                case CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket } block:
-                    input.Discard();
+        var prelude = ConsumePrelude(input, stopToken, nested);
+        if (input.Next is not CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket } block)
+            return null;
 
-                    // A prelude that looks like a custom property declaration is invalid
-                    if (LooksLikeCustomProperty(rule.Prelude))
-                        return null;
+        input.Discard();
 
-                    rule.Block = block;
-                    return rule;
-                default:
-                    rule.Prelude.Add(input.Consume());
-                    break;
-            }
-        }
+        // A prelude that looks like a custom property declaration is invalid
+        if (LooksLikeCustomProperty(prelude))
+            return null;
+
+        return new CssQualifiedRule(prelude, block);
     }
 
     private static bool LooksLikeCustomProperty(List<CssComponentValue> prelude)
@@ -181,7 +210,7 @@ internal static partial class CssParser
             index++;
         }
 
-        if (index >= prelude.Count || prelude[index] is not CssPreservedToken { Type: CssTokenType.Ident } ident || !ident.Token.Value.StartsWith("--", StringComparison.Ordinal))
+        if (index >= prelude.Count || prelude[index] is not CssPreservedToken { Type: CssTokenType.Ident } ident || !ident.Value.StartsWith("--", StringComparison.Ordinal))
             return false;
 
         index++;
@@ -199,12 +228,19 @@ internal static partial class CssParser
     public static List<CssSyntaxNode> ConsumeBlockContents(CssComponentValueStream input, bool reportErrors = false)
     {
         var result = new List<CssSyntaxNode>();
+        ConsumeBlockContents(input, result, reportErrors);
+        return result;
+    }
+
+    /// <summary>Consumes the contents of a block into a list (e.g. a list that is reused).</summary>
+    public static void ConsumeBlockContents(CssComponentValueStream input, List<CssSyntaxNode> result, bool reportErrors = false)
+    {
         while (true)
         {
             switch (input.Next)
             {
                 case null:
-                    return result;
+                    return;
                 case CssPreservedToken { Type: CssTokenType.Whitespace or CssTokenType.Semicolon }:
                     input.Discard();
                     break;
@@ -259,7 +295,6 @@ internal static partial class CssParser
         }
 
         input.Discard();
-        var declaration = new CssDeclaration(name.Token.Value);
         input.DiscardWhitespace();
         if (!input.NextIs(CssTokenType.Colon))
         {
@@ -269,52 +304,44 @@ internal static partial class CssParser
 
         input.Discard();
         input.DiscardWhitespace();
-
-        // The values are counted first, so that the list is allocated once with its final size
         var start = input.Mark();
         while (input.Next is not null && !input.NextIs(CssTokenType.Semicolon) && !(nested && input.NextIs(CssTokenType.RightCurlyBracket)))
         {
             input.Discard();
         }
 
-        var end = input.Mark();
-        input.Restore(start);
-        declaration.Value.Capacity = end - start;
-        while (input.Mark() < end)
-        {
-            declaration.Value.Add(input.Consume());
-        }
+        var value = CollectionsMarshal.AsSpan(input.Values)[start..input.Mark()];
 
         // !important
-        var last = LastNonWhitespace(declaration.Value, declaration.Value.Count);
-        if (last >= 0 && declaration.Value[last] is CssPreservedToken { Type: CssTokenType.Ident } important && Infra.InfraAscii.EqualsIgnoreAsciiCase(important.Token.Value, "important"))
+        var important = false;
+        var last = LastNonWhitespace(value, value.Length);
+        if (last >= 0 && value[last] is CssPreservedToken { Type: CssTokenType.Ident } importantToken && Infra.InfraAscii.EqualsIgnoreAsciiCase(importantToken.Value, "important"))
         {
-            var bang = LastNonWhitespace(declaration.Value, last);
-            if (bang >= 0 && declaration.Value[bang] is CssPreservedToken bangToken && bangToken.Token.IsDelim('!'))
+            var bang = LastNonWhitespace(value, last);
+            if (bang >= 0 && value[bang] is CssPreservedToken bangToken && bangToken.IsDelim('!'))
             {
-                declaration.Value.RemoveRange(bang, declaration.Value.Count - bang);
-                declaration.Important = true;
+                value = value[..bang];
+                important = true;
             }
         }
 
-        while (declaration.Value.Count > 0 && declaration.Value[^1] is CssPreservedToken { Type: CssTokenType.Whitespace })
-        {
-            declaration.Value.RemoveAt(declaration.Value.Count - 1);
-        }
+        value = value[..(LastNonWhitespace(value, value.Length) + 1)];
 
         // A {}-block is only allowed as the whole value of custom properties and of properties that accept it. Like the
         // browsers, the initial-value descriptor of @property, which accepts any <declaration-value>, is a custom property value.
-        if (!declaration.Name.StartsWith("--", StringComparison.Ordinal) && !Infra.InfraAscii.EqualsIgnoreAsciiCase(declaration.Name, "initial-value"))
+        if (value.Length != 1 && !name.Value.StartsWith("--", StringComparison.Ordinal) && !Infra.InfraAscii.EqualsIgnoreAsciiCase(name.Value, "initial-value"))
         {
-            var hasBlock = declaration.Value.Exists(v => v is CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket });
-            if (hasBlock && !(declaration.Value.Count == 1))
-                return null;
+            foreach (var item in value)
+            {
+                if (item is CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket })
+                    return null;
+            }
         }
 
-        return declaration;
+        return new CssDeclaration(name.Value, input.Values, start, value.Length, important);
     }
 
-    private static int LastNonWhitespace(List<CssComponentValue> values, int end)
+    private static int LastNonWhitespace(ReadOnlySpan<CssComponentValue> values, int end)
     {
         for (var i = end - 1; i >= 0; i--)
         {

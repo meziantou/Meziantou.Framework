@@ -1,6 +1,6 @@
 ---
 title: Forms
-description: Create the fields of an interactive form, read and fill them, and flatten the form into the content of its pages.
+description: Create the fields of an interactive form, read and fill them, exchange their values as FDF and XFDF, and flatten the form into the content of its pages.
 ---
 
 [PdfDocument.Form](cref:Meziantou.Framework.Pdf.PdfDocument.Form) is the interactive form of a document (AcroForm): its fields, the values of the fields and the
@@ -120,6 +120,40 @@ document.SaveIncremental(output);
 | Push button | [PdfPushButtonField](cref:Meziantou.Framework.Pdf.PdfPushButtonField) | None |
 | Signature | [PdfSignatureField](cref:Meziantou.Framework.Pdf.PdfSignatureField) | [IsSigned](cref:Meziantou.Framework.Pdf.PdfSignatureField.IsSigned); sign with [PdfSigner](cref:Meziantou.Framework.Pdf.Signing.PdfSigner) |
 
+## Import and export form data
+
+[PdfFormData](cref:Meziantou.Framework.Pdf.PdfFormData) holds the values of the fields apart from the document, to exchange them with other applications as
+FDF (Forms Data Format, the format of PDF for form data) or XFDF (its XML version). [ExportData](cref:Meziantou.Framework.Pdf.PdfInteractiveForm.ExportData) reads the values
+of a form:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfInteractiveFormTests.cs;region=Pdf_ExportFormData;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = form.ExportData();
+var fdf = data.ToFdf();
+var xfdf = data.ToXfdf();
+```
+<!-- endref -->
+
+[ParseFdf](cref:Meziantou.Framework.Pdf.PdfFormData.ParseFdf) and [ParseXfdf](cref:Meziantou.Framework.Pdf.PdfFormData.ParseXfdf) read the files, and [ImportData](cref:Meziantou.Framework.Pdf.PdfInteractiveForm.ImportData) fills a form with them:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfInteractiveFormTests.cs;region=Pdf_ImportFormData;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = PdfFormData.ParseFdf(fdf);
+var result = document.Form.ImportData(data);
+```
+<!-- endref -->
+
+- Each value is set as [Value](cref:Meziantou.Framework.Pdf.PdfFormField.Value) sets it: the appearances of the widgets are written again, and an incremental
+  save keeps the signatures valid.
+- [PdfFormImportResult](cref:Meziantou.Framework.Pdf.PdfFormImportResult) lists the fields updated, the names the form has no field for, and the values rejected
+  with the reason: a read-only field, a value that is not an option, a push button or a signature.
+- The names of [PdfFormDataField](cref:Meziantou.Framework.Pdf.PdfFormDataField) are fully qualified (`address.city`); the files store them as a hierarchy of
+  partial names. A list box with several choices has several [Values](cref:Meziantou.Framework.Pdf.PdfFormDataField.Values). FDF writes the states of check boxes and radio
+  buttons as names ([IsName](cref:Meziantou.Framework.Pdf.PdfFormDataField.IsName)); XFDF does not make the distinction.
+- Only the values are read and written: the annotations, rich text values and scripts that FDF and XFDF can carry are
+  ignored. The XFDF reader does not process document type definitions. The characters XML cannot hold are written as
+  U+FFFD in XFDF; PDF text strings cannot hold unpaired surrogates either.
+
 ## Flatten a form
 
 [Flatten](cref:Meziantou.Framework.Pdf.PdfInteractiveForm.Flatten) draws the appearance of each widget in the content of its page and removes the fields, so that the
@@ -135,3 +169,5 @@ document.Form.Flatten();
 - The text and choice fields without appearance, or all of them when [NeedAppearances](cref:Meziantou.Framework.Pdf.PdfInteractiveForm.NeedAppearances) is set, get the appearance of
   their value first. The hidden widgets are not drawn.
 - The signed signature fields are kept, so that the signatures stay. The form is removed when no field is left.
+
+To run the calculation and format scripts of a form, see [Form scripts](10-FormScripts.md).

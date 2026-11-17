@@ -316,8 +316,33 @@ public abstract partial class Node : EventTarget
     /// <summary>https://dom.spec.whatwg.org/#concept-child-text-content</summary>
     internal string GetChildTextContent()
     {
-        var builder = new System.Text.StringBuilder();
+        // Usually, the node has a single Text child (e.g. the style and script elements): its data is not copied
+        Text? first = null;
+        Text? second = null;
         for (var child = FirstChild; child is not null; child = child.NextSibling)
+        {
+            if (child is Text text)
+            {
+                if (first is null)
+                {
+                    first = text;
+                }
+                else
+                {
+                    second = text;
+                    break;
+                }
+            }
+        }
+
+        if (first is null)
+            return "";
+
+        if (second is null)
+            return first.Data;
+
+        var builder = new System.Text.StringBuilder();
+        for (Node? child = first; child is not null; child = child.NextSibling)
         {
             if (child is Text text)
             {

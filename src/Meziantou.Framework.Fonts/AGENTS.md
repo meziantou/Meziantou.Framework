@@ -2,7 +2,7 @@
 
 The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text),
 `Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which embeds
-fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE
+fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, PostScript Type 1 fonts, variable fonts, color fonts (COLR, CPAL, sbix, CBDT, SVG), BASE
 baselines, the shaping of complex scripts and of the fonts of Apple Advanced Typography, and the subsetting of TrueType
 and CFF outlines (`FontSubsetter`).
 
@@ -20,7 +20,9 @@ These instructions complete the repository-level `AGENTS.md`.
   `false`), and the public API is recorded in `ref/` by the build. The one exception is the AFM reader
   (`AfmFontMetrics` and the `Afm*` types it returns): it is a standalone reader of font metrics, public so that
   applications (PDF writers, text measurement) can read AFM files; `Meziantou.Framework.Pdf` reads the metrics of the
-  standard fonts with `AfmFontMetrics.GetStandardFont`.
+  standard fonts with `AfmFontMetrics.GetStandardFont`. `FontLoader.LoadType1` is public for the same reason: it is
+  how an application gives the AFM file of a Type 1 font (its kerning and metrics), which `FontLoader.Load` has no
+  room for.
 - `DeterministicAngle` (`Infrastructure/`) and `FontTags` are compiled into `Meziantou.Framework.Imaging`
   too, in its namespace (`MEZIANTOU_FRAMEWORK_IMAGING`): they are helpers, not font API, and stay internal to both
   assemblies. WebPlatform has its own tag constants (`OpenTypeTag`).
@@ -41,9 +43,25 @@ These instructions complete the repository-level `AGENTS.md`.
   libraries, and with the web-platform-tests of WebPlatform (`css/WOFF2`, `css/css-fonts`).
 - Write the code from the specifications (OpenType, WOFF 1.0 and 2.0, Adobe Technical Notes #5176 and #5177, Adobe
   Technical Note #5004 for AFM files, the script development specifications of Microsoft, the Apple TrueType Reference
-  Manual, Unicode). Never copy or port code from font libraries (FreeType,
-  HarfBuzz, the woff2 reference code, fontTools, ...): they are test oracles only, their source is never read to write
-  ours.
+  Manual, Unicode) first. The specification stays the reference: where a library and the specification disagree,
+  follow the specification (or document the divergence and why).
+- The source of another font library may be read, and its code ported, only when its license is compatible with the
+  MIT license of this repository: a permissive license such as MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC,
+  Zlib, BSL-1.0, CC0-1.0, Unlicense, or public domain. HarfBuzz, fontTools and the woff2 reference code are MIT;
+  FreeType is dual FTL (usable) or GPL-2.0. Check the license of the exact version you read (the `LICENSE` file of
+  that tag or commit, and the header of the file: some projects mix licenses), not the project's reputation.
+  - Never read the source of code under a copyleft license (GPL, LGPL, AGPL, MPL, EPL, CDDL, ...), a non-commercial
+    or "research only" license, a proprietary license, or no license at all (for example a GitHub repository without
+    a `LICENSE` file). Those libraries are test oracles only: their output is compared with ours, their source is never
+    read to write ours. When the license is unclear, ask the user before reading.
+  - Port, do not paste: the result follows the rules of this library (managed, no reflection, untrusted input, the
+    style of the repository), which win where they differ from the original.
+  - Every port or adaptation (code, tables, constants, heuristics) is listed in `THIRD-PARTY-NOTICES.md` in the same
+    change: project, source URL, license URL, the version or commit read, what was taken and into which files, and the
+    copyright notice and license text (and, for Apache-2.0, the content of the project's `NOTICE` file). Add a comment
+    naming the original file at the top of the ported code.
+  - Reading a compatible source to understand an ambiguous part of a specification, without porting anything, needs no
+    notice; cite the clause of the specification in the code as usual.
 - Fully managed, trimmable and NativeAOT-compatible: no reflection.
 - The tests are in `tests/Meziantou.Framework.Imaging.Tests` (`FontTests`, `FontVariationTests`, `ColorFontTests`,
   `TextShaperTests`, `Conformance/`), the fuzzing in `fuzz/Meziantou.Framework.Imaging.FuzzTests` (`FontFuzzTests`), and
@@ -105,13 +123,24 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   variation index varies with the instance (the store of `GDEF`, as `GPOS`); the device tables of one size and
   `MathKernInfo` are not read. The header and the constants are validated when the face is created, the subtables of
   a glyph when it is looked up.
-- **Bitmap strikes.** The images of `sbix` (PNG, JPEG, TIFF) and of `CBDT` (PNG) are color glyphs: `BitmapGlyph` says
-  which format the font gives for the data, and `BitmapGlyphDecoder` rejects data of another one. The bitmaps without colors
-  of `EBLC` and `EBDT` are outlines: with `FontLoadOptions.UseEmbeddedBitmaps`, `FontFace.DecodeOutline(glyph, size,
-  ...)` emits a rectangle per run of pixels of a strike of one bit per pixel made for exactly that size, so nothing of
-  the drawing pipeline knows about them. Every caller that decodes an outline for a text passes the size; a cache of
-  what depends on the outline of a glyph has the size in its key. The option is off by default: the pixels of a text
-  do not change with the tables a font happens to have.
+- **Bitmap strikes.** `CblcTable` reads `CBLC`/`CBDT` and `EBLC`/`EBDT` (`bloc`/`bdat` in Apple fonts, which can
+  have `bhed` instead of `head`), `SbixTable` reads `sbix`. The encoded images (PNG, JPEG, TIFF of `sbix`, PNG of
+  `CBDT`) are color glyphs: `BitmapGlyph` says which format the font gives for the data, and Imaging's
+  `BitmapGlyphDecoder` decodes them and rejects data of another one. The pixels that are not encoded (image formats 1,
+  2, 5, 6, 7, and the glyphs made of other glyphs, 8 and 9) are decoded here (`FontFace.DecodeBitmap`): 32 bits per
+  pixel are colors (`Bgra`), 2, 4 and 8 bits a coverage drawn with the text color (`Mask`, `ColorGlyph.FromMask`,
+  whose `IsMask` lets Imaging paint it with the brush of the text, through the coverage, instead of its display list).
+  The bitmaps of one bit per pixel are outlines: `FontFace.DecodeOutline(glyph, size, ...)` emits a rectangle per run
+  of pixels, so nothing of the drawing pipeline knows about them. Every caller that decodes an outline for a text
+  passes the size; a cache of what depends on the outline of a glyph has the size in its key. A font with outlines
+  uses `EBDT` only with `FontLoadOptions.UseEmbeddedBitmaps`, at exactly the size of a strike: the pixels of a text do
+  not change with the tables a font happens to have. A font without outlines (`FontFace.IsBitmapOnly`) uses its
+  bitmaps at every size, from the strike that suits the size (the smallest one at least as large, else the largest).
+- **SVG glyphs** (`SvgTable`). The document records are validated when the face is created (sorted, not overlapping,
+  inside the table): a malformed list leaves the table out. `GetSvgDocument` returns the bytes of the font for a
+  document that is not compressed, and expands a gzip one into an array sized from its trailer, bounded by
+  `MaxFontBytes` before it is allocated, then checks its CRC-32. Reading and drawing the XML is the caller's:
+  Imaging draws it with `SvgGlyphRenderer`.
 - Tests have three sources: literals computed by hand on fonts built in memory (`FontTests`, with `Common/FontBuilder.cs`,
   `FontCffWriter.cs`, `FontCharstring.cs` and `FontWoff2Writer.cs` of the corpus generator, linked into the tests), the
   values HarfBuzz and FreeType both give for the fonts of the corpus (`Conformance/FontConformanceTests`: names,
@@ -119,10 +148,37 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
   after the corpus generator has read it back with the reference decoders.
 
+## Type 1 fonts
+
+`Type1/` reads PostScript Type 1 fonts (PFB and PFA files) and converts them to an OpenType font with CFF outlines when
+they are loaded (`Type1FontConverter`), as a WOFF file is expanded: everything after `FontLoader` sees an ordinary
+font. `Type1Font` reads the file (`PostScriptTokenizer`, eexec and charstring decryption), `Type1CharstringConverter`
+runs each charstring into a Type 2 charstring (`Type2CharstringWriter`), `Type1GlyphNames` maps the glyph names with
+the Adobe Glyph List (`Type1/GlyphList`, vendored, see `THIRD-PARTY-NOTICES.md`).
+
+- Written from the Adobe Type 1 Font Format and Technical Note #5040 (PFB segments). The font program is never run as
+  PostScript: the dictionaries are read from the tokens of the usual layout of a font.
+- **Rented storage.** The decrypted font program (the subroutines and the charstrings are decrypted in place, as ranges
+  of it) and the converted charstrings (`FontByteWriter`) are rented from an allocation scope of the environment; the
+  tables of the converted font are checked against `MaxFontBytes` before they are allocated.
+- **Eager and strict.** Every charstring is converted at load time, each one charged to its own `GlyphBudget`, and the
+  whole font to a budget of `MaxGlyphComplexity` plus 64 operations per byte of the file. A malformed charstring fails
+  the loading (`InvalidFontException` naming the glyph): a converted font has no charstring that fails to decode, which
+  the fuzz targets check.
+- Subroutines, flex (the two curves) and `seac` are expanded; hints, hint replacement (subroutine 3) and counter
+  control are dropped. Points are rounded to 16.16 and written relative to the previous rounded point, so the decoded
+  outline is exact.
+- **FreeType is the oracle** (the prebuilt `hb-*` tools have no Type 1 driver: embed the font as `/FontFile` in a PDF
+  file and read the paths of `mutool draw -F svg -O text=path`). It moves the accent of `seac` by
+  `adx - asb + sbx` (the side bearing of the accented glyph), which `FontTests` checks with a glyph whose side bearing
+  differs from the one of its base. The sample font is `FontType1Writer.Sample` (corpus generator, shared with the
+  fuzz project).
+
 ## Hinting
 
 `GlyphHinter` (`Fonts/Hinting/`) decodes outlines fitted to the pixel grid of a size: `LightHinter` (vertical only,
-no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpreter` (the TrueType instructions).
+no instructions, any outline format), `TrueTypeHinter` with `TrueTypeInterpreter` (the TrueType instructions) and
+`CffHinter` (the hints of CFF and CFF2 outlines).
 
 - Written from the OpenType specification ("TrueType Instructions", "Instructing TrueType Glyphs") and the Apple
   TrueType Reference Manual. FreeType is the oracle (version 40 interpreter, `FT_LOAD_TARGET_MONO`): the corpus suite
@@ -145,6 +201,20 @@ no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpre
   the phantom points is rounded before the instructions; a vector set from a line is truncated toward zero; a
   composite glyph rounds only the vertical offset of a component (`ROUND_XY_TO_GRID`), and nothing when the control
   value program turned the instructions off (`INSTCTRL`). GETINFO reports version 40, no grayscale and no ClearType.
+- **Instances of variable fonts** are hinted from their own points and control values (`gvar`, `CvarTable`). What
+  makes them those of FreeType, found with the two variable fonts of the suite (made by `truetype_hinting.py`): a
+  varied point is scaled from its position rounded to 1/64 of a unit, its position in font units (the original
+  distances) rounded to a whole unit, the offsets of the components too; a control value is scaled from its varied
+  value rounded to 1/64 of a unit; the phantom points round halves upward. FreeType keeps normalized coordinates in
+  16.16 and applies `hdmx` to every instance: the suite uses instances exact in 2.14 and fonts without `hdmx`, and the
+  library follows the specification. 11 points differ by 1/64 of a pixel (`KnownDivergences` of the test).
+- **CFF hints.** `CffCharstringInterpreter` gives the stems and the masks of a charstring to a sink that implements
+  `ICffHintSink`; `CffTable.GetHintValues` reads the private DICT of a glyph (`CffHintValues`, blended for an instance
+  of CFF2: `CffDictReader` evaluates the blends only for this reader). `CffHinter` builds a hint map per mask from the
+  horizontal stems and the blue zones, and maps the vertical coordinates (vertical only, as the CFF engine of FreeType;
+  the vertical stems are not used). It is written from TN #5177 and the Type 1 font format; the stems, masks and
+  values are compared with fontTools (`FontTests`), the hinted outlines with literals, not with FreeType. A ghost hint
+  of width -21 is a bottom edge at `edge + width`, of width -20 a top edge at `edge` (the CJK fonts of the corpus).
 - Remaining differences, found with fonts that cannot be committed (Arial, Verdana, Georgia, Times New Roman,
   Courier New of macOS) and with Noto Sans hinted by ttfautohint: one or two 1/64 pixel differences on a few glyphs of
   each font (fewer than 1 % of the glyphs), and about a third of the glyphs of Noto Sans at 7, 8, 20, 24 and 32 pixels
@@ -155,7 +225,7 @@ no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpre
 `AfmFontMetrics` (`Afm/`) reads AFM files (Adobe Font Metrics, Adobe Technical Note #5004, version 4.1); `AfmParser`
 reads the text, `AfmFontMetrics` indexes the characters and the kerning pairs.
 
-- Written from TN #5004; cite its section in the code. fontTools (`afmLib`) is an oracle only: the widths, boxes,
+- Written from TN #5004; cite its section in the code. fontTools (`afmLib`) is the oracle: the widths, boxes,
   codes and kerning pairs of the Core 14 files compare equal with it.
 - **Text.** The file is ASCII; the bytes are read as ISO-8859-1 because the notices of some files have such
   characters. A line ends with CR, LF or CRLF; spaces and tabs separate the values. What follows `EndFontMetrics` is
@@ -218,9 +288,10 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`OpenType/`) applies t
 `GPOS`, with `GdefTable`, `LayoutTable` and `LayoutCommon` for the tables they share.
 
 - Written from the OpenType specification (GSUB, GPOS, GDEF and the common table formats) and, for what a script
-  needs, from the script development specifications of Microsoft. HarfBuzz is the oracle and is never the source: where
-  the specification leaves a behavior to the client (what a lookup sees through, how marks follow a ligature, the
-  default features), write the rule in the terms of the specification and of Unicode, and let the corpus decide.
+  needs, from the script development specifications of Microsoft. HarfBuzz is the oracle (its code may be ported under
+  the license rule above): where the specification leaves a behavior to the client (what a lookup sees through, how
+  marks follow a ligature, the default features), write the rule in the terms of the specification and of Unicode,
+  and let the corpus decide.
 - **Everything is an integer in font units** until `TextLayout` scales it. Positions are an advance and an offset per
   glyph; an attached glyph records what it is attached to, and `FinishPositions` resolves the chains once.
 - **Clusters are the contract with the rest of the layout**: every glyph has the index of the first character of its

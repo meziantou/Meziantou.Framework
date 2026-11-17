@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,8 +11,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The encoder of a code-block of the high-throughput block coder (Rec. ITU-T T.814 | ISO/IEC 15444-15), the reverse of
-/// <see cref="Jpeg2000HtBlockDecoder"/>: one HT cleanup pass, which codes every magnitude bit of the code-block down to
-/// one bit-plane at once, without HT refinement passes.
+/// <see cref="Jpeg2000HtBlockDecoder"/>: an HT cleanup pass, which codes every magnitude bit of the code-block down to
+/// one bit-plane at once, and the HT SigProp and HT MagRef passes, which refine the bit-plane below it.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -27,6 +28,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// unsigned residual offset allow, the encoder chooses the one whose codeword and MagSgn bits are the shortest.
 /// </para>
 /// <para>
+/// The HT refinement segment holds the SigProp bit-stream from its first byte (7.1.5) and the MagRef bit-stream from its
+/// last one, read backward (7.1.6), so that the segment of the HT SigProp pass alone is the start of the segment of the
+/// two passes. The scans are those of 7.4 and 7.5, with the contexts that are not vertically causal.
+/// </para>
+/// <para>
 /// The MagSgn values, the exponents and the significance patterns of a row of quads are computed before its quads are
 /// coded (<see cref="ReadQuadRow"/>): with 128-bit hardware vectors, 2 quads at a time from 4 columns of the 2 rows of
 /// samples, with the same integer operations as <see cref="ReadQuad"/>. The bit-streams are written one quad after the
@@ -37,6 +43,15 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
 {
     private const int MaxCleanupLength = 65534;
     private const int MaxSuffixLength = 4079;
+    private const int MaxRefinementLength = 2046;
+
+    // The significance of the samples of a code-block for the HT SigProp pass, with a margin of zeros: one column on the
+    // left, two on the right and one row above and below (as Jpeg2000HtBlockDecoder)
+    private const int SignificanceLength = 4096 + (2 * 1024) + (3 * 1024) + 6;
+
+    // A significance flag: from the HT cleanup pass, or from the HT SigProp pass
+    private const byte CleanupSignificant = 1;
+    private const byte PropagatedSignificant = 2;
 
     // Two exponents per quad of the widest code-block, and those of a quad that does not exist on each side
     private const int ExponentRowLength = 1024 + 4;
@@ -64,6 +79,13 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
     // The MagSgn values, then the exponents, of the samples of a row of quads (ReadQuadRow)
     private readonly Av1PooledArray<uint> _quadSamples;
 
+    // The HT refinement passes: the SigProp and MagRef bit-streams and the significance of the samples, rented by
+    // RentRefinementBuffers before the work starts, or else when a refinement pass is first coded
+    private readonly AllocationScope _scope;
+    private Av1PooledArray<byte>? _sigProp;
+    private Av1PooledArray<byte>? _magRef;
+    private Av1PooledArray<byte>? _significance;
+
     // The MagSgn bit-stream: the bits that are not written yet, the first one in the least significant bit, and the
     // number of bits the next byte holds (7 after an FF byte)
     private int _magSgnLength;
@@ -87,6 +109,7 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
 
     public Jpeg2000HtBlockEncoder(AllocationScope scope)
     {
+        _scope = scope;
         Av1PooledArray<byte>? magSgn = null;
         Av1PooledArray<byte>? mel = null;
         Av1PooledArray<byte>? vlc = null;
@@ -135,10 +158,12 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
     /// <param name="output">The writer the HT cleanup segments are appended to.</param>
     /// <param name="length">Receives the number of bytes of the segments.</param>
     /// <param name="candidates">
-    /// Empty to write the segment that codes every bit-plane only. Otherwise receives, for each lowest bit-plane from the
-    /// highest one (<c>bitPlanes - 1</c>) to 0, the length of its segment, appended in that order, and how much more it
-    /// reduces the squared error of the coefficients than the previous one (as <see cref="Jpeg2000Tier1Encoder"/>
-    /// measures it): <c>bitPlanes</c> of them.
+    /// Empty to write the segment that codes every bit-plane only. Otherwise receives the points the rate control chooses
+    /// from, numbered as the coding passes of <see cref="Jpeg2000Tier1Encoder"/>: for each lowest bit-plane of an HT cleanup
+    /// pass from the highest one (<c>bitPlanes - 1</c>) to 0, the HT set made of that pass, then of that pass and its HT
+    /// SigProp pass, then of the three passes (none for the bit-plane 0): <c>3 * bitPlanes - 2</c> of them. Each one has
+    /// the length of its HT segments and how much more it reduces the squared error of the coefficients than the previous
+    /// point. The segments of each set are appended in that order: its HT cleanup segment, then its HT refinement segment.
     /// </param>
     /// <param name="isIrreversible">
     /// Whether the coefficients are quantization indices of the irreversible path, which a decoder reconstructs in the
@@ -172,9 +197,17 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
             var plane = bitPlanes - 1 - i;
             var segment = EncodeCleanup(samples, width, height, plane, output);
             var reduction = GetErrorReduction(samples, plane, offset);
-            candidates[i] = new Jpeg2000CodingPass { Length = segment, Distortion = reduction - previous };
+            candidates[3 * i] = new Jpeg2000CodingPass { Length = segment, Distortion = reduction - previous };
             previous = reduction;
             length += segment;
+            if (plane == 0)
+                continue;
+
+            EncodeRefinement(samples, width, height, plane, offset, output, out var sigPropLength, out var magRefLength, out var sigPropReduction, out var magRefReduction);
+            candidates[(3 * i) + 1] = new Jpeg2000CodingPass { Length = segment + sigPropLength, Distortion = sigPropReduction };
+            candidates[(3 * i) + 2] = new Jpeg2000CodingPass { Length = segment + sigPropLength + magRefLength, Distortion = magRefReduction };
+            previous += sigPropReduction + magRefReduction;
+            length += sigPropLength + magRefLength;
         }
 
         return bitPlanes;
@@ -262,8 +295,142 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
         return Terminate(output);
     }
 
+    /// <summary>
+    /// Rents the buffers of the HT refinement passes now, so that no code-block rents them later: a worker has all its
+    /// memory before the work starts (<see cref="Jpeg2000Workers"/>).
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
+    [MemberNotNull(nameof(_sigProp), nameof(_magRef), nameof(_significance))]
+    public void RentRefinementBuffers()
+    {
+        _sigProp ??= Av1PooledArray<byte>.Rent(_scope, MaxRefinementLength + 16, clear: false, AllocationKind.Temporary);
+        _magRef ??= Av1PooledArray<byte>.Rent(_scope, MaxRefinementLength + 16, clear: false, AllocationKind.Temporary);
+        _significance ??= Av1PooledArray<byte>.Rent(_scope, SignificanceLength, clear: false, AllocationKind.Temporary);
+    }
+
+    /// <summary>
+    /// Encodes the HT SigProp and HT MagRef passes (7.4 and 7.5) that refine the bit-plane below the lowest one of an HT
+    /// cleanup pass, and appends the HT refinement segment: the SigProp bytes, then the MagRef bytes.
+    /// </summary>
+    /// <param name="samples">The coefficients, row by row: the magnitude in the 31 low bits and the sign in the high one.</param>
+    /// <param name="width">The width of the code-block: at most 1024.</param>
+    /// <param name="height">The height of the code-block.</param>
+    /// <param name="plane">The lowest bit-plane of the HT cleanup pass: at least 1. The passes code the bit-plane below it.</param>
+    /// <param name="offset">Where a coefficient whose bit-planes are all decoded is reconstructed in its interval: 0.5 for the quantization indices of the irreversible path, 0 otherwise.</param>
+    /// <param name="output">The writer the HT refinement segment is appended to.</param>
+    /// <param name="sigPropLength">Receives the number of bytes of the segment of the HT SigProp pass alone: the start of the segment.</param>
+    /// <param name="magRefLength">Receives the number of bytes the HT MagRef pass adds to the segment.</param>
+    /// <param name="sigPropReduction">Receives how much the HT SigProp pass reduces the squared error of the coefficients.</param>
+    /// <param name="magRefReduction">Receives how much the HT MagRef pass reduces it after the HT SigProp pass.</param>
+    /// <exception cref="InvalidOperationException">The segment would exceed the length of T.814.</exception>
+    public void EncodeRefinement(ReadOnlySpan<int> samples, int width, int height, int plane, double offset, PooledPayloadWriter output, out int sigPropLength, out int magRefLength, out double sigPropReduction, out double magRefReduction)
+    {
+        RentRefinementBuffers();
+        var refined = plane - 1;
+        var stride = width + 3;
+        var significance = _significance.Span[..(stride * (height + 2))];
+        significance.Clear();
+        for (var y = 0; y < height; y++)
+        {
+            var row = significance.Slice(((y + 1) * stride) + 1, width);
+            var source = samples.Slice(y * width, width);
+            for (var x = 0; x < width; x++)
+            {
+                row[x] = (source[x] & int.MaxValue) >> plane != 0 ? CleanupSignificant : (byte)0;
+            }
+        }
+
+        // The reconstruction of a coefficient (7.6) in the middle of the bit-planes that are not decoded
+        var cleanupHalf = (double)(1 << (plane - 1));
+        var refinedHalf = refined == 0 ? offset : 1 << (refined - 1);
+        var bits = new RefinementBits(_sigProp.Span, _magRef.Span);
+        sigPropReduction = 0;
+        for (var stripe = 0; stripe < height; stripe += 4)
+        {
+            var stripeEnd = Math.Min(stripe + 4, height);
+            for (var group = 0; group < width; group += 4)
+            {
+                var groupEnd = Math.Min(group + 4, width);
+
+                // The magnitude bit of each sample of the four columns that has a significant neighbor (one that the HT
+                // cleanup pass, or this pass before it, made significant), then the sign of those that became significant
+                for (var x = group; x < groupEnd; x++)
+                {
+                    for (var y = stripe; y < stripeEnd; y++)
+                    {
+                        var center = ((y + 1) * stride) + x + 1;
+                        if (significance[center] != 0 || !HasSignificantNeighbor(significance, center, stride))
+                            continue;
+
+                        var magnitude = samples[(y * width) + x] & int.MaxValue;
+                        var bit = (magnitude >> refined) & 1;
+                        bits.WriteSigProp(bit);
+                        if (bit == 0)
+                            continue;
+
+                        significance[center] = PropagatedSignificant;
+                        var value = magnitude + offset;
+                        var reconstruction = (1 << refined) + refinedHalf;
+                        sigPropReduction += reconstruction * ((2 * value) - reconstruction);
+                    }
+                }
+
+                for (var x = group; x < groupEnd; x++)
+                {
+                    for (var y = stripe; y < stripeEnd; y++)
+                    {
+                        if (significance[((y + 1) * stride) + x + 1] == PropagatedSignificant)
+                        {
+                            bits.WriteSigProp(samples[(y * width) + x] < 0 ? 1 : 0);
+                        }
+                    }
+                }
+            }
+        }
+
+        // The HT MagRef pass: the bit of every sample the HT cleanup pass made significant, in the stripe-oriented scan
+        magRefReduction = 0;
+        for (var stripe = 0; stripe < height; stripe += 4)
+        {
+            var stripeEnd = Math.Min(stripe + 4, height);
+            for (var x = 0; x < width; x++)
+            {
+                for (var y = stripe; y < stripeEnd; y++)
+                {
+                    var magnitude = samples[(y * width) + x] & int.MaxValue;
+                    if (magnitude >> plane == 0)
+                        continue;
+
+                    bits.WriteMagRef((magnitude >> refined) & 1);
+                    var value = magnitude + offset;
+                    var before = ((magnitude >> plane) << plane) + cleanupHalf;
+                    var after = ((magnitude >> refined) << refined) + refinedHalf;
+                    magRefReduction += (after * ((2 * value) - after)) - (before * ((2 * value) - before));
+                }
+            }
+        }
+
+        bits.Flush(out sigPropLength, out magRefLength);
+        if (sigPropLength + magRefLength > MaxRefinementLength)
+            throw new InvalidOperationException("An HT refinement segment exceeds the length of Rec. ITU-T T.814.");
+
+        output.Write(_sigProp.Span[..sigPropLength]);
+        var magRef = _magRef.Span[..magRefLength];
+        magRef.Reverse();
+        output.Write(magRef);
+    }
+
+    /// <summary>Gets whether one of the eight neighbors of a sample is significant (7.4: the contexts that are not vertically causal).</summary>
+    private static bool HasSignificantNeighbor(ReadOnlySpan<byte> significance, int center, int stride)
+        => (significance[center - stride - 1] | significance[center - stride] | significance[center - stride + 1]
+            | significance[center - 1] | significance[center + 1]
+            | significance[center + stride - 1] | significance[center + stride] | significance[center + stride + 1]) != 0;
+
     public void Dispose()
     {
+        _sigProp?.Dispose();
+        _magRef?.Dispose();
+        _significance?.Dispose();
         _magSgn.Dispose();
         _mel.Dispose();
         _vlc.Dispose();
@@ -822,6 +989,77 @@ internal sealed class Jpeg2000HtBlockEncoder : IDisposable
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>The SigProp bit-stream (7.1.5), written forward, and the MagRef bit-stream (7.1.6), written in the order it is read: from the last byte.</summary>
+    private ref struct RefinementBits(Span<byte> sigProp, Span<byte> magRef)
+    {
+        private readonly Span<byte> _sigProp = sigProp;
+        private readonly Span<byte> _magRef = magRef;
+        private int _sigPropLength;
+        private int _sigPropByte;
+        private int _sigPropCount;
+        private int _sigPropCapacity = 8;
+        private int _magRefLength;
+        private int _magRefByte;
+        private int _magRefCount;
+        private int _magRefLast = 0xFF;
+
+        /// <summary>Appends a bit, in the least significant free bit of the byte: a byte after an FF byte has seven bits, its most significant one being 0.</summary>
+        public void WriteSigProp(int bit)
+        {
+            _sigPropByte |= bit << _sigPropCount;
+            _sigPropCount++;
+            if (_sigPropCount == _sigPropCapacity)
+            {
+                _sigProp[_sigPropLength++] = (byte)_sigPropByte;
+                _sigPropCapacity = _sigPropByte == 0xFF ? 7 : 8;
+                _sigPropByte = 0;
+                _sigPropCount = 0;
+            }
+        }
+
+        /// <summary>
+        /// Appends a bit, in the least significant free bit of the byte: a byte that follows a byte above 8F in the order
+        /// of reading, and whose seven low bits are 1, has these seven bits only.
+        /// </summary>
+        public void WriteMagRef(int bit)
+        {
+            _magRefByte |= bit << _magRefCount;
+            _magRefCount++;
+            if (_magRefCount == 8 || (_magRefCount == 7 && _magRefLast > 0x8F && _magRefByte == 0x7F))
+            {
+                _magRef[_magRefLength++] = (byte)_magRefByte;
+                _magRefLast = _magRefByte;
+                _magRefByte = 0;
+                _magRefCount = 0;
+            }
+        }
+
+        /// <summary>
+        /// Ends the two bit-streams: the last byte of each one is padded with 0 bits, and a SigProp byte-stream that ends
+        /// with FF is followed by a byte 0, so that the segment has no FF byte followed by a byte above 8F.
+        /// </summary>
+        public void Flush(out int sigPropLength, out int magRefLength)
+        {
+            if (_sigPropCount > 0)
+            {
+                _sigProp[_sigPropLength++] = (byte)_sigPropByte;
+            }
+
+            if (_sigPropLength > 0 && _sigProp[_sigPropLength - 1] == 0xFF)
+            {
+                _sigProp[_sigPropLength++] = 0;
+            }
+
+            if (_magRefCount > 0)
+            {
+                _magRef[_magRefLength++] = (byte)_magRefByte;
+            }
+
+            sigPropLength = _sigPropLength;
+            magRefLength = _magRefLength;
         }
     }
 }

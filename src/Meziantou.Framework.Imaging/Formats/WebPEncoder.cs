@@ -9,7 +9,10 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// WebP stores 8-bit RGB(A): gray pixel formats are written as RGB (R = G = B, decoded as RGB), and 16-bit pixel formats require
-/// <see cref="AllowBitDepthReduction"/>. Alpha is always stored when the pixel format has alpha: exactly, unless
+/// <see cref="AllowBitDepthReduction"/> (nearest rounding, or error diffusion with <see cref="DitherBitDepthReduction"/>):
+/// both bitstreams store 8-bit samples only. Lossy output is Y'CbCr 4:2:0, as the VP8 bitstream defines it;
+/// <see cref="SharpYuv"/> chooses planes that the chroma upsampling of the decoder turns into sharper edges. Alpha is always
+/// stored when the pixel format has alpha: exactly, unless
 /// <see cref="AlphaQuality"/> (lossy output) is below 100. <see cref="NearLossless"/> makes lossless output smaller by
 /// allowing small color errors.
 /// </para>
@@ -24,10 +27,12 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// An image with several frames or animation settings is written as an animation of full-canvas frames that replace the
 /// canvas ("do not blend", "do not dispose"), or of the regions that change with <see cref="OptimizeFrames"/>, with freshly
 /// computed control data. A still image (one frame, no animation
-/// settings) can be written to any stream. Animations need a seekable destination: the RIFF size and the alpha flag are
-/// patched once every frame is written. A writer with an unknown frame count produces an animation; set
-/// <see cref="ImageWriterOptions.ExpectedFrameCount"/> to 1 to write a still image to a non-seekable stream. Path outputs are
-/// always seekable.
+/// settings) can be written to any stream. An animation declares the size of the file (RIFF) and the alpha flag of the
+/// canvas before its frames, and the format has no other way to store them: on a seekable destination, the frames are
+/// written as they are encoded and these fields are patched once every frame is written; on a non-seekable stream, the
+/// whole file is kept in memory (counted against <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>, at most 2 GiB)
+/// and written at completion, so nothing is written when the output is aborted. A writer with an unknown frame count
+/// produces an animation; set <see cref="ImageWriterOptions.ExpectedFrameCount"/> to 1 to stream a still image instead.
 /// </para>
 /// <para>
 /// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): ICC profile (<c>ICCP</c>, RGB profiles only), EXIF
@@ -142,8 +147,52 @@ public sealed class WebPEncoder : ImageEncoder
     /// <remarks>Setting it usually makes the output smaller; the visible pixels and every alpha value are unchanged.</remarks>
     public bool ClearTransparentColors { get; init; }
 
-    /// <summary>Gets a value indicating whether 16-bit pixel formats may be reduced to 8 bits per component (nearest rounding). Defaults to <see langword="false"/>.</summary>
+    /// <summary>
+    /// Gets a value indicating whether 16-bit pixel formats may be reduced to 8 bits per component (nearest rounding, or
+    /// <see cref="DitherBitDepthReduction"/>). Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>WebP stores 8-bit samples only (VP8L and VP8 bitstreams): a reduction is a property of the format.</remarks>
     public bool AllowBitDepthReduction { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the color components of samples deeper than 8 bits are reduced with Floyd–Steinberg
+    /// error diffusion instead of nearest rounding. Defaults to <see langword="false"/>. It does not allow the reduction by
+    /// itself: <see cref="AllowBitDepthReduction"/> must be set too.
+    /// </summary>
+    /// <remarks>
+    /// The rounding error of each color component is carried to the pixels to the right and below (7, 3, 5 and 1 sixteenths,
+    /// left to right on every row from the top row down), so that smooth 16-bit gradients keep their average level instead of
+    /// showing 8-bit bands. Each component stays within one 8-bit step of its source value (the nearest 8-bit value or the
+    /// other one around it); gray pixels stay gray. Alpha is rounded to the nearest value, and fully transparent pixels
+    /// neither receive nor spread error. Lossless output of dithered pixels is larger than with nearest rounding; lossy
+    /// output keeps the dithering at high qualities and smooths it at low ones. 8-bit pixel formats are never dithered.
+    /// </remarks>
+    public bool DitherBitDepthReduction { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether <see cref="WebPCompression.Lossy"/> output converts RGB to Y'CbCr with an iterative
+    /// refinement that takes the chroma upsampling of the decoder into account ("sharp YUV"). Defaults to
+    /// <see langword="false"/>. Ignored by lossless output.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Lossy WebP (VP8) stores one chroma sample per 2x2 pixels: averaging the chroma of a block blurs colored edges, and
+    /// the luminance of thin colored details and saturated edges drifts when the decoder interpolates the chroma back. With
+    /// this setting, the encoder simulates the decoder (bilinear upsampling with centered siting, BT.601 limited-range
+    /// conversion, clamping) and corrects the planes in a few passes: the chroma samples move toward the average error
+    /// of the pixels they cover, and each luma sample absorbs the luminance error left at its pixel. Edges between saturated
+    /// colors and colored text keep sharper luminance; in flat areas, the planes change by about the rounding of the plain
+    /// conversion.
+    /// </para>
+    /// <para>
+    /// It costs a few passes over the image before compression (about 10 bytes of working memory per pixel), and the output
+    /// is larger at the same <see cref="Quality"/> (a few percent on photographs, more on saturated graphics), for a better
+    /// quality: compare at equal decoded quality. The stream is an ordinary VP8 stream: every decoder reads it, and the refinement fits
+    /// decoders that upsample chroma bilinearly (libwebp, browsers and this library); the 4:2:0 subsampling itself is a
+    /// property of the format.
+    /// </para>
+    /// </remarks>
+    public bool SharpYuv { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the frames of an animation after the first one are written as the region of the
@@ -167,7 +216,7 @@ public sealed class WebPEncoder : ImageEncoder
     /// </para>
     /// <para>
     /// The encoder keeps a copy of the displayed frame (4 bytes per pixel), and the disposal chosen by a frame is written into
-    /// the frame before it, in the seekable destination that every animation needs.
+    /// the frame before it (a patch of the output, like the file size).
     /// </para>
     /// </remarks>
     public bool OptimizeFrames { get; init; }

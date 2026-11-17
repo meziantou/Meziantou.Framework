@@ -155,12 +155,12 @@ internal static class PageMarginBoxes
                 case CssPreservedToken { Type: CssTokenType.Whitespace }:
                     break;
                 case CssPreservedToken { Type: CssTokenType.String } text:
-                    result.Append(text.Token.Value);
+                    result.Append(text.Value);
                     break;
 
                 // https://drafts.csswg.org/css-content-3/#quote-values: the quotes of the box, nested in the box
                 case CssPreservedToken { Type: CssTokenType.Ident } keyword:
-                    switch (keyword.Token.Value)
+                    switch (keyword.Value)
                     {
                         case "open-quote":
                             result.Append(BoxTreeBuilder.GetQuote(style, quoteDepth++, open: true));
@@ -184,7 +184,7 @@ internal static class PageMarginBoxes
                         break;
 
                     // (as in Blink, the counters of the page context are not nested: counters() shows one value)
-                    var counterValue = counter.Token.Value == "pages" ? pageCount : counters.GetValueOrDefault(counter.Token.Value);
+                    var counterValue = counter.Value == "pages" ? pageCount : counters.GetValueOrDefault(counter.Value);
                     var styleIndex = name.Equals("counters", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
                     counterStyles ??= new CounterStyleResolver(styleEngine);
                     var counterStyle = arguments.Count > styleIndex && counterStyles.Resolve(arguments[styleIndex], treeScope: null) is { } resolved ? resolved : CounterStyle.Decimal;

@@ -28,7 +28,7 @@ internal static partial class CssSerializer
         var first = true;
         foreach (var value in ValueMatcher.RemoveWhitespace(function.Value))
         {
-            if (value is CssPreservedToken slash && slash.Token.IsDelim('/'))
+            if (value is CssPreservedToken slash && slash.IsDelim('/'))
             {
                 builder.Append(" /");
                 continue;
@@ -124,7 +124,7 @@ internal static partial class CssSerializer
         var percentages = colors.ConvertAll(c => c.Percentage is null ? null : SerializeSequence([c.Percentage], keywords));
         if (colors.TrueForAll(c => c.Percentage is null or CssPreservedToken { Type: CssTokenType.Percentage }))
         {
-            percentages = NormalizeMixPercentages(colors.ConvertAll(c => (c.Percentage as CssPreservedToken)?.Token.NumericValue));
+            percentages = NormalizeMixPercentages(colors.ConvertAll(c => (c.Percentage as CssPreservedToken)?.NumericValue));
         }
 
         builder.Append("color-mix(");

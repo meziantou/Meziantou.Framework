@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
@@ -1283,11 +1284,19 @@ internal static class SmokeTests
         full.Frames[0][1, 2] = new RgbaFloat(42.5f, -1f, float.PositiveInfinity, 0.5f);
         full.Metadata.TransferFunction = ColorTransferFunction.Linear;
         using var half = full.CloneAs<RgbaHalf>();
-        foreach (var compression in Enum.GetValues<OpenExrCompression>())
+        foreach (var (compression, tiling) in new (OpenExrCompression, OpenExrTiling?)[]
+        {
+            (OpenExrCompression.None, null),
+            (OpenExrCompression.Rle, null),
+            (OpenExrCompression.Zips, null),
+            (OpenExrCompression.Zip, null),
+            (OpenExrCompression.Piz, null),
+            (OpenExrCompression.Zip, new OpenExrTiling { TileWidth = 3, TileHeight = 2, LevelMode = OpenExrLevelMode.RipmapLevels }),
+        })
         {
             foreach (var image in new Image[] { full, half })
             {
-                var encoded = Encode(image, new OpenExrEncoder { Compression = compression });
+                var encoded = Encode(image, new OpenExrEncoder { Compression = compression, Tiling = tiling });
                 Check(Image.DetectFormat(encoded) == ImageFormat.OpenExr, "OpenEXR detection");
                 var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
                 Check(info.Width == Width && info.Height == Height && info.PixelFormat == PixelFormat.RgbaFloat, "OpenEXR identification");
@@ -1295,6 +1304,18 @@ internal static class SmokeTests
                 using var expected = image is Image<RgbaHalf> halfImage ? halfImage.CloneAs<RgbaFloat>() : ((Image<RgbaFloat>)image).CloneAs<RgbaFloat>();
                 CheckEqual(expected, decoded, "OpenEXR " + compression.ToString());
                 Check(decoded.Metadata.TransferFunction == ColorTransferFunction.Linear, "OpenEXR linear light");
+            }
+        }
+
+        // Lossy compressions: half samples of PXR24 are exact, the others decode to the size of the image
+        foreach (var compression in (OpenExrCompression[])[OpenExrCompression.Pxr24, OpenExrCompression.B44, OpenExrCompression.B44A, OpenExrCompression.Dwaa, OpenExrCompression.Dwab])
+        {
+            using var decoded = Image.Load(Encode(half, new OpenExrEncoder { Compression = compression, Tiling = compression == OpenExrCompression.Dwaa ? new OpenExrTiling() : null }));
+            Check(decoded.Width == Width && decoded.Height == Height, "OpenEXR " + compression.ToString());
+            if (compression == OpenExrCompression.Pxr24)
+            {
+                using var expected = half.CloneAs<RgbaFloat>();
+                CheckEqual(expected, decoded, "OpenEXR PXR24 half samples");
             }
         }
 
@@ -1308,6 +1329,204 @@ internal static class SmokeTests
         using (var decoded = Image.Load<Rgba32>(Encode(still, new OpenExrEncoder { Compression = OpenExrCompression.Piz, PixelType = OpenExrPixelType.Float })))
         {
             CheckEqual(still, decoded, "OpenEXR 8-bit samples");
+        }
+    }
+
+    public static void Psd()
+    {
+        // A 2x1 RGB document, raw planes after empty sections: red, then green, then blue
+        byte[] file =
+        [
+            (byte)'8', (byte)'B', (byte)'P', (byte)'S', 0, 1, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0, 0, 2, 0, 8, 0, 3,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            255, 10, 0, 20, 128, 30,
+        ];
+        Check(Image.DetectFormat(file) == ImageFormat.Psd, "PSD detection");
+        var info = Image.Identify(file, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Check(info.Width == 2 && info.Height == 1 && info.PixelFormat == PixelFormat.Rgb24, "PSD identification");
+        using var image = Image.Load<Rgb24>(file);
+        Check(image.Frames[0][0, 0] == new Rgb24(255, 0, 128) && image.Frames[0][1, 0] == new Rgb24(10, 20, 30), "PSD pixels");
+
+        // The encoder: both compressions and the large document format; a transparent image gets a layer
+        using var still = CreatePattern(seed: 16);
+        using var opaque = still.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        foreach (var encoder in new[] { new PsdEncoder(), new PsdEncoder { Compression = PsdCompression.None, LargeDocument = true } })
+        {
+            var encoded = Encode(opaque, encoder);
+            Check(Image.DetectFormat(encoded) == ImageFormat.Psd, "PSD encoder detection");
+            using var decoded = Image.Load<Rgb24>(encoded);
+            CheckEqual(opaque, decoded, "PSD encoder " + encoder.Compression.ToString());
+        }
+
+        var transparent = Encode(still, new PsdEncoder());
+        Check(Image.Identify(transparent).MayHaveTransparency == true, "PSD encoder transparency");
+    }
+
+    public static void Dng()
+    {
+        // Linear raw data: the stored samples are those of the image, and the rendering gives them back in linear light
+        using var still = CreatePattern(seed: 17);
+        using var rgb = still.CloneAs<Rgb48>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        rgb.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        foreach (var compression in new DngCompression?[] { null, DngCompression.None })
+        {
+            var encoded = Encode(rgb, new DngEncoder { Compression = compression });
+            Check(Image.DetectFormat(encoded) == ImageFormat.Dng, "DNG detection");
+            using var raw = DngRawImage.Load(encoded);
+            var row = new float[Width * 3];
+            raw.CopyStoredRow(1, row);
+            Check(row[3] == rgb.Frames[0][1, 1].R && row[5] == rgb.Frames[0][1, 1].B, "DNG stored samples");
+            using var decoded = Image.Load<RgbaFloat>(encoded);
+            Check(Math.Abs(decoded.Frames[0][1, 1].G - (rgb.Frames[0][1, 1].G / 65535f)) < 1e-4, "DNG rendering");
+        }
+    }
+
+    public static void Dds()
+    {
+        // A BC1 cube map of 4x4 faces, one block each: face i is a solid color of red i × 6 (a 5-bit endpoint)
+        var data = new byte[148 + (6 * 8)];
+        var header = data.AsSpan();
+        "DDS "u8.CopyTo(header);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[4..], 124);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[8..], 0x1007);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[12..], 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[16..], 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[76..], 32);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[80..], 4);
+        "DX10"u8.CopyTo(header[84..]);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[108..], 0x1000);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[128..], 71);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[132..], 3);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[136..], 4);
+        BinaryPrimitives.WriteUInt32LittleEndian(header[140..], 1);
+        for (var face = 0; face < 6; face++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(header[(148 + (face * 8))..], (ushort)((face * 6) << 11));
+        }
+
+        Check(Image.DetectFormat(data) == ImageFormat.Dds, "DDS detection");
+        var info = Image.Identify(data);
+        Check(info.PixelFormat == PixelFormat.Rgba32 && info.CollectionEntryCount == 6, "DDS identification");
+        using (var image = Image.Load<Rgba32>(data))
+        {
+            Check(image.Frames[0][3, 3] == new Rgba32(0, 0, 0, 255), "DDS top surface");
+        }
+
+        using var collection = ImageCollection.Load(data);
+        Check(collection.Count == 6 && collection[5].TextureSurface?.Face == CubeMapFace.NegativeZ, "DDS surfaces");
+        using var last = collection[5].Decode<Rgba32>();
+        Check(last.Frames[0][0, 0] == new Rgba32(247, 0, 0, 255), "DDS block decoding");
+
+        // The encoder: uncompressed without loss, block-compressed with mipmaps, read back by the decoder
+        using var pattern = CreatePattern(seed: 21);
+        using (var decoded = Image.Load<Rgba32>(Encode(pattern, new DdsEncoder())))
+        {
+            Check(decoded.Frames[0][3, 2] == pattern.Frames[0][3, 2], "DDS encoding");
+        }
+
+        foreach (var format in new[] { DdsTextureFormat.Bc1Unorm, DdsTextureFormat.Bc3UnormSrgb, DdsTextureFormat.Bc7Unorm })
+        {
+            using var texture = ImageCollection.Load(Encode(pattern, new DdsEncoder { TextureFormat = format, GenerateMipmaps = true, Quality = TextureCompressionQuality.Fast }));
+            Check(texture.Count > 1 && texture[0].Size == pattern.Size, "DDS " + format.ToString());
+        }
+    }
+
+    public static void Dpx()
+    {
+        // Every depth of the encoder round trips: 8 and 16-bit samples exactly, 10 and 12-bit components to their code values
+        using var still = CreatePattern(seed: 15);
+        using var wide = still.CloneAs<Rgba64>();
+        foreach (var bits in new int?[] { null, 10, 12, 16, 32 })
+        {
+            var encoded = Encode(wide, new DpxEncoder { BitDepth = bits, AllowBitDepthReduction = true, ByteOrder = bits == 12 ? DpxByteOrder.LittleEndian : DpxByteOrder.BigEndian });
+            Check(Image.DetectFormat(encoded) == ImageFormat.Dpx, "DPX detection");
+            var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Check(info.Width == Width && info.Height == Height && info.Metadata.DpxHeader?.BitDepth == (bits ?? 16), "DPX identification");
+            using var decoded = Image.Load(encoded);
+            Check(Encode(decoded, new DpxEncoder { BitDepth = bits, AllowBitDepthReduction = true, ByteOrder = bits == 12 ? DpxByteOrder.LittleEndian : DpxByteOrder.BigEndian }).AsSpan().SequenceEqual(encoded), "DPX " + (bits?.ToString(CultureInfo.InvariantCulture) ?? "default"));
+        }
+
+        // Cineon: 8-bit samples come back exactly from 10 bits
+        using var opaque = still.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+        var cineon = Encode(opaque, new CineonEncoder());
+        Check(Image.DetectFormat(cineon) == ImageFormat.Cineon && Image.Identify(cineon).Metadata.CineonHeader?.BitsPerSample == 10, "Cineon encoder");
+        using var film = Image.Load(cineon);
+        using var filmPixels = film.CloneAs<Rgb24>();
+        CheckEqual(opaque, filmPixels, "Cineon encoder pixels");
+    }
+
+    public static void Radiance()
+    {
+        // RGBE pixels round trip through both scanline encodings: a mantissa is read as the middle of its interval, so the
+        // pixels written again give the same bytes
+        using var still = CreatePattern(seed: 14);
+        using var floats = still.CloneAs<RgbaFloat>();
+        floats.Frames[0][1, 2] = new RgbaFloat(42.5f, 0f, 1e20f, 1f);
+        floats.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        foreach (var compression in Enum.GetValues<RadianceCompression>())
+        {
+            var encoded = Encode(floats, new RadianceEncoder { Compression = compression, BackgroundColor = new Rgba64(0, 0, 0, 65535) });
+            Check(Image.DetectFormat(encoded) == ImageFormat.Radiance, "Radiance HDR detection");
+            var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+            Check(info.Width == Width && info.Height == Height && info.PixelFormat == PixelFormat.RgbaFloat, "Radiance HDR identification");
+            using var decoded = Image.Load<RgbaFloat>(encoded);
+            Check(Encode(decoded, new RadianceEncoder { Compression = compression }).AsSpan().SequenceEqual(encoded), "Radiance HDR " + compression.ToString());
+            Check(decoded.Metadata.TransferFunction == ColorTransferFunction.Linear && decoded.Metadata.RadianceHeader?.ScanOrder == "-Y +X", "Radiance HDR metadata");
+        }
+    }
+
+    public static void Ktx2()
+    {
+        // A 2x1 R8G8B8A8_UNORM texture of two layers, assembled by hand: the header, the index, one level, the descriptor
+        var file = new byte[80 + 24 + 92 + 16];
+        byte[] identifier = [0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A];
+        identifier.CopyTo(file, 0);
+        uint[] header = [37, 1, 2, 1, 0, 2, 1, 1, 0, 104, 92];
+        for (var i = 0; i < header.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(file.AsSpan(12 + (4 * i)), header[i]);
+        }
+
+        BinaryPrimitives.WriteUInt64LittleEndian(file.AsSpan(80), 196);
+        BinaryPrimitives.WriteUInt64LittleEndian(file.AsSpan(88), 16);
+        BinaryPrimitives.WriteUInt64LittleEndian(file.AsSpan(96), 16);
+        var dfd = file.AsSpan(104, 92);
+        BinaryPrimitives.WriteUInt32LittleEndian(dfd, 92);
+        BinaryPrimitives.WriteUInt32LittleEndian(dfd[8..], 2u | (88u << 16));
+        dfd[12] = 1;
+        dfd[13] = 1;
+        dfd[14] = 1;
+        dfd[20] = 4;
+        for (var i = 0; i < 4; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(dfd[(28 + (16 * i))..], (uint)(i * 8) | (7u << 16) | ((uint)(i == 3 ? 15 : i) << 24));
+            BinaryPrimitives.WriteUInt32LittleEndian(dfd[(28 + (16 * i) + 12)..], 255);
+        }
+
+        byte[] texels = [10, 20, 30, 255, 40, 50, 60, 128, 1, 2, 3, 4, 5, 6, 7, 8];
+        texels.CopyTo(file, 196);
+        Check(Image.DetectFormat(file) == ImageFormat.Ktx2, "KTX 2.0 detection");
+        using (var image = Image.Load<Rgba32>(file))
+        {
+            Check(image.Width == 2 && image.Frames[0][1, 0] == new Rgba32(40, 50, 60, 128) && image.Metadata.Ktx2Header?.LayerCount == 2, "KTX 2.0 load");
+        }
+
+        using var collection = ImageCollection.Load(file);
+        Check(collection.Count == 2 && collection[1].TextureSurface is { ArrayIndex: 1, MipLevel: 0, Face: null, DepthSlice: 0 }, "KTX 2.0 collection");
+        using var layer = collection[1].Decode<Rgba32>();
+        Check(layer.Frames[0][0, 0] == new Rgba32(1, 2, 3, 4), "KTX 2.0 layer");
+
+        // The encoder: uncompressed without loss, block-compressed with mip levels and ZLIB, read back by the decoder
+        using var pattern = CreatePattern(seed: 22);
+        using (var decoded = Image.Load<Rgba32>(Encode(pattern, new Ktx2Encoder())))
+        {
+            Check(decoded.Frames[0][3, 2] == pattern.Frames[0][3, 2], "KTX 2.0 encoding");
+        }
+
+        foreach (var format in new[] { Ktx2TextureFormat.Bc7, Ktx2TextureFormat.Etc2Rgba, Ktx2TextureFormat.Astc6x6 })
+        {
+            using var texture = ImageCollection.Load(Encode(pattern, new Ktx2Encoder { TextureFormat = format, GenerateMipmaps = true, Quality = TextureCompressionQuality.Fast, Supercompression = Ktx2Supercompression.Zlib }));
+            Check(texture.Count > 1 && texture[0].Size == pattern.Size, "KTX 2.0 " + format.ToString());
         }
     }
 

@@ -3,8 +3,9 @@ title: Supported formats
 description: The formats the library reads and writes, how it detects them, which extension selects which encoder, and how to choose one.
 ---
 
-The library reads and writes every format below with its own managed codecs. This group has one page per format: what
-is read, what is written, how to save with its encoder and its options, and the pitfalls.
+The library reads every format below with its own managed codecs, and writes all of them. This
+group has one
+page per format: what is read, what is written, how to save with its encoder and its options, and the pitfalls.
 
 ## Support matrix
 
@@ -25,7 +26,14 @@ is read, what is written, how to save with its encoder and its options, and the 
 | [HEIC](14-Heic.md) | 8 to 12 bits, alpha, grids, photos of phones and cameras | Lossless (default) or lossy, 8 to 12 bits, alpha, grids | Read and written |
 | [JPEG XL](15-JpegXl.md) | Lossless and lossy, up to 16 bits, recompressed JPEG files, progressive renderings | Lossless (default) or lossy, up to 16 bits; JPEG files recompressed without loss | Read and written |
 | [JPEG 2000](16-Jpeg2000.md) | JP2 files and codestreams, up to 16 bits, HTJ2K | Lossless (default) or lossy, up to 16 bits | No |
-| [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Lossless half or float samples | No |
+| [OpenEXR](17-OpenExr.md) | Half, float and integer samples, most compressions | Half or float samples, scan lines or tiles with mipmaps, lossless by default or lossy (PXR24, B44, DWA) | No |
+| [Radiance HDR](18-Radiance.md) | RGBE pictures, flat and run-length encoded, every orientation | RGBE pictures, run-length encoded (default) or flat | No |
+| [PSD](19-Psd.md) | The composite image of PSD and PSB files (not the layers), 1 to 32 bits, CMYK and Lab with a color conversion | Flat gray, RGB or CMYK documents of 8, 16 or 32 bits, raw or PackBits, PSB; one layer for transparency | No |
+| [DNG](20-Dng.md) | Raw photos rendered to linear light, their raw mosaic, previews | Linear raw data (the rendered image), 8 or 16-bit integers or 32-bit floats; uncompressed, lossless JPEG or Deflate | No |
+| [DDS](21-Dds.md) | Textures: BC1 to BC7 and the common uncompressed formats, mipmaps, cube maps, arrays, volume textures | BC1 to BC7 and uncompressed formats, generated mipmaps, cube maps and arrays | No (surfaces) |
+| [DPX](22-Dpx.md) | 1 to 16-bit and floating-point components, RGB, luma, Cb, Y, Cr, both byte orders | RGB, RGBA or luma, 8, 10, 12, 16 bits or 32-bit floats | No |
+| [Cineon](23-Cineon.md) | 10-bit (and 1 to 16-bit) RGB and gray film scans | RGB or gray, 8, 10 or 16 bits, packing 5, the header of the source | No |
+| [KTX 2.0](24-Ktx2.md) | GPU textures: levels, layers, cube faces and slices; uncompressed, BCn, ETC2, EAC, ASTC, ETC1S and UASTC; Zstandard and ZLIB | Uncompressed, BCn, ETC2, EAC and ASTC LDR, generated mip levels, cube maps and arrays; ZLIB | Read (`KTXanimData`), and every subresource as an entry |
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
@@ -70,8 +78,15 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.jph` | `Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput }` | Lossless JPH (HTJ2K) file |
 | `.jhc` | `Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream }` | Lossless HTJ2K codestream |
 | `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
-
-Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf`: those JPEG 2000 files are read, not
+| `.hdr`, `.pic` | [RadianceEncoder](cref:Meziantou.Framework.Imaging.Formats.RadianceEncoder) | Run-length encoded Radiance HDR |
+| `.dpx` | [DpxEncoder](cref:Meziantou.Framework.Imaging.Formats.DpxEncoder) | Big-endian DPX at the depth of the pixels |
+| `.psd` | [PsdEncoder](cref:Meziantou.Framework.Imaging.Formats.PsdEncoder) | PackBits PSD file (PSB above 30,000 pixels per side) |
+| `.psb` | `PsdEncoder { LargeDocument = true }` | PackBits PSB file |
+| `.dng` | [DngEncoder](cref:Meziantou.Framework.Imaging.Formats.DngEncoder) | Linear raw DNG, lossless JPEG (Deflate for floating-point pixels) |
+| `.cin` | [CineonEncoder](cref:Meziantou.Framework.Imaging.Formats.CineonEncoder) | 10-bit Cineon (16-bit for 16-bit pixels) |
+| `.dds` | [DdsEncoder](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder) | Uncompressed DDS at the depth of the pixels |
+| `.ktx2` | [Ktx2Encoder](cref:Meziantou.Framework.Imaging.Formats.Ktx2Encoder) | Uncompressed KTX 2.0 at the depth of the pixels |
+Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf` (JPEG 2000): those files are read, not
 written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
@@ -87,14 +102,22 @@ files from photos: pass an encoder with lossy compression for them.
 - **Animations**: GIF is read everywhere but has 256 colors per frame and no partial transparency. APNG and lossless
   WebP keep every color and alpha value; lossy WebP and AVIF image sequences are smaller. See
   [Processing animated images](../03-Guides/04-ProcessAnimatedImages.md).
-- **High dynamic range**: OpenEXR stores floating-point samples, and so does TIFF; AVIF, HEIC, JPEG XL and 16-bit PNG
+- **High dynamic range**: OpenEXR stores floating-point samples, and so does TIFF; Radiance HDR stores RGBE pixels (8
+  bits of mantissa shared by the three colors), the format of most environment maps; AVIF, HEIC, JPEG XL and 16-bit PNG
   store HDR samples as integers with their color description. See [Pixel formats](../04-Concepts/05-PixelFormats.md).
 - **Archival and lossless masters**: PNG, TIFF (also for multi-page documents), and JPEG XL or JPEG 2000 in lossless
   mode, which keep 16-bit samples. A JPEG file can be recompressed to JPEG XL without loss and rebuilt byte for byte
   (see [JPEG XL](15-JpegXl.md)).
 - **Scanned documents**: a bilevel TIFF with CCITT Group 4 compression.
 - **Icons and cursors**: ICO, CUR and ANI.
-- **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default.
+- **Photoshop documents**: PSD and PSB files are read (their composite image) and written as flat documents, which
+  Photoshop opens; the layers of a document are not read.
+- **Raw photos**: DNG files are rendered to linear light; an image saved as DNG is linear raw data that raw converters
+  open, not the mosaic of a sensor.
+- **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default. The
+  block-compressed textures of game engines are DDS files: the library reads and writes them, BC1 to BC7 included.
+- **Tooling, game assets and test fixtures**: QOI, TGA, BMP and Netpbm are simple formats, lossless by default. GPU
+  textures (KTX 2.0) are read and written, block-compressed with BCn, ETC2, EAC or ASTC.
 
 To convert files from one format to another, see [Converting between formats](../03-Guides/03-ConvertBetweenFormats.md).
 
@@ -116,3 +139,10 @@ To convert files from one format to another, see [Converting between formats](..
 - [JPEG XL](15-JpegXl.md): lossless and lossy images, progressive files, lossless JPEG recompression.
 - [JPEG 2000](16-Jpeg2000.md): lossless and lossy images for archives and imaging pipelines.
 - [OpenEXR](17-OpenExr.md): linear-light, floating-point images for rendering and visual effects.
+- [Radiance HDR](18-Radiance.md): RGBE pictures of lighting simulations and HDRI environment maps.
+- [PSD](19-Psd.md): the composite image of Adobe Photoshop documents, and flat documents for Photoshop.
+- [DNG](20-Dng.md): raw photos of cameras and phones, and linear raw files.
+- [DDS](21-Dds.md): the textures of Direct3D and game engines, and their mipmaps, cube maps and arrays.
+- [DPX](22-Dpx.md): film scans and video frames of post-production, with their time codes.
+- [Cineon](23-Cineon.md): the Kodak film scans that preceded DPX.
+- [KTX 2.0](24-Ktx2.md): GPU textures, their levels, layers and faces, block-compressed or supercompressed.

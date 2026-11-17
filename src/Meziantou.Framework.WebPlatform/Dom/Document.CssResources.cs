@@ -199,10 +199,10 @@ public partial class Document
             switch (component)
             {
                 case Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.Url } urlToken:
-                    value = urlToken.Token.Value;
+                    value = urlToken.Value;
                     break;
                 case Css.Syntax.CssFunction { Name: var functionName } function when Infra.InfraAscii.EqualsIgnoreAsciiCase(functionName, "url") && Css.Values.ValueMatcher.RemoveWhitespace(function.Value) is [Css.Syntax.CssPreservedToken { Type: Css.Syntax.CssTokenType.String } stringToken]:
-                    value = stringToken.Token.Value;
+                    value = stringToken.Value;
                     break;
             }
         }

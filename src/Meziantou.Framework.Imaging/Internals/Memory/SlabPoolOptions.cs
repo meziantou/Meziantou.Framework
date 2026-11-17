@@ -11,8 +11,11 @@ internal sealed class SlabPoolOptions
     /// <summary>The default maximum number of retained buffers per size class.</summary>
     public const int DefaultMaxRetainedBuffersPerBucket = 64;
 
-    /// <summary>The default maximum number of bytes retained by the pool across all size classes (32 MiB).</summary>
-    public const long DefaultMaxRetainedBytes = 32L * 1024 * 1024;
+    /// <summary>
+    /// The default maximum number of bytes retained by the pool across all size classes (64 MiB). A 4K RGBA frame alone is
+    /// eight 4 MiB slabs (32 MiB): the bound leaves room for the buffers of the decoder or processor next to it.
+    /// </summary>
+    public const long DefaultMaxRetainedBytes = 64L * 1024 * 1024;
 
     /// <summary>Gets the largest pooled buffer length. Must be a power of two between 128 and 2^30.</summary>
     public int MaxPooledLength

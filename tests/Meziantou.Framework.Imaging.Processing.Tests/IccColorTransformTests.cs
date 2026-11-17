@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -632,7 +633,7 @@ public sealed class IccColorTransformTests
     public void UnsupportedProfilesAreReportedAsUnsupported()
     {
         var gray = IccTestProfiles.BuildBytes("GRAY", "XYZ ", [("kTRC", IccTestProfiles.Curve())]);
-        AssertUnsupported(Modify(gray, data => data[8] = 5));
+        AssertUnsupported(Modify(gray, data => data[8] = 6));
         foreach (var profileClass in new[] { "link", "abst", "nmcl", "zzzz" })
         {
             AssertUnsupported(Modify(gray, data => Encoding.ASCII.GetBytes(profileClass).CopyTo(data, 12)));
@@ -1739,4 +1740,900 @@ public sealed class IccColorTransformTests
 
         throw new InvalidOperationException($"Tag '{signature}' not found.");
     }
+
+    // Named color profiles (ICC.1:2022 section 10.17, ICC.2:2023 section 12.2.5) and iccMAX processing elements
+    // (ICC.2:2023 clause 11). The expected values are computed by hand from the formulas of the specifications, except the
+    // CIELAB values of 'tLab', printed by iccApplyNamedCmm --debugcalc (iccDEV 2.4.2.5)
+
+    [Fact]
+    public void NamedColorsOfAVersion2ProfileUseTheLegacyCieLabEncoding()
+    {
+        var colors = IccNamedColorCollection.Create(IccTestProfiles.NamedColorLabV2());
+        Assert.HasCount(10, colors);
+        Assert.Equal(4, colors.DeviceChannelCount);
+        Assert.Equal("PMS Rubine Red C", colors[2].Name);
+        Assert.Same(colors[2], colors["PMS Rubine Red C"]);
+        Assert.Equal(2, colors.IndexOf("PMS Rubine Red C"));
+        Assert.Equal(-1, colors.IndexOf("Rubine Red"));
+        Assert.False(colors.TryGetValue("pms rubine red c", out _));
+        Assert.Throws<KeyNotFoundException>(() => colors["Rubine Red"]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => colors[10]);
+
+        // L* 48 is stored as round(48 * 652.8) = 31334, a* 74 as (74 + 128) * 256 and b* 15 as (15 + 128) * 256 (Tables 42, 43)
+        var lab = colors[2].ConnectionSpaceLab;
+        Assert.Equal(31334 * 100.0 / 65280, lab.L, 1e-12);
+        Assert.Equal(74, lab.A, 1e-12);
+        Assert.Equal(15, lab.B, 1e-12);
+
+        // The inks 0.06, 1, 0.45, 0.02 are stored as round(x * 65535)
+        Assert.Equal([3932 / 65535.0, 1, 29491 / 65535.0, 1311 / 65535.0], colors[2].DeviceValues);
+    }
+
+    [Fact]
+    public void NamedColorsInTheXyzConnectionSpaceAreU1Fixed15Numbers()
+    {
+        // ICC.1:2022 Table 66: the PCSXYZ coordinates are u1Fixed15Numbers (1.0 is 8000h). LittleCMS 2.19 and iccDEV 2.4.2.5
+        // scale them otherwise, so the expected values are computed here from the stored numbers
+        var profile = IccTestProfiles.NamedColorXyzV4();
+        var colors = IccNamedColorCollection.Create(profile);
+        Assert.Equal(0, colors.DeviceChannelCount);
+        Assert.Empty(colors[4].DeviceValues);
+        var tag = GetTag(profile, "ncl2");
+        var stored = BinaryPrimitives.ReadUInt16BigEndian(tag[(84 + (4 * 38) + 34)..]);
+        var y = stored / 32768.0;
+        Assert.Equal("Orange 021", colors[4].Name);
+        Assert.Equal(y, colors[4].ConnectionSpaceColor.Y, 1e-15);
+        Assert.Equal(69, colors[4].ConnectionSpaceLab.L, 0.001);
+
+        // To the sRGB gray: the encoded fraction of the media white, relative colorimetric intent
+        var gray = new float[1];
+        IccNamedColorTransform.Create(profile, IccProfile.SrgbGray, NoCompensation).Convert(colors[4], gray);
+        var expected = y <= 0.0031308 ? 12.92 * y : (1.055 * Math.Pow(y, 1 / 2.4)) - 0.055;
+        Assert.Equal(expected, gray[0], 1e-4);
+
+        // ICC-absolute: rescaled by the media white point of the named color profile ('wtpt' 0.9505, 1, 1.089), whose Y
+        // is the illuminant's: the gray does not change
+        IccNamedColorTransform.Create(profile, IccProfile.SrgbGray, new IccColorTransformOptions { Intent = IccRenderingIntent.AbsoluteColorimetric }).Convert(colors[4], gray);
+        Assert.Equal(expected, gray[0], 1e-4);
+    }
+
+    [Fact]
+    public void NamedColorTransformsConvertTheColorimetryOfTheColors()
+    {
+        // PMS Warm Red C: L* 59, a* 66.49, b* 59.38 (legacy encoding), to sRGB: a saturated red-orange
+        var transform = IccNamedColorTransform.Create(IccTestProfiles.NamedColorLabV2(), IccProfile.Srgb);
+        Assert.Equal(3, transform.DestinationChannelCount);
+        var rgb = new byte[3];
+        transform.Convert(transform.Colors["PMS Warm Red C"], rgb);
+        Assert.True(rgb[0] > 240 && rgb[1] < 100 && rgb[2] < 60, string.Join(' ', rgb));
+
+        // The paper is the media white: the white of the destination with the relative colorimetric intent
+        transform.Convert(transform.Colors["PMS Paper C"], rgb);
+        Assert.Equal([255, 255, 255], rgb);
+
+        // Through a sequence: the colors enter the connection space, an abstract profile changes them, then the destination
+        var throughAbstract = IccNamedColorTransform.Create([IccTestProfiles.NamedColorLabV2(), IccTestProfiles.LabAbstractLutAToB(), IccProfile.Srgb]);
+        var sixteen = new ushort[3];
+        throughAbstract.Convert(throughAbstract.Colors["PMS Black C"], sixteen);
+        Assert.All(sixteen, value => value > 0);
+    }
+
+    [Fact]
+    public void NamedColorProfilesAreRejectedWhereSamplesAreConverted()
+    {
+        var named = IccTestProfiles.NamedColorLabV2();
+        Assert.Throws<ArgumentException>("profile", () => IccNamedColorCollection.Create(IccProfile.Srgb));
+        Assert.Throws<ArgumentException>("profiles", () => IccNamedColorTransform.Create([IccProfile.Srgb, IccProfile.Srgb]));
+        Assert.Throws<ArgumentException>("profiles", () => IccNamedColorTransform.Create([named]));
+        Assert.Throws<ArgumentNullException>("profiles", () => IccNamedColorTransform.Create([named, null!]));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(named, IccProfile.Srgb));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create([IccProfile.Srgb, named]));
+
+        // A named color profile is only a source: one in the middle of a sequence is rejected
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorTransform.Create([named, IccProfile.Srgb, named, IccProfile.Srgb]));
+
+        var transform = IccNamedColorTransform.Create(named, IccProfile.Srgb);
+        Assert.Throws<ArgumentException>("destination", () => transform.Convert(transform.Colors[0], new float[4]));
+        Assert.Throws<ArgumentNullException>("color", () => transform.Convert(null!, new float[3]));
+    }
+
+    [Fact]
+    public void MalformedNamedColorTagsAreInvalid()
+    {
+        var tag = IccProfileBuilder.NamedColor2("", "", 0, ("Red", [1, 2, 3], []));
+        Assert.Equal("Red", IccNamedColorCollection.Create(new IccProfile(new MetadataBlob(NamedProfile("Lab ", tag))))[0].Name);
+        AssertInvalid(NamedProfile("Lab ", tag[..^1]));                                           // the color does not fit
+        AssertInvalid(NamedProfile("Lab ", With(tag, data => data.AsSpan(84, 32).Fill((byte)'a'))));   // no null character
+        AssertInvalid(NamedProfile("Lab ", With(tag, data => data[84] = 0xE9)));                    // not 7-bit ASCII
+        AssertInvalid(NamedProfile("Lab ", With(tag, data => data[19] = 16)));                      // more than 15 colorants
+        AssertInvalid(NamedProfile("XYZ ", IccProfileBuilder.NamedColor2("", "", 3, ("Red", [1, 2, 3], [1, 2, 3])), "CMYK"));
+        AssertInvalid(NamedProfile("RGB ", tag));                                                   // not a connection space
+        AssertInvalid(IccTestProfiles.BuildBytes("CMYK", "Lab ", [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249))], header => "nmcl"u8.CopyTo(header.AsSpan(12))));
+
+        static void AssertInvalid(byte[] profile) => Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(new IccProfile(new MetadataBlob(profile))));
+
+        static byte[] With(byte[] tag, Action<byte[]> change)
+        {
+            var copy = tag.ToArray();
+            change(copy);
+            return copy;
+        }
+    }
+
+    [Fact]
+    public void IccMaxNamedColorsAreReadAtFullTint()
+    {
+        // A namedColorArray: the tint zero structure, then a color whose tints are 0.5 and 1, and one without tint values
+        // (equally spaced tints: the last vector is the full tint)
+        var profile = IccMaxNamedProfile(
+            Struct("nmcl", ("name", Utf8("Rouge é")), ("tint", Floats("fl32", 0.5f, 1)), ("pcs ", Floats("fl32", 75, 20, 10, 50, 40, 20)), ("dev ", Floats("ui16", 0.5f, 0, 0, 0, 1, 0, 0, 0))),
+            Struct("nmcl", ("name", Utf8("Gray")), ("pcs ", Floats("fl16", 80, 0, 0, 60, 0, 0)), ("dev ", Floats("fl32", 0, 0, 0, 0.2f, 0, 0, 0, 0.4f))));
+        var colors = IccNamedColorCollection.Create(profile);
+        Assert.HasCount(2, colors);
+        Assert.Equal(4, colors.DeviceChannelCount);
+        Assert.Equal("Rouge é", colors[0].Name);
+        Assert.Equal(new CieLab(50, 40, 20), colors[0].ConnectionSpaceLab);
+        Assert.Equal([1, 0, 0, 0], colors[0].DeviceValues);
+        Assert.Equal(60, colors[1].ConnectionSpaceLab.L);
+        Assert.Equal(0.4, colors[1].DeviceValues[3], 1e-7);
+
+        // Not supported: no value at full tint, integer PCS values, a spectral connection space only
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("tint", Floats("fl32", 0.5f)), ("pcs ", Floats("fl32", 75, 20, 10))))));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("ui16", 0.5f, 0.5f, 0.5f))))));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("\0\0\0\0", Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("Lab ", includeTintZero: true, [("c2sp", Mpe(3, 3, Element("bACS", 3, 3, U32(0))))], Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
+
+        // Malformed: no name, values that are not vectors of the connection space, a first element that is not the tint
+        // zero, device values (amounts of the colorants) outside [0, 1]
+        Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("pcs ", Floats("fl32", 75, 20, 10))))));
+        Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10)), ("dev ", Floats("fl32", -1, 2, 0, 0))))));
+        Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10)), ("dev ", Floats("fl16", 0, 0, 0, 1.5f))))));
+        Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile(Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20))))));
+        Assert.Throws<InvalidImageContentException>(() => IccNamedColorCollection.Create(IccMaxNamedProfile("Lab ", includeTintZero: false, Struct("nmcl", ("name", Utf8("A")), ("pcs ", Floats("fl32", 75, 20, 10))))));
+    }
+
+    [Fact]
+    public void IccMaxNamedColorsSharingTheirStructureAreReadOnce()
+    {
+        // 5,000 colors that all refer to the same structure, whose 20,000 members are unknown but the last two (a name
+        // and PCS values)
+        var colors = IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedStructureArray(5000, 20000, sizeStep: 0), []));
+        Assert.HasCount(5000, colors);
+        Assert.Equal("A", colors[4999].Name);
+        Assert.Equal(new CieLab(50, 40, 20), colors[4999].ConnectionSpaceLab);
+
+        // Structures at the same offset but of different sizes would have their members scanned again and again
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedStructureArray(5000, 20000, sizeStep: 1), [])));
+
+        // A namedColorArray: the tint zero structure, then a single structure that every color refers to
+        static byte[] SharedStructureArray(int count, int unknownMembers, int sizeStep)
+        {
+            var tintZero = Struct("tnt0", ("pcs ", Floats("fl32", 100, 0, 0)));
+            var name = Utf8("A");
+            var pcs = Floats("fl32", 50, 40, 20);
+            var header = 16 + (8 * (count + 1));
+            var structOffset = header + tintZero.Length;
+            var table = 16 + (12 * (unknownMembers + 2));
+            var structSize = table + name.Length + pcs.Length;
+            var data = new List<byte>([.. "tary"u8, 0, 0, 0, 0, .. "ncol"u8, .. U32((uint)count + 1), .. U32((uint)header), .. U32((uint)tintZero.Length)]);
+            for (var i = 0; i < count; i++)
+            {
+                data.AddRange([.. U32((uint)structOffset), .. U32((uint)(structSize + (sizeStep * i)))]);
+            }
+
+            data.AddRange(tintZero);
+            data.AddRange([.. "tstr"u8, 0, 0, 0, 0, .. "nmcl"u8, .. U32((uint)unknownMembers + 2)]);
+            for (var i = 0; i < unknownMembers; i++)
+            {
+                data.AddRange([.. "junk"u8, .. U32(0), .. U32(0)]);
+            }
+
+            data.AddRange([.. "name"u8, .. U32((uint)table), .. U32((uint)name.Length)]);
+            data.AddRange([.. "pcs "u8, .. U32((uint)(table + name.Length)), .. U32((uint)pcs.Length)]);
+            data.AddRange(name);
+            data.AddRange(pcs);
+            data.AddRange(new byte[sizeStep * count]);
+            return [.. data];
+        }
+    }
+
+    [Fact]
+    public void IccMaxNamedColorsSharingTheirNameAreReadOnce()
+    {
+        // 1,000 colors whose name members all refer to the same name of 64 KiB
+        var name = new string('n', 65536);
+        var colors = IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedNameArray(name, 1000, sizeStep: 0), []));
+        Assert.HasCount(1000, colors);
+        Assert.Same(colors[0].Name, colors[999].Name);
+        Assert.Equal(0, colors.IndexOf(name));
+        Assert.Same(colors[0], colors[name]);
+
+        // Names that appear several times as distinct strings refer to their first color too
+        var duplicates = IccNamedColorCollection.Create(new IccProfile(new MetadataBlob(NamedProfile("Lab ", IccProfileBuilder.NamedColor2("", "", 0, ("Red", [1, 2, 3], []), ("Red", [4, 5, 6], []))))));
+        Assert.NotSame(duplicates[0].Name, duplicates[1].Name);
+        Assert.Equal(0, duplicates.IndexOf("Red"));
+        Assert.Equal(new CieLab(50, 40, 20), colors[999].ConnectionSpaceLab);
+
+        // Names at the same offset but of different sizes would be read and stored again and again
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccNamedColorCollection.Create(IccMaxNamedProfileWithArray("Lab ", SharedNameArray(name, 1000, sizeStep: 1), [])));
+
+        // A namedColorArray: the tint zero structure, then the members of a structure per color (a name and PCS values),
+        // then the name and the PCS values they refer to
+        static byte[] SharedNameArray(string name, int count, int sizeStep)
+        {
+            var tintZero = Struct("tnt0", ("pcs ", Floats("fl32", 100, 0, 0)));
+            var nameData = Utf8(name);
+            var pcs = Floats("fl32", 50, 40, 20);
+            const int StructSize = 16 + (2 * 12);
+            var header = 16 + (8 * (count + 1));
+            var firstStruct = header + tintZero.Length;
+            var nameOffset = firstStruct + (count * StructSize);
+            var pcsOffset = nameOffset + nameData.Length;
+            var data = new List<byte>([.. "tary"u8, 0, 0, 0, 0, .. "ncol"u8, .. U32((uint)count + 1), .. U32((uint)header), .. U32((uint)tintZero.Length)]);
+            for (var i = 0; i < count; i++)
+            {
+                // Each structure extends to the end of the shared data, which its members refer to
+                var structOffset = firstStruct + (i * StructSize);
+                data.AddRange([.. U32((uint)structOffset), .. U32((uint)(pcsOffset + pcs.Length - structOffset))]);
+            }
+
+            data.AddRange(tintZero);
+            for (var i = 0; i < count; i++)
+            {
+                var structOffset = firstStruct + (i * StructSize);
+                data.AddRange([.. "tstr"u8, 0, 0, 0, 0, .. "nmcl"u8, .. U32(2)]);
+                data.AddRange([.. "name"u8, .. U32((uint)(nameOffset - structOffset)), .. U32((uint)(nameData.Length - (sizeStep * i)))]);
+                data.AddRange([.. "pcs "u8, .. U32((uint)(pcsOffset - structOffset)), .. U32((uint)pcs.Length)]);
+            }
+
+            data.AddRange(nameData);
+            data.AddRange(pcs);
+            return [.. data];
+        }
+    }
+
+    [Fact]
+    public void CalculatorOperationsFollowIcc2Table102()
+    {
+        // Arithmetic, rounded to single precision; 'sign' gives 1 for positive values (Table 102 prints -1, a typographical error)
+        Assert.Equal([1], Calculate(1, "7 3 mod out"));
+        Assert.Equal([-1], Calculate(1, "-7 3 mod out"));
+        Assert.Equal([3, -3, 2, 3, -2], Calculate(5, "2.5 rond -2.5 rond 2.7 flor 2.2 ceil -2.7 trnc out:0:4"));
+        Assert.Equal([-1, 0, 1], Calculate(3, "-3 sign 0 sign 3 sign out:0:2"));
+        Assert.Equal([8, 4, 5, -1, 6], Calculate(5, "2 3 gama 8 2 sdiv 2 3 sadd 2 3 ssub 2 3 smul out:0:4"));
+        Assert.Equal([1024, 3, 3, 9, 8, 2.5, -2.5], Calculate(7, "2 10 pow 9 sqrt 27 cbrt 3 sq 2 cb -2.5 abs 2.5 neg out:0:6"));
+        Assert.Equal([1, 2, 0], Calculate(3, "0 exp 100 log 1 ln out:0:2"));
+        Assert.Equal(Math.PI / 4, Calculate(1, "1 1 atn2 out")[0], 1e-7);
+
+        // Two values that are not numbers are equal, so that a value can be compared with 'NaN ' (section 11.2.1.1)
+        Assert.Equal([1, 0, 0, 0, 1], Calculate(5, "NaN NaN eq NaN 1 eq NaN 1 lt NaN rnum 1 rnum out:0:4"));
+        Assert.Equal([1, 0], Calculate(2, "1 1.000000001 near 1 1.001 near out:0:1"));
+        Assert.Equal([1, 2, 0, 1, 0, 1], Calculate(6, "1 2 vmin 1 2 vmax 1 0 vand 1 0 vor 1 1 vxor 0.2 not out:0:5"));
+        Assert.Equal([6, 24, 3, 5, 0, 1], Calculate(6, "1 2 3 sum:1 2 3 4 prod:1 5 3 4 min:1 5 3 4 max:1 1 0 and 1 0 or out:0:5"));
+
+        // Polar coordinates in degrees, in [0, 360)
+        var polar = Calculate(4, "3 4 ctop 5 60 ptoc out:0:3");
+        AssertClose([5, 53.130102354155978, 2.5, 4.3301270189221932], polar, 1e-5);
+        Assert.Equal(270, Calculate(2, "0 -1 ctop out:0:1")[1], 1e-5);
+
+        // CIELAB of normalized CIEXYZ and back (iccDEV prints 57.0754 81.8700 -55.7199)
+        AssertClose([57.0754, 81.8700, -55.7199], Calculate(3, "0.5 0.25 0.75 tLab out:0:2"), 1e-4);
+        AssertClose([0.5, 0.25, 0.75], Calculate(3, "0.5 0.25 0.75 tLab tXYZ out:0:2"), 1e-6);
+    }
+
+    [Fact]
+    public void CalculatorStackOperationsFollowIcc2Table96()
+    {
+        Assert.Equal([18], Calculate(1, "1 2 3 copy:2:1 sum:7 out"));
+        Assert.Equal([3, 4, 5, 1, 2], Calculate(5, "1 2 3 4 5 rotl:4:1 out:0:4"));
+        Assert.Equal([4, 5, 1, 2, 3], Calculate(5, "1 2 3 4 5 rotr:4:1 out:0:4"));
+        Assert.Equal([1, 2, 3, 4, 5, 2, 2], Calculate(7, "1 2 3 4 5 posd:3:1 out:0:6"));
+        Assert.Equal([3, 2, 1], Calculate(3, "1 2 3 flip:1 out:0:2"));
+        Assert.Equal([1], Calculate(1, "1 2 3 pop:1 out"));
+        Assert.Equal([1, 2, 2], Calculate(3, "1 2 scnt out:0:2"));
+        Assert.Equal([1, 4, 2, 5, 3, 6], Calculate(6, "1 2 3 4 5 6 tran:1:2 out:0:5"));
+
+        // Systems of linear equations: [2 1; 1 3] x = [3 5] has x = (0.8, 1.4); a singular or not square system reports a failure
+        AssertClose([0.8, 1.4, 1], Calculate(3, "2 1 1 3 3 5 solv:1:1 out:0:2"), 1e-6);
+        Assert.Equal([0, 0, 0], Calculate(3, "1 2 2 4 1 1 solv:1:1 out:0:2"));
+        Assert.Equal([0, 0], Calculate(2, "1 2 3 4 solv:1:0 out:0:1"));
+
+        // Channels: the inputs, the temporary channels (zero until set) and the outputs
+        Assert.Equal([0.25, 0.5], Calculate(2, "in:0:1 out:0:1", [0.25, 0.5]));
+        Assert.Equal([0, 2, 1, 6], Calculate(4, "tget:3 1 2 tput:4:1 tget:5 tget:4 3 tsav:0 tget:0 add out:0:3"));
+        Assert.Equal([0, 7], Calculate(2, "7 out:1"));
+    }
+
+    [Fact]
+    public void CalculatorConditionsAndSelectionsFollowIcc2Section11_2_1_10()
+    {
+        Assert.Equal([5, 3], Calculate(2, "3 1 if:2 pop 5 3 0 if:2 pop 5 out:0:1"));
+        Assert.Equal([7], Calculate(1, "0.49 if:1 else:1 5 7 out"));
+        Assert.Equal([5], Calculate(1, "NaN if:1 else:1 5 7 out"));
+        Assert.Equal([9], Calculate(1, "9 0 if:2 1 pop out"));
+
+        // The selector is rounded like 'rond'; the default runs outside the cases, nothing runs without a default
+        Assert.Equal([30, 20, 40, 40], Calculate(4, "2 sel case:1 case:1 case:1 dflt:1 10 20 30 40 1.4 sel case:1 case:1 case:1 dflt:1 10 20 30 40 3 sel case:1 case:1 case:1 dflt:1 10 20 30 40 -1 sel case:1 case:1 case:1 dflt:1 10 20 30 40 out:0:3"));
+        Assert.Equal([2, 9], Calculate(2, "9 1 sel case:2 case:2 pop 1 pop 2 9 5 sel case:2 case:2 pop 1 pop 2 out:0:1"));
+
+        // A selection nested in a case of another one: the outer selection runs its default or its case
+        Assert.Equal([0.75, 0.25], Calculate(2, "1 sel case:6 dflt:1 0 sel case:1 dflt:1 0.25 0.5 0.75 0 sel case:6 dflt:1 0 sel case:1 dflt:1 0.25 0.5 0.75 out:0:1"));
+
+        // The CMM environment variables: 'true' is available with the value 1; the others are not available
+        Assert.Equal([1, 1, 0, 0, 0, 0], Calculate(6, "env:true env:ndef env:zzzz out:0:5"));
+    }
+
+    [Fact]
+    public void CalculatorSubElementsAreAppliedToTheStack()
+    {
+        byte[][] subElements =
+        [
+            Element("matf", 2, 2, Floats(2, 0, 0, 3, 1, 0)),                                 // [2 0; 0 3] + (1, 0)
+            CurveSetElement(Segmented([], Formula(0, 2, 1, 0, 0))),                          // x^2
+            ClutElement([2], 1, 0, 0, 10),                                                   // 10 x
+            Element("tint", 1, 2, U32(0), U32(0), Floats(0, 0, 1, 2)),                       // (t, 2 t)
+            CalculatorElement(1, 1, [], "in sq 1 add out"),                                  // x^2 + 1
+        ];
+
+        Assert.Equal([3, 3], Calculate(2, "1 1 mtx:0 out:0:1", subElements: subElements));
+        Assert.Equal([0.25, 2.5, 0.5, 1, 1.25, 3, 3], Calculate(7, "0.5 curv:1 0.25 clut:2 0.5 tint:3 0.5 calc:4 1 1 elem:0 out:0:6", subElements: subElements));
+
+        // The operation names the type of the sub-element it applies; 'elem' applies any
+        Assert.Throws<InvalidImageContentException>(() => Calculate(1, "1 curv:0 out", subElements: subElements));
+        Assert.Throws<InvalidImageContentException>(() => Calculate(1, "1 mtx:9 out", subElements: subElements));
+    }
+
+    [Fact]
+    public void RepeatedProcessingElementsAreReadOnce()
+    {
+        // A tint array of 65,536 values, which every element of a multiProcessElementsType refers to
+        var tint = Element("tint", 1, 1, U32(0), U32(0), Floats([.. Enumerable.Range(0, 65536).Select(i => i / 65535f)]));
+
+        // The same position many times: the element is read once
+        var context = new IccMpeParseContext("source", 0x41324231);
+        var stage = IccMpeParser.CreateStage(Stage(tint, [.. Enumerable.Repeat(tint.Length, 1000)]), 1, 1, context);
+        Assert.Equal(65536 + 2, context.Allocated); // the values, then the element and its channel
+        var values = new double[16];
+        values[0] = 0.5;
+        stage.Apply(values);
+        Assert.Equal(0.5, values[0], 1e-6);
+
+        // Overlapping positions (the same offset, shorter sizes) are different elements, which would store the same data
+        // again and again
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(tint, [.. Enumerable.Range(0, 32).Select(i => tint.Length - (4 * i))]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+    }
+
+    [Fact]
+    public void SegmentedCurvesCountTheSearchOfTheirSegment()
+    {
+        // 1,024 segments: the segment k gives k, between the break-points (k - 1) / 1024 and k / 1024
+        var element = CurveSetElement(Segmented([.. Enumerable.Range(1, 1023).Select(i => i / 1024f)], [.. Enumerable.Range(0, 1024).Select(k => Formula(0, 1, 0, 0, k))]));
+        foreach (var k in new[] { 0, 1, 511, 512, 1022, 1023 })
+        {
+            Assert.Equal(k, Evaluate(element, (k + 0.5) / 1024)[0]);
+        }
+
+        // The 10 steps of the binary search are part of the cost: a curve repeated by many positions exceeds the work per color
+        Assert.Equal(4 + 10 + 1, ParseElement(element).Cost);
+        IccMpeParser.CreateStage(Stage(element, [.. Enumerable.Repeat(element.Length, 1000)]), 1, 1, new IccMpeParseContext("source", 0x41324231));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(element, [.. Enumerable.Repeat(element.Length, 100_000)]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+    }
+
+    [Fact]
+    public void OverlappingCurveSetsChargeTheirChannels()
+    {
+        // A calculator whose sub-elements are the same curve set of 65,535 channels, which all share one curve: once is
+        // supported, 32 overlapping positions (the same offset, 32 sizes) would store 32 arrays of 65,535 curves
+        var once = CalculatorOfOverlappingCurveSets(1);
+        IccMpeParser.CreateStage(Stage(once, [once.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231));
+
+        var overlapping = CalculatorOfOverlappingCurveSets(32);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(overlapping, [overlapping.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+
+        static byte[] CalculatorOfOverlappingCurveSets(int subCount)
+        {
+            const int Channels = 65535;
+            var curve = Segmented([], Formula(0, 1, 1, 0, 0));
+            var curveSet = new List<byte>([.. "cvst"u8, 0, 0, 0, 0, .. U16(Channels), .. U16(Channels)]);
+            for (var i = 0; i < Channels; i++)
+            {
+                curveSet.AddRange([.. U32((uint)(12 + (8 * Channels))), .. U32((uint)curve.Length)]);
+            }
+
+            curveSet.AddRange(curve);
+            var main = new List<byte>([.. "func"u8, 0, 0, 0, 0, .. U32(2), .. "in  "u8, 0, 0, 0, 0, .. "out "u8, 0, 0, 0, 0]);
+            var curveSetOffset = 24 + (8 * subCount) + main.Count;
+            var data = new List<byte>([.. "calc"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), 0, 0, .. U16(subCount), .. U32((uint)(24 + (8 * subCount))), .. U32((uint)main.Count)]);
+            for (var i = 0; i < subCount; i++)
+            {
+                data.AddRange([.. U32((uint)curveSetOffset), .. U32((uint)(curveSet.Count + i))]);
+            }
+
+            data.AddRange(main);
+            data.AddRange(curveSet);
+            data.AddRange(new byte[subCount - 1]);
+            return [.. data];
+        }
+    }
+
+    [Fact]
+    public void NestedCalculatorsReferringToOverlappingSubElementsAreBounded()
+    {
+        // Each calculator has 8 sub-elements at the position of the same nested calculator, with 8 different sizes: they
+        // are 8 distinct elements, so that 2 levels parse 8 + 64 calculators
+        var shallow = FanOut(2);
+        IccMpeParser.CreateStage(Stage(shallow, [shallow.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231));
+
+        // 9 levels would parse 8^9 calculators from a few kilobytes
+        var deep = FanOut(9);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(deep, [deep.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+
+        static byte[] FanOut(int levels)
+        {
+            const int SubCount = 8;
+            var element = CalculatorElement(1, 1, [], "in out");
+            for (var level = 0; level < levels; level++)
+            {
+                var main = new List<byte>([.. "func"u8, 0, 0, 0, 0, .. U32(2), .. "in  "u8, 0, 0, 0, 0, .. "out "u8, 0, 0, 0, 0]);
+                var childOffset = 24 + (8 * SubCount) + main.Count;
+                var data = new List<byte>([.. "calc"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), 0, 0, .. U16(SubCount), .. U32((uint)(24 + (8 * SubCount))), .. U32((uint)main.Count)]);
+                for (var i = 0; i < SubCount; i++)
+                {
+                    data.AddRange([.. U32((uint)childOffset), .. U32((uint)(element.Length + i))]);
+                }
+
+                data.AddRange(main);
+                data.AddRange(element);
+                data.AddRange(new byte[SubCount - 1]);
+                element = [.. data];
+            }
+
+            return element;
+        }
+    }
+
+    [Fact]
+    public void CalculatorCopiesCountTheirValues()
+    {
+        // tget 10 values, pop, in, out, then the 10 temporary channels and the output cleared before each evaluation
+        Assert.Equal(10 + 1 + 1 + 1 + 10 + 1, ParseElement(CalculatorElement(1, 1, [], "tget:0:9 pop:9 in out")).Cost);
+
+        // 20 copies of 65,535 temporary channels exceed the work per color
+        var copies = CalculatorElement(1, 1, [], string.Join(' ', Enumerable.Repeat("tget:0:65534 pop:65534", 20)) + " in out");
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccMpeParser.CreateStage(Stage(copies, [copies.Length]), 1, 1, new IccMpeParseContext("source", 0x41324231)));
+    }
+
+    [Fact]
+    public void CalculatorFunctionsAreCheckedBeforeTheyRun()
+    {
+        // Malformed: the stack underflows, a channel does not exist, an operation of a structure is alone or goes beyond
+        // the function, the streams of a condition leave different numbers of values
+        foreach (var function in new[] { "add out", "1 out:1", "in:1 out", "tget:0 out:0:1", "else:0 1 out", "case:0 1 out", "1 sel 1 out", "1 if:5 out", "1 if:1 else:0 5 out", "1 1 sel case:1 case:0 dflt:0 5 out", "1 2 3 4 solv:1:1 out", "tran:65535:65535 1 out" })
+        {
+            Assert.Throws<InvalidImageContentException>(() => Calculate(1, function));
+        }
+
+        // Not supported: an unknown operation, the color appearance operations, a stream that may not run and changes the
+        // number of values on the stack (valid, but the number of values would depend on the colors)
+        Assert.Throws<UnsupportedImageFeatureException>(() => Calculate(1, "1 zzzz out"));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Calculate(1, "1 if:1 5 out"));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Calculate(1, "9 0 sel case:1 pop out"));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Calculate(3, "1 1 1 tJab out:0:2"));
+
+        // Calculators nested deeper than 16 levels
+        var nested = CalculatorElement(1, 1, [], "in out");
+        for (var i = 0; i < 17; i++)
+        {
+            nested = CalculatorElement(1, 1, [nested], "in calc:0 out");
+        }
+
+        Assert.Throws<UnsupportedImageFeatureException>(() => ParseElement(nested));
+    }
+
+    [Fact]
+    public void CurveSetElementsEvaluateTheirSegments()
+    {
+        // ICC.2:2023 Table 111 at x = 0.5, with parameters chosen for round results
+        (int Function, float[] Parameters, double Expected)[] formulas =
+        [
+            (0, [2, 1, 0.5f, 0.25f], 1.25),                                  // (a x + b)^g + c
+            (1, [2, 1, 4, 1, 0.5f], Math.Log10(2) + 0.5),                    // a log10(b x^g + c) + d
+            (2, [2, 3, 2, -1, 0.5f], 2.5),                                   // a b^(c x + d) + e
+            (3, [2, 2, 2, 1, -1], 7),                                        // a (b x + c)^g + d
+            (4, [1, 2, -1, 1, 2], (2 * Math.Log(2)) + 1),                    // a ln(d x^g - b) + c
+            (5, [1, 2, 1, 0, 2, 3], (3 * Math.Exp(0.5)) + 1),                // e exp((d x^g - c) / a) + b
+            (6, [2, 1, 0.25f, 1, 1, 4, 1], 1),                               // d (max(e x^g - a, 0) / (b - c x^g))^w
+            (7, [2, 1, 1, 2, 1, 3], 3 * Math.Pow(2 / 1.5, 2)),               // d ((a + b x^g) / (1 + c x^g))^w
+        ];
+        foreach (var (function, parameters, expected) in formulas)
+        {
+            Assert.Equal(expected, Evaluate(CurveSetElement(Segmented([], Formula(function, parameters))), 0.5)[0], 1e-6);
+        }
+
+        // A sampled segment between the break-points 0 and 1: its first value is the one of the previous segment at 0
+        var segmented = CurveSetElement(Segmented([0, 1], Formula(0, 1, 1, 0, 0), Sampled(0.1f, 1), Formula(0, 1, 0, 1, 0)));
+        AssertClose([-1, 0, 0.05, 0.1, 0.55, 1, 1], new[] { -1, 0, 0.25, 0.5, 0.75, 1, 5 }.Select(x => Evaluate(segmented, x)[0]), 1e-7);
+
+        // Single sampled curves: clipped or extended linearly outside their range; integers encode [0, 1]
+        AssertClose([0, 1.25, 2], new[] { -1, 0.75, 2 }.Select(x => Evaluate(CurveSetElement(SingleSampled(0, 0, 0, 0.5f, 2)), x)[0]), 1e-7);
+        AssertClose([-1, 5], new[] { -1.0, 2 }.Select(x => Evaluate(CurveSetElement(SingleSampled(1, 0, 0, 0.5f, 2)), x)[0]), 1e-6);
+        Assert.Equal(32768 / 65535.0, Evaluate(CurveSetElement(SingleSampled(0, 2, 0, 32768, 65535)), 0.5)[0], 1e-12);
+
+        // A sampled calculator curve: the calculator sampled at 3 points, 0, 0.5 and 1, interpolated linearly
+        Assert.Equal(0.625, Evaluate(CurveSetElement(SampledCalculator(3, CalculatorElement(1, 1, [], "in sq out"))), 0.75)[0], 1e-7);
+
+        // Malformed: decreasing break-points, a sampled first segment, an unknown function type
+        Assert.Throws<InvalidImageContentException>(() => ParseElement(CurveSetElement(Segmented([1, 0], Formula(0, 1, 1, 0, 0), Formula(0, 1, 1, 0, 0), Formula(0, 1, 1, 0, 0)))));
+        Assert.Throws<InvalidImageContentException>(() => ParseElement(CurveSetElement(Segmented([0], Sampled(1), Formula(0, 1, 1, 0, 0)))));
+        Assert.Throws<InvalidImageContentException>(() => ParseElement(CurveSetElement(Segmented([], Formula(8, 1, 1, 0, 0)))));
+    }
+
+    [Fact]
+    public void MatrixLookupTableAndTintElementsFollowIcc2Clause11()
+    {
+        // Q rows of P coefficients, then the offsets
+        Assert.Equal([1.75], Evaluate(Element("matf", 2, 1, Floats(1, 2, 0.5f)), 0.25, 0.5));
+
+        // A table that is 1 at (1, 1, 1) only: multilinear without hint, tetrahedral (along the main diagonal) with hint 2
+        float[] corner = [0, 0, 0, 0, 0, 0, 0, 1];
+        AssertClose([0.09375], Evaluate(ClutElement([2, 2, 2], 1, 0, corner), 0.5, 0.25, 0.75), 1e-12);
+        AssertClose([0.25], Evaluate(ClutElement([2, 2, 2], 1, 2, corner), 0.5, 0.25, 0.75), 1e-12);
+        Assert.Equal([1], Evaluate(ClutElement([2, 2, 2], 1, 0, corner), 2, 2, 2));
+
+        // Tint arrays: equally spaced vectors from tint 0 to tint 1, clipped outside
+        var tint = Element("tint", 1, 2, U32(0), U32(0), Floats(0, 0, 1, 2, 2, 0));
+        Assert.Equal([0.5, 1], Evaluate(tint, 0.25));
+        Assert.Equal([1.5, 1], Evaluate(tint, 0.75));
+        Assert.Equal([0, 0], Evaluate(tint, -1));
+
+        // 'bACS' and 'eACS' pass their values through; the elements of the other domains are not supported
+        Assert.Equal([0.25, 0.5], Evaluate(Element("bACS", 2, 2, U32(0)), 0.25, 0.5));
+        foreach (var signature in new[] { "eclt", "emtx", "iemx", "rclt", "robs", "eobs", "xclt", "smet", "tmap", "JtoX", "XtoJ", "zzzz" })
+        {
+            Assert.Throws<UnsupportedImageFeatureException>(() => ParseElement(Element(signature, 3, 3, new byte[64])));
+        }
+
+        Assert.Throws<InvalidImageContentException>(() => ParseElement(Element("matf", 3, 3, Floats(1, 2))));
+        Assert.Throws<InvalidImageContentException>(() => ParseElement(ClutElement([2, 1], 1, 0, 0, 0)));
+    }
+
+    [Fact]
+    public void IccMaxProfilesConvertWithTheirProcessingElements()
+    {
+        // A version 5 display profile whose AToB1 and BToA1 tags are the matrix of the sRGB primaries (no tone curve): the
+        // same colors as the version 4 matrix-based profile with identity curves
+        var colorants = IccTestProfiles.SrgbColorants;
+        float[] matrix = [.. new[] { colorants[0][0], colorants[1][0], colorants[2][0], colorants[0][1], colorants[1][1], colorants[2][1], colorants[0][2], colorants[1][2], colorants[2][2] }.Select(value => (float)value)];
+        var inverse = new double[9];
+        Assert.True(IccMatrixStage.TryInvert([.. matrix.Select(value => (double)value)], inverse));
+        var v5 = IccMaxProfile("mntr", "RGB ", "XYZ ", ("A2B1", Mpe(3, 3, Element("matf", 3, 3, Floats([.. matrix, 0, 0, 0])))), ("B2A1", Mpe(3, 3, Element("matf", 3, 3, Floats([.. inverse.Select(value => (float)value), 0, 0, 0])))));
+        var v4 = IccTestProfiles.Rgb(colorants, IccTestProfiles.Curve());
+        float[] colors = [0, 0, 0, 1, 1, 1, 0.25f, 0.5f, 0.75f, 1, 0, 0];
+        var fromV5 = new float[colors.Length];
+        IccColorTransform.Create(v5, v4, NoCompensation).Convert(colors, fromV5);
+        AssertClose(colors, fromV5, 1e-4);
+        var toV5 = new float[colors.Length];
+        IccColorTransform.Create(v4, v5, NoCompensation).Convert(colors, toV5);
+        AssertClose(colors, toV5, 1e-4);
+
+        // Not supported: a spectral connection space, custom connection conditions, the classes of iccMAX only, version 6
+        AssertUnsupported(IccMaxProfile("mntr", "RGB ", "\0\0\0\0", ("A2B1", Mpe(3, 3, Element("matf", 3, 3, Floats([.. matrix, 0, 0, 0]))))));
+        AssertUnsupported(IccMaxProfile("mntr", "RGB ", "XYZ ", ("A2B1", Mpe(3, 3, Element("matf", 3, 3, Floats([.. matrix, 0, 0, 0])))), ("c2sp", Mpe(3, 3, Element("bACS", 3, 3, U32(0))))));
+        foreach (var profileClass in new[] { "cenc", "mid ", "mlnk", "mvis" })
+        {
+            AssertUnsupported(IccMaxProfile(profileClass, "RGB ", "XYZ ", ("A2B1", Mpe(3, 3, Element("matf", 3, 3, Floats([.. matrix, 0, 0, 0]))))));
+        }
+
+        // Malformed: a multiProcessElementsType whose channels are not the ones of the profile
+        Assert.Throws<InvalidImageContentException>(() => IccColorTransform.Create(IccMaxProfile("mntr", "RGB ", "XYZ ", ("A2B1", Mpe(1, 3, Element("matf", 1, 3, Floats(1, 1, 1, 0, 0, 0))))), IccProfile.Srgb));
+
+        static void AssertUnsupported(IccProfile profile) => Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(profile, IccProfile.Srgb));
+    }
+
+    [Fact]
+    public void IccMaxRenderingIntentsSelectTheirTagsAsIcc2Section8_14_2()
+    {
+        // Gray output profiles whose tags give Y = k x for a gray x, with the media white point Y 0.75; the destination is
+        // a linear gray display, so the converted gray is Y. Each tag has its own k: 0.2 (AToB0), 0.4 (AToB1), 0.3 (AToB3)
+        var a2b0 = ("A2B0", GrayTag(0.2f));
+        var a2b1 = ("A2B1", GrayTag(0.4f));
+        var a2b3 = ("A2B3", GrayTag(0.3f));
+        var all = IccMaxProfile("prtr", "GRAY", "XYZ ", a2b0, a2b1, a2b3);
+        Assert.Equal(0.2, Convert(all, IccRenderingIntent.Perceptual), 1e-6);
+        Assert.Equal(0.4, Convert(all, IccRenderingIntent.RelativeColorimetric), 1e-6);
+        Assert.Equal(0.2, Convert(all, IccRenderingIntent.Saturation), 1e-6);
+
+        // ICC-absolute: the AToB3 tag, converted to the media white of the destination (the illuminant)
+        Assert.Equal(0.3, Convert(all, IccRenderingIntent.AbsoluteColorimetric), 1e-6);
+
+        // Without the tag of the intent: the media-relative colorimetry of the AToB3 tag (divided by the media white),
+        // the ICC-absolute colorimetry of the AToB1 tag (multiplied by it), the colorimetric tags for the perceptual intent
+        var absoluteOnly = IccMaxProfile("prtr", "GRAY", "XYZ ", a2b3);
+        Assert.Equal(0.4, Convert(absoluteOnly, IccRenderingIntent.RelativeColorimetric), 1e-6);
+        Assert.Equal(0.4, Convert(absoluteOnly, IccRenderingIntent.Perceptual), 1e-6);
+        Assert.Equal(0.3, Convert(absoluteOnly, IccRenderingIntent.AbsoluteColorimetric), 1e-6);
+        var relativeOnly = IccMaxProfile("prtr", "GRAY", "XYZ ", a2b1);
+        Assert.Equal(0.3, Convert(relativeOnly, IccRenderingIntent.AbsoluteColorimetric), 1e-6);
+        Assert.Equal(0.4, Convert(relativeOnly, IccRenderingIntent.Saturation), 1e-6);
+
+        // A version 4 profile has no AToB3 tag: it is ignored
+        var version4 = IccTestProfiles.BuildBytes("GRAY", "XYZ ", [("wtpt", IccTestProfiles.Xyz(0.75 * 0.9642, 0.75, 0.75 * 0.8249)), a2b0, a2b3], header => "prtr"u8.CopyTo(header.AsSpan(12)));
+        Assert.Equal(0.2, Convert(new IccProfile(new MetadataBlob(version4)), IccRenderingIntent.RelativeColorimetric), 1e-6);
+
+        static byte[] GrayTag(float k) => Mpe(1, 3, Element("matf", 1, 3, Floats(0.9642f * k, k, 0.8249f * k, 0, 0, 0)));
+
+        static double Convert(IccProfile profile, IccRenderingIntent intent)
+        {
+            var output = new float[1];
+            IccColorTransform.Create(profile, IccTestProfiles.Gray(IccTestProfiles.Curve()), new IccColorTransformOptions { Intent = intent, BlackPointCompensation = false }).Convert([1f], output);
+            return output[0];
+        }
+    }
+
+    private static IccProfile IccMaxProfile(string profileClass, string colorSpace, string connectionSpace, params (string Signature, byte[] Data)[] tags)
+    {
+        var data = IccTestProfiles.BuildBytes(colorSpace, connectionSpace, [("wtpt", IccTestProfiles.Xyz(0.75 * 0.9642, 0.75, 0.75 * 0.8249)), .. tags], header =>
+        {
+            header[8] = 5;
+            header[9] = 0;
+            Encoding.ASCII.GetBytes(profileClass).CopyTo(header, 12);
+        });
+        return new IccProfile(new MetadataBlob(data));
+    }
+
+    private static byte[] NamedProfile(string connectionSpace, byte[] tag, string colorSpace = "RGB ")
+        => IccTestProfiles.BuildBytes(colorSpace, connectionSpace, [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249)), ("ncl2", tag)], header => "nmcl"u8.CopyTo(header.AsSpan(12)));
+
+    private static IccProfile IccMaxNamedProfile(params byte[][] colors) => IccMaxNamedProfile("Lab ", includeTintZero: true, colors);
+
+    private static IccProfile IccMaxNamedProfile(string connectionSpace, params byte[][] colors) => IccMaxNamedProfile(connectionSpace, includeTintZero: true, colors);
+
+    // A namedColorTag (ICC.2:2023 section 9.2.104): a tagArrayType of tagStructType elements
+    private static IccProfile IccMaxNamedProfile(string connectionSpace, bool includeTintZero, params byte[][] colors) => IccMaxNamedProfile(connectionSpace, includeTintZero, [], colors);
+
+    private static IccProfile IccMaxNamedProfile(string connectionSpace, bool includeTintZero, (string Signature, byte[] Data)[] otherTags, params byte[][] colors)
+    {
+        byte[][] elements = includeTintZero ? [Struct("tnt0", ("pcs ", Floats("fl32", 100, 0, 0))), .. colors] : colors;
+        return IccMaxNamedProfileWithArray(connectionSpace, Container("tary", "ncol", elements.Select(element => ((string?)null, element)).ToArray()), otherTags);
+    }
+
+    private static IccProfile IccMaxNamedProfileWithArray(string connectionSpace, byte[] array, (string Signature, byte[] Data)[] otherTags)
+    {
+        var data = IccTestProfiles.BuildBytes("CMYK", connectionSpace, [("wtpt", IccTestProfiles.Xyz(0.9642, 1, 0.8249)), ("nmcl", array), .. otherTags], header =>
+        {
+            header[8] = 5;
+            header[9] = 0;
+            "nmcl"u8.CopyTo(header.AsSpan(12));
+        });
+        return new IccProfile(new MetadataBlob(data));
+    }
+
+    private static byte[] Struct(string structType, params (string Signature, byte[] Data)[] members) => Container("tstr", structType, members.Select(member => ((string?)member.Signature, member.Data)).ToArray());
+
+    // A tagArrayType (positions only) or a tagStructType (signature and position of each member), then the data, 4-byte aligned
+    private static byte[] Container(string type, string identifier, (string? Signature, byte[] Data)[] items)
+    {
+        var entrySize = items.Length > 0 && items[0].Signature is not null ? 12 : 8;
+        var data = new List<byte>();
+        data.AddRange(Encoding.ASCII.GetBytes(type));
+        data.AddRange(new byte[4]);
+        data.AddRange(Encoding.ASCII.GetBytes(identifier));
+        data.AddRange(U32((uint)items.Length));
+        var table = data.Count;
+        data.AddRange(new byte[entrySize * items.Length]);
+        var bytes = data;
+        for (var i = 0; i < items.Length; i++)
+        {
+            while (bytes.Count % 4 != 0)
+            {
+                bytes.Add(0);
+            }
+
+            var entry = new List<byte>();
+            if (items[i].Signature is { } signature)
+            {
+                entry.AddRange(Encoding.ASCII.GetBytes(signature));
+            }
+
+            entry.AddRange(U32((uint)bytes.Count));
+            entry.AddRange(U32((uint)items[i].Data.Length));
+            for (var j = 0; j < entry.Count; j++)
+            {
+                bytes[table + (entrySize * i) + j] = entry[j];
+            }
+
+            bytes.AddRange(items[i].Data);
+        }
+
+        return [.. bytes];
+    }
+
+    private static byte[] Utf8(string text) => [.. "utf8"u8, 0, 0, 0, 0, .. Encoding.UTF8.GetBytes(text)];
+
+    // A numeric array type: fl32, fl16, ui16 (the values are fractions of 65535) or ui08
+    private static byte[] Floats(string type, params float[] values)
+    {
+        var data = new List<byte>(Encoding.ASCII.GetBytes(type)) { 0, 0, 0, 0 };
+        foreach (var value in values)
+        {
+            var bytes = new byte[type switch { "fl32" => 4, "ui08" => 1, _ => 2 }];
+            switch (type)
+            {
+                case "fl32":
+                    BinaryPrimitives.WriteSingleBigEndian(bytes, value);
+                    break;
+                case "fl16":
+                    BinaryPrimitives.WriteHalfBigEndian(bytes, (Half)value);
+                    break;
+                case "ui16":
+                    BinaryPrimitives.WriteUInt16BigEndian(bytes, (ushort)Math.Round(value * 65535, MidpointRounding.AwayFromZero));
+                    break;
+                default:
+                    bytes[0] = (byte)Math.Round(value * 255, MidpointRounding.AwayFromZero);
+                    break;
+            }
+
+            data.AddRange(bytes);
+        }
+
+        return [.. data];
+    }
+
+    private static byte[] Floats(params float[] values)
+    {
+        var data = new byte[4 * values.Length];
+        for (var i = 0; i < values.Length; i++)
+        {
+            BinaryPrimitives.WriteSingleBigEndian(data.AsSpan(4 * i), values[i]);
+        }
+
+        return data;
+    }
+
+    private static byte[] U32(uint value)
+    {
+        var data = new byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(data, value);
+        return data;
+    }
+
+    private static byte[] U16(int value) => [(byte)(value >> 8), (byte)value];
+
+    // A processing element: its signature, reserved bytes, its channels, then its data (ICC.2:2023 Table 84)
+    private static byte[] Element(string signature, int inputs, int outputs, params byte[][] parts)
+        => [.. Encoding.ASCII.GetBytes(signature), 0, 0, 0, 0, .. U16(inputs), .. U16(outputs), .. parts.SelectMany(part => part)];
+
+    // A multiProcessElementsType (ICC.2:2023 Table 63)
+    private static byte[] Mpe(int inputs, int outputs, params byte[][] elements) => Positioned([.. "mpet"u8, 0, 0, 0, 0, .. U16(inputs), .. U16(outputs), .. U32((uint)elements.Length)], elements);
+
+    // A multiProcessElementsType of one channel whose elements all start at the same offset, with these sizes
+    private static byte[] Stage(byte[] element, int[] sizes)
+    {
+        var offset = 16 + (8 * sizes.Length);
+        var data = new List<byte>([.. "mpet"u8, 0, 0, 0, 0, .. U16(1), .. U16(1), .. U32((uint)sizes.Length)]);
+        foreach (var size in sizes)
+        {
+            data.AddRange([.. U32((uint)offset), .. U32((uint)size)]);
+        }
+
+        data.AddRange(element);
+        return [.. data];
+    }
+
+    // A header, a table of positions (offset and size relative to the start), then the items, 4-byte aligned
+    private static byte[] Positioned(byte[] header, byte[][] items, byte[]? beforeItems = null)
+    {
+        var data = new List<byte>(header);
+        var table = data.Count;
+        data.AddRange(new byte[8 * items.Length]);
+        data.AddRange(beforeItems ?? []);
+        for (var i = 0; i < items.Length; i++)
+        {
+            while (data.Count % 4 != 0)
+            {
+                data.Add(0);
+            }
+
+            var position = U32((uint)data.Count).Concat(U32((uint)items[i].Length)).ToArray();
+            for (var j = 0; j < 8; j++)
+            {
+                data[table + (8 * i) + j] = position[j];
+            }
+
+            data.AddRange(items[i]);
+        }
+
+        return [.. data];
+    }
+
+    private static byte[] CurveSetElement(params byte[][] curves) => Positioned([.. "cvst"u8, 0, 0, 0, 0, .. U16(curves.Length), .. U16(curves.Length)], curves);
+
+    private static byte[] Segmented(float[] breakPoints, params byte[][] segments)
+        => [.. "curf"u8, 0, 0, 0, 0, .. U16(segments.Length), 0, 0, .. Floats(breakPoints), .. segments.SelectMany(segment => segment)];
+
+    private static byte[] Formula(int function, params float[] parameters) => [.. "parf"u8, 0, 0, 0, 0, .. U16(function), 0, 0, .. Floats(parameters)];
+
+    private static byte[] Sampled(params float[] values) => [.. "samf"u8, 0, 0, 0, 0, .. U32((uint)values.Length), .. Floats(values)];
+
+    // A single sampled curve over [0, 1] (ICC.2:2023 Table 108); the encoding 2 stores the values as 16-bit integers
+    private static byte[] SingleSampled(int extension, int encoding, params float[] values)
+        => [.. "sngf"u8, 0, 0, 0, 0, .. U32((uint)values.Length), .. Floats(0, 1), .. U16(extension), .. U16(encoding), .. encoding == 2 ? values.SelectMany(value => U16((int)value)) : Floats(values)];
+
+    private static byte[] SampledCalculator(int samples, byte[] calculator) => [.. "clcf"u8, 0, 0, 0, 0, .. U32((uint)samples), .. Floats(0, 1), 0, 0, 0, 0, .. calculator];
+
+    private static byte[] ClutElement(int[] gridPoints, int outputs, byte hint, params float[] entries)
+    {
+        var grid = new byte[16];
+        for (var i = 0; i < gridPoints.Length; i++)
+        {
+            grid[i] = (byte)gridPoints[i];
+        }
+
+        return [.. "clut"u8, 0, 0, 0, hint, .. U16(gridPoints.Length), .. U16(outputs), .. grid, .. Floats(entries)];
+    }
+
+    // A calculator element (ICC.2:2023 Table 85) whose main function is written as operations separated by spaces: a
+    // number is a 'data' operation, "op:S:T" is an operation and its two 16-bit parameters (S and T of Tables 88 to 102,
+    // not the counts of the text form of iccDEV), "if:N", "else:N", "case:N" and "dflt:N" a number of operations, and
+    // "env:name" a CMM environment variable
+    private static byte[] CalculatorElement(int inputs, int outputs, byte[][] subElements, string function)
+    {
+        var operations = function.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var main = new List<byte>([.. "func"u8, 0, 0, 0, 0, .. U32((uint)operations.Length)]);
+        foreach (var operation in operations)
+        {
+            if (operation == "NaN" || float.TryParse(operation, NumberStyles.Float, CultureInfo.InvariantCulture, out _))
+            {
+                main.AddRange([.. "data"u8, .. Floats(float.Parse(operation, NumberStyles.Float, CultureInfo.InvariantCulture))]);
+                continue;
+            }
+
+            var parts = operation.Split(':');
+            main.AddRange(Encoding.ASCII.GetBytes(parts[0].PadRight(4)));
+            if (parts[0] == "env")
+            {
+                main.AddRange(Encoding.ASCII.GetBytes(parts[1]));
+            }
+            else if (parts[0] is "if" or "else" or "case" or "dflt")
+            {
+                main.AddRange(U32(uint.Parse(parts[1], CultureInfo.InvariantCulture)));
+            }
+            else
+            {
+                main.AddRange(U16(parts.Length > 1 ? int.Parse(parts[1], CultureInfo.InvariantCulture) : 0));
+                main.AddRange(U16(parts.Length > 2 ? int.Parse(parts[2], CultureInfo.InvariantCulture) : 0));
+            }
+        }
+
+        // The main function, then the sub-elements
+        var header = new List<byte>([.. "calc"u8, 0, 0, 0, 0, .. U16(inputs), .. U16(outputs), 0, 0, .. U16(subElements.Length)]);
+        var data = Positioned([.. header, .. U32((uint)(24 + (8 * subElements.Length))), .. U32((uint)main.Count)], subElements, [.. main]);
+        return data;
+    }
+
+    private static IccMpeElement ParseElement(byte[] element) => IccMpeParser.ParseElement(element, new IccMpeParseContext("source", 0x41324231));
+
+    private static double[] Evaluate(byte[] element, params double[] input)
+    {
+        var parsed = ParseElement(element);
+        var output = new double[parsed.OutputCount];
+        parsed.Apply(input, output, new double[parsed.ScratchSize]);
+        return output;
+    }
+
+    private static void AssertClose(IEnumerable<double> expected, IEnumerable<double> actual, double tolerance)
+    {
+        var expectedValues = expected.ToArray();
+        var actualValues = actual.ToArray();
+        Assert.HasCount(expectedValues.Length, actualValues);
+        for (var i = 0; i < expectedValues.Length; i++)
+        {
+            Assert.Equal(expectedValues[i], actualValues[i], tolerance);
+        }
+    }
+
+    private static void AssertClose(IEnumerable<float> expected, IEnumerable<float> actual, double tolerance) => AssertClose(expected.Select(value => (double)value), actual.Select(value => (double)value), tolerance);
+
+    private static double[] Calculate(int outputs, string function, double[]? input = null, byte[][]? subElements = null)
+        => Evaluate(CalculatorElement(Math.Max(1, input?.Length ?? 1), outputs, subElements ?? [], function), input ?? [0]);
 }

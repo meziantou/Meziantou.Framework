@@ -237,6 +237,15 @@ internal static class DataBarExpandedBitDecoder
                         position += 5;
                         data.Append(Fnc1);
                         mode = Mode.Numeric;
+
+                        // The FNC1 latches to the numeric mode; some generators write a numeric latch (000) after it,
+                        // which would read as the start of a latch to the alphanumeric mode (0000): no digit pair is
+                        // below 8 in the numeric mode, so 7 bits below 8 are that redundant latch
+                        if (bits.Count - position >= 7 && Peek(bits, position, 7) < 8)
+                        {
+                            position += 3;
+                        }
+
                         continue;
                     }
 

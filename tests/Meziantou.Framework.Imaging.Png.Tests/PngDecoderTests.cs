@@ -277,7 +277,7 @@ public sealed class PngDecoderTests
             badAdler[^1] ^= 1;
             var badHeader = stream.ToArray();
             badHeader[1] ^= 0x20; // FDICT: preset dictionaries are not allowed (and the header check fails)
-            return new TheoryData<string, byte[]>
+            var data = new TheoryData<string, byte[]>
             {
                 { "filter type 5", image.Encode(false, zlib: SyntheticImages.Zlib(badFilter)) },
                 { "one scanline too many", image.Encode(false, zlib: SyntheticImages.Zlib([.. filtered, .. filtered.AsSpan(0, rowBytes)])) },
@@ -288,9 +288,18 @@ public sealed class PngDecoderTests
                 { "Adler-32 missing", image.Encode(false, zlib: stream[..^4]) },
                 { "bytes after the zlib datastream", image.Encode(false, zlib: [.. stream, 0, 0]) },
                 { "invalid zlib header", image.Encode(false, zlib: badHeader) },
+                { "zlib header of a 64 KiB window", image.Encode(false, zlib: [0x88, 0x1C, .. stream[2..]]) },
+                { "zlib header of compression method 7", image.Encode(false, zlib: [0x77, 0x09, .. stream[2..]]) },
+                { "zlib header check bits", image.Encode(false, zlib: [stream[0], (byte)(stream[1] ^ 1), .. stream[2..]]) },
+                { "byte between the deflate data and the Adler-32 trailer", image.Encode(false, zlib: [.. stream[..^4], 0, .. stream[^4..]]) },
+                { "Adler-32 trailer cut by a byte", image.Encode(false, zlib: stream[..^1]) },
                 { "empty datastream", image.Encode(false, zlib: []) },
                 { "palette index out of range", PngTestImage.Create(2, 1, 3, 8, [0, 2], [1, 2, 3, 4, 5, 6]).Encode(false) },
+
+                // The decoder knows where the deflate data ends: the checksum that follows it is not the last bytes
+                { "Adler-32 trailer repeated", image.Encode(false, zlib: [.. stream, .. stream[^4..]]) },
             };
+            return data;
         }
     }
 

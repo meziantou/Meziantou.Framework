@@ -314,7 +314,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             // The walker only adopts a CMYK profile for four components. The rows are converted to the destination
             // profile, which is the one that labels the image
             var transform = conversion.CreateTransform(profile) ?? throw Unsupported("The CMYK JPEG image has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null.", "JPEG CMYK without color profile");
-            _inkConversion = transform.Pipeline;
+            _inkConversion?.ReleaseLookupTables();
+            _inkConversion = transform.Pipeline.BindLookupTables(_context.Scope);
             profile = conversion.DestinationProfile;
         }
         else if (components.Length == 4)
@@ -621,6 +622,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     public override bool IsEmbedded => _receiver is not null;
 
+    public override bool AcceptsTwoComponentLosslessFrames => _receiver is { ReceivesStoredSamples: true };
+
     // Lenient decoding applies to JPEG files, not to the datastreams of another format
     private bool IsLenient => _context.IsLenient && _receiver is null;
 
@@ -734,6 +737,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         if (disposing)
         {
             ReleaseDecoderState();
+            _inkConversion?.ReleaseLookupTables();
             ReleaseReferences();
             _sink?.Dispose();
             _sink = null;

@@ -41,11 +41,11 @@ internal static class CssImageSet
                 switch (value)
                 {
                     case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                        resolution = ToDotsPerPixel(dimension.Token.NumericValue, dimension.Token.Value);
+                        resolution = ToDotsPerPixel(dimension.NumericValue, dimension.Value);
                         break;
 
                     case CssFunction type when InfraAscii.EqualsIgnoreAsciiCase(type.Name, "type"):
-                        supported = ValueMatcher.RemoveWhitespace(type.Value) is [CssPreservedToken { Type: CssTokenType.String } mimeType] && HtmlImageElement.IsSupportedImageType(mimeType.Token.Value);
+                        supported = ValueMatcher.RemoveWhitespace(type.Value) is [CssPreservedToken { Type: CssTokenType.String } mimeType] && HtmlImageElement.IsSupportedImageType(mimeType.Value);
                         break;
                 }
             }
@@ -102,7 +102,7 @@ internal static class CssImageSet
             if (values.Count == 0)
                 continue;
 
-            CssComponentValue image = values[0] is CssPreservedToken { Type: CssTokenType.String } url ? new CssPreservedToken(new CssToken { Type = CssTokenType.Url, Value = url.Token.Value }) : values[0];
+            CssComponentValue image = values[0] is CssPreservedToken { Type: CssTokenType.String } url ? new CssPreservedToken(new CssToken { Type = CssTokenType.Url, Value = url.Value }) : values[0];
             CssComponentValue? resolution = null;
             CssComponentValue? type = null;
             foreach (var value in values.Skip(1))

@@ -427,7 +427,7 @@ internal static class CssSubstitution
         // An argument containing commas is written in a {} block (https://drafts.csswg.org/css-values-5/#component-function-commas).
         // The attr()-taint of the arguments is tracked by the function: its result is tainted when its value is.
         var arguments = new List<(string? Value, bool Tainted)>();
-        if (ValueMatcher.RemoveWhitespace(function.Value).Count > 0)
+        if (!ValueMatcher.IsEmptyOrWhitespace(function.Value))
         {
             foreach (var argument in ValueMatcher.SplitAtCommas(function.Value))
             {
@@ -467,7 +467,7 @@ internal static class CssSubstitution
         {
             if (argument is CssPreservedToken { Type: CssTokenType.String or CssTokenType.Ident } token)
             {
-                value.Append(token.Token.Value);
+                value.Append(token.Value);
             }
             // The font-relative lengths of a font property refer to the font of the parent (https://drafts.csswg.org/css-values-4/#font-relative-lengths)
             else if (CustomPropertySyntax.ComputeGrammar(context.Style, "<integer>", CssSerializer.SerializeValue([argument], property: null), baseUrl: null, fontSizeContext: IsFontPropertyComputation) is { } integer)
@@ -501,7 +501,7 @@ internal static class CssSubstitution
             {
                 branches.Add([]);
             }
-            else if (value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.IsDelim('!'))
+            else if (value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.IsDelim('!'))
             {
                 return null;
             }
@@ -521,7 +521,7 @@ internal static class CssSubstitution
         foreach (var branch in branches)
         {
             var colon = branch.FindIndex(v => v is CssPreservedToken { Type: CssTokenType.Colon });
-            if (colon < 0 || ValueMatcher.RemoveWhitespace(branch[..colon]).Count == 0)
+            if (colon < 0 || ValueMatcher.IsEmptyOrWhitespace(branch[..colon]))
                 return null;
 
             parsed.Add((branch[..colon], branch[(colon + 1)..]));
@@ -573,7 +573,7 @@ internal static class CssSubstitution
         }
 
         var tokens = ValueMatcher.RemoveWhitespace(condition);
-        if (tokens is [CssPreservedToken { Type: CssTokenType.Ident } elseKeyword] && elseKeyword.Token.IsIdent("else"))
+        if (tokens is [CssPreservedToken { Type: CssTokenType.Ident } elseKeyword] && elseKeyword.IsIdent("else"))
             return true;
 
         return EvaluateIfBooleanExpression(tokens, source, context, depth: 0, ref tainted);
@@ -586,13 +586,13 @@ internal static class CssSubstitution
             return false;
 
         // The operands are functions or () blocks (a <general-enclosed> is unknown); another token makes the condition invalid
-        for (var i = tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } first && first.Token.IsIdent("not") ? 1 : 0; i < tokens.Count; i += 2)
+        for (var i = tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } first && first.IsIdent("not") ? 1 : 0; i < tokens.Count; i += 2)
         {
             if (tokens[i] is not (CssFunction or CssSimpleBlock { AssociatedToken: CssTokenType.LeftParenthesis }))
                 return false;
         }
 
-        if (tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } not && not.Token.IsIdent("not"))
+        if (tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } not && not.IsIdent("not"))
             return tokens.Count == 2 ? !EvaluateIfTestInParens(tokens[1], source, context, depth, ref tainted) : false;
 
         bool? result = EvaluateIfTestInParens(tokens[0], source, context, depth, ref tainted);
@@ -603,7 +603,7 @@ internal static class CssSubstitution
                 return false;
 
             // "and" and "or" cannot be mixed at the same level
-            var keyword = InfraAscii.ToAsciiLowercase(word.Token.Value);
+            var keyword = InfraAscii.ToAsciiLowercase(word.Value);
             if (keyword is not ("and" or "or") || (combinator is not null && combinator != keyword))
                 return false;
 
@@ -648,7 +648,7 @@ internal static class CssSubstitution
                             return false;
 
                         var text = GetSource(function.Value, source);
-                        if (tokens[0] is not CssSimpleBlock && !(tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } mediaNot && mediaNot.Token.IsIdent("not")))
+                        if (tokens[0] is not CssSimpleBlock && !(tokens[0] is CssPreservedToken { Type: CssTokenType.Ident } mediaNot && mediaNot.IsIdent("not")))
                         {
                             text = "(" + text + ")";
                         }
@@ -658,7 +658,7 @@ internal static class CssSubstitution
 
                     // The declarations are parsed in the mode of the document (the quirky lengths are valid in quirks mode)
                     case "supports":
-                        return ValueMatcher.RemoveWhitespace(function.Value).Count > 0 && Om.Css.Supports(GetSource(function.Value, source), context.Style.Element.NodeDocument.Mode == DocumentMode.Quirks);
+                        return !ValueMatcher.IsEmptyOrWhitespace(function.Value) && Om.Css.Supports(GetSource(function.Value, source), context.Style.Element.NodeDocument.Mode == DocumentMode.Quirks);
 
                     default:
                         return null;
@@ -707,11 +707,11 @@ internal static class CssSubstitution
 
         var significantKey = ValueMatcher.RemoveWhitespace(key);
         double baseValue;
-        if (significantKey is [CssPreservedToken fixedKeyword, var fixedValue] && fixedKeyword.Token.IsIdent("fixed"))
+        if (significantKey is [CssPreservedToken fixedKeyword, var fixedValue] && fixedKeyword.IsIdent("fixed"))
         {
             var number = fixedValue switch
             {
-                CssPreservedToken { Type: CssTokenType.Number } token => token.Token.NumericValue,
+                CssPreservedToken { Type: CssTokenType.Number } token => token.NumericValue,
                 CssFunction math when CssCalc.Evaluate(math, CssCalcContext.Default) is { IsResolved: true, Unit: "" } result => result.Value,
                 _ => double.NaN,
             };
@@ -742,7 +742,7 @@ internal static class CssSubstitution
             item = block.Value;
         }
 
-        if (ValueMatcher.RemoveWhitespace(item).Count == 0)
+        if (ValueMatcher.IsEmptyOrWhitespace(item))
             return null;
 
         var value = new SubstitutionBuilder();
@@ -832,18 +832,18 @@ internal static class CssSubstitution
             nameValues = ValueMatcher.RemoveWhitespace(block.Value);
         }
 
-        if (nameValues is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken] || !CssPropertyRegistry.IsCustomProperty(nameToken.Token.Value))
+        if (nameValues is not [CssPreservedToken { Type: CssTokenType.Ident } nameToken] || !CssPropertyRegistry.IsCustomProperty(nameToken.Value))
             return null;
 
         if (context.Frame is { } frame)
         {
-            var variable = frame.GetVariable(nameToken.Token.Value, out var variableTainted);
+            var variable = frame.GetVariable(nameToken.Value, out var variableTainted);
             tainted |= variableTainted;
             return variable;
         }
 
-        var value = context.Style.GetCustomPropertyValue(nameToken.Token.Value);
-        tainted |= context.Style.IsCustomPropertyTainted(nameToken.Token.Value);
+        var value = context.Style.GetCustomPropertyValue(nameToken.Value);
+        tainted |= context.Style.IsCustomPropertyTainted(nameToken.Value);
         return value;
     }
 
@@ -854,13 +854,13 @@ internal static class CssSubstitution
     private static string? ReplaceInherit(List<CssComponentValue> arguments, int index, int comma, SubstitutionContext context, out bool tainted)
     {
         tainted = false;
-        if (arguments[index] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || !CssPropertyRegistry.IsCustomProperty(nameToken.Token.Value))
+        if (arguments[index] is not CssPreservedToken { Type: CssTokenType.Ident } nameToken || !CssPropertyRegistry.IsCustomProperty(nameToken.Value))
             return null;
 
         if (SkipWhitespace(arguments, index + 1) != (comma < 0 ? arguments.Count : comma))
             return null;
 
-        var name = nameToken.Token.Value;
+        var name = nameToken.Value;
         if (context.Frame is { } frame)
             return frame.GetCallerVariable(name, out tainted);
 
@@ -887,10 +887,10 @@ internal static class CssSubstitution
             if (count == indices.Length || arguments[i] is not CssPreservedToken { Type: CssTokenType.Number, Token: { IsInteger: true, NumericValue: >= 0 and <= int.MaxValue } } indexToken)
                 return null;
 
-            indices[count++] = (int)indexToken.Token.NumericValue;
+            indices[count++] = (int)indexToken.NumericValue;
         }
 
-        return GetEnvironmentVariable(nameToken.Token.Value, indices[..count], style.Environment);
+        return GetEnvironmentVariable(nameToken.Value, indices[..count], style.Environment);
     }
 
     /// <summary>
@@ -1072,13 +1072,13 @@ internal static class CssSubstitution
 
         // The components of the name are not separated by whitespace
         string? prefix = null;
-        if (tokens is [CssPreservedToken bar, ..] && bar.Token.IsDelim('|'))
+        if (tokens is [CssPreservedToken bar, ..] && bar.IsDelim('|'))
         {
             index++;
         }
-        else if (tokens is [CssPreservedToken { Type: CssTokenType.Ident } prefixToken, CssPreservedToken prefixBar, CssPreservedToken { Type: CssTokenType.Ident }, ..] && prefixBar.Token.IsDelim('|'))
+        else if (tokens is [CssPreservedToken { Type: CssTokenType.Ident } prefixToken, CssPreservedToken prefixBar, CssPreservedToken { Type: CssTokenType.Ident }, ..] && prefixBar.IsDelim('|'))
         {
-            prefix = prefixToken.Token.Value;
+            prefix = prefixToken.Value;
             index += 2;
         }
 
@@ -1086,7 +1086,7 @@ internal static class CssSubstitution
             return null;
 
         index++;
-        if (index < tokens.Count && tokens[index] is CssPreservedToken namespaceBar && namespaceBar.Token.IsDelim('|'))
+        if (index < tokens.Count && tokens[index] is CssPreservedToken namespaceBar && namespaceBar.IsDelim('|'))
             return null;
 
         while (index < tokens.Count && tokens[index] is CssPreservedToken { Type: CssTokenType.Whitespace })
@@ -1095,28 +1095,28 @@ internal static class CssSubstitution
         }
 
         if (index == tokens.Count)
-            return new AttrArguments(nameToken.Token.Value, AttrTypeKind.None, Unit: null, Syntax: null, prefix);
+            return new AttrArguments(nameToken.Value, AttrTypeKind.None, Unit: null, Syntax: null, prefix);
 
         if (index != tokens.Count - 1)
             return null;
 
         switch (tokens[index])
         {
-            case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.Token.IsIdent("raw-string"):
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.RawString, Unit: null, Syntax: null, prefix);
+            case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.IsIdent("raw-string"):
+                return new AttrArguments(nameToken.Value, AttrTypeKind.RawString, Unit: null, Syntax: null, prefix);
 
-            case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.Token.IsIdent("number"):
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Number, Unit: null, Syntax: null, prefix);
+            case CssPreservedToken { Type: CssTokenType.Ident } keyword when keyword.IsIdent("number"):
+                return new AttrArguments(nameToken.Value, AttrTypeKind.Number, Unit: null, Syntax: null, prefix);
 
             case CssPreservedToken { Type: CssTokenType.Ident } unit:
             {
                 // An unknown unit is valid: it triggers the fallback
-                var lower = InfraAscii.ToAsciiLowercase(unit.Token.Value);
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Unit, ValueMatcher.IsKnownUnit(lower) ? lower : null, Syntax: null, prefix);
+                var lower = InfraAscii.ToAsciiLowercase(unit.Value);
+                return new AttrArguments(nameToken.Value, AttrTypeKind.Unit, ValueMatcher.IsKnownUnit(lower) ? lower : null, Syntax: null, prefix);
             }
 
-            case CssPreservedToken percent when percent.Token.IsDelim('%'):
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Unit, "%", Syntax: null, prefix);
+            case CssPreservedToken percent when percent.IsDelim('%'):
+                return new AttrArguments(nameToken.Value, AttrTypeKind.Unit, "%", Syntax: null, prefix);
 
             case CssFunction { Name: var functionName } typeFunction when InfraAscii.EqualsIgnoreAsciiCase(functionName, "type"):
             {
@@ -1130,7 +1130,7 @@ internal static class CssSubstitution
                         return null;
                 }
 
-                return new AttrArguments(nameToken.Token.Value, AttrTypeKind.Type, Unit: null, syntax, prefix);
+                return new AttrArguments(nameToken.Value, AttrTypeKind.Type, Unit: null, syntax, prefix);
             }
 
             default:

@@ -22,9 +22,10 @@ public sealed class Barcode2DDecodeResult
 
     /// <summary>
     /// Gets the text of the data. The bytes are decoded with the character set of the ECI designator that precedes them;
-    /// without one, as UTF-8 when they are valid UTF-8, and as ISO/IEC 8859-1 otherwise. The FNC1 characters that separate
-    /// the elements of GS1 data are GS characters (U+001D). For GS1 data (<see cref="IsGs1"/>), the text is the
-    /// human-readable interpretation: each application identifier in parentheses, followed by its data.
+    /// without one, as UTF-8 when they are valid UTF-8, as Shift JIS when they look like Japanese text in Shift JIS, and as
+    /// ISO/IEC 8859-1 otherwise. The FNC1 characters that separate the elements of GS1 data are GS characters (U+001D).
+    /// For GS1 data (<see cref="IsGs1"/>), the text is the human-readable interpretation: each application identifier in
+    /// parentheses, followed by its data.
     /// </summary>
     public string Text { get; }
 

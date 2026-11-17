@@ -1,0 +1,18 @@
+@inject TimeZoneService TimeZoneService
+<button @onclick="DetectAsync">Detect</button>
+<p id="timezone">@_timeZone</p>
+<p id="offset">@_offset</p>
+
+@code {
+    private string? _timeZone;
+    private string? _offset;
+
+    [Parameter]
+    public DateTimeOffset Instant { get; set; }
+
+    private async Task DetectAsync()
+    {
+        _timeZone = (await TimeZoneService.GetTimeZoneAsync())?.Id ?? "(unknown)";
+        _offset = (await TimeZoneService.GetOffsetAsync(Instant)).ToString();
+    }
+}

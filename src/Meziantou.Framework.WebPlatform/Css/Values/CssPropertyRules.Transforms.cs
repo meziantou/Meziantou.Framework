@@ -33,7 +33,7 @@ internal static partial class CssPropertyRules
                 scales.RemoveAt(2);
             }
 
-            if (scales is [CssPreservedToken x, CssPreservedToken y] && x.Token.NumericValue == y.Token.NumericValue)
+            if (scales is [CssPreservedToken x, CssPreservedToken y] && x.NumericValue == y.NumericValue)
             {
                 scales.RemoveAt(1);
             }
@@ -100,12 +100,12 @@ internal static partial class CssPropertyRules
                 break;
 
             case [CssPreservedToken { Type: CssTokenType.Ident } ident]:
-                keyword = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                keyword = InfraAscii.ToAsciiLowercase(ident.Value);
                 break;
 
             case [CssPreservedToken { Type: CssTokenType.Number } x, CssPreservedToken { Type: CssTokenType.Number } y, CssPreservedToken { Type: CssTokenType.Number } z]:
             {
-                var (vx, vy, vz) = (x.Token.NumericValue, y.Token.NumericValue, z.Token.NumericValue);
+                var (vx, vy, vz) = (x.NumericValue, y.NumericValue, z.NumericValue);
                 keyword = (vx != 0, vy != 0, vz != 0) switch
                 {
                     (true, false, false) => "x",

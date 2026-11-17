@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.FileConversion.Tool. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <RootNamespace>Meziantou.Framework.FileConversionTool.Fuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The files the unit tests convert are the seeds -->
+    <Compile Include="..\..\tests\Meziantou.Framework.FileConversion.Tool.Tests\TestFiles.cs" Link="TestFiles.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FileConversion.Tool\Meziantou.Framework.FileConversion.Tool.csproj" />
+  </ItemGroup>
+</Project>

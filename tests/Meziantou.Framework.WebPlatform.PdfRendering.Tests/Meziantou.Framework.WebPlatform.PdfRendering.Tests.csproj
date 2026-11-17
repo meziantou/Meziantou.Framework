@@ -25,6 +25,8 @@
   <ItemGroup>
     <!-- The browsing contexts of the tests of the Imaging backend -->
     <Compile Include="..\Meziantou.Framework.WebPlatform.Imaging.Tests\TestPages.cs" Link="TestPages.cs" />
+    <!-- The writer of the fonts of the tests of Meziantou.Framework.Imaging: the fonts with SVG glyphs -->
+    <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" Exclude="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontWoff2*.cs" LinkBase="Shared" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

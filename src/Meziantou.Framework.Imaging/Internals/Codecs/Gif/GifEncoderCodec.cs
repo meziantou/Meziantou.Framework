@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -273,6 +274,8 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private readonly int _height;
         private readonly ushort? _loopCount;
         private readonly byte[][] _comments;
+        private readonly IccProfile? _iccProfile;
+        private readonly XmpProfile? _xmpProfile;
         private readonly byte[] _colorTable = new byte[256 * 3];
         private PaletteQuantizer? _quantizer;
         private GifLzwEncoder? _lzw;
@@ -291,6 +294,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private ushort _delay;
         private int _transparentIndex;
         private int _colorTableEntries;
+        private bool _lossy;
 
         // The image being written: the frame of the operation, or (OptimizeFrames) the previous frame, from the canvases
         private Rectangle _image;
@@ -326,6 +330,8 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
 
             // Comments (already filtered by the metadata policy: bare Latin-1 comments), one extension each
             _comments = [.. options.Metadata.TextEntries.Select(entry => Encoding.Latin1.GetBytes(entry.Value))];
+            _iccProfile = options.Metadata.IccProfile;
+            _xmpProfile = options.Metadata.XmpProfile;
 
             var scope = options.Scope;
             var planeBytes = PaletteRowMapper.IsErrorDiffusion(_quantization.Dithering) && _quantization.DitherStrength > 0 && _encoder.Interlaced ? (long)_width * _height : 0;
@@ -335,7 +341,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             try
             {
                 _quantizer = new PaletteQuantizer(scope);
-                _lzw = new GifLzwEncoder(scope);
+                _lzw = new GifLzwEncoder(scope, lossy: _encoder.LossyTolerance > 0);
                 if (_sourceFormat != _workFormat)
                 {
                     _converted = scope.Rent(_width * 4, AllocationKind.Temporary, clear: false);
@@ -368,6 +374,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         {
             None,
             Header,
+            Profiles,
             Comments,
             Compare,
             Histogram,
@@ -424,6 +431,22 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                 case Step.Header:
                     WriteHeader(output);
                     _headerWritten = true;
+                    _step = Step.Profiles;
+                    return false;
+
+                case Step.Profiles:
+                    // Before the first image, where readers of the header see them
+                    if (_iccProfile is not null)
+                    {
+                        WriteApplicationExtension(output, "ICCRGBG1012"u8);
+                        WriteSubBlocks(output, _iccProfile.Data.Span);
+                    }
+
+                    if (_xmpProfile is not null)
+                    {
+                        WriteXmp(output, _xmpProfile.Data.Span);
+                    }
+
                     _step = Step.Comments;
                     return false;
 
@@ -555,6 +578,32 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         {
             output.Write([ExtensionIntroducer, CommentLabel]);
             WriteSubBlocks(output, comment);
+        }
+
+        private static void WriteApplicationExtension(ImageOutputBuffer output, ReadOnlySpan<byte> identifier)
+        {
+            output.Write([ExtensionIntroducer, ApplicationLabel, (byte)identifier.Length]);
+            output.Write(identifier);
+        }
+
+        /// <summary>
+        /// Writes an XMP application extension (XMP Specification Part 3, 1.1.2): the packet as it is, then the 257 bytes of
+        /// the magic trailer (<c>0x01</c>, then <c>0xFF</c> down to <c>0x00</c>) that bring a reader that walks the bytes as
+        /// data sub-blocks to the block terminator.
+        /// </summary>
+        private static void WriteXmp(ImageOutputBuffer output, ReadOnlySpan<byte> packet)
+        {
+            WriteApplicationExtension(output, "XMP DataXMP"u8);
+            output.Write(packet);
+            var trailer = output.GetSpan(258);
+            trailer[0] = 0x01;
+            for (var i = 0; i < 256; i++)
+            {
+                trailer[1 + i] = (byte)(255 - i);
+            }
+
+            trailer[257] = 0;
+            output.Advance(258);
         }
 
         private static void WriteSubBlocks(ImageOutputBuffer output, ReadOnlySpan<byte> data)
@@ -821,7 +870,10 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             output.Write(_colorTable.AsSpan(0, _colorTableEntries * 3));
             var codeSize = GifLzwEncoder.GetMinimumCodeSize(_colorTableEntries);
             output.Write([(byte)codeSize]);
-            _lzw!.Reset(codeSize);
+
+            // The lossy compression only applies to the frames whose colors are reduced: an exact palette stays exact
+            _lossy = _encoder.LossyTolerance > 0 && !_quantizer!.IsExact;
+            _lzw!.Reset(codeSize, _colorTable.AsSpan(0, _colorTableEntries * 3), _transparentIndex, _lossy ? _encoder.LossyTolerance : 0);
         }
 
         /// <summary>Maps and compresses rows in datastream order until the output should be flushed or a band is done.</summary>
@@ -842,13 +894,29 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                 var y = _encoder.Interlaced ? GetInterlacedRow(_row, height) : _row;
                 if (_plane is not null && !_quantizer!.IsExact)
                 {
-                    lzw.Write(_plane.Span.Slice(y * width, width), output);
+                    var planeRow = _plane.Span.Slice(y * width, width);
+                    if (_lossy)
+                    {
+                        LoadImageKeys(y, keys);
+                        lzw.Write(planeRow, keys, output);
+                    }
+                    else
+                    {
+                        lzw.Write(planeRow, output);
+                    }
                 }
                 else
                 {
                     LoadImageKeys(y, keys);
                     MapRow(keys, indices, y);
-                    lzw.Write(indices, output);
+                    if (_lossy)
+                    {
+                        lzw.Write(indices, keys, output);
+                    }
+                    else
+                    {
+                        lzw.Write(indices, output);
+                    }
                 }
 
                 _row++;

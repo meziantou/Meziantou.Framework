@@ -248,7 +248,7 @@ internal sealed class PaintWorklet : Worklet
         if (parts.Count == 0 || ValueMatcher.RemoveWhitespace(parts[0]) is not [CssPreservedToken { Type: CssTokenType.Ident } ident])
             return false;
 
-        name = ident.Token.Value;
+        name = ident.Value;
         for (var i = 1; i < parts.Count; i++)
         {
             arguments.Add(CssSerializer.SerializeValue(parts[i], property: null).Trim(' ', '\t', '\n'));

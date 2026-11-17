@@ -256,7 +256,7 @@ internal readonly record struct TextOverflow(TextOverflowSide First, TextOverflo
     private static TextOverflowSide ParseSide(string value) => new(LayoutKeywords.ParseTextOverflowSide(value), UnquoteString(value));
 
     private static string? UnquoteString(string value) => value.Length >= 2 && value[0] is '"' or '\''
-        && Syntax.CssParser.ParseListOfComponentValues(value) is [Syntax.CssPreservedToken { Type: Syntax.CssTokenType.String } token] ? token.Token.Value : null;
+        && Syntax.CssParser.ParseListOfComponentValues(value) is [Syntax.CssPreservedToken { Type: Syntax.CssTokenType.String } token] ? token.Value : null;
 }
 
 /// <summary>vertical-align (https://drafts.csswg.org/css-inline-3/#transverse-alignment): its three longhands.</summary>

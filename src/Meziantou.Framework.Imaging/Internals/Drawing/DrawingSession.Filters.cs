@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 
@@ -12,11 +13,19 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// drawn with <see cref="CompositeMode.Source"/>. The matrix of a layer is applied to the pixels of the layer (8-bit
 /// or 16-bit colors with alpha), on the pixels the clip the layer started under can show, before the layer is drawn.
 /// </para>
-/// <para>The working storage is one row of colors, rented before a pixel changes and kept until the session ends.</para>
+/// <para>
+/// The working storage is one row of colors, rented before a pixel changes and kept until the session ends. Without a clip,
+/// the rows of an area of at least <see cref="RowBands.MinPixelsForParallelism"/> pixels are split between up to
+/// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers (<see cref="RowBands"/>), each with a row of colors of
+/// its own: the rows do not depend on one another, so the pixels are those of one worker.
+/// </para>
 /// </remarks>
 internal sealed partial class DrawingSession
 {
     private PooledBuffer? _filterColors;
+
+    // The rows of colors of the other workers of a color matrix (the first one has _filterColors); kept until the session ends
+    private PooledBuffer[]? _filterWorkerColors;
 
     /// <summary>Starts a layer whose pixels go through a color matrix when it ends, before it is drawn.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="matrix"/> is <see langword="null"/>.</exception>
@@ -118,10 +127,62 @@ internal sealed partial class DrawingSession
     /// <param name="applyClip">Whether the pixels are replaced in proportion to the coverage of the clip.</param>
     private void FilterPixels(ImageFrame frame, PixelStorage storage, ColorMatrix matrix, Rectangle area, bool applyClip)
     {
+        // Each row is computed alone: without a clip (whose coverage row is shared), the rows of a large area are split
+        // between workers, each with a row of colors of its own, rented before any pixel changes
+        var clipped = applyClip && _clipDepth != 0;
+        var workers = clipped ? 1 : RowBands.GetWorkerCount(area.Size, _image.Configuration.MaxDegreeOfParallelism);
+        if (workers is 1)
+        {
+            FilterRows(frame, storage, matrix, area, area.Top, area.Bottom, _filterColors!, clipped);
+            return;
+        }
+
+        if (_filterWorkerColors is null || _filterWorkerColors.Length < workers - 1)
+        {
+            var buffers = new PooledBuffer[workers - 1];
+            _filterWorkerColors?.CopyTo(buffers, 0);
+            var firstRented = _filterWorkerColors?.Length ?? 0;
+            var rented = firstRented;
+            try
+            {
+                for (; rented < buffers.Length; rented++)
+                {
+                    buffers[rented] = ResampleWeights.Rent<ushort>(_image.Owner.Scope, 4L * Width);
+                }
+            }
+            catch
+            {
+                // A rental that fails releases the buffers rented before it: the buffers of the session stay as they were
+                for (var i = firstRented; i < rented; i++)
+                {
+                    buffers[i].Dispose();
+                }
+
+                throw;
+            }
+
+            _filterWorkerColors = buffers;
+        }
+
+        var workerColors = _filterWorkerColors;
+        RowBands.RunParallelInBandOrder(workers, band => FilterRows(
+            frame,
+            storage,
+            matrix,
+            area,
+            area.Top + RowBands.GetBandStart(area.Height, band, workers),
+            area.Top + RowBands.GetBandStart(area.Height, band + 1, workers),
+            band is 0 ? _filterColors! : workerColors[band - 1],
+            clipped: false));
+    }
+
+    /// <summary>Applies a color matrix to rows <paramref name="top"/> to <paramref name="bottom"/> - 1 of an area of a frame, in place.</summary>
+    private void FilterRows(ImageFrame frame, PixelStorage storage, ColorMatrix matrix, Rectangle area, int top, int bottom, PooledBuffer colorRow, bool clipped)
+    {
         var width = area.Width;
-        var colors = unsafe(MemoryMarshal.Cast<byte, ushort>(_filterColors!.Span))[..(4 * width)];
+        var colors = unsafe(MemoryMarshal.Cast<byte, ushort>(colorRow.Span))[..(4 * width)];
         ReadOnlySpan<uint> full = unsafe(MemoryMarshal.Cast<byte, uint>(_blurCoverage!.Span))[..width];
-        for (var y = area.Top; y < area.Bottom; y++)
+        for (var y = top; y < bottom; y++)
         {
             if ((y & 63) == 0)
             {
@@ -130,19 +191,34 @@ internal sealed partial class DrawingSession
 
             var column = area.Left;
             var run = full;
-            if (applyClip && _clipDepth != 0 && !ApplyClip(y, ref column, ref run, out _))
+            if (clipped && !ApplyClip(y, ref column, ref run, out _))
                 continue;
 
             // A floating-point frame gets the colors of the matrix in place, unclipped
             if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
             {
-                if (frame.PixelFormat == PixelFormat.RgbaFloat)
+                switch (frame.PixelFormat)
                 {
-                    FloatDrawingKernels.ApplyColorMatrix<RgbaFloat>(storage, y, column, matrix, run);
-                }
-                else
-                {
-                    FloatDrawingKernels.ApplyColorMatrix<RgbaHalf>(storage, y, column, matrix, run);
+                    case PixelFormat.RgbaFloat:
+                        FloatDrawingKernels.ApplyColorMatrix<RgbaFloat>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.RgbaHalf:
+                        FloatDrawingKernels.ApplyColorMatrix<RgbaHalf>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.GrayFloat:
+                        FloatDrawingKernels.ApplyColorMatrix<GrayFloat>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.GrayHalf:
+                        FloatDrawingKernels.ApplyColorMatrix<GrayHalf>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.LaFloat:
+                        FloatDrawingKernels.ApplyColorMatrix<LaFloat>(storage, y, column, matrix, run);
+                        break;
+                    case PixelFormat.LaHalf:
+                        FloatDrawingKernels.ApplyColorMatrix<LaHalf>(storage, y, column, matrix, run);
+                        break;
+                    default:
+                        throw new UnreachableException();
                 }
 
                 continue;
@@ -179,5 +255,14 @@ internal sealed partial class DrawingSession
     {
         _filterColors?.Dispose();
         _filterColors = null;
+        if (_filterWorkerColors is not null)
+        {
+            foreach (var buffer in _filterWorkerColors)
+            {
+                buffer.Dispose();
+            }
+
+            _filterWorkerColors = null;
+        }
     }
 }

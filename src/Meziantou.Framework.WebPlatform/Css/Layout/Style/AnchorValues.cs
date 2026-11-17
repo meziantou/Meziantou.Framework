@@ -229,7 +229,7 @@ internal sealed class AnchorPositioningStyle
             {
                 if (part.StartsWith("--", StringComparison.Ordinal))
                 {
-                    ruleName = CssParser.ParseListOfComponentValues(part) is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? ident.Token.Value : part;
+                    ruleName = CssParser.ParseListOfComponentValues(part) is [CssPreservedToken { Type: CssTokenType.Ident } ident] ? ident.Value : part;
                     continue;
                 }
 

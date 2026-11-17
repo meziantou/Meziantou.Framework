@@ -70,7 +70,7 @@ internal static class FontWoff2Writer
     }
 
     /// <summary>Writes a file from its tables, as they are given.</summary>
-    public static byte[] WriteContainer(uint flavor, IReadOnlyList<FontWoff2Table> tables)
+    public static byte[] WriteContainer(uint flavor, IReadOnlyList<FontWoff2Table> tables, byte[]? metadata = null, byte[]? privateData = null)
     {
         var directory = new FontWriter();
         var stream = new FontWriter();
@@ -106,12 +106,32 @@ internal static class FontWoff2Writer
         writer.UInt32((uint)fontLength);
         writer.UInt32((uint)compressed.Length);
 
-        // The version of the font, then the metadata and the private data: none.
+        // The version of the font, then the location of the metadata and the private data, patched below.
         writer.UInt16(1);
         writer.UInt16(0);
         writer.Zeros(20);
         writer.Bytes(directory.ToArray());
         writer.Bytes(compressed);
+
+        // The metadata block, compressed with Brotli, then the private data block, each at a 4-byte boundary.
+        if (metadata is not null)
+        {
+            var compressedMetadata = Compress(metadata);
+            writer.Pad(4);
+            writer.PatchUInt32(28, (uint)writer.Length);
+            writer.PatchUInt32(32, (uint)compressedMetadata.Length);
+            writer.PatchUInt32(36, (uint)metadata.Length);
+            writer.Bytes(compressedMetadata);
+        }
+
+        if (privateData is not null)
+        {
+            writer.Pad(4);
+            writer.PatchUInt32(40, (uint)writer.Length);
+            writer.PatchUInt32(44, (uint)privateData.Length);
+            writer.Bytes(privateData);
+        }
+
         writer.Pad(4);
         writer.PatchUInt32(8, (uint)writer.Length);
         return writer.ToArray();

@@ -13,7 +13,7 @@ internal sealed partial class DisplayListRasterizer
     /// Draws a glyph run: the glyphs of the font file of the layout, by id, at the positions computed by the text shaping. The
     /// glyphs are not hinted and are filled each on its own (the glyphs of a translucent text that overlap are composited one
     /// over the other), with the coverage correction of Skia (<see cref="GlyphContrast"/>); the glyphs a font draws with its
-    /// own colors (COLR, sbix, CBDT) are drawn with them.
+    /// own colors (COLR, SVG, sbix, CBDT) are drawn with them.
     /// </summary>
     private void DrawGlyphs(D.DrawingCanvas canvas, DrawGlyphsItem draw)
     {

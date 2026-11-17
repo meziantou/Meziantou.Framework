@@ -1,0 +1,11 @@
+<div id="scroller" style="height: 100px; overflow-y: auto">
+    <InfiniteScrolling ItemsProvider="ItemsProvider">
+        <ItemTemplate><div class="item" style="height: 40px">Item @context</div></ItemTemplate>
+        <LoadingTemplate><div class="loading">Loading...</div></LoadingTemplate>
+    </InfiniteScrolling>
+</div>
+
+@code {
+    [Parameter]
+    public InfiniteScrollingItemsProviderRequestDelegate<int>? ItemsProvider { get; set; }
+}

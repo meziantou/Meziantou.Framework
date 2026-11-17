@@ -510,7 +510,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     public override bool TryEvaluateFloat(int y, int x, int count, double alphaFactor, out ReadOnlySpan<double> colors)
     {
         colors = default;
-        if (_source!.PixelFormat is not (PixelFormat.RgbaHalf or PixelFormat.RgbaFloat) || _destination!.PixelFormat is not (PixelFormat.RgbaHalf or PixelFormat.RgbaFloat))
+        if (!PixelFormats.IsFloatingPoint(_source!.PixelFormat) || !PixelFormats.IsFloatingPoint(_destination!.PixelFormat))
             return false;
 
         if (_floatColors is null || _floatColors.Span.Length < count * 4 * sizeof(double))
@@ -625,24 +625,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             return;
 
         var bytes = _storage!.GetRowSpanCore(_top + y);
-        double r, g, b, a;
-        if (_source!.PixelFormat == PixelFormat.RgbaHalf)
-        {
-            var pixel = unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(bytes))[_left + x];
-            r = (double)pixel.R;
-            g = (double)pixel.G;
-            b = (double)pixel.B;
-            a = (double)pixel.A;
-        }
-        else
-        {
-            var pixel = unsafe(MemoryMarshal.Cast<byte, RgbaFloat>(bytes))[_left + x];
-            r = pixel.R;
-            g = pixel.G;
-            b = pixel.B;
-            a = pixel.A;
-        }
-
+        PixelConverter.ReadFloat(_source!.PixelFormat, bytes, _left + x, out var r, out var g, out var b, out var a);
         var alpha = Math.Clamp(a, 0, 1) * weight;
         if (alpha == 0)
             return;
@@ -652,6 +635,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         sum[2] += b * alpha;
         sum[3] += alpha;
     }
+
+    public override bool CanCreateWorkers => true;
 
     /// <remarks>
     /// The image and the lease that <see cref="Begin"/> took are shared: the worker only reads the pixels. Its scratch is

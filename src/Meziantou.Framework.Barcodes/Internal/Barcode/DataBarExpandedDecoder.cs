@@ -10,6 +10,9 @@ internal static class DataBarExpandedDecoder
     private const int CharacterModules = 17;
     private const int FinderModules = 15;
 
+    /// <summary>The number of steps of the search of the order of the rows, for all the symbols of the scan lines.</summary>
+    public const int MaximumAssemblySteps = 20_000;
+
     private static readonly int[][] Finders = [.. DataBarExpandedEncoder.FinderPatterns, .. DataBarExpandedEncoder.FinderPatterns.Select(pattern => pattern.Reverse().ToArray())];
 
     /// <summary>A pair of characters: the left one, the finder pattern, and the right one when there is one.</summary>
@@ -142,10 +145,13 @@ internal static class DataBarExpandedDecoder
     /// pairs follow the sequence of the symbol (ISO/IEC 24724, Table 11).
     /// </summary>
     /// <returns>The rows in order and the text of the symbol, or <see langword="null"/>.</returns>
-    public static (List<Row> Rows, string Text)? TryAssemble(IReadOnlyList<Row> rows)
+    public static (List<Row> Rows, string Text)? TryAssemble(IReadOnlyList<Row> rows, ref int budget)
     {
         // The longest rows first: a single-row symbol is read whole rather than from parts of its row
         rows = [.. rows.OrderByDescending(row => row.Pairs.Length)];
+
+        // The rows misread by some lines of a photograph are rows too: the combinations grow exponentially with them, and the
+        // search stops after a number of steps
         foreach (var first in rows)
         {
             var pair0 = first.Pairs[0];
@@ -160,9 +166,12 @@ internal static class DataBarExpandedDecoder
             var pairCount = (symbolCharacters + 1) / 2;
             var sequence = DataBarExpandedEncoder.FinderSequences[pairCount - 2];
             var ordered = new List<Row>();
-            var text = TryFollow(rows, first, 0, sequence, symbolCharacters, ordered);
+            var text = TryFollow(rows, first, 0, sequence, symbolCharacters, ordered, ref budget);
             if (text is not null)
                 return (ordered, text);
+
+            if (budget <= 0)
+                return null;
         }
 
         return null;
@@ -170,9 +179,9 @@ internal static class DataBarExpandedDecoder
 
     // Follows the rows that continue the finder sequence; a complete sequence must have a valid check character, else the
     // other rows are tried (a row read in the other direction has the same finder patterns, the other way around)
-    private static string? TryFollow(IReadOnlyList<Row> rows, Row row, int offset, int[] sequence, int symbolCharacters, List<Row> ordered)
+    private static string? TryFollow(IReadOnlyList<Row> rows, Row row, int offset, int[] sequence, int symbolCharacters, List<Row> ordered, ref int budget)
     {
-        if (offset + row.Pairs.Length > sequence.Length)
+        if (--budget < 0 || offset + row.Pairs.Length > sequence.Length)
             return null;
 
         for (var i = 0; i < row.Pairs.Length; i++)
@@ -211,10 +220,13 @@ internal static class DataBarExpandedDecoder
         }
         else
         {
-            // The nearest rows first: the next row of a label printed twice is the one of the same label
-            foreach (var candidate in rows.OrderBy(candidate => Math.Max(0, Math.Max(candidate.FirstLine - row.LastLine, row.FirstLine - candidate.LastLine))))
+            // The rows that continue the sequence, the nearest first: the next row of a label printed twice is the one of the
+            // same label
+            var nextFinder = sequence[next];
+            var nextIsOdd = next % 2 is 1;
+            foreach (var candidate in rows.Where(candidate => candidate.Pairs[0].Finder == nextFinder && candidate.Pairs[0].IsOddPair == nextIsOdd).OrderBy(candidate => Math.Max(0, Math.Max(candidate.FirstLine - row.LastLine, row.FirstLine - candidate.LastLine))))
             {
-                var text = TryFollow(rows, candidate, next, sequence, symbolCharacters, ordered);
+                var text = TryFollow(rows, candidate, next, sequence, symbolCharacters, ordered, ref budget);
                 if (text is not null)
                     return text;
             }

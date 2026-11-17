@@ -57,7 +57,7 @@ internal static partial class CssPropertyRules
     {
         if (value is CssPreservedToken { Type: CssTokenType.Ident } ident)
         {
-            var index = Array.FindIndex(DynamicRangeLimitKeywords, keyword => ident.Token.IsIdent(keyword));
+            var index = Array.FindIndex(DynamicRangeLimitKeywords, keyword => ident.IsIdent(keyword));
             if (index < 0)
                 return null;
 
@@ -81,7 +81,7 @@ internal static partial class CssPropertyRules
             if (percentage is not CssPreservedToken { Type: CssTokenType.Percentage } percentageToken || EvaluateDynamicRangeLimit(limit) is not { } weights)
                 return null;
 
-            var amount = percentageToken.Token.NumericValue;
+            var amount = percentageToken.NumericValue;
             sum += amount;
             for (var i = 0; i < result.Length; i++)
             {

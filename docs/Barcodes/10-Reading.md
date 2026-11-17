@@ -34,10 +34,17 @@ Assert.True(topLeft.DistanceTo(new PointD(40, 40)) < 1); // after the quiet zone
 ```
 <!-- endref -->
 
-The reader is made for clean images: generated symbols, printed and scanned, or photographed straight on. They can be
-rotated, mirrored, scaled, slightly blurred or compressed, or in mild perspective; they need their quiet zone and modules
-of at least 2 pixels. Symbols printed light on a dark background are read when the image has none printed dark on light.
-A transparent background reads as white.
+The readers read generated, printed and scanned images, and photographs taken with a phone: the symbols can be rotated,
+mirrored, scaled, blurred, compressed, unevenly lit (a shadow, a gradient) or photographed at an angle. A local threshold
+classifies the pixels as dark or light whatever the lighting, and the corners of the finder patterns of a QR code (and
+its alignment patterns), the edges of a Data Matrix symbol and the bullseye of an Aztec symbol give the perspective. A
+symbol needs its quiet zone and modules of at least 2 pixels. Symbols printed light on a dark background are read when the
+image has none printed dark on light. A transparent background reads as white.
+
+The readers are checked against the sample images of [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp), including
+photographs and images without symbols. For the photographs they read and their limits, see
+[Limitations](11-Limitations.md).
+
 [QRCodeReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions) limits the
 [Types](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.Types) to read and the
 [MaximumResults](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeReadingOptions.MaximumResults).
@@ -61,8 +68,12 @@ Assert.Equal((Barcode2DType.DataMatrix, "https://www.meziantou.net"), (result.Re
 [ReadBarcodes](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageReader.ReadBarcodes) reads the linear barcodes, with
 [BarcodeReadingOptions](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeReadingOptions). Parallel scan lines cross the
 image horizontally, vertically and at 30°, 60°, 120° and 150°: a barcode turned by another angle is read when a line
-crosses all its bars. Code 39, Codabar and ITF, which have no check character, must be crossed by two lines that agree.
-The text printed under the bars is not read: it is not needed.
+crosses all its bars. The edges of the bars are found in the grayscale image, between the pixels, so that small and
+blurred barcodes keep the widths of their bars, and the outside of the image reads as white: a barcode cropped at its
+first and last bars is read. A barcode must be crossed by two lines that agree; Code 39, Codabar and ITF, whose check is
+weak or missing, by lines that cover at least 4% of their length, with 4 characters or more for Codabar and 6 digits or
+more for ITF, so that the patterns of other barcodes and of text are not read as them. The text printed under the bars
+is not read: it is not needed.
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_ReadBarcodes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -134,8 +145,9 @@ A standard or Micro QR code read in a mirror has its rows and columns swapped: t
 
 - [Text](cref:Meziantou.Framework.Barcodes.QRCodeDecodeResult.Text): the data as text. The byte segments are decoded with
   the character set of the ECI designator that precedes them. Without one, they are decoded as UTF-8 when they are valid
-  UTF-8, which is what [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) writes, and as ISO/IEC 8859-1
-  otherwise.
+  UTF-8, which is what [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) writes, as Shift JIS when they
+  look like Japanese text in Shift JIS (a word of 3 katakana or kanji, or bytes that are control characters in
+  ISO/IEC 8859-1), which many Japanese generators write, and as ISO/IEC 8859-1 otherwise.
 - [Segments](cref:Meziantou.Framework.Barcodes.QRCodeDecodeResult.Segments): the segments of the data, with their
   [Mode](cref:Meziantou.Framework.Barcodes.QRCodeSegment.Mode), their
   [Text](cref:Meziantou.Framework.Barcodes.QRCodeSegment.Text), the raw
@@ -195,7 +207,7 @@ Assert.Equal(Barcode2DType.DataMatrix, result.Type);
 [EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.EciAssignmentNumber) of the first ECI
 designator, and the [CorrectedErrorCount](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.CorrectedErrorCount).
 The bytes are decoded as for QR codes: with the character set of their ECI designator, or as UTF-8 when they are valid
-UTF-8, and as ISO/IEC 8859-1 otherwise.
+UTF-8, as Shift JIS when they look like Japanese text in Shift JIS, and as ISO/IEC 8859-1 otherwise.
 
 A Data Matrix symbol that starts with a FNC1 character holds GS1 element strings:
 [IsGs1](cref:Meziantou.Framework.Barcodes.Barcode2DDecodeResult.IsGs1) is `true`, and the text is the human-readable

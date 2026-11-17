@@ -47,7 +47,7 @@ internal static class BasicShapePaths
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Ident } ident when box is null:
-                    box = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                    box = InfraAscii.ToAsciiLowercase(ident.Value);
                     break;
 
                 default:
@@ -177,7 +177,7 @@ internal static class BasicShapePaths
         static BasicShapeGeometry? FromPath(DisplayPath? path) => path is not null ? new BasicShapeGeometry(Rectangle: null, Polygon: null, path.FillRule, path) : null;
     }
 
-    private static bool IsIdent(CssComponentValue value, string name) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, name);
+    private static bool IsIdent(CssComponentValue value, string name) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, name);
 
     /// <summary>Splits the arguments at the <c>round</c> keyword.</summary>
     private static (List<CssComponentValue> Before, List<CssComponentValue>? Radii) SplitRound(List<CssComponentValue> arguments)
@@ -264,7 +264,7 @@ internal static class BasicShapePaths
         if (radii is null || radii.Count == 0)
             return new RoundedRect(rect, default);
 
-        var slash = radii.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.Value == "/");
+        var slash = radii.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Value == "/");
         var horizontal = slash < 0 ? radii : radii.GetRange(0, slash);
         var vertical = slash < 0 ? radii : radii.GetRange(slash + 1, radii.Count - slash - 1);
         if (Expand(horizontal, box.Width, zoom) is not { } x || Expand(vertical, box.Height, zoom) is not { } y)
@@ -378,7 +378,7 @@ internal static class BasicShapePaths
 
             if (value is CssPreservedToken { Type: CssTokenType.Ident } ident)
             {
-                return InfraAscii.ToAsciiLowercase(ident.Token.Value) switch
+                return InfraAscii.ToAsciiLowercase(ident.Value) switch
                 {
                     "closest-side" => closest,
                     "farthest-side" => farthest,
@@ -441,7 +441,7 @@ internal static class BasicShapePaths
                 // <'fill-rule'>? [ round <length> ]?
                 if (group is [CssPreservedToken { Type: CssTokenType.Ident } rule, ..] && !IsIdent(rule, "round"))
                 {
-                    fillRule = InfraAscii.EqualsIgnoreAsciiCase(rule.Token.Value, "evenodd") ? FillRule.EvenOdd : FillRule.NonZero;
+                    fillRule = InfraAscii.EqualsIgnoreAsciiCase(rule.Value, "evenodd") ? FillRule.EvenOdd : FillRule.NonZero;
                     group = group[1..];
                 }
 
@@ -747,7 +747,7 @@ internal static class BasicShapePaths
                 var index = 0;
                 if (group[0] is CssPreservedToken { Type: CssTokenType.Ident } rule && !IsIdent(rule, "from"))
                 {
-                    fillRule = InfraAscii.EqualsIgnoreAsciiCase(rule.Token.Value, "evenodd") ? FillRule.EvenOdd : FillRule.NonZero;
+                    fillRule = InfraAscii.EqualsIgnoreAsciiCase(rule.Value, "evenodd") ? FillRule.EvenOdd : FillRule.NonZero;
                     index++;
                 }
 
@@ -761,7 +761,7 @@ internal static class BasicShapePaths
                 continue;
             }
 
-            var name = group[0] is CssPreservedToken { Type: CssTokenType.Ident } command ? InfraAscii.ToAsciiLowercase(command.Token.Value) : null;
+            var name = group[0] is CssPreservedToken { Type: CssTokenType.Ident } command ? InfraAscii.ToAsciiLowercase(command.Value) : null;
             switch (name)
             {
                 case "close":
@@ -798,7 +798,7 @@ internal static class BasicShapePaths
                     if (group[2] is CssPreservedToken { Type: CssTokenType.Ident } keyword)
                     {
                         var size = horizontal ? box.Width : box.Height;
-                        coordinate = InfraAscii.ToAsciiLowercase(keyword.Token.Value) switch
+                        coordinate = InfraAscii.ToAsciiLowercase(keyword.Value) switch
                         {
                             "left" or "top" or "x-start" or "y-start" => 0,
                             "center" => size / 2,
@@ -833,7 +833,7 @@ internal static class BasicShapePaths
                     if (with >= 0)
                     {
                         var rest = group.GetRange(with + 1, group.Count - with - 1);
-                        var slash = rest.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Token.Value == "/");
+                        var slash = rest.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Delim } delim && delim.Value == "/");
                         foreach (var part in slash < 0 ? [rest] : new[] { rest.GetRange(0, slash), rest.GetRange(slash + 1, rest.Count - slash - 1) })
                         {
                             if (ResolveControlPoint(part, current, end, relative, box, zoom) is not { } control)

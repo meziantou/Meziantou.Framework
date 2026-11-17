@@ -29,6 +29,8 @@ public sealed class WebPEncoderTests
         Assert.Equal(100, encoder.NearLossless);
         Assert.False(encoder.ClearTransparentColors);
         Assert.False(encoder.AllowBitDepthReduction);
+        Assert.False(encoder.DitherBitDepthReduction);
+        Assert.False(encoder.SharpYuv);
         Assert.False(encoder.OptimizeFrames);
         Assert.Equal(FrameDurationRounding.RoundToNearest, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
@@ -304,6 +306,147 @@ public sealed class WebPEncoderTests
     }
 
     [Fact]
+    public void DitheredReductionKeepsTheAverageLevelOfGradients()
+    {
+        // A 16-bit ramp that spans 4 levels of 8 bits over 256 columns: nearest rounding makes 4 bands, dithering keeps the
+        // average of each column close to its 16-bit value, and every sample within one 8-bit step of it
+        const int Width = 256;
+        const int Height = 32;
+        var pixels = new Rgba64[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var value = (ushort)(30000 + (x * 4));
+                pixels[(y * Width) + x] = new Rgba64(value, (ushort)(value + 500), (ushort)(65535 - value), 65535);
+            }
+        }
+
+        using var image = Image.ImportPixelData<Rgba64>(pixels, Width, Height);
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new ThrowingStream(), new WebPEncoder { DitherBitDepthReduction = true }));
+        var nearest = ReferenceWebP.Parse(Encode(image, new WebPEncoder { AllowBitDepthReduction = true })).DecodeFrame(0).Span.ToArray();
+        var dithered = ReferenceWebP.Parse(Encode(image, new WebPEncoder { AllowBitDepthReduction = true, DitherBitDepthReduction = true })).DecodeFrame(0).Span.ToArray();
+        double nearestError = 0, ditheredError = 0;
+        for (var x = 0; x < Width; x++)
+        {
+            for (var c = 0; c < 3; c++)
+            {
+                double nearestSum = 0, ditheredSum = 0;
+                var source = c switch { 0 => pixels[x].R, 1 => pixels[x].G, _ => pixels[x].B };
+                for (var y = 0; y < Height; y++)
+                {
+                    var offset = (((y * Width) + x) * 4) + c;
+                    Assert.InRange(Math.Abs((dithered[offset] * 257) - source), 0, 257);
+                    nearestSum += nearest[offset];
+                    ditheredSum += dithered[offset];
+                }
+
+                nearestError += Math.Abs((nearestSum / Height) - (source / 257.0));
+                ditheredError += Math.Abs((ditheredSum / Height) - (source / 257.0));
+            }
+
+            Assert.Equal(255, dithered[(x * 4) + 3]);
+        }
+
+        Assert.True(ditheredError < nearestError / 4, $"Mean column error: {ditheredError / (Width * 3)} dithered, {nearestError / (Width * 3)} nearest.");
+    }
+
+    [Fact]
+    public void DitheringKeepsGrayAlphaAndEightBitSources()
+    {
+        var gray = new La32[64];
+        for (var i = 0; i < gray.Length; i++)
+        {
+            gray[i] = new La32((ushort)(1000 + (i * 997)), (ushort)(i % 4 == 0 ? 0 : 40000 + i));
+        }
+
+        using var image = Image.ImportPixelData<La32>(gray, 16, 4);
+        var encoder = new WebPEncoder { AllowBitDepthReduction = true, DitherBitDepthReduction = true };
+        var nearest = ReferenceWebP.Parse(Encode(image, new WebPEncoder { AllowBitDepthReduction = true })).DecodeFrame(0).Span.ToArray();
+        var dithered = ReferenceWebP.Parse(Encode(image, encoder)).DecodeFrame(0).Span.ToArray();
+        for (var i = 0; i < gray.Length; i++)
+        {
+            // Gray stays gray, alpha is the nearest value, and fully transparent pixels keep their nearest colors
+            Assert.Equal(dithered[i * 4], dithered[(i * 4) + 1]);
+            Assert.Equal(dithered[i * 4], dithered[(i * 4) + 2]);
+            Assert.Equal(nearest[(i * 4) + 3], dithered[(i * 4) + 3]);
+            if (nearest[(i * 4) + 3] == 0)
+            {
+                Assert.Equal(nearest[i * 4], dithered[i * 4]);
+            }
+        }
+
+        using var eightBit = CreateGradient(37, 23);
+        Assert.Equal(Encode(eightBit, new WebPEncoder()), Encode(eightBit, encoder));
+    }
+
+    [Theory]
+    [InlineData(50)]
+    [InlineData(90)]
+    public void SharpYuvReducesTheErrorOfColoredEdges(int quality)
+    {
+        using var image = CreateColoredStripes(96, 64, transparent: false);
+        using var plain = Image.Load<Rgba32>(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = quality }));
+        using var sharp = Image.Load<Rgba32>(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = quality, SharpYuv = true }));
+        var plainPsnr = ImageSimilarity.ComputePsnr(image.Frames[0], plain.Frames[0]);
+        var sharpPsnr = ImageSimilarity.ComputePsnr(image.Frames[0], sharp.Frames[0]);
+        Assert.True(sharpPsnr > plainPsnr + 0.5, $"PSNR {sharpPsnr:F2} dB with SharpYuv, {plainPsnr:F2} dB without.");
+    }
+
+    [Fact]
+    public void SharpYuvCorrectsColoredEdgesNextToTransparentBlocks()
+    {
+        // Stripes on the left, fully transparent 8x8 blocks on the right: the hidden blocks are flattened before the
+        // refinement, so the visible pixels next to them are corrected against the chroma that is encoded
+        using var stripes = CreateColoredStripes(64, 32, transparent: false);
+        var pixels = GetBytes(stripes);
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            if ((i / 4) % 64 >= 27)
+            {
+                pixels[i + 3] = 0;
+            }
+        }
+
+        using var image = Image.ImportPixelBytes<Rgba32>(pixels, 64, 32);
+        using var plain = Image.Load<Rgba32>(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 90 }));
+        using var sharp = Image.Load<Rgba32>(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 90, SharpYuv = true }));
+        var plainBytes = GetBytes(plain);
+        var sharpBytes = GetBytes(sharp);
+        long plainError = 0, sharpError = 0;
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            Assert.Equal(pixels[i + 3], sharpBytes[i + 3]);
+            if (pixels[i + 3] == 0)
+                continue;
+
+            for (var c = 0; c < 3; c++)
+            {
+                plainError += (pixels[i + c] - plainBytes[i + c]) * (pixels[i + c] - plainBytes[i + c]);
+                sharpError += (pixels[i + c] - sharpBytes[i + c]) * (pixels[i + c] - sharpBytes[i + c]);
+            }
+        }
+
+        Assert.True(sharpError < plainError * 0.9, $"Squared error of the visible pixels: {sharpError} with SharpYuv, {plainError} without.");
+    }
+
+    [Fact]
+    public void SharpYuvKeepsAlphaAndIsIgnoredByLosslessOutput()
+    {
+        using var image = CreateColoredStripes(40, 24, transparent: true);
+        var source = GetBytes(image);
+        var data = Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, SharpYuv = true });
+        using var decoded = Image.Load<Rgba32>(data);
+        var bytes = GetBytes(decoded);
+        for (var i = 3; i < source.Length; i += 4)
+        {
+            Assert.Equal(source[i], bytes[i]);
+        }
+
+        Assert.Equal(Encode(image, new WebPEncoder()), Encode(image, new WebPEncoder { SharpYuv = true }));
+    }
+
+    [Fact]
     public void GrayInputIsWrittenAsRgb()
     {
         using var image = Image.ImportPixelData<Gray8>([new Gray8(0), new Gray8(77), new Gray8(255)], 3, 1);
@@ -438,16 +581,59 @@ public sealed class WebPEncoderTests
         Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, new WebPEncoder()));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AnimationsToNonSeekableOutputAreWrittenAtCompletion(bool optimizeFrames)
+    {
+        using var image = CreateAnimation(3);
+        var encoder = new WebPEncoder { OptimizeFrames = optimizeFrames };
+        var seekable = Encode(image, encoder);
+
+        using var stream = new TestOutputStream();
+        image.Save(stream, encoder);
+        Assert.Equal(seekable, stream.ToArray());
+
+        using var asyncStream = new TestOutputStream { ForbidSynchronousWrites = true };
+        await image.SaveAsync(asyncStream, encoder, XunitCancellationToken);
+        Assert.Equal(seekable, asyncStream.ToArray());
+
+        // A writer with an unknown frame count holds the whole file, with its sizes patched, until completion
+        using var writerOutput = new TestOutputStream();
+        await using (var writer = Image.CreateWriter<Rgba32>(writerOutput, new ImageWriterOptions(image.Width, image.Height) { Encoder = encoder }))
+        {
+            foreach (var frame in image.Frames)
+            {
+                await writer.WriteFrameAsync((ImageFrame<Rgba32>)frame, XunitCancellationToken);
+                Assert.Equal(0, writerOutput.BytesWritten);
+            }
+
+            await writer.CompleteAsync(XunitCancellationToken);
+        }
+
+        Assert.Equal(seekable, writerOutput.ToArray());
+        Assert.Equal(3, ReferenceWebP.Parse(writerOutput.ToArray()).Frames.Count);
+    }
+
     [Fact]
-    public async Task AnimationsRejectNonSeekableOutputBeforeWriting()
+    public void AbortedAnimationsWriteNothingToNonSeekableOutput()
     {
         using var image = CreateAnimation(2);
         using var stream = new TestOutputStream();
-        var exception = Assert.Throws<ArgumentException>(() => image.Save(stream, new WebPEncoder()));
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(image.Width, image.Height) { Encoder = new WebPEncoder() }))
+        {
+            writer.WriteFrame((ImageFrame<Rgba32>)image.Frames[0]);
+        }
+
+        Assert.Equal(0, stream.BytesWritten);
+    }
+
+    [Fact]
+    public void OtherOutputsStillRejectNonSeekableStreams()
+    {
+        using var stream = new TestOutputStream();
+        var exception = Assert.Throws<ArgumentException>(() => Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(2, 2) { Encoder = new AniEncoder() }));
         Assert.Equal("stream", exception.ParamName);
-        await Assert.ThrowsAsync<ArgumentException>(() => image.SaveAsync(stream, new WebPEncoder(), XunitCancellationToken));
-        Assert.Throws<ArgumentException>(() => Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(2, 2) { Encoder = new WebPEncoder() })); // unknown frame count
-        Assert.Throws<ArgumentException>(() => Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(2, 2) { Encoder = new WebPEncoder(), ExpectedFrameCount = 3 }));
         Assert.Equal(0, stream.BytesWritten);
     }
 
@@ -517,7 +703,7 @@ public sealed class WebPEncoderTests
     public void EncodingIsDeterministic()
     {
         using var image = CreateGradient(33, 17);
-        foreach (var encoder in new[] { new WebPEncoder(), new WebPEncoder { Compression = WebPCompression.Lossy, Effort = 9 } })
+        foreach (var encoder in new[] { new WebPEncoder(), new WebPEncoder { Compression = WebPCompression.Lossy, Effort = 9 }, new WebPEncoder { Compression = WebPCompression.Lossy, SharpYuv = true } })
         {
             Assert.Equal(Encode(image, encoder), Encode(image, encoder));
         }
@@ -1347,6 +1533,30 @@ public sealed class WebPEncoderTests
             for (var x = 0; x < width; x++)
             {
                 pixels[(y * width) + x] = new Rgba32((byte)(x * 255 / (width - 1)), (byte)(255 - (y * 255 / (height - 1))), (byte)((x + y) * 3), 255);
+            }
+        }
+
+        return Image.ImportPixelData<Rgba32>(pixels, width, height);
+    }
+
+    /// <summary>Saturated stripes of 1 to 4 pixels over colored backgrounds, like colored text and chart lines.</summary>
+    private static Image<Rgba32> CreateColoredStripes(int width, int height, bool transparent)
+    {
+        Rgba32[] colors = [new(255, 0, 0, 255), new(0, 0, 255, 255), new(0, 255, 0, 255), new(255, 255, 0, 255), new(255, 0, 255, 255), new(0, 255, 255, 255), new(255, 255, 255, 255), new(0, 0, 0, 255)];
+        var pixels = new Rgba32[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var band = y / 8;
+                var background = colors[(band + 3) % colors.Length];
+                var pixel = ((x + band) % (3 + (band % 4))) < 2 ? colors[(x / (1 + (band % 4))) % colors.Length] : background;
+                if (transparent && (x + y) % 7 == 0)
+                {
+                    pixel = new Rgba32(pixel.R, pixel.G, pixel.B, (byte)((x * 37) % 256));
+                }
+
+                pixels[(y * width) + x] = pixel;
             }
         }
 

@@ -1,6 +1,6 @@
 ---
 title: JPEG XL
-description: Read and write JPEG XL images and animations, lossless or lossy, progressive files, and recompress JPEG files without loss.
+description: Read and write JPEG XL images, animations and layers, lossless or lossy, progressive files, and recompress JPEG files without loss.
 ---
 
 JPEG XL stores lossless and lossy images and animations, with integer or floating-point samples. The library reads every JPEG XL file
@@ -17,7 +17,8 @@ numbers do not establish a matched comparison. Measure representative images at 
 | --- | --- | --- |
 | Coding | Lossy (VarDCT) and lossless (Modular) frames; recompressed JPEG files | Lossless (default) or lossy |
 | Samples | Integers up to 24 bits and floating-point numbers, gray and color, alpha; CMYK, converted to RGB | Every pixel format at its own depth ([Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32), [Bgra32](cref:Meziantou.Framework.Imaging.Bgra32), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64)), lossless alpha |
-| Animations | Composited into full frames with exact durations and the play count | Full frames, durations in milliseconds, play count |
+| Animations | Composited into full frames with exact durations and the play count | Full frames, or the regions that change; durations in milliseconds, play count |
+| Layers | Composited into the image; [JpegXlLayeredImage](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage) reads the layers of a still image | Layers of any size and position, with the blend modes of the format and names ([JpegXlLayeredImage](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage)) |
 | Progressive | Renderings of a partial file | Progressive files on request |
 | Metadata | ICC profile, EXIF, XMP, enumerated color encodings, orientation | The same |
 | Reduced size | 1/8 of the size, for a still lossy image without alpha | - |
@@ -31,9 +32,10 @@ JPEG XL also stores the samples of high dynamic range and print workflows. They 
 all:
 
 - Floating-point samples load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) when every sample is a half-precision number, otherwise as
-  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat). Values above 1 (highlights) and below 0 are kept, in the color encoding the file declares
+  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat); a gray image loads as [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) or
+  [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat). Values above 1 (highlights) and below 0 are kept, in the color encoding the file declares
   (often linear sRGB): nothing is clamped or tone mapped.
-- Integer samples of 17 to 24 bits load as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat): each sample divided by the largest value, which gives the
+- Integer samples of 17 to 24 bits load as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) ([GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) or [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) for a gray image): each sample divided by the largest value, which gives the
   sample back when multiplied by it. Integers of more than 24 bits do not fit a single-precision number and throw an
   [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 - A CMYK file (cyan, magenta and yellow in the color channels, black in an extra channel) loads only with
@@ -58,7 +60,8 @@ public static string DescribeJpegXl(string path)
 <!-- endref -->
 
 Layers (frames without duration) are composited with the frames they belong to, with the blend modes and the
-reference frames of the file: an image holds what a viewer shows.
+reference frames of the file: an image holds what a viewer shows. To read the layers themselves, see
+[Write and read layers](#write-and-read-layers).
 
 ## Save a JPEG XL file
 
@@ -91,8 +94,84 @@ public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPa
 <!-- endref -->
 
 Lossless output keeps every sample, 16-bit samples and the colors of fully transparent pixels included. Lossy output
-keeps the alpha channel lossless. Unlike WebP, AVIF and HEIC, an animation does not need a seekable destination: frames
-are written as they come, whatever their number.
+keeps the alpha channel lossless. Unlike AVIF and HEIC, an animation does not need a seekable destination, and unlike
+WebP it is not kept in memory for a non-seekable one: frames are written as they come, whatever their number.
+
+## Write and read layers
+
+A still JPEG XL image can be made of layers, like a document of an image editor: each layer is an image of any size at a
+position on the canvas, combined with the layers below it, and has an optional name. Viewers show the image the layers
+make. [JpegXlLayeredImage](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage) writes such a file and reads its layers
+back:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/FormatExamples.cs;region=Imaging_JpegXlLayers;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static string SaveJpegXlLayers(string photoPath, string logoPath, string layeredPath)
+{
+    using (var photo = Image.Load<Rgba32>(photoPath))
+    using (var logo = Image.Load<Rgba32>(logoPath))
+    using (var document = new JpegXlLayeredImage(photo.Width, photo.Height))
+    {
+        // Each layer is an image of any size at a position on the canvas, combined with the layers below it by a blend
+        // mode of the format: Blend draws the logo over the photo, weighted by its alpha. The layers have the same
+        // pixel format; the colors of the document describe all of them.
+        document.AddLayer(photo, name: "Photo");
+        document.AddLayer(logo, new Point(photo.Width - logo.Width - 8, 8), JpegXlBlendMode.Blend, "Logo");
+        document.Save(layeredPath, new JpegXlEncoder { Effort = 7 });
+    }
+
+    // Image.Load gives the image the layers make, as a viewer shows it; JpegXlLayeredImage.Load gives the layers back,
+    // exactly for lossless output, from any still JPEG XL file whose frames are layers
+    using var layers = JpegXlLayeredImage.Load(layeredPath);
+    return string.Join(", ", layers.Layers.Select(layer => $"{layer.Name} {layer.Image.Width}x{layer.Image.Height} at {layer.Offset.X},{layer.Offset.Y} ({layer.BlendMode})"));
+}
+```
+<!-- endref -->
+
+- [AddLayer](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage.AddLayer) copies the image; the layered image owns the
+  copies and disposes them. A layer may start at a negative offset or extend beyond the canvas: the part outside is not
+  shown.
+- [JpegXlBlendMode](cref:Meziantou.Framework.Imaging.JpegXlBlendMode) has the modes of the format:
+  [Replace](cref:Meziantou.Framework.Imaging.JpegXlBlendMode.Replace),
+  [Add](cref:Meziantou.Framework.Imaging.JpegXlBlendMode.Add),
+  [Blend](cref:Meziantou.Framework.Imaging.JpegXlBlendMode.Blend) (drawn over the layers below, weighted by its alpha),
+  [AlphaWeightedAdd](cref:Meziantou.Framework.Imaging.JpegXlBlendMode.AlphaWeightedAdd) and
+  [Multiply](cref:Meziantou.Framework.Imaging.JpegXlBlendMode.Multiply). The color and alpha channels use the same mode.
+  Below the first layer, the canvas is transparent black.
+- [Save](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage.Save) takes the settings of a
+  [JpegXlEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder): lossless by default, lossy or progressive on
+  request. The layers must have the same pixel format, and
+  [Metadata](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage.Metadata) (the color profile, orientation, EXIF and XMP)
+  describes all of them: a layer labeled with other colors is rejected.
+- [Load](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage.Load) reads the layers of any still JPEG XL file whose frames
+  are layers, whatever wrote it; a file of one frame has one layer. Lossless layers come back exactly. An animation, or a
+  file whose frames are blended in a way a list of layers cannot describe (with another reference frame than the layers
+  below, or the alpha channel otherwise than the colors), throws an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+
+The decoders blend the layers in floating point, so a 16-bit pixel of a blended layer can differ by one unit between two
+decoders. An [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) holds pages and icon sizes, never
+layers: its entries are not blended.
+
+## Write smaller animations
+
+[OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.OptimizeFrames) writes each frame after the first
+one as the rectangle that changes, drawn over the previous frame. Screen recordings and animations of small moving
+objects get much smaller; lossless frames still decode exactly:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/FormatExamples.cs;region=Imaging_JpegXlOptimizedAnimation;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static long SaveOptimizedJpegXlAnimation(string animationPath, string jxlPath)
+{
+    using var animation = Image.Load(animationPath);
+
+    // Each frame after the first one stores the rectangle that changes, drawn over the previous frame: a screen
+    // recording or a small moving object costs far less than full frames, and lossless frames decode exactly
+    animation.Save(jxlPath, new JpegXlEncoder { OptimizeFrames = true });
+    return new FileInfo(jxlPath).Length;
+}
+```
+<!-- endref -->
 
 ## Options
 
@@ -102,6 +181,7 @@ are written as they come, whatever their number.
 | [Quality](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Quality) | 0 (smallest) to 100 (best) for lossy output: 90 is barely distinguishable from the source, 100 is still lossy | 75 |
 | [Effort](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Effort) | 0 (fastest, largest) to 9 (slowest, smallest): changes the decisions of the encoder, never lossless pixels nor the size [Quality](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Quality) aims at | 5 |
 | [Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Progressive) | Writes a file that a reader can show at a lower resolution before it is complete; the file is larger | `false` |
+| [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.OptimizeFrames) | Writes the frames of an animation after the first one as the rectangle that changes | `false` |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds durations to the nearest millisecond; [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata JPEG XL cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
@@ -206,7 +286,8 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
 
 ## Pitfalls
 
-- A frame of an animation without duration is rejected: JPEG XL defines it as a layer of the next frame.
+- A frame of an animation without duration is rejected: JPEG XL defines it as a layer of the next frame. Write layers
+  with [JpegXlLayeredImage](cref:Meziantou.Framework.Imaging.JpegXlLayeredImage), as a still image.
 - Lossy output converts the samples to the XYB color space, which needs an enumerated color encoding (sRGB, linear,
   BT.709 or DCI, with sRGB, Display P3 or BT.2020 primaries) or an sRGB ICC profile. Another ICC profile, or the
   PQ and HLG transfer functions, throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): write those images losslessly.

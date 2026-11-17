@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Imaging.Formats;
 
 /// <summary>
@@ -8,12 +10,12 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <para>
 /// Gray pixel formats are written as one component, the other formats as red, green and blue components with the
 /// multiple component transformation, and an opacity component when the pixel format has an alpha channel. The layout
-/// follows the pixel format, never the pixels. By default the image is one tile with one quality layer in the
-/// <see cref="Jpeg2000ProgressionOrder.Lrcp"/> order and up to five decomposition levels; <see cref="TileWidth"/>,
-/// <see cref="TileHeight"/>, <see cref="QualityLayers"/>, <see cref="ProgressionOrder"/> and
-/// <see cref="DecompositionLevels"/> change them. The code-blocks have 64 by 64 coefficients and are coded with the block
-/// coder of ISO/IEC 15444-1, or with the high-throughput block coder of ISO/IEC 15444-15 (HTJ2K) with
-/// <see cref="BlockCoder"/>.
+/// follows the pixel format, never the pixels. By default the image is one tile of one tile-part, with one quality layer
+/// in the <see cref="Jpeg2000ProgressionOrder.Lrcp"/> order, up to five decomposition levels and no precinct;
+/// <see cref="TileWidth"/>, <see cref="TileHeight"/>, <see cref="TilePartDivision"/>, <see cref="QualityLayers"/>,
+/// <see cref="ProgressionOrder"/>, <see cref="DecompositionLevels"/> and <see cref="PrecinctSizes"/> change them. The
+/// code-blocks have 64 by 64 coefficients (fewer in small precincts) and are coded with the block coder of ISO/IEC
+/// 15444-1, or with the high-throughput block coder of ISO/IEC 15444-15 (HTJ2K) with <see cref="BlockCoder"/>.
 /// </para>
 /// <para>
 /// A JP2 file stores the ICC profile, the resolution, the EXIF data (which carries the orientation) and the XMP packet.
@@ -122,10 +124,12 @@ public sealed class Jpeg2000Encoder : ImageEncoder
 
     /// <summary>Gets the order of the packets of each tile. Defaults to <see cref="Jpeg2000ProgressionOrder.Lrcp"/>.</summary>
     /// <remarks>
-    /// Without precincts, a resolution level of a tile-component is one position: <see cref="Jpeg2000ProgressionOrder.Pcrl"/>
+    /// A packet holds the coding passes a layer adds to the code-blocks of one precinct. Without <see cref="PrecinctSizes"/>,
+    /// a resolution level of a tile-component is one precinct, so one position: <see cref="Jpeg2000ProgressionOrder.Pcrl"/>
     /// and <see cref="Jpeg2000ProgressionOrder.Cprl"/> then give the same packets, component by component, and
     /// <see cref="Jpeg2000ProgressionOrder.Rpcl"/> the packets of <see cref="Jpeg2000ProgressionOrder.Rlcp"/> with the layers of
-    /// a component together.
+    /// a component together. With precincts, the position progressions visit the precincts from the top-left corner of the
+    /// tile, as the reference grid places them (T.800, B.12).
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Jpeg2000ProgressionOrder"/>.</exception>
     public Jpeg2000ProgressionOrder ProgressionOrder
@@ -198,22 +202,102 @@ public sealed class Jpeg2000Encoder : ImageEncoder
     } = 5;
 
     /// <summary>
+    /// Gets the size of the precincts of each resolution level, from the highest one (the full size) down; the last size is
+    /// used for the lower levels. Defaults to an empty list: each resolution level of a tile-component is one precinct.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A precinct is an area of a resolution level whose code-blocks are in packets of their own (T.800, B.6), so that a
+    /// reader can find the bytes of a part of the image, and a position progression (<see cref="ProgressionOrder"/>) can
+    /// give the image area by area. The width and the height are powers of two from 2 to 32,768, on the grid of the
+    /// resolution level (a sample of the level <c>n</c> levels below the highest one stands for <c>2^n</c> pixels of the
+    /// image). The code-blocks of a precinct are cut to it: a precinct narrower than 128 coefficients (64 for the lowest
+    /// level) has code-blocks of half its width, and the same for the height.
+    /// </para>
+    /// <para>
+    /// Small precincts add packets, and small code-blocks code worse: precincts of 128 to 512 coefficients cost less than
+    /// one percent of the size of a photograph.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The value has more than 33 sizes, or a width or a height that is not a power of two from 2 to 32,768.</exception>
+    public IReadOnlyList<Size> PrecinctSizes
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            Size[] sizes = [.. value];
+            if (sizes.Length > 33)
+                throw new ArgumentException("A JPEG 2000 tile-component has at most 33 resolution levels.", nameof(value));
+
+            foreach (var size in sizes)
+            {
+                if (!IsPrecinctSide(size.Width) || !IsPrecinctSide(size.Height))
+                    throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"The precinct size {size.Width}x{size.Height} is not valid: the width and the height are powers of two from 2 to 32768."), nameof(value));
+            }
+
+            field = sizes;
+        }
+    } = [];
+
+    /// <summary>Gets where each tile is cut into tile-parts. Defaults to <see cref="Jpeg2000TilePartDivision.None"/>: one tile-part per tile.</summary>
+    /// <remarks>
+    /// A tile-part starts at each change of the resolution level, of the layer or of the component of the packets, in the
+    /// <see cref="ProgressionOrder"/>: the division follows the progression best when the progression changes that
+    /// dimension last, such as <see cref="Jpeg2000TilePartDivision.Resolution"/> with
+    /// <see cref="Jpeg2000ProgressionOrder.Rpcl"/>. A tile has at most 255 tile-parts. The tile-parts of a tile follow each
+    /// other: a reader can stop after any of them. Each tile-part adds 14 bytes.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Jpeg2000TilePartDivision"/>.</exception>
+    public Jpeg2000TilePartDivision TilePartDivision
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The tile-part division is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets whether the main header lists the length of every tile-part (a TLM marker segment, T.800, A.7.1), so that a
+    /// reader can seek to any tile-part without reading the others. Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>Each tile-part adds 5 or 6 bytes (6 with more than 255 tiles).</remarks>
+    public bool WriteTilePartLengths { get; init; }
+
+    /// <summary>
+    /// Gets whether the header of each tile-part lists the length of each of its packets (PLT marker segments, T.800,
+    /// A.7.3), so that a reader can seek to any packet without reading the packet headers. Defaults to
+    /// <see langword="false"/>.
+    /// </summary>
+    /// <remarks>Each packet adds 1 to 5 bytes (1 for a packet shorter than 128 bytes), and each tile-part about 5.</remarks>
+    public bool WritePacketLengths { get; init; }
+
+    /// <summary>
     /// Gets the coder of the code-blocks. Defaults to <see cref="Jpeg2000BlockCoder.Standard"/>, the block coder of
     /// ISO/IEC 15444-1.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <see cref="Jpeg2000BlockCoder.HighThroughput"/> codes each code-block with one HT cleanup pass of ISO/IEC 15444-15
-    /// (no HT refinement pass), and declares it in the codestream (the CAP marker segment, the code-block style); a
+    /// <see cref="Jpeg2000BlockCoder.HighThroughput"/> codes each code-block with the coding passes of ISO/IEC 15444-15,
+    /// and declares it in the codestream (the CAP marker segment, the code-block style); a
     /// <see cref="Jpeg2000Container.Jp2"/> output is then a JPH file, of the brand <c>jph </c>. The pass codes the same
     /// quantized coefficients as the standard coder: a lossless output is the image, and a lossy output decodes to the
     /// samples of the standard coder at the same <see cref="Quality"/>.
     /// </para>
     /// <para>
-    /// The pass has no fractional bit-planes and cannot be split between layers: the output has one quality layer, and
-    /// <see cref="QualityLayers"/> may only hold one layer. Its target is reached by choosing, for each code-block, the
-    /// lowest bit-plane its pass codes (each candidate is coded, at the same rate-distortion slopes as the coding passes
-    /// of the standard coder), so that a target is reached in steps of whole bit-planes of the code-blocks.
+    /// Without a target in <see cref="QualityLayers"/>, the HT cleanup pass codes every bit-plane. With a target, the
+    /// encoder codes, for each code-block, one HT set for each lowest bit-plane: an HT cleanup pass, then an HT SigProp
+    /// pass and an HT MagRef pass that refine the bit-plane below it. It keeps the set and the refinement passes that
+    /// reduce the error most for their bytes, at the same rate-distortion slopes as the coding passes of the standard
+    /// coder. A code-block has one HT set, which a layer holds whole: the layers share out the code-blocks, each with the
+    /// precision the last layer gives it, so that the first layers have fewer code-blocks rather than coarser ones. A
+    /// reader that decodes the first layers gets the code-blocks they hold; OpenJPEG reads such files, which have no
+    /// placeholder pass and no refinement pass in a later packet than its HT cleanup pass.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Jpeg2000BlockCoder"/>.</exception>
@@ -243,4 +327,6 @@ public sealed class Jpeg2000Encoder : ImageEncoder
             field = value;
         }
     }
+
+    private static bool IsPrecinctSide(int value) => value is >= 2 and <= 32768 && BitOperations.IsPow2(value);
 }

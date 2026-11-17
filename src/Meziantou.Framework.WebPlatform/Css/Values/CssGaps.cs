@@ -125,7 +125,7 @@ internal static class CssGaps
         var parts = new List<List<CssComponentValue>> { new() };
         foreach (var value in significant)
         {
-            if (value is CssPreservedToken slash && slash.Token.IsDelim('/'))
+            if (value is CssPreservedToken slash && slash.IsDelim('/'))
             {
                 parts.Add([]);
             }

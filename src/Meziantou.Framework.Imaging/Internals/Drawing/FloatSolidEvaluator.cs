@@ -32,6 +32,8 @@ internal sealed class FloatSolidEvaluator(AllocationScope scope) : PaintEvaluato
         return true;
     }
 
+    public override bool CanCreateWorkers => true;
+
     public override PaintEvaluator? CreateWorker()
     {
         var worker = new FloatSolidEvaluator(scope) { _color = _color };

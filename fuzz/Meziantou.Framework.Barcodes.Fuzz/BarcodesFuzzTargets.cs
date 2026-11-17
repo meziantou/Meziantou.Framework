@@ -5,6 +5,7 @@ using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Barcodes;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework.Barcodes.Fuzz;
 
@@ -140,6 +141,7 @@ public static class BarcodesFuzzTargets
         .. Gs1FuzzTargets.All,
         .. QRSegmentFuzzTargets.All,
         .. QRDecodeFuzzTargets.All,
+        .. RenderFuzzTargets.All,
     ];
 
     private static void QRCodeTarget(ReadOnlySpan<byte> data)
@@ -199,12 +201,10 @@ public static class BarcodesFuzzTargets
         FuzzAssert.True(byteSegment is null || qr.Width * qr.Height <= byteSegment.Width * byteSegment.Height, $"The symbol of the text ({qr.Width}x{qr.Height}) is larger than the one of a single byte segment ({byteSegment?.Width}x{byteSegment?.Height})");
 
         // The renderers agree with the module matrix
-        using var image = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = 0 }));
-        CheckPixels(image, qr.Width, qr.Height, (row, column) => qr[row, column], "ToPng");
-        using var fromImaging = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
-        CheckPixels(fromImaging, qr.Width, qr.Height, (row, column) => qr[row, column], "ToImage");
+        using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        CheckPixels(image, qr.Width, qr.Height, (row, column) => qr[row, column], "ToImage");
         FuzzAssert.True(qr.ToSvg().Length > 0, "ToSvg is empty");
-        var console = qr.ToConsoleString(new QRCodeConsoleOptions { QuietZoneModules = 0 });
+        var console = qr.ToConsoleString(new ConsoleRenderOptions { QuietZoneModules = 0 });
         FuzzAssert.Equal((qr.Height + 1) / 2, console.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length, "ToConsoleString line count");
     }
 
@@ -247,13 +247,10 @@ public static class BarcodesFuzzTargets
         FuzzAssert.True(barcode[0, 0] && barcode[0, barcode.Width - 1], "A linear barcode starts and ends with a bar");
         CheckText(barcode, type, text, extension, (flags & 4) != 0, (char)('A' + ((flags >> 2) & 3)), (char)('A' + ((flags >> 4) & 3)));
 
-        var png = barcode.ToPng(new BarcodePngOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
         try
         {
-            using var image = Image.Load<Rgba32>(png);
-            CheckPixels(image, barcode.Width, 1, (row, column) => barcode[row, column], "ToPng");
-            using var fromImaging = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
-            CheckPixels(fromImaging, barcode.Width, 1, (row, column) => barcode[row, column], "ToImage");
+            using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
+            CheckPixels(image, barcode.Width, 1, (row, column) => barcode[row, column], "ToImage");
         }
         catch (ImageResourceLimitException)
         {
@@ -374,17 +371,15 @@ public static class BarcodesFuzzTargets
         // A stacked symbol is drawn with rows as high as a module is wide
         try
         {
-            using var image = Image.Load<Rgba32>(barcode.ToPng(new BarcodePngOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 }));
-            CheckPixels(image, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToPng");
-            using var fromImaging = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
-            CheckPixels(fromImaging, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
+            using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
+            CheckPixels(image, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
         }
         catch (ImageResourceLimitException)
         {
             // Wider than the default image width limit of Meziantou.Framework.Imaging
         }
 
-        var svg = barcode.ToSvg(new BarcodeSvgOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
         FuzzAssert.True(svg.Contains(FormattableString.Invariant($"viewBox=\"0 0 {barcode.Width} {barcode.Height}\""), StringComparison.Ordinal), "The size of the SVG");
     }
 
@@ -549,10 +544,8 @@ public static class BarcodesFuzzTargets
         FuzzAssert.True(other is not null && SameModules(barcode, other), "Encoding the same data twice gives different symbols");
 
         // The renderers agree with the module matrix
-        using var image = Image.Load<Rgba32>(barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 1, QuietZoneModules = 0 }));
-        CheckPixels(image, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToPng");
-        using var fromImaging = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
-        CheckPixels(fromImaging, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
+        using var image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        CheckPixels(image, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
         FuzzAssert.True(barcode.ToSvg().StartsWith("<svg ", StringComparison.Ordinal), "ToSvg does not start with <svg");
     }
 
@@ -1098,8 +1091,8 @@ public static class BarcodesFuzzTargets
             _ => new PointD(-0.5, 0.5),
         };
 
-        Brush dark = gradient ? new LinearGradientBrush(new PointD(0, 0), new PointD(64, 0), [new GradientStop(0, Colors.Black), new GradientStop(1, Colors.Blue)]) : new SolidBrush(Colors.Black);
-        Brush? light = noLight ? null : new SolidBrush(Colors.White);
+        ScenePaint dark = gradient ? new LinearGradientPaint(0, 0, 64, 0, [new SceneGradientStop(0, SceneColor.Black), new SceneGradientStop(1, new SceneColor(0, 0, 255))]) : SceneColor.Black;
+        ScenePaint? light = noLight ? null : (ScenePaint)SceneColor.White;
 
         int columns;
         int rows;
@@ -1111,7 +1104,7 @@ public static class BarcodesFuzzTargets
             if (!TryCreateQRCode((QRCodeType)kind, text, ErrorCorrectionLevel.L, out var qr))
                 return;
 
-            var options = new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZone, DarkBrush = dark, LightBrush = light, SnapToPixels = snap };
+            var options = new QRCodeRenderOptions { ModuleSize = moduleSize, QuietZoneModules = quietZone, DarkPaint = dark, LightPaint = light, SnapToPixels = snap };
             (columns, rows, isDark) = (qr.Width, qr.Height, (row, column) => qr[row, column]);
             measure = () => QRCodeImageRenderer.MeasureQRCode(qr, options);
             draw = canvas => canvas.DrawQRCode(qr, position, options);
@@ -1138,7 +1131,7 @@ public static class BarcodesFuzzTargets
                 return;
             }
 
-            var options = new BarcodeDrawingOptions { ModuleWidth = moduleSize, ModuleHeight = moduleSize * 3, QuietZoneModules = quietZone, DarkBrush = dark, LightBrush = light, SnapToPixels = snap, Font = font, FontSize = fontSize };
+            var options = new BarcodeRenderOptions { ModuleWidth = moduleSize, ModuleHeight = moduleSize * 3, QuietZoneModules = quietZone, DarkPaint = dark, LightPaint = light, SnapToPixels = snap, Text = font is null ? null : new BarcodeTextOptions { Fonts = font, FontSize = fontSize } };
             (columns, rows, isDark) = (barcode.Width, 1, (row, column) => barcode[row, column]);
             measure = () => BarcodeImageRenderer.MeasureBarcode(barcode, options);
             draw = canvas => canvas.DrawBarcode(barcode, position, options);

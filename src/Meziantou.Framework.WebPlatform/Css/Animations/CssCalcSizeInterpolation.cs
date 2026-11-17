@@ -127,7 +127,7 @@ internal static class CssCalcSizeInterpolation
         switch (CssGenericInterpolation.Parse(value))
         {
             case [CssPreservedToken { Type: CssTokenType.Ident } ident]:
-                return InfraAscii.ToAsciiLowercase(ident.Token.Value) is "auto" or "min-content" or "max-content" or "fit-content" or "stretch" or "contain"
+                return InfraAscii.ToAsciiLowercase(ident.Value) is "auto" or "min-content" or "max-content" or "fit-content" or "stretch" or "contain"
                     or "-webkit-fill-available" or "-webkit-min-content" or "-webkit-max-content" or "-webkit-fit-content" or "-moz-available" or "-moz-fit-content"
                     ? ValueKind.Keyword
                     : ValueKind.Other;
@@ -135,7 +135,7 @@ internal static class CssCalcSizeInterpolation
             case [CssPreservedToken { Type: CssTokenType.Dimension or CssTokenType.Percentage }]:
                 return ValueKind.LengthPercentage;
 
-            case [CssPreservedToken { Type: CssTokenType.Number } number] when number.Token.NumericValue == 0:
+            case [CssPreservedToken { Type: CssTokenType.Number } number] when number.NumericValue == 0:
                 return ValueKind.LengthPercentage;
 
             case [CssFunction function] when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "calc-size"):
@@ -159,7 +159,7 @@ internal static class CssCalcSizeInterpolation
         var components = CssGenericInterpolation.Parse(value);
         return kind switch
         {
-            ValueKind.Keyword => new PreparedValue(Normalize(((CssPreservedToken)components[0]).Token.Value), "size"),
+            ValueKind.Keyword => new PreparedValue(Normalize(((CssPreservedToken)components[0]).Value), "size"),
             ValueKind.LengthPercentage => new PreparedValue("any", Serialize(components)),
             _ => PrepareCalcSize((CssFunction)components[0]),
         };
@@ -186,7 +186,7 @@ internal static class CssCalcSizeInterpolation
         switch (basis)
         {
             case [CssPreservedToken { Type: CssTokenType.Ident } keyword]:
-                result = new PreparedValue(InfraAscii.ToAsciiLowercase(keyword.Token.Value), Serialize(calculation));
+                result = new PreparedValue(InfraAscii.ToAsciiLowercase(keyword.Value), Serialize(calculation));
                 break;
 
             case [CssFunction nested] when InfraAscii.EqualsIgnoreAsciiCase(nested.Name, "calc-size"):
@@ -233,14 +233,14 @@ internal static class CssCalcSizeInterpolation
         {
             switch (value)
             {
-                case CssPreservedToken { Type: CssTokenType.Ident } ident when insertion is not null && ident.Token.IsIdent("size"):
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when insertion is not null && ident.IsIdent("size"):
                     builder.Append('(').Append(insertion).Append(')');
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Percentage } percentage when depercentify:
                     // https://drafts.csswg.org/css-values-5/#de-percentify-a-calc-size-calculation: "Replace every instance of a
                     // <percentage-token> in calc with (size * N), where N is the percentage's value divided by 100"
-                    builder.Append("(size * ").Append(CssGenericInterpolation.FormatNumber(percentage.Token.NumericValue / 100)).Append(')');
+                    builder.Append("(size * ").Append(CssGenericInterpolation.FormatNumber(percentage.NumericValue / 100)).Append(')');
                     break;
 
                 case CssFunction function:

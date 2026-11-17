@@ -15,15 +15,17 @@ public static class Barcode2DImageReader
     /// <returns>The symbols found, each once; empty when there is none.</returns>
     /// <remarks>
     /// <para>
-    /// The reader is made for clean images: generated, printed or scanned symbols, photographed straight on. It finds the
-    /// solid sides of the finder pattern of a Data Matrix symbol, the bullseye of an Aztec symbol and the start and stop
-    /// patterns of the rows of a PDF417 symbol, samples their modules and decodes them with <see cref="Barcode2DDecoder"/>.
-    /// Data Matrix and Aztec symbols can be rotated or mirrored; the rows of a PDF417 symbol must be about horizontal or
-    /// vertical. A transparent background reads as white.
+    /// The reader reads generated, printed and scanned images, and photographs. It finds the solid sides of the finder
+    /// pattern of a Data Matrix symbol, the bullseye of an Aztec symbol and the start and stop patterns of the rows of a
+    /// PDF417 symbol, samples their modules and decodes them with <see cref="Barcode2DDecoder"/>. Data Matrix and Aztec
+    /// symbols can be rotated, mirrored, blurred, unevenly lit or in perspective: the edges of a Data Matrix symbol and the
+    /// corners of the bullseye of an Aztec symbol give the perspective. The rows of a PDF417 symbol must be about
+    /// horizontal or vertical. A transparent background reads as white.
     /// </para>
     /// <para>
-    /// A symbol needs its quiet zone and modules of at least 2 pixels. The pixels are classified as dark or light with
-    /// the Otsu threshold of the image, then with a local threshold (Sauvola) when no symbol is found.
+    /// A symbol needs its quiet zone and modules of at least 2 pixels. The pixels are classified as dark or light with a
+    /// local threshold (from the blocks of 8x8 pixels around them, which follows shadows and gradients), then with the
+    /// Otsu threshold of the image and a Sauvola threshold when no symbol is found.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
@@ -46,19 +48,11 @@ public static class Barcode2DImageReader
         bool IsIncluded(Barcode2DType type) => types is null || types.Contains(type);
 
         var results = new List<Barcode2DImageResult>();
-        using var luminance = BinaryImage.GetLuminance(image);
-        foreach (var method in (ReadOnlySpan<ThresholdMethod>)[ThresholdMethod.Otsu, ThresholdMethod.Sauvola])
+        BinarizationPasses.Run(image, options.TryInverted, binary =>
         {
-            var binary = BinaryImage.Create(luminance, QRCodeImageReader.GetThresholdOptions(method, luminance), cancellationToken);
             Barcode2DLocator.Locate(binary, IsIncluded, results, options.MaximumResults, cancellationToken);
-            if (options.TryInverted && results.Count is 0)
-            {
-                Barcode2DLocator.Locate(binary.Invert(), IsIncluded, results, options.MaximumResults, cancellationToken);
-            }
-
-            if (results.Count > 0)
-                break;
-        }
+            return results.Count > 0;
+        }, cancellationToken);
 
         return results;
     }

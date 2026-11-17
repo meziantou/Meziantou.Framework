@@ -37,14 +37,14 @@ internal static partial class CssPropertyRules
     /// alias of <c>auto</c> (https://drafts.csswg.org/css-cascade-5/#legacy-value-alias: it is converted at parse time).
     /// </summary>
     private static string? CanonicalizeOverflow(List<CssComponentValue> significant)
-        => significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && keyword.Token.IsIdent("overlay") ? "auto" : null;
+        => significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && keyword.IsIdent("overlay") ? "auto" : null;
 
     /// <summary>
     /// ruby-overhang (https://drafts.csswg.org/css-ruby-1/#ruby-overhang): <c>none</c> is a legacy value alias of <c>spaces</c>
     /// (converted at parse time).
     /// </summary>
     private static string? CanonicalizeRubyOverhang(List<CssComponentValue> significant)
-        => significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && keyword.Token.IsIdent("none") ? "spaces" : null;
+        => significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && keyword.IsIdent("none") ? "spaces" : null;
 
     /// <summary>
     /// hyphenate-limit-chars (https://drafts.csswg.org/css-text-4/#hyphenate-limit-chars-property): "If the third value is
@@ -56,7 +56,7 @@ internal static partial class CssPropertyRules
         var values = new List<string>(significant.Count);
         foreach (var value in significant)
         {
-            values.Add(value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : Serialize([value], separator: " "));
+            values.Add(value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : Serialize([value], separator: " "));
         }
 
         return CanonicalizeHyphenateLimitChars(values);
@@ -88,8 +88,8 @@ internal static partial class CssPropertyRules
         if (significant is not [CssPreservedToken { Type: CssTokenType.Ident } first, CssPreservedToken { Type: CssTokenType.Ident } second])
             return null;
 
-        var over = InfraAscii.ToAsciiLowercase(first.Token.Value);
-        var under = InfraAscii.ToAsciiLowercase(second.Token.Value);
+        var over = InfraAscii.ToAsciiLowercase(first.Value);
+        var under = InfraAscii.ToAsciiLowercase(second.Value);
         if (over == under || (over is "cap" or "ex" && under == "text"))
             return over;
 
@@ -102,14 +102,14 @@ internal static partial class CssPropertyRules
     /// </summary>
     private static Dictionary<string, string>? ExpandTextBox(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && InfraAscii.ToAsciiLowercase(single.Token.Value) == "normal")
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && InfraAscii.ToAsciiLowercase(single.Value) == "normal")
             return new(StringComparer.Ordinal) { ["text-box-trim"] = "none", ["text-box-edge"] = "auto" };
 
         var trim = "trim-both";
         var edge = new List<CssComponentValue>();
         foreach (var value in significant)
         {
-            var keyword = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+            var keyword = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
             if (keyword is "none" or "trim-start" or "trim-end" or "trim-both")
             {
                 trim = keyword;
@@ -145,7 +145,7 @@ internal static partial class CssPropertyRules
         var mode = "wrap";
         foreach (var value in significant)
         {
-            var keyword = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+            var keyword = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
             if (significant.Count == 1 && Array.Find(WhiteSpaceKeywords, k => k.Keyword == keyword) is { Keyword: not null } legacy)
             {
                 (collapse, mode) = (legacy.Collapse, legacy.Mode);
@@ -184,7 +184,7 @@ internal static partial class CssPropertyRules
         var result = new Dictionary<string, string>(StringComparer.Ordinal) { ["baseline-source"] = "auto", ["alignment-baseline"] = "baseline", ["baseline-shift"] = "0px" };
         foreach (var value in significant)
         {
-            var keyword = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+            var keyword = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
             var name = keyword switch
             {
                 "first" or "last" => "baseline-source",

@@ -22,9 +22,9 @@ internal static class CssColorLayers
         var arguments = CssValueComputer.SplitArguments(function.Value);
         var blendMode = "normal";
         var index = 0;
-        if (arguments.Count > 1 && arguments[0] is [CssPreservedToken { Type: CssTokenType.Ident } ident] && IsBlendMode(InfraAscii.ToAsciiLowercase(ident.Token.Value)))
+        if (arguments.Count > 1 && arguments[0] is [CssPreservedToken { Type: CssTokenType.Ident } ident] && IsBlendMode(InfraAscii.ToAsciiLowercase(ident.Value)))
         {
-            blendMode = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+            blendMode = InfraAscii.ToAsciiLowercase(ident.Value);
             index = 1;
         }
 

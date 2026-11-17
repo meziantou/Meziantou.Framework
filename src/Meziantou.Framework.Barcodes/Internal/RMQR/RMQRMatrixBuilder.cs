@@ -19,6 +19,13 @@ internal sealed class RMQRMatrixBuilder
 
     public bool[,] Modules => _modules;
 
+    /// <summary>Gets the modules of the function patterns and of the format information: the modules that hold no data.</summary>
+    public bool[,] GetReservedModules()
+    {
+        ReserveFunctionPattern();
+        return _isReserved;
+    }
+
     public void Build(byte[] codewords, ErrorCorrectionLevel ecLevel)
     {
         PlaceFixedPatterns();

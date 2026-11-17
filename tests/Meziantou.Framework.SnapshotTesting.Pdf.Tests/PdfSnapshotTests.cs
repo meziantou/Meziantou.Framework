@@ -168,6 +168,24 @@ public sealed class PdfSnapshotTests
     }
 
     [Fact]
+    public void Serialize_MetadataContent_WritesTheElementsOfEveryPage()
+    {
+        var document = CreateDocument();
+        document.Pages[0].CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(10, 20, 30, 40).Fill();
+
+        var result = Serialize(document, new PdfSnapshotSettings { Metadata = PdfSnapshotMetadata.Content });
+
+        using var json = ParseJson(result);
+        var content = json.RootElement.GetProperty("pages")[0].GetProperty("content");
+        Assert.Equal(["fill 1 0 0 rg [0 80 20 100]", "fill 1 0 0 rg [10 20 40 60]"], content.GetProperty("paths").EnumerateArray().Select(line => line.GetString()));
+        var text = Assert.Single(content.GetProperty("text").EnumerateArray()).GetString()!;
+        Assert.StartsWith("Page 1 [", text, StringComparison.Ordinal);
+        Assert.Empty(content.GetProperty("images").EnumerateArray());
+        Assert.Empty(content.GetProperty("shadings").EnumerateArray());
+        Assert.False(ParseJson(Serialize(CreateDocument(), new PdfSnapshotSettings { Metadata = PdfSnapshotMetadata.All })).RootElement.GetProperty("pages")[0].TryGetProperty("content", out _));
+    }
+
+    [Fact]
     public void Serialize_MetadataDates_WritesTheDatesOfTheDocument()
     {
         var document = CreateDocument();

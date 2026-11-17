@@ -119,6 +119,42 @@ internal static class RowBands
     }
 
     /// <summary>
+    /// Runs <paramref name="items"/> items on at most <paramref name="workers"/> workers (the calling thread included): each
+    /// worker takes the next item no worker has started, so that the workers stay busy until the last items whatever the time
+    /// each item takes. Every item runs to its end or its failure, and the exception is the one of the first item that failed
+    /// (a cancellation first): the one of a sequential run.
+    /// </summary>
+    /// <param name="items">The number of items.</param>
+    /// <param name="workers">The largest number of workers.</param>
+    /// <param name="item">Runs the item of the first argument on the worker of the second one, whose scratch it can use.</param>
+    internal static void RunParallelInItemOrder(int items, int workers, Action<int, int> item)
+    {
+        var failures = new Exception?[items];
+        var next = -1;
+        RunParallel(Math.Min(workers, items), worker =>
+        {
+            int index;
+            while ((index = Interlocked.Increment(ref next)) < items)
+            {
+                try
+                {
+                    item(index, worker);
+                }
+                catch (Exception exception)
+                {
+                    failures[index] = exception;
+                }
+            }
+        });
+
+        var failure = Array.Find(failures, e => e is OperationCanceledException) ?? Array.Find(failures, e => e is not null);
+        if (failure is not null)
+        {
+            ExceptionDispatchInfo.Throw(failure);
+        }
+    }
+
+    /// <summary>
     /// Runs one band per worker, at most <paramref name="workers"/> at once (the calling thread included). The workers run in
     /// the caller's execution context (the test hooks flow with it). Exceptions are those of a sequential run:
     /// cancellation first, else the first failure, rethrown unwrapped.

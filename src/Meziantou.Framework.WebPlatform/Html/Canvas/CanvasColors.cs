@@ -44,7 +44,7 @@ internal static partial class CanvasColors
     private static bool IsLegacySyntax(string value)
         => ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is [CssFunction function]
             && InfraAscii.ToAsciiLowercase(function.Name) is "rgb" or "rgba" or "hsl" or "hsla" or "hwb"
-            && (ValueMatcher.RemoveWhitespace(function.Value) is not [CssPreservedToken { Type: CssTokenType.Ident } from, ..] || !InfraAscii.EqualsIgnoreAsciiCase(from.Token.Value, "from"));
+            && (ValueMatcher.RemoveWhitespace(function.Value) is not [CssPreservedToken { Type: CssTokenType.Ident } from, ..] || !InfraAscii.EqualsIgnoreAsciiCase(from.Value, "from"));
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/canvas.html#serialisation-of-a-color: the sRGB colors are serialized as

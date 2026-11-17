@@ -1,0 +1,21 @@
+<DataGrid TRowData="Person" Items="Items" RowKey="p => p.Id" RowClass="@((p, index) => index % 2 == 0 ? "even" : "odd")" class="grid">
+    <DataGridColumn TRowData="Person" Expression="p => p.Name" />
+    @if (ShowAge)
+    {
+        <DataGridColumn TRowData="Person" Expression="p => p.Age" Format="D3" />
+    }
+    <DataGridColumn TRowData="Person" Title="Actions">
+        <button @onclick="() => OnDelete.InvokeAsync(context)">Delete @context.Name</button>
+    </DataGridColumn>
+</DataGrid>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<Person> Items { get; set; } = [];
+
+    [Parameter]
+    public bool ShowAge { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<Person> OnDelete { get; set; }
+}

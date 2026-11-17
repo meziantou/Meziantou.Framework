@@ -58,6 +58,34 @@ internal readonly record struct ExrChunkLayout(IReadOnlyList<ExrChannel> Channel
         }
     }
 
+    /// <summary>Splits the uncompressed data of the chunk into planes: the inverse of <see cref="InterleavePlanes"/>.</summary>
+    public void DeinterleavePlanes(ReadOnlySpan<byte> data, Span<byte> planes)
+    {
+        var channelCount = Channels.Count;
+        Span<int> planeOffsets = channelCount <= 64 ? stackalloc int[channelCount] : new int[channelCount];
+        var offset = 0;
+        for (var c = 0; c < channelCount; c++)
+        {
+            planeOffsets[c] = offset;
+            offset += Channels[c].BytesPerSample * GetSampleCount(c) * GetLineCount(c);
+        }
+
+        var position = 0;
+        for (var line = 0; line < Lines; line++)
+        {
+            for (var c = 0; c < channelCount; c++)
+            {
+                if (!HasLine(c, line))
+                    continue;
+
+                var rowLength = Channels[c].BytesPerSample * GetSampleCount(c);
+                data.Slice(position, rowLength).CopyTo(planes[planeOffsets[c]..]);
+                planeOffsets[c] += rowLength;
+                position += rowLength;
+            }
+        }
+    }
+
     /// <summary>Gets the size of the uncompressed data.</summary>
     public int GetDataLength()
     {

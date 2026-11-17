@@ -71,6 +71,10 @@ public sealed class ProcessingTests
             case PixelFormat.Abgr32: CheckRotationsAndFlips<Abgr32>(); break;
             case PixelFormat.Bgr565: CheckRotationsAndFlips<Bgr565>(); break;
             case PixelFormat.Rgba1010102: CheckRotationsAndFlips<Rgba1010102>(); break;
+            case PixelFormat.GrayFloat: CheckRotationsAndFlips<GrayFloat>(); break;
+            case PixelFormat.GrayHalf: CheckRotationsAndFlips<GrayHalf>(); break;
+            case PixelFormat.LaFloat: CheckRotationsAndFlips<LaFloat>(); break;
+            case PixelFormat.LaHalf: CheckRotationsAndFlips<LaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -295,6 +299,37 @@ public sealed class ProcessingTests
     }
 
     [Fact]
+    public void ConvertColorProfileGivesTheSameResultWithSeveralWorkers()
+    {
+        Assert.Equal(Convert<Rgba32>(1, (x, y) => new Rgba32((byte)x, (byte)y, (byte)(x ^ y), (byte)(255 - x))), Convert<Rgba32>(4, (x, y) => new Rgba32((byte)x, (byte)y, (byte)(x ^ y), (byte)(255 - x))));
+        Assert.Equal(Convert<Rgba64>(1, (x, y) => new Rgba64((ushort)(x * 211), (ushort)(y * 257), (ushort)((x ^ y) * 199), ushort.MaxValue)), Convert<Rgba64>(4, (x, y) => new Rgba64((ushort)(x * 211), (ushort)(y * 257), (ushort)((x ^ y) * 199), ushort.MaxValue)));
+
+        static TPixel[] Convert<TPixel>(int workers, Func<int, int, TPixel> pixel)
+            where TPixel : unmanaged
+        {
+            // 300x256 pixels are split into bands of rows when several workers are allowed
+            using var image = new Image<TPixel>(300, 256, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Frames[0].ProcessPixelRows(pixel, static (pixels, pixel) =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = pixel(x, y);
+                    }
+                }
+            });
+
+            image.Metadata.IccProfile = IccProfile.DisplayP3;
+            image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+            var pixels = new TPixel[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+    }
+
+    [Fact]
     public void ConvertColorProfileRejectsFloatingPointColorsOutsideTheUnitRangeBeforeAnythingChanges()
     {
         foreach (var value in new[] { 1.5f, -0.25f, float.NaN, float.PositiveInfinity })
@@ -500,6 +535,10 @@ public sealed class ProcessingTests
             case PixelFormat.Abgr32: CheckQuarterTurns<Abgr32>(); break;
             case PixelFormat.Bgr565: CheckQuarterTurns<Bgr565>(); break;
             case PixelFormat.Rgba1010102: CheckQuarterTurns<Rgba1010102>(); break;
+            case PixelFormat.GrayFloat: CheckQuarterTurns<GrayFloat>(); break;
+            case PixelFormat.GrayHalf: CheckQuarterTurns<GrayHalf>(); break;
+            case PixelFormat.LaFloat: CheckQuarterTurns<LaFloat>(); break;
+            case PixelFormat.LaHalf: CheckQuarterTurns<LaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -1421,6 +1460,30 @@ public sealed class ProcessingTests
         {
             gray16.Grayscale(Ct);
             Assert.Equal(new Gray16(0x1235), gray16.Frames[0][0, 0]);
+        }
+
+        using (var grayHalf = new Image<GrayHalf>(1, 1, new GrayHalf((Half)4.25f)))
+        {
+            grayHalf.Grayscale(Ct);
+            Assert.Equal(new GrayHalf((Half)4.25f), grayHalf.Frames[0][0, 0]);
+        }
+
+        using (var grayFloat = new Image<GrayFloat>(1, 1, new GrayFloat(-0.5f)))
+        {
+            grayFloat.Grayscale(Ct);
+            Assert.Equal(new GrayFloat(-0.5f), grayFloat.Frames[0][0, 0]);
+        }
+
+        using (var laHalf = new Image<LaHalf>(1, 1, new LaHalf((Half)2f, (Half)0.5f)))
+        {
+            laHalf.Grayscale(Ct);
+            Assert.Equal(new LaHalf((Half)2f, (Half)0.5f), laHalf.Frames[0][0, 0]);
+        }
+
+        using (var laFloat = new Image<LaFloat>(1, 1, new LaFloat(3f, 0.25f)))
+        {
+            laFloat.Grayscale(Ct);
+            Assert.Equal(new LaFloat(3f, 0.25f), laFloat.Frames[0][0, 0]);
         }
     }
 
@@ -2549,7 +2612,7 @@ public sealed class ProcessingTests
             var channels = PixelFormats.GetComponentCount(format);
             var (colors, alpha) = GetSampleLayout(format);
             var max = MaxValue(format);
-            var tolerance = PixelFormats.IsFloatingPoint(format) ? (format == PixelFormat.RgbaFloat ? 1e-4 : 2e-3) : max == 255 ? 1 : 2;
+            var tolerance = PixelFormats.IsFloatingPoint(format) ? (PixelFormats.GetBitsPerComponent(format) == 32 ? 1e-4 : 2e-3) : max == 255 ? 1 : 2;
             var paint = format == PixelFormat.Bgra32 ? new[] { color.B, color.G, color.R } : [color.R, color.G, color.B];
             for (var y = 0; y < 11; y++)
             {
@@ -2881,19 +2944,19 @@ public sealed class ProcessingTests
     private static double[] ReadValues(ImageFrame frame)
     {
         var samples = DrawingTestSupport.ReadSamples(frame);
-        return frame.PixelFormat switch
-        {
-            PixelFormat.RgbaFloat => [.. samples.Select(bits => (double)BitConverter.Int32BitsToSingle(bits))],
-            PixelFormat.RgbaHalf => [.. samples.Select(bits => (double)BitConverter.UInt16BitsToHalf((ushort)bits))],
-            _ => [.. samples.Select(sample => (double)sample)],
-        };
+        if (!PixelFormats.IsFloatingPoint(frame.PixelFormat))
+            return [.. samples.Select(sample => (double)sample)];
+
+        return PixelFormats.GetBitsPerComponent(frame.PixelFormat) == 32
+            ? [.. samples.Select(bits => (double)BitConverter.Int32BitsToSingle(bits))]
+            : [.. samples.Select(bits => (double)BitConverter.UInt16BitsToHalf((ushort)bits))];
     }
 
     /// <summary>The number of color samples of a pixel and the index of its alpha sample (-1 without alpha).</summary>
     private static (int Colors, int Alpha) GetSampleLayout(PixelFormat format)
     {
         if (PixelFormats.IsFloatingPoint(format))
-            return (3, 3);
+            return PixelFormats.IsGrayscale(format) ? (1, PixelFormats.HasAlpha(format) ? 1 : -1) : (3, 3);
 
         var layout = ReferencePixelLayout.FromPixelFormat(format);
         return (layout.ColorChannels, layout.HasAlpha ? layout.ColorChannels : -1);
@@ -2913,27 +2976,31 @@ public sealed class ProcessingTests
         if (PixelFormats.IsFloatingPoint(format))
         {
             double alphaSum = 0;
-            var colorSums = new double[3];
+            var colorSums = new double[colors];
             foreach (var pixel in pixels)
             {
-                var a = samples[pixel + 3];
+                var a = alphaIndex >= 0 ? samples[pixel + alphaIndex] : 1;
                 alphaSum += a;
-                for (var c = 0; c < 3; c++)
+                for (var c = 0; c < colors; c++)
                 {
                     colorSums[c] += samples[pixel + c] * a;
                 }
             }
 
             var alpha = Math.Clamp(alphaSum / pixels.Count, 0, 1);
-            if (format == PixelFormat.RgbaHalf ? (Half)alpha == Half.Zero : (float)alpha == 0)
+            if (PixelFormats.GetBitsPerComponent(format) == 16 ? (Half)alpha == Half.Zero : (float)alpha == 0)
                 return result;
 
-            for (var c = 0; c < 3; c++)
+            for (var c = 0; c < colors; c++)
             {
                 result[c] = colorSums[c] / alphaSum;
             }
 
-            result[3] = alpha;
+            if (alphaIndex >= 0)
+            {
+                result[alphaIndex] = alpha;
+            }
+
             return result;
         }
 
@@ -2967,12 +3034,7 @@ public sealed class ProcessingTests
     private static void AssertValues(PixelFormat format, double[] expected, double[] actual, string context)
     {
         Assert.HasCount(expected.Length, actual);
-        var tolerance = format switch
-        {
-            PixelFormat.RgbaFloat => 1e-6,
-            PixelFormat.RgbaHalf => 1e-3,
-            _ => 0,
-        };
+        var tolerance = !PixelFormats.IsFloatingPoint(format) ? 0 : PixelFormats.GetBitsPerComponent(format) == 32 ? 1e-6 : 1e-3;
 
         for (var i = 0; i < expected.Length; i++)
         {
@@ -3189,6 +3251,10 @@ public sealed class ProcessingTests
             // A fraction, a negative (out-of-gamut) color, a high dynamic range one and a translucent alpha, all exact as halves
             var t when t == typeof(RgbaFloat) => new RgbaFloat(id + 0.25f, -id / 8f, 1000f + id, 1f - (id / 64f)),
             var t when t == typeof(RgbaHalf) => new RgbaHalf((Half)(id + 0.25f), (Half)(-id / 8f), (Half)(1000f + id), (Half)(1f - (id / 64f))),
+            var t when t == typeof(GrayFloat) => new GrayFloat(1000f + id - 0.25f),
+            var t when t == typeof(GrayHalf) => new GrayHalf((Half)(-id / 8f)),
+            var t when t == typeof(LaFloat) => new LaFloat(id + 0.25f, 1f - (id / 64f)),
+            var t when t == typeof(LaHalf) => new LaHalf((Half)(1000f + id), (Half)(1f - (id / 64f))),
             _ => throw new NotSupportedException(),
         };
 
@@ -3539,6 +3605,115 @@ public sealed class ProcessingTests
         Assert.All(parallelCalls, count => Assert.Equal(1, count));
     }
 
+    #region ApplyProcessor_Mirror
+    [Fact]
+    public void ApplyProcessor_Mirror()
+    {
+        // A 3x2 image: 1 2 3 / 4 5 6
+        using var image = new Image<Gray8>(3, 2);
+        for (var i = 0; i < 6; i++)
+        {
+            image.Frames[0][i % 3, i / 3] = new Gray8((byte)(i + 1));
+        }
+
+        // The processor transposes every frame: the 3x2 canvas becomes 2x3, and the result replaces the frames at once
+        image.ApplyProcessor<Gray8, TransposeProcessor<Gray8>>(default);
+
+        Assert.Equal(new Size(2, 3), image.Size);
+        Assert.Equal(new Gray8(4), image.Frames[0][1, 0]);
+        Assert.Equal(new Gray8(3), image.Frames[0][0, 2]);
+    }
+
+    /// <summary>Swaps the rows and the columns of every frame.</summary>
+    public readonly struct TransposeProcessor<TPixel> : IImageProcessor<TPixel>
+        where TPixel : unmanaged
+    {
+        public Size GetOutputSize(Size size) => new(size.Height, size.Width);
+
+        public void Process(int frameIndex, PixelRowSource<TPixel> source, PixelAccessor<TPixel> destination, CancellationToken cancellationToken)
+        {
+            for (var y = 0; y < destination.Height; y++)
+            {
+                var row = destination.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = source.GetRow(x)[y];
+                }
+            }
+        }
+
+        // The hotspot of a cursor follows its pixel
+        public bool TryMapPoint(Point source, Size sourceSize, Size destinationSize, out Point destination)
+        {
+            destination = new Point(source.Y, source.X);
+            return true;
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void ProcessorsProcessEveryFrameAndThePosterThroughAWorkingFormat()
+    {
+        using var image = new Image<Rgb24>(3, 2, new Rgb24(10, 20, 30));
+        image.InsertFrame(1, image.Frames[0]).ProcessPixelRows(static pixels => pixels.GetRowSpan(1)[2] = new Rgb24(1, 2, 3));
+        image.SetPosterFrame(image.Frames[0]);
+        image.Frames[0].Metadata.Hotspot = new Point(2, 1);
+        var frames = ((IEnumerable<ImageFrame<Rgb24>>)image.Frames).ToArray();
+
+        var indexes = new List<int>();
+        image.ApplyProcessor<Rgba64, RecordingProcessor>(new RecordingProcessor(indexes));
+
+        Assert.Equal([0, 1, 2], indexes);
+        Assert.Equal(new Size(2, 3), image.Size);
+        Assert.Equal(frames, ((IEnumerable<ImageFrame<Rgb24>>)image.Frames).ToArray());
+        Assert.Equal(new Size(2, 3), image.PosterFrame!.Size);
+        Assert.Equal(new Rgb24(1, 2, 3), image.Frames[1][1, 2]);
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][1, 2]);
+
+        // The pixels the processor did not write are the cleared pixels of the format: opaque black without alpha
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][0, 0]);
+        Assert.Equal(new Point(1, 2), image.Frames[0].Metadata.Hotspot);
+
+        // The working copies and the original storages are released
+        Assert.Equal(image.Owner.Scope.GetDiagnostics().LiveAllocations, image.Owner.LiveStorageCount);
+    }
+
+    [Fact]
+    public void FailedProcessorsLeaveTheImageUnchanged()
+    {
+        using var image = new Image<Rgba32>(4, 3, new Rgba32(1, 2, 3, 4));
+        image.InsertFrame(1, image.Frames[0]);
+        var liveStorages = image.Owner.LiveStorageCount;
+
+        Assert.Throws<InvalidOperationException>(() => image.ApplyProcessor<Rgba32, ThrowingProcessor>(new ThrowingProcessor(ThrowAtFrame: 1)));
+        Assert.Throws<OperationCanceledException>(() => image.ApplyProcessor<Rgba32, TransposeProcessor<Rgba32>>(default, new CancellationToken(canceled: true)));
+        Assert.Throws<InvalidOperationException>(() => image.ApplyProcessor<Rgba32, ThrowingProcessor>(new ThrowingProcessor(ThrowAtFrame: -1)));
+        Assert.Throws<NotSupportedException>(() => image.ApplyProcessor<Rgba1010102, TransposeProcessor<Rgba1010102>>(default));
+        Assert.Throws<NotSupportedException>(() => image.ApplyProcessor<int, TransposeProcessor<int>>(default));
+
+        // A hotspot whose pixel the processor does not keep fails before anything is allocated
+        image.Frames[1].Metadata.Hotspot = new Point(3, 0);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.ApplyProcessor<Rgba32, ThrowingProcessor>(new ThrowingProcessor(ThrowAtFrame: 5)));
+        Assert.Equal("Cursor hotspot outside the kept region", exception.Feature);
+        image.Frames[1].Metadata.Hotspot = null;
+
+        // A transparent pixel cannot be stored without alpha
+        using var opaque = new Image<Rgb24>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => opaque.ApplyProcessor<Rgba64, ClearingProcessor>(default));
+        Assert.Equal(new Size(2, 2), opaque.Size);
+
+        Assert.Equal(new Size(4, 3), image.Size);
+        Assert.Equal(2, image.Frames.Count);
+        Assert.All(Enumerable.Range(0, image.Frames.Count), i => Assert.Equal(new Rgba32(1, 2, 3, 4), image.Frames[i][3, 2]));
+        Assert.Equal(liveStorages, image.Owner.LiveStorageCount);
+
+        // The new frames and the working copies are charged with the old ones
+        using var limited = new Image<Rgba32>(64, 64, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 40_000 } });
+        Assert.Throws<ImageResourceLimitException>(() => limited.ApplyProcessor<RgbaFloat, TransposeProcessor<RgbaFloat>>(default));
+        Assert.Equal(new Size(64, 64), limited.Size);
+        limited.ApplyProcessor<Rgba32, TransposeProcessor<Rgba32>>(default);
+    }
+
     private static int[] ReadGray(ImageFrame frame)
     {
         var bytes = new byte[frame.Width * frame.Height];
@@ -3649,5 +3824,50 @@ public sealed class ProcessingTests
                 destination[x] = new Rgba64((ushort)((above[x].R + below[x].R) / 2), above[x].G, below[x].B, source.GetRow(y)[x].A);
             }
         }
+    }
+
+    private sealed class RecordingProcessor(List<int> indexes) : IImageProcessor<Rgba64>
+    {
+        public Size GetOutputSize(Size size) => new(size.Height, size.Width);
+
+        public void Process(int frameIndex, PixelRowSource<Rgba64> source, PixelAccessor<Rgba64> destination, CancellationToken cancellationToken)
+        {
+            indexes.Add(frameIndex);
+            Assert.Equal(new Rgba64(0, 0, 0, ushort.MaxValue), destination.GetRowSpan(0)[0]);
+            for (var y = 1; y < destination.Height; y++)
+            {
+                var row = destination.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = source.GetRow(x)[y];
+                }
+            }
+        }
+
+        public bool TryMapPoint(Point source, Size sourceSize, Size destinationSize, out Point destination)
+        {
+            destination = new Point(source.Y, source.X);
+            return true;
+        }
+    }
+
+    private readonly record struct ThrowingProcessor(int ThrowAtFrame) : IImageProcessor<Rgba32>
+    {
+        public Size GetOutputSize(Size size) => ThrowAtFrame < 0 ? Size.Empty : new Size(size.Width - 1, size.Height);
+
+        public void Process(int frameIndex, PixelRowSource<Rgba32> source, PixelAccessor<Rgba32> destination, CancellationToken cancellationToken)
+        {
+            destination.GetRowSpan(0).Fill(new Rgba32(9, 9, 9, 9));
+            if (frameIndex == ThrowAtFrame)
+                throw new InvalidOperationException("The processor failed.");
+        }
+    }
+
+    private readonly struct ClearingProcessor : IImageProcessor<Rgba64>
+    {
+        public Size GetOutputSize(Size size) => size;
+
+        public void Process(int frameIndex, PixelRowSource<Rgba64> source, PixelAccessor<Rgba64> destination, CancellationToken cancellationToken)
+            => destination.GetRowSpan(0)[0] = default;
     }
 }

@@ -87,7 +87,7 @@ internal static class DnsClientFuzzTargets
 
         if (age is 0)
         {
-            FuzzAssert.Equal(DnsMessageText.Format(plain, normalizeNames: false, includeResponseCode: true, presentationNames: true, parseCdsAsUnknown: false), DnsMessageText.Format(response, normalizeNames: false, includeResponseCode: true, presentationNames: true, parseCdsAsUnknown: false), "Keeping the raw data must not change the decoded message");
+            FuzzAssert.Equal(DnsMessageText.Format(plain, normalizeNames: false, includeResponseCode: true, presentationNames: true, parseServerUnknownTypesAsUnknown: false), DnsMessageText.Format(response, normalizeNames: false, includeResponseCode: true, presentationNames: true, parseServerUnknownTypesAsUnknown: false), "Keeping the raw data must not change the decoded message");
         }
 
         var names = new List<string>();
@@ -260,7 +260,7 @@ internal static class DnsClientFuzzTargets
             var signed = DnsTsig.Sign(messages[i], key, TsigTime, priorMac, [.. unsignedMessages], timersOnly: i > 0, DnsResponseCode.NoError, out priorMac);
             unsignedMessages.Clear();
 
-            // Bytes after the last record of the input are read as the start of the TSIG record
+            // Bytes after the last record of the input are read as the start of the TSIG record, in its owner name
             IReadOnlyList<DnsRecord> additionalRecords;
             try
             {
@@ -271,7 +271,7 @@ internal static class DnsClientFuzzTargets
                 return;
             }
 
-            if (additionalRecords.Count is 0 || additionalRecords[^1] is not DnsTsigRecord tsig || !tsig.Mac.AsSpan().SequenceEqual(priorMac))
+            if (additionalRecords.Count is 0 || additionalRecords[^1] is not DnsTsigRecord tsig || tsig.MessageOffset != messages[i].Length || !tsig.Mac.AsSpan().SequenceEqual(priorMac))
                 return;
 
             signedMessages.Add(signed);

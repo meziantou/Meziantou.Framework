@@ -6,14 +6,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>One validated color mask of a <c>BI_BITFIELDS</c> (or implicit <c>BI_RGB</c>) BMP layout.</summary>
 /// <remarks>
-/// A mask must be a single contiguous run of 1 to 8 bits inside the pixel. <see cref="Scale"/> holds the exact expansion of
-/// every encoded value to 8 bits (<c>round(value * 255 / max)</c>), so a 5-bit channel maps 0 to 0 and 31 to 255 without a
-/// multiplication per sample.
+/// A mask must be a single contiguous run of bits inside the pixel. For a channel of 1 to 8 bits, <see cref="Scale"/> holds
+/// the exact expansion of every encoded value to 8 bits (<c>round(value * 255 / max)</c>), so a 5-bit channel maps 0 to 0
+/// and 31 to 255 without a multiplication per sample. A layout with a channel wider than 8 bits is expanded to 16 bits
+/// instead (<see cref="ReadWide"/>, <c>round(value * 65535 / max)</c>), every channel of it included.
 /// </remarks>
 [StructLayout(LayoutKind.Auto)]
 internal readonly struct BmpChannelMask
 {
-    private BmpChannelMask(uint mask, int shift, int bits, byte[] scale)
+    private BmpChannelMask(uint mask, int shift, int bits, byte[]? scale)
     {
         Mask = mask;
         Shift = shift;
@@ -30,7 +31,7 @@ internal readonly struct BmpChannelMask
     /// <summary>Gets the number of mask bits (0 when the channel is absent).</summary>
     public int Bits { get; }
 
-    /// <summary>Gets the expansion of every encoded value to 8 bits, or <see langword="null"/> when the channel is absent.</summary>
+    /// <summary>Gets the expansion of every encoded value to 8 bits, or <see langword="null"/> when the channel is absent or wider than 8 bits.</summary>
     public byte[]? Scale { get; }
 
     /// <summary>Gets a value indicating whether the channel is present.</summary>
@@ -42,7 +43,6 @@ internal readonly struct BmpChannelMask
     /// <param name="bitsPerPixel">The number of bits of one pixel.</param>
     /// <returns>The channel.</returns>
     /// <exception cref="InvalidImageContentException">The mask is not a contiguous run of bits inside the pixel.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The mask is wider than 8 bits.</exception>
     public static BmpChannelMask Create(uint mask, string name, int bitsPerPixel)
     {
         if (mask == 0)
@@ -57,7 +57,7 @@ internal readonly struct BmpChannelMask
             throw BmpFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The BMP {name} mask 0x{mask:X8} does not fit in a {bitsPerPixel}-bit pixel."));
 
         if (bits > 8)
-            throw BmpFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The BMP {name} mask 0x{mask:X8} is {bits} bits wide; this version decodes channels of at most 8 bits."), "Bit fields: channel wider than 8 bits");
+            return new BmpChannelMask(mask, shift, bits, scale: null);
 
         var max = (1u << bits) - 1;
         var scale = new byte[max + 1];
@@ -72,4 +72,12 @@ internal readonly struct BmpChannelMask
     /// <summary>Extracts and expands the channel of a pixel to 8 bits.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte Read(uint pixel) => Scale![(pixel & Mask) >> Shift];
+
+    /// <summary>Extracts and expands the channel of a pixel to 16 bits: <c>round(value * 65535 / max)</c>.</summary>
+    public ushort ReadWide(uint pixel)
+    {
+        var max = Bits == 32 ? uint.MaxValue : (1u << Bits) - 1;
+        var value = (ulong)((pixel & Mask) >> Shift);
+        return (ushort)(((value * 65535) + (max / 2)) / max);
+    }
 }

@@ -136,6 +136,9 @@ public partial class Document
         IncrementDomVersionCore();
     }
 
+    /// <summary>Increments <see cref="DomVersion"/> for the attributes that a parser appended to an element that is not connected (see <see cref="Element.AppendParsedAttribute"/>).</summary>
+    internal void OnParsedAttributesAppended() => IncrementDomVersionCore();
+
     /// <summary>Records the change of the data of a character data node and increments <see cref="DomVersion"/>.</summary>
     internal void OnCharacterDataChangedForStyles(CharacterData node)
     {

@@ -50,65 +50,74 @@ internal static class Barcode2DLocator
             if (results.Count >= maximumResults)
                 return;
 
-            if (Geometry.GetMinimumAreaRectangle(hull) is not { } corners)
+            // The smallest rectangle around the region, then the quadrilateral of its edges: in a photograph taken at an
+            // angle, the symbol is not a rectangle
+            if (Geometry.GetMinimumAreaRectangle(hull) is not { } rectangle)
                 continue;
 
-            // Two adjacent sides are solid: the finder pattern
-            var center = new PointD(corners.Average(corner => corner.X), corners.Average(corner => corner.Y));
-            var darkness = new double[4];
-            for (var side = 0; side < 4; side++)
+            if ((TryDecodeDataMatrix(image, rectangle) ?? (Geometry.FitToEdges(image, rectangle) is { } quadrilateral ? TryDecodeDataMatrix(image, quadrilateral) : null)) is { } result)
             {
-                // The edges of a turned symbol are jagged: the darkest of a few depths into the side
-                foreach (var inset in (ReadOnlySpan<double>)[1, 1.5, 2.5])
-                {
-                    darkness[side] = Math.Max(darkness[side], GetDarkness(image, corners[side], corners[(side + 1) % 4], center, inset));
-                }
-            }
-
-            var solidCorner = -1;
-            for (var side = 0; side < 4; side++)
-            {
-                if (darkness[side] > 0.8 && darkness[(side + 1) % 4] > 0.8 && darkness[(side + 2) % 4] < 0.75 && darkness[(side + 3) % 4] < 0.75)
-                {
-                    solidCorner = side;
-                }
-            }
-
-            if (solidCorner < 0)
-                continue;
-
-            // The module is as thick as a solid side where no dark module is next to it; the alternating sides have a dark
-            // module every other module
-            var thicknesses = GetSolidThicknesses(image, corners[solidCorner], corners[(solidCorner + 1) % 4], center)
-                .Concat(GetSolidThicknesses(image, corners[(solidCorner + 1) % 4], corners[(solidCorner + 2) % 4], center))
-                .Where(thickness => thickness > 0)
-                .Order()
-                .ToList();
-            var moduleSize = thicknesses.Count > 1 ? thicknesses[1] : 0;
-            if (moduleSize < 1)
-                continue;
-
-            var timing1 = (solidCorner + 2) % 4;
-            var timing2 = (solidCorner + 3) % 4;
-            var count1 = 2 * CountDarkRuns(image, corners[timing1], corners[(timing1 + 1) % 4], center, moduleSize / 2, moduleSize);
-            var count2 = 2 * CountDarkRuns(image, corners[timing2], corners[(timing2 + 1) % 4], center, moduleSize / 2, moduleSize);
-
-            // The sides 0 and 2 have the width of the rectangle in modules, the sides 1 and 3 its height
-            var (width, height) = timing1 % 2 == 0 ? (count1, count2) : (count2, count1);
-            foreach (var (h, w) in GetDataMatrixSizeCandidates(height, width))
-            {
-                var transform = Homography.Create([new(0, 0), new(w, 0), new(w, h), new(0, h)], corners);
-                if (transform is null)
-                    continue;
-
-                var modules = Sample(image, transform, h, w);
-                if (Barcode2DDecoder.TryDecode(modules, Barcode2DType.DataMatrix, out var result))
-                {
-                    Add(results, new Barcode2DImageResult(result, OrderCorners(corners)));
-                    break;
-                }
+                Add(results, result);
             }
         }
+    }
+
+    private static Barcode2DImageResult? TryDecodeDataMatrix(BinaryImage image, PointD[] corners)
+    {
+        // Two adjacent sides are solid: the finder pattern
+        var center = new PointD(corners.Average(corner => corner.X), corners.Average(corner => corner.Y));
+        var darkness = new double[4];
+        for (var side = 0; side < 4; side++)
+        {
+            // The edges of a turned symbol are jagged: the darkest of a few depths into the side
+            foreach (var inset in (ReadOnlySpan<double>)[1, 1.5, 2.5])
+            {
+                darkness[side] = Math.Max(darkness[side], GetDarkness(image, corners[side], corners[(side + 1) % 4], center, inset));
+            }
+        }
+
+        var solidCorner = -1;
+        for (var side = 0; side < 4; side++)
+        {
+            if (darkness[side] > 0.8 && darkness[(side + 1) % 4] > 0.8 && darkness[(side + 2) % 4] < 0.75 && darkness[(side + 3) % 4] < 0.75)
+            {
+                solidCorner = side;
+            }
+        }
+
+        if (solidCorner < 0)
+            return null;
+
+        // The module is as thick as a solid side where no dark module is next to it; the alternating sides have a dark
+        // module every other module
+        var thicknesses = GetSolidThicknesses(image, corners[solidCorner], corners[(solidCorner + 1) % 4], center)
+            .Concat(GetSolidThicknesses(image, corners[(solidCorner + 1) % 4], corners[(solidCorner + 2) % 4], center))
+            .Where(thickness => thickness > 0)
+            .Order()
+            .ToList();
+        var moduleSize = thicknesses.Count > 1 ? thicknesses[1] : 0;
+        if (moduleSize < 1)
+            return null;
+
+        var timing1 = (solidCorner + 2) % 4;
+        var timing2 = (solidCorner + 3) % 4;
+        var count1 = 2 * CountDarkRuns(image, corners[timing1], corners[(timing1 + 1) % 4], center, moduleSize / 2, moduleSize);
+        var count2 = 2 * CountDarkRuns(image, corners[timing2], corners[(timing2 + 1) % 4], center, moduleSize / 2, moduleSize);
+
+        // The sides 0 and 2 have the width of the rectangle in modules, the sides 1 and 3 its height
+        var (width, height) = timing1 % 2 == 0 ? (count1, count2) : (count2, count1);
+        foreach (var (h, w) in GetDataMatrixSizeCandidates(height, width))
+        {
+            var transform = Homography.Create([new(0, 0), new(w, 0), new(w, h), new(0, h)], corners);
+            if (transform is null)
+                continue;
+
+            var modules = Sample(image, transform, h, w);
+            if (Barcode2DDecoder.TryDecode(modules, Barcode2DType.DataMatrix, out var result))
+                return new Barcode2DImageResult(result, OrderCorners(corners));
+        }
+
+        return null;
     }
 
     private static IEnumerable<(int Height, int Width)> GetDataMatrixSizeCandidates(int height, int width)
@@ -287,7 +296,7 @@ internal static class Barcode2DLocator
             // The rings of a compact bullseye can continue in the mode message as if it were a full-range one: both are tried
             foreach (var compact in isFullRange ? (ReadOnlySpan<bool>)[true, false] : [true])
             {
-                if (TryDecodeAztec(image, center, u, v, moduleSize, compact) is { } result)
+                if ((TryDecodeAztec(image, center, u, v, moduleSize, compact) ?? TryDecodeAztecInPerspective(image, center, bullseyeModuleSize, compact)) is { } result)
                 {
                     Add(results, result);
                     break;
@@ -326,6 +335,39 @@ internal static class Barcode2DLocator
                 if (layers > 2 && scale is 1 && size * moduleSize * 0.01 < 0.25)
                     break;
             }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Decodes an Aztec symbol photographed at an angle: the corners of a ring of the bullseye give the perspective. The
+    /// light ring 3 modules from the center of a compact bullseye has its outer edge 3.5 modules from it, the light ring 5
+    /// modules from the center of a full-range bullseye 5.5 modules: the larger square extrapolates better.
+    /// </summary>
+    private static Barcode2DImageResult? TryDecodeAztecInPerspective(BinaryImage image, PointD center, double moduleSize, bool compact)
+    {
+        var ring = compact ? 3 : 5;
+        if (PatternCorners.Find(image, center, moduleSize, transitions: ring + 1) is not { } corners)
+            return null;
+
+        // The decoder finds the orientation: any corner can be the first one, clockwise
+        for (var layers = 1; layers <= (compact ? 4 : 32); layers++)
+        {
+            var size = GetAztecSize(compact, layers);
+            if (size * moduleSize > 2 * Math.Max(image.Width, image.Height))
+                break;
+
+            var middle = (size / 2) + 0.5;
+            var low = middle - ring - 0.5;
+            var high = middle + ring + 0.5;
+            var transform = Homography.Create([new(low, low), new(high, low), new(high, high), new(low, high)], corners);
+            if (transform is null)
+                return null;
+
+            var modules = Sample(image, transform, size, size);
+            if (Barcode2DDecoder.TryDecode(modules, Barcode2DType.Aztec, out var result))
+                return new Barcode2DImageResult(result, OrderCorners([transform.Transform(0, 0), transform.Transform(size, 0), transform.Transform(size, size), transform.Transform(0, size)]));
         }
 
         return null;

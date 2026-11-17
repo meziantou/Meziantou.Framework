@@ -349,10 +349,10 @@ internal sealed class CalcSizeValue
         switch (basis)
         {
             case [CssPreservedToken { Type: CssTokenType.Ident } keyword]:
-                var kind = InfraAscii.ToAsciiLowercase(keyword.Token.Value) switch
+                var kind = InfraAscii.ToAsciiLowercase(keyword.Value) switch
                 {
                     "any" => SizeKind.None,
-                    _ => Size.Parse(keyword.Token.Value, zoom) is { Kind: not SizeKind.LengthPercentage and not SizeKind.None } parsed ? parsed.Kind : (SizeKind?)null,
+                    _ => Size.Parse(keyword.Value, zoom) is { Kind: not SizeKind.LengthPercentage and not SizeKind.None } parsed ? parsed.Kind : (SizeKind?)null,
                 };
 
                 return kind is { } basisKind ? new CalcSizeValue(basisKind, default, nestedBasis: null, calculation, zoom) : null;

@@ -1879,7 +1879,7 @@ internal sealed partial class ComputedStyle
                 case CssFunction function:
                     if (InfraAscii.EqualsIgnoreAsciiCase(function.Name, "var") && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } name, ..])
                     {
-                        references.Add(name.Token.Value);
+                        references.Add(name.Value);
                     }
 
                     CollectReferences(function.Value, references, depth);
@@ -1950,15 +1950,15 @@ internal sealed partial class ComputedStyle
             switch (value)
             {
                 case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                    var unit = InfraAscii.ToAsciiLowercase(dimension.Token.Value);
+                    var unit = InfraAscii.ToAsciiLowercase(dimension.Value);
                     if (unit is "lh" || (IsRoot && unit is "rlh") || (property == "font-size" && (unit is "em" or "ex" or "cap" or "ch" or "ic" || (IsRoot && unit is "rem" or "rex" or "rcap" or "rch" or "ric"))))
                         return true;
 
                     break;
                 case CssFunction function:
                     if (InfraAscii.EqualsIgnoreAsciiCase(function.Name, "var") && depth < MaxUnitDependencyDepth && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.Ident } name, ..]
-                        && (!RegisteredProperties.TryGetValue(name.Token.Value, out var registration) || registration.Syntax.IsUniversal)
-                        && GetCustomPropertyValue(name.Token.Value) is { } referenced && UsesRelativeUnits(CssParser.ParseListOfComponentValues(referenced), property, depth + 1))
+                        && (!RegisteredProperties.TryGetValue(name.Value, out var registration) || registration.Syntax.IsUniversal)
+                        && GetCustomPropertyValue(name.Value) is { } referenced && UsesRelativeUnits(CssParser.ParseListOfComponentValues(referenced), property, depth + 1))
                     {
                         return true;
                     }

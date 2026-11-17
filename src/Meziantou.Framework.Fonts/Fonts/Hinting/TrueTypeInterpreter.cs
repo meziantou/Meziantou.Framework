@@ -117,6 +117,12 @@ internal sealed partial class TrueTypeInterpreter : IDisposable
     /// <summary>Gets or sets the scale from font units to 26.6 pixels, as a 16.16 fixed-point number.</summary>
     public int Scale { get; set; }
 
+    /// <summary>
+    /// Gets or sets the normalized coordinates of the instance of a variable font that is hinted, as 2.14 fixed-point
+    /// numbers, which GETVARIATION reports; empty for the default instance, whose coordinates are zero.
+    /// </summary>
+    public int[] Coordinates { get; set; } = [];
+
     /// <summary>Gets the control values, in 26.6 pixels.</summary>
     public Span<int> ControlValues => unsafe(MemoryMarshal.Cast<byte, int>(_cvtBuffer!.Span))[.._cvtCount];
 
@@ -588,10 +594,10 @@ internal sealed partial class TrueTypeInterpreter : IDisposable
                 SetInstructionControl();
                 break;
             case 0x91 when _axisCount > 0:
-                // GETVARIATION: the hinted instances are the default instance, whose coordinates are zero.
+                // GETVARIATION: the normalized coordinate of each axis, in the order of the axes.
                 for (var i = 0; i < _axisCount; i++)
                 {
-                    Push(0);
+                    Push(i < Coordinates.Length ? Coordinates[i] : 0);
                 }
 
                 break;

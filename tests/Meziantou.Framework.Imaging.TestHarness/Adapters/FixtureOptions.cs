@@ -63,6 +63,12 @@ public static class FixtureOptions
             "jxl" => ImageFormat.JpegXl,
             "jp2" => ImageFormat.Jpeg2000,
             "exr" => ImageFormat.OpenExr,
+            "hdr" => ImageFormat.Radiance,
+            "psd" => ImageFormat.Psd,
+            "dng" => ImageFormat.Dng,
+            "dds" => ImageFormat.Dds,
+            "dpx" => ImageFormat.Dpx,
+            "cin" => ImageFormat.Cineon,
             _ => ImageFormat.Unknown,
         };
     }

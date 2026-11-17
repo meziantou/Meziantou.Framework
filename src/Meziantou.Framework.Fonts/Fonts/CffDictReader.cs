@@ -8,6 +8,9 @@ internal ref struct CffDictReader
     /// <summary>The largest number of operands of an operator: section 4, "An operator may be preceded by up to a maximum of 48 operands".</summary>
     public const int MaxOperands = 48;
 
+    /// <summary>The largest number of operands of an operator of a CFF2 DICT, which a blend can need: the size of the argument stack of CFF2.</summary>
+    public const int MaxCff2Operands = 513;
+
     /// <summary>The value added to the second byte of a two-byte operator, which follows the escape byte 12.</summary>
     public const int Escape = 0x0C00;
 
@@ -16,13 +19,31 @@ internal ref struct CffDictReader
 
     private readonly ReadOnlySpan<byte> _data;
     private readonly bool _isCff2;
+    private readonly ReadOnlySpan<double> _blendScalars;
+    private readonly bool _readsBlends;
     private int _position;
 
+    /// <summary>Initializes a reader of a DICT.</summary>
+    /// <param name="data">The DICT.</param>
+    /// <param name="isCff2">Whether the DICT is one of a CFF2 table, whose operands can be blended.</param>
     public CffDictReader(ReadOnlySpan<byte> data, bool isCff2 = false)
     {
         _data = data;
         _isCff2 = isCff2;
         _position = 0;
+    }
+
+    /// <summary>Initializes a reader of a private DICT of a CFF2 table that gives the values of its <c>blend</c> operators.</summary>
+    /// <param name="data">The DICT.</param>
+    /// <param name="blendScalars">
+    /// The scalar of each region the blends have deltas for (the subtable of the variation store the <c>vsindex</c> of
+    /// the DICT selects): zeros for the default instance.
+    /// </param>
+    public CffDictReader(ReadOnlySpan<byte> data, ReadOnlySpan<double> blendScalars)
+        : this(data, isCff2: true)
+    {
+        _blendScalars = blendScalars;
+        _readsBlends = true;
     }
 
     /// <summary>Reads the next entry.</summary>
@@ -40,24 +61,29 @@ internal ref struct CffDictReader
             {
                 if (_isCff2 && b0 == BlendOperator)
                 {
-                    // The blended values are hints, which are not read: the operands of the entry start again.
-                    count = 0;
+                    // A reader that does not need the values of the blends starts the operands of the entry again.
+                    count = _readsBlends ? Blend(operands, count) : 0;
                     continue;
                 }
 
                 @operator = b0 == 12 ? Escape + FontBinary.UInt8(_data, _position++) : b0;
+                count = Math.Min(count, operands.Length);
                 return true;
             }
 
             var operand = ReadOperand(b0);
             if (count < operands.Length)
             {
-                operands[count++] = operand;
+                operands[count] = operand;
             }
             else if (!_isCff2)
             {
                 throw FontErrors.InvalidTable(FontTags.Cff, "has a DICT entry with too many operands.");
             }
+
+            // The operands beyond the storage of a CFF2 DICT are counted, not kept: an entry that needs them is
+            // malformed, one that does not is read as before.
+            count++;
         }
 
         if (count != 0)
@@ -65,6 +91,37 @@ internal ref struct CffDictReader
 
         @operator = 0;
         return false;
+    }
+
+    /// <summary>
+    /// Replaces n values, followed by their deltas for each region and by n, with the n values of the instance:
+    /// OpenType specification, "CFF2", "Private DICT Data" and "blend".
+    /// </summary>
+    private readonly int Blend(scoped Span<double> operands, int count)
+    {
+        if (count > operands.Length)
+            throw FontErrors.InvalidTable(FontTags.Cff2, "has a DICT entry with too many operands.");
+
+        var n = count >= 1 ? operands[count - 1] : -1;
+        var regionCount = _blendScalars.Length;
+        if (!(n >= 0 && n * (regionCount + 1) <= count - 1) || n != Math.Floor(n))
+            throw FontErrors.InvalidTable(FontTags.Cff2, "has a blend with too few operands.");
+
+        var valueCount = (int)n;
+        var first = count - 1 - (valueCount * (regionCount + 1));
+        var deltas = operands.Slice(first + valueCount, valueCount * regionCount);
+        for (var i = 0; i < valueCount; i++)
+        {
+            var value = operands[first + i];
+            for (var region = 0; region < regionCount; region++)
+            {
+                value += _blendScalars[region] * deltas[(i * regionCount) + region];
+            }
+
+            operands[first + i] = value;
+        }
+
+        return first + valueCount;
     }
 
     /// <summary>Reads an operand: table 3, "Operand Encoding", and table 5 for the real numbers.</summary>

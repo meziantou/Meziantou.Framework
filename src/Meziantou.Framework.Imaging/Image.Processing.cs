@@ -277,7 +277,7 @@ public abstract partial class Image
 
         // The background of an analysis of floating-point pixels is exact in its own pixel type only: its Rgba64 is clipped
         var fill = analysis.BackgroundColor;
-        var isFloatingPointAnalysis = analysis is AutoCropAnalysis<RgbaFloat> or AutoCropAnalysis<RgbaHalf>;
+        var isFloatingPointAnalysis = analysis is AutoCropAnalysis<RgbaFloat> or AutoCropAnalysis<RgbaHalf> or AutoCropAnalysis<GrayFloat> or AutoCropAnalysis<GrayHalf> or AutoCropAnalysis<LaFloat> or AutoCropAnalysis<LaHalf>;
         if (isFloatingPointAnalysis ? !IsAnalysisOfThisPixelType(analysis) : !PixelConverter.IsExactlyRepresentable(fill, PixelFormat))
             throw new UnsupportedImageFeatureException(
                 $"Enlarging the canvas fills it with the background color of the analysis ({(isFloatingPointAnalysis ? "an analysis of floating-point pixels" : fill)}), which {PixelFormat} pixels cannot represent exactly. Use {nameof(AutoCropPaddingMode)}.{nameof(AutoCropPaddingMode.Contain)}, or analyze an image of the same pixel format.",
@@ -750,7 +750,15 @@ public abstract partial class Image
             // after the replacements are reserved, and released with the conversion)
             var colors = PixelFormats.GetBitsPerComponent(KernelPixelFormat) == 16 && !PixelFormats.IsFloatingPoint(KernelPixelFormat) ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
             using var scratch = new ColorConversionScratch();
-            ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline, colors, scratch), cancellationToken);
+            var boundPipeline = pipeline.BindLookupTables(Owner.Scope);
+            try
+            {
+                ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(boundPipeline, colors, scratch), cancellationToken);
+            }
+            finally
+            {
+                boundPipeline.ReleaseLookupTables();
+            }
         }
 
         // Committed (or nothing to convert): the pixels are now described by the destination profile. A CICP description

@@ -134,7 +134,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
             }
 
             // A sink that stores the rows as they are is written in place; a receiver is given a row of its own
-            if (sink is null ? components.Length == 3 : !sink.Plan.IsIdentity && components.Length > 1)
+            if (sink is null ? components.Length is 2 or 3 : !sink.Plan.IsIdentity && components.Length > 1)
             {
                 _sourceRow = scope.Rent(width * (_opaqueRgba || _nativeInks ? 4 : 3), AllocationKind.DecoderState, clear: false);
             }
@@ -211,6 +211,22 @@ internal sealed class JpegRowWriter : JpegBandWriter
         if (_components.Length == 1)
         {
             receiver.OnRow(y, _components[0].GetRow(y)[.._width]);
+            return;
+        }
+
+        if (_components.Length == 2)
+        {
+            // A lossless frame of two components, whose container takes the samples as they are stored (DNG)
+            var pairs = _sourceRow!.RawBuffer.AsSpan(0, _width * 2);
+            var first = GetSamples(_components[0], y);
+            var second = GetSamples(_components[1], y);
+            for (var x = 0; x < first.Length; x++)
+            {
+                pairs[2 * x] = first[x];
+                pairs[(2 * x) + 1] = second[x];
+            }
+
+            receiver.OnRow(y, pairs);
             return;
         }
 
@@ -668,21 +684,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
         static Vector256<ushort> Clamp(Vector256<short> value) => Vector256.Min(Vector256.Max(value, Vector256<short>.Zero), Vector256.Create((short)255)).AsUInt16();
     }
 
-    /// <summary>Converts 64 pixels with the arithmetic of <see cref="ConvertYCbCrVector"/> in 512-bit vectors: the R, G and B samples.</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ConvertYCbCr64(Vector512<byte> luma, Vector512<byte> blue, Vector512<byte> red, out Vector512<byte> r, out Vector512<byte> g, out Vector512<byte> b)
-    {
-        var (y0, y1) = Vector512.Widen(luma);
-        var (b0, b1) = Vector512.Widen(blue);
-        var (r0, r1) = Vector512.Widen(red);
-        Convert32(y0.AsInt16(), b0.AsInt16() - Vector512.Create((short)128), r0.AsInt16() - Vector512.Create((short)128), out var red0, out var green0, out var blue0);
-        Convert32(y1.AsInt16(), b1.AsInt16() - Vector512.Create((short)128), r1.AsInt16() - Vector512.Create((short)128), out var red1, out var green1, out var blue1);
-        r = Vector512.Narrow(red0, red1);
-        g = Vector512.Narrow(green0, green1);
-        b = Vector512.Narrow(blue0, blue1);
-    }
-
-    /// <summary>Thirty-two pixels of <see cref="ConvertYCbCr64"/>: R, G and B clamped to 0..255, in 16-bit lanes.</summary>
+    /// <summary>Thirty-two pixels of <see cref="ConvertYCbCrToRgba"/> with AVX-512: R, G and B clamped to 0..255, in 16-bit lanes.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Convert32(Vector512<short> luma, Vector512<short> cb, Vector512<short> cr, out Vector512<ushort> red, out Vector512<ushort> green, out Vector512<ushort> blue)
     {
@@ -700,35 +702,12 @@ internal sealed class JpegRowWriter : JpegBandWriter
         static Vector512<ushort> Clamp(Vector512<short> value) => Vector512.Min(Vector512.Max(value, Vector512<short>.Zero), Vector512.Create((short)255)).AsUInt16();
     }
 
-    /// <summary>
-    /// Writes 64 opaque RGBA pixels (256 bytes) from 64 red, green and blue values: byte interleaving within each 128-bit
-    /// block (the pixels 16 i + 4 j to 16 i + 4 j + 3 in the block i of the vector j), then a transposition of the blocks.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void StoreOpaqueRgba64(Vector512<byte> r, Vector512<byte> g, Vector512<byte> b, ref byte output)
-    {
-        var a = Vector512<byte>.AllBitsSet;
-        var redGreenLow = Avx512BW.UnpackLow(r, g).AsUInt16();
-        var redGreenHigh = Avx512BW.UnpackHigh(r, g).AsUInt16();
-        var blueAlphaLow = Avx512BW.UnpackLow(b, a).AsUInt16();
-        var blueAlphaHigh = Avx512BW.UnpackHigh(b, a).AsUInt16();
-        var pixels0 = Avx512BW.UnpackLow(redGreenLow, blueAlphaLow).AsDouble();
-        var pixels1 = Avx512BW.UnpackHigh(redGreenLow, blueAlphaLow).AsDouble();
-        var pixels2 = Avx512BW.UnpackLow(redGreenHigh, blueAlphaHigh).AsDouble();
-        var pixels3 = Avx512BW.UnpackHigh(redGreenHigh, blueAlphaHigh).AsDouble();
-
-        // Output vector i is the block i of pixels0 to pixels3
-        var low01 = Avx512F.Shuffle4x128(pixels0, pixels1, 0b01_00_01_00);
-        var high01 = Avx512F.Shuffle4x128(pixels0, pixels1, 0b11_10_11_10);
-        var low23 = Avx512F.Shuffle4x128(pixels2, pixels3, 0b01_00_01_00);
-        var high23 = Avx512F.Shuffle4x128(pixels2, pixels3, 0b11_10_11_10);
-        unsafe { Avx512F.Shuffle4x128(low01, low23, 0b10_00_10_00).AsByte().StoreUnsafe(ref output); }
-        unsafe { Avx512F.Shuffle4x128(low01, low23, 0b11_01_11_01).AsByte().StoreUnsafe(ref output, 64); }
-        unsafe { Avx512F.Shuffle4x128(high01, high23, 0b10_00_10_00).AsByte().StoreUnsafe(ref output, 128); }
-        unsafe { Avx512F.Shuffle4x128(high01, high23, 0b11_01_11_01).AsByte().StoreUnsafe(ref output, 192); }
-    }
-
     /// <summary>Converts full-range YCbCr samples to opaque RGBA pixels, with the arithmetic of <see cref="ConvertYCbCr"/>.</summary>
+    /// <remarks>
+    /// The pixels are formed from the clamped 16-bit results of the conversion: <c>R | G &lt;&lt; 8</c> and <c>B | A &lt;&lt; 8</c>
+    /// are the two 16-bit halves of a pixel in little-endian memory, so that one 16-bit interleaving writes them; the
+    /// results are not narrowed to bytes first.
+    /// </remarks>
     internal static void ConvertYCbCrToRgba(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, Span<byte> destination)
     {
         var done = 0;
@@ -741,44 +720,113 @@ internal sealed class JpegRowWriter : JpegBandWriter
             var length = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), destination.Length / 4);
             if (UseVectors512)
             {
-                for (; done + 64 <= length; done += 64)
-                {
-                    ConvertYCbCr64(
-                        unsafe(Vector512.LoadUnsafe(ref lumaStart, (nuint)done)),
-                        unsafe(Vector512.LoadUnsafe(ref blueStart, (nuint)done)),
-                        unsafe(Vector512.LoadUnsafe(ref redStart, (nuint)done)),
-                        out var r, out var g, out var b);
-                    StoreOpaqueRgba64(r, g, b, ref unsafe(Unsafe.Add(ref destinationStart, 4 * done)));
-                }
-            }
-
-            if (UseVectors256)
-            {
+                var offset = Vector512.Create((short)128);
                 for (; done + 32 <= length; done += 32)
                 {
-                    ConvertYCbCr32(
-                        unsafe(Vector256.LoadUnsafe(ref lumaStart, (nuint)done)),
-                        unsafe(Vector256.LoadUnsafe(ref blueStart, (nuint)done)),
-                        unsafe(Vector256.LoadUnsafe(ref redStart, (nuint)done)),
-                        out var r, out var g, out var b);
-                    ref var output = ref unsafe(Unsafe.Add(ref destinationStart, 4 * done));
-                    StoreOpaqueRgba16(r.GetLower(), g.GetLower(), b.GetLower(), ref output);
-                    StoreOpaqueRgba16(r.GetUpper(), g.GetUpper(), b.GetUpper(), ref unsafe(Unsafe.Add(ref output, 64)));
+                    var y = Avx512BW.ConvertToVector512Int16(unsafe(Vector256.LoadUnsafe(ref lumaStart, (nuint)done)));
+                    var cb = Avx512BW.ConvertToVector512Int16(unsafe(Vector256.LoadUnsafe(ref blueStart, (nuint)done))) - offset;
+                    var cr = Avx512BW.ConvertToVector512Int16(unsafe(Vector256.LoadUnsafe(ref redStart, (nuint)done))) - offset;
+                    Convert32(y, cb, cr, out var r, out var g, out var b);
+                    StoreOpaqueRgba32(r, g, b, ref unsafe(Unsafe.Add(ref destinationStart, 4 * done)));
                 }
             }
 
-            for (; done + 16 <= length; done += 16)
+            if (UseVectors256 && Avx2.IsSupported)
             {
-                ConvertYCbCr16(
-                    unsafe(Vector128.LoadUnsafe(ref lumaStart, (nuint)done)),
-                    unsafe(Vector128.LoadUnsafe(ref blueStart, (nuint)done)),
-                    unsafe(Vector128.LoadUnsafe(ref redStart, (nuint)done)),
-                    out var r, out var g, out var b);
-                StoreOpaqueRgba16(r, g, b, ref unsafe(Unsafe.Add(ref destinationStart, 4 * done)));
+                var offset = Vector256.Create((short)128);
+                for (; done + 16 <= length; done += 16)
+                {
+                    var y = Avx2.ConvertToVector256Int16(unsafe(Vector128.LoadUnsafe(ref lumaStart, (nuint)done)));
+                    var cb = Avx2.ConvertToVector256Int16(unsafe(Vector128.LoadUnsafe(ref blueStart, (nuint)done))) - offset;
+                    var cr = Avx2.ConvertToVector256Int16(unsafe(Vector128.LoadUnsafe(ref redStart, (nuint)done))) - offset;
+                    Convert16(y, cb, cr, out var r, out var g, out var b);
+                    StoreOpaqueRgba16Avx2(r, g, b, ref unsafe(Unsafe.Add(ref destinationStart, 4 * done)));
+                }
+            }
+
+            if (AdvSimd.Arm64.IsSupported || Sse2.IsSupported)
+            {
+                var offset = Vector128.Create((short)128);
+                for (; done + 16 <= length; done += 16)
+                {
+                    var (y0, y1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref lumaStart, (nuint)done)));
+                    var (b0, b1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref blueStart, (nuint)done)));
+                    var (r0, r1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref redStart, (nuint)done)));
+                    ref var output = ref unsafe(Unsafe.Add(ref destinationStart, 4 * done));
+                    Convert8(y0.AsInt16(), b0.AsInt16() - offset, r0.AsInt16() - offset, out var red0, out var green0, out var blue0);
+                    StoreOpaqueRgba8(red0, green0, blue0, ref output);
+                    Convert8(y1.AsInt16(), b1.AsInt16() - offset, r1.AsInt16() - offset, out var red1, out var green1, out var blue1);
+                    StoreOpaqueRgba8(red1, green1, blue1, ref unsafe(Unsafe.Add(ref output, 32)));
+                }
+            }
+            else
+            {
+                for (; done + 16 <= length; done += 16)
+                {
+                    ConvertYCbCr16(
+                        unsafe(Vector128.LoadUnsafe(ref lumaStart, (nuint)done)),
+                        unsafe(Vector128.LoadUnsafe(ref blueStart, (nuint)done)),
+                        unsafe(Vector128.LoadUnsafe(ref redStart, (nuint)done)),
+                        out var r, out var g, out var b);
+                    StoreOpaqueRgba16(r, g, b, ref unsafe(Unsafe.Add(ref destinationStart, 4 * done)));
+                }
             }
         }
 
         ConvertYCbCrToRgbaScalar(luma[done..], blue[done..], red[done..], destination[(4 * done)..]);
+    }
+
+    /// <summary>Writes 8 opaque RGBA pixels (32 bytes) from 8 red, green and blue values in 0..255 (AdvSimd or SSE2).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreOpaqueRgba8(Vector128<ushort> r, Vector128<ushort> g, Vector128<ushort> b, ref byte output)
+    {
+        var redGreen = r | Vector128.ShiftLeft(g, 8);
+        var blueAlpha = b | Vector128.Create((ushort)0xFF00);
+        Vector128<ushort> first, second;
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            first = AdvSimd.Arm64.ZipLow(redGreen, blueAlpha);
+            second = AdvSimd.Arm64.ZipHigh(redGreen, blueAlpha);
+        }
+        else
+        {
+            first = Sse2.UnpackLow(redGreen, blueAlpha);
+            second = Sse2.UnpackHigh(redGreen, blueAlpha);
+        }
+
+        unsafe { first.AsByte().StoreUnsafe(ref output); }
+        unsafe { second.AsByte().StoreUnsafe(ref output, 16); }
+    }
+
+    /// <summary>
+    /// Writes 16 opaque RGBA pixels (64 bytes) from 16 red, green and blue values in 0..255: the 16-bit interleaving gives the
+    /// pixels 0 to 3 and 8 to 11, then 4 to 7 and 12 to 15, regrouped by 128-bit block permutations.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreOpaqueRgba16Avx2(Vector256<ushort> r, Vector256<ushort> g, Vector256<ushort> b, ref byte output)
+    {
+        var redGreen = r | Vector256.ShiftLeft(g, 8);
+        var blueAlpha = b | Vector256.Create((ushort)0xFF00);
+        var low = Avx2.UnpackLow(redGreen, blueAlpha);
+        var high = Avx2.UnpackHigh(redGreen, blueAlpha);
+        unsafe { Avx2.Permute2x128(low, high, 0x20).AsByte().StoreUnsafe(ref output); }
+        unsafe { Avx2.Permute2x128(low, high, 0x31).AsByte().StoreUnsafe(ref output, 32); }
+    }
+
+    /// <summary>
+    /// Writes 32 opaque RGBA pixels (128 bytes) from 32 red, green and blue values in 0..255: the 16-bit interleaving gives
+    /// the pixels 8 i to 8 i + 3 in the block i of the first vector and 8 i + 4 to 8 i + 7 in the block i of the second,
+    /// regrouped by two 64-bit permutations.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreOpaqueRgba32(Vector512<ushort> r, Vector512<ushort> g, Vector512<ushort> b, ref byte output)
+    {
+        var redGreen = r | Vector512.ShiftLeft(g, 8);
+        var blueAlpha = b | Vector512.Create((ushort)0xFF00);
+        var low = Avx512BW.UnpackLow(redGreen, blueAlpha).AsUInt64();
+        var high = Avx512BW.UnpackHigh(redGreen, blueAlpha).AsUInt64();
+        unsafe { Avx512F.PermuteVar8x64x2(low, Vector512.Create(0UL, 1, 8, 9, 2, 3, 10, 11), high).AsByte().StoreUnsafe(ref output); }
+        unsafe { Avx512F.PermuteVar8x64x2(low, Vector512.Create(4UL, 5, 12, 13, 6, 7, 14, 15), high).AsByte().StoreUnsafe(ref output, 64); }
     }
 
     /// <summary>The scalar reference of <see cref="ConvertYCbCrToRgba"/>.</summary>

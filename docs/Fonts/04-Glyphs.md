@@ -100,8 +100,9 @@ For the letter `l` of Noto Sans, the path is `M173 0L85 0L85 -760L173 -760L173 0
 - A glyph without outline, such as a space, emits nothing.
 - [GlyphBoundsSink](cref:Meziantou.Framework.Fonts.GlyphBoundsSink) is a sink that measures an outline: the smallest rectangle that contains its points and the control
   points of its curves.
-- The [DecodeOutline](cref:Meziantou.Framework.Fonts.FontFace.DecodeOutline) overload that takes a size uses the bitmaps of the font at that size when the font was loaded with
-  `useEmbeddedBitmaps`.
+- The [DecodeOutline](cref:Meziantou.Framework.Fonts.FontFace.DecodeOutline) overload that takes a size uses the bitmaps of one bit per pixel of the font (`EBDT`, `bdat`): a
+  rectangle per run of pixels of a row. A font loaded with `useEmbeddedBitmaps` uses the strike made for exactly that
+  size; a font without outlines uses the strike that suits any size (see [Bitmap glyphs](#bitmap-glyphs)).
 
 ## Hint outlines
 
@@ -110,9 +111,18 @@ pixel grid of a size:
 
 - [GlyphHinting.Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light) aligns the outlines along the vertical axis, without the instructions of the font, for any
   outline format.
-- [GlyphHinting.Full](cref:Meziantou.Framework.Fonts.GlyphHinting.Full) runs the TrueType instructions of the font. Instructions that break a rule of the specification
-  leave the glyph, or the font when they are in its programs, unhinted. [Hinting](cref:Meziantou.Framework.Fonts.GlyphHinter.Hinting) gives the mode that is used: [Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light)
-  when the instructions of the font cannot be run.
+- [GlyphHinting.Full](cref:Meziantou.Framework.Fonts.GlyphHinting.Full) uses the hints of the font, and makes the advances whole pixels:
+  - TrueType outlines: the instructions of the font, along both axes. An instance of a variable font is hinted with
+    its own outlines and control values (the `cvar` table). Instructions that break a rule of the specification leave
+    the glyph, or the font when they are in its programs, unhinted.
+  - CFF and CFF2 outlines: the horizontal stem hints of each glyph (with the hint masks that replace them along the
+    outline) and the alignment zones of the font (`BlueValues`, `OtherBlues`, `BlueScale`, `BlueShift`, `BlueFuzz`),
+    along the vertical axis. The edges of the stems in a zone go to the zone, the other stems are a whole number of
+    pixels thick, and the overshoots of the zones are suppressed at small sizes. A glyph without stem hints is not
+    changed.
+
+  [Hinting](cref:Meziantou.Framework.Fonts.GlyphHinter.Hinting) gives the mode that is used: [Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light) for TrueType outlines without instructions, or whose
+  programs cannot be run.
 
 [GlyphHinter.Create](cref:Meziantou.Framework.Fonts.GlyphHinter.Create) prepares a font at a size, and [DecodeOutline](cref:Meziantou.Framework.Fonts.GlyphHinter.DecodeOutline) gives the hinted outline of a glyph and its advance
 in pixels. A hinter keeps the state of the programs of the font: use it for one operation at a time, and dispose it.
@@ -125,8 +135,51 @@ Some fonts have glyphs with their own colors, such as emoji. [HasColorGlyphs](cr
 - [BuildColorGlyph](cref:Meziantou.Framework.Fonts.FontFace.BuildColorGlyph) gives the display list of a glyph of a `COLR` table, with the colors of a palette: layers, paints,
   gradients and compositions to draw. [PaletteCount](cref:Meziantou.Framework.Fonts.FontFace.PaletteCount), [TryGetPaletteColor](cref:Meziantou.Framework.Fonts.FontFace.TryGetPaletteColor) and [GetPaletteType](cref:Meziantou.Framework.Fonts.FontFace.GetPaletteType) read the palettes of the
   `CPAL` table.
-- [TryGetBitmapGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetBitmapGlyph) finds the image of a glyph of an `sbix` or `CBDT` table in the strike that suits a size: where its
-  data is in the font, its placement and its image format ([BitmapGlyph.Format](cref:Meziantou.Framework.Fonts.BitmapGlyph.Format)). Decoding the image is up to you; a
-  renderer can also draw the outline of the glyph instead.
+- The glyphs of the `sbix` and `CBDT` tables are images: see [Bitmap glyphs](#bitmap-glyphs).
+- [TryGetSvgGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetSvgGlyph) finds the SVG document that describes a glyph of an `SVG ` table, and [GetSvgDocument](cref:Meziantou.Framework.Fonts.FontFace.GetSvgDocument)
+  gives its text, expanded when the font compresses it with gzip. [HasSvgGlyphs](cref:Meziantou.Framework.Fonts.FontFace.HasSvgGlyphs) tells whether a font has such glyphs.
+
+A document can describe several glyphs: the element of a glyph has the identifier `glyph` followed by the glyph
+identifier, and the glyph is drawn as a `use` element that refers to it would draw it, in font units with the y axis
+going down from the baseline. Drawing the document is up to you:
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_SvgDocument;format=md-fenced-code-block;dedent=true -->
+```csharp
+static string? GetSvgDocument(FontFace face, char character)
+{
+    var glyph = face.MapCodePoint(character);
+    if (!face.TryGetSvgGlyph(glyph, out var svgGlyph))
+        return null; // no SVG description: the glyph is drawn from its outline, or from another color table
+
+    // The text of the document, expanded when the font compresses it. The document can describe several glyphs
+    // (FirstGlyphId to LastGlyphId): the element of this one has the identifier "glyph" + GlyphId.
+    return Encoding.UTF8.GetString(face.GetSvgDocument(svgGlyph).Span);
+}
+```
+<!-- endref -->
+
+A font that has a malformed list of documents is read without its `SVG ` table: its glyphs are then outlines. A
+compressed document that is malformed throws an [InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) when it is read.
 
 To draw color glyphs without writing a renderer, use [the text API of Meziantou.Framework.Imaging](../Imaging/08-Text/02-Fonts.md#color-glyphs).
+
+## Bitmap glyphs
+
+Some fonts give glyphs as images, in strikes made for a number of pixels per em: images in color (`sbix`, `CBDT`) and
+bitmaps without colors (`EBDT`, `bdat` in the fonts of Apple). A font can have no outlines at all: its
+[Outlines](cref:Meziantou.Framework.Fonts.FontFace.Outlines) is [None](cref:Meziantou.Framework.Fonts.FontOutlineKind.None), and [IsBitmapOnly](cref:Meziantou.Framework.Fonts.FontFace.IsBitmapOnly) tells that its glyphs are bitmaps. Its metrics, character map and
+layout tables are read like those of any font; a font of Apple without outlines can have a `bhed` table instead of
+`head`.
+
+- [TryGetBitmapGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetBitmapGlyph) finds the image of a glyph a renderer draws as an image, in the strike that suits a size (the
+  smallest one that is at least as large, else the largest one): the images of `sbix` and `CBDT`, and the bitmaps of
+  several bits per pixel of `EBDT` when the font uses them. [HasBitmapGlyphs](cref:Meziantou.Framework.Fonts.FontFace.HasBitmapGlyphs) tells whether a font has some.
+- [TryGetAnyBitmapGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetAnyBitmapGlyph) finds the image of a glyph in any of these tables, the bitmaps of one bit per pixel included.
+- A [BitmapGlyph](cref:Meziantou.Framework.Fonts.BitmapGlyph) gives the strike, the placement of the image and its format ([BitmapGlyph.Format](cref:Meziantou.Framework.Fonts.BitmapGlyph.Format)). The PNG, JPEG
+  and TIFF images are encoded data in the font, at [Offset](cref:Meziantou.Framework.Fonts.BitmapGlyph.Offset): decoding them is up to you ([Font.DecodeBitmapGlyph](../Imaging/08-Text/02-Fonts.md#bitmap-glyphs)
+  of Meziantou.Framework.Imaging does it).
+- The pixels that are not encoded, [Mask](cref:Meziantou.Framework.Fonts.BitmapGlyphFormat.Mask) (a coverage of 1, 2, 4 or 8 bits, drawn with the color of the text) and
+  [Bgra](cref:Meziantou.Framework.Fonts.BitmapGlyphFormat.Bgra) (colors of 32 bits), are decoded by [DecodeBitmap](cref:Meziantou.Framework.Fonts.FontFace.DecodeBitmap), with the glyphs a glyph is made of (image formats 8
+  and 9): an image of [Width](cref:Meziantou.Framework.Fonts.BitmapGlyph.Width) by [Height](cref:Meziantou.Framework.Fonts.BitmapGlyph.Height) pixels.
+- [ColorGlyph.FromImage](cref:Meziantou.Framework.Fonts.ColorGlyph.FromImage) and [ColorGlyph.FromMask](cref:Meziantou.Framework.Fonts.ColorGlyph.FromMask) make the display list that draws a decoded image, in its colors or in the
+  color of the text.

@@ -1,7 +1,3 @@
-using System.Buffers.Binary;
-using System.IO.Compression;
-using Meziantou.Framework.Hashing;
-
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -14,9 +10,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Push-model use: <see cref="Feed"/> copies a bounded piece of compressed data, then <see cref="TryReadRow"/> returns the
 /// reconstructed rows that piece completes, until the inflater starves; finally <see cref="Complete"/> validates the end of
 /// the datastream. The image data of an Apple CgBI file (<see cref="PngSampleFormat.IsAppleCgbi"/>) is a raw deflate
-/// datastream instead of a zlib one: it has no header and no Adler-32 trailer. The inflater is given a zlib header before
-/// it and, once the image is complete, the Adler-32 checksum of the decompressed bytes after it, so that both datastreams
-/// are validated by the same zlib inflater. Memory is bounded by two scanlines, one expanded row (none when the scanline
+/// datastream instead of a zlib one: it has no header and no Adler-32 trailer (<see cref="PngZlibInflater"/> inflates
+/// both). Memory is bounded by two scanlines, one expanded row (none when the scanline
 /// bytes already are the source pixels), one compressed piece, one piece of decompressed data and the inflater window,
 /// whatever the image or chunk sizes (the scanlines and the row are those of the widest pass that is decoded); every
 /// buffer is charged to the operation scope as decoder state. The two scanline buffers are swapped after each row instead
@@ -25,13 +20,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// Validation (every failure is <see cref="InvalidImageContentException"/>): invalid zlib data (header, deflate blocks,
-/// Adler-32 mismatch reported by the BCL), an invalid filter type, an out-of-range palette index, decompressed data longer
-/// than the image (checked as soon as the last scanline is complete, so the expansion is bounded by the image size), data
-/// shorter than the image, and a datastream that does not end with its Adler-32 trailer (the BCL reports truncated zlib
-/// data as a clean end, so the trailer is checked against the running checksum of the decompressed bytes; extra bytes after
-/// the zlib datastream are rejected the same way). A raw deflate datastream must end with its final block: bytes after it
-/// are read as the checksum and do not match it, and an inflater that did not reach it reads the byte pushed after the
-/// checksum, which a finished one leaves unread.
+/// Adler-32 mismatch), an invalid filter type, an out-of-range palette index, decompressed data longer than the image
+/// (checked as soon as the last scanline is complete, so the expansion is bounded by the image size), data shorter than the
+/// image, a datastream that does not end (truncated: no final block or no Adler-32 trailer), and bytes after its end
+/// (<see cref="PngZlibInflater"/> describes how each runtime finds the end).
 /// </para>
 /// <para>
 /// Scaled decoding: an Adam7 datastream decoded at 1/2, 1/4 or 1/8 of its size stops after the first passes, which hold
@@ -58,15 +50,13 @@ internal sealed class PngImageDataDecoder : IDisposable
     private PooledBuffer? _previousBuffer;
     private PooledBuffer? _pixelBuffer;
     private PooledBuffer? _feedBuffer;
+    private PngZlibInflater? _inflater;
 
     // Decompressed bytes not yet copied to a scanline: [_inflatedStart, _inflatedEnd)
     private PooledBuffer? _inflatedBuffer;
     private int _inflatedStart;
     private int _inflatedEnd;
     private long _remainingBytes;
-    private InflateFeedStream? _feed;
-    private ZLibStream? _zlib;
-    private bool _pendingSyntheticHeader;
 
     private int _pass = -1;
     private int _passWidth;
@@ -77,9 +67,6 @@ internal sealed class PngImageDataDecoder : IDisposable
     private long _decodedScanlines;
     private bool _done;
     private bool _firstScanlineOfPass;
-    private uint _adler = Adler32.Compute([]);
-    private long _compressedLength;
-    private uint _trailer;
 
     /// <summary>Creates the decoder of one image.</summary>
     /// <param name="context">The per-input context (allocation scope, cancellation).</param>
@@ -139,9 +126,7 @@ internal sealed class PngImageDataDecoder : IDisposable
 
             _feedBuffer = scope.Rent(FeedCapacity, AllocationKind.DecoderState, clear: false);
             _inflatedBuffer = scope.Rent((int)Math.Min(InflatedCapacity, _remainingBytes), AllocationKind.DecoderState, clear: false);
-            _feed = new InflateFeedStream(_feedBuffer.RawBuffer);
-            _zlib = new ZLibStream(_feed, CompressionMode.Decompress, leaveOpen: true);
-            _pendingSyntheticHeader = format.IsAppleCgbi;
+            _inflater = new PngZlibInflater(_feedBuffer.RawBuffer, format.IsAppleCgbi);
         }
         catch
         {
@@ -168,39 +153,21 @@ internal sealed class PngImageDataDecoder : IDisposable
     /// <returns>The number of bytes taken (at most an internal bound); feed the rest afterward.</returns>
     public int Feed(ReadOnlySpan<byte> compressed)
     {
-        var feed = _feed ?? throw new ObjectDisposedException(nameof(PngImageDataDecoder));
+        var inflater = _inflater ?? throw new ObjectDisposedException(nameof(PngImageDataDecoder));
 
         // The passes after those of a reduced image are not decoded: their data is skipped
         if (_done && _isPartial)
             return compressed.Length;
 
         // A finished inflater stops reading its source: unread bytes follow the end of the zlib datastream
-        if (feed.Available != 0)
+        if (inflater.Available != 0)
         {
             throw _done
                 ? Invalid("The PNG image data has extra bytes after the end of its zlib datastream.")
                 : Invalid(string.Create(CultureInfo.InvariantCulture, $"The zlib datastream of the PNG image data ends after {_decodedScanlines} of {_totalScanlines} scanlines."));
         }
 
-        var count = _pendingSyntheticHeader ? feed.Push(BoundedInflater.SyntheticZlibHeader, compressed) : feed.Push(compressed);
-        _pendingSyntheticHeader = false;
-        var piece = compressed[..count];
-        _compressedLength += count;
-
-        // Keep the last four compressed bytes: the Adler-32 trailer once the datastream ends
-        if (count >= 4)
-        {
-            _trailer = BinaryPrimitives.ReadUInt32BigEndian(piece[^4..]);
-        }
-        else
-        {
-            foreach (var value in piece)
-            {
-                _trailer = (_trailer << 8) | value;
-            }
-        }
-
-        return count;
+        return inflater.Push(compressed);
     }
 
     /// <summary>Reconstructs the next row whose scanline is complete in the data fed so far.</summary>
@@ -209,7 +176,7 @@ internal sealed class PngImageDataDecoder : IDisposable
     /// <exception cref="InvalidImageContentException">The datastream is invalid or longer than the image.</exception>
     public bool TryReadRow(out PngDecodedRow row)
     {
-        var zlib = _zlib ?? throw new ObjectDisposedException(nameof(PngImageDataDecoder));
+        var inflater = _inflater ?? throw new ObjectDisposedException(nameof(PngImageDataDecoder));
         row = default;
         if (_done)
         {
@@ -228,7 +195,7 @@ internal sealed class PngImageDataDecoder : IDisposable
             if (_inflatedStart == _inflatedEnd)
             {
                 // Never past the image: what follows it is checked once every scanline was read (EnsureNoExtraData)
-                var read = Inflate(zlib, inflated.AsSpan(0, (int)Math.Min(inflated.Length, _remainingBytes)));
+                var read = inflater.Inflate(inflated.AsSpan(0, (int)Math.Min(inflated.Length, _remainingBytes)));
                 if (read == 0)
                     return false;
 
@@ -285,7 +252,7 @@ internal sealed class PngImageDataDecoder : IDisposable
     /// <exception cref="InvalidImageContentException">The data is shorter or longer than the image, or the zlib datastream is truncated or followed by extra data.</exception>
     public void Complete()
     {
-        ObjectDisposedException.ThrowIf(_feed is null, this);
+        ObjectDisposedException.ThrowIf(_inflater is null, this);
 
         if (!_done)
         {
@@ -298,22 +265,13 @@ internal sealed class PngImageDataDecoder : IDisposable
             return;
 
         EnsureNoExtraData();
-        if (_format.IsAppleCgbi)
-        {
-            CompleteRawDeflate();
-            return;
-        }
-
-        if (_compressedLength < 6 || _trailer != _adler)
-            throw Invalid("The PNG image data does not end with the Adler-32 checksum of its zlib datastream (truncated datastream or extra data after it).");
+        _inflater.Complete();
     }
 
     public void Dispose()
     {
-        _zlib?.Dispose();
-        _zlib = null;
-        _feed?.Dispose();
-        _feed = null;
+        _inflater?.Dispose();
+        _inflater = null;
         _feedBuffer?.Dispose();
         _feedBuffer = null;
         _inflatedBuffer?.Dispose();
@@ -347,63 +305,15 @@ internal sealed class PngImageDataDecoder : IDisposable
         _done = true;
     }
 
-    /// <summary>
-    /// Ends the raw deflate datastream of an Apple CgBI file: the inflater is given the checksum of the decompressed bytes,
-    /// which ends a complete datastream, then one byte, which only an inflater that did not reach the end reads.
-    /// </summary>
-    private void CompleteRawDeflate()
-    {
-        var feed = _feed!;
-        Span<byte> checksum = stackalloc byte[4];
-        BinaryPrimitives.WriteUInt32BigEndian(checksum, _adler);
-        feed.Push(checksum);
-        Span<byte> probe = stackalloc byte[1];
-
-        // The image is complete (more data was rejected before): a datastream that goes on after the checksum is truncated
-        if (Inflate(_zlib!, probe) != 0)
-            throw Truncated();
-
-        if (feed.Available != 0)
-            throw Invalid("The Apple CgBI image data has extra bytes after the end of its deflate datastream.");
-
-        feed.Push([0]);
-        if (Inflate(_zlib!, probe) != 0 || feed.Available == 0)
-            throw Truncated();
-
-        static InvalidImageContentException Truncated() => Invalid("The deflate datastream of the Apple CgBI image data does not end with its final block (truncated datastream).");
-    }
-
     private void EnsureNoExtraData()
     {
         // The image is complete: the zlib datastream may only end (Adler-32 trailer), never produce more bytes
         Span<byte> probe = stackalloc byte[1];
-        if (Inflate(_zlib!, probe) != 0)
+        if (_inflater!.Inflate(probe) != 0)
             throw Invalid("The PNG image data decompresses to more bytes than the image needs.");
 
         // A finished inflater stops reading its source: unread pushed bytes follow the end of the zlib datastream
-        if (_feed!.Available != 0)
+        if (_inflater.Available != 0)
             throw Invalid("The PNG image data has extra bytes after the end of its zlib datastream.");
-    }
-
-    private int Inflate(ZLibStream zlib, Span<byte> destination)
-    {
-        int read;
-        try
-        {
-            read = zlib.Read(destination);
-        }
-        catch (InvalidDataException exception)
-        {
-            throw Invalid("The zlib datastream of the PNG image data is invalid.", exception);
-        }
-        catch (IOException exception)
-        {
-            // The feed is in memory and never fails: an IOException is the BCL's (internal) ZLibException for zlib error
-            // codes that are not data errors, for example a preset dictionary (FDICT), which PNG forbids (fuzz regression)
-            throw Invalid("The zlib datastream of the PNG image data is invalid.", exception);
-        }
-
-        _adler = Adler32.Append(_adler, destination[..read]);
-        return read;
     }
 }

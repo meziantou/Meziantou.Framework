@@ -1288,7 +1288,7 @@ internal sealed partial class Painter
             var count = 0;
             foreach (var component in layer)
             {
-                if (component is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "inset"))
+                if (component is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "inset"))
                 {
                     inset = true;
                 }
@@ -1296,7 +1296,7 @@ internal sealed partial class Painter
                 {
                     lengths[count++] = length.Length;
                 }
-                else if (currentColor is not null && component is CssPreservedToken { Type: CssTokenType.Ident } keyword && InfraAscii.EqualsIgnoreAsciiCase(keyword.Token.Value, "currentcolor"))
+                else if (currentColor is not null && component is CssPreservedToken { Type: CssTokenType.Ident } keyword && InfraAscii.EqualsIgnoreAsciiCase(keyword.Value, "currentcolor"))
                 {
                     color = currentColor;
                 }
@@ -1871,7 +1871,7 @@ internal sealed partial class Painter
     private static string GetEmphasisMark(string value, bool horizontal)
     {
         if (value.Length >= 2 && value[0] is '"' or '\'')
-            return CssParser.ParseListOfComponentValues(value) is [CssPreservedToken { Type: CssTokenType.String } text, ..] ? text.Token.Value : "";
+            return CssParser.ParseListOfComponentValues(value) is [CssPreservedToken { Type: CssTokenType.String } text, ..] ? text.Value : "";
 
         var open = value.Contains("open", StringComparison.Ordinal);
         var shape = value.Replace("filled", "", StringComparison.Ordinal).Replace("open", "", StringComparison.Ordinal).Trim();

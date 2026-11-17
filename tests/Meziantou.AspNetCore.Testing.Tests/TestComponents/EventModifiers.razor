@@ -1,0 +1,14 @@
+<div id="outer" @onclick="() => OuterClicks++">
+    <button id="stopped" @onclick="() => InnerClicks++" @onclick:stopPropagation>Stopped</button>
+    <button id="bubbling" @onclick="() => InnerClicks++">Bubbling</button>
+</div>
+<input id="prevented" type="checkbox" @onclick:preventDefault />
+<a id="link" href="other" @onclick="() => LinkClicks++" @onclick:preventDefault>Link</a>
+
+@code {
+    public int OuterClicks { get; private set; }
+
+    public int InnerClicks { get; private set; }
+
+    public int LinkClicks { get; private set; }
+}

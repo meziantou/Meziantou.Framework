@@ -369,6 +369,77 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Creates a single-frame image of the storage format of a custom pixel type by converting its pixels
+    /// (<see cref="ICustomPixel{TSelf}.ToStorage"/>). The source memory is never wrapped or retained.
+    /// </summary>
+    /// <typeparam name="TPixel">The custom pixel type.</typeparam>
+    /// <param name="source">The source pixels, row by row, top to bottom.</param>
+    /// <param name="width">The width of the image. Must be positive.</param>
+    /// <param name="height">The height of the image. Must be positive.</param>
+    /// <param name="strideInPixels">
+    /// The distance between the starts of two consecutive source rows, in pixels, or 0 for tightly packed rows. Must be 0 or
+    /// at least <paramref name="width"/>.
+    /// </param>
+    /// <param name="configuration">The configuration of the new image, or <see langword="null"/> for <see cref="ImageConfiguration.Default"/>.</param>
+    /// <returns>A new image of <see cref="ICustomPixel{TSelf}.StorageFormat"/>, owned by the caller.</returns>
+    /// <exception cref="NotSupportedException">The storage format of <typeparamref name="TPixel"/> is not a built-in pixel format.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A dimension or the stride is invalid.</exception>
+    /// <exception cref="ArgumentException"><paramref name="source"/> is too short for the dimensions and stride.</exception>
+    /// <exception cref="ImageResourceLimitException">The image would exceed a configured limit.</exception>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Imaging.Tests/PixelAccessTests.cs" ref:region="ICustomPixel_Usage" ref:dedent="true">
+    /// // Bgr555 converts from and to Rgb24: an image of Rgb24 pixels is made from its pixels
+    /// Bgr555[] source = [Bgr555.FromColor(31, 0, 0), Bgr555.FromColor(0, 31, 0), Bgr555.FromColor(0, 0, 31), Bgr555.FromColor(31, 31, 31)];
+    /// using var image = Image.ImportCustomPixelData&lt;Bgr555&gt;(source, width: 2, height: 2);
+    /// Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+    ///
+    /// // The pixels of a frame of any format are converted to the storage format, then to the custom pixels
+    /// using var gray = image.CloneAs&lt;Gray16&gt;();
+    /// var copy = new Bgr555[4];
+    /// gray.Frames[0].CopyCustomPixelDataTo&lt;Bgr555&gt;(copy);
+    ///
+    /// // A frame of the storage format is edited in place, row by row
+    /// image.Frames[0].ProcessCustomPixelRows&lt;Bgr555&gt;(static (row, y) =&gt;
+    /// {
+    ///     foreach (ref var pixel in row)
+    ///     {
+    ///         pixel = Bgr555.FromColor(pixel.Blue, pixel.Green, pixel.Red);
+    ///     }
+    /// });
+    /// </code>
+    /// </example>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new image is returned to the caller, or disposed when the conversion fails.")]
+    public static Image ImportCustomPixelData<TPixel>(ReadOnlySpan<TPixel> source, int width, int height, int strideInPixels = 0, ImageConfiguration? configuration = null)
+        where TPixel : unmanaged, ICustomPixel<TPixel>
+    {
+        var format = CustomPixels.GetStorageFormat<TPixel>();
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentOutOfRangeException.ThrowIfNegative(strideInPixels);
+        var stride = RowStride.Resolve(strideInPixels, width, nameof(strideInPixels), "pixels");
+        RowStride.EnsureLength(source.Length, stride, width, height, nameof(source), "pixels");
+        configuration ??= ImageConfiguration.Default;
+        configuration.Limits.EnsureCanvasWithinLimits(width, height);
+        var image = CreateForDecoder(format, configuration, new Size(width, height), AllocationScope.Create(configuration, "Image"));
+        try
+        {
+            using var lease = image.FrameCore(0).GetStorage().AcquireLease();
+            var rowLength = width * PixelFormats.GetBytesPerPixel(format);
+            for (var y = 0; y < height; y++)
+            {
+                TPixel.ToStorage(source.Slice(RowStride.GetOffset(y, stride), width), lease.GetRowBytes(y)[..rowLength]);
+            }
+        }
+        catch
+        {
+            image.Dispose();
+            throw;
+        }
+
+        return image;
+    }
+
+    /// <summary>
     /// Creates a single-frame image by copying raw pixel bytes laid out like <typeparamref name="TPixel"/> (16-bit
     /// components in native endianness). The source memory is never wrapped or retained.
     /// </summary>
@@ -402,6 +473,7 @@ public abstract partial class Image
     }
 
     /// <summary>Creates a single-frame image of a runtime pixel format for a decoder (<see cref="DecodedImageBuilder"/>): size and limits are already validated.</summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The new image is returned to the decoder, which owns it.")]
     internal static Image CreateForDecoder(PixelFormat format, ImageConfiguration configuration, Size size, AllocationScope scope) => format switch
     {
         PixelFormat.Rgba32 => new Image<Rgba32>(configuration, size, scope, layoutOptions: null),
@@ -422,6 +494,10 @@ public abstract partial class Image
         PixelFormat.Rgba1010102 => new Image<Rgba1010102>(configuration, size, scope, layoutOptions: null),
         PixelFormat.Cmyk32 => new Image<Cmyk32>(configuration, size, scope, layoutOptions: null),
         PixelFormat.Cmyk64 => new Image<Cmyk64>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.GrayFloat => new Image<GrayFloat>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.GrayHalf => new Image<GrayHalf>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.LaFloat => new Image<LaFloat>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.LaHalf => new Image<LaHalf>(configuration, size, scope, layoutOptions: null),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 

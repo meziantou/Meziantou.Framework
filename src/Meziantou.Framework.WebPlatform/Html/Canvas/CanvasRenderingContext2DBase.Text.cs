@@ -695,7 +695,7 @@ public abstract partial class CanvasRenderingContext2DBase
         if (significant.Count == 0)
             return false;
 
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Token.Value)))
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ValueMatcher.CssWideKeywords.Contains(InfraAscii.ToAsciiLowercase(ident.Value)))
             return false;
 
         return !ContainsFunction(components);
@@ -834,17 +834,17 @@ public abstract partial class CanvasRenderingContext2DBase
         if (ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is not [CssPreservedToken token])
             return null;
 
-        if (token.Type == CssTokenType.Number && token.Token.NumericValue == 0)
+        if (token.Type == CssTokenType.Number && token.NumericValue == 0)
             return "0px";
 
         if (token.Type != CssTokenType.Dimension)
             return null;
 
-        var unit = InfraAscii.ToAsciiLowercase(token.Token.Value);
+        var unit = InfraAscii.ToAsciiLowercase(token.Value);
         if (!ValueMatcher.IsLengthUnit(unit))
             return null;
 
-        return CssValueComputer.SerializeNumber(token.Token.NumericValue) + unit;
+        return CssValueComputer.SerializeNumber(token.NumericValue) + unit;
     }
 
     /// <summary>Resolves a spacing length to CSS px with the font of the text (its font-relative lengths).</summary>
@@ -888,7 +888,7 @@ public abstract partial class CanvasRenderingContext2DBase
     private static string? ParseFilter(string value)
     {
         var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
-        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "none"))
+        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, "none"))
             return "none";
 
         // A <filter-value-list> (https://drafts.fxtf.org/filter-effects/#typedef-filter-value-list): a valid value of the

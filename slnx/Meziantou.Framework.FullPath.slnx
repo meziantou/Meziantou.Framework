@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
@@ -7,12 +8,14 @@
     <Project Path="../fuzz/Meziantou.Framework.BloomFilters.Fuzz/Meziantou.Framework.BloomFilters.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Charts.Fuzz/Meziantou.Framework.Charts.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.CodeOwners.Fuzz/Meziantou.Framework.CodeOwners.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Compression.Fuzz/Meziantou.Framework.Compression.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Diagrams.Fuzz/Meziantou.Framework.Diagrams.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Dns.Fuzz/Meziantou.Framework.Dns.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.FastEnumGenerator.FuzzEnums/Meziantou.Framework.FastEnumGenerator.FuzzEnums.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.FileConversion.Tool.Fuzz/Meziantou.Framework.FileConversion.Tool.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Fonts.Fuzz/Meziantou.Framework.Fonts.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Fuzzing.Tests/Meziantou.Framework.Fuzzing.Tests.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
@@ -27,12 +30,14 @@
     <Project Path="../fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Http.Fuzz/Meziantou.Framework.Http.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Imaging.Fuzz/Meziantou.Framework.Imaging.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.JsonPath.Fuzz/Meziantou.Framework.JsonPath.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Ntp.Fuzz/Meziantou.Framework.Ntp.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Pdf.Fuzz/Meziantou.Framework.Pdf.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Pdf.VectorGraphics.Fuzz/Meziantou.Framework.Pdf.VectorGraphics.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.RobotsTxt.Fuzz/Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
@@ -51,6 +56,7 @@
     <Project Path="../fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.AspNetCore.Testing/Meziantou.AspNetCore.Testing.csproj" />
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
     <Project Path="../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
@@ -59,6 +65,7 @@
     <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
     <Project Path="../src/Meziantou.Framework.CodeOwners/Meziantou.Framework.CodeOwners.csproj" />
     <Project Path="../src/Meziantou.Framework.CommandLine/Meziantou.Framework.CommandLine.csproj" />
+    <Project Path="../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
     <Project Path="../src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="../src/Meziantou.Framework.Diagrams/Meziantou.Framework.Diagrams.csproj" />
@@ -67,6 +74,7 @@
     <Project Path="../src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
     <Project Path="../src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj" />
     <Project Path="../src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.FileConversion.Tool/Meziantou.Framework.FileConversion.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
@@ -86,6 +94,7 @@
     <Project Path="../src/Meziantou.Framework.Http.Htpasswd/Meziantou.Framework.Http.Htpasswd.csproj" />
     <Project Path="../src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.JavaScriptEngine.SourceGenerator/Meziantou.Framework.JavaScriptEngine.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
@@ -103,6 +112,7 @@
     <Project Path="../src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
     <Project Path="../src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
     <Project Path="../src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
+    <Project Path="../src/Meziantou.Framework.Pdf.JavaScript/Meziantou.Framework.Pdf.JavaScript.csproj" />
     <Project Path="../src/Meziantou.Framework.Pdf.VectorGraphics/Meziantou.Framework.Pdf.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />

@@ -70,10 +70,10 @@ internal static class CssValueNormalizer
         string expanded;
         if (function.Name.Equals("inset", StringComparison.OrdinalIgnoreCase))
         {
-            var round = arguments.FindIndex(static argument => argument is Syntax.CssPreservedToken { Type: Syntax.CssTokenType.Ident } ident && ident.Token.IsIdent("round"));
+            var round = arguments.FindIndex(static argument => argument is Syntax.CssPreservedToken { Type: Syntax.CssTokenType.Ident } ident && ident.IsIdent("round"));
             var offsets = ExpandFour(Serialize(round < 0 ? arguments : arguments[..round]));
             var radii = round < 0 ? [] : arguments[(round + 1)..];
-            var slash = radii.FindIndex(static argument => argument is Syntax.CssPreservedToken token && token.Token.IsDelim('/'));
+            var slash = radii.FindIndex(static argument => argument is Syntax.CssPreservedToken token && token.IsDelim('/'));
             var horizontal = ExpandFour(round < 0 ? ["0px"] : Serialize(slash < 0 ? radii : radii[..slash]));
             var vertical = slash < 0 ? horizontal : ExpandFour(Serialize(radii[(slash + 1)..]));
             if (offsets is null || horizontal is null || vertical is null)

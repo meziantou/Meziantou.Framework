@@ -4,6 +4,8 @@ using Meziantou.Framework.Barcodes;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Typography;
+using Meziantou.Framework.Imaging.VectorGraphics;
+using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework.Imaging.Barcodes.Tests;
 
@@ -23,19 +25,19 @@ public sealed class ImageRendererTests
         using var webp = new MemoryStream();
         image.Save(webp, new WebPEncoder());
 
-        // Custom options, the same as the canvas drawing takes: any brush, and no background
-        using var customImage = qrCode.ToImage(new QRCodeDrawingOptions
+        // Custom options, the same as the SVG renderer takes: any paint, and no background
+        using var customImage = qrCode.ToImage(new QRCodeRenderOptions
         {
             ModuleSize = 4,
             QuietZoneModules = 2,
-            DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
-            LightBrush = null,
+            DarkPaint = new SceneColor(0x00, 0x33, 0x66),
+            LightPaint = null,
         });
         Assert.Equal((116, 116), (customImage.Width, customImage.Height));
         Assert.Equal(Colors.Transparent, customImage.Frames[0][0, 0]);
         Assert.Equal(new Rgba32(0x00, 0x33, 0x66), customImage.Frames[0][8, 8]);
 
-        // An indexed PNG stores the two colors in a palette, as ToPng does
+        // An indexed PNG stores the two colors in a palette
         using var png = new MemoryStream();
         customImage.Save(png, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
         #endregion
@@ -46,7 +48,7 @@ public sealed class ImageRendererTests
     {
         #region ImagingBarcodes_BarcodeToImage
         var barcode = Barcode.CreateEan13("5901234123457");
-        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, ModuleHeight = 100 });
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 3, ModuleHeight = 100 });
         Assert.Equal((345, 100), (image.Width, image.Height));
         #endregion
     }
@@ -63,7 +65,7 @@ public sealed class ImageRendererTests
 
         // Draw a PDF417 symbol at the bottom of a ticket
         var pdf417 = Barcode2D.CreatePdf417("TICKET 0042", new Pdf417Options { Columns = 3 });
-        var options = new Barcode2DDrawingOptions { ModuleSize = 2 };
+        var options = new Barcode2DRenderOptions { ModuleSize = 2 };
         var size = Barcode2DImageRenderer.MeasureBarcode2D(pdf417, options);
         using var ticket = new Image<Rgba32>(400, 200, Colors.White);
         ticket.Draw(canvas => canvas.DrawBarcode2D(pdf417, new PointD((400 - size.Width) / 2, 200 - 16 - size.Height), options));
@@ -79,7 +81,7 @@ public sealed class ImageRendererTests
         #region ImagingBarcodes_DrawQRCode
         using var ticket = new Image<Rgba32>(400, 200, Colors.White); // or Image.Load<Rgba32>("ticket.png")
         var qrCode = QRCode.Create("TICKET-0042");
-        var options = new QRCodeDrawingOptions { ModuleSize = 4, QuietZoneModules = 2 };
+        var options = new QRCodeRenderOptions { ModuleSize = 4, QuietZoneModules = 2 };
 
         // The size of the drawing, quiet zone included, to lay out the page before drawing
         var size = QRCodeImageRenderer.MeasureQRCode(qrCode, options);
@@ -102,14 +104,13 @@ public sealed class ImageRendererTests
     {
         #region ImagingBarcodes_DrawBarcode
         var barcode = Barcode.CreateEan13("590123412345");
-        var options = new BarcodeDrawingOptions
+        var options = new BarcodeRenderOptions
         {
             ModuleWidth = 2,
             ModuleHeight = 60,
             QuietZoneModules = 9,
-            DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
-            Font = BarcodeFonts.OcrB, // prints barcode.Text, "5901234123457", under the bars
-            FontSize = 24,
+            DarkPaint = new SceneColor(0x00, 0x33, 0x66),
+            Text = new BarcodeTextOptions { Fonts = BarcodeFonts.OcrB, FontSize = 24 }, // prints the digits of barcode.Text in groups under the bars
         };
 
         var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
@@ -129,12 +130,13 @@ public sealed class ImageRendererTests
         #region ImagingBarcodes_GradientQRCode
         var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.Q);
 
-        // The brushes are in the coordinates of the image: the gradient goes across the whole symbol
-        var options = new QRCodeDrawingOptions
+        // The paints are in the coordinates of the scene: (0, 0) is the top-left corner of the quiet zone, and the
+        // gradient goes across the whole symbol
+        var options = new QRCodeRenderOptions
         {
             ModuleSize = 5,
             QuietZoneModules = 2,
-            DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(165, 165), [new GradientStop(0, new Rgba32(0x7c, 0x3a, 0xed)), new GradientStop(1, new Rgba32(0x0e, 0x74, 0x90))]),
+            DarkPaint = new LinearGradientPaint(0, 0, 165, 165, [new SceneGradientStop(0, new SceneColor(0x7c, 0x3a, 0xed)), new SceneGradientStop(1, new SceneColor(0x0e, 0x74, 0x90))]),
         };
 
         using var image = qrCode.ToImage(options);
@@ -147,12 +149,16 @@ public sealed class ImageRendererTests
     public void Documentation_OcrFonts()
     {
         #region ImagingBarcodes_OcrFonts
+        // The TrueType files of the fonts, loaded with Meziantou.Framework.Imaging
+        var ocrA = Font.Load(BarcodeFonts.OcrA.Faces[0].Data.Span);
+        var ocrB = Font.Load(BarcodeFonts.OcrB.Faces[0].Data.Span);
+
         using var image = new Image<Rgba32>(280, 72, Colors.White);
         image.Draw(canvas =>
         {
             var ink = new SolidBrush(Colors.Black);
-            canvas.FillText(ink, "OCR-A 0123456789", BarcodeFonts.OcrA, size: 24, new PointD(8, 6));
-            canvas.FillText(ink, "OCR-B 0123456789", BarcodeFonts.OcrB, size: 24, new PointD(8, 38));
+            canvas.FillText(ink, "OCR-A 0123456789", ocrA, size: 24, new PointD(8, 6));
+            canvas.FillText(ink, "OCR-B 0123456789", ocrB, size: 24, new PointD(8, 38));
         });
         #endregion
 
@@ -208,22 +214,10 @@ public sealed class ImageRendererTests
 
     [Theory]
     [MemberData(nameof(QRCodeLayouts))]
-    public void QRCode_ToImage_MatchesToPng(QRCodeType type, int moduleSize, int quietZoneModules)
-    {
-        var qr = CreateSample(type);
-        var expected = qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
-
-        using var actual = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
-
-        AssertSamePixels(expected, actual);
-    }
-
-    [Theory]
-    [MemberData(nameof(QRCodeLayouts))]
     public void QRCode_ToImage_PixelsMatchTheModuleMatrix(QRCodeType type, int moduleSize, int quietZoneModules)
     {
         var qr = CreateSample(type);
-        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
+        using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
 
         Assert.Equal((qr.Width + (2 * quietZoneModules)) * moduleSize, image.Width);
         Assert.Equal((qr.Height + (2 * quietZoneModules)) * moduleSize, image.Height);
@@ -244,6 +238,33 @@ public sealed class ImageRendererTests
         }
     }
 
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L, 15, 0)]
+    [InlineData(ErrorCorrectionLevel.M, 20, 1)]
+    [InlineData(ErrorCorrectionLevel.Q, 25, 1)]
+    [InlineData(ErrorCorrectionLevel.H, 30, 1)]
+    public void QRCode_ToImage_LogoOnClearedModules_IsDecoded(ErrorCorrectionLevel level, int sizePercent, int margin)
+    {
+        // The largest logo each level recovers, for 120 characters (versions 6 to 11): the logo is dark in its middle
+        var data = new string('a', 120);
+        var qr = QRCode.Create(data, level);
+        using var logo = new Image<Rgba32>(32, 32, Colors.White);
+        logo.Draw(canvas => canvas.FillCircle(new SolidBrush(new Rgba32(0x25, 0x63, 0xeb)), new PointD(16, 16), 14));
+        using var logoStream = new MemoryStream();
+        logo.Save(logoStream, new PngEncoder());
+        var options = new QRCodeRenderOptions
+        {
+            ModuleSize = 4,
+            Logo = new BarcodeLogo(logoStream.ToArray()) { SizePercent = sizePercent, MarginModules = margin, BackdropPaint = new SceneColor(0xf0, 0xf0, 0xf0), BackdropCornerRadius = 1 },
+        };
+
+        using var image = qr.ToImage(options);
+
+        var result = Assert.Single(image.ReadQRCodes());
+        Assert.Equal(data, result.Text);
+        Assert.Equal(level, result.Result.ErrorCorrectionLevel);
+    }
+
     [Fact]
     public void QRCode_ToImage_UsesCustomColors()
     {
@@ -251,7 +272,7 @@ public sealed class ImageRendererTests
         var dark = new Rgba32(0x00, 0x33, 0x66, 0xC0);
         var light = Colors.Transparent;
 
-        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 3, QuietZoneModules = 1, DarkBrush = new SolidBrush(dark), LightBrush = null });
+        using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 3, QuietZoneModules = 1, DarkPaint = Paint(dark), LightPaint = null });
 
         var pixels = GetPixels(image);
         Assert.Equal(light, pixels[0]);
@@ -260,21 +281,10 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
-    public void QRCode_ToImage_MatchesToPng_WithCustomColors()
-    {
-        var qr = QRCode.Create("SCAN ME", ErrorCorrectionLevel.Q);
-        var expected = qr.ToPng(new QRCodePngOptions { ModuleSize = 3, DarkColor = Color.FromRgb(0x00, 0x33, 0x66), LightColor = Color.Transparent });
-
-        using var actual = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 3, DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)), LightBrush = null });
-
-        AssertSamePixels(expected, actual);
-    }
-
-    [Fact]
     public void QRCode_ToImage_IndexedPngRoundTrip()
     {
         var qr = QRCode.CreateRMQR("https://example.com", ErrorCorrectionLevel.M);
-        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 2, LightBrush = null });
+        using var image = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 2, LightPaint = null });
 
         using var stream = new MemoryStream();
         image.Save(stream, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
@@ -286,7 +296,7 @@ public sealed class ImageRendererTests
     public void QRCode_ToImage_CanBeDrawnOntoAnotherImage()
     {
         var qr = QRCode.Create("TICKET-0042", ErrorCorrectionLevel.L);
-        using var qrImage = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        using var qrImage = qr.ToImage(new QRCodeRenderOptions { ModuleSize = 1, QuietZoneModules = 0 });
         using var ticket = new Image<Rgba32>(qrImage.Width + 32, qrImage.Height + 32, Colors.Red);
 
         ticket.Draw(canvas => canvas.DrawImage(qrImage.Frames[0], new PointD(16, 16)));
@@ -325,7 +335,7 @@ public sealed class ImageRendererTests
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeDrawingOptions { ModuleSize = moduleSize }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeRenderOptions { ModuleSize = moduleSize }));
     }
 
     [Fact]
@@ -333,7 +343,7 @@ public sealed class ImageRendererTests
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeDrawingOptions { QuietZoneModules = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeRenderOptions { QuietZoneModules = -1 }));
     }
 
     [Fact]
@@ -341,8 +351,8 @@ public sealed class ImageRendererTests
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
 
-        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeDrawingOptions { ModuleSize = int.MaxValue }));
-        Assert.Equal(nameof(QRCodeDrawingOptions.ModuleSize), exception.ParamName);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeRenderOptions { ModuleSize = int.MaxValue }));
+        Assert.Equal("options", exception.ParamName);
     }
 
     [Fact]
@@ -361,14 +371,14 @@ public sealed class ImageRendererTests
 
     [Theory]
     [MemberData(nameof(BarcodeLayouts))]
-    public void Barcode_ToImage_MatchesToPng(BarcodeType type, int moduleWidth, int moduleHeight, int quietZoneModules)
+    public void Barcode_ToImage_PixelsMatchTheModules(BarcodeType type, int moduleWidth, int moduleHeight, int quietZoneModules)
     {
         var barcode = CreateSample(type);
-        var expected = barcode.ToPng(new BarcodePngOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
+        using var expected = CreateExpectedImage(barcode, moduleWidth, moduleHeight, quietZoneModules);
 
-        using var actual = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
+        using var actual = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
 
-        AssertSamePixels(expected, actual);
+        AssertDrawnAt(expected, actual, 0, 0);
     }
 
     [Fact]
@@ -378,7 +388,7 @@ public sealed class ImageRendererTests
         var dark = new Rgba32(0x10, 0x20, 0x30);
         var light = new Rgba32(0xF0, 0xE0, 0xD0, 0x80);
 
-        using var image = barcode.ToImage(new BarcodeDrawingOptions { DarkBrush = new SolidBrush(dark), LightBrush = new SolidBrush(light) });
+        using var image = barcode.ToImage(new BarcodeRenderOptions { DarkPaint = Paint(dark), LightPaint = Paint(light) });
 
         var pixels = GetPixels(image);
         Assert.Contains(dark, pixels);
@@ -406,7 +416,7 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 0 }));
     }
 
     [Fact]
@@ -414,7 +424,7 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { ModuleHeight = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 0 }));
     }
 
     [Fact]
@@ -422,7 +432,7 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { QuietZoneModules = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeRenderOptions { QuietZoneModules = -1 }));
     }
 
     [Fact]
@@ -430,17 +440,17 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = int.MaxValue }));
-        Assert.Equal(nameof(BarcodeDrawingOptions.ModuleWidth), exception.ParamName);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = int.MaxValue }));
+        Assert.Equal("options", exception.ParamName);
     }
 
     [Theory]
     [MemberData(nameof(QRCodeLayouts))]
-    public void DrawQRCode_MatchesToPng(QRCodeType type, int moduleSize, int quietZoneModules)
+    public void DrawQRCode_PixelsMatchTheModules(QRCodeType type, int moduleSize, int quietZoneModules)
     {
         var qr = CreateSample(type);
-        using var expected = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules }));
-        var options = new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules };
+        using var expected = CreateExpectedImage(qr, moduleSize, quietZoneModules);
+        var options = new QRCodeRenderOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules };
 
         using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
         var bounds = DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(10, 10), state.options));
@@ -452,11 +462,11 @@ public sealed class ImageRendererTests
 
     [Theory]
     [MemberData(nameof(BarcodeLayouts))]
-    public void DrawBarcode_MatchesToPng(BarcodeType type, int moduleWidth, int moduleHeight, int quietZoneModules)
+    public void DrawBarcode_PixelsMatchTheModules(BarcodeType type, int moduleWidth, int moduleHeight, int quietZoneModules)
     {
         var barcode = CreateSample(type);
-        using var expected = Image.Load<Rgba32>(barcode.ToPng(new BarcodePngOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules }));
-        var options = new BarcodeDrawingOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules };
+        using var expected = CreateExpectedImage(barcode, moduleWidth, moduleHeight, quietZoneModules);
+        var options = new BarcodeRenderOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules };
 
         using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
         var bounds = DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(10, 10), state.options));
@@ -470,7 +480,7 @@ public sealed class ImageRendererTests
     public void DrawQRCode_NullLightBrush_KeepsTheBackground()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
-        var options = new QRCodeDrawingOptions { ModuleSize = 2, QuietZoneModules = 1, LightBrush = null };
+        var options = new QRCodeRenderOptions { ModuleSize = 2, QuietZoneModules = 1, LightPaint = null };
 
         using var actual = new Image<Rgba32>(50, 50, Colors.Red);
         DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, default, state.options));
@@ -492,8 +502,8 @@ public sealed class ImageRendererTests
     public void DrawQRCode_GradientBrush_PaintsOnlyTheDarkModules()
     {
         var qr = QRCode.Create("GRADIENT", ErrorCorrectionLevel.L);
-        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(100, 0), [new GradientStop(0, Colors.Blue), new GradientStop(1, Colors.Green)]);
-        var options = new QRCodeDrawingOptions { ModuleSize = 4, QuietZoneModules = 0, DarkBrush = gradient };
+        var gradient = new LinearGradientPaint(0, 0, 100, 0, [new SceneGradientStop(0, Paint(Colors.Blue)), new SceneGradientStop(1, Paint(Colors.Green))]);
+        var options = new QRCodeRenderOptions { ModuleSize = 4, QuietZoneModules = 0, DarkPaint = gradient };
 
         using var actual = new Image<Rgba32>(qr.Width * 4, qr.Height * 4, Colors.Red);
         DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, default, state.options));
@@ -524,14 +534,14 @@ public sealed class ImageRendererTests
     public void DrawQRCode_SnapToPixels_RoundsTheModuleSizeAndThePosition()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
-        var options = new QRCodeDrawingOptions { ModuleSize = 2.6, QuietZoneModules = 1 };
+        var options = new QRCodeRenderOptions { ModuleSize = 2.6, QuietZoneModules = 1 };
 
         using var actual = new Image<Rgba32>(100, 100, Colors.Red);
         var bounds = DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(10.4, 10.6), state.options));
 
         Assert.Equal(new RectangleD(10, 11, 23 * 3, 23 * 3), bounds);
         Assert.Equal(new RectangleD(0, 0, 23 * 3, 23 * 3), QRCodeImageRenderer.MeasureQRCode(qr, options));
-        using var expected = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = 3, QuietZoneModules = 1 }));
+        using var expected = CreateExpectedImage(qr, 3, 1);
         AssertDrawnAt(expected, actual, 10, 11);
     }
 
@@ -539,7 +549,7 @@ public sealed class ImageRendererTests
     public void DrawQRCode_WithoutSnapping_UsesTheExactSizeAndPosition()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
-        var options = new QRCodeDrawingOptions { ModuleSize = 2.5, QuietZoneModules = 1, SnapToPixels = false };
+        var options = new QRCodeRenderOptions { ModuleSize = 2.5, QuietZoneModules = 1, SnapToPixels = false };
 
         using var actual = new Image<Rgba32>(100, 100, Colors.Red);
         var bounds = DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(10.25, 10.5), state.options));
@@ -559,8 +569,8 @@ public sealed class ImageRendererTests
     public void DrawQRCode_UnderATransform_IsScaled()
     {
         var qr = QRCode.Create("SCALE", ErrorCorrectionLevel.L);
-        using var expected = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = 2, QuietZoneModules = 2 }));
-        var options = new QRCodeDrawingOptions { ModuleSize = 1, QuietZoneModules = 2 };
+        using var expected = CreateExpectedImage(qr, 2, 2);
+        var options = new QRCodeRenderOptions { ModuleSize = 1, QuietZoneModules = 2 };
 
         using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
         DrawOn(actual, (qr, options), static (canvas, state) =>
@@ -576,13 +586,13 @@ public sealed class ImageRendererTests
     public void DrawBarcode_WithFont_DrawsTheTextUnderTheBars()
     {
         var font = LoadAhem();
-        var barcode = Barcode.CreateEan8("5512345");
-        var options = new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 7, Font = font, FontSize = 10, TextSpacing = 3 };
+        var barcode = Barcode.CreateCode39("AB");
+        var options = new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 40, QuietZoneModules = 7, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10, Spacing = 3 } };
         var text = TextLayout.Create(barcode.Text, font, 10);
-        Assert.Equal("55123457", barcode.Text);
+        Assert.Equal("AB", barcode.Text);
 
         var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
-        Assert.Equal((67 + 14) * 2, size.Width); // the text (8 boxes of 10 pixels) is narrower than the bars
+        Assert.Equal(barcode.Width + 14, size.Width); // the text (2 boxes of 10 pixels) is narrower than the bars
         Assert.Equal(40 + 3 + text.Height, size.Height);
 
         using var actual = new Image<Rgba32>(200, 100, Colors.Red);
@@ -598,11 +608,30 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void DrawBarcode_Ean8WithFont_GroupsTheDigitsBetweenTheLongerGuards()
+    {
+        var barcode = Barcode.CreateEan8("5512345");
+        var options = new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 7, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10, Spacing = 3 } };
+
+        // The guards extend 5 modules (10 pixels) below the data bars; each group, 4 boxes of 10 pixels, is centered in 28 modules
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+        Assert.Equal(((67 + 14) * 2, 43 + 10), (size.Width, size.Height));
+
+        using var actual = new Image<Rgba32>(200, 100, Colors.Red);
+        DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(4, 4), state.options));
+        var pixels = GetPixels(actual);
+        var groupLeft = 4 + 14 + (3 * 2) + (((28 * 2) - 40) / 2);
+        Assert.Equal(Colors.Black, pixels[((4 + 45) * actual.Width) + 4 + 14]); // the start guard, below the data bars
+        Assert.Equal(Colors.White, pixels[((4 + 41) * actual.Width) + groupLeft + 2]); // under the data bars, above the digits
+        Assert.Equal(Colors.Black, pixels[((4 + 48) * actual.Width) + groupLeft + 2]); // inside the first box of "5512"
+        Assert.Equal(Colors.White, pixels[((4 + 48) * actual.Width) + groupLeft - 2]); // left of the group
+    }
+
+    [Fact]
     public void DrawBarcode_TextWiderThanTheBars_WidensTheDrawing()
     {
-        var font = LoadAhem();
         var barcode = Barcode.CreateCode128("WIDE");
-        var options = new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 10, QuietZoneModules = 0, Font = font, FontSize = 40, TextBrush = new SolidBrush(Colors.Blue) };
+        var options = new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 10, QuietZoneModules = 0, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 40, Paint = Paint(Colors.Blue) } };
 
         var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
         Assert.Equal(160, size.Width);
@@ -617,34 +646,57 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void DrawBarcode_TextWithANewLine_StaysInTheMeasuredBounds()
+    {
+        // Code 128 encodes the new line: the text is still one line, drawn inside the measured rectangle
+        var barcode = Barcode.CreateCode128("AB\nCD");
+        var options = new BarcodeRenderOptions { ModuleWidth = 1, ModuleHeight = 10, QuietZoneModules = 2, Text = new BarcodeTextOptions { Fonts = LoadAhemFonts(), FontSize = 10 } };
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+
+        using var actual = new Image<Rgba32>((int)size.Width + 20, (int)size.Height + 40, Colors.Red);
+        DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(10, 10), state.options));
+
+        var pixels = GetPixels(actual);
+        for (var y = 0; y < actual.Height; y++)
+        {
+            for (var x = 0; x < actual.Width; x++)
+            {
+                var inside = x >= 10 && x < 10 + size.Width && y >= 10 && y < 10 + size.Height;
+                if (!inside && pixels[(y * actual.Width) + x] != Colors.Red)
+                {
+                    Assert.Fail($"Pixel ({x}, {y}) is outside the measured bounds {size} but was painted.");
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void Measure_InvalidOptions_Throw()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
         var barcode = Barcode.CreateCode39("ABC");
-        var font = LoadAhem();
+        var font = LoadAhemFonts();
 
         Assert.Throws<ArgumentNullException>(() => QRCodeImageRenderer.MeasureQRCode(qrCode: null!));
         Assert.Throws<ArgumentNullException>(() => BarcodeImageRenderer.MeasureBarcode(barcode: null!));
-        Assert.Throws<ArgumentNullException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { DarkBrush = null! }));
-        Assert.Throws<ArgumentNullException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { DarkBrush = null! }));
+        Assert.Throws<ArgumentNullException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeRenderOptions { DarkPaint = null! }));
+        Assert.Throws<ArgumentNullException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeRenderOptions { DarkPaint = null! }));
 
         foreach (var size in new[] { 0, -1, double.NaN, double.PositiveInfinity })
         {
-            Assert.Equal(nameof(QRCodeDrawingOptions.ModuleSize), Assert.Throws<ArgumentOutOfRangeException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { ModuleSize = size })).ParamName);
-            Assert.Equal(nameof(BarcodeDrawingOptions.ModuleWidth), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { ModuleWidth = size })).ParamName);
-            Assert.Equal(nameof(BarcodeDrawingOptions.ModuleHeight), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { ModuleHeight = size })).ParamName);
-            Assert.Equal(nameof(BarcodeDrawingOptions.FontSize), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { Font = font, FontSize = size })).ParamName);
+            Assert.Equal(nameof(QRCodeRenderOptions.ModuleSize), Assert.Throws<ArgumentOutOfRangeException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeRenderOptions { ModuleSize = size })).ParamName);
+            Assert.Equal(nameof(BarcodeRenderOptions.ModuleWidth), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeRenderOptions { ModuleWidth = size })).ParamName);
+            Assert.Equal(nameof(BarcodeRenderOptions.ModuleHeight), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeRenderOptions { ModuleHeight = size })).ParamName);
+            Assert.Equal(nameof(BarcodeTextOptions.FontSize), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeRenderOptions { Text = new BarcodeTextOptions { Fonts = font, FontSize = size } })).ParamName);
         }
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { QuietZoneModules = -1 }));
-        Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { QuietZoneModules = -1 }));
-        Assert.Equal(nameof(BarcodeDrawingOptions.TextSpacing), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { Font = font, TextSpacing = -1 })).ParamName);
+        Assert.Throws<ArgumentOutOfRangeException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeRenderOptions { QuietZoneModules = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeRenderOptions { QuietZoneModules = -1 }));
+        Assert.Equal(nameof(BarcodeTextOptions.Spacing), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeRenderOptions { Text = new BarcodeTextOptions { Fonts = font, Spacing = -1 } })).ParamName);
 
-        // Without a font, the text options are not used
-        _ = BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { FontSize = -1, TextSpacing = -1 });
 
         // A module size below 0.5 rounds up to 1 when snapping
-        Assert.Equal(qr.Width + 8, QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { ModuleSize = 0.1 }).Width);
+        Assert.Equal(qr.Width + 8, QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeRenderOptions { ModuleSize = 0.1 }).Width);
     }
 
     [Fact]
@@ -667,7 +719,7 @@ public sealed class ImageRendererTests
 
             try
             {
-                canvas.DrawQRCode(state.qr, new PointD(double.NaN, 0), new QRCodeDrawingOptions { SnapToPixels = false });
+                canvas.DrawQRCode(state.qr, new PointD(double.NaN, 0), new QRCodeRenderOptions { SnapToPixels = false });
             }
             catch (ArgumentException ex)
             {
@@ -691,7 +743,7 @@ public sealed class ImageRendererTests
     [Fact]
     public void BarcodeFonts_MapThePrintableAsciiCharacters()
     {
-        foreach (var font in new[] { BarcodeFonts.OcrA, BarcodeFonts.OcrB })
+        foreach (var font in new[] { OcrFonts.OcrA, OcrFonts.OcrB })
         {
             Assert.True(font.IsMonospaced);
             for (var c = 0x21; c <= 0x7E; c++)
@@ -703,11 +755,11 @@ public sealed class ImageRendererTests
             }
         }
 
-        Assert.Equal("Meziantou OCR-A", BarcodeFonts.OcrA.FamilyName);
-        Assert.Equal("Meziantou OCR-B", BarcodeFonts.OcrB.FamilyName);
-        Assert.True(BarcodeFonts.OcrA.ContainsGlyph(new Rune(0x2440)));
-        Assert.True(BarcodeFonts.OcrB.ContainsGlyph(new Rune('\u00C4')));
-        Assert.Same(BarcodeFonts.OcrB, BarcodeFonts.OcrB);
+        Assert.Equal("Meziantou OCR-A", OcrFonts.OcrA.FamilyName);
+        Assert.Equal("Meziantou OCR-B", OcrFonts.OcrB.FamilyName);
+        Assert.True(OcrFonts.OcrA.ContainsGlyph(new Rune(0x2440)));
+        Assert.True(OcrFonts.OcrB.ContainsGlyph(new Rune('\u00C4')));
+        Assert.Same(OcrFonts.OcrB, OcrFonts.OcrB);
     }
 
     [Theory]
@@ -718,7 +770,7 @@ public sealed class ImageRendererTests
     public void BarcodeFonts_HaveTheDimensionsOfTheStandards(string standard, char character, double heightMillimeters, double widthMillimeters)
     {
         // Size I: the 2.54 mm pitch is the advance (600 units), the ink is the centerline size plus a stroke
-        var font = standard == "A" ? BarcodeFonts.OcrA : BarcodeFonts.OcrB;
+        var font = standard == "A" ? OcrFonts.OcrA : OcrFonts.OcrB;
         var bounds = TextLayout.Create(character.ToString(), font, 1000).InkBounds;
         const double UnitsPerMillimeter = 600 / 2.54;
         var tolerance = standard == "A" ? 2 : 0.06 * UnitsPerMillimeter; // OCR-B is traced from an illustration
@@ -731,7 +783,7 @@ public sealed class ImageRendererTests
     {
         // tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator writes the embedded fonts: they must be up to date.
         // The rendering is compared, not the bytes, as the rounding of the outlines can differ between math libraries.
-        foreach (var (embedded, generated) in new[] { (BarcodeFonts.OcrA, FontGenerator.OcrA.Font), (BarcodeFonts.OcrB, FontGenerator.OcrB.Font) })
+        foreach (var (embedded, generated) in new[] { (OcrFonts.OcrA, FontGenerator.OcrA.Font), (OcrFonts.OcrB, FontGenerator.OcrB.Font) })
         {
             var fresh = Font.Load(generated.Build());
             Assert.Equal(embedded.GlyphCount, fresh.GlyphCount);
@@ -761,6 +813,66 @@ public sealed class ImageRendererTests
     {
         using var stream = typeof(ImageRendererTests).Assembly.GetManifestResourceStream("Ahem.ttf")!;
         return Font.Load(stream);
+    }
+
+    private static SceneFontCollection LoadAhemFonts()
+    {
+        using var stream = typeof(ImageRendererTests).Assembly.GetManifestResourceStream("Ahem.ttf")!;
+        return new SceneFontCollection(SceneFontFace.Load(stream));
+    }
+
+    private static SceneColor Paint(Rgba32 color) => new(color.R, color.G, color.B, color.A);
+
+    /// <summary>The image of the modules, one color per pixel, as the renderers must draw them.</summary>
+    private static Image<Rgba32> CreateExpectedImage(QRCode qrCode, int moduleSize, int quietZoneModules)
+    {
+        var width = (qrCode.Width + (2 * quietZoneModules)) * moduleSize;
+        var height = (qrCode.Height + (2 * quietZoneModules)) * moduleSize;
+        var image = new Image<Rgba32>(width, height, Colors.White);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var row = (y / moduleSize) - quietZoneModules;
+                var column = (x / moduleSize) - quietZoneModules;
+                if (row >= 0 && row < qrCode.Height && column >= 0 && column < qrCode.Width && qrCode[row, column])
+                {
+                    image.Frames[0][x, y] = Colors.Black;
+                }
+            }
+        }
+
+        return image;
+    }
+
+    /// <summary>The image of the bars, one color per pixel, as the renderers must draw them.</summary>
+    private static Image<Rgba32> CreateExpectedImage(Barcode barcode, int moduleWidth, int moduleHeight, int quietZoneModules)
+    {
+        var rowHeight = barcode.IsStacked ? moduleWidth : moduleHeight;
+        var width = (barcode.Width + (2 * quietZoneModules)) * moduleWidth;
+        var height = barcode.Height * rowHeight;
+        var image = new Image<Rgba32>(width, height, Colors.White);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var column = (x / moduleWidth) - quietZoneModules;
+                if (column >= 0 && column < barcode.Width && barcode[y / rowHeight, column])
+                {
+                    image.Frames[0][x, y] = Colors.Black;
+                }
+            }
+        }
+
+        return image;
+    }
+
+    /// <summary>The OCR fonts, loaded with Imaging, to measure and draw their glyphs.</summary>
+    private static class OcrFonts
+    {
+        public static Font OcrA { get; } = Font.Load(BarcodeFonts.OcrA.Faces[0].Data.Span);
+
+        public static Font OcrB { get; } = Font.Load(BarcodeFonts.OcrB.Faces[0].Data.Span);
     }
 
     private static RectangleD Offset(RectangleD rectangle, double dx, double dy) => new(rectangle.X + dx, rectangle.Y + dy, rectangle.Width, rectangle.Height);
@@ -865,7 +977,7 @@ public sealed class ImageRendererTests
     public void ReadQRCodes_RendersReadBack(string text, QRCodeType type, int moduleSize)
     {
         var qrCode = CreateQRCode(text, type);
-        using var image = qrCode.ToImage(new QRCodeDrawingOptions { ModuleSize = moduleSize });
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = moduleSize });
 
         var result = Assert.Single(image.ReadQRCodes());
 
@@ -890,7 +1002,7 @@ public sealed class ImageRendererTests
     public void ReadQRCodes_Rotated(QRCodeType type, double degrees)
     {
         var qrCode = CreateQRCode("ROTATED 42", type);
-        using var image = qrCode.ToImage(new QRCodeDrawingOptions { ModuleSize = 6 });
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 6 });
         image.Rotate(degrees, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
 
         var result = Assert.Single(image.ReadQRCodes());
@@ -901,7 +1013,7 @@ public sealed class ImageRendererTests
     [Fact]
     public void ReadQRCodes_Mirrored()
     {
-        using var image = QRCode.Create("Mirrored symbol").ToImage(new QRCodeDrawingOptions { ModuleSize = 4 });
+        using var image = QRCode.Create("Mirrored symbol").ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
         image.Flip(FlipMode.Horizontal);
 
         var result = Assert.Single(image.ReadQRCodes());
@@ -914,7 +1026,7 @@ public sealed class ImageRendererTests
     public void ReadQRCodes_Perspective()
     {
         var qrCode = QRCode.Create("Perspective: the symbol is photographed at an angle", ErrorCorrectionLevel.M);
-        using var image = qrCode.ToImage(new QRCodeDrawingOptions { ModuleSize = 8 });
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 8 });
         var size = image.Width;
         var transform = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, size, size), new PointD(30, 10), new PointD(size - 10, 40), new PointD(size - 40, size - 20), new PointD(5, size - 5));
         image.Transform(transform, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
@@ -926,7 +1038,7 @@ public sealed class ImageRendererTests
     public void ReadQRCodes_ResizedBlurredAndCompressed()
     {
         var qrCode = QRCode.Create("Resized, blurred and compressed", ErrorCorrectionLevel.Q);
-        using var image = qrCode.ToImage(new QRCodeDrawingOptions { ModuleSize = 7 });
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 7 });
         image.Resize(new ResizeOptions(image.Width * 5 / 7, image.Height * 5 / 7));
         image.GaussianBlur(0.8);
         using var jpeg = new MemoryStream();
@@ -937,21 +1049,65 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void ReadQRCodes_ShadowAcrossTheSymbol()
+    {
+        // The light modules on the dark side are darker than the dark modules on the light side: no threshold of the whole
+        // image separates them
+        var qrCode = QRCode.Create("A shadow across the symbol", ErrorCorrectionLevel.M);
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 6 });
+        ApplyShadow(image, darkest: 0.15);
+
+        Assert.Equal("A shadow across the symbol", Assert.Single(image.ReadQRCodes()).Text);
+    }
+
+    [Fact]
+    public void ReadQRCodes_StrongPerspectiveOfAVersion1Symbol()
+    {
+        // A version 1 symbol has no alignment pattern: the corners of the finder patterns give the perspective
+        var qrCode = QRCode.Create("PERSPECTIVE", ErrorCorrectionLevel.L);
+        Assert.Equal(1, qrCode.Version);
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 10 });
+        var size = image.Width;
+        var transform = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, size, size), new PointD(30, 50), new PointD(size - 20, 10), new PointD(size - 15, size - 10), new PointD(50, size - 45));
+        image.Transform(transform, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
+
+        Assert.Equal("PERSPECTIVE", Assert.Single(image.ReadQRCodes()).Text);
+    }
+
+    private static void ApplyShadow(Image<Rgba32> image, double darkest)
+    {
+        // The luminance falls from the left edge to the right edge, down to `darkest` of it
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    var factor = 1 - ((1 - darkest) * x / row.Length);
+                    var pixel = row[x];
+                    row[x] = new Rgba32((byte)(pixel.R * factor), (byte)(pixel.G * factor), (byte)(pixel.B * factor), pixel.A);
+                }
+            }
+        });
+    }
+
+    [Fact]
     public void ReadQRCodes_ColorsTransparencyAndInversion()
     {
         var qrCode = QRCode.Create("Colors");
-        using var gradient = qrCode.ToImage(new QRCodeDrawingOptions
+        using var gradient = qrCode.ToImage(new QRCodeRenderOptions
         {
             ModuleSize = 5,
-            DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(200, 200), [new GradientStop(0, Rgba64.FromRgba32(new Rgba32(0x00, 0x33, 0x66))), new GradientStop(1, Rgba64.FromRgba32(new Rgba32(0x66, 0x00, 0x33)))]),
-            LightBrush = new SolidBrush(new Rgba32(0xFF, 0xF8, 0xE0)),
+            DarkPaint = new LinearGradientPaint(0, 0, 200, 200, [new SceneGradientStop(0, new SceneColor(0x00, 0x33, 0x66)), new SceneGradientStop(1, new SceneColor(0x66, 0x00, 0x33))]),
+            LightPaint = Paint(new Rgba32(0xFF, 0xF8, 0xE0)),
         });
         Assert.Equal("Colors", Assert.Single(gradient.ReadQRCodes()).Text);
 
-        using var transparent = qrCode.ToImage(new QRCodeDrawingOptions { ModuleSize = 5, LightBrush = null });
+        using var transparent = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 5, LightPaint = null });
         Assert.Equal("Colors", Assert.Single(transparent.ReadQRCodes()).Text);
 
-        using var inverted = qrCode.ToImage(new QRCodeDrawingOptions { ModuleSize = 5, DarkBrush = new SolidBrush(Colors.White), LightBrush = new SolidBrush(Colors.Black) });
+        using var inverted = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 5, DarkPaint = Paint(Colors.White), LightPaint = Paint(Colors.Black) });
         Assert.Equal("Colors", Assert.Single(inverted.ReadQRCodes()).Text);
         Assert.Empty(inverted.ReadQRCodes(new QRCodeReadingOptions { TryInverted = false }));
     }
@@ -960,7 +1116,7 @@ public sealed class ImageRendererTests
     public void ReadQRCodes_SeveralSymbols()
     {
         using var image = new Image<Rgba32>(900, 500, Colors.White);
-        var options = new QRCodeDrawingOptions { ModuleSize = 4 };
+        var options = new QRCodeRenderOptions { ModuleSize = 4 };
         image.Draw(canvas =>
         {
             canvas.DrawQRCode(QRCode.Create("First"), new PointD(10, 10), options);
@@ -986,7 +1142,7 @@ public sealed class ImageRendererTests
     public void ReadQRCodes_SheetOfSymbols()
     {
         using var image = new Image<Rgba32>(1000, 1000, Colors.White);
-        var options = new QRCodeDrawingOptions { ModuleSize = 3 };
+        var options = new QRCodeRenderOptions { ModuleSize = 3 };
         image.Draw(canvas =>
         {
             for (var i = 0; i < 64; i++)
@@ -1050,7 +1206,7 @@ public sealed class ImageRendererTests
     [MemberData(nameof(ReadableBarcodes2D))]
     public void ReadBarcodes2D_RendersReadBack(Barcode2DType type, string text, int moduleSize)
     {
-        using var image = CreateBarcode2D(type, text).ToImage(new Barcode2DDrawingOptions { ModuleSize = moduleSize });
+        using var image = CreateBarcode2D(type, text).ToImage(new Barcode2DRenderOptions { ModuleSize = moduleSize });
 
         var result = Assert.Single(image.ReadBarcodes2D());
 
@@ -1071,7 +1227,7 @@ public sealed class ImageRendererTests
     [InlineData(Barcode2DType.Pdf417, 270)]
     public void ReadBarcodes2D_Rotated(Barcode2DType type, double degrees)
     {
-        using var image = CreateBarcode2D(type, "Rotated 2D symbol").ToImage(new Barcode2DDrawingOptions { ModuleSize = 5 });
+        using var image = CreateBarcode2D(type, "Rotated 2D symbol").ToImage(new Barcode2DRenderOptions { ModuleSize = 5 });
         image.Rotate(degrees, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
 
         var result = Assert.Single(image.ReadBarcodes2D());
@@ -1086,7 +1242,7 @@ public sealed class ImageRendererTests
     [InlineData("Portrait rectangle of 12x36", RotateMode.Rotate270)]
     public void ReadBarcodes2D_RectangularDataMatrixInPortrait(string text, RotateMode rotation)
     {
-        using var image = Barcode2D.CreateDataMatrix(text, new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }).ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+        using var image = Barcode2D.CreateDataMatrix(text, new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }).ToImage(new Barcode2DRenderOptions { ModuleSize = 4 });
         image.Rotate(rotation);
 
         Assert.True(image.Height > image.Width);
@@ -1103,8 +1259,8 @@ public sealed class ImageRendererTests
         using var image = new Image<Rgba32>(400, 400, Colors.White);
         image.Draw(canvas =>
         {
-            canvas.DrawBarcode2D(Barcode2D.CreatePdf417(upper, options), new PointD(20, 20), new Barcode2DDrawingOptions { ModuleSize = 2 });
-            canvas.DrawBarcode2D(Barcode2D.CreatePdf417(lower, options), new PointD(20, 200), new Barcode2DDrawingOptions { ModuleSize = 2 });
+            canvas.DrawBarcode2D(Barcode2D.CreatePdf417(upper, options), new PointD(20, 20), new Barcode2DRenderOptions { ModuleSize = 2 });
+            canvas.DrawBarcode2D(Barcode2D.CreatePdf417(lower, options), new PointD(20, 200), new Barcode2DRenderOptions { ModuleSize = 2 });
         });
         if (rotate)
         {
@@ -1124,15 +1280,15 @@ public sealed class ImageRendererTests
     public void ReadBarcodes2D_MirroredInvertedAndCompressed(Barcode2DType type)
     {
         var barcode = CreateBarcode2D(type, "Mirrored 2D symbol");
-        using var mirrored = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+        using var mirrored = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 4 });
         mirrored.Flip(FlipMode.Horizontal);
         Assert.Equal("Mirrored 2D symbol", Assert.Single(mirrored.ReadBarcodes2D()).Text);
 
-        using var inverted = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 4, DarkBrush = new SolidBrush(Colors.White), LightBrush = new SolidBrush(Colors.Black) });
+        using var inverted = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 4, DarkPaint = Paint(Colors.White), LightPaint = Paint(Colors.Black) });
         Assert.Equal("Mirrored 2D symbol", Assert.Single(inverted.ReadBarcodes2D()).Text);
         Assert.Empty(inverted.ReadBarcodes2D(new Barcode2DReadingOptions { TryInverted = false }));
 
-        using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 5 });
+        using var image = barcode.ToImage(new Barcode2DRenderOptions { ModuleSize = 5 });
         image.GaussianBlur(0.7);
         using var jpeg = new MemoryStream();
         image.Save(jpeg, new JpegEncoder { Quality = 70 });
@@ -1140,11 +1296,37 @@ public sealed class ImageRendererTests
         Assert.Equal("Mirrored 2D symbol", Assert.Single(decoded.ReadBarcodes2D()).Text);
     }
 
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix)]
+    [InlineData(Barcode2DType.Aztec)]
+    public void ReadBarcodes2D_Perspective(Barcode2DType type)
+    {
+        // A photograph taken at an angle: the symbol is not a rectangle
+        var text = "Perspective: the symbol is photographed at an angle";
+        using var image = CreateBarcode2D(type, text).ToImage(new Barcode2DRenderOptions { ModuleSize = 8 });
+        var size = image.Width;
+        var transform = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, size, size), new PointD(30, 10), new PointD(size - 10, 50), new PointD(size - 40, size - 20), new PointD(5, size - 5));
+        image.Transform(transform, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
+
+        Assert.Equal((type, text), (Assert.Single(image.ReadBarcodes2D()).Result.Type, Assert.Single(image.ReadBarcodes2D()).Text));
+    }
+
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix)]
+    [InlineData(Barcode2DType.Aztec)]
+    public void ReadBarcodes2D_ShadowAcrossTheSymbol(Barcode2DType type)
+    {
+        using var image = CreateBarcode2D(type, "A shadow across the symbol").ToImage(new Barcode2DRenderOptions { ModuleSize = 6 });
+        ApplyShadow(image, darkest: 0.15);
+
+        Assert.Equal("A shadow across the symbol", Assert.Single(image.ReadBarcodes2D()).Text);
+    }
+
     [Fact]
     public void ReadBarcodes2D_CompactAztecWhoseRingsContinueInTheModeMessage()
     {
         // The modules of the mode message around this compact bullseye alternate like the rings of a full-range one
-        using var image = Barcode2D.CreateAztec("XEv").ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+        using var image = Barcode2D.CreateAztec("XEv").ToImage(new Barcode2DRenderOptions { ModuleSize = 4 });
         image.Rotate(RotateMode.Rotate90);
 
         Assert.Equal("XEv", Assert.Single(image.ReadBarcodes2D()).Text);
@@ -1154,7 +1336,7 @@ public sealed class ImageRendererTests
     public void ReadBarcodes2D_SeveralSymbols()
     {
         using var image = new Image<Rgba32>(800, 400, Colors.White);
-        var options = new Barcode2DDrawingOptions { ModuleSize = 3 };
+        var options = new Barcode2DRenderOptions { ModuleSize = 3 };
         image.Draw(canvas =>
         {
             canvas.DrawBarcode2D(Barcode2D.CreateDataMatrix("Data Matrix"), new PointD(10, 10), options);
@@ -1222,7 +1404,7 @@ public sealed class ImageRendererTests
     public void ReadBarcodes_RendersReadBack(BarcodeType type, int moduleWidth)
     {
         var barcode = CreateSample(type);
-        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = moduleWidth });
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = moduleWidth });
 
         var result = Assert.Single(image.ReadBarcodes());
 
@@ -1245,7 +1427,7 @@ public sealed class ImageRendererTests
     public void ReadBarcodes_Rotated(BarcodeType type, double degrees)
     {
         var barcode = CreateSample(type);
-        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, ModuleHeight = 120 });
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 3, ModuleHeight = 120 });
         image.Rotate(degrees, new TransformOptions { BackgroundColor = Rgba64.FromRgba32(Colors.White) });
 
         var result = Assert.Single(image.ReadBarcodes());
@@ -1257,18 +1439,18 @@ public sealed class ImageRendererTests
     public void ReadBarcodes_MirroredBlurredCompressedAndInverted()
     {
         var barcode = Barcode.CreateCode128("Mirrored barcode");
-        using var mirrored = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3 });
+        using var mirrored = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 3 });
         mirrored.Flip(FlipMode.Horizontal);
         Assert.Equal("Mirrored barcode", Assert.Single(mirrored.ReadBarcodes()).Text);
 
-        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 4 });
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 4 });
         image.GaussianBlur(1);
         using var jpeg = new MemoryStream();
         image.Save(jpeg, new JpegEncoder { Quality = 60 });
         using var decoded = Image.Load(jpeg.ToArray());
         Assert.Equal("Mirrored barcode", Assert.Single(decoded.ReadBarcodes()).Text);
 
-        using var inverted = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, DarkBrush = new SolidBrush(Colors.White), LightBrush = new SolidBrush(Colors.Black) });
+        using var inverted = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 3, DarkPaint = Paint(Colors.White), LightPaint = Paint(Colors.Black) });
         Assert.Equal("Mirrored barcode", Assert.Single(inverted.ReadBarcodes()).Text);
         Assert.Empty(inverted.ReadBarcodes(new BarcodeReadingOptions { TryInverted = false }));
     }
@@ -1277,7 +1459,7 @@ public sealed class ImageRendererTests
     public void ReadBarcodes_SeveralBarcodesWithText()
     {
         using var image = new Image<Rgba32>(700, 420, Colors.White);
-        var options = new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 60, Font = BarcodeFonts.OcrB };
+        var options = new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 60, Text = new BarcodeTextOptions() };
         image.Draw(canvas =>
         {
             canvas.DrawBarcode(Barcode.CreateEan13("590123412345"), new PointD(20, 20), options);
@@ -1296,6 +1478,34 @@ public sealed class ImageRendererTests
     }
 
     [Theory]
+    [InlineData(BarcodeType.Code128)]
+    [InlineData(BarcodeType.Ean13)]
+    [InlineData(BarcodeType.Codabar)]
+    [InlineData(BarcodeType.Code39)]
+    public void ReadBarcodes_CroppedAtTheFirstAndLastBars(BarcodeType type)
+    {
+        // An image cropped at the bars has no quiet zone: the reader takes the outside of the image as light
+        var barcode = CreateSample(type);
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 3, ModuleHeight = 60, QuietZoneModules = 0 });
+
+        Assert.Equal((type, barcode.Text), (Assert.Single(image.ReadBarcodes()).Result.Type, Assert.Single(image.ReadBarcodes()).Text));
+    }
+
+    [Theory]
+    [InlineData(BarcodeType.Code128)]
+    [InlineData(BarcodeType.Ean13)]
+    public void ReadBarcodes_SmallAndBlurred(BarcodeType type)
+    {
+        // Narrow bars of 2 pixels, blurred and shaded: the edges of the bars are found between the pixels
+        var barcode = type is BarcodeType.Ean13 ? Barcode.CreateEan13("590123412345") : Barcode.CreateCode128("SKU-123456");
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 50 });
+        image.GaussianBlur(1);
+        ApplyShadow(image, darkest: 0.5);
+
+        Assert.Equal((type, barcode.Text), (Assert.Single(image.ReadBarcodes()).Result.Type, Assert.Single(image.ReadBarcodes()).Text));
+    }
+
+    [Theory]
     [InlineData(BarcodeType.Gs1DataBarExpanded, false)]
     [InlineData(BarcodeType.Gs1DataBarExpanded, true)]
     [InlineData(BarcodeType.Gs1DataBarExpandedStacked, false)]
@@ -1305,7 +1515,7 @@ public sealed class ImageRendererTests
     public void ReadBarcodes_SameDataBarLabelTwice(BarcodeType type, bool aboveEachOther)
     {
         var barcode = CreateSample(type);
-        var options = new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 40 };
+        var options = new BarcodeRenderOptions { ModuleWidth = 2, ModuleHeight = 40 };
         using var label = barcode.ToImage(options);
         using var image = new Image<Rgba32>(aboveEachOther ? label.Width + 40 : (2 * label.Width) + 80, aboveEachOther ? (2 * label.Height) + 80 : label.Height + 40, Colors.White);
         image.Draw(canvas =>

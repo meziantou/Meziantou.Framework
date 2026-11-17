@@ -120,6 +120,45 @@ public sealed class ImageMetadata
     /// </remarks>
     public OpenExrWindows? OpenExrWindows { get; set; }
 
+    /// <summary>
+    /// Gets or sets the variables of the header of the Radiance HDR file the image was decoded from, or
+    /// <see langword="null"/> for the other formats. This is informational only, like <see cref="SourceFormat"/>: it
+    /// describes the file, not the pixels (the exposure and the color correction it reports are not applied).
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public RadianceHeader? RadianceHeader { get; set; }
+
+    /// <summary>
+    /// Gets or sets the properties of the DNG file the image was rendered from (its version and the camera that wrote it),
+    /// or <see langword="null"/> for the other formats. This is informational only, like <see cref="SourceFormat"/>: it
+    /// describes the file, not the pixels.
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public DngProperties? DngProperties { get; set; }
+
+    /// <summary>
+    /// Gets or sets the fields of the headers of the DPX file the image was decoded from, or <see langword="null"/> for the
+    /// other formats. This is informational only, like <see cref="SourceFormat"/>: it describes the file, not the pixels (the
+    /// transfer characteristic it reports is not applied).
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public DpxHeader? DpxHeader { get; set; }
+
+    /// <summary>
+    /// Gets or sets the fields of the header of the Cineon file the image was decoded from, or <see langword="null"/> for the
+    /// other formats. This is informational only, like <see cref="SourceFormat"/>: it describes the file, not the pixels.
+    /// </summary>
+    /// <remarks>No operation updates it. <see cref="Formats.CineonEncoder"/> copies its fields; the other encoders ignore it.</remarks>
+    public CineonHeader? CineonHeader { get; set; }
+
+    /// <summary>
+    /// Gets or sets the header, the data format descriptor and the key/value data of the KTX 2.0 file the image was
+    /// decoded from, or <see langword="null"/> for the other formats. This is informational only, like
+    /// <see cref="SourceFormat"/>: it describes the file, not the pixels.
+    /// </summary>
+    /// <remarks>No operation updates it, and every encoder ignores it.</remarks>
+    public Ktx2Header? Ktx2Header { get; set; }
+
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
 
@@ -156,6 +195,11 @@ public sealed class ImageMetadata
             MasteringDisplay = MasteringDisplay,
             PixelAspectRatio = PixelAspectRatio,
             OpenExrWindows = OpenExrWindows,
+            RadianceHeader = RadianceHeader,
+            DngProperties = DngProperties,
+            DpxHeader = DpxHeader,
+            CineonHeader = CineonHeader,
+            Ktx2Header = Ktx2Header,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

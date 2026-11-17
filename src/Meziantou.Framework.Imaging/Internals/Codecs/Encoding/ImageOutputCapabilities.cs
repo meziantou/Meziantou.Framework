@@ -15,18 +15,19 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><term>APNG</term><description>Known frame count (acTL precedes the image data; seeking is never required); optional poster written before frame zero.</description></item>
 /// <item><term>GIF</term><description>Unknown frame count allowed (local palettes, no global prepass); no poster; at most 65,535 pixels per side; play count up to 65,536.</description></item>
 /// <item><term>JPEG</term><description>Exactly one frame; no animation settings; no poster; at most 65,535 pixels per side.</description></item>
-/// <item><term>WebP</term><description>Unknown frame count allowed; no poster; at most 16,384 (lossless) or 16,383 (lossy) pixels per side; play count up to 65,535; animations (several or unknown frames, or animation settings) need a seekable destination (the RIFF size is patched at completion).</description></item>
+/// <item><term>WebP</term><description>Unknown frame count allowed; no poster; at most 16,384 (lossless) or 16,383 (lossy) pixels per side; play count up to 65,535; animations (several or unknown frames, or animation settings) patch the RIFF size at completion: a seekable destination, or the whole output kept in memory for a non-seekable stream (see <see cref="ImageWriterCore"/>).</description></item>
 /// <item><term>QOI</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side (32-bit header fields).</description></item>
 /// <item><term>BMP</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side, and a file size the 32-bit <c>bfSize</c> field can declare.</description></item>
 /// <item><term>TGA</term><description>Exactly one frame; no animation settings; no poster; at most 65,535 pixels per side.</description></item>
 /// <item><term>PNM</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side.</description></item>
-/// <item><term>TIFF</term><description>Exactly one page (<c>ImageCollection.Save</c> writes several); no animation settings; no poster; a seekable destination (a directory stores the offsets of its strips, so the pointer to it is patched once the page is written).</description></item>
+/// <item><term>TIFF</term><description>Exactly one page (<c>ImageCollection.Save</c> writes several); no animation settings; no poster; a seekable destination unless the page is not compressed (a directory stores the offsets of its strips, so the pointer to it is patched once the page is written; the directory of an uncompressed page precedes its strips).</description></item>
 /// <item><term>ICO/CUR</term><description>Exactly one representation (<c>ImageCollection.Save</c> writes several); no animation settings; no poster; at most 256 pixels per side; no seeking (a representation payload is encoded in memory).</description></item>
 /// <item><term>ANI</term><description>Always an animation container; unknown frame count allowed; no poster; at most 256 pixels per side; infinite play count only; a seekable destination (the header counts and the RIFF and frame-list sizes are patched at completion).</description></item>
 /// <item><term>AVIF</term><description>Known frame count; a count of 1 is a still image, without animation settings, written to any destination; any other count is an image sequence, which needs a seekable destination (the <c>moov</c> box is written at completion, in the room reserved for it); no poster; at most 65,536 pixels per side (65,535 for an image sequence).</description></item>
 /// <item><term>JPEG XL</term><description>Unknown frame count allowed (a frame is written when the next one or the completion arrives); no poster; at most 1,073,741,824 pixels per side; any play count; no seeking.</description></item>
 /// <item><term>JPEG 2000</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side; no seeking (the lengths of a file are known before it is written).</description></item>
 /// <item><term>OpenEXR</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side; floating-point samples stored as they are; a seekable destination unless the chunks are not compressed (the table of their offsets precedes them and is patched once they are written).</description></item>
+/// <item><term>DDS, KTX 2.0</term><description>Exactly one surface (<c>ImageCollection.Save</c> writes cube maps and arrays); no animation settings; no poster; no seeking (the encoded levels are kept until the file is written).</description></item>
 /// </list>
 /// <para>
 /// <see cref="PngAnimationMode.Auto"/> writes an APNG when more than one frame is expected or animation settings are given
@@ -68,8 +69,9 @@ internal sealed class ImageOutputCapabilities
     public int MaxDimension { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the destination must be seekable: sizes written before the data are patched once every
-    /// frame is written (animated WebP). Non-seekable destinations are rejected when the writer is created, before any output.
+    /// Gets a value indicating whether the output patches sizes written before the data once every frame is written (animated
+    /// WebP, ANI, TIFF, image sequences, compressed OpenEXR). Non-seekable destinations are rejected when the writer is
+    /// created, before any output, except for animated WebP, whose whole output is kept in memory and written at completion.
     /// </summary>
     public bool RequiresSeekableOutput { get; }
 
@@ -170,7 +172,7 @@ internal sealed class ImageOutputCapabilities
         BmpEncoder => new ImageOutputCapabilities(ImageFormat.Bmp, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         TgaEncoder => new ImageOutputCapabilities(ImageFormat.Tga, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: ushort.MaxValue),
         PnmEncoder => new ImageOutputCapabilities(ImageFormat.Pnm, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
-        TiffEncoder => new ImageOutputCapabilities(ImageFormat.Tiff, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: true),
+        TiffEncoder tiff => new ImageOutputCapabilities(ImageFormat.Tiff, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: tiff.Compression != TiffCompression.None),
         IcoEncoder ico => new ImageOutputCapabilities(ico.Format, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: IcoEncoder.MaxDimension),
         // An image sequence stores the size of its images in 16-bit fields, and its index after the images: the box is
         // written last, in the room that the number of images gives it
@@ -182,6 +184,14 @@ internal sealed class ImageOutputCapabilities
 
         // The offsets of the chunks precede them: compressed chunks need a seekable destination to patch the table
         OpenExrEncoder exr => new ImageOutputCapabilities(ImageFormat.OpenExr, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: exr.Compression != OpenExrCompression.None),
+        RadianceEncoder => new ImageOutputCapabilities(ImageFormat.Radiance, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        DpxEncoder => new ImageOutputCapabilities(ImageFormat.Dpx, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        // The image file directory follows the raw image: the offset of the header is patched once it is written
+        DngEncoder => new ImageOutputCapabilities(ImageFormat.Dng, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: true),
+        CineonEncoder => new ImageOutputCapabilities(ImageFormat.Cineon, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        PsdEncoder => new ImageOutputCapabilities(ImageFormat.Psd, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: PsdFormat.MaxPsbDimension),
+        DdsEncoder => new ImageOutputCapabilities(ImageFormat.Dds, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+        Ktx2Encoder => new ImageOutputCapabilities(ImageFormat.Ktx2, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
         CustomImageEncoder custom => throw new ArgumentException($"The {custom.FormatInfo.Name} encoder is a custom encoder: sequential writers and image collections do not use custom encoders. Use Image.Save or ImageFrame.Save.", nameof(encoder)),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };

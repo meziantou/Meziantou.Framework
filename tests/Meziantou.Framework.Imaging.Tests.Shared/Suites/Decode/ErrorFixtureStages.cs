@@ -12,6 +12,136 @@ internal static class ErrorFixtureStages
 {
     private static readonly HashSet<string> HeaderDefects = new(StringComparer.Ordinal)
     {
+        // PSD: the file header, the color mode data, the image resources and the layer and mask information
+        "invalid/psd/57-channels",
+        "invalid/psd/bitmap-depth-8",
+        "invalid/psd/cmyk32",
+        "invalid/psd/depth-4",
+        "invalid/psd/fewer-channels-than-colors",
+        "invalid/psd/indexed-color-table-length",
+        "invalid/psd/lab16",
+        "invalid/psd/layer-info-past-section",
+        "invalid/psd/mode-5",
+        "invalid/psd/multichannel",
+        "invalid/psd/psd-width-30001",
+        "invalid/psd/reserved-bytes",
+        "invalid/psd/resource-past-section",
+        "invalid/psd/resource-signature",
+        "invalid/psd/tagged-block-signature",
+        "invalid/psd/truncated-header",
+        "invalid/psd/truncated-resources",
+        "invalid/psd/version-3",
+        "invalid/psd/zero-channels",
+        "invalid/psd/zero-width",
+        "limit/psd/frame-pixels-over-limit",
+        "limit/psd/height-over-limit",
+        "limit/psd/metadata-bytes-over-limit",
+        "limit/psd/width-over-limit",
+
+        // DNG: the tags of IFD 0 and of the raw IFD, the opcode lists and the camera profile, resolved by an identification
+        "invalid/dng/active-area-outside",
+        "invalid/dng/backward-version",
+        "invalid/dng/cfa-layout-staggered",
+        "invalid/dng/cfa-pattern-color-unlisted",
+        "invalid/dng/color-matrix-singular",
+        "invalid/dng/default-crop-outside",
+        "invalid/dng/default-scale",
+        "invalid/dng/dng-version-zero",
+        "invalid/dng/missing-cfa-pattern",
+        "invalid/dng/opcode-list-truncated",
+        "invalid/dng/required-opcode",
+        "invalid/dng/signed-samples",
+        "invalid/dng/third-illuminant",
+        "invalid/dng/truncated-samples",
+        "invalid/dng/white-below-black",
+        "limit/dng/frame-pixels-over-limit",
+        "limit/dng/metadata-bytes-over-limit",
+
+        // DDS: the headers (DDS_HEADER, DDS_PIXELFORMAT, DDS_HEADER_DXT10), and the pixel formats the library rejects
+        "invalid/dds/alpha-mode-invalid",
+        "invalid/dds/array-size-zero",
+        "invalid/dds/bc6h-typeless",
+        "invalid/dds/bit-count",
+        "invalid/dds/cube-and-volume",
+        "invalid/dds/cube-no-face",
+        "invalid/dds/cube-not-square",
+        "invalid/dds/depth-d24-s8",
+        "invalid/dds/dimension-invalid",
+        "invalid/dds/dxgi-unknown",
+        "invalid/dds/dxt2",
+        "invalid/dds/dxt4",
+        "invalid/dds/fourcc-q16w16v16u16",
+        "invalid/dds/fourcc-unknown",
+        "invalid/dds/header-size",
+        "invalid/dds/height-zero",
+        "invalid/dds/legacy-yuv",
+        "invalid/dds/linear-size-wrong",
+        "invalid/dds/mask-not-contiguous",
+        "invalid/dds/mask-outside-pixel",
+        "invalid/dds/mask-overlap",
+        "invalid/dds/masks-zero",
+        "invalid/dds/no-pixel-format",
+        "invalid/dds/pitch-wrong",
+        "invalid/dds/pixel-format-size",
+        "invalid/dds/premultiplied-alpha",
+        "invalid/dds/texture-1d-height",
+        "invalid/dds/too-many-mips",
+        "invalid/dds/truncated-dx10-header",
+        "invalid/dds/truncated-header",
+        "invalid/dds/typeless-r32g32b32a32",
+        "invalid/dds/uint-r8g8b8a8",
+        "invalid/dds/video-nv12",
+        "invalid/dds/volume-array",
+        "invalid/dds/volume-depth-zero",
+        "invalid/dds/width-zero",
+        "invalid/dds/yuy2",
+        "limit/dds/frame-pixels-over-limit",
+        "limit/dds/width-over-limit",
+
+        // DPX: the generic headers and the first image element structure
+        "invalid/dpx/bit-depth-7",
+        "invalid/dpx/cbycr-float",
+        "invalid/dpx/cbycry-odd-width",
+        "invalid/dpx/data-in-generic-header",
+        "invalid/dpx/data-sign-2",
+        "invalid/dpx/descriptor-depth",
+        "invalid/dpx/descriptor-user-defined",
+        "invalid/dpx/encrypted",
+        "invalid/dpx/nine-elements",
+        "invalid/dpx/no-element",
+        "invalid/dpx/orientation-8",
+        "invalid/dpx/packing-3",
+        "invalid/dpx/run-length",
+        "invalid/dpx/signed",
+        "invalid/dpx/truncated-header",
+        "invalid/dpx/zero-width",
+        "limit/dpx/frame-pixels-over-limit",
+        "limit/dpx/width-over-limit",
+
+        // Cineon: the generic section
+        "invalid/cin/bit-fields",
+        "invalid/cin/bits-32",
+        "invalid/cin/cell-smaller-than-sample",
+        "invalid/cin/channel-sizes",
+        "invalid/cin/line-interleave",
+        "invalid/cin/no-channel",
+        "invalid/cin/orientation-9",
+        "invalid/cin/signed",
+        "invalid/cin/truncated-header",
+        "invalid/cin/two-channels",
+
+        // Radiance HDR: the information header and the resolution string
+        "invalid/hdr/format-other",
+        "invalid/hdr/resolution-lowercase",
+        "invalid/hdr/resolution-one-axis",
+        "invalid/hdr/resolution-same-axis",
+        "invalid/hdr/resolution-zero",
+        "invalid/hdr/truncated-header",
+        "invalid/hdr/truncated-resolution",
+        "invalid/hdr/two-formats",
+        "limit/hdr/frame-pixels-over-limit",
+        "limit/hdr/metadata-bytes-over-limit",
+
         "invalid/jxl/codestream-signature",
         "invalid/jxl/container-box-size",
         "invalid/jxl/container-parts-out-of-order",
@@ -94,10 +224,8 @@ internal static class ErrorFixtureStages
 
         // BMP: the file header, the Windows or OS/2 DIB header (its compression must agree with its bit count and row
         // order) and the masks that follow a 40-byte BI_BITFIELDS header, all read before the palette and the pixel data
-        "invalid/bmp/bit-count-2",
         "invalid/bmp/bit-count-7",
         "invalid/bmp/embedded-png",
-        "invalid/bmp/mask-10-bits",
         "invalid/bmp/non-contiguous-mask",
         "invalid/bmp/os2-core-bit-count-16",
         "invalid/bmp/os2-core-offset-inside-palette",
@@ -205,12 +333,11 @@ internal static class ErrorFixtureStages
         "invalid/heic/item-av01",
         "invalid/heic/item-lhv1",
         "invalid/heic/layer-selector",
-        "invalid/heic/matrix-ictcp",
+        "invalid/heic/matrix-ictcp-sdr-transfer",
         "invalid/heic/missing-ftyp",
         "invalid/heic/missing-hvcc",
         "invalid/heic/missing-ispe",
         "invalid/heic/missing-pitm",
-        "invalid/heic/premultiplied-alpha",
         "invalid/heic/sequence-edit-list-offset",
         "invalid/heic/sequence-fragmented",
         "invalid/heic/sequence-missing-chunk-offsets",
@@ -223,8 +350,7 @@ internal static class ErrorFixtureStages
         "limit/heic/width-over-limit",
 
         // OpenEXR: the header, validated whole before the offset table
-        "invalid/exr/compression-htj2k256",
-        "invalid/exr/compression-htj2k32",
+        "invalid/exr/compression-lj2k",
         "invalid/exr/data-window-outside",
         "invalid/exr/deep-layers-zips",
         "invalid/exr/deep-scanline-none",
@@ -235,6 +361,9 @@ internal static class ErrorFixtureStages
         "invalid/exr/deep-tiles-zstd",
         "invalid/exr/deep-without-alpha",
         "invalid/exr/extra-channel",
+        "invalid/exr/htj2k256-float",
+        "invalid/exr/htj2k256-subsampled-layer",
+        "invalid/exr/htj2k32-uint",
         "invalid/exr/layer-channels",
         "invalid/exr/luminance-chroma",
         "invalid/exr/missing-channels",
@@ -263,6 +392,32 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
     {
+        // PSD: the image data (a full scan decompresses the PackBits rows)
+        "invalid/psd/compression-4",
+        "invalid/psd/rle-literal-past-length",
+        "invalid/psd/rle-row-too-long",
+        "invalid/psd/rle-row-too-short",
+        "invalid/psd/rle-run-without-byte",
+        "invalid/psd/truncated-counts",
+        "invalid/psd/truncated-image-data",
+        // DDS: the data of the surfaces
+        "invalid/dds/truncated-block-data",
+        "invalid/dds/truncated-data",
+
+        // DPX and Cineon: the lines, read by a full scan
+        "invalid/dpx/truncated-data",
+        "invalid/cin/truncated-data",
+
+        // Radiance HDR: the scanlines, read by a full scan
+        "invalid/hdr/old-rle-repetition-first",
+        "invalid/hdr/old-rle-repetition-past-end",
+        "invalid/hdr/rle-code-zero",
+        "invalid/hdr/rle-length",
+        "invalid/hdr/rle-literal-past-end",
+        "invalid/hdr/rle-run-past-end",
+        "invalid/hdr/truncated-scanline",
+        "invalid/hdr/truncated-scanlines",
+
         // JPEG 2000: the chain of the tile-parts, the end of the codestream and the boxes that follow it
         "invalid/jp2/codestream-cut",
         "invalid/jp2/codestream-no-end",
@@ -400,6 +555,21 @@ internal static class ErrorFixtureStages
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
     {
+        // PSD: rejected by a load only
+        "invalid/psd/cmyk16",
+        "invalid/psd/cmyk8",
+        "invalid/psd/lab8",
+        "invalid/psd/no-composite",
+        "invalid/psd/zip",
+        "invalid/psd/zip-prediction",
+
+        // DPX: a 64-bit component that single precision does not hold is found when the components are read
+        "invalid/dpx/float64-inexact",
+
+        // Radiance HDR: XYZE samples are identified, and rejected by a load
+        "invalid/hdr/xyze",
+        "invalid/hdr/xyze-columns",
+
         // JPEG 2000: the packets of a tile and the coding passes of a code-block
         "invalid/jp2/ht-placeholders-alone",
         "invalid/jp2/ht-suffix-length",

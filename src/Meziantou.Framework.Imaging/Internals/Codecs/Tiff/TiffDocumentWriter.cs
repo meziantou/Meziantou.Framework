@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -17,7 +18,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Layout per page: the strips (or tiles) first, in top-down order, then the directory that describes them. A directory
 /// stores the offset and the stored length of every block, so it can only be written once the blocks are compressed; the offset
 /// that points <em>to</em> the directory (the header's first-IFD field, or the previous directory's next-IFD field) is
-/// therefore patched afterward, which is why the destination must be seekable.
+/// therefore patched afterward, which is why the destination must be seekable. Uncompressed blocks are the exception: their
+/// lengths are known before they are written, so the directory of such a page precedes its blocks
+/// (<see cref="WriteDirectoryFirst"/>), the header points to the directory that follows it, and a one-page document is
+/// written forward only.
 /// </para>
 /// <para>
 /// One call to <see cref="EncodeStrip"/> writes one strip, so the memory of an encode is one strip (about
@@ -28,8 +32,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// With several workers (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), LZW and Deflate strips and tiles are compressed
-/// by batches of one strip per worker, each into an output of its own, and appended in order, one per call: the file and
-/// its flushes are those of one worker, and the memory is one strip and its compressed bytes per worker.
+/// by batches of up to <see cref="BlocksPerWorker"/> strips per worker, each into an output of its own, and appended in order,
+/// one per call: the file and its flushes are those of one worker, and the memory is up to
+/// <see cref="BlocksPerWorker"/> strips and their compressed bytes per worker.
 /// </para>
 /// <para>
 /// Nothing is lost silently. The bilevel and palette layouts store a page exactly or reject it, and so does a layout
@@ -48,10 +53,23 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The predictors work on the rows of a block (<see cref="ApplyPredictor"/>): the rows of a strip, or the padded rows of
 /// a tile, whose samples are serialized in the byte order of the file first.
 /// </para>
+/// <para>
+/// With separate planes (<see cref="TiffEncoder.SeparatePlanes"/>), the blocks of a page are the blocks of its first plane,
+/// then those of its second plane, and so on (TIFF 6.0, <c>StripOffsets</c>): a block holds one sample per pixel, cut from
+/// the chunky rows the frame rows are serialized to (<see cref="ExtractPlane"/>), and its predictor works on one sample per
+/// pixel.
+/// </para>
 /// </remarks>
 internal sealed class TiffDocumentWriter : IDisposable
 {
     private const ulong WhiteColor = 0xFFFF_FFFF_FFFF;
+
+    /// <summary>
+    /// The largest number of blocks per worker in a batch of blocks compressed by several workers
+    /// (<see cref="EncodeStripOfWorkers"/>): about four times fewer waits for the slowest block of a batch than one block
+    /// per worker, for the memory of four blocks and their compressed bytes per worker.
+    /// </summary>
+    private const int BlocksPerWorker = 4;
 
     private readonly TiffEncoder _encoder;
     private readonly AllocationScope _scope;
@@ -63,6 +81,8 @@ internal sealed class TiffDocumentWriter : IDisposable
     private PooledBuffer? _band;
     private PooledBuffer? _predictorRow;
     private PooledBuffer? _converted;
+    private PooledBuffer? _chunkyRow;
+    private AllocationCharge? _tablesCharge;
     private PooledBuffer? _changes;
     private TiffLzwEncoder? _lzw;
     private ImageEncoderSession? _jpeg;
@@ -70,7 +90,9 @@ internal sealed class TiffDocumentWriter : IDisposable
     private long _jpegStart;
     private PreparedPage? _prepared;
     private long _pendingPointerOffset = -1;
+    private long _pendingPointerValue = -1;
     private long _nextPointerOffset = -1;
+    private bool _directoryWritten;
     private PageState _page;
     private int _blocksWritten;
     private int _bandRow = -1;
@@ -109,6 +131,9 @@ internal sealed class TiffDocumentWriter : IDisposable
         if (encoder.TileWidth > 0 && encoder.Compression == TiffCompression.Jpeg)
             throw new ArgumentException("TiffCompression.Jpeg writes each page as one strip: it cannot be combined with TiffEncoder.TileWidth and TiffEncoder.TileHeight.", nameof(encoder));
 
+        if (encoder.SeparatePlanes && encoder.Compression == TiffCompression.Jpeg)
+            throw new ArgumentException("TiffCompression.Jpeg codes the samples of a page in one interleaved datastream: it cannot be combined with TiffEncoder.SeparatePlanes.", nameof(encoder));
+
         _encoder = encoder;
         _scope = scope;
         _configuration = configuration;
@@ -143,7 +168,13 @@ internal sealed class TiffDocumentWriter : IDisposable
 
     private int OffsetSize => IsBigTiff ? 8 : 4;
 
-    /// <summary>Writes the file header. The offset of the first directory is patched when that directory is written.</summary>
+    /// <summary>Gets a value indicating whether the directory of a page precedes its blocks: uncompressed blocks, whose lengths are known up front.</summary>
+    private bool WritesDirectoryFirst => _compression == TiffFormat.CompressionNone;
+
+    /// <summary>
+    /// Writes the file header. The offset of the first directory is patched when that directory is written, unless it
+    /// directly follows the header (<see cref="WritesDirectoryFirst"/>).
+    /// </summary>
     /// <param name="output">The output buffer, positioned at the first byte of the file.</param>
     public void WriteHeader(ImageOutputBuffer output)
     {
@@ -163,6 +194,10 @@ internal sealed class TiffDocumentWriter : IDisposable
         {
             _pendingPointerOffset = 4;
         }
+
+        // The directory of an uncompressed first page follows the header
+        _pendingPointerValue = WritesDirectoryFirst ? length : 0;
+        WriteOffset(span[(int)_pendingPointerOffset..], (ulong)_pendingPointerValue);
 
         output.Advance(length);
     }
@@ -264,6 +299,12 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         var isJpeg = _compression == TiffFormat.CompressionJpeg;
         var isTiled = _encoder.TileWidth > 0;
+
+        // A block of a page of separate planes holds one sample per pixel. A page of one sample has a single plane, which
+        // TIFF 6.0 stores the same either way: it is written as chunky (some readers ignore the photometric interpretation of
+        // a page of one sample in separate planes)
+        var planes = _encoder.SeparatePlanes ? layout.SamplesPerPixel : 1;
+        var blockSamplesPerPixel = layout.SamplesPerPixel / planes;
         int blockWidth;
         int blockHeight;
         long blockRowLength;
@@ -282,7 +323,7 @@ internal sealed class TiffDocumentWriter : IDisposable
             // start on a byte of the row of the page whatever the sample width
             blockWidth = _encoder.TileWidth;
             blockHeight = _encoder.TileHeight;
-            blockRowLength = layout.GetRowLength(blockWidth);
+            blockRowLength = layout.GetRowLength(blockWidth, blockSamplesPerPixel);
             if (!CheckedSizes.TryMultiply(blockRowLength, blockHeight, out var tileLength) || tileLength > CheckedSizes.MaxBufferLength
                 || !CheckedSizes.TryMultiply(rowLength, blockHeight, out var bandLength) || bandLength > CheckedSizes.MaxBufferLength)
             {
@@ -292,11 +333,11 @@ internal sealed class TiffDocumentWriter : IDisposable
         else
         {
             blockWidth = size.Width;
+            blockRowLength = layout.GetRowLength(size.Width, blockSamplesPerPixel);
             blockHeight = _encoder.RowsPerStrip > 0
                 ? Math.Min(_encoder.RowsPerStrip, size.Height)
-                : (int)Math.Clamp(TiffEncoder.DefaultStripBytes / Math.Max(1, rowLength), 1, size.Height);
-            blockRowLength = rowLength;
-            if (!CheckedSizes.TryMultiply(rowLength, blockHeight, out var stripLength) || stripLength > CheckedSizes.MaxBufferLength)
+                : (int)Math.Clamp(TiffEncoder.DefaultStripBytes / Math.Max(1, blockRowLength), 1, size.Height);
+            if (!CheckedSizes.TryMultiply(blockRowLength, blockHeight, out var stripLength) || stripLength > CheckedSizes.MaxBufferLength)
             {
                 blockHeight = 1;
             }
@@ -304,14 +345,18 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         var blocksAcross = (size.Width + blockWidth - 1) / blockWidth;
         var blocksDown = (size.Height + blockHeight - 1) / blockHeight;
-        _page = new PageState(frame, size, pixelFormat, layout, metadata, (int)rowLength, isTiled, blockWidth, blockHeight, (int)blockRowLength, blocksAcross, blocksDown, prepared.Palette, prepared.PaletteIndexes);
+        var blockCount = (long)blocksAcross * blocksDown * planes;
+        if (blockCount > CheckedSizes.MaxBufferLength / sizeof(ulong))
+            throw CheckedSizes.CreateOverflowException(_scope.Limits);
+
+        ChargeBlockTables((int)blockCount);
+        _page = new PageState(frame, size, pixelFormat, layout, metadata, (int)rowLength, isTiled, blockWidth, blockHeight, (int)blockRowLength, blocksAcross, blocksDown, planes, prepared.Palette, prepared.PaletteIndexes);
         _blocksWritten = 0;
+        _directoryWritten = false;
         _bandRow = -1;
         _workers?.Dispose();
         _workers = null;
         _workersChosen = false;
-        _blockOffsets.Clear();
-        _blockByteCounts.Clear();
         if (isJpeg)
         {
             BeginJpeg(frame, size, pixelFormat);
@@ -322,6 +367,10 @@ internal sealed class TiffDocumentWriter : IDisposable
         if (isTiled)
         {
             EnsureBuffer(ref _band, (int)rowLength * blockHeight);
+        }
+        else if (planes > 1)
+        {
+            EnsureBuffer(ref _chunkyRow, (int)rowLength);
         }
 
         if (!layout.IsBilevel && !layout.IsIndexed && !layout.IsFloatingPoint && layout.BitsPerSample == 16)
@@ -354,6 +403,11 @@ internal sealed class TiffDocumentWriter : IDisposable
         if (_jpeg is not null)
             return EncodeJpeg(output, cancellationToken);
 
+        if (WritesDirectoryFirst && !_directoryWritten)
+        {
+            WriteDirectoryFirst(output);
+        }
+
         if (!_workersChosen)
         {
             _workersChosen = true;
@@ -373,6 +427,15 @@ internal sealed class TiffDocumentWriter : IDisposable
         var rows = length / blockRowLength;
         var stored = _strip.Span[..length];
         var start = output.TotalBytes;
+        if (_directoryWritten)
+        {
+            // The directory gave the block this place and this length
+            Debug.Assert(_blockOffsets[_blocksWritten] == (ulong)start && _blockByteCounts[_blocksWritten] == (ulong)length, "An uncompressed block must be where the directory says.");
+            output.Write(stored);
+            _blocksWritten++;
+            return !HasPendingBlocks;
+        }
+
         _blockOffsets.Add((ulong)start);
         switch (_compression)
         {
@@ -413,12 +476,74 @@ internal sealed class TiffDocumentWriter : IDisposable
     public void CompletePage(ImageOutputBuffer output)
     {
         ArgumentNullException.ThrowIfNull(output);
-        var fields = BuildFields();
-        var directoryOffset = output.TotalBytes;
-        WriteDirectory(output, fields);
-        PatchPointer(output, directoryOffset);
+        if (!_directoryWritten)
+        {
+            var fields = BuildFields();
+            var directoryOffset = output.TotalBytes;
+            WriteDirectory(output, fields, dataLength: 0);
+            PatchPointer(output, directoryOffset);
+        }
+
+        _directoryWritten = false;
         _page = default;
+        _tablesCharge?.Dispose();
+        _tablesCharge = null;
         PageCount++;
+    }
+
+    /// <summary>
+    /// Charges the tables of the offsets and the lengths of the blocks of a page, before they grow to hold
+    /// <paramref name="blockCount"/> entries, and their copies in the values of the directory fields (two copies, since a
+    /// directory written before its blocks is measured first): many small strips, or separate planes, make them large.
+    /// The charge is held until the directory of the page is written.
+    /// </summary>
+    private void ChargeBlockTables(int blockCount)
+    {
+        _tablesCharge?.Dispose();
+        _tablesCharge = null;
+        _blockOffsets.Clear();
+        _blockByteCounts.Clear();
+        var entries = (long)Math.Max(blockCount, _blockOffsets.Capacity) + Math.Max(blockCount, _blockByteCounts.Capacity);
+        _tablesCharge = _scope.Charge((entries * sizeof(ulong)) + (4L * blockCount * OffsetSize), AllocationKind.Temporary);
+        _blockOffsets.EnsureCapacity(blockCount);
+        _blockByteCounts.EnsureCapacity(blockCount);
+    }
+
+    /// <summary>
+    /// Writes the directory of an uncompressed page before its blocks: the length of each block is the length of its rows,
+    /// so the directory can give the offsets of blocks that follow it (the directory and its values first, then the
+    /// blocks in order).
+    /// </summary>
+    private void WriteDirectoryFirst(ImageOutputBuffer output)
+    {
+        var page = _page;
+        var blocksPerPlane = page.BlocksAcross * page.BlocksDown;
+        _blockOffsets.Clear();
+        _blockByteCounts.Clear();
+        var dataLength = 0L;
+        for (var i = 0; i < page.BlockCount; i++)
+        {
+            // A strip holds the rows of the page it covers; a tile is stored in full
+            var rows = page.IsTiled ? page.BlockHeight : Math.Min(page.BlockHeight, page.Size.Height - ((i % blocksPerPlane) / page.BlocksAcross * page.BlockHeight));
+            var length = (long)rows * page.BlockRowLength;
+            _blockOffsets.Add(0);
+            _blockByteCounts.Add((ulong)length);
+            dataLength += length;
+        }
+
+        // The values of the fields have the same length whatever the offsets, so the directory measured with zero offsets is
+        // the one written
+        var directoryOffset = output.TotalBytes;
+        var offset = directoryOffset + GetDirectoryLength(BuildFields());
+        for (var i = 0; i < page.BlockCount; i++)
+        {
+            _blockOffsets[i] = (ulong)offset;
+            offset += (long)_blockByteCounts[i];
+        }
+
+        WriteDirectory(output, BuildFields(), dataLength);
+        PatchPointer(output, directoryOffset);
+        _directoryWritten = true;
     }
 
     public void Dispose()
@@ -433,6 +558,10 @@ internal sealed class TiffDocumentWriter : IDisposable
         _predictorRow = null;
         _converted?.Dispose();
         _converted = null;
+        _chunkyRow?.Dispose();
+        _chunkyRow = null;
+        _tablesCharge?.Dispose();
+        _tablesCharge = null;
         _changes?.Dispose();
         _changes = null;
         _lzw?.Dispose();
@@ -469,7 +598,8 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>): LZW and Deflate blocks of a page of at least
     /// <see cref="RowBands.MinPixelsForParallelism"/> pixels and two blocks, and as many workers as the live bytes the scope
     /// has left can give their memory to, after the growth of the output buffer one worker would cause. Uncompressed,
-    /// PackBits and CCITT strips cost about what serializing them costs.
+    /// PackBits and CCITT strips cost about what serializing them costs. The live bytes left after the workers give up to
+    /// <see cref="BlocksPerWorker"/> blocks per worker to a batch.
     /// </summary>
     /// <returns>The workers, or <see langword="null"/> for one worker.</returns>
     private StripWorkers? CreateWorkers(ImageOutputBuffer output)
@@ -486,31 +616,29 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         // One worker rents the table of LZW with its first strip, and grows the output buffer to hold the bytes written
         // between two flushes (the old and the new buffer are live together while it grows): the other workers need a strip,
-        // a table and an output of their own, and the first one an output
+        // a table and an output of their own, and the first one an output. Each other block of a batch needs a strip and an
+        // output
         var encoderBytes = _compression == TiffFormat.CompressionLzw ? _scope.GetChargedSize(TiffLzwEncoder.StateLength) : 0;
         var outputBytes = _scope.GetChargedSize(compressedLength);
-        var workerBytes = _scope.GetChargedSize(stripLength) + encoderBytes + outputBytes;
+        var blockBytes = _scope.GetChargedSize(stripLength) + outputBytes;
+        var workerBytes = blockBytes + encoderBytes;
         var oneWorkerBytes = (_lzw is null ? encoderBytes : 0) + (3 * _scope.GetChargedSize(output.FlushThreshold + compressedLength));
         var available = _scope.Limit - _scope.LiveBytes - oneWorkerBytes - outputBytes;
         if (available < workerBytes)
             return null;
 
         var workers = (int)Math.Min(1 + (available / workerBytes), Math.Min(_configuration.MaxDegreeOfParallelism, stripCount));
-        var created = new StripWorkers(workers);
+        var blocks = (int)Math.Min(workers + ((available - ((workers - 1) * workerBytes)) / blockBytes), Math.Min((long)BlocksPerWorker * workers, stripCount));
+        var created = new StripWorkers(workers, blocks);
         try
         {
-            for (var i = 0; i < workers; i++)
+            for (var i = 0; i < blocks; i++)
             {
-                // The first worker uses the strip and the table of the writer
-                if (i == 0)
+                // The first block uses the strip of the writer, and the first worker its table
+                created.Strips[i] = i == 0 ? _strip! : _scope.Rent((int)stripLength, AllocationKind.Temporary, clear: false);
+                if (i < workers && _compression == TiffFormat.CompressionLzw)
                 {
-                    created.Strips[i] = _strip!;
-                    created.Encoders[i] = _compression == TiffFormat.CompressionLzw ? _lzw ??= new TiffLzwEncoder(_scope) : null;
-                }
-                else
-                {
-                    created.Strips[i] = _scope.Rent((int)stripLength, AllocationKind.Temporary, clear: false);
-                    created.Encoders[i] = _compression == TiffFormat.CompressionLzw ? new TiffLzwEncoder(_scope) : null;
+                    created.Encoders[i] = i == 0 ? _lzw ??= new TiffLzwEncoder(_scope) : new TiffLzwEncoder(_scope);
                 }
 
                 var compressed = new ImageOutputBuffer(_scope);
@@ -528,36 +656,41 @@ internal sealed class TiffDocumentWriter : IDisposable
     }
 
     /// <summary>
-    /// Writes the next block of a page whose strips or tiles several workers compress: the rows of a batch of one block per
-    /// worker are serialized on this thread, the workers compress them, each into an output of its own, and the blocks are
+    /// Writes the next block of a page whose strips or tiles several workers compress: the rows of a batch of blocks are
+    /// serialized on this thread, the workers compress them, each block into an output of its own, and the blocks are
     /// appended in order, one per call, so the file and its flushes are the ones of one worker.
     /// </summary>
+    /// <remarks>
+    /// The workers wait for each other at the end of a batch, so the more blocks a batch has, the less time they wait for
+    /// the slowest block (<see cref="BlocksPerWorker"/>), and the batches of a page have the same number of blocks, give or
+    /// take one, so that the last one is not a few blocks that leave most of the workers idle.
+    /// </remarks>
     private bool EncodeStripOfWorkers(ImageOutputBuffer output, StripWorkers workers, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (workers.Next == workers.Count)
         {
             var block = _blocksWritten;
-            var count = 0;
+            var remaining = _page.BlockCount - block;
+            var batches = (remaining + workers.Strips.Length - 1) / workers.Strips.Length;
+            var count = (remaining + batches - 1) / batches;
             using (var lease = _page.Frame.GetStorage().AcquireLease())
             {
-                while (count < workers.Strips.Length && block < _page.BlockCount)
+                for (var i = 0; i < count; i++)
                 {
-                    workers.Lengths[count] = FillBlock(block, lease, workers.Strips[count].Span, cancellationToken);
-                    block++;
-                    count++;
+                    workers.Lengths[i] = FillBlock(block + i, lease, workers.Strips[i].Span, cancellationToken);
                 }
             }
 
             workers.Count = 0;
             workers.Next = 0;
             var compression = _compression;
-            RowBands.RunParallelInBandOrder(count, worker =>
+            RowBands.RunParallelInItemOrder(count, workers.Encoders.Length, (strip, worker) =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var compressed = workers.Outputs[worker];
+                var compressed = workers.Outputs[strip];
                 compressed.FlushTo(Stream.Null);
-                var stored = workers.Strips[worker].Span[..workers.Lengths[worker]];
+                var stored = workers.Strips[strip].Span[..workers.Lengths[strip]];
                 if (compression == TiffFormat.CompressionLzw)
                 {
                     workers.Encoders[worker]!.Encode(stored, compressed);
@@ -571,10 +704,10 @@ internal sealed class TiffDocumentWriter : IDisposable
             workers.Count = count;
         }
 
-        var strip = workers.Next++;
+        var next = workers.Next++;
         var start = output.TotalBytes;
         _blockOffsets.Add((ulong)start);
-        output.Write(workers.Outputs[strip].WrittenMemory.Span);
+        output.Write(workers.Outputs[next].WrittenMemory.Span);
         _blockByteCounts.Add((ulong)(output.TotalBytes - start));
         _blocksWritten++;
         if (HasPendingBlocks)
@@ -736,13 +869,17 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// <summary>
     /// Serializes the strip or tile <paramref name="index"/> of the current page, predictors applied, into
     /// <paramref name="destination"/>: the rows of a strip, or the rows of a tile cut from the band of its row of tiles,
-    /// padded with zero samples past the right and bottom edges of the page.
+    /// padded with zero samples past the right and bottom edges of the page. A block of a page of separate planes holds
+    /// the samples of its plane only.
     /// </summary>
     /// <returns>The number of stored bytes of the block: its rows times <see cref="PageState.BlockRowLength"/>.</returns>
     private int FillBlock(int index, scoped in PixelLease lease, Span<byte> destination, CancellationToken cancellationToken)
     {
         var page = _page;
-        var blockRow = index / page.BlocksAcross;
+        var blocksPerPlane = page.BlocksAcross * page.BlocksDown;
+        var plane = index / blocksPerPlane;
+        var place = index % blocksPerPlane;
+        var blockRow = place / page.BlocksAcross;
         var firstRow = blockRow * page.BlockHeight;
         var rows = Math.Min(page.BlockHeight, page.Size.Height - firstRow);
         var blockRowLength = page.BlockRowLength;
@@ -752,14 +889,24 @@ internal sealed class TiffDocumentWriter : IDisposable
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var row = destination.Slice(i * blockRowLength, blockRowLength);
-                SerializeRow(lease.GetRowBytes(firstRow + i), row);
+                if (page.Planes == 1)
+                {
+                    SerializeRow(lease.GetRowBytes(firstRow + i), row);
+                }
+                else
+                {
+                    var chunky = _chunkyRow!.Span[..page.RowLength];
+                    SerializeRow(lease.GetRowBytes(firstRow + i), chunky);
+                    ExtractPlane(chunky, plane, 0, page.Size.Width, row);
+                }
+
                 ApplyPredictor(row);
             }
 
             return rows * blockRowLength;
         }
 
-        // The rows of a row of tiles are serialized once, for all its tiles
+        // The rows of a row of tiles are serialized once, for all its tiles (of every plane, when it is the only row of tiles)
         var rowLength = page.RowLength;
         var band = _band!.Span;
         if (_bandRow != blockRow)
@@ -776,7 +923,7 @@ internal sealed class TiffDocumentWriter : IDisposable
         // Tile widths are multiples of 16 pixels, so a tile starts on a byte of the band whatever the sample width. A
         // bilevel row is serialized with zero bits past the width of the page
         var bitsPerPixel = (long)page.Layout.SamplesPerPixel * page.Layout.BitsPerSample;
-        var firstColumn = (index % page.BlocksAcross) * page.BlockWidth;
+        var firstColumn = (place % page.BlocksAcross) * page.BlockWidth;
         var columns = Math.Min(page.BlockWidth, page.Size.Width - firstColumn);
         var copyLength = (int)(((columns * bitsPerPixel) + 7) / 8);
         var bandOffset = (int)(firstColumn * bitsPerPixel / 8);
@@ -790,12 +937,56 @@ internal sealed class TiffDocumentWriter : IDisposable
         for (var i = 0; i < rows; i++)
         {
             var row = tile.Slice(i * blockRowLength, blockRowLength);
-            band.Slice((i * rowLength) + bandOffset, copyLength).CopyTo(row);
+            if (page.Planes == 1)
+            {
+                band.Slice((i * rowLength) + bandOffset, copyLength).CopyTo(row);
+            }
+            else
+            {
+                ExtractPlane(band.Slice(i * rowLength, rowLength), plane, firstColumn, columns, row);
+            }
+
             ApplyPredictor(row);
         }
 
         // The rows of zero samples below the page stay zero samples with either predictor
         return length;
+    }
+
+    /// <summary>
+    /// Copies the samples of one plane of <paramref name="count"/> pixels of a serialized chunky row, from the pixel
+    /// <paramref name="firstPixel"/>, to the start of <paramref name="destination"/>: a row of a block of that plane. The
+    /// samples keep the byte order of the file. A page of several planes has samples of 8, 16 or 32 bits (a bilevel or
+    /// palette page has one sample per pixel).
+    /// </summary>
+    private void ExtractPlane(ReadOnlySpan<byte> chunky, int plane, int firstPixel, int count, Span<byte> destination)
+    {
+        var samplesPerPixel = _page.Layout.SamplesPerPixel;
+        var start = (firstPixel * samplesPerPixel) + plane;
+        switch (_page.Layout.BitsPerSample)
+        {
+            case 8:
+                ExtractSamples(chunky, samplesPerPixel, start, destination[..count]);
+                break;
+
+            case 16:
+                ExtractSamples(unsafe(MemoryMarshal.Cast<byte, ushort>(chunky)), samplesPerPixel, start, unsafe(MemoryMarshal.Cast<byte, ushort>(destination))[..count]);
+                break;
+
+            default:
+                ExtractSamples(unsafe(MemoryMarshal.Cast<byte, uint>(chunky)), samplesPerPixel, start, unsafe(MemoryMarshal.Cast<byte, uint>(destination))[..count]);
+                break;
+        }
+
+        static void ExtractSamples<T>(ReadOnlySpan<T> samples, int stride, int start, Span<T> destination)
+            where T : unmanaged
+        {
+            var source = samples[start..];
+            for (var x = 0; x < destination.Length; x++)
+            {
+                destination[x] = source[x * stride];
+            }
+        }
     }
 
     /// <summary>
@@ -808,7 +999,7 @@ internal sealed class TiffDocumentWriter : IDisposable
     private void ApplyPredictor(Span<byte> row)
     {
         var layout = _page.Layout;
-        var samplesPerPixel = layout.SamplesPerPixel;
+        var samplesPerPixel = _page.BlockSamplesPerPixel;
         if (UsesFloatingPointPredictor)
         {
             var scratch = _predictorRow!.Span[..row.Length];
@@ -1081,7 +1272,7 @@ internal sealed class TiffDocumentWriter : IDisposable
             Scalar(TiffFormat.CompressionTag, TiffFieldType.Short, (ulong)_compression),
             Scalar(TiffFormat.PhotometricInterpretationTag, TiffFieldType.Short, (ulong)layout.Photometric),
             Scalar(TiffFormat.SamplesPerPixelTag, TiffFieldType.Short, (ulong)layout.SamplesPerPixel),
-            Scalar(TiffFormat.PlanarConfigurationTag, TiffFieldType.Short, TiffFormat.PlanarChunky),
+            Scalar(TiffFormat.PlanarConfigurationTag, TiffFieldType.Short, (ulong)(_page.Planes > 1 ? TiffFormat.PlanarSeparate : TiffFormat.PlanarChunky)),
             Repeated(TiffFormat.SampleFormatTag, TiffFieldType.Short, (ulong)layout.SampleFormat, layout.SamplesPerPixel),
         };
 
@@ -1155,23 +1346,44 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         if (metadata.XmpProfile is { } xmp)
         {
-            fields.Add(new TiffWriteField(TiffFormat.XmpTag, TiffFieldType.Byte, (ulong)xmp.Data.Length, xmp.Data.Span.ToArray()));
+            fields.Add(new TiffWriteField(TiffFormat.XmpTag, TiffFieldType.Byte, (ulong)xmp.Data.Length, xmp.Data.Memory));
         }
 
         if (metadata.IccProfile is { } icc)
         {
-            fields.Add(new TiffWriteField(TiffFormat.IccProfileTag, TiffFieldType.Undefined, (ulong)icc.Data.Length, icc.Data.Span.ToArray()));
+            fields.Add(new TiffWriteField(TiffFormat.IccProfileTag, TiffFieldType.Undefined, (ulong)icc.Data.Length, icc.Data.Memory));
         }
 
         fields.Sort(static (left, right) => left.Tag.CompareTo(right.Tag));
         return fields;
     }
 
-    private void WriteDirectory(ImageOutputBuffer output, List<TiffWriteField> fields)
+    /// <summary>Gets the number of bytes <see cref="WriteDirectory"/> writes for these fields: the table, then the values that do not fit in it.</summary>
+    private long GetDirectoryLength(List<TiffWriteField> fields)
+    {
+        var valuesLength = 0L;
+        foreach (var field in fields)
+        {
+            if (field.Data.Length > OffsetSize)
+            {
+                valuesLength = Align(valuesLength) + field.Data.Length;
+            }
+        }
+
+        return GetTableLength(fields.Count) + Align(valuesLength);
+    }
+
+    private int GetTableLength(int fieldCount) => (IsBigTiff ? 8 : 2) + (fieldCount * (IsBigTiff ? TiffFormat.BigTiffEntryLength : TiffFormat.ClassicEntryLength)) + OffsetSize;
+
+    /// <summary>Writes a directory and the values of its fields.</summary>
+    /// <param name="output">The output buffer.</param>
+    /// <param name="fields">The fields, sorted by tag.</param>
+    /// <param name="dataLength">The number of bytes of the blocks that follow the directory (<see cref="WriteDirectoryFirst"/>), which 32-bit offsets must also address.</param>
+    private void WriteDirectory(ImageOutputBuffer output, List<TiffWriteField> fields, long dataLength)
     {
         var entryLength = IsBigTiff ? TiffFormat.BigTiffEntryLength : TiffFormat.ClassicEntryLength;
         var countLength = IsBigTiff ? 8 : 2;
-        var tableLength = countLength + (fields.Count * entryLength) + OffsetSize;
+        var tableLength = GetTableLength(fields.Count);
         var directoryOffset = output.TotalBytes;
 
         // Out-of-line values follow the table; every block starts on an 8-byte boundary, which satisfies the word
@@ -1189,11 +1401,12 @@ internal sealed class TiffDocumentWriter : IDisposable
         }
 
         var total = tableLength + Align(valuesLength);
+        Debug.Assert(total == GetDirectoryLength(fields), "The directory must have the length it was measured with.");
         if (total > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(_scope.Limits);
 
         // Every offset of the page (its strips, the values of its fields, the directory itself) is below this one
-        if (!IsBigTiff && directoryOffset + total > uint.MaxValue)
+        if (!IsBigTiff && directoryOffset + total + dataLength > uint.MaxValue)
             throw TiffFormat.Unsupported("The TIFF document would be larger than the 4 GiB its 32-bit offsets can address. Set TiffEncoder.BigTiff to write 64-bit offsets.", "File size");
 
         var span = output.GetSpan((int)total)[..(int)total];
@@ -1225,7 +1438,7 @@ internal sealed class TiffDocumentWriter : IDisposable
             var value = entry[(IsBigTiff ? 12 : 8)..];
             if (field.Data.Length <= OffsetSize)
             {
-                field.Data.CopyTo(value);
+                field.Data.Span.CopyTo(value);
             }
             else
             {
@@ -1238,7 +1451,7 @@ internal sealed class TiffDocumentWriter : IDisposable
         {
             if (fields[i].Data.Length > OffsetSize)
             {
-                fields[i].Data.CopyTo(span[(int)(valueOffsets[i] - directoryOffset)..]);
+                fields[i].Data.Span.CopyTo(span[(int)(valueOffsets[i] - directoryOffset)..]);
             }
         }
 
@@ -1247,12 +1460,21 @@ internal sealed class TiffDocumentWriter : IDisposable
     }
 
     /// <summary>Patches the field that must point to the directory just written: the header, or the previous directory.</summary>
+    /// <remarks>
+    /// The header already points to a first directory that follows it (<see cref="WritesDirectoryFirst"/>): the bytes are
+    /// then patched only when the directory is elsewhere, so a one-page uncompressed document needs no patch.
+    /// </remarks>
     private void PatchPointer(ImageOutputBuffer output, long directoryOffset)
     {
-        Span<byte> pointer = stackalloc byte[8];
-        WriteOffset(pointer, (ulong)directoryOffset);
-        output.AddPatch(_pendingPointerOffset, pointer[..OffsetSize]);
+        if (directoryOffset != _pendingPointerValue)
+        {
+            Span<byte> pointer = stackalloc byte[8];
+            WriteOffset(pointer, (ulong)directoryOffset);
+            output.AddPatch(_pendingPointerOffset, pointer[..OffsetSize]);
+        }
+
         _pendingPointerOffset = _nextPointerOffset;
+        _pendingPointerValue = 0;
     }
 
     private static long Align(long value) => ((value + 7) / 8) * 8;
@@ -1378,29 +1600,34 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// <param name="BlockRowLength">The number of stored bytes of a row of a block.</param>
     /// <param name="BlocksAcross">The number of blocks of a row of blocks (1 for strips).</param>
     /// <param name="BlocksDown">The number of rows of blocks.</param>
+    /// <param name="Planes">The number of planes: the samples per pixel of a page of separate planes, 1 otherwise.</param>
     /// <param name="Palette">The colors of a palette page, sorted.</param>
     /// <param name="PaletteIndexes">The index of each color of a palette page.</param>
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct PageState(ImageFrame Frame, Size Size, PixelFormat PixelFormat, TiffSampleLayout Layout, MetadataWritePlan Metadata, int RowLength, bool IsTiled, int BlockWidth, int BlockHeight, int BlockRowLength, int BlocksAcross, int BlocksDown, ulong[]? Palette, Dictionary<ulong, byte>? PaletteIndexes)
+    private readonly record struct PageState(ImageFrame Frame, Size Size, PixelFormat PixelFormat, TiffSampleLayout Layout, MetadataWritePlan Metadata, int RowLength, bool IsTiled, int BlockWidth, int BlockHeight, int BlockRowLength, int BlocksAcross, int BlocksDown, int Planes, ulong[]? Palette, Dictionary<ulong, byte>? PaletteIndexes)
     {
-        /// <summary>Gets the number of strips or tiles of the page.</summary>
-        public int BlockCount => BlocksAcross * BlocksDown;
+        /// <summary>Gets the number of strips or tiles of the page, of every plane.</summary>
+        public int BlockCount => BlocksAcross * BlocksDown * Planes;
+
+        /// <summary>Gets the number of samples of a pixel of a block: 1 for a page of separate planes.</summary>
+        public int BlockSamplesPerPixel => Layout.SamplesPerPixel / Planes;
     }
 
     /// <summary>
-    /// The memory of the workers that compress the strips of a page: a strip, an LZW table and an output each (the first
-    /// worker uses the strip and the table of the writer), and the strips of the current batch.
+    /// The memory of the workers that compress the strips of a page: an LZW table per worker (the first worker uses the
+    /// table of the writer), and a strip and an output per block of a batch (the first block uses the strip of the writer).
     /// </summary>
-    private sealed class StripWorkers(int count) : IDisposable
+    private sealed class StripWorkers(int workers, int blocks) : IDisposable
     {
-        public PooledBuffer[] Strips { get; } = new PooledBuffer[count];
+        public PooledBuffer[] Strips { get; } = new PooledBuffer[blocks];
 
-        public TiffLzwEncoder?[] Encoders { get; } = new TiffLzwEncoder?[count];
+        /// <summary>Gets the LZW table of each worker.</summary>
+        public TiffLzwEncoder?[] Encoders { get; } = new TiffLzwEncoder?[workers];
 
-        public ImageOutputBuffer[] Outputs { get; } = new ImageOutputBuffer[count];
+        public ImageOutputBuffer[] Outputs { get; } = new ImageOutputBuffer[blocks];
 
         /// <summary>Gets the number of stored bytes of each block of the batch.</summary>
-        public int[] Lengths { get; } = new int[count];
+        public int[] Lengths { get; } = new int[blocks];
 
         /// <summary>Gets or sets the number of strips of the batch.</summary>
         public int Count { get; set; }
@@ -1415,13 +1642,21 @@ internal sealed class TiffDocumentWriter : IDisposable
                 if (i > 0)
                 {
                     Strips[i]?.Dispose();
-                    Encoders[i]?.Dispose();
                 }
 
                 Outputs[i]?.Dispose();
                 Strips[i] = null!;
-                Encoders[i] = null;
                 Outputs[i] = null!;
+            }
+
+            for (var i = 0; i < Encoders.Length; i++)
+            {
+                if (i > 0)
+                {
+                    Encoders[i]?.Dispose();
+                }
+
+                Encoders[i] = null;
             }
         }
     }

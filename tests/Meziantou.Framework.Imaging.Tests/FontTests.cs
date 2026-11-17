@@ -1613,6 +1613,122 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheMetadataAndPrivateDataOfAWoffFileAreKept()
+    {
+        var sfnt = FontSamples.Boxes().Build();
+        var metadata = "\uFEFF<?xml version=\"1.0\" encoding=\"UTF-8\"?><metadata version=\"1.0\"><vendor name=\"Meziantou é\"/></metadata>"u8.ToArray();
+        byte[] privateData = [1, 2, 3, 4, 5];
+        var expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><metadata version=\"1.0\"><vendor name=\"Meziantou é\"/></metadata>";
+
+        foreach (var file in (byte[][])[
+            FontBuilder.WriteWoff(sfnt, metadata: metadata, privateData: privateData),
+            FontWoff2Writer.WriteContainer(0x00010000, FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options()), metadata, privateData),
+        ])
+        {
+            var data = Font.Load(file).Face.Data;
+            Assert.Equal(expected, data.GetWoffMetadata());
+            Assert.Equal(privateData, data.GetWoffPrivateData().ToArray());
+            AssertSameFont(Font.Load(sfnt), Font.Load(file), sameGlyphBytes: false);
+        }
+
+        // Only one of the blocks.
+        var onlyPrivate = Font.Load(FontBuilder.WriteWoff(sfnt, privateData: privateData)).Face.Data;
+        Assert.Null(onlyPrivate.GetWoffMetadata());
+        Assert.Equal(privateData, onlyPrivate.GetWoffPrivateData().ToArray());
+        var onlyMetadata = Font.Load(FontWoff2Writer.WriteContainer(0x00010000, FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options()), metadata)).Face.Data;
+        Assert.Equal(expected, onlyMetadata.GetWoffMetadata());
+        Assert.True(onlyMetadata.GetWoffPrivateData().IsEmpty);
+
+        // A font that is not in a container, or a container without the blocks.
+        foreach (var file in (byte[][])[sfnt, FontBuilder.WriteWoff(sfnt), FontWoff2Writer.Write(FontSamples.Boxes())])
+        {
+            var data = Font.Load(file).Face.Data;
+            Assert.Null(data.GetWoffMetadata());
+            Assert.True(data.GetWoffPrivateData().IsEmpty);
+        }
+    }
+
+    [Fact]
+    public void AMalformedMetadataBlockOfAWoffFileIsReportedWhenItIsRead()
+    {
+        var sfnt = FontSamples.Boxes().Build();
+        var metadata = "<metadata version=\"1.0\"/>"u8.ToArray();
+        var woff = FontBuilder.WriteWoff(sfnt, metadata: metadata, privateData: [9, 9]);
+        var metadataOffset = (int)BinaryPrimitives.ReadUInt32BigEndian(woff.AsSpan(24));
+        var metadataLength = (int)BinaryPrimitives.ReadUInt32BigEndian(woff.AsSpan(28));
+
+        byte[] Edit(byte[] source, Action<byte[]> edit)
+        {
+            var copy = (byte[])source.Clone();
+            edit(copy);
+            return copy;
+        }
+
+        // The font loads: the blocks are not needed to use it.
+        static void AssertInvalidMetadata(byte[] file, string expectedMessage)
+        {
+            var data = Font.Load(file).Face.Data;
+            var exception = Assert.Throws<InvalidFontException>(() => data.GetWoffMetadata());
+            Assert.Contains(expectedMessage, exception.Message);
+        }
+
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), (uint)metadata.Length + 1)), "less than its declared length");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), (uint)metadata.Length - 1)), "more than its declared length");
+        AssertInvalidMetadata(Edit(woff, data => data[metadataOffset + metadataLength - 1] ^= 0x01), "compressed data");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(28), (uint)metadataLength - 4)), "truncated or corrupted");
+        AssertInvalidMetadata(Edit(woff, data => data.AsSpan(metadataOffset, metadataLength).Fill(0xAA)), "malformed compressed data");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(24), (uint)data.Length)), "outside the file");
+        AssertInvalidMetadata(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), 0)), "empty document");
+
+        var outsidePrivate = Font.Load(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(40), (uint)data.Length))).Face.Data;
+        Assert.Contains("private data block", Assert.Throws<InvalidFontException>(() => outsidePrivate.GetWoffPrivateData()).Message);
+
+        // WOFF2: the blocks must follow the compressed tables, so only their content can be malformed.
+        var woff2 = FontWoff2Writer.WriteContainer(0x00010000, FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options()), metadata);
+        AssertInvalidMetadata(Edit(woff2, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(36), (uint)metadata.Length + 1)), "less than its declared length");
+        AssertInvalidMetadata(Edit(woff2, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(36), (uint)metadata.Length - 1)), "more than its declared length");
+        var woff2Offset = (int)BinaryPrimitives.ReadUInt32BigEndian(woff2.AsSpan(28));
+        var woff2Length = (int)BinaryPrimitives.ReadUInt32BigEndian(woff2.AsSpan(32));
+        AssertInvalidMetadata(Edit(woff2, data => data.AsSpan(woff2Offset, woff2Length).Fill(0xFF)), "malformed compressed data");
+
+        // The document is bounded by the limit of the bytes a font keeps, and expanded in temporary storage.
+        var limited = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFontBytes = sfnt.Length + 64 } } };
+        var huge = Font.Load(Edit(woff, data => BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(32), (uint)sfnt.Length + 65)), limited).Face.Data;
+        var limitException = Assert.Throws<FontResourceLimitException>(() => huge.GetWoffMetadata());
+        Assert.Equal(FontResourceLimitKind.FontBytes, limitException.Kind);
+
+        var smallScope = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = metadata.Length - 1 } } };
+        var scoped = Font.Load(woff, smallScope).Face.Data;
+        // The buffer is rented from the environment of the font: here an allocation scope of Imaging, which throws its own exception.
+        var scopeException = Assert.Throws<ImageResourceLimitException>(() => scoped.GetWoffMetadata());
+        Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, scopeException.Kind);
+    }
+
+    [Fact]
+    public void TheBlocksOfAWoffFileCountWithTheFontAgainstItsLimit()
+    {
+        var sfnt = FontSamples.Boxes().Build();
+        byte[] privateData = new byte[1000];
+        static FontLoadOptions Options(long fontBytes) => new() { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFontBytes = fontBytes } } };
+
+        // WOFF: the font is exactly the original one; the private data is kept next to it.
+        var woff = FontBuilder.WriteWoff(sfnt, privateData: privateData);
+        Assert.HasCount(1000, Font.Load(woff, Options(sfnt.Length + 1000)).Face.Data.GetWoffPrivateData().ToArray());
+        var exception = Assert.Throws<ImageResourceLimitException>(() => Font.Load(woff, Options(sfnt.Length + 999)));
+        Assert.Equal(ImageResourceLimitKind.FontBytes, exception.Kind);
+        Assert.Equal(sfnt.Length + 1000, exception.Requested);
+
+        // WOFF2: the rebuilt font has its glyphs padded to four bytes.
+        var tables = FontWoff2Writer.CreateTables(FontSamples.Boxes(), new FontWoff2Options());
+        var rebuiltLength = Font.Load(FontWoff2Writer.WriteContainer(0x00010000, tables)).Face.Data.RawBytes.Length;
+        var woff2 = FontWoff2Writer.WriteContainer(0x00010000, tables, privateData: privateData);
+        Assert.HasCount(1000, Font.Load(woff2, Options(rebuiltLength + 1000)).Face.Data.GetWoffPrivateData().ToArray());
+        exception = Assert.Throws<ImageResourceLimitException>(() => Font.Load(woff2, Options(rebuiltLength + 999)));
+        Assert.Equal(ImageResourceLimitKind.FontBytes, exception.Kind);
+        Assert.Equal(rebuiltLength + 1000, exception.Requested);
+    }
+
+    [Fact]
     public void AMalformedWoffFileIsRejected()
     {
         var woff = FontBuilder.WriteWoff(FontSamples.Boxes().Build());
@@ -3172,6 +3288,208 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheHintsOfACffGlyphAreThoseOfItsCharstring()
+    {
+        // fontTools reads the same stems and masks (subroutines included): a stem is its first edge and its width, a
+        // mask its bytes. Glyph 2 has the ghost hint 8 -21 (a bottom edge at -13), glyph 3 the ghost hint 21 -21.
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf").Face;
+        Assert.Equal("", GetHints(face, 1));
+        Assert.Equal("H-13/139 H8/-21 V73/132 M60 Ma0 M60", GetHints(face, 2));
+        Assert.Equal("H21/-21 H224/73 H658/75 V4/600", GetHints(face, 3));
+        Assert.Equal("H398/64 H547/62 H689/64 V152/80 V686/81", GetHints(face, 10));
+        Assert.Equal("H-78/55.5 H-78/62 H71/63 V488/73 V693/73 Mb8 M78", GetHints(face, 200));
+        Assert.Equal("H380/60 H548/59 H703/62 H706/59 V71/67 V216/68 V313/201 V439/75 Mde Mee Med Mdd", GetHints(face, 300));
+
+        // The hints do not change the outline.
+        for (var glyph = 0; glyph < face.GlyphCount; glyph += 37)
+        {
+            var recorder = new HintRecorder();
+            var budget = new GlyphBudget(FontResourceLimits.Default);
+            using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+            face.DecodeOutline(glyph, recorder, scratch, ref budget);
+            Assert.Equal(GetFaceOutline(face, glyph), recorder.Outline.ToString());
+        }
+
+        // The private DICT of the font DICT of each glyph.
+        var latin = face.GetCffHintValues(2)!;
+        Assert.Equal([-13.0, 0, 543, 557, 733, 747], latin.BlueValues);
+        Assert.Equal([-250.0, -229], latin.OtherBlues);
+        Assert.Empty(latin.FamilyBlues);
+        Assert.Equal((0.039625, 7.0, 1.0, 69.0, 85.0), (latin.BlueScale, latin.BlueShift, latin.BlueFuzz, latin.StdHW, latin.StdVW));
+        Assert.Equal([69.0, 79, 88], latin.StemSnapH);
+        Assert.Equal([85.0, 95, 111], latin.StemSnapV);
+        var ideographs = face.GetCffHintValues(200)!;
+        Assert.Equal([-250.0, -250, 1100, 1100], ideographs.BlueValues);
+        Assert.Empty(ideographs.OtherBlues);
+        Assert.Equal((65.0, 75.0), (ideographs.StdHW, ideographs.StdVW));
+        Assert.Equal([39.0, 50, 65], ideographs.StemSnapH);
+    }
+
+    [Fact]
+    public void TheHintingValuesOfACff2FontAreBlended()
+    {
+        // The blue values of the font are blended for the 5 regions of its store; fontTools gives the values of the
+        // default instance and, for each one, a delta per region. At wght=0 (-1), only the second region applies, with
+        // the scalar 1.
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/text-rendering-tests/AdobeVFPrototype-Subset.otf").Face;
+        var values = face.GetCffHintValues(1)!;
+        Assert.Equal([-20.0, 0, 487, 503, 515, 531, 536, 552, 624, 640, 652, 672, 711, 731], values.BlueValues);
+        Assert.Equal([-232.0, -222], values.OtherBlues);
+        Assert.Equal((0.0375, 7.0, 0.0, 74.0, 190.0), (values.BlueScale, values.BlueShift, values.BlueFuzz, values.StdHW, values.StdVW));
+        Assert.Equal([60.0, 74], values.StemSnapH);
+
+        var light = face.WithCoordinates([0, 0]).GetCffHintValues(1)!;
+        Assert.Equal([-13.0, 0, 470, 483, 534, 547, 556, 569, 654, 667, 677, 690, 738, 758], light.BlueValues);
+        Assert.Equal([-255.0, -245], light.OtherBlues);
+        Assert.Equal((26.0, 28.0), (light.StdHW, light.StdVW));
+        Assert.Equal([20.0, 26], light.StemSnapH);
+    }
+
+    [Fact]
+    public void ASubsetKeepsTheHintsOfTheCffGlyphs()
+    {
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf").Face;
+        var table = FontSubsetter.SubsetCff(face, [2, 200, 300], "Subset");
+        var cff = CffTable.Read(table);
+        foreach (var glyph in (int[])[2, 200, 300])
+        {
+            var recorder = new HintRecorder();
+            var budget = new GlyphBudget(FontResourceLimits.Default);
+            cff.Decode(table, glyph, recorder, ref budget);
+            Assert.Equal(GetHints(face, glyph), recorder.Hints);
+            var original = face.GetCffHintValues(glyph)!;
+            var subset = cff.GetHintValues(table, glyph);
+            Assert.Equal((original.BlueValues, original.OtherBlues, original.StemSnapH, original.StdHW), (subset.BlueValues, subset.OtherBlues, subset.StemSnapH, subset.StdHW));
+        }
+    }
+
+    [Fact]
+    public void TheHintsOfACffFontFitItsStemsToThePixels()
+    {
+        // Glyph 3: a ghost edge at 0 (the baseline zone), and the stems 224 to 297 and 658 to 733 (the top of the
+        // second one in the zone 733 to 747). At 12 pixels per em (0.012 pixel per unit, under the blue scale: no
+        // overshoot), the edges go to 0, 2.688 -> 3 (with a width of 1 pixel: 4), and 8.796 -> 9 (733 -> 8.796, the
+        // zone flat at 9; the stem 0.9 -> 1 pixel thick from 8).
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans-cjk-kr/NotoSansCJKkr-Regular.letters.otf").Face;
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+        using var hinter = GlyphHinter.Create(face, 12, GlyphHinting.Full, scratch, face.Data.Environment.CreateAllocator("hinter"));
+        Assert.Equal(GlyphHinting.Full, hinter.Hinting);
+        var unhinted = new PointRecorder();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        face.DecodeOutline(3, unhinted, scratch, ref budget);
+        var hinted = new PointRecorder();
+        budget = new GlyphBudget(FontResourceLimits.Default);
+        var advance = hinter.DecodeOutline(3, hinted, scratch, ref budget);
+        Assert.Equal(Math.Round(face.GetAdvanceWidth(3) * 12.0 / face.UnitsPerEm, MidpointRounding.AwayFromZero), advance);
+        Assert.HasCount(unhinted.Points.Count, hinted.Points);
+        var scale = 12.0 / face.UnitsPerEm;
+        var edges = new Dictionary<double, double> { [0] = 0, [224] = 3, [297] = 4, [658] = 8, [733] = 9 };
+        var checkedEdges = 0;
+        for (var i = 0; i < hinted.Points.Count; i++)
+        {
+            // The horizontal coordinates do not change.
+            Assert.Equal(unhinted.Points[i].X, hinted.Points[i].X);
+            if (edges.TryGetValue(unhinted.Points[i].Y, out var pixels))
+            {
+                Assert.Equal(pixels, hinted.Points[i].Y * scale, 1e-9);
+                checkedEdges++;
+            }
+        }
+
+        Assert.True(checkedEdges >= 8, $"{checkedEdges} points on the edges");
+
+        // Above the blue scale (39.625 pixels per em), an overshoot keeps at least a pixel: at 50 pixels the round
+        // bottom of glyph 2 (-13, in the zone -13 to 0) is a pixel under the baseline.
+        using var large = GlyphHinter.Create(face, 50, GlyphHinting.Full, scratch, face.Data.Environment.CreateAllocator("hinter"));
+        var bottom = new PointRecorder();
+        budget = new GlyphBudget(FontResourceLimits.Default);
+        large.DecodeOutline(2, bottom, scratch, ref budget);
+        Assert.Equal(-1, bottom.Points.Min(point => point.Y) * 50 / face.UnitsPerEm, 1e-9);
+    }
+
+    [Fact]
+    public void AContourThatClosesWithACurveEndsWhereItStarted()
+    {
+        // The stems 0 to 100 and 550 to 650; the contour starts at (0, 0) with the first one, and its last curve comes
+        // back to (0, 0) with the second one, whose map would place the height 0 elsewhere (0.15 pixel lower at 13
+        // pixels per em).
+        var font = new FontBuilder { FamilyName = "Meziantou Hint Masks", PostScriptName = "MeziantouHintMasks-Regular", UnitsPerEm = 1000, CmapFormats = FontCmapFormats.Format4 };
+        var cff = new FontCffWriter();
+        font.AddGlyph(FontGlyph.Empty(500), -1);
+        cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.EndChar).ToArray());
+        font.AddGlyph(FontGlyph.Empty(600), 'A');
+        cff.CharStrings.Add(new FontCharstring()
+            .Op(FontCharstring.HStemHM, 0, 100, 450, 100)
+            .Op(FontCharstring.HintMask).Raw(0x80)
+            .Op(FontCharstring.RMoveTo, 0, 0)
+            .Op(FontCharstring.RLineTo, 500, 0, 0, 600)
+            .Op(FontCharstring.HintMask).Raw(0x40)
+            .Op(FontCharstring.RRCurveTo, -250, 0, -250, -300, 0, -300)
+            .Op(FontCharstring.EndChar)
+            .ToArray());
+        cff.Apply(font);
+        var face = FontTestSupport.Load(font).Face;
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+        using var hinter = GlyphHinter.Create(face, 13, GlyphHinting.Full, scratch, face.Data.Environment.CreateAllocator("hinter"));
+        var hinted = new PointRecorder();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        hinter.DecodeOutline(1, hinted, scratch, ref budget);
+        Assert.Equal(hinted.Points[0], hinted.Points[^1]);
+    }
+
+    private static string GetHints(FontFace face, int glyph)
+    {
+        var recorder = new HintRecorder();
+        var budget = new GlyphBudget(FontResourceLimits.Default);
+        using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("test"));
+        face.DecodeOutline(glyph, recorder, scratch, ref budget);
+        return recorder.Hints;
+    }
+
+    /// <summary>Records the outline of a glyph as an SVG path, and its hints as fontTools writes them.</summary>
+    private sealed class HintRecorder : OutlineSink, ICffHintSink
+    {
+        private readonly StringBuilder _stems = new();
+        private readonly StringBuilder _masks = new();
+
+        public FontTestSupport.SvgPathSink Outline { get; } = new();
+
+        public string Hints => (_stems.ToString() + _masks.ToString()).TrimEnd();
+
+        public void AddStem(bool isHorizontal, double edge, double width) => _stems.Append(CultureInfo.InvariantCulture, $"{(isHorizontal ? 'H' : 'V')}{edge}/{width} ");
+
+        public void SetMask(ReadOnlySpan<byte> mask, bool isCounterMask) => _masks.Append(isCounterMask ? 'C' : 'M').Append(Convert.ToHexStringLower(mask)).Append(' ');
+
+        public override void MoveTo(double x, double y) => Outline.MoveTo(x, y);
+
+        public override void LineTo(double x, double y) => Outline.LineTo(x, y);
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => Outline.QuadraticTo(controlX, controlY, x, y);
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => Outline.CubicTo(control1X, control1Y, control2X, control2Y, x, y);
+
+        public override void Close() => Outline.Close();
+    }
+
+    /// <summary>Records the points of an outline, in order.</summary>
+    private sealed class PointRecorder : OutlineSink
+    {
+        public List<(double X, double Y)> Points { get; } = [];
+
+        public override void MoveTo(double x, double y) => Points.Add((x, y));
+
+        public override void LineTo(double x, double y) => Points.Add((x, y));
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => Points.AddRange([(controlX, controlY), (x, y)]);
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => Points.AddRange([(control1X, control1Y), (control2X, control2Y), (x, y)]);
+
+        public override void Close()
+        {
+        }
+    }
+
+    [Fact]
     public void TrueTypeGlyphOutlinesReadTheGlyfTable()
     {
         var face = Font.Load(FixtureRoot.GetDirectory() / "fonts/noto-sans/NotoSans-Regular.subset.ttf").Face;
@@ -3329,6 +3647,370 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void AType1FontIsReadFromAPfaOrAPfbFile()
+    {
+        // The outlines of the sample font are the ones FreeType draws for it (MuPDF, the font embedded in a PDF file):
+        // the flex is its two curves, hint replacement and the hints draw nothing, div gives 7/3 rounded to 1/65536,
+        // and the accent of a seac glyph is moved by adx - asb + the side bearing of the glyph (Aacute and Aring).
+        string[] outlines =
+        [
+            "", "",
+            "M20 0L300 -700L580 0L20 0Z",
+            "M50 -550L150 -700L200 -670L50 -550Z",
+            "M20 0L300 -700L580 0L20 0ZM170 -670L270 -820L320 -790L170 -670Z",
+            "M20 0L300 -700L580 0L20 0ZM155 -670L255 -820L305 -790L155 -670Z",
+            "M350 0C520 0 660 -160 660 -350C660 -540 520 -700 350 -700C180 -700 40 -540 40 -350C40 -160 180 0 350 0Z",
+            "M30 0L30 -700L130 -700L130 -400L570 -400L570 -700L670 -700L670 0L570 0L570 -300L130 -300L130 0L30 0Z",
+            "M10 0L110 0L110 -500L10 -500L10 0Z",
+            "M20 0C120 0 220 -10 320 -10C420 -10 520 0 620 0L620 -300L20 -300L20 0Z",
+            "M100 -10L150 -10L150 -60L100 -60L100 -10Z",
+            "M20 0L520.5 0L520.5 -2.3333282470703125L20 0Z",
+            "",
+            "M0 0L300 -600L600 0L0 0Z",
+        ];
+        int[] advances = [250, 250, 600, 333, 600, 610, 700, 700, 500, 600, 250, 540, 400, 600];
+
+        // A PFA file with a custom encoding and encrypted charstrings, and a PFB file with the standard encoding and
+        // charstrings that are not encrypted (lenIV -1)
+        var standard = FontType1Writer.Sample(standardEncoding: true);
+        standard.LenIV = -1;
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        foreach (var (data, hasStandardEncoding) in new[] { (FontType1Writer.Sample().WritePfa(), false), (standard.WritePfb(), true) })
+        {
+            var face = Assert.Single(FontLoader.Load(data, environment));
+            Assert.Equal(("Meziantou Type1", "Regular", "MeziantouType1-Regular"), (face.FamilyName, face.SubfamilyName, face.PostScriptName));
+            Assert.Equal((FontOutlineKind.Cff, 1000, 14), (face.Outlines, face.UnitsPerEm, face.GlyphCount));
+            Assert.Equal((400, false, false), (face.Weight, face.IsItalic, face.IsMonospaced));
+
+            // The bounding box of the font gives the ascender and the descender, and a line is 1.2 em; the cap height and
+            // the x-height are the tops of H and x; the underline is centered on the position of the font
+            Assert.Equal((900, -250, 50), (face.HorizontalAscender, face.HorizontalDescender, face.HorizontalLineGap));
+            Assert.Equal((-50, -250, 1000, 900), (face.XMin, face.YMin, face.XMax, face.YMax));
+            Assert.Equal((700, 500), (face.CapHeight, face.XHeight));
+            Assert.Equal((-75, 50), (face.UnderlinePosition, face.UnderlineThickness));
+
+            using var scratch = new GlyphScratch(environment.CreateAllocator("type1"));
+            for (var glyph = 0; glyph < face.GlyphCount; glyph++)
+            {
+                var budget = new GlyphBudget(face.Data.Limits);
+                var sink = new SvgPathSink();
+                face.DecodeOutline(glyph, sink, scratch, ref budget);
+                Assert.Equal(outlines[glyph], sink.ToString());
+                Assert.Equal(advances[glyph], face.GetAdvanceWidth(glyph));
+            }
+
+            // The character map comes from the glyph names: a variant (a.sc) has no character
+            Assert.Equal([1, 2, 4, 5, 6, 11, 13, 0], " AÁÅOﬁ∆a".Select(c => face.MapCodePoint(c)));
+
+            // The CFF table has the names of the glyphs and the encoding of the font
+            Assert.True(face.TryGetTable(FontTags.Cff, out var table));
+            var cff = CffFont.Load(table.Span);
+            Assert.Equal(("Aacute", 2, 4), (cff.GetGlyphName(4), cff.GetGlyphByCode('A'), cff.GetGlyphByName("Aacute")));
+            Assert.Equal(hasStandardEncoding ? 0 : 4, cff.GetGlyphByCode(193));
+
+            // The font is subset like a font with CFF outlines, for a PDF file
+            Assert.Equal(14, CffFont.Load(FontSubsetter.SubsetCff(face, [2, 4], "Subset")).GlyphCount);
+        }
+
+        // Imaging draws the font like any other
+        var font = Font.Load(FontType1Writer.Sample().WritePfb());
+        Assert.Equal(("Meziantou Type1", 1000), (font.FamilyName, font.UnitsPerEm));
+    }
+
+    [Fact]
+    public void AType1FontTakesTheMetricsOfItsAfmFile()
+    {
+        var metrics = AfmFontMetrics.Parse("""
+            StartFontMetrics 4.1
+            FontName MeziantouType1-Regular
+            Ascender 750
+            Descender -240
+            CapHeight 710
+            XHeight 510
+            StartCharMetrics 2
+            C 65 ; WX 600 ; N A ; B 20 0 580 700 ;
+            C 79 ; WX 700 ; N O ; B 40 0 660 700 ;
+            EndCharMetrics
+            StartKernData
+            StartKernPairs 3
+            KPX A O -50
+            KPX O A -40.4
+            KPX A missing -10
+            EndKernPairs
+            EndKernData
+            EndFontMetrics
+            """);
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        var face = FontLoader.LoadType1(FontType1Writer.Sample().WritePfa(), metrics, environment);
+
+        Assert.Equal((750, -240, 210), (face.HorizontalAscender, face.HorizontalDescender, face.HorizontalLineGap));
+        Assert.Equal((710, 510), (face.CapHeight, face.XHeight));
+
+        // The kerning pairs, rounded to whole units; a pair of a glyph the font does not have is ignored
+        Assert.Equal((-50, -40, 0), (face.GetLegacyKerning(2, 6), face.GetLegacyKerning(6, 2), face.GetLegacyKerning(2, 2)));
+        var buffer = new GlyphBuffer(face.Data.Limits);
+        TextShaper.AddText(buffer, "AO");
+        TextShaper.Shape(buffer, face, UnicodeScript.Latin, languages: [], isRightToLeft: false, []);
+        Assert.Equal(1250, buffer.Positions[0].XAdvance + buffer.Positions[1].XAdvance);
+
+        // Without metrics, the font has no kerning
+        Assert.Equal(0, FontLoader.LoadType1(FontType1Writer.Sample().WritePfb(), metrics: null, environment).GetLegacyKerning(2, 6));
+    }
+
+    [Fact]
+    public void TheEncodingOfAType1FontIsTheEncodingOfItsCffTable()
+    {
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        static CffFont GetCff(FontFace face) => face.TryGetTable(FontTags.Cff, out var table) ? CffFont.Load(table.Span) : throw new InvalidOperationException("No CFF table");
+
+        // A copy of the standard encoding that assigns another name to a code is a custom encoding
+        var pfa = Encoding.Latin1.GetString(FontType1Writer.Sample(standardEncoding: true).WritePfa());
+        pfa = pfa.Replace("/Encoding StandardEncoding def\n", "/Encoding StandardEncoding 256 array copy\ndup 65 /Aacute put\nreadonly def\n", StringComparison.Ordinal);
+        var cff = GetCff(FontLoader.Load(Encoding.Latin1.GetBytes(pfa), environment)[0]);
+        Assert.Equal((4, 6, 0), (cff.GetGlyphByCode('A'), cff.GetGlyphByCode('O'), cff.GetGlyphByCode('a')));
+
+        // A literal array gives the names of the codes in order, and later puts override them
+        var literal = "/Encoding [/.notdef /A /O /Aacute] dup 3 /H put readonly def\n";
+        pfa = Encoding.Latin1.GetString(FontType1Writer.Sample(standardEncoding: true).WritePfa());
+        pfa = pfa.Replace("/Encoding StandardEncoding def\n", literal, StringComparison.Ordinal);
+        cff = GetCff(FontLoader.Load(Encoding.Latin1.GetBytes(pfa), environment)[0]);
+        Assert.Equal((0, 2, 6, 7, 0), (cff.GetGlyphByCode(0), cff.GetGlyphByCode(1), cff.GetGlyphByCode(2), cff.GetGlyphByCode(3), cff.GetGlyphByCode('A')));
+
+        // Every code assigned: 255 supplements, and the first glyphs take a code in the format 0 part
+        string[] names = ["space", "A", "acute", "Aacute", "Aring", "O", "H", "x", "E", "period", "fi", "a.sc", "uni2206"];
+        var all = FontType1Writer.Sample();
+        all.Encoding = new();
+        for (var code = 0; code < 256; code++)
+        {
+            all.Encoding[code] = names[code % names.Length];
+        }
+
+        cff = GetCff(FontLoader.Load(all.WritePfb(), environment)[0]);
+        for (var code = 0; code < 256; code++)
+        {
+            Assert.Equal(names[code % names.Length], cff.GetGlyphName(cff.GetGlyphByCode(code)));
+        }
+
+        // Every code assigned to a glyph of its own, the glyphs 1 to 256: one code in the format 0 part
+        var distinct = FontType1Writer.Sample();
+        distinct.Encoding = new();
+        for (var code = 0; code < 256; code++)
+        {
+            var name = string.Create(CultureInfo.InvariantCulture, $"g{code}");
+            distinct.CharStrings.Insert(1 + code, (name, FontType1Writer.Charstring(0, 250, "hsbw", "endchar")));
+            distinct.Encoding[code] = name;
+        }
+
+        cff = GetCff(FontLoader.Load(distinct.WritePfa(), environment)[0]);
+        for (var code = 0; code < 256; code++)
+        {
+            Assert.Equal((code + 1, string.Create(CultureInfo.InvariantCulture, $"g{code}")), (cff.GetGlyphByCode(code), cff.GetGlyphName(code + 1)));
+        }
+    }
+
+    [Fact]
+    public void AType1FontMatrixGivesTheUnitsPerEm()
+    {
+        // A matrix of 1/2048 is an em of 2048 units; a slanted matrix transforms the outlines
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        var large = FontType1Writer.Sample();
+        large.FontMatrix = "[0.00048828125 0 0 0.00048828125 0 0]";
+        var face = FontLoader.LoadType1(large.WritePfb(), metrics: null, environment);
+        Assert.Equal((2048, 600), (face.UnitsPerEm, face.GetAdvanceWidth(2)));
+        Assert.True(face.TryGetTable(FontTags.Cff, out var table));
+        Assert.Equal([1.0 / 2048, 0, 0, 1.0 / 2048, 0, 0], CffFont.Load(table.Span).FontMatrix);
+
+        var slanted = FontType1Writer.Sample();
+        slanted.FontMatrix = "[0.001 0 0.0002 0.001 0 0]";
+        slanted.ItalicAngle = -11.3;
+        slanted.Weight = "Bold";
+        face = FontLoader.LoadType1(slanted.WritePfb(), metrics: null, environment);
+        using var scratch = new GlyphScratch(environment.CreateAllocator("type1"));
+        var budget = new GlyphBudget(face.Data.Limits);
+        var sink = new SvgPathSink();
+        face.DecodeOutline(2, sink, scratch, ref budget);
+        Assert.Equal("M20 0L440 -700L580 0L20 0Z", sink.ToString());
+        Assert.Equal((1000, 700, true, "Bold Italic"), (face.UnitsPerEm, face.Weight, face.IsItalic, face.SubfamilyName));
+
+        // A weight other than regular and bold is a typographic subfamily
+        var light = FontType1Writer.Sample();
+        light.Weight = "Light";
+        face = FontLoader.LoadType1(light.WritePfa(), metrics: null, environment);
+        Assert.Equal((300, "Meziantou Type1", "Light"), (face.Weight, face.FamilyName, face.SubfamilyName));
+    }
+
+    [Fact]
+    public void AMalformedType1FontFailsWithAnInvalidFontException()
+    {
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        FontFace Load(FontType1Writer writer) => FontLoader.LoadType1(writer.WritePfb(), metrics: null, environment);
+        FontType1Writer WithGlyph(params object[] tokens)
+        {
+            var writer = FontType1Writer.Sample();
+            writer.CharStrings[2] = ("A", FontType1Writer.Charstring(tokens));
+            return writer;
+        }
+
+        Assert.Throws<UnknownFontFormatException>(() => FontLoader.LoadType1("%!PS-Adobe-3.0"u8, metrics: null, environment));
+
+        // The segments of the PFB file, and the encrypted part
+        var pfb = FontType1Writer.Sample().WritePfb();
+        Assert.Throws<InvalidFontException>(() => FontLoader.Load(pfb.AsSpan(0, 100), environment));
+        Assert.Throws<InvalidFontException>(() => FontLoader.Load(pfb.AsSpan(0, pfb.Length - 700), environment));
+        var pfa = Encoding.Latin1.GetString(FontType1Writer.Sample().WritePfa());
+        Assert.Throws<InvalidFontException>(() => FontLoader.Load(Encoding.Latin1.GetBytes(pfa.Replace("currentfile eexec", "currentfile", StringComparison.Ordinal)), environment));
+        Assert.Throws<InvalidFontException>(() => FontLoader.Load(Encoding.Latin1.GetBytes(pfa.Replace("/FontType 1 def", "", StringComparison.Ordinal)), environment));
+
+        // The charstrings: a message names the glyph
+        var exception = Assert.Throws<InvalidFontException>(() => Load(WithGlyph(20, 600, "hsbw", 5, "rlineto", "endchar")));
+        Assert.Contains("glyph 'A'", exception.Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidFontException>(() => Load(WithGlyph(20, 600, "hsbw", 99, "callsubr", "endchar")));
+        Assert.Throws<InvalidFontException>(() => Load(WithGlyph(20, 600, "hsbw", 1, 0, "div", "endchar")));
+        Assert.Throws<InvalidFontException>(() => Load(WithGlyph(20, 600, "hsbw", "pop", "endchar")));
+        Assert.Throws<InvalidFontException>(() => Load(WithGlyph(20, 600, "hsbw", 50, 150, 120, 65, 1, "seac")));
+        Assert.Throws<InvalidFontException>(() => Load(WithGlyph(20, 600, "hsbw", 0, 1, "callothersubr", 0, 0, "rlineto", "endchar")));
+        Assert.Throws<InvalidFontException>(() => Load(WithGlyph(20, 600, "hsbw", 40000, 0, "rlineto", -40000, 0, "rlineto", "endchar")));
+
+        // A subroutine that calls itself
+        var recursive = FontType1Writer.Sample();
+        recursive.Subroutines[5] = FontType1Writer.Charstring(5, "callsubr", "return");
+        Assert.Throws<InvalidFontException>(() => Load(recursive));
+    }
+
+    [Fact]
+    public void AType1FontIsBoundedByTheLimits()
+    {
+        // Subroutines that call the next one twice, ten deep: a charstring of a few bytes runs about 5,000 operators
+        var writer = FontType1Writer.Sample();
+        writer.Subroutines.Clear();
+        for (var i = 0; i < 9; i++)
+        {
+            writer.Subroutines.Add(FontType1Writer.Charstring(i + 1, "callsubr", i + 1, "callsubr", "return"));
+        }
+
+        writer.Subroutines.Add(FontType1Writer.Charstring(1, 0, "rlineto", "return"));
+        writer.CharStrings.Clear();
+        writer.CharStrings.Add(("A", FontType1Writer.Charstring(0, 500, "hsbw", 0, 0, "rmoveto", 0, "callsubr", "closepath", "endchar")));
+        var data = writer.WritePfb();
+
+        var face = FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(FontResourceLimits.Default, 1024 * 1024));
+        Assert.Equal((2, 500), (face.GlyphCount, face.GetAdvanceWidth(1)));
+        var exception = Assert.Throws<FontResourceLimitException>(() => FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(new FontResourceLimits { MaxGlyphComplexity = 1000 }, 1024 * 1024)));
+        Assert.Equal(FontResourceLimitKind.GlyphComplexity, exception.Kind);
+
+        // The largest complexity removes the limit: the budget of the font does not wrap around
+        face = FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(new FontResourceLimits { MaxGlyphComplexity = long.MaxValue }, 1024 * 1024));
+        Assert.Equal(2, face.GlyphCount);
+        Assert.Equal(FontResourceLimitKind.EncodedBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.LoadType1(data, metrics: null, new PooledFontEnvironment(new FontResourceLimits { MaxEncodedBytes = 100 }, 1024 * 1024))).Kind);
+        Assert.Equal(FontResourceLimitKind.FontBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.Load(data, new PooledFontEnvironment(new FontResourceLimits { MaxFontBytes = data.Length }, 1024 * 1024))).Kind);
+
+        // The decrypted font program and the converted charstrings are rented from the environment
+        Assert.Equal(FontResourceLimitKind.LiveAllocationBytes, Assert.Throws<FontResourceLimitException>(() => FontLoader.Load(data, new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 1024))).Kind);
+    }
+
+    [Fact]
+    public void UnsupportedType1FontsFailWithAnUnsupportedFontFeatureException()
+    {
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        foreach (var extra in new[] { "/FontType 3 def\n", "/BlendDesignPositions [[0] [1]] def\n", "/PaintType 2 def\n", "/CIDFontType 0 def\n" })
+        {
+            var writer = FontType1Writer.Sample();
+            writer.ExtraClearText = extra;
+            Assert.Throws<UnsupportedFontFeatureException>(() => FontLoader.LoadType1(writer.WritePfa(), metrics: null, environment));
+        }
+
+        var blend = FontType1Writer.Sample();
+        blend.CharStrings[2] = ("A", FontType1Writer.Charstring(20, 600, "hsbw", 1, 2, 2, 14, "callothersubr", "endchar"));
+        Assert.Throws<UnsupportedFontFeatureException>(() => FontLoader.LoadType1(blend.WritePfa(), metrics: null, environment));
+    }
+
+    [Fact]
+    public void Documentation_LoadType1Font()
+    {
+        var pfbFile = FontType1Writer.Sample().WritePfb();
+        var afmFile = "StartFontMetrics 4.1\nStartKernData\nStartKernPairs 1\nKPX A O -50\nEndKernPairs\nEndKernData\nEndFontMetrics\n";
+
+        #region Fonts_LoadType1
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024);
+
+        // A PFB or PFA file is detected from its content, like the other formats: it becomes a face with CFF outlines
+        var face = FontLoader.Load(pfbFile, environment)[0];
+        Assert.Equal(FontOutlineKind.Cff, face.Outlines);
+
+        // The characters come from the names of the glyphs: "A" is the character A
+        var glyph = face.MapCodePoint('A');
+        Assert.Equal(600, face.GetAdvanceWidth(glyph));
+
+        // The AFM file of the font adds its kerning
+        var metrics = AfmFontMetrics.Parse(afmFile);
+        var kerned = FontLoader.LoadType1(pfbFile, metrics, environment);
+        Assert.Equal(-50, kerned.GetLegacyKerning(glyph, kerned.MapCodePoint('O')));
+        #endregion
+    }
+
+    [Fact]
+    public void ImagingDrawsAType1FontWithTheKerningOfItsAfmFile()
+    {
+        var pfbFile = FontType1Writer.Sample().WritePfb();
+        var afmFile = "StartFontMetrics 4.1\nStartKernData\nStartKernPairs 1\nKPX A O -50\nEndKernPairs\nEndKernData\nEndFontMetrics\n";
+
+        // Font.Load reads a PFB or a PFA file like any other font file. LoadType1 adds the kerning of its AFM file.
+        var metrics = AfmFontMetrics.Parse(afmFile);
+        var font = Font.LoadType1(pfbFile, metrics);
+        var layout = TextLayout.Create("AO", new TextStyle(font, 100));
+
+        // A is 600 units wide and O 700, less 50 for the kerning pair, at 100 pixels per 1000 units
+        Assert.Equal(125, layout.Width);
+
+        Assert.Equal(130, TextLayout.Create("AO", new TextStyle(Font.Load(pfbFile), 100)).Width);
+        Assert.Equal(130, TextLayout.Create("AO", new TextStyle(Font.LoadType1(pfbFile, metrics: null), 100)).Width);
+
+        // The PFA and the PFB files of a font draw the same pixels; the accented character (seac) draws its base and its
+        // accent, the flex its two curves
+        var pfa = Font.Load(FontType1Writer.Sample().WritePfa());
+        Assert.Equal(("Meziantou Type1", FontOutlineKind.Cff), (pfa.FamilyName, pfa.Face.Outlines));
+        Assert.Equal(Render(Font.Load(pfbFile)), Render(pfa));
+        var accented = Render(pfa, "\u00C1");
+        var plain = Render(pfa, "A");
+        Assert.NotEqual(plain, accented);
+        Assert.True(accented.Sum() > plain.Sum());
+
+        // The file of a font, and its errors
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "font.pfb";
+            File.WriteAllBytes(path, pfbFile);
+            Assert.Equal(125, TextLayout.Create("AO", new TextStyle(Font.LoadType1(path, metrics), 100)).Width);
+            Assert.Throws<ArgumentException>(() => Font.LoadType1("", metrics));
+            var limited = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = pfbFile.Length - 1 } } };
+            Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(path, metrics, limited)).Kind);
+            Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(pfbFile, metrics, limited)).Kind);
+
+            // The bytes of the file are charged to the live allocations while the font is converted
+            var small = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = pfbFile.Length - 1 } } };
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => Font.LoadType1(path, metrics, small)).Kind);
+            Assert.Throws<FileNotFoundException>(() => Font.LoadType1(directory / "missing.pfb", metrics));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        Assert.Throws<UnknownImageFormatException>(() => Font.LoadType1(FontSamples.Boxes().Build(), metrics));
+        Assert.Throws<InvalidImageContentException>(() => Font.LoadType1(pfbFile.AsSpan(0, pfbFile.Length - 700), metrics));
+        Assert.Throws<InvalidImageContentException>(() => Font.Load(pfbFile.AsSpan(0, 100)));
+
+        static int[] Render(Font font, string text = "A\u00C1O\u00C5xE.\uFB01")
+        {
+            var layout = TextLayout.Create(text, new TextStyle(font, 24));
+            using var image = new Image<Gray8>((int)Math.Ceiling(layout.Width) + 4, (int)Math.Ceiling(layout.Height) + 4, new Gray8(0));
+            image.Draw(canvas => canvas.FillText(new Drawing.SolidBrush(new Rgba32(255, 255, 255)), layout, new PointD(2, 2)), TestContext.Current.CancellationToken);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
     public void Documentation_LoadFontFace()
     {
         #region Fonts_LoadFontFace
@@ -3369,6 +4051,29 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void Documentation_WoffMetadata()
+    {
+        #region Fonts_WoffMetadata
+        static (string? Metadata, ReadOnlyMemory<byte> PrivateData) ReadWoffBlocks(byte[] woff)
+        {
+            var environment = new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024);
+            var face = FontLoader.Load(woff, environment)[0];
+
+            // The XML document of the metadata block, or null when the file has none
+            var metadata = face.Data.GetWoffMetadata();
+
+            // The private data block, empty when the file has none
+            var privateData = face.Data.GetWoffPrivateData();
+            return (metadata, privateData);
+        }
+        #endregion
+
+        var (metadata, privateData) = ReadWoffBlocks(FontBuilder.WriteWoff(FontSamples.Boxes().Build(), metadata: "<metadata version=\"1.0\"><vendor name=\"Meziantou\"/></metadata>"u8.ToArray(), privateData: [42]));
+        Assert.Equal("<metadata version=\"1.0\"><vendor name=\"Meziantou\"/></metadata>", metadata);
+        Assert.Equal((byte)42, privateData.Span[0]);
+    }
+
+    [Fact]
     public void Documentation_DecodeOutline()
     {
         var path = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
@@ -3394,6 +4099,137 @@ public sealed class FontTests
         var (svgPath, glyphBounds) = GetOutline(face, 'l');
         Assert.Equal("M173 0L85 0L85 -760L173 -760L173 0Z", svgPath);
         Assert.Equal(new GlyphBox(85, 0, 173, 760), glyphBounds);
+    }
+
+    [Fact]
+    public void Documentation_SvgDocument()
+    {
+        var face = FontLoader.Load(FontSamples.SvgBoxes().Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+        #region Fonts_SvgDocument
+        static string? GetSvgDocument(FontFace face, char character)
+        {
+            var glyph = face.MapCodePoint(character);
+            if (!face.TryGetSvgGlyph(glyph, out var svgGlyph))
+                return null; // no SVG description: the glyph is drawn from its outline, or from another color table
+
+            // The text of the document, expanded when the font compresses it. The document can describe several glyphs
+            // (FirstGlyphId to LastGlyphId): the element of this one has the identifier "glyph" + GlyphId.
+            return Encoding.UTF8.GetString(face.GetSvgDocument(svgGlyph).Span);
+        }
+        #endregion
+
+        Assert.Contains("id=\"glyph2\"", GetSvgDocument(face, 'A'), StringComparison.Ordinal);
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"glyph4\"", GetSvgDocument(face, 'C'), StringComparison.Ordinal);
+        Assert.Null(GetSvgDocument(face, ' '));
+    }
+
+    [Fact]
+    public void AFontGivesTheSvgDocumentOfAGlyph()
+    {
+        var face = FontLoader.Load(FontSamples.SvgBoxes().Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+        Assert.True(face.HasSvgGlyphs);
+        Assert.True(face.HasColorGlyphs);
+
+        // A and B share a record, and E has a record of its own that refers to the same document.
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgA, out var a));
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgB, out var b));
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgE, out var e));
+        Assert.Equal((FontSamples.SvgA, FontSamples.SvgA, FontSamples.SvgB, false), (a.GlyphId, a.FirstGlyphId, a.LastGlyphId, a.IsCompressed));
+        Assert.Equal((FontSamples.SvgB, a.Offset, a.Length), (b.GlyphId, b.Offset, b.Length));
+        Assert.Equal((FontSamples.SvgE, FontSamples.SvgE, FontSamples.SvgE, a.Offset, a.Length), (e.GlyphId, e.FirstGlyphId, e.LastGlyphId, e.Offset, e.Length));
+
+        // The document of a glyph that is not compressed is the bytes of the font.
+        Assert.Equal(face.Data.Bytes.Slice(a.Offset, a.Length).ToArray(), face.GetSvgDocument(a).ToArray());
+
+        // A compressed document is expanded.
+        Assert.True(face.TryGetSvgGlyph(FontSamples.SvgC, out var c));
+        Assert.True(c.IsCompressed);
+        Assert.Equal([0x1F, 0x8B, 0x08], face.Data.Bytes.Slice(c.Offset, 3).ToArray());
+        Assert.EndsWith("</svg>", Encoding.UTF8.GetString(face.GetSvgDocument(c).Span), StringComparison.Ordinal);
+
+        // The glyphs without a record, and those that are not glyphs of the font.
+        Assert.False(face.TryGetSvgGlyph(0, out _));
+        Assert.False(face.TryGetSvgGlyph(1, out _));
+        Assert.False(face.TryGetSvgGlyph(face.GlyphCount, out _));
+        Assert.False(face.TryGetSvgGlyph(-1, out _));
+        Assert.Throws<ArgumentException>("glyph", () => face.GetSvgDocument(default));
+
+        // A font without the table.
+        var boxes = FontLoader.Load(FontSamples.Boxes().Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+        Assert.False(boxes.HasSvgGlyphs);
+        Assert.False(boxes.TryGetSvgGlyph(1, out _));
+    }
+
+    [Fact]
+    public void AMalformedSvgTableIsLeftOut()
+    {
+        static FontFace Load(byte[] table)
+        {
+            var font = FontSamples.Boxes();
+            font.RawTables["SVG "] = table;
+            return FontLoader.Load(font.Build(), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+        }
+
+        var document = Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
+        Assert.True(Load(FontSamples.WriteSvgTable([(1, 1, document), (2, 3, document)])).HasSvgGlyphs);
+
+        // Records that are not sorted, that overlap, whose range is reversed, or whose document is out of the table.
+        Assert.False(Load(FontSamples.WriteSvgTable([(2, 2, document), (1, 1, document)])).HasSvgGlyphs);
+        Assert.False(Load(FontSamples.WriteSvgTable([(1, 2, document), (2, 3, document)])).HasSvgGlyphs);
+        Assert.False(Load(FontSamples.WriteSvgTable([(2, 1, document)])).HasSvgGlyphs);
+        var table = FontSamples.WriteSvgTable([(1, 1, document)]);
+        Assert.False(Load(table[..^1]).HasSvgGlyphs);
+
+        // A version that is not known, and a list without record.
+        table = FontSamples.WriteSvgTable([(1, 1, document)]);
+        table[1] = 1;
+        Assert.False(Load(table).HasSvgGlyphs);
+        Assert.False(Load(FontSamples.WriteSvgTable([])).HasSvgGlyphs);
+    }
+
+    [Fact]
+    public void AMalformedCompressedSvgDocumentIsAnErrorOfTheFont()
+    {
+        static (FontFace Face, SvgGlyph Glyph) Load(byte[] compressed, FontResourceLimits? limits = null)
+        {
+            var font = FontSamples.Boxes();
+            font.RawTables["SVG "] = FontSamples.WriteSvgTable([(1, 1, compressed)]);
+            var face = FontLoader.Load(font.Build(), new PooledFontEnvironment(limits ?? FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+            Assert.True(face.TryGetSvgGlyph(1, out var glyph));
+            Assert.True(glyph.IsCompressed);
+            return (face, glyph);
+        }
+
+        var text = Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"><rect id=\"glyph1\" width=\"10\" height=\"10\"/></svg>");
+        var compressed = FontSamples.Gzip(text);
+        var (face, glyph) = Load(compressed);
+        Assert.Equal(text, face.GetSvgDocument(glyph).ToArray());
+
+        // A corrupted checksum, a length that does not match, a truncated stream, data after the stream.
+        var corrupted = compressed.ToArray();
+        corrupted[^5] ^= 0xFF;
+        (face, glyph) = Load(corrupted);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        var longer = compressed.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(longer.AsSpan(longer.Length - 4), (uint)text.Length + 1);
+        (face, glyph) = Load(longer);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        var shorter = compressed.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(shorter.AsSpan(shorter.Length - 4), (uint)text.Length - 1);
+        (face, glyph) = Load(shorter);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        (face, glyph) = Load(compressed[..10]);
+        Assert.Throws<InvalidFontException>(() => face.GetSvgDocument(glyph));
+
+        // A declared length beyond the limit of the font is refused before anything is allocated.
+        var huge = compressed.ToArray();
+        BinaryPrimitives.WriteUInt32LittleEndian(huge.AsSpan(huge.Length - 4), 0x7FFFFFFF);
+        (face, glyph) = Load(huge, new FontResourceLimits { MaxFontBytes = 1024 * 1024 });
+        Assert.Equal(FontResourceLimitKind.FontBytes, Assert.Throws<FontResourceLimitException>(() => face.GetSvgDocument(glyph)).Kind);
     }
 
     [Fact]

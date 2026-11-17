@@ -785,4 +785,100 @@ public sealed class PdfTextExtractionTests
 
         return PdfDocument.Open(file.ToArray());
     }
+
+    [Fact]
+    public void RuledTablesAreExtracted()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        var table = new PdfTable(new PdfTableColumn(PdfTableColumnWidth.Fixed(150)), new PdfTableColumn(PdfTableColumnWidth.Fixed(100)), new PdfTableColumn(PdfTableColumnWidth.Fixed(100)));
+        table.AddHeaderRow("Description", "Quantity", "Amount");
+        table.AddRow("A long description broken into two lines", "1", "10.00");
+        table.AddRow("Second", "", "5.00");
+        page.CreateContentBuilder().DrawText("Outside", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 50, 800).DrawTable(table, new PdfRectangle(50, 400, 400, 780));
+        var file = document.ToByteArray();
+
+        #region Pdf_ExtractTable
+        var read = PdfDocument.Open(file);
+        var result = PdfTableExtractor.Extract(read.Pages[0], new PdfRectangle(40, 300, 420, 790));
+        if (result.Succeeded)
+        {
+            var amount = result.Table[1, 2];
+        }
+        #endregion
+
+        Assert.True(result.Succeeded, result.Message);
+        var extracted = result.Table;
+        Assert.Equal(3, extracted.RowCount);
+        Assert.Equal(3, extracted.ColumnCount);
+        Assert.Equal(["Description", "Quantity", "Amount"], extracted.Rows[0]);
+        Assert.Equal("A long description broken into\ntwo lines", extracted[1, 0]);
+        Assert.Equal(["1", "10.00"], extracted.Rows[1].Skip(1));
+        Assert.Equal(["Second", "", "5.00"], extracted.Rows[2]);
+        Assert.Equal([50.0, 200, 300, 400], extracted.ColumnBoundaries.Select(value => Math.Round(value, 2, MidpointRounding.AwayFromZero)));
+        Assert.Null(result.Failure);
+    }
+
+    [Fact]
+    public void TableExtractionTellsWhyItFails()
+    {
+        var document = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+
+        // A merged cell: the first row spans the two columns
+        var merged = new PdfTable(new PdfTableColumn(PdfTableColumnWidth.Fixed(100)), new PdfTableColumn(PdfTableColumnWidth.Fixed(100)));
+        merged.AddRow("Title").Cells[0].ColumnSpan = 2;
+        merged.AddRow("A", "B");
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder().DrawTable(merged, new PdfRectangle(50, 400, 250, 780));
+        var result = PdfTableExtractor.Extract(page, new PdfRectangle(40, 300, 300, 790));
+        Assert.Equal(PdfTableExtractionFailureKind.MergedCells, result.Failure);
+        Assert.False(result.Succeeded);
+        Assert.Contains("merged", result.Message, StringComparison.Ordinal);
+
+        // No rule: text alone
+        var text = document.Pages.Add(PdfSize.A4);
+        text.CreateContentBuilder().DrawText("A   B", font, 12, 50, 700);
+        Assert.Equal(PdfTableExtractionFailureKind.NoGrid, PdfTableExtractor.Extract(text, new PdfRectangle(0, 0, 595, 842)).Failure);
+
+        // Rotated text in a grid
+        var rotated = document.Pages.Add(PdfSize.A4);
+        rotated.CreateContentBuilder()
+            .Rectangle(50, 50, 100, 100).Rectangle(150, 50, 100, 100).Stroke()
+            .SaveGraphicsState().Translate(100, 60).Rotate(90).DrawText("Up", font, 12, 0, 0).RestoreGraphicsState();
+        Assert.Equal(PdfTableExtractionFailureKind.NonHorizontalText, PdfTableExtractor.Extract(rotated, new PdfRectangle(0, 0, 595, 842)).Failure);
+
+        // A scanned table: an image without text
+        using var pixels = new Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32>(10, 10);
+        var scanned = document.Pages.Add(PdfSize.A4);
+        scanned.CreateContentBuilder().DrawImage(PdfImage.FromImage(pixels), 50, 50, 200, 200);
+        Assert.Equal(PdfTableExtractionFailureKind.ImageOnly, PdfTableExtractor.Extract(scanned, new PdfRectangle(0, 0, 595, 842)).Failure);
+    }
+
+    [Fact]
+    public void TablesOfThinFilledRulesAreExtracted()
+    {
+        // A grid of filled rectangles 0.5 thick, as some generators draw it
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        var builder = page.CreateContentBuilder();
+        foreach (var y in new[] { 100.0, 120, 140 })
+        {
+            builder.Rectangle(50, y - 0.25, 200, 0.5);
+        }
+
+        foreach (var x in new[] { 50.0, 150, 250 })
+        {
+            builder.Rectangle(x - 0.25, 100, 0.5, 40);
+        }
+
+        builder.Fill();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        builder.DrawText("a", font, 10, 60, 125).DrawText("b", font, 10, 160, 125).DrawText("c", font, 10, 60, 105).DrawText("d", font, 10, 160, 105);
+
+        var result = PdfTableExtractor.Extract(page, new PdfRectangle(0, 0, 595, 842));
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Equal([["a", "b"], ["c", "d"]], result.Table.Rows);
+    }
 }

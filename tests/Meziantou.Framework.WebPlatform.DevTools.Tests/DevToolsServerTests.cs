@@ -844,6 +844,38 @@ public sealed class DevToolsServerTests(DevToolsServerFixture fixture) : IClassF
     }
 
     [Fact]
+    public async Task Protocol_DispatchDragEvent_DropsFilesFromTheDisk()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(directory, "folder"));
+        var path = Path.Combine(directory, "notes.txt");
+        await File.WriteAllTextAsync(path, "hello", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(directory, "folder", "a.txt"), "a", TestContext.Current.CancellationToken);
+        try
+        {
+            using var client = await CdpClient.ConnectAsync(fixture.Server.WebSocketEndpoint);
+            var created = await client.SendAsync("""{"id":1,"method":"Target.createTarget","params":{"url":"about:blank"}}""");
+            var targetId = created.GetProperty("result").GetProperty("targetId").GetString();
+            var sessionId = (await client.SendAsync("{\"id\":2,\"method\":\"Target.attachToTarget\",\"params\":{\"targetId\":\"" + targetId + "\",\"flatten\":true}}")).GetProperty("result").GetProperty("sessionId").GetString();
+            const string Setup = "document.body.style.margin = '0'; const zone = document.body.appendChild(Object.assign(document.createElement('div'), { style: 'height: 100px' })); window.log = [];" +
+                "zone.ondragenter = e => log.push(e.type + ':' + e.isTrusted); zone.ondragover = e => e.preventDefault();" +
+                "zone.ondrop = e => { e.preventDefault(); log.push(e.type + ':' + e.dataTransfer.effectAllowed + ':' + e.dataTransfer.getData('text/plain') + ':' + [...e.dataTransfer.items].filter(i => i.kind === 'file').map(i => i.webkitGetAsEntry().fullPath).join()); }";
+            await client.SendAsync("{\"id\":3,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":" + System.Text.Json.JsonSerializer.Serialize(Setup) + "},\"sessionId\":\"" + sessionId + "\"}");
+
+            var data = "{\"items\":[{\"mimeType\":\"text/plain\",\"data\":\"text\"}],\"files\":" + System.Text.Json.JsonSerializer.Serialize(new[] { path, Path.Combine(directory, "folder") }) + ",\"dragOperationsMask\":1}";
+            await client.SendAsync("{\"id\":4,\"method\":\"Input.dispatchDragEvent\",\"params\":{\"type\":\"dragEnter\",\"x\":10,\"y\":10,\"data\":" + data + "},\"sessionId\":\"" + sessionId + "\"}");
+            await client.SendAsync("{\"id\":5,\"method\":\"Input.dispatchDragEvent\",\"params\":{\"type\":\"drop\",\"x\":10,\"y\":20,\"data\":" + data + "},\"sessionId\":\"" + sessionId + "\"}");
+            var log = await client.SendAsync("{\"id\":6,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"log.join('|')\",\"returnByValue\":true},\"sessionId\":\"" + sessionId + "\"}");
+
+            Assert.Equal("dragenter:true|drop:copy:text:/notes.txt,/folder", log.GetProperty("result").GetProperty("result").GetProperty("value").GetString());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ConnectOverCDP_WebSocketEndpoint()
     {
         using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();

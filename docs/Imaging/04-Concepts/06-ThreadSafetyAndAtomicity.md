@@ -45,7 +45,7 @@ By default, an operation runs on the calling thread only ([ImageConfiguration.Ma
 higher value, large resizes, transformations, convolutions, blurs, medians and unsharp masks split their rows into
 bands processed concurrently, and the decoders and encoders of JPEG, TIFF, OpenEXR, JPEG 2000, JPEG XL, AVIF and HEIC
 split the independent parts of large images (rows, strips, chunks, code-blocks, groups, tiles) between threads, and
-drawing composites the rows of large shapes, images and layers on several threads. The
+drawing computes the coverages of the rows of large shapes, images and layers and composites them on several threads. The
 result is identical to the sequential one: the same pixels, the same encoded bytes and the same error. Each thread
 needs memory of its own, counted by
 [ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes),
@@ -56,7 +56,7 @@ Keep the default in a service that already processes several images at once: the
 
 ## Geometry changes are all or nothing
 
-[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop), [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize), [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad), [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate), [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew), [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) and [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) apply to every
+[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop), [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize), [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad), [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate), [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew), [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform), [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient), [SeamCarve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.SeamCarve), [Inpaint](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Inpaint) and [ApplyProcessor](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyProcessor) apply to every
 frame and to the poster in one transaction. If they fail before the end, because of a limit, an allocation failure or a
 cancellation, the image is unchanged: its size, pixels, frames and their order, cursor hotspots and metadata:
 

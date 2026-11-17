@@ -1,0 +1,12 @@
+<Repeater Items="Items">
+    <LoadingTemplate><p class="loading">Loading...</p></LoadingTemplate>
+    <EmptyTemplate><p class="empty">No items</p></EmptyTemplate>
+    <RepeaterContainerTemplate><ul>@context</ul></RepeaterContainerTemplate>
+    <ItemTemplate><li>@context</li></ItemTemplate>
+    <ItemSeparatorTemplate><li role="separator"></li></ItemSeparatorTemplate>
+</Repeater>
+
+@code {
+    [Parameter]
+    public IEnumerable<string>? Items { get; set; }
+}

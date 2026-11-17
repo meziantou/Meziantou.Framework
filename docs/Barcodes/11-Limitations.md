@@ -3,13 +3,13 @@ title: Limitations
 description: What the barcode packages do not do.
 ---
 
-- **Reading clean images.** [ReadQRCodes](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageReader.ReadQRCodes),
+- **Reading photographs.** [ReadQRCodes](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageReader.ReadQRCodes),
   [ReadBarcodes2D](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DImageReader.ReadBarcodes2D) and
-  [ReadBarcodes](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageReader.ReadBarcodes) read generated, printed or
-  scanned codes, photographed straight on: not damaged symbols, curved labels or heavily distorted photos. The rows of a
-  PDF417 symbol must be about horizontal or vertical, and a linear barcode is read when one of the scan lines (at 0°,
-  30°, 60°, 90°, 120° and 150°) crosses all its bars: a long and short barcode turned between two of these angles can
-  be missed.
+  [ReadBarcodes](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageReader.ReadBarcodes) read blurred, unevenly lit
+  photographs taken at an angle, but not damaged symbols, labels on curved surfaces, symbols with modules smaller than 2
+  pixels, or Data Matrix symbols marked on metal (dot peen). The rows of a PDF417 symbol must be about horizontal or
+  vertical, and a linear barcode is read when one of the scan lines (at 0°, 30°, 60°, 90°, 120° and 150°) crosses all
+  its bars: a long and short barcode turned between two of these angles can be missed.
 - **Not every option of the symbologies is read.** The decoders do not read the FNC1 modes of GS1 QR codes, Macro
   PDF417, the structured append of Data Matrix and Aztec symbols, the Aztec runes, the Data Matrix rectangular extension
   (DMRE), nor the 2D composite components of the GS1 DataBar symbols.
@@ -30,7 +30,9 @@ description: What the barcode packages do not do.
   symbols.
 - **ECI for text only in two-dimensional symbols**: [Barcode2D](cref:Meziantou.Framework.Barcodes.Barcode2D) declares UTF-8 for a text that is not ASCII, and
   encodes bytes without an ECI designator: there is no option to declare another encoding.
-- **Logos in SVG only.** The PNG renderer and the image renderer do not draw logos; draw them on the image yourself.
-- **No text under the bars** in the SVG and PNG renderers: the image renderer prints it, with a font.
-- **QR codes only in the terminal**: the console renderer does not draw linear barcodes or the other two-dimensional
-  symbols.
+- **Logos on QR codes only**, from the bytes of a PNG, JPEG, GIF or WebP file: not an SVG image, nor a URL. The logo
+  is centered: it cannot be placed elsewhere, and the area it clears is a rectangle. The check of the cleared area
+  assumes a perfect print: it does not measure how well a scanner reads the result.
+- **The human-readable text in the terminal is one centered line**, written in the font of the terminal: the digits of
+  EAN and UPC barcodes are grouped around longer guard bars in SVG, images and PDF only.
+- **Larger SVG documents than a hand-written path**: each run of dark modules is a rectangle of absolute coordinates.

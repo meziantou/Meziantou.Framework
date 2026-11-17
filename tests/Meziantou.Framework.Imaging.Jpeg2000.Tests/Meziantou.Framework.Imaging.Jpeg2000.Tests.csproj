@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>jp2</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>jp2</ImagingTestEncoders>
+    <ImagingTestEncoders>jp2;jp2-structured</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

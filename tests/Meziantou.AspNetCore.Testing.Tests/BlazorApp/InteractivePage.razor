@@ -1,0 +1,11 @@
+@page "/interactive"
+@rendermode InteractiveServer
+<PageTitle>Interactive</PageTitle>
+<h1>Interactive server</h1>
+<p role="status">Current count: @_count</p>
+<button @onclick="() => _count++">Click me</button>
+<p id="renderer">@(RendererInfo.IsInteractive ? "interactive" : "prerendered")</p>
+
+@code {
+    private int _count;
+}

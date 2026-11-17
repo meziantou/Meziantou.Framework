@@ -35,6 +35,7 @@ internal sealed class ExrDwa : IDisposable
     private static readonly float CbToBlue = BitConverter.UInt32BitsToSingle(0x3FED844D);
 
     private static ushort[]? s_toLinear;
+    private static ushort[]? s_toNonlinear;
 
     private readonly AllocationScope _scope;
     private readonly List<ChannelState> _channels = [];
@@ -88,6 +89,34 @@ internal sealed class ExrDwa : IDisposable
 
         Interlocked.CompareExchange(ref s_toLinear, table, null);
         return s_toLinear;
+    }
+
+    /// <summary>
+    /// Gets the table that maps a half value from linear light to the perceptual domain of the coded values (section 8.13,
+    /// toNonlinear), computed in single precision.
+    /// </summary>
+    internal static ushort[] GetToNonlinearTable()
+    {
+        var table = Volatile.Read(ref s_toNonlinear);
+        if (table is not null)
+            return table;
+
+        table = new ushort[65536];
+        var exponent = (double)(1f / 2.2f);
+        for (var x = 0; x < table.Length; x++)
+        {
+            if (x is 0 || (x & 0x7C00) == 0x7C00)
+                continue;
+
+            var value = (float)BitConverter.UInt16BitsToHalf((ushort)x);
+            var sign = value < 0 ? -1f : 1f;
+            var magnitude = Math.Abs(value);
+            var z = magnitude <= 1f ? (float)Math.Pow(magnitude, exponent) : ((float)Math.Log(magnitude) / 2.2f) + 1f;
+            table[x] = BitConverter.HalfToUInt16Bits((Half)(sign * z));
+        }
+
+        Interlocked.CompareExchange(ref s_toNonlinear, table, null);
+        return s_toNonlinear;
     }
 
     /// <summary>Decompresses a chunk that is not stored raw (section 8.16).</summary>
@@ -703,7 +732,7 @@ internal sealed class ExrDwa : IDisposable
     }
 
     /// <summary>Gets the zig-zag position of each natural position of a block (section 8.8).</summary>
-    private static ReadOnlySpan<byte> ZigzagOfNatural =>
+    internal static ReadOnlySpan<byte> ZigzagOfNatural =>
     [
         0, 1, 5, 6, 14, 15, 27, 28,
         2, 4, 7, 13, 16, 26, 29, 42,

@@ -1,10 +1,12 @@
 ---
 title: Pages and representations
-description: Read and write multi-page TIFF documents and the sizes of an icon or a cursor with ImageCollection.
+description: Read and write multi-page TIFF documents, the sizes of an icon or a cursor and the surfaces of a DDS or KTX 2.0 texture, and read the images of a Netpbm file, with ImageCollection.
 ---
 
-Some files hold several images that are not an animation: the pages of a TIFF document, in order, and the sizes and
-color depths of the same drawing in an icon or a cursor file. The library keeps them apart from frames, in an
+Some files hold several images that are not an animation: the pages of a TIFF document, in order, the sizes and
+color depths of the same drawing in an icon or a cursor file, the images that a Netpbm file concatenates, and the
+mipmaps, cube map faces, array elements and depth slices of a DDS texture (see [DDS](../10-Formats/21-Dds.md)) or a
+KTX 2.0 texture (see [KTX 2.0](../10-Formats/24-Ktx2.md)). The library keeps them apart from frames, in an
 [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection). Its entries can each have their own size, pixel format and metadata, and never have a duration or a
 play count, so code that plays the frames of an animation never receives pages or icon sizes by accident.
 
@@ -38,14 +40,16 @@ public static Size WriteAndReadTiffDocument(string inputPath, string documentPat
 <!-- endref -->
 
 - `ImageCollection.Create(ImageCollectionKind.Pages)` creates a document; [ImageCollectionKind.Representations](cref:Meziantou.Framework.Imaging.ImageCollectionKind.Representations) creates
-  the sizes of an icon.
+  the sizes of an icon, and [ImageCollectionKind.TextureSurfaces](cref:Meziantou.Framework.Imaging.ImageCollectionKind.TextureSurfaces) the surfaces of a texture, added with a
+  [TextureSurface](cref:Meziantou.Framework.Imaging.TextureSurface) that says where each one goes (see [DDS](../10-Formats/21-Dds.md)).
 - [Add](cref:Meziantou.Framework.Imaging.ImageCollection.Add) and [Insert](cref:Meziantou.Framework.Imaging.ImageCollection.Insert) copy the image: you keep and dispose your own. [RemoveAt](cref:Meziantou.Framework.Imaging.ImageCollection.RemoveAt) and [Move](cref:Meziantou.Framework.Imaging.ImageCollection.Move) edit the order.
 - [ImageCollection.Load](cref:Meziantou.Framework.Imaging.ImageCollection.Load) reads only the structure of the file. Each entry describes its page without decoding it:
   [Size](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.Size), [PixelFormat](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.PixelFormat), [ColorModel](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.ColorModel), [BitsPerComponent](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.BitsPerComponent), [MayHaveTransparency](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.MayHaveTransparency), [PayloadFormat](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.PayloadFormat), [Hotspot](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.Hotspot) and
   [Metadata](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.Metadata).
 - `entry.Decode()` (or [Decode\<TPixel\>()](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.Decode)) decodes that entry only, and returns a still image that you own and
   dispose. Nothing is resized or converted to match the other entries.
-- [Save](cref:Meziantou.Framework.Imaging.ImageCollection.Save) writes pages with the TIFF encoder and representations with the ICO encoder, one entry at a time. A file is
+- [Save](cref:Meziantou.Framework.Imaging.ImageCollection.Save) writes pages with the TIFF encoder, representations with the ICO encoder, and texture surfaces with the DDS or KTX 2.0
+  encoder, one entry at a time. A file is
   published only once it is complete, like [`Image.Save`](../05-LoadingAndSaving/04-SavingImages.md).
   [SaveAsync](cref:Meziantou.Framework.Imaging.ImageCollection.SaveAsync) does the same with asynchronous I/O and a
   `CancellationToken`; a failed or canceled save leaves no partial file.
@@ -99,6 +103,7 @@ public static Point WriteAndReadIcon(string inputPath, string iconPath, string c
 | --- | --- |
 | TIFF document | The first page |
 | ICO or CUR file | The largest representation (then the deepest), with its hotspot on `Frames[0].Metadata.Hotspot` for a cursor |
+| Netpbm file | The first image; the identification does not count the images, and the streaming readers read the first one |
 
 [ImageInfo.CollectionEntryCount](cref:Meziantou.Framework.Imaging.ImageInfo.CollectionEntryCount) tells how many entries the file has. Use [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) to reach the other ones.
 The [streaming readers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md) reject TIFF, ICO and CUR files,

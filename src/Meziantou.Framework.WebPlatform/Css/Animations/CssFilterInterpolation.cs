@@ -83,7 +83,7 @@ internal static class CssFilterInterpolation
             // An angle converted from another unit (e.g. rad) is serialized with 6 significant digits, as in the browsers
             if (filterA.Name == "hue-rotate" && CssGenericInterpolation.Parse(combined) is [CssPreservedToken { Type: CssTokenType.Dimension } angle])
             {
-                combined = CssColor.FormatNumber(angle.Token.NumericValue) + angle.Token.Value;
+                combined = CssColor.FormatNumber(angle.NumericValue) + angle.Value;
             }
 
             // The values of the functions cannot be negative (the accumulated values are clamped after the interpolation)
@@ -125,7 +125,7 @@ internal static class CssFilterInterpolation
     private static List<Filter>? Parse(string value)
     {
         var components = CssGenericInterpolation.Parse(value);
-        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.Token.IsIdent("none"))
+        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.IsIdent("none"))
             return [];
 
         var result = new List<Filter>(components.Count);

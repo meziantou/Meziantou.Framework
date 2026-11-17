@@ -1,9 +1,13 @@
+using System.Globalization;
 using System.Xml;
 using Meziantou.Framework.Fuzzing;
 using CssApi = Meziantou.Framework.WebPlatform.Css.Om.Css;
 using DomUrl = Meziantou.Framework.WebPlatform.Dom.Url;
+using TagId = Meziantou.Framework.WebPlatform.Html.TagId;
+using TagNames = Meziantou.Framework.WebPlatform.Html.TagNames;
 using Meziantou.Framework.WebPlatform.Css.Fonts;
 using Meziantou.Framework.WebPlatform.Css.Om;
+using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Formatting;
 using Meziantou.Framework.WebPlatform.Unicode;
@@ -97,6 +101,8 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-dictionary-decompression", DictionaryDecompression) { Seeds = GetDictionaryDecompressionSeeds },
         new("webplatform-integrity-signatures", data => IntegritySignatureVerification(FuzzText.Decode(data))) { Seeds = GetIntegritySignatureSeeds, Dictionary = StructuredFieldTokens },
         new("webplatform-pinch-zoom", PinchZoom) { Seeds = GetPinchZoomSeeds, Dictionary = PinchZoomTokens },
+        new("webplatform-entries-path", data => EntriesPathResolution(FuzzText.Decode(data))) { Seeds = GetEntriesPathSeeds, Dictionary = EntriesPathTokens },
+        new("webplatform-drag-and-drop", DragAndDrop) { Seeds = GetDragAndDropSeeds, Dictionary = DragTokens },
     ];
 
     /// <summary>
@@ -153,6 +159,7 @@ public static partial class WebPlatformFuzzTargets
     public static void Html(string input)
     {
         var document = HtmlDocumentParser.ParseDocument(input);
+        CheckParsedNodes(document);
         var html = document.DocumentElement?.OuterHtml ?? "";
         _ = document.ToHtml(new HtmlPrettyFormatter());
         _ = document.ToHtml(new HtmlMinifyFormatter());
@@ -193,6 +200,46 @@ public static partial class WebPlatformFuzzTargets
         {
             var element = context == "svg" ? document.CreateElementNS("http://www.w3.org/2000/svg", "svg") : document.CreateElement(context);
             _ = parser.ParseFragment(input, element).ChildNodes.Length;
+        }
+
+        // The tag id of each element is the one of a linear search of the well-known names (the parser looks up the name in a
+        // hash table, from the token, the string or the characters), and the child text content of each node is the
+        // concatenation of the data of its Text children (the parser does not copy the data of a single child)
+        static void CheckParsedNodes(Document document)
+        {
+            var nodes = new Stack<Node>();
+            nodes.Push(document);
+            while (nodes.TryPop(out var node))
+            {
+                if (node is Element element)
+                {
+                    var expected = (TagId)Math.Max(0, Array.IndexOf(TagNames.Names, element.LocalName, 1));
+                    if (element.NamespaceUri is "http://www.w3.org/1999/xhtml" or "http://www.w3.org/1998/Math/MathML")
+                    {
+                        FuzzAssert.Equal(expected, element.TagId, $"The tag id of the element {FuzzAssert.Format(element.LocalName)}");
+                    }
+
+                    FuzzAssert.Equal(expected, TagNames.GetTagId(new string(element.LocalName)), $"The tag id of the string {FuzzAssert.Format(element.LocalName)}");
+                    FuzzAssert.Equal(expected, TagNames.GetTagId(element.LocalName.AsSpan()), $"The tag id of the characters {FuzzAssert.Format(element.LocalName)}");
+                }
+
+                var text = new System.Text.StringBuilder();
+                for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+                {
+                    if (child is Text childText)
+                    {
+                        text.Append(childText.Data);
+                    }
+
+                    nodes.Push(child);
+                }
+
+                FuzzAssert.Equal(text.ToString(), node.GetChildTextContent(), "The child text content");
+                if (node is HtmlTemplateElement template)
+                {
+                    nodes.Push(template.Content);
+                }
+            }
         }
 
         // Removes the leading line feeds of the pre, listing and textarea elements, and returns false when a script
@@ -364,6 +411,7 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>Parses a style sheet, a declaration block and a condition, and serializes them.</summary>
     public static void Css(string input)
     {
+        CssNumbers(input);
         var sheet = new CssStyleSheet();
         sheet.ReplaceSync(input);
         var text = Serialize(sheet.CssRules);
@@ -792,6 +840,49 @@ public static partial class WebPlatformFuzzTargets
     private sealed class FixedTimeProvider : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    }
+
+    /// <summary>The value of a numeric token has the bits of double.Parse of its number (the tokenizer has a fast path for the short numbers).</summary>
+    private static void CssNumbers(string input)
+    {
+        var source = CssTokenizer.Preprocess(input);
+        foreach (var token in CssTokenizer.Tokenize(input))
+        {
+            if (token.Type is not (CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension))
+                continue;
+
+            var text = source.AsSpan(token.Start, token.End - token.Start);
+            var length = 0;
+            if (text[length] is '+' or '-')
+            {
+                length++;
+            }
+
+            length += CountDigits(text[length..]);
+            if (length + 1 < text.Length && text[length] == '.' && char.IsAsciiDigit(text[length + 1]))
+            {
+                length += 1 + CountDigits(text[(length + 1)..]);
+            }
+
+            if (length + 1 < text.Length && text[length] is 'e' or 'E')
+            {
+                var exponent = length + (text[length + 1] is '+' or '-' ? 2 : 1);
+                var digits = exponent < text.Length ? CountDigits(text[exponent..]) : 0;
+                if (digits > 0)
+                {
+                    length = exponent + digits;
+                }
+            }
+
+            var expected = double.Parse(text[..length], NumberStyles.Float, CultureInfo.InvariantCulture);
+            FuzzAssert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(token.NumericValue), $"The value of the number {FuzzAssert.Format(text[..length].ToString())} is not the value of double.Parse");
+        }
+
+        static int CountDigits(ReadOnlySpan<char> text)
+        {
+            var index = text.IndexOfAnyExceptInRange('0', '9');
+            return index < 0 ? text.Length : index;
+        }
     }
 
     private static Document CreateDocument() => QueryDocument.Value.Implementation.CreateHtmlDocument("");

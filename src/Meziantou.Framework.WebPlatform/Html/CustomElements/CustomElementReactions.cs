@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Html;
@@ -134,12 +135,12 @@ internal readonly ref struct CEReactionsScope
     public bool IsActive => _stack is not null;
 
     /// <summary>Enters an operation decorated with [CEReactions].</summary>
-    public static CEReactionsScope Enter()
-    {
-        // Nothing can enqueue reactions until an element is defined: skip the thread-static lookup
-        if (!CustomElementRegistry.HasDefinitions)
-            return default;
+    // Nothing can enqueue reactions until an element is defined: the thread-static lookup is skipped (inlined in the callers)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static CEReactionsScope Enter() => CustomElementRegistry.HasDefinitions ? EnterCore() : default;
 
+    private static CEReactionsScope EnterCore()
+    {
         var stack = CustomElementReactionsStack.Current;
         var push = stack.Depth == 0;
         stack.Depth++;

@@ -2,12 +2,13 @@ using System.IO.Compression;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Exr;
+using Meziantou.Framework.Imaging.TestHarness.Radiance;
 using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
 
 /// <summary>
-/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI), and of OpenEXR, whose corpus fixtures
+/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI), and of OpenEXR and Radiance HDR, whose corpus fixtures
 /// <see cref="FuzzSeeds"/> adds to these: files written by the encoders of
 /// the library (every compression, pixel layout and container option they have), and files assembled byte by byte by the
 /// builders of the unit tests for what the encoders never write (tiles, the horizontal predictor, packed samples, signed,
@@ -16,7 +17,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// </summary>
 internal static class FuzzGeneratedSeeds
 {
-    public static IReadOnlyList<string> Groups { get; } = ["tiff", "ico", "ani", "exr"];
+    public static IReadOnlyList<string> Groups { get; } = ["tiff", "ico", "ani", "exr", "hdr"];
 
     public static List<FuzzSeed> Get(string group) => group switch
     {
@@ -24,6 +25,7 @@ internal static class FuzzGeneratedSeeds
         "ico" => GetIconSeeds(),
         "ani" => GetAnimatedCursorSeeds(),
         "exr" => GetOpenExrSeeds(),
+        "hdr" => GetRadianceSeeds(),
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "The group has no generated seeds."),
     };
 
@@ -100,6 +102,7 @@ internal static class FuzzGeneratedSeeds
         seeds.Add(new FuzzSeed("tiff/builder-signed16-rgb-predictor-deflate", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, BitsPerSample = 16, SamplesPerPixel = 3, Photometric = 2, SampleFormat = 2, Compression = 8, Predictor = 2, Samples = Samples(5 * 3 * 3 * 2, 256) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-half-gray-tiles-lzw-predictor-bigendian", new TiffFileBuilder { BigEndian = true }.AddPage(new TiffPageSpec { Width = 18, Height = 5, BitsPerSample = 16, SampleFormat = 3, TileWidth = 16, TileLength = 16, Compression = 5, Predictor = 3, Samples = Samples(18 * 5 * 2, 61) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-float24-graya-packbits", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 4, Height = 3, BitsPerSample = 24, SamplesPerPixel = 2, ExtraSamples = [2], SampleFormat = 3, Compression = 32773, Samples = Samples(4 * 3 * 2 * 3, 64) }).Build()));
+        seeds.Add(new FuzzSeed("tiff/builder-rgb8-lzw-fillorder2", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, SamplesPerPixel = 3, Photometric = 2, Compression = 5, FillOrder = 2, EncodedBlocks = [TiffReferenceCodecs.ReverseBits(TiffReferenceCodecs.EncodeLzw(Samples(5 * 3 * 3, 199)))], Samples = [] }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-gray4-whiteiszero-packbits", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 7, Height = 5, BitsPerSample = 4, Photometric = 0, Compression = 32773, Orientation = 6, Samples = Samples(4 * 5, 256) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-bilevel-strips-bigendian-gap", new TiffFileBuilder { BigEndian = true, Gap = 6 }
             .AddPage(new TiffPageSpec { Width = 10, Height = 4, BitsPerSample = 1, Photometric = 1, RowsPerStrip = 1, Samples = [0b1010_0000, 0b1100_0000, 0b0000_1111, 0b0100_0000, 0b1111_1111, 0b1100_0000, 0b0101_0101, 0b0000_0000] })
@@ -123,6 +126,21 @@ internal static class FuzzGeneratedSeeds
         pyramid.SubPages.Add(Level(16, 12, 1, 227));
         pyramid.SubPages.Add(Level(4, 3, 1, 223));
         seeds.Add(new FuzzSeed("tiff/builder-pyramid-subifds-bigtiff", new TiffFileBuilder { BigTiff = true }.AddPage(pyramid).Build()));
+        // Old-style JPEG (compression 6), which no encoder writes: the header of the JPEG interchange format with the
+        // scan in a strip, or the whole datastream at JPEGInterchangeFormat, with 8- and 12-bit samples
+        using (var rgb = CreateRgb24(19, 13, salt: 6))
+        {
+            seeds.Add(OldJpeg("tiff/builder-ojpeg-ycbcr420-interchange-strip", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420 }, bitsPerSample: 8, wholeImage: false));
+            seeds.Add(OldJpeg("tiff/builder-ojpeg12-ycbcr420-interchange-whole", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420, BitDepth = 12 }, bitsPerSample: 12, wholeImage: true));
+            seeds.Add(OldJpegFromTables("tiff/builder-ojpeg12-ycbcr420-table-tags", rgb, new JpegEncoder { Quality = 80, ChromaSubsampling = JpegChromaSubsampling.Ratio420, BitDepth = 12 }, bitsPerSample: 12));
+        }
+
+        using (var gray16 = CreateGray16(11, 9, salt: 7))
+        {
+            seeds.Add(OldJpeg("tiff/builder-ojpeg12-gray-interchange-strip", gray16, new JpegEncoder { Quality = 85, BitDepth = 12 }, bitsPerSample: 12, wholeImage: false));
+            seeds.Add(OldJpegFromTables("tiff/builder-ojpeg12-gray-table-tags", gray16, new JpegEncoder { Quality = 85, BitDepth = 12 }, bitsPerSample: 12));
+        }
+
         seeds.Add(new FuzzSeed("tiff/builder-rgba32-bigtiff-unassociated", new TiffFileBuilder { BigTiff = true }.AddPage(new TiffPageSpec { Width = 5, Height = 4, SamplesPerPixel = 4, Photometric = 2, ExtraSamples = [2], Compression = 8, Samples = Samples(5 * 4 * 4, 256) }).Build()));
         return seeds;
     }
@@ -184,6 +202,14 @@ internal static class FuzzGeneratedSeeds
             .Add(new IcoEntrySpec { Width = 6, Height = 5, ColorCount = 4, BitCountOrHotspotY = 4, Payload = IcoFileBuilder.Dib(6, 5, 4, PaletteTable(palette), PackedRows(6, 5, 4), mask, includeMask: true) })
             .Add(new IcoEntrySpec { Width = 9, Height = 4, ColorCount = 2, BitCountOrHotspotY = 1, Payload = IcoFileBuilder.Dib(9, 4, 1, PaletteTable(palette[..2]), PackedRows(9, 4, 1), mask: null, includeMask: true) })
             .Build()));
+        // A PNG payload larger than the 256 pixels a directory byte can declare (stored as 0)
+        using (var wide = CreateRgba32(260, 3, salt: 20))
+        {
+            using var png = new MemoryStream();
+            wide.Save(png, new PngEncoder());
+            seeds.Add(new FuzzSeed("ico/builder-png-wider-than-256", new IcoFileBuilder().Add(new IcoEntrySpec { Width = 256, Height = 3, DeclaredWidth = 0, Payload = png.ToArray() }).Build()));
+        }
+
         seeds.Add(new FuzzSeed("cur/builder-dib32-mask-and-unmasked", new IcoFileBuilder { Type = 2 }
             .Add(new IcoEntrySpec { Width = 4, Height = 4, PlanesOrHotspotX = 1, BitCountOrHotspotY = 2, Payload = IcoFileBuilder.Dib32(4, 4, [.. Enumerable.Range(0, 16).Select(i => new Rgba32((byte)(i * 16), 7, 9, (byte)(i * 17)))], [.. Enumerable.Range(0, 16).Select(i => i % 3 == 0)]) })
             .Add(new IcoEntrySpec { Width = 3, Height = 2, PlanesOrHotspotX = 2, BitCountOrHotspotY = 1, Payload = IcoFileBuilder.Dib32(3, 2, [.. Enumerable.Range(0, 6).Select(i => new Rgba32(1, (byte)(i * 40), 3))], includeMask: false) })
@@ -353,6 +379,217 @@ internal static class FuzzGeneratedSeeds
             image.Save(stream, new IcoEncoder { Kind = IconKind.Cursor, PayloadFormat = IconPayloadFormat.Dib });
             return stream.ToArray();
         }
+    }
+
+    /// <summary>
+    /// Builds an old-style JPEG page of one strip from a JPEG file: <c>JPEGInterchangeFormat</c> holds the markers of the
+    /// file up to its start of scan and the strip its entropy-coded data, or, for <paramref name="wholeImage"/>, it holds
+    /// the whole file and the page declares no strip byte counts.
+    /// </summary>
+    private static FuzzSeed OldJpeg(string id, Image image, JpegEncoder encoder, int bitsPerSample, bool wholeImage)
+    {
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        var jpeg = stream.ToArray();
+        var headerLength = TiffOldJpegLayout.FindHeaderLength(jpeg);
+        var isGray = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+        byte[] appended = wholeImage ? jpeg : jpeg[..headerLength];
+
+        TiffPageSpec CreatePage(ulong offset)
+        {
+            var page = new TiffPageSpec
+            {
+                Width = image.Width,
+                Height = image.Height,
+                SamplesPerPixel = isGray ? 1 : 3,
+                BitsPerSample = bitsPerSample,
+                Photometric = isGray ? 1 : 6,
+                Compression = 6,
+                RowsPerStrip = image.Height,
+                OmitByteCounts = wholeImage,
+                EncodedBlocks = [wholeImage ? [0] : jpeg[headerLength..^2]],
+                Samples = [],
+            };
+            page.ExtraFields.Add(TiffFieldSpec.Long(513, (uint)offset));
+            page.ExtraFields.Add(TiffFieldSpec.Long(514, (uint)appended.Length));
+            return page;
+        }
+
+        // The bytes are appended to the file, whose length the value of the offset does not change
+        var length = (ulong)new TiffFileBuilder().AddPage(CreatePage(0)).Build().Length;
+        return new FuzzSeed(id, [.. new TiffFileBuilder().AddPage(CreatePage(length)).Build(), .. appended]);
+    }
+
+    /// <summary>
+    /// Builds an old-style JPEG page of one strip from a JPEG file, with its tables in <c>JPEGQTables</c>,
+    /// <c>JPEGDCTables</c> and <c>JPEGACTables</c> and the entropy-coded data of its scan in the strip, so that the
+    /// decoder assembles the header of the strip from the tags.
+    /// </summary>
+    private static FuzzSeed OldJpegFromTables(string id, Image image, JpegEncoder encoder, int bitsPerSample)
+    {
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        var jpeg = stream.ToArray();
+
+        // The tables of the file, the quantization table of each component and the Huffman tables of the scan
+        var quantization = new Dictionary<int, byte[]>();
+        var huffman = new Dictionary<(int Class, int Id), byte[]>();
+        var componentQuantization = new List<int>();
+        var selectors = new List<(int Dc, int Ac)>();
+        var restartInterval = 0;
+        var lumaSampling = 0x11;
+        var position = 2;
+        while (selectors.Count == 0)
+        {
+            var marker = jpeg[position + 1];
+            var length = (jpeg[position + 2] << 8) | jpeg[position + 3];
+            var payload = jpeg.AsSpan(position + 4, length - 2);
+            switch (marker)
+            {
+                case 0xDB:
+                    for (var i = 0; i < payload.Length; i += 65)
+                    {
+                        // The tags hold 8-bit quantization values only
+                        if (payload[i] >> 4 != 0)
+                            throw new InvalidOperationException("The JPEG file has a 16-bit quantization table.");
+
+                        quantization[payload[i] & 15] = payload.Slice(i + 1, 64).ToArray();
+                    }
+
+                    break;
+
+                case 0xC4:
+                    for (var i = 0; i < payload.Length;)
+                    {
+                        var count = 16;
+                        for (var k = 0; k < 16; k++)
+                        {
+                            count += payload[i + 1 + k];
+                        }
+
+                        huffman[(payload[i] >> 4, payload[i] & 15)] = payload.Slice(i + 1, count).ToArray();
+                        i += 1 + count;
+                    }
+
+                    break;
+
+                case 0xDD:
+                    restartInterval = (payload[0] << 8) | payload[1];
+                    break;
+
+                case 0xC0 or 0xC1:
+                    lumaSampling = payload[7];
+                    for (var i = 0; i < payload[5]; i++)
+                    {
+                        componentQuantization.Add(payload[6 + (i * 3) + 2]);
+                    }
+
+                    break;
+
+                case 0xDA:
+                    for (var i = 0; i < payload[0]; i++)
+                    {
+                        selectors.Add((payload[2 + (i * 2)] >> 4, payload[2 + (i * 2)] & 15));
+                    }
+
+                    break;
+            }
+
+            position += 2 + length;
+        }
+
+        var componentCount = componentQuantization.Count;
+        byte[] scan = jpeg[position..^2];
+        var appended = new List<byte>();
+        var offsets = (Quantization: new ulong[componentCount], Dc: new ulong[componentCount], Ac: new ulong[componentCount]);
+
+        TiffPageSpec CreatePage(ulong offset)
+        {
+            // Each component reads its own copy of its tables, at the offsets the tags give
+            appended.Clear();
+            for (var component = 0; component < componentCount; component++)
+            {
+                offsets.Quantization[component] = offset + (ulong)appended.Count;
+                appended.AddRange(quantization[componentQuantization[component]]);
+                offsets.Dc[component] = offset + (ulong)appended.Count;
+                appended.AddRange(huffman[(0, selectors[component].Dc)]);
+                offsets.Ac[component] = offset + (ulong)appended.Count;
+                appended.AddRange(huffman[(1, selectors[component].Ac)]);
+            }
+
+            var page = new TiffPageSpec
+            {
+                Width = image.Width,
+                Height = image.Height,
+                SamplesPerPixel = componentCount,
+                BitsPerSample = bitsPerSample,
+                Photometric = componentCount == 1 ? 1 : 6,
+                Compression = 6,
+                RowsPerStrip = image.Height,
+                EncodedBlocks = [scan],
+                Samples = [],
+            };
+            page.ExtraFields.Add(new TiffFieldSpec(512, 3, [1]));
+            page.ExtraFields.Add(new TiffFieldSpec(519, 4, offsets.Quantization));
+            page.ExtraFields.Add(new TiffFieldSpec(520, 4, offsets.Dc));
+            page.ExtraFields.Add(new TiffFieldSpec(521, 4, offsets.Ac));
+            if (restartInterval > 0)
+            {
+                page.ExtraFields.Add(TiffFieldSpec.Short(515, (ushort)restartInterval));
+            }
+
+            if (componentCount == 3)
+            {
+                // The sampling factors of the luma component of the file
+                page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [(ushort)(lumaSampling >> 4), (ushort)(lumaSampling & 15)]));
+            }
+
+            return page;
+        }
+
+        // The tables are appended to the file, whose length the values of the offsets do not change
+        var fileLength = (ulong)new TiffFileBuilder().AddPage(CreatePage(0)).Build().Length;
+        var data = new TiffFileBuilder().AddPage(CreatePage(fileLength)).Build();
+        return new FuzzSeed(id, [.. data, .. appended]);
+    }
+
+    private static List<FuzzSeed> GetRadianceSeeds()
+    {
+        var seeds = new List<FuzzSeed>();
+        foreach (var (width, height) in new[] { (7, 3), (19, 11), (130, 2) })
+        {
+            using var rgba = CreateRgba32(width, height, salt: 50 + width);
+            using var full = rgba.CloneAs<RgbaFloat>();
+            full.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+            full.Frames[0][1, 1] = new RgbaFloat(12.5f, 0f, 3e20f, 1f);
+            foreach (var compression in Enum.GetValues<RadianceCompression>())
+            {
+                seeds.Add(Encode(string.Create(CultureInfo.InvariantCulture, $"hdr/{compression.ToString().ToLowerInvariant()}-{width}x{height}"), full, new RadianceEncoder { Compression = compression, BackgroundColor = new Rgba64(0, 0, 0, 65535) }));
+            }
+        }
+
+        // The old encoding, the other orientations and header variables, which the encoder never writes
+        var pixels = new byte[9 * 8 * 4];
+        for (var i = 0; i < 9 * 8; i++)
+        {
+            byte[] pixel = i % 3 == 0 ? [200, 100, 50, 130] : [(byte)(128 + i), (byte)i, 3, (byte)(120 + (i % 5))];
+            pixel.CopyTo(pixels, i * 4);
+        }
+
+        seeds.Add(new FuzzSeed("hdr/builder-old-rle", RadianceFileBuilder.Create(9, 8, pixels, RadianceScanlineEncoding.OldRunLength).Build()));
+        foreach (var order in RadianceFileBuilder.ScanOrders.Skip(1))
+        {
+            seeds.Add(new FuzzSeed("hdr/builder-" + order.Replace(' ', '_'), RadianceFileBuilder.Create(9, 8, pixels, RadianceScanlineEncoding.NewRunLength, order).Build()));
+        }
+
+        var header = RadianceFileBuilder.Create(9, 8, pixels, RadianceScanlineEncoding.Flat, format: "32-bit_rle_xyze");
+        header.HeaderLines.Add("EXPOSURE=2");
+        header.HeaderLines.Add("COLORCORR=1 0.5 2");
+        header.HeaderLines.Add("PRIMARIES=0.670 0.330 0.210 0.710 0.140 0.080 0.333 0.333");
+        header.HeaderLines.Add("PIXASPECT=0.5");
+        header.HeaderLines.Add("VIEW= -vh 45");
+        seeds.Add(new FuzzSeed("hdr/builder-xyze-variables", header.Build()));
+        return seeds;
     }
 
     private static FuzzSeed Encode(string id, Image image, ImageEncoder encoder)

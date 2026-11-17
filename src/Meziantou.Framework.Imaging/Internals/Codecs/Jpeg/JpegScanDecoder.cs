@@ -585,6 +585,9 @@ internal abstract class JpegScanDecoder
         /// <summary>Gets the quantization values in natural order.</summary>
         public ushort[] Quantization { get; } = quantization;
 
+        /// <summary>Gets the quantization values in natural order as doubles (the scales of <see cref="JpegIdct.Dequantize"/>).</summary>
+        public double[] Scales => field ??= CreateScales(Quantization);
+
         /// <summary>Gets the <see cref="JpegHuffmanTable.FastLookup"/> of the DC table, or an empty array without DC table.</summary>
         public int[] DcLookup { get; } = dcTable?.FastLookup ?? [];
 
@@ -671,6 +674,17 @@ internal abstract class JpegScanDecoder
         /// (<c>Db</c> of the next sample of the column).
         /// </summary>
         public int[] AboveDifferences { get; set; } = [];
+
+        private static double[] CreateScales(ushort[] quantization)
+        {
+            var scales = new double[64];
+            for (var i = 0; i < quantization.Length; i++)
+            {
+                scales[i] = quantization[i];
+            }
+
+            return scales;
+        }
 
         private static int[] CreateZigZagQuantization(ushort[] quantization)
         {

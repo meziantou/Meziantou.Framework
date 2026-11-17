@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// mask, and every glyph under a transformation that turns, skews or is projective, is filled as a shape where it is.
 /// </para>
 /// <para>
-/// A glyph the font draws with its own colors (<c>COLR</c>, <c>sbix</c>, <c>CBDT</c>) is drawn as a text draws it, from
+/// A glyph the font draws with its own colors (<c>COLR</c>, <c>SVG </c>, <c>sbix</c>, <c>CBDT</c>) is drawn as a text draws it, from
 /// its display list, kept in the cache too. A synthetic bold fills the glyphs with the stroke of their outline; a
 /// synthetic oblique shears them.
 /// </para>
@@ -104,13 +104,14 @@ internal sealed partial class DrawingSession
         {
             var glyph = positioned.Glyph;
             var placement = Affine2D.ForGlyph(scale, positioned.Origin.X, positioned.Origin.Y, shear);
-            if (face.HasColorGlyphs && GetColorGlyph(face, glyph, options.Palette, size, options.Cache, scratch) is { } colorGlyph)
+            if ((face.HasColorGlyphs || face.HasBitmapGlyphs) && GetColorGlyph(face, glyph, options.Palette, size, options.Cache, scratch) is { } colorGlyph)
             {
                 DrawRunColorGlyph(brush, colorGlyph, face, placement, ref isForegroundSet);
                 continue;
             }
 
-            if (isMasked && TryGetGlyphMask(face, glyph, size, placement, boldWidth, swapsAxes, options.Cache, scratch, out var mask, out var pixelX, out var pixelY))
+            var source = GlyphOutlineSource.FromFont(face, glyph, size);
+            if (isMasked && TryGetGlyphMask(source, placement, boldWidth, swapsAxes, options.Cache, scratch, out var mask, out var pixelX, out var pixelY))
             {
                 if (!isBrushPrepared)
                 {
@@ -135,7 +136,7 @@ internal sealed partial class DrawingSession
                 continue;
             }
 
-            FillGlyphOutline(brush, face, glyph, size, placement, boldWidth, scratch);
+            FillGlyphOutline(brush, source, placement, boldWidth, scratch);
             isBrushPrepared = false;
         }
     }
@@ -144,8 +145,17 @@ internal sealed partial class DrawingSession
     /// Gets the coverage of a glyph from the cache, or computes it: in the renderer (<paramref name="mask"/> is then
     /// <see langword="null"/>), copied to the cache when there is one.
     /// </summary>
+    /// <param name="source">The outline of the glyph.</param>
+    /// <param name="placement">The transformation from the units of the glyph to the coordinates of the drawing.</param>
+    /// <param name="boldWidth">The width of the stroke of a synthetic bold, in units of the drawing, or 0.</param>
+    /// <param name="isLineVertical">Whether the line goes along the y axis of the canvas: the origin is then snapped to a quarter of a pixel along y.</param>
+    /// <param name="cache">The cache, or <see langword="null"/>.</param>
+    /// <param name="scratch">The scratch of the outlines.</param>
+    /// <param name="mask">The mask from the cache, or <see langword="null"/> when it is in the renderer.</param>
+    /// <param name="pixelX">The column of the pixel of the origin.</param>
+    /// <param name="pixelY">The row of the pixel of the origin.</param>
     /// <returns><see langword="false"/> when the glyph is too large for a mask, or its origin is too far from the canvas.</returns>
-    private bool TryGetGlyphMask(FontFace face, int glyph, double size, in Affine2D placement, double boldWidth, bool swapsAxes, GlyphCache? cache, GlyphScratch scratch, out GlyphMask? mask, out int pixelX, out int pixelY)
+    private bool TryGetGlyphMask(in GlyphOutlineSource source, in Affine2D placement, double boldWidth, bool isLineVertical, GlyphCache? cache, GlyphScratch scratch, out GlyphMask? mask, out int pixelX, out int pixelY)
     {
         mask = null;
         pixelX = 0;
@@ -154,8 +164,8 @@ internal sealed partial class DrawingSession
         // The origin on the canvas: a quarter of a pixel along the line, a pixel across it; a pixel without antialiasing
         var canvas = ToCanvas(placement);
         var along = _isAliased ? 1 : 4;
-        var x = Snap(canvas.Tx, swapsAxes ? 1 : along);
-        var y = Snap(canvas.Ty, swapsAxes ? along : 1);
+        var x = Snap(canvas.Tx, isLineVertical ? 1 : along);
+        var y = Snap(canvas.Ty, isLineVertical ? along : 1);
         const double Limit = 1 << 28;
         if (!(Math.Abs(x) < Limit && Math.Abs(y) < Limit))
             return false;
@@ -167,7 +177,7 @@ internal sealed partial class DrawingSession
         var fractionX = x - left;
         var fractionY = y - top;
         var deviceBold = boldWidth * (_hasTransform ? _transformScale : 1);
-        var key = new GlyphCacheKey(face, glyph, IsColor: false, size, Palette: 0, canvas.A, canvas.B, canvas.C, canvas.D, (int)(fractionX * 4), (int)(fractionY * 4), _isAliased, deviceBold);
+        var key = new GlyphCacheKey(source.Face, source.Glyph, IsColor: false, source.Size, Palette: 0, canvas.A, canvas.B, canvas.C, canvas.D, (int)(fractionX * 4), (int)(fractionY * 4), _isAliased, deviceBold, source.Hinting);
         if (cache is not null && cache.TryGet(key, out var value))
         {
             mask = (GlyphMask)value!;
@@ -176,7 +186,7 @@ internal sealed partial class DrawingSession
 
         // Without a cache, the pass that prepares the run only needs the rentals: the paint pass computes the mask again
         var renderer = _glyphMasks ??= new GlyphMaskRenderer(_image.Owner.Scope);
-        if (!renderer.Render(face, glyph, size, canvas, fractionX, fractionY, deviceBold, _isAliased, scratch, _cancellationToken, prepareOnly: _isPreparing && cache is null))
+        if (!renderer.Render(source, canvas, fractionX, fractionY, deviceBold, _isAliased, scratch, _cancellationToken, prepareOnly: _isPreparing && cache is null))
         {
             cache?.Add(key, GlyphMask.TooLarge, GlyphMask.TooLarge.Bytes);
             return false;
@@ -249,14 +259,13 @@ internal sealed partial class DrawingSession
     }
 
     /// <summary>Fills a glyph as a shape where it is, thickened by a synthetic bold.</summary>
-    private void FillGlyphOutline(Brush brush, FontFace face, int glyph, double size, in Affine2D placement, double boldWidth, GlyphScratch scratch)
+    private void FillGlyphOutline(Brush brush, in GlyphOutlineSource source, in Affine2D placement, double boldWidth, GlyphScratch scratch)
     {
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var sink = BeginFill();
         var edges = _edges!;
         glyphSink.Begin(sink, placement);
-        var budget = new GlyphBudget(face.Data.Limits);
-        face.DecodeOutline(glyph, size, glyphSink, scratch, ref budget);
+        source.Send(glyphSink, scratch);
         if (glyphSink.SignedArea < 0)
         {
             edges.NegateDirections(0);
@@ -279,8 +288,7 @@ internal sealed partial class DrawingSession
 
             emboldener.Configure(boldWidth, LineJoin.Miter, GlyphRun.BoldMiterLimit);
             glyphSink.Begin(emboldener, placement);
-            budget = new GlyphBudget(face.Data.Limits);
-            face.DecodeOutline(glyph, size, glyphSink, scratch, ref budget);
+            source.Send(glyphSink, scratch);
             emboldener.End();
             coversFrame = emboldener.CoversFrame;
         }
@@ -294,7 +302,9 @@ internal sealed partial class DrawingSession
     private static ColorGlyph? GetColorGlyph(FontFace face, int glyph, int palette, double size, GlyphCache? cache, GlyphScratch scratch)
     {
         var isPainted = face.IsColorGlyph(glyph);
-        var key = new GlyphCacheKey(face, glyph, IsColor: true, isPainted ? 0 : size, isPainted ? palette : 0, 0, 0, 0, 0, 0, 0, IsAliased: false, 0);
+        var svg = default(SvgGlyph);
+        var isSvg = !isPainted && face.TryGetSvgGlyph(glyph, out svg);
+        var key = new GlyphCacheKey(face, glyph, IsColor: true, isPainted ? 0 : size, isPainted || isSvg ? palette : 0, 0, 0, 0, 0, 0, 0, IsAliased: false, 0);
         if (cache is not null && cache.TryGet(key, out var value))
             return (ColorGlyph?)value;
 
@@ -304,9 +314,17 @@ internal sealed partial class DrawingSession
         {
             colorGlyph = face.BuildColorGlyph(glyph, palette, scratch, ref budget);
         }
-        else if (face.TryGetBitmapGlyph(glyph, size, out var bitmap))
+        else
         {
-            colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, size);
+            if (isSvg)
+            {
+                colorGlyph = SvgGlyphRenderer.CreateGlyph(face, svg, palette, size, ref budget);
+            }
+
+            if (colorGlyph is null && face.TryGetBitmapGlyph(glyph, size, out var bitmap))
+            {
+                colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, size);
+            }
         }
 
         cache?.Add(key, colorGlyph, GetBytes(colorGlyph));
@@ -331,6 +349,12 @@ internal sealed partial class DrawingSession
         }
 
         var canvas = ToCanvas(placement);
+        if (glyph.IsMask)
+        {
+            DrawMaskGlyph(brush, glyph, canvas, brush.CompositeMode, brush.BlendMode, paint: !_isPreparing);
+            return;
+        }
+
         var surface = _colorSurface ??= new ColorSurface(_image.Owner.Scope);
         if (!surface.Reserve(glyph, canvas, Width, Height))
             return;

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -175,6 +176,36 @@ internal static class TextExamples
     }
     #endregion
 
+    /// <summary>Many small labels, drawn from the glyph masks of a cache that the drawings share.</summary>
+    #region Imaging_DrawLabelsFromGlyphMasks
+    // Kept as long as the application draws: the masks computed by a drawing are reused by the next ones
+    private static readonly GlyphCache LabelGlyphs = new(maxBytes: 4 * 1024 * 1024);
+
+    // The masks of a cache are found again for the same Font object: load the font once, and keep it with the cache
+    public static void DrawTimingTable(Font font, string outputPath)
+    {
+        var ink = new SolidBrush(new Rgba32(40, 40, 40));
+        using var image = new Image<Rgba32>(400, 230, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            // Inside the callback, each glyph of a text is copied from its coverage mask, its origin snapped to a
+            // quarter of a pixel along the line: much faster for many labels than filling each text as one shape
+            canvas.GlyphMasks(LabelGlyphs, masked =>
+            {
+                for (var row = 0; row < 12; row++)
+                {
+                    for (var column = 0; column < 4; column++)
+                    {
+                        var value = ((row * 4) + column + 1) * 1.25;
+                        masked.FillText(ink, string.Create(CultureInfo.InvariantCulture, $"{value:0.00} ms"), font, 13, new PointD(10 + (column * 96), 8 + (row * 18)));
+                    }
+                }
+            });
+        });
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Ruby: the reading of Japanese words in kana beside them, in a horizontal and a vertical layout.</summary>
     #region Imaging_DrawRuby
     public static void DrawRuby(string fontPath, string outputPath)
@@ -203,6 +234,22 @@ internal static class TextExamples
             canvas.FillText(new Rgba32(0, 0, 0), vertical, new PointD(horizontal.Width + 30, 10));
         });
         image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>Optimal line breaking: the breaks of a paragraph chosen together, so that its lines are evenly filled.</summary>
+    #region Imaging_OptimalLineBreaking
+    public static TextLayout LayOutEvenly(string fontPath, string text, double width)
+    {
+        var font = Font.Load(fontPath);
+
+        // A line can end before the text that would still fit, when this leaves less room at the end of the lines
+        // after it. The last line of a paragraph can be short: it costs nothing
+        return TextLayout.Create(text, new TextStyle(font, 16), new TextLayoutOptions
+        {
+            MaxWidth = width,
+            LineBreakStrategy = TextLineBreakStrategy.Optimal,
+        });
     }
     #endregion
 }

@@ -12,9 +12,9 @@ namespace Meziantou.Framework.WebPlatform.Html;
 internal static partial class ElementFactory
 {
     /// <summary>Creates an element of the Html namespace using the element interface of the local name, or null for an unknown local name.</summary>
-    private static HtmlElement? CreateHtmlElementOrNull(Document document, string localName, string? prefix)
+    private static HtmlElement? CreateHtmlElementOrNull(Document document, string localName, TagId tagId, string? prefix)
     {
-        return TagNames.GetTagId(localName) switch
+        return tagId switch
         {
             TagId.A => new HtmlAnchorElement(document, localName, prefix),
             TagId.Abbr => new HtmlElement(document, localName, prefix),

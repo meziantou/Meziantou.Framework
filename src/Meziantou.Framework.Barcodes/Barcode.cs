@@ -9,8 +9,9 @@ public sealed class Barcode
 {
     private readonly bool[,] _modules;
 
-    internal Barcode(bool[,] modules, BarcodeType type, string text, bool isStacked = false)
+    internal Barcode(bool[,] modules, BarcodeType type, string text, bool isStacked = false, EanUpcLayout? eanUpcLayout = null)
     {
+        EanUpcLayout = eanUpcLayout;
         _modules = modules;
         Type = type;
         Text = text;
@@ -38,8 +39,8 @@ public sealed class Barcode
 
     /// <summary>Gets whether the barcode is a stacked symbol: several rows of bars, whose heights are part of the symbol.</summary>
     /// <remarks>
-    /// A linear barcode has one row, as high as the renderer draws it (<see cref="BarcodeSvgOptions.ModuleHeight"/>,
-    /// <see cref="BarcodePngOptions.ModuleHeight"/>). A stacked barcode, such as <see cref="BarcodeType.Gs1DataBarStacked"/>,
+    /// A linear barcode has one row, as high as the renderer draws it (<see cref="BarcodeRenderOptions.ModuleHeight"/>,
+    /// <see cref="ConsoleRenderOptions.BarHeight"/>). A stacked barcode, such as <see cref="BarcodeType.Gs1DataBarStacked"/>,
     /// has one row per module of height: a row of bars 5 modules high is 5 identical rows, and the renderers draw each row
     /// as high as a module is wide.
     /// </remarks>
@@ -55,6 +56,9 @@ public sealed class Barcode
 
     /// <summary>Gets the modules, without copying them: the callers must not modify them.</summary>
     internal bool[,] Modules => _modules;
+
+    /// <summary>Gets the human-readable layout of an EAN or UPC symbol, or <see langword="null"/> for the other symbologies.</summary>
+    internal EanUpcLayout? EanUpcLayout { get; }
 
     /// <summary>
     /// Creates a Code 39 barcode from the specified data.

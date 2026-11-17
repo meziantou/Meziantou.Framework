@@ -107,7 +107,7 @@ internal static class ContainerQueries
 
         foreach (var token in CssParser.ParseListOfComponentValues(value))
         {
-            if (token is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.Value == name)
+            if (token is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Value == name)
                 return true;
         }
 
@@ -351,7 +351,7 @@ internal sealed class ContainerQueryContext(ComputedStyle container)
                 return true;
 
             var orientation = height >= width ? "portrait" : "landscape";
-            return comparisons[0].Value is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, orientation);
+            return comparisons[0].Value is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.EqualsIgnoreAsciiCase(ident.Value, orientation);
         }
 
         double? featureValue = feature switch
@@ -410,7 +410,7 @@ internal sealed class ContainerQueryContext(ComputedStyle container)
             case [var single]:
                 return ResolveNonNegativeNumber(single);
 
-            case [var numerator, CssPreservedToken slash, var denominator] when slash.Token.IsDelim('/'):
+            case [var numerator, CssPreservedToken slash, var denominator] when slash.IsDelim('/'):
                 // The degenerate ratio 0/0 behaves as 1/0
                 if (ResolveNonNegativeNumber(numerator) is not { } n || ResolveNonNegativeNumber(denominator) is not { } d)
                     return null;
@@ -779,13 +779,13 @@ internal sealed class ContainerQueryContext(ComputedStyle container)
         switch (values)
         {
             case [CssPreservedToken { Type: CssTokenType.Number } number]:
-                return (number.Token.NumericValue, "");
+                return (number.NumericValue, "");
 
             case [CssPreservedToken { Type: CssTokenType.Percentage } percentage]:
-                return (percentage.Token.NumericValue, "%");
+                return (percentage.NumericValue, "%");
 
             case [CssPreservedToken { Type: CssTokenType.Dimension } dimension]:
-                return CssCalc.TryConvertToCanonicalUnit(dimension.Token.NumericValue, InfraAscii.ToAsciiLowercase(dimension.Token.Value), out var value, out var unit) ? (value, unit) : null;
+                return CssCalc.TryConvertToCanonicalUnit(dimension.NumericValue, InfraAscii.ToAsciiLowercase(dimension.Value), out var value, out var unit) ? (value, unit) : null;
 
             default:
                 return null;

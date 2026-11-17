@@ -1,0 +1,16 @@
+@inject IJSRuntime JS
+<input @ref="_input" id="focus-target" />
+<p id="result">@_result</p>
+<button @onclick="FocusAsync">Focus</button>
+<button id="call-js" @onclick="CallJsAsync">Call JS</button>
+
+@code {
+    private ElementReference _input;
+    private string? _result;
+
+    public ElementReference Input => _input;
+
+    private async Task FocusAsync() => await _input.FocusAsync();
+
+    private async Task CallJsAsync() => _result = await JS.InvokeAsync<string>("getGreeting", _input, "Ada");
+}

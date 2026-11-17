@@ -112,6 +112,7 @@ public sealed class TextLayout
         _textLength = data.TextLength;
         _vertical = data.Vertical;
         SubpixelRendering = data.SubpixelRendering;
+        Hinting = data.HintedOutlines?.Hinting ?? TextHinting.None;
         foreach (var run in _runs)
         {
             HasEmboldenedGlyphs |= run.EmboldenWidth > 0;
@@ -205,6 +206,37 @@ public sealed class TextLayout
     internal bool HasColorGlyphs => _colorIndexes is not null;
 
     internal int RunCount => _runs.Length;
+
+    /// <summary>Gets the runs of glyphs of the layout.</summary>
+    internal ReadOnlySpan<GlyphRun> Runs => _runs;
+
+    /// <summary>Gets how the outlines the layout recorded were fitted to the pixel grid: <see cref="TextHinting.None"/> when they are the outlines of the fonts.</summary>
+    internal TextHinting Hinting { get; }
+
+    /// <summary>Gets a value indicating whether the lines of the layout are vertical.</summary>
+    internal bool IsVertical => _vertical is not null;
+
+    /// <summary>Gets a value indicating whether the layout has decorations: underlines, overlines and strikethroughs.</summary>
+    internal bool HasDecorations => _decorations.Length != 0;
+
+    /// <summary>Gets a font of the layout.</summary>
+    internal Font GetFont(int index) => _fonts[index];
+
+    /// <summary>Gets the glyph at an index of the layout.</summary>
+    internal int GetGlyph(int index) => _glyphs[index];
+
+    /// <summary>Gets the origin of the glyph at an index of the layout, on its baseline, from the top-left corner of the layout.</summary>
+    internal PointD GetGlyphOrigin(int index) => new(_positions[index * 2], _positions[(index * 2) + 1]);
+
+    /// <summary>Sends the outline the layout recorded for the glyph at an index, in font units, to a sink.</summary>
+    internal void ReplayOutline(int index, OutlineSink sink) => _recordedOutlines.Replay(_outlineIndexes[index], sink);
+
+    /// <summary>Sends the rectangles of the decorations of one paint (or of all of them, for -1), placed on the canvas, to the sink of a fill.</summary>
+    internal void EmitDecorations(PathSink target, double originX, double originY, int brush)
+    {
+        EmitRectangles(target, _decorations, originX, originY, brush);
+        target.End();
+    }
 
     /// <summary>Gets how the glyphs are antialiased when the layout is filled at a point (<see cref="TextLayoutOptions.SubpixelRendering"/>).</summary>
     internal TextSubpixelRendering SubpixelRendering { get; }
@@ -1292,14 +1324,14 @@ public sealed class TextLayout
                 var glyphBounds = recorded.Bounds;
 
                 // A glyph the font draws with its own colors: its display list is built once, which validates what it
-                // refers to, and its box replaces the box of its outline.
-                // A glyph the font draws with its own colors: its display list is built once, which validates what it
                 // refers to, and its box replaces the box of its outline. A glyph that is an image depends on the size
                 // it is drawn at.
-                if (face.HasColorGlyphs)
+                if (face.HasColorGlyphs || face.HasBitmapGlyphs)
                 {
                     var isPainted = face.IsColorGlyph(_glyphs[i]);
-                    var key = (run.Font, _glyphs[i], isPainted ? run.Palette : 0, isPainted ? 0 : run.Size);
+                    var svg = default(SvgGlyph);
+                    var isSvg = !isPainted && face.TryGetSvgGlyph(_glyphs[i], out svg);
+                    var key = (run.Font, _glyphs[i], isPainted || isSvg ? run.Palette : 0, isPainted ? 0 : run.Size);
                     if (!colorKeys.TryGetValue(key, out var colorIndex))
                     {
                         var budget = new GlyphBudget(face.Data.Limits);
@@ -1308,9 +1340,19 @@ public sealed class TextLayout
                         {
                             colorGlyph = face.BuildColorGlyph(_glyphs[i], run.Palette, scratch, ref budget);
                         }
-                        else if (face.TryGetBitmapGlyph(_glyphs[i], run.Size, out var bitmap))
+                        else
                         {
-                            colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, run.Size);
+                            // An SVG glyph is drawn into an image at the size of the run; one the renderer cannot read
+                            // falls back to the bitmap of the glyph, then to its outline.
+                            if (isSvg)
+                            {
+                                colorGlyph = SvgGlyphRenderer.CreateGlyph(face, svg, run.Palette, run.Size, ref budget);
+                            }
+
+                            if (colorGlyph is null && face.TryGetBitmapGlyph(_glyphs[i], run.Size, out var bitmap))
+                            {
+                                colorGlyph = BitmapGlyphDecoder.CreateGlyph(face, bitmap, run.Size);
+                            }
                         }
 
                         colorIndex = -1;

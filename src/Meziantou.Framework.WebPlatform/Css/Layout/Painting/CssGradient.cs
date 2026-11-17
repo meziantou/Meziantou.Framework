@@ -492,7 +492,7 @@ internal sealed class CssGradient
         {
             if (value is CssPreservedToken { Type: CssTokenType.Percentage } percentage)
             {
-                turn = percentage.Token.NumericValue / 100;
+                turn = percentage.NumericValue / 100;
                 return true;
             }
 
@@ -530,8 +530,8 @@ internal sealed class CssGradient
                 return true;
 
             case CssPreservedToken { Type: CssTokenType.Dimension } dimension:
-                var number = dimension.Token.NumericValue;
-                degrees = InfraAscii.ToAsciiLowercase(dimension.Token.Value) switch
+                var number = dimension.NumericValue;
+                degrees = InfraAscii.ToAsciiLowercase(dimension.Value) switch
                 {
                     "deg" => number,
                     "rad" => number * 180 / Math.PI,
@@ -546,7 +546,7 @@ internal sealed class CssGradient
         }
     }
 
-    private static string? GetIdent(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : null;
+    private static string? GetIdent(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
 
     /// <summary>Returns the shader of the gradient drawn in a rectangle from (0, 0) to <paramref name="size"/>, or null when it paints nothing.</summary>
     public DisplayShader? CreateShader(PhysicalSize size)

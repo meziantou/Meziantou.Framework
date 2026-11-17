@@ -51,7 +51,7 @@ internal abstract class CssEasing
 
         if (component is CssPreservedToken { Type: CssTokenType.Ident } ident)
         {
-            return InfraAscii.ToAsciiLowercase(ident.Token.Value) switch
+            return InfraAscii.ToAsciiLowercase(ident.Value) switch
             {
                 "linear" => Linear,
                 "ease" => new CubicBezierEasing(0.25, 0.1, 0.25, 1),
@@ -102,7 +102,7 @@ internal abstract class CssEasing
                         if (arguments[1] is not [CssPreservedToken { Type: CssTokenType.Ident } positionIdent])
                             return null;
 
-                        switch (InfraAscii.ToAsciiLowercase(positionIdent.Token.Value))
+                        switch (InfraAscii.ToAsciiLowercase(positionIdent.Value))
                         {
                             case "jump-start":
                             case "start":
@@ -156,7 +156,7 @@ internal abstract class CssEasing
             {
                 if (component is CssPreservedToken { Type: CssTokenType.Percentage } percentage && percentages.Count < 2)
                 {
-                    percentages.Add(percentage.Token.NumericValue / 100);
+                    percentages.Add(percentage.NumericValue / 100);
                 }
                 else if (output is null && ReadNumber(component) is { } number)
                 {
@@ -235,7 +235,7 @@ internal abstract class CssEasing
     private static double? ReadNumber(CssComponentValue component)
     {
         if (component is CssPreservedToken { Type: CssTokenType.Number } number)
-            return number.Token.NumericValue;
+            return number.NumericValue;
 
         if (component is CssFunction function && CssCalc.Evaluate(function, CssCalcContext.Default) is { IsResolved: true, Unit: "" } calc)
             return calc.Value;

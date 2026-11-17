@@ -164,6 +164,45 @@ public sealed class TiffCodecTests
         Assert.Equal([new Gray16(0x0102), new Gray16(0xFFFE), new Gray16(0x8000)], Decode<Gray16>(data));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FloatingPointRgbSamplesAreReadInTheByteOrderOfTheFile(bool bigEndian)
+    {
+        // Rows of 1 to 6 pixels: the last pixel of a row and the others are expanded by different loops
+        float[] values = [0.25f, -1.5f, 2e-40f, float.PositiveInfinity, 1, 0, -0f, 3.4e38f, 0.1f, 7, 0.5f, 1e-3f, 42, -2, 0.75f, 0.33f, 9, 1.25f];
+        for (var width = 1; width <= 6; width++)
+        {
+            var bytes = new byte[width * 12];
+            for (var i = 0; i < width * 3; i++)
+            {
+                var bits = BitConverter.SingleToUInt32Bits(values[i]);
+                if (bigEndian)
+                {
+                    BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(i * 4), bits);
+                }
+                else
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(i * 4), bits);
+                }
+            }
+
+            var data = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec
+            {
+                Width = width,
+                Height = 1,
+                BitsPerSample = 32,
+                SamplesPerPixel = 3,
+                Photometric = 2,
+                SampleFormat = 3,
+                Samples = bytes,
+            }).Build();
+
+            var expected = Enumerable.Range(0, width).Select(x => new RgbaFloat(values[x * 3], values[(x * 3) + 1], values[(x * 3) + 2], 1)).ToArray();
+            Assert.Equal(expected, Decode<RgbaFloat>(data));
+        }
+    }
+
     [Fact]
     public void SixteenBitRgbIsWidenedToRgba64BecauseThereIsNoSixteenBitRgbFormat()
     {
@@ -747,6 +786,24 @@ public sealed class TiffCodecTests
     }
 
     [Fact]
+    public void TheReversedFillOrderOfDataWiderThanOneBitDecodesLikeLibTiff()
+    {
+        // tiffcp -f lsb2msb of libtiff 4.6.0 (Alpine 3.20 tiff-tools) on uncompressed pages written by ImageMagick: libtiff
+        // reverses the bits of every stored byte, whatever the width of the samples, before LZW or Deflate decompression.
+        // "tiffcp -f msb2lsb -c none" gives back the samples of the source, which are the expected values
+        Assert.Equal([new Rgb24(0, 255, 5), new Rgb24(80, 195, 5), new Rgb24(160, 135, 5), new Rgb24(7, 255, 125), new Rgb24(87, 195, 125), new Rgb24(167, 135, 125)], Decode<Rgb24>(Convert.FromHexString("49492A00200000000100F8074AC1305005C28102F7CF97BA61BECA85F30D08000F000001030001000000030000000101030001000000020000000201030003000000DA0000000301030001000000050000000601030001000000020000000A01030001000000020000001101040001000000080000001201030001000000010000001501030001000000030000001601030001000000020000001701040001000000170000001C01030001000000010000002901030002000000000001003E01050002000000E00000003F01050006000000F000000000000000080008000800371AA000000000022B870A000000200085EB510000008000C3F5A80000000002CDCC4C0000000001CDCC4C0000008000CDCC4C00000000028FC2F50000000010")));
+
+        Assert.Equal([new Rgb24(0, 255, 5), new Rgb24(80, 195, 5), new Rgb24(160, 135, 5), new Rgb24(7, 255, 125), new Rgb24(87, 195, 125), new Rgb24(167, 135, 125)], Decode<Rgb24>(Convert.FromHexString("49492A002A0000001E39C61FF3580E19AE82DCD400085BC0921E39C6FFFAD87E1D6E9EDEB400681F20630F000001030001000000030000000101030001000000020000000201030003000000E40000000301030001000000080000000601030001000000020000000A01030001000000020000001101040002000000EA0000001201030001000000010000001501030001000000030000001601030001000000010000001701030002000000110011001C01030001000000010000002901030002000000000001003E01050002000000F20000003F0105000600000002010000000000000800080008000800000019000000371AA000000000022B870A000000200085EB510000008000C3F5A80000000002CDCC4C0000000001CDCC4C0000008000CDCC4C00000000028FC2F50000000010")));
+
+        // 16-bit samples: the two bytes of each sample are reversed one by one, then read in the byte order of the file
+        Assert.Equal([new Gray16(1), new Gray16(20001), new Gray16(40001), new Gray16(3001), new Gray16(23001), new Gray16(43001)], Decode<Gray16>(Convert.FromHexString("49492A00140000008000847282399DD09B9A9FE50D000001030001000000030000000101030001000000020000000201030001000000100000000301030001000000010000000601030001000000010000000A010300010000000200000011010400010000000800000012010300010000000100000015010300010000000100000016010300010000000200000017010400010000000C0000001C010300010000000100000029010300020000000000010000000000")));
+
+        // A JPEG datastream has its own bit order, which libtiff never reverses
+        var jpeg = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 2, Height = 1, Compression = 7, FillOrder = 2, EncodedBlocks = [[0xFF, 0xD8, 0xFF, 0xD9]], Samples = [] }).Build();
+        Assert.Equal("FillOrder: 2 with JPEG", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(jpeg)).Feature);
+    }
+
+    [Fact]
     public void JpegCompressedPlanesDecodeLikeLibTiff()
     {
         // tiffcp -p separate -c jpeg:r:90 -t -w 16 -l 16 of libtiff 4.7.2: each 16x16 tile of each plane is a grayscale JPEG
@@ -995,7 +1052,15 @@ public sealed class TiffCodecTests
     {
         var (_, model, bits, planes, file) = FloatingPointReferenceFileCases.Single(item => item.Name == name);
         var data = Convert.FromHexString(file);
-        var format = bits == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+        var format = (planes.Length, bits == 16) switch
+        {
+            (1, true) => PixelFormat.GrayHalf,
+            (1, false) => PixelFormat.GrayFloat,
+            (2, true) => PixelFormat.LaHalf,
+            (2, false) => PixelFormat.LaFloat,
+            (_, true) => PixelFormat.RgbaHalf,
+            _ => PixelFormat.RgbaFloat,
+        };
 
         // The layout is known without decoding a sample
         var info = Image.Identify(data);
@@ -1110,7 +1175,16 @@ public sealed class TiffCodecTests
         }).Build();
 
         using var image = Image.Load(data);
-        Assert.Equal(bits == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat, image.PixelFormat);
+        var expectedFormat = (samplesPerPixel, bits == 16) switch
+        {
+            (1, true) => PixelFormat.GrayHalf,
+            (1, false) => PixelFormat.GrayFloat,
+            (2, true) => PixelFormat.LaHalf,
+            (2, false) => PixelFormat.LaFloat,
+            (_, true) => PixelFormat.RgbaHalf,
+            _ => PixelFormat.RgbaFloat,
+        };
+        Assert.Equal(expectedFormat, image.PixelFormat);
         Assert.Equal(expected, GetComponentBits(image));
     }
 
@@ -1947,13 +2021,17 @@ public sealed class TiffCodecTests
     }
 
     [Theory]
-    [InlineData(2, 2, 3, false, 0)]
-    [InlineData(1, 1, 3, false, 0)]
-    [InlineData(2, 1, 3, true, 0)]
-    [InlineData(1, 1, 1, false, 0)]
-    [InlineData(1, 1, 1, true, 0)]
-    [InlineData(2, 2, 3, false, 2)]
-    public void OldJpegPagesWithTablesInTagsDecodeLikeTheirBlocks(int horizontal, int vertical, int componentCount, bool tiled, int restartInterval)
+    [InlineData(2, 2, 3, false, 0, 8)]
+    [InlineData(1, 1, 3, false, 0, 8)]
+    [InlineData(2, 1, 3, true, 0, 8)]
+    [InlineData(1, 1, 1, false, 0, 8)]
+    [InlineData(1, 1, 1, true, 0, 8)]
+    [InlineData(2, 2, 3, false, 2, 8)]
+    [InlineData(2, 2, 3, false, 0, 12)]
+    [InlineData(2, 1, 3, true, 2, 12)]
+    [InlineData(1, 1, 1, false, 0, 12)]
+    [InlineData(1, 1, 1, true, 0, 12)]
+    public void OldJpegPagesWithTablesInTagsDecodeLikeTheirBlocks(int horizontal, int vertical, int componentCount, bool tiled, int restartInterval, int precision)
     {
         // TIFF 6.0 section 22: the tables are in JPEGQTables, JPEGDCTables and JPEGACTables, and each strip or tile holds
         // the entropy-coded data of a frame of its size, without markers. The blocks are written by the test-side encoder,
@@ -1961,7 +2039,7 @@ public sealed class TiffCodecTests
         const int Width = 21;
         const int Height = 37;
         (int H, int V)[] sampling = componentCount == 1 ? [(1, 1)] : [(horizontal, vertical), (1, 1), (1, 1)];
-        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled);
+        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled, precision);
         var options = new JpegTestEncodeOptions { RestartInterval = restartInterval };
         var encoded = blocks.Select(block => ParseJpeg(block.Image.Encode(options))).ToArray();
         var tables = encoded[0];
@@ -1970,6 +2048,7 @@ public sealed class TiffCodecTests
             Width = Width,
             Height = Height,
             SamplesPerPixel = componentCount,
+            BitsPerSample = precision,
             Photometric = componentCount == 1 ? 1 : 6,
             Compression = 6,
             RowsPerStrip = 16,
@@ -2010,14 +2089,16 @@ public sealed class TiffCodecTests
         });
 
         using var image = Image.Load(data);
-        Assert.Equal(componentCount == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24, image.PixelFormat);
-        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks, componentCount), GetBytes(image));
+        Assert.Equal(blocks[0].Image.PixelFormat, image.PixelFormat);
+        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks), GetExpectedLayoutBytes(image));
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void OldJpegPagesWithAJpegInterchangeFormatDecodeLikeLibTiff(bool frameOfThePage)
+    [InlineData(false, 8)]
+    [InlineData(true, 8)]
+    [InlineData(false, 12)]
+    [InlineData(true, 12)]
+    public void OldJpegPagesWithAJpegInterchangeFormatDecodeLikeLibTiff(bool frameOfThePage, int precision)
     {
         // JPEGInterchangeFormat points at the markers of the image up to its start of scan, and each strip holds the
         // entropy-coded data of its rows, coded on its own: libtiff requires the frame of the header to be as tall as the
@@ -2025,13 +2106,14 @@ public sealed class TiffCodecTests
         const int Width = 19;
         const int Height = 41;
         (int H, int V)[] sampling = [(2, 2), (1, 1), (1, 1)];
-        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled: false);
+        var blocks = CreateOldJpegBlocks(Width, Height, sampling, tiled: false, precision);
         var datastreams = blocks.Select(static block => block.Image.Encode()).ToArray();
         var headerLength = ParseJpeg(datastreams[0]).HeaderLength;
         var header = datastreams[0][..headerLength];
+        var frameMarker = precision == 8 ? (byte)0xC0 : (byte)0xC1;
         if (frameOfThePage)
         {
-            var frame = FindSegment(header, 0xC0);
+            var frame = FindSegment(header, frameMarker);
             header[frame + 5] = 0;
             header[frame + 6] = Height;
         }
@@ -2041,6 +2123,7 @@ public sealed class TiffCodecTests
             Width = Width,
             Height = Height,
             SamplesPerPixel = 3,
+            BitsPerSample = precision,
             Photometric = 6,
             Compression = 6,
             RowsPerStrip = 16,
@@ -2049,13 +2132,20 @@ public sealed class TiffCodecTests
         };
         page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
         var data = BuildWithAppendedData(page, [.. header], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)header.Length])]);
-        using var image = Image.Load(data);
-        Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks, 3), GetBytes(image));
+        using (var image = Image.Load(data))
+        {
+            Assert.Equal(ComposeOldJpegPixels(Width, Height, blocks), GetExpectedLayoutBytes(image));
+        }
 
         // A frame of another height describes neither the page nor its strips
         var frameHeader = header.ToArray();
-        frameHeader[FindSegment(frameHeader, 0xC0) + 6] = 7;
+        frameHeader[FindSegment(frameHeader, frameMarker) + 6] = 7;
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [.. frameHeader], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)frameHeader.Length])])));
+
+        // The frame codes the samples of the page: its precision must be the one of BitsPerSample
+        var otherPrecision = header.ToArray();
+        otherPrecision[FindSegment(otherPrecision, frameMarker) + 4] = (byte)(20 - precision);
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(BuildWithAppendedData(page, [.. otherPrecision], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [(ulong)otherPrecision.Length])])));
     }
 
     [Fact]
@@ -2089,12 +2179,13 @@ public sealed class TiffCodecTests
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [0xFF, 0xD8, 0xFF, 0xD9], offset => [new TiffFieldSpec(513, 4, [offset]), new TiffFieldSpec(514, 4, [4])])));
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(BuildWithAppendedData(page, [], offset => [new TiffFieldSpec(513, 4, [offset + 100])])));
 
-        var deep = new TiffPageSpec { Width = 8, Height = 8, SamplesPerPixel = 1, BitsPerSample = 12, Compression = 6, EncodedBlocks = [[0]], Samples = [] };
-        Assert.Equal("BitsPerSample: 12", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(new TiffFileBuilder().AddPage(deep).Build())).Feature);
+        // The DCT-based processes code 8- and 12-bit samples only
+        var deep = new TiffPageSpec { Width = 8, Height = 8, SamplesPerPixel = 1, BitsPerSample = 10, Compression = 6, EncodedBlocks = [[0]], Samples = [] };
+        Assert.Equal("Compression: old-style JPEG with 10-bit samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(new TiffFileBuilder().AddPage(deep).Build())).Feature);
     }
 
     /// <summary>The blocks of an old-style JPEG page: one test image per strip or 16x16 tile, all with the quantization tables of the first one.</summary>
-    private static (int X, int Y, JpegTestImage Image)[] CreateOldJpegBlocks(int width, int height, (int H, int V)[] sampling, bool tiled)
+    private static (int X, int Y, JpegTestImage Image)[] CreateOldJpegBlocks(int width, int height, (int H, int V)[] sampling, bool tiled, int precision = 8)
     {
         var result = new List<(int, int, JpegTestImage)>();
         ushort[][]? quantization = null;
@@ -2106,9 +2197,9 @@ public sealed class TiffCodecTests
                 // A tile is coded in full; a strip has the rows of the page it covers
                 var blockWidth = tiled ? 16 : width;
                 var blockHeight = tiled ? 16 : Math.Min(16, height - y);
-                var random = JpegTestImage.CreateRandom(blockWidth, blockHeight, sampling, seed++);
+                var random = JpegTestImage.CreateRandom(blockWidth, blockHeight, sampling, seed++, precision: precision);
                 quantization ??= random.QuantizationTables;
-                var image = JpegTestImage.FromCoefficients(blockWidth, blockHeight, sampling, quantization, (component, blockX, blockY) => random.Components[component].Blocks[(blockY * random.Components[component].BlocksX) + blockX]);
+                var image = JpegTestImage.FromCoefficients(blockWidth, blockHeight, sampling, quantization, (component, blockX, blockY) => random.Components[component].Blocks[(blockY * random.Components[component].BlocksX) + blockX], precision: precision);
                 result.Add((x, y, image));
             }
         }
@@ -2116,9 +2207,11 @@ public sealed class TiffCodecTests
         return [.. result];
     }
 
-    /// <summary>The pixels of a page made of the blocks of <see cref="CreateOldJpegBlocks"/>.</summary>
-    private static byte[] ComposeOldJpegPixels(int width, int height, (int X, int Y, JpegTestImage Image)[] blocks, int bytesPerPixel)
+    /// <summary>The pixels of a page made of the blocks of <see cref="CreateOldJpegBlocks"/>, in the layout of <see cref="JpegTestImage.GetExpectedPixels()"/>.</summary>
+    private static byte[] ComposeOldJpegPixels(int width, int height, (int X, int Y, JpegTestImage Image)[] blocks)
     {
+        var first = blocks[0].Image;
+        var bytesPerPixel = first.Precision == 8 ? first.Components.Length : first.Components.Length == 1 ? 2 : 8;
         var result = new byte[width * height * bytesPerPixel];
         foreach (var (x, y, image) in blocks)
         {
@@ -2204,7 +2297,7 @@ public sealed class TiffCodecTests
 
                     break;
 
-                case 0xC0:
+                case 0xC0 or 0xC1:
                     for (var i = 0; i < payload[5]; i++)
                     {
                         componentQuantization.Add(payload[6 + (i * 3) + 2]);
@@ -2727,11 +2820,11 @@ public sealed class TiffCodecTests
         var four = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 3, Height = 1, BitsPerSample = 4, Photometric = 0, Samples = [0x0F, 0x70] }).Build();
         Assert.Equal(Grays(255, 0, 136), Decode<Gray8>(four));
 
-        // The bits of each byte in the other order (FillOrder 2), only defined for bilevel data
+        // The bits of each byte in the other order (FillOrder 2), the order of fax devices
         var reversed = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 10, Height = 1, BitsPerSample = 1, Photometric = 1, FillOrder = 2, Samples = [0b0000_0101, 0b0000_0011] }).Build();
         Assert.Equal(Grays(255, 0, 255, 0, 0, 0, 0, 0, 255, 255), Decode<Gray8>(reversed));
-        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 2, Height = 1, FillOrder = 2, Samples = [1, 2] }).Build()));
-        Assert.Equal("FillOrder: 2", exception.Feature);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 2, Height = 1, FillOrder = 3, Samples = [1, 2] }).Build()));
+        Assert.Equal("FillOrder: 3", exception.Feature);
 
         // Bilevel tiles: a tile starts on a byte of the row whatever the sample width
         var samples = new byte[3 * 20];
@@ -4121,6 +4214,9 @@ public sealed class TiffCodecTests
     }
 
     /// <summary>Gets the pixels as <see cref="Rgba64"/> bytes (an opaque alpha for <see cref="Rgb48"/>).</summary>
+    /// <summary>Gets the pixels of an image in the layout of <see cref="JpegTestImage.GetExpectedPixels()"/>: <see cref="PixelFormat.Rgb48"/> pixels as opaque <see cref="PixelFormat.Rgba64"/> ones.</summary>
+    private static byte[] GetExpectedLayoutBytes(Image image) => image.PixelFormat == PixelFormat.Rgb48 ? GetRgba64Bytes(image) : GetBytes(image);
+
     private static byte[] GetRgba64Bytes(Image image)
     {
         using var wide = image.CloneAs<Rgba64>();
@@ -4166,7 +4262,7 @@ public sealed class TiffCodecTests
 
             for (var c = 0; c < 4; c++)
             {
-                result[(i * 4) + c] = format == PixelFormat.RgbaHalf ? BitConverter.HalfToUInt16Bits((Half)pixel[c]) : BitConverter.SingleToUInt32Bits(pixel[c]);
+                result[(i * 4) + c] = PixelFormats.GetBitsPerComponent(format) == 16 ? BitConverter.HalfToUInt16Bits((Half)pixel[c]) : BitConverter.SingleToUInt32Bits(pixel[c]);
             }
         }
 
@@ -4174,12 +4270,27 @@ public sealed class TiffCodecTests
     }
 
     /// <summary>Gets the bits of the components of an <see cref="RgbaHalf"/> or <see cref="RgbaFloat"/> image, so that signed zeros and not-a-number values are compared exactly.</summary>
+    /// <summary>Gets the bits of the components of a floating-point image, four per pixel: a gray level is repeated in the three colors, and a missing alpha is 1.</summary>
     private static uint[] GetComponentBits(Image image)
     {
         var bytes = GetBytes(image);
-        return image.PixelFormat == PixelFormat.RgbaHalf
+        var isHalf = PixelFormats.GetBitsPerComponent(image.PixelFormat) == 16;
+        uint[] components = isHalf
             ? [.. unsafe(MemoryMarshal.Cast<byte, ushort>(bytes.AsSpan())).ToArray().Select(static value => (uint)value)]
             : unsafe(MemoryMarshal.Cast<byte, uint>(bytes.AsSpan())).ToArray();
+        var count = PixelFormats.GetComponentCount(image.PixelFormat);
+        if (count == 4)
+            return components;
+
+        var one = isHalf ? BitConverter.HalfToUInt16Bits(Half.One) : BitConverter.SingleToUInt32Bits(1f);
+        var result = new uint[components.Length / count * 4];
+        for (var i = 0; i < components.Length / count; i++)
+        {
+            var level = components[i * count];
+            (result[i * 4], result[(i * 4) + 1], result[(i * 4) + 2], result[(i * 4) + 3]) = (level, level, level, count == 2 ? components[(i * count) + 1] : one);
+        }
+
+        return result;
     }
 
     private static TPixel[] Decode<TPixel>(byte[] data, ImageDecodeOptions? options = null)

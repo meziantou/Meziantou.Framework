@@ -1,5 +1,7 @@
 using Meziantou.Framework.Barcodes.Internal;
+using Meziantou.Framework.Imaging.Barcodes;
 using Meziantou.Framework.SnapshotTesting;
+
 namespace Meziantou.Framework.Barcodes.Tests;
 
 public class QRCodeTests
@@ -30,11 +32,11 @@ public class QRCodeTests
         #region QRCode_GettingStarted
         var qrCode = QRCode.Create("https://www.meziantou.net");
 
-        // The bytes of a PNG file, to save with File.WriteAllBytes("qrcode.png", png)
-        var png = qrCode.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        // ToImage comes from Meziantou.Framework.Imaging.Barcodes: save the image as PNG with image.Save("qrcode.png")
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
         #endregion
 
-        DocumentationImages.AssertPng("GettingStartedQRCode", png);
+        DocumentationImages.AssertPng("GettingStartedQRCode", PngRendering.Encode(image));
     }
 
     [Fact]
@@ -48,12 +50,12 @@ public class QRCodeTests
         Assert.Equal((2, 25), (low.Version, low.Width));
         Assert.Equal((4, 33), (high.Version, high.Width));
 
-        var lowPng = low.ToPng(new QRCodePngOptions { ModuleSize = 4 });
-        var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        using var lowImage = low.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
+        using var highImage = high.ToImage(new QRCodeRenderOptions { ModuleSize = 4 });
         #endregion
 
-        DocumentationImages.AssertPng("ErrorCorrectionLow", lowPng);
-        DocumentationImages.AssertPng("ErrorCorrectionHigh", highPng);
+        DocumentationImages.AssertPng("ErrorCorrectionLow", PngRendering.Encode(lowImage));
+        DocumentationImages.AssertPng("ErrorCorrectionHigh", PngRendering.Encode(highImage));
     }
 
     [Fact]
@@ -110,12 +112,12 @@ public class QRCodeTests
         Assert.Equal((1, 11, 11), (microQr.Version, microQr.Width, microQr.Height));
         Assert.Equal((27, 13), (rmqr.Width, rmqr.Height));
 
-        var microPng = microQr.ToPng(new QRCodePngOptions { ModuleSize = 6, QuietZoneModules = 2 });
-        var rmqrPng = rmqr.ToPng(new QRCodePngOptions { ModuleSize = 6, QuietZoneModules = 2 });
+        using var microImage = microQr.ToImage(new QRCodeRenderOptions { ModuleSize = 6, QuietZoneModules = 2 });
+        using var rmqrImage = rmqr.ToImage(new QRCodeRenderOptions { ModuleSize = 6, QuietZoneModules = 2 });
         #endregion
 
-        DocumentationImages.AssertPng("MicroQR", microPng);
-        DocumentationImages.AssertPng("RectangularMicroQR", rmqrPng);
+        DocumentationImages.AssertPng("MicroQR", PngRendering.Encode(microImage));
+        DocumentationImages.AssertPng("RectangularMicroQR", PngRendering.Encode(rmqrImage));
     }
 
     // ───── Numeric mode ─────
@@ -600,7 +602,7 @@ public class QRCodeTests
         // Large modules and a quiet zone, so that the snapshot can be scanned
         var qr = QRCode.Create([QRCodeSegment.CreateAlphanumeric("ORDER "), QRCodeSegment.CreateNumeric("20261110123456"), QRCodeSegment.CreateByte(" ok")], ErrorCorrectionLevel.M);
 
-        Snapshot.Validate(qr.ToPng(new QRCodePngOptions { ModuleSize = 8 }), SnapshotType.Png);
+        Snapshot.Validate(qr.ToPng(new QRCodeRenderOptions { ModuleSize = 8 }), SnapshotType.Png);
     }
 
     // ───── Structured append ─────
@@ -621,10 +623,10 @@ public class QRCodeTests
         Assert.Equal((6, 7), (symbols[6].StructuredAppend!.Index, symbols[6].StructuredAppend!.Count));
 
         // Print the symbols in order, side by side
-        var images = symbols.Select(symbol => symbol.ToPng(new QRCodePngOptions { ModuleSize = 4 })).ToList();
+        var documents = symbols.Select(symbol => symbol.ToSvg(new QRCodeRenderOptions { ModuleSize = 4 })).ToList();
         #endregion
 
-        Assert.HasCount(7, images);
+        Assert.HasCount(7, documents);
     }
 
     [Theory]
@@ -637,7 +639,7 @@ public class QRCodeTests
         var symbols = QRCode.CreateStructuredAppend("Structured append splits this text across three QR codes.", ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 2 });
 
         Assert.HasCount(3, symbols);
-        Snapshot.Validate(symbols[index].ToPng(new QRCodePngOptions { ModuleSize = 8 }), SnapshotType.Png);
+        Snapshot.Validate(symbols[index].ToPng(new QRCodeRenderOptions { ModuleSize = 8 }), SnapshotType.Png);
     }
 
     [Fact]
@@ -810,10 +812,10 @@ public class QRCodeTests
         Assert.Equal((43, 7), (rmqr.Width, rmqr.Height));
 
         // The size of the image is set by the renderer: 33 modules of 10 pixels, plus a quiet zone of 4 modules on each side
-        var png = shortLabel.ToPng(new QRCodePngOptions { ModuleSize = 10 });
+        using var image = shortLabel.ToImage(new QRCodeRenderOptions { ModuleSize = 10 });
         #endregion
 
-        Assert.NotEmpty(png);
+        Assert.Equal((410, 410), (image.Width, image.Height));
     }
 
     [Theory]
@@ -1180,7 +1182,7 @@ public class QRCodeTests
 
     private static string RenderAsSvg(QRCode qr)
     {
-        return qr.ToSvg(new QRCodeSvgOptions
+        return qr.ToSvg(new QRCodeRenderOptions
         {
             ModuleSize = 1,
             QuietZoneModules = 0,
@@ -1763,6 +1765,16 @@ public class QRCodeTests
     public void Decode_InvalidUtf8WithoutEci_IsLatin1()
     {
         Assert.Equal("caf\u00E9", QRCodeDecoder.Decode(QRCode.Create([0x63, 0x61, 0x66, 0xE9])).Text);
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x47, 0x6F, 0x6F, 0x67, 0x6C, 0x65, 0x20, 0x83, 0x82, 0x83, 0x6F, 0x83, 0x43, 0x83, 0x8B }, "Google \u30E2\u30D0\u30A4\u30EB")] // Katakana of 2 bytes, whose first byte is a C1 control character in ISO/IEC 8859-1
+    [InlineData(new byte[] { 0xC3, 0xDE, 0xBB, 0xDE, 0xB2, 0xDD, 0x51, 0x52 }, "\uFF83\uFF9E\uFF7B\uFF9E\uFF72\uFF9DQR")] // Half-width katakana
+    [InlineData(new byte[] { 0x93, 0xFA, 0x96, 0x7B }, "\u65E5\u672C")]
+    [InlineData(new byte[] { 0x63, 0x61, 0x66, 0xE9, 0x20, 0xE0, 0x20, 0xC0 }, "caf\u00E9 \u00E0 \u00C0")] // Not Shift JIS: no katakana word, no C1 byte
+    public void Decode_NoEci_ShiftJisIsGuessed(byte[] bytes, string expected)
+    {
+        Assert.Equal(expected, QRCodeDecoder.Decode(QRCode.Create(bytes)).Text);
     }
 
     [Fact]

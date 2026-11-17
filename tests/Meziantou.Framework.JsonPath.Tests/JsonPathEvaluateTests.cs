@@ -2155,6 +2155,132 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal(3, result.Count); // [1,2], 1, 2
     }
 
+    [Theory]
+    // The selectors apply in their order at each node, whatever the order of the properties
+    [InlineData("$..['b','a']", """{"a":1,"b":2,"c":{"b":3,"a":4}}""", "$['b']=2 $['a']=1 $['c']['b']=3 $['c']['a']=4")]
+    [InlineData("$..['a','a']", """{"a":1,"x":{"a":2}}""", "$['a']=1 $['a']=1 $['x']['a']=2 $['x']['a']=2")]
+    [InlineData("$..['missing','a']", """{"a":{"a":1}}""", "$['a']={\"a\":1} $['a']['a']=1")]
+    [InlineData("$..['a','b']", """{"a":{"b":{"a":1}},"b":[{"a":2},{"b":3}]}""", "$['a']={\"b\":{\"a\":1}} $['b']=[{\"a\":2},{\"b\":3}] $['a']['b']={\"a\":1} $['a']['b']['a']=1 $['b'][0]['a']=2 $['b'][1]['b']=3")]
+    [InlineData("$..['b',*,'a',0]", """{"a":[10,20],"b":{"a":1}}""", "$['b']={\"a\":1} $['a']=[10,20] $['b']={\"a\":1} $['a']=[10,20] $['a'][0]=10 $['a'][1]=20 $['a'][0]=10 $['b']['a']=1 $['b']['a']=1")]
+    [InlineData("$..['a',?@ == 1]", """{"x":1,"a":{"a":1}}""", "$['a']={\"a\":1} $['x']=1 $['a']['a']=1 $['a']['a']=1")]
+    [InlineData("$..['it\\'s','a b','\\u00e9']", """{"\u00e9":1,"a b":2,"it's":{"a b":3}}""", "$['it\\'s']={\"a b\":3} $['a b']=2 $['\u00e9']=1 $['it\\'s']['a b']=3")]
+    [InlineData("$..['a','b'].c", """{"a":{"c":1},"b":{"c":2},"d":[{"b":{"c":3}}]}""", "$['a']['c']=1 $['b']['c']=2 $['d'][0]['b']['c']=3")]
+    [InlineData("$..['a','b']", """[1,"a",{"b":null,"a":true}]""", "$[2]['a']=true $[2]['b']=null")]
+    public void Evaluate_DescendantSegment_NameSelectors(string query, string json, string expected)
+    {
+        var path = JsonPath.Parse(query);
+        static string Format(string? path, string? value) => path + "=" + (value ?? "null");
+
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(JsonNode.Parse(json)).Select(match => Format(match.Path, match.Value?.ToJsonString()))));
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(JsonNode.Parse(json), new EvaluationProbeNavigator()).Select(match => Format(match.Path, match.Value?.ToJsonString()))));
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(document).Select(match => Format(match.Path, match.Value.GetRawText()))));
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(document, JsonPathEvaluationMode.Strict).Select(match => Format(match.Path, match.Value.GetRawText()))));
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(JsonNode.Parse(json), JsonPathEvaluationMode.Strict).Select(match => Format(match.Path, match.Value?.ToJsonString()))));
+
+        Assert.Equal(path.Evaluate(document)[0].Value.GetRawText(), path.EvaluateValue(document)?.GetRawText());
+    }
+
+    [Fact]
+    public void Evaluate_DescendantSegment_NameSelectors_JsonElementDuplicateNamesUseLastValue()
+    {
+        // A name selector selects the last of duplicate members, while the walk visits all of them
+        using var document = JsonDocument.Parse("""{"a":{"a":1},"b":0,"a":{"a":2},"x":[{"a":3,"a":4}]}""");
+
+        foreach (var query in (string[])["$..a", "$..['a','a']", "$..['b','a']", "$..['b','a',*]"])
+        {
+            var path = JsonPath.Parse(query);
+            var actual = path.Evaluate(document).Select(match => match.Path + "=" + match.Value.GetRawText()).ToArray();
+            Assert.Equal(ExpectedDuplicateNameMatches(query), actual);
+        }
+
+        static string[] ExpectedDuplicateNameMatches(string query) => query switch
+        {
+            "$..a" => ["$['a']={\"a\":2}", "$['a']['a']=1", "$['a']['a']=2", "$['x'][0]['a']=4"],
+            "$..['a','a']" => ["$['a']={\"a\":2}", "$['a']={\"a\":2}", "$['a']['a']=1", "$['a']['a']=1", "$['a']['a']=2", "$['a']['a']=2", "$['x'][0]['a']=4", "$['x'][0]['a']=4"],
+            "$..['b','a']" => ["$['b']=0", "$['a']={\"a\":2}", "$['a']['a']=1", "$['a']['a']=2", "$['x'][0]['a']=4"],
+            _ => ["$['b']=0", "$['a']={\"a\":2}", "$['a']={\"a\":1}", "$['b']=0", "$['a']={\"a\":2}", "$['x']=[{\"a\":3,\"a\":4}]",
+                "$['a']['a']=1", "$['a']['a']=1", "$['a']['a']=2", "$['a']['a']=2", "$['x'][0]={\"a\":3,\"a\":4}", "$['x'][0]['a']=4", "$['x'][0]['a']=3", "$['x'][0]['a']=4"],
+        };
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(8)]
+    [InlineData(40)]
+    public void Evaluate_DescendantSegment_ManyNameSelectors_MatchesOneSelectorAtATime(int nameCount)
+    {
+        // Enough names to search them linearly, in a dictionary, and with matches that do not fit on the stack
+        var names = Enumerable.Range(0, nameCount).Select(i => "p" + ((i * 7) % nameCount).ToString(CultureInfo.InvariantCulture)).ToArray();
+        var root = new JsonArray();
+        for (var record = 0; record < 3; record++)
+        {
+            var item = new JsonObject();
+            for (var i = nameCount + 2; i >= 0; i--)
+            {
+                item["p" + i.ToString(CultureInfo.InvariantCulture)] = i % 5 is 0 ? new JsonObject { ["p0"] = i, ["q"] = new JsonArray(i) } : i;
+            }
+
+            root.Add(item);
+        }
+
+        var json = root.ToJsonString();
+        var path = JsonPath.Parse("$..[" + string.Join(',', names.Select(name => "'" + name + "'")) + "]");
+        var expected = path.Evaluate(JsonNode.Parse(json), new EvaluationProbeNavigator()).Select(match => match.Path + "=" + match.Value?.ToJsonString()).ToArray();
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected, path.Evaluate(JsonNode.Parse(json)).Select(match => match.Path + "=" + match.Value?.ToJsonString()));
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expected, path.Evaluate(document).Select(match => match.Path + "=" + match.Value.GetRawText()));
+        var modified = JsonNode.Parse(json);
+        Assert.InRange(path.Remove(modified), 1, expected.Length);
+        Assert.Empty(path.Evaluate(modified));
+    }
+
+    [Fact]
+    public void Evaluate_DescendantSegment_NameSelectors_Limits()
+    {
+        const string Json = """{"a":{"b":1,"a":2},"b":[{"b":3}]}""";
+        var path = JsonPath.Parse("$..['b','a']");
+        using var document = JsonDocument.Parse(Json);
+
+        Assert.Equal(5, path.Evaluate(document, new JsonPathEvaluationOptions { MaximumResults = 5 }).Count);
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(document, new JsonPathEvaluationOptions { MaximumResults = 4 }));
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(JsonNode.Parse(Json), new JsonPathEvaluationOptions { MaximumResults = 4 }));
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(document, new JsonPathEvaluationOptions { MaximumWork = 5 }));
+        Assert.Equal("[{\"b\":3}]", path.EvaluateValue(document)?.GetRawText());
+        Assert.Equal("[{\"b\":3}]", path.EvaluateValue(JsonNode.Parse(Json))?.ToJsonString());
+
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Assert.Throws<OperationCanceledException>(() => path.Evaluate(document, new JsonPathEvaluationOptions { CancellationToken = cancellation.Token }));
+    }
+
+    [Theory]
+    [InlineData("$..x")]
+    [InlineData("$..['x','y']")]
+    [InlineData("$..*")]
+    public void Evaluate_DescendantSegment_PrimitiveBeyondTheDepthLimit_Throws(string query)
+    {
+        // The deepest value is a primitive one level beyond the limit: it is still visited, so the limit applies
+        static JsonNode Build(int depth)
+        {
+            JsonNode node = JsonValue.Create(1);
+            for (var i = 0; i < depth; i++)
+            {
+                node = new JsonObject { ["a"] = node };
+            }
+
+            return node;
+        }
+
+        var path = JsonPath.Parse(query);
+        _ = path.Evaluate(Build(JsonPathEvaluator.MaxRecursionDepth));
+        var exception = Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(Build(JsonPathEvaluator.MaxRecursionDepth + 1)));
+        Assert.Contains("$" + string.Concat(Enumerable.Repeat("['a']", JsonPathEvaluator.MaxRecursionDepth + 1)) + ".", exception.Message, StringComparison.Ordinal);
+        using var document = JsonDocument.Parse(Build(JsonPathEvaluator.MaxRecursionDepth + 1).ToJsonString(), new JsonDocumentOptions { MaxDepth = 1_000 });
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(document));
+    }
+
     [Fact]
     public void Evaluate_MultipleSelectors()
     {

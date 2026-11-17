@@ -15,6 +15,9 @@ internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important
     private CssLonghandValue _value = value;
     private CssLonghandSnapshot? _snapshot;
 
+    /// <summary>The base URL, only set for the declarations of the style attributes: there is one declaration per longhand of the style sheets, so its size matters.</summary>
+    private DeclarationBaseUrl? _baseUrl;
+
     public CssLonghandValue Value
     {
         get => _value;
@@ -37,19 +40,17 @@ internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important
     /// are resolved against it, not against the base URL of the document when the style is computed
     /// (https://drafts.csswg.org/css-values-4/#relative-urls).
     /// </summary>
-    public string? BaseUrl { get; private set; }
+    public string? BaseUrl => _baseUrl?.Url;
 
     /// <summary>The document whose base URL is <see cref="BaseUrl"/>: an element adopted by another document uses the base URL of its new document.</summary>
-    public Document? BaseUrlDocument { get; private set; }
+    public Document? BaseUrlDocument => _baseUrl?.Document;
 
-    public void SetBaseUrl(Document? document, string? baseUrl)
-    {
-        BaseUrlDocument = document;
-        BaseUrl = baseUrl;
-    }
+    public void SetBaseUrl(Document? document, string? baseUrl) => _baseUrl = document is null && baseUrl is null ? null : new DeclarationBaseUrl(document, baseUrl);
 
     /// <summary>Returns the base URL of the declaration in a document, or null when it is the document base URL.</summary>
     public string? GetBaseUrl(Document document) => ReferenceEquals(BaseUrlDocument, document) ? BaseUrl : null;
+
+    private sealed record DeclarationBaseUrl(Document? Document, string? Url);
 
     /// <summary>Returns whether the value of a declaration may contain a URL (a function or a string).</summary>
     public static bool MayContainUrl(string value) => value.AsSpan().IndexOfAny('(', '"', '\'') >= 0;
@@ -626,8 +627,6 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         return CssShorthands.ParseValue(name, values, originalText);
     }
 
-    private static string TrimWhitespace(ReadOnlySpan<char> value) => value.Trim(" \t\n").ToString();
-
     /// <summary>
     /// The descriptors of @counter-style whose grammar does not express all the constraints
     /// (https://drafts.csswg.org/css-counter-styles/#counter-style-range): the lower bound of a range is not higher than its
@@ -641,7 +640,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             case "range":
                 foreach (var range in ValueMatcher.SplitAtCommas(significant))
                 {
-                    if (range is [CssPreservedToken { Type: CssTokenType.Number } lower, CssPreservedToken { Type: CssTokenType.Number } upper] && lower.Token.NumericValue > upper.Token.NumericValue)
+                    if (range is [CssPreservedToken { Type: CssTokenType.Number } lower, CssPreservedToken { Type: CssTokenType.Number } upper] && lower.NumericValue > upper.NumericValue)
                         return null;
                 }
 
@@ -659,10 +658,10 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
                     var (weight, symbol) = IsSymbol(first) ? (second, first) : (first, second);
                     if (name == "additive-symbols" && weight is CssPreservedToken { Type: CssTokenType.Number } number)
                     {
-                        if (previousWeight <= number.Token.NumericValue)
+                        if (previousWeight <= number.NumericValue)
                             return null;
 
-                        previousWeight = number.Token.NumericValue;
+                        previousWeight = number.NumericValue;
                     }
 
                     items.Add(CssSerializer.SerializeValue([weight], property: null) + " " + CssSerializer.SerializeValue([symbol], property: null));
@@ -691,11 +690,11 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             case "font-weight" or "font-width" when significant is [CssPreservedToken lower, CssPreservedToken upper] && lower.Token.ToString() == upper.Token.ToString():
                 return CssSerializer.SerializeValue([lower], property: null);
 
-            case "font-style" when significant is [CssPreservedToken { Type: CssTokenType.Ident } oblique, CssPreservedToken { Type: CssTokenType.Dimension } angle, ..] && InfraAscii.EqualsIgnoreAsciiCase(oblique.Token.Value, "oblique"):
+            case "font-style" when significant is [CssPreservedToken { Type: CssTokenType.Ident } oblique, CssPreservedToken { Type: CssTokenType.Dimension } angle, ..] && InfraAscii.EqualsIgnoreAsciiCase(oblique.Value, "oblique"):
                 if (significant is [_, _, CssPreservedToken upperAngle] && upperAngle.Token.ToString() != angle.Token.ToString())
                     return serialized;
 
-                return angle.Token.NumericValue == 0 ? "normal" : "oblique " + CssSerializer.SerializeValue([angle], property: null);
+                return angle.NumericValue == 0 ? "normal" : "oblique " + CssSerializer.SerializeValue([angle], property: null);
 
             default:
                 return serialized;
@@ -751,7 +750,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         static bool HasUnsupportedFormatString(List<CssComponentValue> entry) => entry.Exists(static value => value is CssFunction function
             && InfraAscii.EqualsIgnoreAsciiCase(function.Name, "format")
             && ValueMatcher.RemoveWhitespace(function.Value) is [CssPreservedToken { Type: CssTokenType.String } format]
-            && format.Token.Value is not ("collection" or "embedded-opentype" or "opentype" or "svg" or "truetype" or "woff" or "woff2"
+            && format.Value is not ("collection" or "embedded-opentype" or "opentype" or "svg" or "truetype" or "woff" or "woff2"
                 or "opentype-variations" or "truetype-variations" or "woff-variations" or "woff2-variations"));
 
         static string SerializeFontSourceComponent(CssComponentValue value)
@@ -763,10 +762,10 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             // https://drafts.csswg.org/cssom/#serialize-a-local: local() is serialized with a string, as in the browsers (WPT
             // css/css-fonts/font-family-src-quoted.html)
             if (name == "local" && ValueMatcher.RemoveWhitespace(((CssFunction)value).Value) is { Count: > 0 } localName && localName.TrueForAll(static argument => argument is CssPreservedToken { Type: CssTokenType.Ident }))
-                return "local(" + CssSerializer.SerializeString(string.Join(' ', localName.Select(static argument => ((CssPreservedToken)argument).Token.Value))) + ")";
+                return "local(" + CssSerializer.SerializeString(string.Join(' ', localName.Select(static argument => ((CssPreservedToken)argument).Value))) + ")";
 
             var arguments = Cascade.CssValueComputer.SplitArguments(((CssFunction)value).Value).Select(argument => string.Join(' ', argument.Select(component =>
-                name != "local" && component is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : CssSerializer.SerializeValue([component], property: null))));
+                name != "local" && component is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : CssSerializer.SerializeValue([component], property: null))));
             return name + "(" + string.Join(", ", arguments) + ")";
         }
     }
@@ -1161,34 +1160,41 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             return;
 
         var name = NormalizePropertyName(declaration.Name);
-        var originalText = declaration.Value.Count == 0 ? "" : TrimWhitespace(source.AsSpan(declaration.Value[0].Start..Math.Min(declaration.Value[^1].End, source.Length)));
-        var endOfFile = declaration.Value.Count > 0 && declaration.Value[^1].End >= source.Length;
+        // The list of the component values is only created when the value is parsed
+        var values = declaration.ValueSpan;
+        var text = values.IsEmpty ? default : source.AsSpan(values[0].Start..Math.Min(values[^1].End, source.Length)).Trim(" \t\n");
+        string? originalText = null;
+        var endOfFile = !values.IsEmpty && values[^1].End >= source.Length;
         if (endOfFile)
         {
-            originalText = FixupEndOfFile(originalText, declaration.Value[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
+            originalText = FixupEndOfFile(text.ToString(), values[^1], source, closeBlocks: CssPropertyRegistry.IsCustomProperty(name));
+            text = originalText;
         }
 
         // An empty custom property (e.g. --x: ;) is valid (https://drafts.csswg.org/css-variables/#defining-variables): its
         // value is serialized as a space, like the browsers
-        if (originalText.Length == 0 && CssPropertyRegistry.IsCustomProperty(name))
+        if (text.Length == 0 && CssPropertyRegistry.IsCustomProperty(name))
         {
             originalText = " ";
+            text = originalText;
         }
 
         // The parsed value only depends on the text of the value: the declarations repeated in the style sheets and the style
-        // attributes (e.g. display: none) are parsed once
+        // attributes (e.g. display: none) are parsed once. The text is only allocated when the value is not cached.
         List<CssLonghandValue>? longhands;
-        if (!endOfFile && originalText.Length <= ParsedValueCache.MaxTextLength)
+        if (!endOfFile && text.Length <= ParsedValueCache.MaxTextLength)
         {
             var cache = ParsedValueCache.Declarations;
-            if (!cache.TryGetValue(atRule, name, originalText, out longhands))
+            if (!cache.TryGetValue(atRule, name, text, out longhands))
             {
+                originalText ??= text.ToString();
                 longhands = ParseValue(atRule, name, declaration.Value, originalText, source);
                 cache.Add(atRule, name, originalText, longhands);
             }
         }
         else
         {
+            originalText ??= text.ToString();
             longhands = ParseValue(atRule, name, declaration.Value, originalText, source);
         }
 
@@ -1950,7 +1956,7 @@ internal static class CssUnicodeRanges
 
     private static string? ParseRange(List<CssComponentValue> tokens, string source)
     {
-        if (tokens.Count < 2 || tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } u || !u.Token.IsIdent("u"))
+        if (tokens.Count < 2 || tokens[0] is not CssPreservedToken { Type: CssTokenType.Ident } u || !u.IsIdent("u"))
             return null;
 
         // The representations of the tokens after "u", concatenated

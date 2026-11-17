@@ -286,6 +286,45 @@ public sealed class Font
     public static Font Load(ReadOnlySpan<byte> data, FontLoadOptions? options = null)
         => new(FontFiles.Load(data, options ?? FontLoadOptions.Default)[0]);
 
+    /// <summary>Loads a PostScript Type 1 font (a PFB or a PFA file) with the metrics of its AFM file.</summary>
+    /// <param name="data">The bytes of the PFB or PFA file. They are converted: the font does not refer to the span after the method returns.</param>
+    /// <param name="metrics">
+    /// The metrics of the font, read from its AFM file with <see cref="AfmFontMetrics.Load(ReadOnlySpan{byte}, FontResourceLimits?)"/>,
+    /// or <see langword="null"/>: their kerning pairs become the kerning of the font, and their ascender, descender,
+    /// cap height and x-height replace the values computed from the font program. The advance widths are always the
+    /// ones of the font program.
+    /// </param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font.</returns>
+    /// <remarks>
+    /// <see cref="Load(ReadOnlySpan{byte}, FontLoadOptions?)"/> reads Type 1 fonts too, without metrics. The font is
+    /// converted to an OpenType font with CFF outlines when it is loaded: subroutines, flex and accented characters
+    /// (<c>seac</c>) become outlines, and the hints are dropped.
+    /// </remarks>
+    /// <exception cref="UnknownImageFormatException">The data is not a PFB or a PFA file.</exception>
+    /// <exception cref="InvalidImageContentException">The font program is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font is a multiple master, CID-keyed or stroked font.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    public static Font LoadType1(ReadOnlySpan<byte> data, AfmFontMetrics? metrics, FontLoadOptions? options = null)
+        => new(FontFiles.LoadType1(data, metrics, options ?? FontLoadOptions.Default));
+
+    /// <summary>Loads a PostScript Type 1 font from a PFB or a PFA file, with the metrics of its AFM file.</summary>
+    /// <param name="path">The path of the PFB or PFA file. The file is closed before the method returns.</param>
+    /// <param name="metrics">The metrics of the font, read from its AFM file, or <see langword="null"/>; see <see cref="LoadType1(ReadOnlySpan{byte}, AfmFontMetrics?, FontLoadOptions?)"/>.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font.</returns>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty.</exception>
+    /// <exception cref="UnknownImageFormatException">The file is not a PFB or a PFA file.</exception>
+    /// <exception cref="InvalidImageContentException">The font program is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font is a multiple master, CID-keyed or stroked font.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    public static Font LoadType1(string path, AfmFontMetrics? metrics, FontLoadOptions? options = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        return new Font(FontFiles.LoadType1(path, metrics, options ?? FontLoadOptions.Default));
+    }
+
     /// <summary>Loads a face of a font installed on the machine, or of a font of the directories of a <see cref="SystemFontCollection"/>.</summary>
     /// <param name="face">The face: one of <see cref="SystemFontCollection.Fonts"/>, or what <see cref="SystemFontCollection.Match"/> or <see cref="SystemFontCollection.FindByName"/> returns.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
@@ -380,6 +419,55 @@ public sealed class Font
     {
         ValidateSize(size, nameof(size));
         return Metrics.Scale(size / UnitsPerEm);
+    }
+
+    /// <summary>Decodes the image the font gives for the glyph of a character, in the strike that suits a size.</summary>
+    /// <param name="codePoint">The character.</param>
+    /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
+    /// <returns>The image, or <see langword="null"/> when the font has no image for the glyph.</returns>
+    /// <remarks>See <see cref="DecodeBitmapGlyph(int, double)"/>.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not a positive finite number, or is greater than 65536.</exception>
+    /// <exception cref="InvalidImageContentException">The font or the image of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The image uses a feature of its format that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The image exceeds a limit of the configuration of the font.</exception>
+    public BitmapGlyphImage? DecodeBitmapGlyph(Rune codePoint, double size) => DecodeBitmapGlyph(Face.MapCodePoint(codePoint.Value), size);
+
+    /// <summary>Decodes the image the font gives for a glyph, in the strike that suits a size.</summary>
+    /// <param name="glyph">The glyph, such as <see cref="PositionedGlyph.Glyph"/>.</param>
+    /// <param name="size">The size the glyph is drawn at, in pixels per em.</param>
+    /// <returns>The image, or <see langword="null"/> when the font has no image for the glyph or an image without pixels (a blank glyph).</returns>
+    /// <remarks>
+    /// <para>
+    /// The strike that suits a size is the smallest one that is at least as large, else the largest one. The tables are
+    /// looked at in this order: <c>sbix</c>, <c>CBDT</c>, then <c>EBDT</c> (or <c>bdat</c>), whether or not
+    /// <see cref="FontLoadOptions.UseEmbeddedBitmaps"/> is set. The image is not scaled to the size.
+    /// </para>
+    /// <para>
+    /// The encoded images (PNG, JPEG, TIFF) are decoded with the codecs of the library; the bitmaps that are not
+    /// encoded, and the glyphs made of other glyphs, by the font reader.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not a positive finite number, or is greater than 65536.</exception>
+    /// <exception cref="InvalidImageContentException">The font or the image of the glyph is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The image uses a feature of its format that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">The image exceeds a limit of the configuration of the font.</exception>
+    public BitmapGlyphImage? DecodeBitmapGlyph(int glyph, double size)
+    {
+        ValidateSize(size, nameof(size));
+        try
+        {
+            // A bitmap without pixels, such as the one of a space, is no image.
+            if (!Face.TryGetAnyBitmapGlyph(glyph, size, out var bitmap) || BitmapGlyphDecoder.IsBlank(bitmap))
+                return null;
+
+            var image = BitmapGlyphDecoder.Decode(Face, bitmap);
+            var top = bitmap.Bottom is { } bottom ? bottom + image.Height : bitmap.Top;
+            return new BitmapGlyphImage(image, bitmap.PixelsPerEmX, bitmap.PixelsPerEmY, bitmap.Left, top, bitmap.Format == BitmapGlyphFormat.Mask);
+        }
+        catch (FontException exception)
+        {
+            throw FontExceptionTranslation.Translate(exception);
+        }
     }
 
     /// <summary>Determines whether the font has a glyph for a character.</summary>

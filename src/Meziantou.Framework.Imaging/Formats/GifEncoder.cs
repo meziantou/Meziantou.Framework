@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// transparent entry) with a deterministic quantizer, alpha is reduced to fully transparent or fully opaque, and 16-bit
 /// precision is reduced to 8 bits. Selecting the GIF encoder is the explicit opt-in to these losses. A frame whose colors fit
 /// its palette is reproduced exactly; other frames use a deterministic variance-based median-cut palette, or a fixed palette,
-/// optionally dithered (<see cref="Quantization"/>). Only <c>Comment</c> text entries (Latin-1) are stored as metadata.
+/// optionally dithered (<see cref="Quantization"/>). <c>Comment</c> text entries (Latin-1), an RGB ICC profile and an XMP packet (application extensions) are the metadata it stores.
 /// </para>
 /// <para>
 /// Frames are encoded from full displayed frames with freshly computed disposal/transparency control data, so pixels that
@@ -17,6 +17,9 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </remarks>
 public sealed class GifEncoder : ImageEncoder
 {
+    /// <summary>The largest <see cref="LossyTolerance"/>: the squared distance between black and white (3 x 255²), which allows any entry.</summary>
+    public const int MaxLossyTolerance = 3 * 255 * 255;
+
     /// <inheritdoc />
     public override ImageFormat Format => ImageFormat.Gif;
 
@@ -113,6 +116,36 @@ public sealed class GifEncoder : ImageEncoder
     {
         get => Quantization.MaxColors;
         init => Quantization = Quantization.With(maxColors: value);
+    }
+
+    /// <summary>
+    /// Gets how much error the compression may add to the pixels of a frame whose colors are reduced, to make the file smaller.
+    /// Defaults to 0: each pixel keeps the palette entry the color reduction gives it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The value is the largest increase of the squared error of a pixel: the sum of the squares of the differences of its
+    /// red, green and blue samples (8-bit scale) to the color of its source pixel, after the alpha reduction. While it compresses a frame,
+    /// the encoder may give a pixel another palette entry that continues the sequence of indices it is writing, when that
+    /// entry is at most this much farther from the color of the pixel than the entry the color reduction (and the dithering)
+    /// chose. Longer sequences make the file smaller. Values from 30 to 300 are typical: larger values make smaller files and
+    /// lose more quality. The loss shows as horizontal smearing of fine detail.
+    /// </para>
+    /// <para>
+    /// A frame whose colors fit its palette is still reproduced exactly, and transparent pixels stay transparent. The output
+    /// is deterministic.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative or greater than <see cref="MaxLossyTolerance"/>.</exception>
+    public int LossyTolerance
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxLossyTolerance);
+            field = value;
+        }
     }
 
     /// <summary>Gets a value indicating whether frames are written interlaced. Defaults to <see langword="false"/>.</summary>

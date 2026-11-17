@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using System.Text;
 
 namespace Meziantou.Framework.WebPlatform.Html.Parsing;
 
@@ -51,18 +50,15 @@ internal sealed class NameTable
     }
 
     /// <summary>Returns the value of an attribute, shared with the other attributes with the same short value (to use for the attributes whose values repeat, as hashing the unique values costs more than it saves).</summary>
-    public string GetAttributeValue(StringBuilder builder)
+    public string GetAttributeValue(ReadOnlySpan<char> value)
     {
-        var length = builder.Length;
-        if (length == 0)
+        if (value.IsEmpty)
             return "";
 
-        if (length > MaxSharedValueLength)
-            return builder.ToString();
+        if (value.Length > MaxSharedValueLength)
+            return value.ToString();
 
-        Span<char> buffer = stackalloc char[length];
-        builder.CopyTo(0, buffer, length);
-        return GetSharedValue(buffer);
+        return GetSharedValue(value);
     }
 
     /// <summary>Returns the data of a text node, shared with the other text nodes when it is short and only whitespace (e.g. the line breaks and the indentation between elements).</summary>
@@ -90,24 +86,18 @@ internal sealed class NameTable
         return result;
     }
 
-    public string GetTagName(StringBuilder builder, out TagId tagId)
+    public string GetTagName(ReadOnlySpan<char> name, out TagId tagId)
     {
-        return WithSpan(builder, this, static (span, table) =>
-        {
-            var id = TagNames.GetTagId(span);
-            return (id == TagId.Unknown ? table.Intern(span) : TagNames.GetName(id), id);
-        }, out tagId);
+        tagId = TagNames.GetTagId(name);
+        return tagId == TagId.Unknown ? Intern(name) : TagNames.GetName(tagId);
     }
 
-    public string GetAttributeName(StringBuilder builder)
+    public string GetAttributeName(ReadOnlySpan<char> name)
     {
-        return WithSpan(builder, this, static (span, table) =>
-        {
-            if (KnownAttributeLookup.TryGetValue(span, out var known))
-                return (known, TagId.Unknown);
+        if (KnownAttributeLookup.TryGetValue(name, out var known))
+            return known;
 
-            return (table.Intern(span), TagId.Unknown);
-        }, out _);
+        return Intern(name);
     }
 
     public string Intern(ReadOnlySpan<char> value)
@@ -118,22 +108,5 @@ internal sealed class NameTable
         var result = value.ToString();
         _names.Add(result);
         return result;
-    }
-
-    private static string WithSpan(StringBuilder builder, NameTable table, Func<ReadOnlySpan<char>, NameTable, (string Name, TagId Id)> func, out TagId tagId)
-    {
-        const int MaxStackLength = 256;
-        if (builder.Length <= MaxStackLength)
-        {
-            Span<char> buffer = stackalloc char[builder.Length];
-            builder.CopyTo(0, buffer, builder.Length);
-            var (name, id) = func(buffer, table);
-            tagId = id;
-            return name;
-        }
-
-        var result = func(builder.ToString(), table);
-        tagId = result.Id;
-        return result.Name;
     }
 }

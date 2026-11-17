@@ -23,7 +23,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// starts with a start-of-image marker is a datastream of its own.
 /// </description></item>
 /// </list>
-/// <para>Only the baseline process (<c>JPEGProc</c> 1) is supported, with 8-bit samples.</para>
+/// <para>
+/// Only the baseline process (<c>JPEGProc</c> 1) is supported, with 8-bit samples or the 12-bit samples of the extended
+/// process, which codes them with the same Huffman coding. The quantization tables of the tags have 8-bit values, as
+/// TIFF 6.0 defines them, for both precisions.
+/// </para>
 /// </remarks>
 internal sealed class TiffOldJpegLayout
 {
@@ -133,9 +137,10 @@ internal sealed class TiffOldJpegLayout
                 AddSegment(header, MarkerDri, [(byte)(restartInterval >> 8), (byte)restartInterval]);
             }
 
-            // The baseline frame allows two Huffman tables of each class; the extended one, with the same coding, four
-            var isBaseline = components.All(component => dcIndexes[component] < 2 && acIndexes[component] < 2);
-            var frame = new List<byte> { 8, 0, 0, (byte)(page.BlockWidth >> 8), (byte)page.BlockWidth, (byte)components.Length };
+            // The baseline frame codes 8-bit samples with two Huffman tables of each class; the extended one, with the same
+            // coding, 8- or 12-bit samples with four
+            var isBaseline = page.BitsPerSample == 8 && components.All(component => dcIndexes[component] < 2 && acIndexes[component] < 2);
+            var frame = new List<byte> { (byte)page.BitsPerSample, 0, 0, (byte)(page.BlockWidth >> 8), (byte)page.BlockWidth, (byte)components.Length };
             for (var i = 0; i < components.Length; i++)
             {
                 var sampling = i == 0 ? (horizontal << 4) | vertical : 0x11;

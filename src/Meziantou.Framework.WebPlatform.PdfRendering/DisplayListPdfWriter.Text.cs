@@ -12,7 +12,7 @@ internal sealed partial class DisplayListPdfWriter
     /// Draws a glyph run: the glyphs of the font file of the layout, embedded as a subset, at the positions the layout
     /// computed, with the text of the run so that it can be extracted. The glyphs of a font that cannot be embedded (an
     /// instance of a variable font, CFF2 outlines, a license that forbids it) are filled as paths, and the color glyphs
-    /// (COLR, sbix, CBDT) are rasterized; both are marked with the text of the run (<c>/ActualText</c>).
+    /// (COLR, SVG, sbix, CBDT) are rasterized; both are marked with the text of the run (<c>/ActualText</c>).
     /// </summary>
     private void DrawGlyphs(DrawGlyphsItem draw)
     {
@@ -44,20 +44,13 @@ internal sealed partial class DisplayListPdfWriter
         }
 
         var glyphCount = face.GlyphCount;
-        var hasColorGlyphs = false;
-        for (var i = 0; i < count; i++)
-        {
-            if (run.Glyphs[i] < glyphCount && face.IsColorGlyph(run.Glyphs[i]))
-            {
-                hasColorGlyphs = true;
-                break;
-            }
-        }
-
         Mark(draw);
-        if (hasColorGlyphs)
+        if (HasColorGlyph(face, run, count, font.Size))
         {
-            WithActualText(run.Text, () => Rasterize([draw], PdfGeometry.GetBounds(draw), firstItem: null));
+            // The bounds are estimated from the metrics of the font, but the artwork of a color glyph (an SVG document, an
+            // image, a COLR glyph) can extend beyond them: the area rasterized has a margin of one em
+            var bounds = PdfGeometry.GetBounds(draw) is { } estimate ? PdfGeometry.Inflate(estimate, font.Size) : (PhysicalRect?)null;
+            WithActualText(run.Text, () => Rasterize([draw], bounds, firstItem: null));
             return;
         }
 
@@ -94,6 +87,39 @@ internal sealed partial class DisplayListPdfWriter
         }
 
         _builder.RestoreGraphicsState();
+    }
+
+    /// <summary>Returns whether a glyph of a run is drawn with the colors of the font: a COLR glyph, an SVG document or an image.</summary>
+    private static bool HasColorGlyph(FontFace face, GlyphRun run, int count, double size)
+    {
+        if (!face.HasColorGlyphs && !face.HasBitmapGlyphs)
+            return false;
+
+        var glyphCount = face.GlyphCount;
+        for (var i = 0; i < count; i++)
+        {
+            var glyph = run.Glyphs[i];
+            if (glyph >= glyphCount)
+                continue;
+
+            if (face.IsColorGlyph(glyph) || face.TryGetSvgGlyph(glyph, out _))
+                return true;
+
+            if (face.HasBitmapGlyphs)
+            {
+                try
+                {
+                    if (face.TryGetBitmapGlyph(glyph, size, out _))
+                        return true;
+                }
+                catch (FontException)
+                {
+                    // The image of the glyph is malformed: the glyph is drawn as its outline
+                }
+            }
+        }
+
+        return false;
     }
 
     private void ShowGlyphs(PdfFont pdfFont, GlyphRun run, int count, int glyphCount, double scaleX, double shear, bool fills, bool strokes)

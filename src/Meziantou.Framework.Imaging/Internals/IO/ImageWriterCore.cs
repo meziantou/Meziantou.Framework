@@ -25,9 +25,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>A successful <see cref="Complete"/> may be repeated (no effect). Disposal without one aborts the output.</description></item>
 /// <item><description>
 /// Caller streams are left open unless <see cref="ImageWriterOptions.LeaveOpen"/> is false; they are flushed by completion. They
-/// are never sought, except by outputs whose capabilities require a seekable destination (animated WebP): such writers reject a
-/// non-seekable stream when they are created, and write the session's patches (<see cref="ImageOutputBuffer.Patches"/>) at
-/// completion, after the last byte, relative to the stream position at creation.
+/// are never sought, except by outputs whose capabilities require a seekable destination (animated WebP, ANI, TIFF, ...):
+/// such writers write the session's patches (<see cref="ImageOutputBuffer.Patches"/>) at completion, after the last byte,
+/// relative to the stream position at creation. They reject a non-seekable stream when they are created, except animated
+/// WebP, whose writer then keeps the whole output in its buffer, applies the patches there and writes it at completion.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -38,6 +39,10 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private readonly AtomicFileOutput? _file;
     private readonly ImageOutputBuffer _output;
     private readonly long _startPosition;
+
+    // An animated WebP output to a non-seekable stream: the whole output stays in the buffer, the patches are applied there,
+    // and it is written at completion
+    private readonly bool _holdsOutput;
     private ImageEncoderSession? _session;
     private WriterState _state;
     private int _busy;
@@ -61,7 +66,8 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         _ownsStream = ownsStream;
         _file = file;
         _output = new ImageOutputBuffer(scope);
-        _startPosition = capabilities.RequiresSeekableOutput ? stream.Position : 0;
+        _holdsOutput = HoldsOutput(capabilities, stream);
+        _startPosition = capabilities.RequiresSeekableOutput && !_holdsOutput ? stream.Position : 0;
     }
 
     private enum WriterState
@@ -81,15 +87,16 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     public PixelFormat PixelFormat { get; }
 
     /// <summary>
-    /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, <see cref="PixelFormat.Rgba64"/> for a
-    /// floating-point format, whose frames are reduced with <see cref="ImageEncoder.FloatingPointConversion"/> first, the
+    /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, 16-bit integers for a floating-point format
+    /// (<see cref="PixelFormatWidening.GetReducedFloatingPointFormat"/>), whose frames are reduced with
+    /// <see cref="ImageEncoder.FloatingPointConversion"/> first, the
     /// lossless widening of a format the encoder does not store (<see cref="PixelFormatWidening"/>), or
     /// <see cref="PixelFormat.Rgba32"/> for indexed PNG output that reduces colors (<see cref="PngColorReduction"/>).
     /// </summary>
     public PixelFormat EncodedPixelFormat { get; }
 
     /// <summary>
-    /// Gets the pixel format of the frames once their floating-point samples are reduced (<see cref="PixelFormat.Rgba64"/>)
+    /// Gets the pixel format of the frames once their floating-point samples are reduced (<see cref="PixelFormatWidening.GetReducedFloatingPointFormat"/>)
     /// or their format is widened for the encoder, before any color reduction.
     /// </summary>
     private PixelFormat ReducedPixelFormat { get; }
@@ -366,10 +373,13 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Ani && stream is { CanSeek: false })
             throw new ArgumentException("ANI output requires a seekable stream: the frame and step counts and the sizes are written before the frames and patched once every frame is written. Write to a seekable stream or a path.", nameof(stream));
 
+        if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Tiff && stream is { CanSeek: false })
+            throw new ArgumentException("Compressed TIFF output requires a seekable stream: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the strips are compressed. Write to a seekable stream or a path, or set TiffEncoder.Compression to None.", nameof(stream));
+
         if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.OpenExr && stream is { CanSeek: false })
             throw new ArgumentException("Compressed OpenEXR output requires a seekable stream: the offsets of the chunks are written before the chunks and patched once they are written. Write to a seekable stream or a path, or set OpenExrEncoder.Compression to None.", nameof(stream));
 
-        if (capabilities.RequiresSeekableOutput && stream is { CanSeek: false })
+        if (capabilities.RequiresSeekableOutput && stream is { CanSeek: false } && !HoldsOutput(capabilities, stream))
             throw new ArgumentException($"{capabilities.Name} animation output requires a seekable stream: the file size is written before the frames and patched once every frame is written. Write to a seekable stream or a path, or write a still image (ImageWriterOptions.ExpectedFrameCount = 1, no animation settings).", nameof(stream));
 
         // Floating-point pixels are reduced to 16 bits first, unless the encoder stores them: the session never sees them otherwise
@@ -554,7 +564,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private static PixelFormat GetEncodedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PngColorReduction.Applies(encoder) ? PixelFormat.Rgba32 : GetReducedPixelFormat(encoder, pixelFormat);
 
     private static PixelFormat GetReducedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat)
-        => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormat.Rgba64 : PixelFormatWidening.GetEncodedFormat(encoder, pixelFormat);
+        => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormatWidening.GetReducedFloatingPointFormat(encoder, pixelFormat) : PixelFormatWidening.GetEncodedFormat(encoder, pixelFormat);
 
     /// <summary>Rejects floating-point pixels before anything exists, unless the encoder stores them or says how to reduce them.</summary>
     private static void EnsureEncodable(ImageEncoder encoder, ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
@@ -565,7 +575,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples && encoder.FloatingPointConversion is null)
         {
             throw new UnsupportedImageFeatureException(
-                $"{capabilities.Name} output does not store floating-point samples, so encoding {pixelFormat} pixels would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers (Rgba64), or convert the image explicitly with CloneAs.",
+                $"{capabilities.Name} output does not store floating-point samples, so encoding {pixelFormat} pixels would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers, or convert the image explicitly with CloneAs.",
                 capabilities.Format,
                 "Floating-point samples");
         }
@@ -817,13 +827,20 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Gets whether an output keeps every byte in its buffer until completion: an animated WebP written to a non-seekable
+    /// stream, whose RIFF size and flags are known only at the end (the format has no other way to store them).
+    /// </summary>
+    private static bool HoldsOutput(ImageOutputCapabilities capabilities, Stream? stream)
+        => capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.WebP && stream is { CanSeek: false };
+
     private void Pump(ImageEncoderSession session)
     {
         while (true)
         {
             session.CancellationToken.ThrowIfCancellationRequested();
             var done = session.Encode(_output);
-            if (done || _output.ShouldFlush)
+            if (!_holdsOutput && (done || _output.ShouldFlush))
             {
                 _output.FlushTo(_stream);
             }
@@ -839,7 +856,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             var done = session.Encode(_output);
-            if (done || _output.ShouldFlush)
+            if (!_holdsOutput && (done || _output.ShouldFlush))
             {
                 await _output.FlushToAsync(_stream, cancellationToken).ConfigureAwait(false);
             }
@@ -852,6 +869,13 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     /// <summary>Writes the session's patches over the already written output, then returns to the end of the output.</summary>
     private void ApplyPatches()
     {
+        if (_holdsOutput)
+        {
+            _output.ApplyPatches();
+            _output.FlushTo(_stream);
+            return;
+        }
+
         if (_output.Patches is not { Count: > 0 } patches)
             return;
 
@@ -867,6 +891,13 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
     private async ValueTask ApplyPatchesAsync(CancellationToken cancellationToken)
     {
+        if (_holdsOutput)
+        {
+            _output.ApplyPatches();
+            await _output.FlushToAsync(_stream, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         if (_output.Patches is not { Count: > 0 } patches)
             return;
 

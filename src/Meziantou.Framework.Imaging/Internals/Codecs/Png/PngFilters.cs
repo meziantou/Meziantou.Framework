@@ -32,8 +32,10 @@ internal static class PngFilters
     /// With 128-bit hardware vector support, Up adds whole vectors; Sub reconstructs 16 bytes per step as a prefix sum
     /// inside the vector (modulo 256 additions are associative); Average and Paeth reconstruct one pixel per step for
     /// pixels of 3, 4, 6 and 8 bytes: the bytes of a pixel only depend on the previous pixel, so they are computed together
-    /// in the lanes of one vector (16-bit lanes, whose intermediate values exceed a byte; on Arm64, Average stays in byte
-    /// lanes with a halving add). For pixels of 1 and 2 bytes, Paeth runs a branch-free scalar loop.
+    /// in the lanes of one vector (Average in 16-bit lanes, whose intermediate values exceed a byte; on Arm64, it stays in
+    /// byte lanes with a halving add). Paeth first computes, for a piece of the row, the thresholds of the left byte that
+    /// select each predictor (they only depend on the row above), so that each pixel then costs three comparisons and two
+    /// selections (<see cref="UnfilterPaethPixels{TSize}"/>). For pixels of 1 and 2 bytes, Paeth runs a branch-free scalar loop.
     /// The result is identical to <see cref="UnfilterScalar(byte, Span{byte}, ReadOnlySpan{byte}, int)"/>, the reference.
     /// </remarks>
     public static void Unfilter(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous, int bytesPerPixel)
@@ -66,15 +68,26 @@ internal static class PngFilters
                 _ => 0,
             };
         }
-        else if (filterType is Average or Paeth)
+        else if (filterType == Average)
         {
             done = bytesPerPixel switch
             {
-                1 or 2 when filterType == Paeth => UnfilterPaethBytes(row, previous, bytesPerPixel),
-                3 => UnfilterPixels<PixelSize3>(filterType, row, previous),
-                4 => UnfilterPixels<PixelSize4>(filterType, row, previous),
-                6 => UnfilterPixels<PixelSize6>(filterType, row, previous),
-                8 => UnfilterPixels<PixelSize8>(filterType, row, previous),
+                3 => UnfilterAverage<PixelSize3>(row, previous),
+                4 => UnfilterAverage<PixelSize4>(row, previous),
+                6 => UnfilterAverage<PixelSize6>(row, previous),
+                8 => UnfilterAverage<PixelSize8>(row, previous),
+                _ => 0,
+            };
+        }
+        else if (filterType == Paeth)
+        {
+            done = bytesPerPixel switch
+            {
+                1 or 2 => UnfilterPaethBytes(row, previous, bytesPerPixel),
+                3 => UnfilterPaethPixels<PixelSize3>(row, previous),
+                4 => UnfilterPaethPixels<PixelSize4>(row, previous),
+                6 => UnfilterPaethPixels<PixelSize6>(row, previous),
+                8 => UnfilterPaethPixels<PixelSize8>(row, previous),
                 _ => 0,
             };
         }
@@ -523,6 +536,12 @@ internal static class PngFilters
         return sum;
     }
 
+    /// <summary>The length of the pieces of a Paeth scanline whose thresholds are computed at once: a multiple of 3, 4, 6, 8 and 16.</summary>
+    private const nuint PaethPieceLength = 240;
+
+    /// <summary>The length of each array of Paeth thresholds: the longest piece (less than one more vector) and the vector read at its last pixel.</summary>
+    private const int PaethScratchStride = (int)PaethPieceLength + 32;
+
     private static bool UseVectors => Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian;
 
     private static void UnfilterUpVector(Span<byte> row, ReadOnlySpan<byte> previous)
@@ -660,11 +679,11 @@ internal static class PngFilters
     }
 
     /// <summary>
-    /// Reconstructs the pixels of an Average or Paeth scanline whose 16 following bytes exist (whole vectors are loaded;
-    /// only the bytes of the pixel are stored), one pixel per step.
+    /// Reconstructs the pixels of an Average scanline whose 16 following bytes exist (whole vectors are loaded; only the
+    /// bytes of the pixel are stored), one pixel per step.
     /// </summary>
     /// <returns>The number of bytes reconstructed (a multiple of the pixel size).</returns>
-    private static int UnfilterPixels<TSize>(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous)
+    private static int UnfilterAverage<TSize>(Span<byte> row, ReadOnlySpan<byte> previous)
         where TSize : struct, IPixelSize
     {
         // Unfilter only calls this method for rows of at least one vector: "last" would wrap for a shorter row
@@ -675,7 +694,7 @@ internal static class PngFilters
         var step = (nuint)TSize.Value;
         var last = (nuint)(row.Length - Vector128<byte>.Count);
         nuint i = 0;
-        if (filterType == Average && AdvSimd.IsSupported)
+        if (AdvSimd.IsSupported)
         {
             // The halving add computes floor((left + above) / 2) in byte lanes: two operations per pixel on the chain of "left"
             var left = Vector128<byte>.Zero;
@@ -687,7 +706,7 @@ internal static class PngFilters
                 StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), left);
             }
         }
-        else if (filterType == Average)
+        else
         {
             // floor((left + above) / 2) needs 9 bits: 16-bit lanes, the sum reduced modulo 256 before it is the next "left"
             var byteMask = Vector128.Create((ushort)0xFF);
@@ -700,32 +719,146 @@ internal static class PngFilters
                 StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), Vector128.Narrow(left, left));
             }
         }
-        else
+
+        return (int)i;
+    }
+
+    /// <summary>
+    /// Reconstructs a Paeth scanline of 3-, 4-, 6- or 8-byte pixels, piece by piece: a vector pass computes, from the row
+    /// above alone, the thresholds of the left byte that select each predictor; a serial pass then reconstructs one pixel
+    /// per step with three comparisons and two selections, instead of the whole predictor on the chain of "left".
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With <c>a</c> the left byte, <c>b</c> the byte above and <c>c</c> the upper left one, the predictor is <c>a</c> unless
+    /// <c>a</c> is strictly between <c>b</c> and <c>e = 3c - 2b</c>; in that interval, it is the one of <c>b</c> and
+    /// <c>c</c> on the side of <c>b</c> (ties included), which is the larger one when <c>a &gt;= m</c>, with <c>m</c> the
+    /// middle of the interval rounded toward <c>c</c> (<c>b == c</c> gives an empty interval). The thresholds are clamped to
+    /// bytes: the bounds of the interval as <c>a &lt; L</c> and <c>a &gt; H</c>, the middle as <c>a &gt; T</c>, and when
+    /// <c>m &lt;= 0</c> the smaller value is replaced by the larger one, since <c>a &gt;= m</c> then always holds.
+    /// </para>
+    /// <para>
+    /// The serial pass works in an offset domain (bytes plus 128, as signed bytes), where signed comparisons give the
+    /// unsigned ones on every platform; it holds <c>x + a</c> and the sums of <c>x</c> with the two other predictors, so
+    /// that the chain of "left" is one comparison, one OR and one selection long. The result is identical to
+    /// <see cref="UnfilterScalar(byte, Span{byte}, ReadOnlySpan{byte}, int)"/> for every triple (tested exhaustively).
+    /// </para>
+    /// </remarks>
+    /// <returns>The number of bytes reconstructed: the whole pixels of the row, none for a row shorter than two vectors.</returns>
+    private static int UnfilterPaethPixels<TSize>(Span<byte> row, ReadOnlySpan<byte> previous)
+        where TSize : struct, IPixelSize
+    {
+        Debug.Assert(previous.Length >= row.Length);
+
+        // Two vectors at least: the last block of a piece, aligned on its end, never starts before the first pixel
+        if (row.Length < 2 * Vector128<byte>.Count)
+            return 0;
+
+        Span<byte> scratch = stackalloc byte[PaethScratchStride * 6];
+        ref var current = ref unsafe(MemoryMarshal.GetReference(row));
+        ref var above = ref unsafe(MemoryMarshal.GetReference(previous));
+        ref var lowBound = ref unsafe(MemoryMarshal.GetReference(scratch));
+        ref var highBound = ref unsafe(Unsafe.Add(ref lowBound, PaethScratchStride));
+        ref var middle = ref unsafe(Unsafe.Add(ref highBound, PaethScratchStride));
+        ref var filtered = ref unsafe(Unsafe.Add(ref middle, PaethScratchStride));
+        ref var plusLarger = ref unsafe(Unsafe.Add(ref filtered, PaethScratchStride));
+        ref var plusSmaller = ref unsafe(Unsafe.Add(ref plusLarger, PaethScratchStride));
+
+        var step = (nuint)TSize.Value;
+        var length = (nuint)row.Length;
+        var one = Vector128<byte>.One;
+        var offset = Vector128.Create((byte)0x80);
+
+        // The left pixel before the first one is zero (offset domain)
+        var left = offset.AsSByte();
+        nuint start = 0;
+        nuint i = 0;
+        while (start < length)
         {
-            // With p = a + b - c: |p - a| = |b - c|, |p - b| = |a - c| and |p - c| = |(a - c) + (b - c)|; ties prefer a, then b.
-            // The first pixel has a = c = 0, which selects b (or a = b = 0): the byte above, as the specification requires
-            var byteMask = Vector128.Create((short)0xFF);
-            var a = Vector128<short>.Zero;
-            var c = Vector128<short>.Zero;
-            for (; i <= last; i += step)
+            // A piece is a multiple of every pixel size; the last one takes the rest, so that it is at least one vector long
+            var count = length - start >= PaethPieceLength + (nuint)Vector128<byte>.Count ? PaethPieceLength : length - start;
+            nuint j = 0;
+            while (true)
             {
-                var b = Vector128.WidenLower(unsafe(Vector128.LoadUnsafe(ref above, i))).AsInt16();
-                var x = Vector128.WidenLower(unsafe(Vector128.LoadUnsafe(ref current, i))).AsInt16();
-                var deltaA = b - c;
-                var deltaB = a - c;
-                var distanceA = Vector128.Abs(deltaA);
-                var distanceB = Vector128.Abs(deltaB);
-                var distanceC = Vector128.Abs(deltaA + deltaB);
-                var useA = Vector128.LessThanOrEqual(distanceA, distanceB) & Vector128.LessThanOrEqual(distanceA, distanceC);
-                var useB = Vector128.LessThanOrEqual(distanceB, distanceC);
-                var predictor = Vector128.ConditionalSelect(useA, a, Vector128.ConditionalSelect(useB, b, c));
-                a = (x + predictor) & byteMask;
-                c = b;
-                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), Vector128.Narrow(a.AsUInt16(), a.AsUInt16()));
+                var position = start + j;
+                var b = unsafe(Vector128.LoadUnsafe(ref above, position));
+                var x = unsafe(Vector128.LoadUnsafe(ref current, position));
+
+                // The bytes before the first pixel are zero
+                var c = position == 0 ? ShiftBytesUp(b, (byte)TSize.Value) : unsafe(Vector128.LoadUnsafe(ref above, position - step));
+                var below = Vector128.LessThan(b, c);
+                var excess = Vector128.SubtractSaturate(b, c);
+                var deficit = Vector128.SubtractSaturate(c, b);
+                var halfExcess = excess >>> 1;
+
+                // b >= c: the interval is (e, b) with e = c - 2 (b - c), and m - 1 = c - 1 - floor((b - c) / 2).
+                // b < c: the interval is (b, e) with e = c + 2 (c - b), and m - 1 = c + floor((c - b) / 2)
+                var low = Vector128.ConditionalSelect(below, b + one, Vector128.SubtractSaturate(Vector128.AddSaturate(c, one), Vector128.AddSaturate(excess, excess)));
+                var high = Vector128.ConditionalSelect(below, Vector128.AddSaturate(c - one, Vector128.AddSaturate(deficit, deficit)), Vector128.SubtractSaturate(b, one));
+                var threshold = Vector128.ConditionalSelect(below, Vector128.AddSaturate(c, deficit >>> 1), Vector128.SubtractSaturate(Vector128.SubtractSaturate(c, halfExcess), one));
+                var larger = Vector128.Max(b, c);
+                var smaller = Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(halfExcess, c), larger, Vector128.Min(b, c));
+                unsafe
+                {
+                    (low ^ offset).StoreUnsafe(ref lowBound, j);
+                    (high ^ offset).StoreUnsafe(ref highBound, j);
+                    (threshold ^ offset).StoreUnsafe(ref middle, j);
+                    x.StoreUnsafe(ref filtered, j);
+                    ((x ^ offset) + larger).StoreUnsafe(ref plusLarger, j);
+                    ((x ^ offset) + smaller).StoreUnsafe(ref plusSmaller, j);
+                }
+
+                if (j + (nuint)Vector128<byte>.Count == count)
+                    break;
+
+                // The last block ends with the piece; it may overlap the previous one (same bytes, same values)
+                j = Math.Min(j + (nuint)Vector128<byte>.Count, count - (nuint)Vector128<byte>.Count);
             }
+
+            // The bytes of the piece were copied: whole vectors are stored while they stay in its whole pixels (the
+            // following pixels overwrite their extra lanes; the bytes of a last partial pixel are reconstructed after
+            // this method, from the row), the last pixels alone
+            var end = start + count;
+            var vectorEnd = Math.Min(end, length - (length % step));
+            for (; i + (nuint)Vector128<byte>.Count <= vectorEnd; i += step)
+            {
+                left = NextPaethPixel(left, ref unsafe(Unsafe.Add(ref lowBound, i - start)), PaethScratchStride);
+                unsafe { (left ^ offset.AsSByte()).AsByte().StoreUnsafe(ref current, i); }
+            }
+
+            for (; i + step <= end; i += step)
+            {
+                left = NextPaethPixel(left, ref unsafe(Unsafe.Add(ref lowBound, i - start)), PaethScratchStride);
+                StorePixel<TSize>(ref unsafe(Unsafe.Add(ref current, i)), (left ^ offset.AsSByte()).AsByte());
+            }
+
+            start += count;
         }
 
         return (int)i;
+    }
+
+    /// <summary>
+    /// Reconstructs one Paeth pixel from its thresholds (<see cref="UnfilterPaethPixels{TSize}"/>), in the offset domain:
+    /// <paramref name="thresholds"/> is its byte in the first of the six arrays, one stride apart.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<sbyte> NextPaethPixel(Vector128<sbyte> left, ref byte thresholds, nuint stride)
+    {
+        Vector128<sbyte> low, high, middle, filtered, plusLarger, plusSmaller;
+        unsafe
+        {
+            low = Vector128.LoadUnsafe(ref thresholds).AsSByte();
+            high = Vector128.LoadUnsafe(ref thresholds, stride).AsSByte();
+            middle = Vector128.LoadUnsafe(ref thresholds, 2 * stride).AsSByte();
+            filtered = Vector128.LoadUnsafe(ref thresholds, 3 * stride).AsSByte();
+            plusLarger = Vector128.LoadUnsafe(ref thresholds, 4 * stride).AsSByte();
+            plusSmaller = Vector128.LoadUnsafe(ref thresholds, 5 * stride).AsSByte();
+        }
+
+        var pickLeft = Vector128.GreaterThan(low, left) | Vector128.GreaterThan(left, high);
+        var other = Vector128.ConditionalSelect(Vector128.GreaterThan(left, middle), plusLarger, plusSmaller);
+        return Vector128.ConditionalSelect(pickLeft, filtered + left, other);
     }
 
     /// <summary>Stores the first <c>TSize.Value</c> bytes of a vector (the size is a JIT-time constant of each instantiation).</summary>

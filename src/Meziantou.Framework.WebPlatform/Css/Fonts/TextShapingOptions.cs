@@ -281,7 +281,7 @@ internal readonly record struct TextShapingOptions
         if (value is "normal" or "" || ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is not [CssPreservedToken { Type: CssTokenType.String } token])
             return 0;
 
-        return OpenTypeTag.TryParse(token.Token.Value, out var tag) ? tag : 0;
+        return OpenTypeTag.TryParse(token.Value, out var tag) ? tag : 0;
     }
 
     /// <summary>
@@ -535,7 +535,7 @@ internal readonly record struct TextShapingOptions
         foreach (var entry in CssValueComputer.SplitArguments(CssParser.ParseListOfComponentValues(featureSettings)))
         {
             var significant = ValueMatcher.RemoveWhitespace(entry);
-            if (significant is not [CssPreservedToken { Type: CssTokenType.String } tag, ..] || tag.Token.Value is not { Length: 4 } name)
+            if (significant is not [CssPreservedToken { Type: CssTokenType.String } tag, ..] || tag.Value is not { Length: 4 } name)
                 continue;
 
             if ((((uint)name[0] << 24) | ((uint)name[1] << 16) | ((uint)name[2] << 8) | name[3]) != feature)
@@ -544,8 +544,8 @@ internal readonly record struct TextShapingOptions
             result = significant switch
             {
                 [_] => 1,
-                [_, CssPreservedToken { Type: CssTokenType.Number } number] => (int)number.Token.NumericValue,
-                [_, CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Token.Value.Equals("off", StringComparison.OrdinalIgnoreCase) => 0,
+                [_, CssPreservedToken { Type: CssTokenType.Number } number] => (int)number.NumericValue,
+                [_, CssPreservedToken { Type: CssTokenType.Ident } keyword] when keyword.Value.Equals("off", StringComparison.OrdinalIgnoreCase) => 0,
                 [_, CssPreservedToken { Type: CssTokenType.Ident }] => 1,
                 _ => result,
             };

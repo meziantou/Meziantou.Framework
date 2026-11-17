@@ -329,7 +329,7 @@ internal static class FloatShapes
                     break;
 
                 case CssPreservedToken { Type: CssTokenType.Ident } ident when referenceBox is null:
-                    referenceBox = ident.Token.Value.ToLowerInvariant();
+                    referenceBox = ident.Value.ToLowerInvariant();
                     break;
 
                 default:

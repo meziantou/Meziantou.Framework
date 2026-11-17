@@ -1,6 +1,6 @@
 # Meziantou.Framework.Imaging.Barcodes.FontGenerator
 
-Generates `src/Meziantou.Framework.Imaging.Barcodes/Fonts/OcrA.ttf` and `OcrB.ttf`, the fonts of `BarcodeFonts`, from the
+Generates `src/Meziantou.Framework.Barcodes/Fonts/OcrA.ttf` and `OcrB.ttf`, the fonts of `BarcodeFonts`, from the
 character shapes of the OCR standards. The tests of `Meziantou.Framework.Imaging.Barcodes` fail when the committed fonts
 are not what the generator builds.
 

@@ -1,0 +1,8 @@
+@page "/about"
+<h1>About</h1>
+<button @onclick='() => Navigation.NavigateTo("/")'>Back</button>
+
+@code {
+    [Inject]
+    public NavigationManager Navigation { get; set; } = default!;
+}

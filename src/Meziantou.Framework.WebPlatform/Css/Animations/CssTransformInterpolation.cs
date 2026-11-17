@@ -255,7 +255,7 @@ internal static class CssTransformInterpolation
 
     private static double? GetPerspectiveInverse(TransformFunction function)
     {
-        if (function.Arguments is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.Token.IsIdent("none"))
+        if (function.Arguments is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.IsIdent("none"))
             return 0;
 
         if (function.Arguments is [var argument] && CssGenericInterpolation.TryGetNumber(argument, out var distance, out var unit) && unit == "px")
@@ -305,7 +305,7 @@ internal static class CssTransformInterpolation
     private static List<TransformFunction>? Parse(string value)
     {
         var components = CssGenericInterpolation.Parse(value);
-        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.Token.IsIdent("none"))
+        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && ident.IsIdent("none"))
             return [];
 
         var result = new List<TransformFunction>(components.Count);
@@ -431,7 +431,7 @@ internal static class CssTransformInterpolation
         var family = GetFamily(function.Name);
         foreach (var argument in function.Arguments)
         {
-            if (argument is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("none"))
+            if (argument is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("none"))
                 continue;
 
             if (!CssGenericInterpolation.TryGetNumber(argument, out var value, out _) || value != (family == Family.Scale ? 1 : 0))

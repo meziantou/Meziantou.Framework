@@ -126,13 +126,13 @@ internal readonly struct LengthPercentage : IEquatable<LengthPercentage>
     {
         switch (value)
         {
-            case CssPreservedToken { Type: CssTokenType.Dimension } dimension when string.Equals(dimension.Token.Value, "px", StringComparison.OrdinalIgnoreCase):
-                result = FromPixels(dimension.Token.NumericValue * zoom);
+            case CssPreservedToken { Type: CssTokenType.Dimension } dimension when string.Equals(dimension.Value, "px", StringComparison.OrdinalIgnoreCase):
+                result = FromPixels(dimension.NumericValue * zoom);
                 return true;
             case CssPreservedToken { Type: CssTokenType.Percentage } percentage:
-                result = FromPercentage(percentage.Token.NumericValue);
+                result = FromPercentage(percentage.NumericValue);
                 return true;
-            case CssPreservedToken { Type: CssTokenType.Number } number when number.Token.NumericValue == 0:
+            case CssPreservedToken { Type: CssTokenType.Number } number when number.NumericValue == 0:
                 result = Zero;
                 return true;
             case CssFunction function when IsLengthMathFunction(function.Name):

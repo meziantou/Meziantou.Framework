@@ -814,7 +814,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
             {
                 if (value is Syntax.CssPreservedToken { Type: Syntax.CssTokenType.String } token)
                 {
-                    text.Append(token.Token.Value);
+                    text.Append(token.Value);
                 }
                 else if (value is Syntax.CssFunction)
                 {
@@ -873,11 +873,11 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
             var significant = ValueMatcher.RemoveWhitespace(entry);
             if (significant is [CssPreservedToken { Type: CssTokenType.String } stringToken])
             {
-                families.Add(stringToken.Token.Value);
+                families.Add(stringToken.Value);
             }
             else if (significant.Count > 0 && significant.TrueForAll(component => component is CssPreservedToken { Type: CssTokenType.Ident }))
             {
-                families.Add(string.Join(' ', significant.Select(component => ((CssPreservedToken)component).Token.Value)));
+                families.Add(string.Join(' ', significant.Select(component => ((CssPreservedToken)component).Value)));
             }
         }
 

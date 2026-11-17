@@ -12,15 +12,60 @@ internal static class EciCharacterSets
 
     /// <summary>
     /// Decodes bytes with the character set of an ECI assignment number. Without ECI, or for an assignment number whose
-    /// character set .NET does not have, the bytes are UTF-8 when they are valid UTF-8, and ISO/IEC 8859-1 otherwise:
-    /// the generators of this library write UTF-8 without ECI designator, the default of the standards is ISO/IEC 8859-1.
+    /// character set .NET does not have, the bytes are UTF-8 when they are valid UTF-8, Shift JIS when they look like
+    /// Japanese text in Shift JIS, and ISO/IEC 8859-1 otherwise: the generators of this library write UTF-8 without ECI
+    /// designator, many Japanese generators write Shift JIS, and the default of the standards is ISO/IEC 8859-1.
     /// </summary>
     public static string GetString(ReadOnlySpan<byte> bytes, int? assignmentNumber)
     {
         if (assignmentNumber is { } number && GetEncoding(number) is { } encoding)
             return encoding.GetString(bytes);
 
-        return Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes);
+        if (Utf8.IsValid(bytes))
+            return Encoding.UTF8.GetString(bytes);
+
+        if (LooksLikeShiftJis(bytes) && DataAnalyzer.GetShiftJisString(bytes) is { } shiftJis)
+            return shiftJis;
+
+        return Encoding.Latin1.GetString(bytes);
+    }
+
+    /// <summary>
+    /// Gets whether bytes look like Shift JIS text rather than ISO/IEC 8859-1 text: a word of 3 or more katakana (half-width
+    /// katakana, or characters of two bytes), or bytes that are control characters in ISO/IEC 8859-1 (0x80 to 0x9F), which
+    /// text does not have but the first byte of most Shift JIS characters is.
+    /// </summary>
+    private static bool LooksLikeShiftJis(ReadOnlySpan<byte> bytes)
+    {
+        var katakanaWord = 0;
+        var doubleByteWord = 0;
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            var value = bytes[i];
+            if (value is >= 0x80 and <= 0x9F)
+                return true;
+
+            if (value is >= 0xA1 and <= 0xDF)
+            {
+                doubleByteWord = 0;
+                if (++katakanaWord >= 3)
+                    return true;
+            }
+            else if (value is >= 0xE0 and <= 0xEF && i + 1 < bytes.Length)
+            {
+                katakanaWord = 0;
+                i++;
+                if (++doubleByteWord >= 3)
+                    return true;
+            }
+            else
+            {
+                katakanaWord = 0;
+                doubleByteWord = 0;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Gets the text of QR code segments: the byte segments are decoded with the ECI designator that precedes them.</summary>

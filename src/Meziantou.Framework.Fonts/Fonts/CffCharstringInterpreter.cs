@@ -10,8 +10,9 @@ namespace Meziantou.Framework.Fonts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The hints are parsed and ignored: the library does not hint. The width a charstring can start with is skipped: the
-/// advances of an OpenType font are in its <c>hmtx</c> table.
+/// The hints are given to a sink that implements <see cref="ICffHintSink"/> (<see cref="CffHinter"/> fits the outlines
+/// to the pixel grid with them), and skipped otherwise. The width a charstring can start with is skipped: the advances
+/// of an OpenType font are in its <c>hmtx</c> table.
 /// </para>
 /// <para>
 /// The charstrings of a CFF2 table (OpenType specification, "CFF2 CharString Format") are the same programs without
@@ -46,6 +47,7 @@ internal ref struct CffCharstringInterpreter
     private readonly CffIndex _globalSubroutines;
     private readonly CffIndex _localSubroutines;
     private readonly OutlineSink _sink;
+    private readonly ICffHintSink? _hints;
     private readonly ref GlyphBudget _budget;
     private readonly bool _isCff2;
     private readonly int _variationStore;
@@ -71,6 +73,7 @@ internal ref struct CffCharstringInterpreter
         _globalSubroutines = globalSubroutines;
         _localSubroutines = localSubroutines;
         _sink = sink;
+        _hints = sink as ICffHintSink;
         _budget = ref budget;
     }
 
@@ -163,20 +166,26 @@ internal ref struct CffCharstringInterpreter
                 // hstem, vstem, hstemhm, vstemhm: pairs of hint positions.
                 case 1 or 3 or 18 or 23:
                     SkipWidth(stack, (_count & 1) != 0);
+                    AddStems(stack, isHorizontal: b0 is 1 or 18);
                     _hintCount += _count / 2;
                     _count = 0;
                     break;
 
                 // hintmask, cntrmask: one bit per hint follows. Arguments before the first mask are vertical hints.
                 case 19 or 20:
-                    SkipWidth(stack, (_count & 1) != 0);
-                    _hintCount += _count / 2;
-                    _count = 0;
-                    position += (_hintCount + 7) / 8;
-                    if (position > code.Length)
-                        throw Invalid("ends inside a hint mask");
+                    {
+                        SkipWidth(stack, (_count & 1) != 0);
+                        AddStems(stack, isHorizontal: false);
+                        _hintCount += _count / 2;
+                        _count = 0;
+                        var maskLength = (_hintCount + 7) / 8;
+                        if (position + maskLength > code.Length)
+                            throw Invalid("ends inside a hint mask");
 
-                    break;
+                        _hints?.SetMask(code.Slice(position, maskLength), isCounterMask: b0 == 20);
+                        position += maskLength;
+                        break;
+                    }
 
                 // rmoveto, hmoveto, vmoveto: a new contour.
                 case 21:
@@ -695,6 +704,28 @@ internal ref struct CffCharstringInterpreter
             stack[1.._count].CopyTo(stack);
             _count--;
         }
+    }
+
+    /// <summary>
+    /// Gives the pairs of arguments of a stem operator to the hint sink: each edge is relative to the previous one, the
+    /// first one to zero. A hint does not change the outline: a value out of the coordinates an outline can have is
+    /// brought within them rather than rejected.
+    /// </summary>
+    private readonly void AddStems(scoped ReadOnlySpan<double> stack, bool isHorizontal)
+    {
+        if (_hints is null)
+            return;
+
+        var edge = 0.0;
+        for (var i = 0; i + 1 < _count; i += 2)
+        {
+            edge = Bound(edge + stack[i]);
+            var width = Bound(stack[i + 1]);
+            _hints.AddStem(isHorizontal, edge, width);
+            edge = Bound(edge + width);
+        }
+
+        static double Bound(double value) => double.IsFinite(value) ? Math.Clamp(value, -FontErrors.MaxCoordinate, FontErrors.MaxCoordinate) : 0;
     }
 
     private readonly void Require(int count)

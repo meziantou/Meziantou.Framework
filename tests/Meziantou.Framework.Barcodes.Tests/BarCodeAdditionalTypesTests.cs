@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Imaging.Barcodes;
 using Meziantou.Framework.SnapshotTesting;
 
 namespace Meziantou.Framework.Barcodes.Tests;
@@ -50,11 +51,11 @@ public class BarCodeAdditionalTypesTests
         #region Barcode_GettingStarted
         var barcode = Barcode.CreateCode128("SKU-123456");
 
-        // The bytes of a PNG file, to save with File.WriteAllBytes("barcode.png", png)
-        var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+        // ToImage comes from Meziantou.Framework.Imaging.Barcodes: save the image as PNG with image.Save("barcode.png")
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60 });
         #endregion
 
-        DocumentationImages.AssertPng("GettingStartedBarcode", png);
+        DocumentationImages.AssertPng("GettingStartedBarcode", PngRendering.Encode(image));
     }
 
     [Fact]
@@ -65,10 +66,11 @@ public class BarCodeAdditionalTypesTests
         var barcode = Barcode.CreateEan13("978020137962", extension: "52499");
         Assert.Equal("9780201379624 52499", barcode.Text); // the check digit is added
 
-        var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+        // The digits of the add-on are printed above its bars
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
         #endregion
 
-        DocumentationImages.AssertPng("Ean13WithAddOn", png);
+        DocumentationImages.AssertPng("Ean13WithAddOn", PngRendering.Encode(image));
     }
 
     [Fact]
@@ -457,6 +459,42 @@ public class BarCodeAdditionalTypesTests
     }
 
     [Fact]
+    public void ToSvg_Ean13WithAddOn_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateEan13("978020137962", "52499");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_Ean8_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateEan8("5512345");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_UpcAWithAddOn_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateUpcA("03600029145", "12");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
+    public void ToSvg_UpcE_Text_Snapshot()
+    {
+        var barcode = Barcode.CreateUpcE("0425261");
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
+
+        Snapshot.Validate(svg, SnapshotType.Svg);
+    }
+
+    [Fact]
     public void ToSvg_Codabar_SmallData_Snapshot()
     {
         var barcode = Barcode.CreateCodabar(CodabarSmallData);
@@ -543,10 +581,11 @@ public class BarCodeAdditionalTypesTests
         // A UPC-A number without these zeros has no UPC-E form
         Assert.Throws<ArgumentException>("data", () => Barcode.CreateUpcE("03600029145"));
 
-        var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+        // The number system and check digits are printed outside the bars, the 6 digits under them
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleHeight = 60, Text = new BarcodeTextOptions() });
         #endregion
 
-        DocumentationImages.AssertPng("UpcE", png);
+        DocumentationImages.AssertPng("UpcE", PngRendering.Encode(image));
     }
 
     [Fact]
@@ -565,10 +604,10 @@ public class BarCodeAdditionalTypesTests
         Assert.Equal((50, 13), (stacked.Width, stacked.Height));
 
         // The renderers draw the rows of a stacked barcode as high as a module is wide
-        var png = stacked.ToPng(new BarcodePngOptions { ModuleWidth = 3 });
+        using var image = stacked.ToImage(new BarcodeRenderOptions { ModuleWidth = 3 });
         #endregion
 
-        DocumentationImages.AssertPng("Gs1DataBarStacked", png);
+        DocumentationImages.AssertPng("Gs1DataBarStacked", PngRendering.Encode(image));
     }
 
     [Fact]
@@ -584,10 +623,10 @@ public class BarCodeAdditionalTypesTests
         var stacked = Barcode.CreateGs1DataBarExpandedStacked(4, elements);
         Assert.Equal((102, 3 * 34 + 2 * 3), (stacked.Width, stacked.Height));
 
-        var png = stacked.ToPng(new BarcodePngOptions { ModuleWidth = 2 });
+        using var image = stacked.ToImage(new BarcodeRenderOptions { ModuleWidth = 2 });
         #endregion
 
-        DocumentationImages.AssertPng("Gs1DataBarExpandedStacked", png);
+        DocumentationImages.AssertPng("Gs1DataBarExpandedStacked", PngRendering.Encode(image));
     }
 
     [Theory]
@@ -764,11 +803,11 @@ public class BarCodeAdditionalTypesTests
     {
         var barcode = Barcode.CreateGs1DataBarStacked("0950110153001");
 
-        var svg = barcode.ToSvg(new BarcodeSvgOptions { ModuleWidth = 3, ModuleHeight = 50, QuietZoneModules = 1 });
-        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 156 39\">", svg, StringComparison.Ordinal);
-        Assert.Contains("M6 0h3v15h-3z", svg, StringComparison.Ordinal); // the first bar of the 5-module top row, after a space
+        var svg = barcode.ToSvg(new BarcodeRenderOptions { ModuleWidth = 3, ModuleHeight = 50, QuietZoneModules = 1 });
+        Assert.Contains("viewBox=\"0 0 156 39\"", svg, StringComparison.Ordinal);
+        Assert.Contains("M6,0 L9,0 L9,15 L6,15 Z", svg, StringComparison.Ordinal); // the first bar of the 5-module top row, after a space
 
-        using var image = Image.Load<Rgba32>(barcode.ToPng(new BarcodePngOptions { ModuleWidth = 3, ModuleHeight = 50, QuietZoneModules = 1 }));
+        using var image = Image.Load<Rgba32>(barcode.ToPng(new BarcodeRenderOptions { ModuleWidth = 3, ModuleHeight = 50, QuietZoneModules = 1 }));
         Assert.Equal((156, 39), (image.Width, image.Height));
         for (var y = 0; y < image.Height; y++)
         {

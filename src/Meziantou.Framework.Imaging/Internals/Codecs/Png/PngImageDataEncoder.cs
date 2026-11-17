@@ -64,7 +64,7 @@ internal sealed class PngImageDataEncoder : IDisposable
     private PooledBuffer? _row;
     private PooledBuffer? _chunkBuffer;
     private ChunkStream? _chunks;
-    private ZLibStream? _zlib;
+    private PngZlibStream? _zlib;
 
     private int _pass;
     private int _passWidth;
@@ -249,7 +249,7 @@ internal sealed class PngImageDataEncoder : IDisposable
             throw new InvalidOperationException("The previous PNG datastream is not complete.");
 
         _chunks.Reset(frameData, sequenceNumber, count);
-        _zlib = new ZLibStream(_chunks, _compressionLevel, leaveOpen: true);
+        _zlib = PngZlib.Create(_chunks, _compressionLevel, leaveOpen: true);
         _pass = -1;
         _started = true;
         StartNextPass();
@@ -360,7 +360,7 @@ internal sealed class PngImageDataEncoder : IDisposable
         _current = null;
     }
 
-    private int EncodeScanline(scoped in PixelLease lease, ZLibStream zlib)
+    private int EncodeScanline(scoped in PixelLease lease, PngZlibStream zlib)
     {
         var bytesPerPixel = _layout.BytesPerPixel;
         var length = _layout.GetScanlineLength(_passWidth);
@@ -419,7 +419,7 @@ internal sealed class PngImageDataEncoder : IDisposable
         return (_indexedRows is null ? length : _passWidth) + 1;
     }
 
-    private int EncodeSourceScanline(PngScanlineSource source, ZLibStream zlib)
+    private int EncodeSourceScanline(PngScanlineSource source, PngZlibStream zlib)
     {
         var length = source.GetScanlineLength(_passWidth);
         var current = _current!.RawBuffer.AsSpan(0, length);

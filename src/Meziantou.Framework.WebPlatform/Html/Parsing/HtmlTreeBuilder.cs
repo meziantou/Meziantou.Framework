@@ -1005,7 +1005,21 @@ internal sealed partial class HtmlTreeBuilder
         // and have no attributes. So are their descendants created in a removed element.
         if (sanitizerAction == SanitizerElementAction.Keep)
         {
-            isValue = token.GetAttribute("is");
+            // A single pass over the attributes finds the is and customelementregistry attributes
+            var hasRegistryAttribute = false;
+            foreach (ref var attribute in token.Attributes)
+            {
+                switch (attribute.Name)
+                {
+                    case "is":
+                        isValue ??= attribute.Value;
+                        break;
+                    case "customelementregistry":
+                        hasRegistryAttribute = true;
+                        break;
+                }
+            }
+
             if (isValue is not null && Sanitizer is not null && Sanitizer.RemovesAttribute(sanitizerElementName, sanitizerElement, "is", namespaceUri: null, isValue))
             {
                 isValue = null;
@@ -1018,7 +1032,7 @@ internal sealed partial class HtmlTreeBuilder
             // An element parsed with the customelementregistry attribute has the null registry, and so have its descendants (the
             // registry of their intended parent), as in the browsers (the attribute is not specified yet). Setting the attribute
             // later has no effect.
-            registry = token.HasAttribute("customelementregistry") ? null : CustomElementRegistry.LookUp(registryParent);
+            registry = hasRegistryAttribute ? null : CustomElementRegistry.LookUp(registryParent);
         }
 
 
@@ -1036,7 +1050,7 @@ internal sealed partial class HtmlTreeBuilder
         Element element;
         try
         {
-            element = ElementFactory.CreateElement(document, token.Name, @namespace, prefix: null, isValue, willExecuteScript, registry);
+            element = ElementFactory.CreateElement(document, token.Name, @namespace, prefix: null, isValue, willExecuteScript, registry, ReferenceEquals(@namespace, Namespaces.Html) ? token.TagId : null);
             if (sanitizerAction == SanitizerElementAction.Keep)
             {
                 element.EnsureAttributeCapacity(token.Attributes.Length);
@@ -1044,9 +1058,11 @@ internal sealed partial class HtmlTreeBuilder
                 {
                     if (Sanitizer is null || !Sanitizer.RemovesAttribute(sanitizerElementName, sanitizerElement, attribute.LocalName, attribute.Namespace, attribute.Value))
                     {
-                        element.AppendAttribute(attribute.LocalName, attribute.Namespace, attribute.Prefix, attribute.Value);
+                        element.AppendParsedAttribute(attribute.LocalName, attribute.Namespace, attribute.Prefix, attribute.Value);
                     }
                 }
+
+                element.EndParsedAttributes();
             }
             else
             {
@@ -1276,7 +1292,9 @@ internal sealed partial class HtmlTreeBuilder
             return script.GetChildTextContent();
 
         _parsedScript = null;
-        var text = _parsedScriptText.ToString();
+
+        // Usually, the characters are the data of the only child of the script: the string is not copied
+        var text = script.FirstChild is Text { NextSibling: null } child && _parsedScriptText.Equals(child.Data) ? child.Data : _parsedScriptText.ToString();
         _parsedScriptText.Clear();
         return text;
     }

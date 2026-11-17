@@ -7,9 +7,9 @@ namespace Meziantou.Framework.WebPlatform.Css.Values;
 // view-timeline shorthands, and the canonical values of animation-timeline and view-timeline-inset
 internal static partial class CssPropertyRules
 {
-    private static bool IsAxisKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Token.Value) is "block" or "inline" or "x" or "y";
+    private static bool IsAxisKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Value) is "block" or "inline" or "x" or "y";
 
-    private static bool IsAutoKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent("auto");
+    private static bool IsAutoKeyword(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.IsIdent("auto");
 
     /// <summary>
     /// The canonical value of a &lt;'view-timeline-inset'&gt; item: the second value is omitted when it is the first one
@@ -68,7 +68,7 @@ internal static partial class CssPropertyRules
                     if (argument is not CssPreservedToken { Type: CssTokenType.Ident } keyword)
                         return null;
 
-                    var lower = InfraAscii.ToAsciiLowercase(keyword.Token.Value);
+                    var lower = InfraAscii.ToAsciiLowercase(keyword.Value);
                     if (IsAxisKeyword(argument))
                     {
                         axis = lower;
@@ -100,7 +100,7 @@ internal static partial class CssPropertyRules
                 {
                     if (IsAxisKeyword(argument))
                     {
-                        axis = InfraAscii.ToAsciiLowercase(((CssPreservedToken)argument).Token.Value);
+                        axis = InfraAscii.ToAsciiLowercase(((CssPreservedToken)argument).Value);
                     }
                     else
                     {
@@ -123,7 +123,7 @@ internal static partial class CssPropertyRules
             }
             else
             {
-                items.Add(value is CssPreservedToken { Type: CssTokenType.Ident } ident && !ident.Token.Value.StartsWith("--", StringComparison.Ordinal) ? InfraAscii.ToAsciiLowercase(ident.Token.Value) : SerializeComponent(value, property: null));
+                items.Add(value is CssPreservedToken { Type: CssTokenType.Ident } ident && !ident.Value.StartsWith("--", StringComparison.Ordinal) ? InfraAscii.ToAsciiLowercase(ident.Value) : SerializeComponent(value, property: null));
             }
         }
 

@@ -1123,6 +1123,25 @@ public sealed class PixelConversionTests
     }
 
     [Fact]
+    public void TheHalfRangeAppliesToTheValuesAHalfDestinationStores()
+    {
+        // Flattened over black, 100000 at alpha 0.5 is 50000; the luma of (100000, 0, 0) is 21260: both fit a half
+        var background = new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) };
+        var gray = new GrayHalf[2];
+        PixelConversionPlan.Create<RgbaFloat, GrayHalf>(background).ConvertRow<RgbaFloat, GrayHalf>([new(100000, 100000, 100000, 0.5f), new(100000, 0, 0)], gray);
+        Assert.Equal([new GrayHalf((Half)50000), new GrayHalf((Half)21260)], gray);
+
+        var rgb = new RgbaHalf[1];
+        var keepsAlpha = PixelConversionPlan.Create<RgbaFloat, RgbaHalf>(background);
+        Assert.Throws<UnsupportedImageFeatureException>(() => keepsAlpha.ConvertRow<RgbaFloat, RgbaHalf>([new(100000, 100000, 100000, 0.5f)], rgb));
+
+        // Clipping clips the stored value, not the colors before they are flattened
+        var clip = PixelConversionPlan.Create<RgbaFloat, GrayHalf>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0), OutOfRangeSamples = OutOfRangeSampleHandling.Clip });
+        clip.ConvertRow<RgbaFloat, GrayHalf>([new(100000, 100000, 100000, 0.5f), new(200000, 200000, 200000, 0.5f)], gray);
+        Assert.Equal([new GrayHalf((Half)50000), new GrayHalf(Half.MaxValue)], gray);
+    }
+
+    [Fact]
     public void FloatToHalfRoundsAndRejectsWhatOverflowsUnlessClipped()
     {
         RgbaFloat[] row = [new(1 / 3f, -2.5f, 65504f, 0.5f), new(float.NaN, float.PositiveInfinity, float.NegativeInfinity, 1), new(65519f, -65519f, 1e-8f, 0)];
@@ -1903,13 +1922,27 @@ public sealed class PixelConversionTests
             for (var i = 0; i < pixels.Count; i++)
             {
                 var (r, g, b, a) = pixels[i];
-                if (format == PixelFormat.RgbaFloat)
+                var span = result.AsSpan(i * size);
+                switch (format)
                 {
-                    unsafe { MemoryMarshal.Write(result.AsSpan(i * size), new RgbaFloat((float)r, (float)g, (float)b, (float)a)); }
-                }
-                else
-                {
-                    unsafe { MemoryMarshal.Write(result.AsSpan(i * size), new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a)); }
+                    case PixelFormat.RgbaFloat:
+                        unsafe { MemoryMarshal.Write(span, new RgbaFloat((float)r, (float)g, (float)b, (float)a)); }
+                        break;
+                    case PixelFormat.RgbaHalf:
+                        unsafe { MemoryMarshal.Write(span, new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a)); }
+                        break;
+                    case PixelFormat.GrayFloat:
+                        unsafe { MemoryMarshal.Write(span, new GrayFloat((float)r)); }
+                        break;
+                    case PixelFormat.GrayHalf:
+                        unsafe { MemoryMarshal.Write(span, new GrayHalf((Half)r)); }
+                        break;
+                    case PixelFormat.LaFloat:
+                        unsafe { MemoryMarshal.Write(span, new LaFloat((float)r, (float)a)); }
+                        break;
+                    default:
+                        unsafe { MemoryMarshal.Write(span, new LaHalf((Half)r, (Half)a)); }
+                        break;
                 }
             }
 
@@ -1928,6 +1961,10 @@ public sealed class PixelConversionTests
                 {
                     PixelFormat.RgbaFloat => FromFloats(unsafe(MemoryMarshal.Read<RgbaFloat>(span))),
                     PixelFormat.RgbaHalf => FromHalves(unsafe(MemoryMarshal.Read<RgbaHalf>(span))),
+                    PixelFormat.GrayFloat => Gray(Rational.FromDouble(unsafe(MemoryMarshal.Read<GrayFloat>(span)).Value), Rational.One),
+                    PixelFormat.GrayHalf => Gray(Rational.FromDouble((double)unsafe(MemoryMarshal.Read<GrayHalf>(span)).Value), Rational.One),
+                    PixelFormat.LaFloat => Gray(Rational.FromDouble(unsafe(MemoryMarshal.Read<LaFloat>(span)).L), Rational.FromDouble(unsafe(MemoryMarshal.Read<LaFloat>(span)).A)),
+                    PixelFormat.LaHalf => Gray(Rational.FromDouble((double)unsafe(MemoryMarshal.Read<LaHalf>(span)).L), Rational.FromDouble((double)unsafe(MemoryMarshal.Read<LaHalf>(span)).A)),
                     PixelFormat.Rgba32 => (span[0], span[1], span[2], span[3]),
                     PixelFormat.Bgra32 => (span[2], span[1], span[0], span[3]),
                     PixelFormat.Rgb24 => (span[0], span[1], span[2], 255),
@@ -1951,6 +1988,7 @@ public sealed class PixelConversionTests
             static (Rational, Rational, Rational, Rational) FromFloats(RgbaFloat p) => (Rational.FromDouble(p.R), Rational.FromDouble(p.G), Rational.FromDouble(p.B), Rational.FromDouble(p.A));
             static (Rational, Rational, Rational, Rational) FromHalves(RgbaHalf p) => (Rational.FromDouble((double)p.R), Rational.FromDouble((double)p.G), Rational.FromDouble((double)p.B), Rational.FromDouble((double)p.A));
             static int Read16(Span<byte> span, int index) => unsafe(MemoryMarshal.Read<ushort>(span[(index * 2)..]));
+            static (Rational, Rational, Rational, Rational) Gray(Rational level, Rational alpha) => (level, level, level, alpha);
         }
 
         /// <summary>
@@ -1963,6 +2001,22 @@ public sealed class PixelConversionTests
             // The integer components are fractions of the largest value of each (a packed format has its own)
             (int R, int G, int B, int A) sourceMax = PixelFormats.IsFloatingPoint(source) ? (1, 1, 1, 1) : ReferenceModel.Maxima(source);
             var (r, g, b, a) = (pixel.R / sourceMax.R, pixel.G / sourceMax.G, pixel.B / sourceMax.B, pixel.A / sourceMax.A);
+            if (PixelFormats.IsFloatingPoint(destination) && PixelFormats.IsGrayscale(destination))
+            {
+                // A floating-point gray destination: flattened when it has no alpha, then the level of a gray color or the luma
+                if (!PixelFormats.HasAlpha(destination) && a != Rational.One)
+                {
+                    var (bgR, bgG, bgB) = (new Rational(background.R, 65535), new Rational(background.G, 65535), new Rational(background.B, 65535));
+                    (r, g, b) = ((r * a) + (bgR * (Rational.One - a)), (g * a) + (bgG * (Rational.One - a)), (b * a) + (bgB * (Rational.One - a)));
+                    a = Rational.One;
+                }
+
+                var level = r == g && g == b ? r : (new Rational(2126, 10000) * r) + (new Rational(7152, 10000) * g) + (new Rational(722, 10000) * b);
+                AssertNearest(level, actual.R, destination, index);
+                AssertNearest(a, actual.A, destination, index);
+                return;
+            }
+
             if (PixelFormats.IsFloatingPoint(destination))
             {
                 foreach (var (expected, value) in new[] { (r, actual.R), (g, actual.G), (b, actual.B), (a, actual.A) })
@@ -2015,7 +2069,7 @@ public sealed class PixelConversionTests
         private static void AssertNearest(Rational exact, Rational actual, PixelFormat format, int index)
         {
             var value = actual.ToDouble();
-            var (up, down) = format == PixelFormat.RgbaFloat
+            var (up, down) = PixelFormats.GetBitsPerComponent(format) == 32
                 ? ((double)MathF.BitIncrement((float)value), (double)MathF.BitDecrement((float)value))
                 : ((double)Half.BitIncrement((Half)value), (double)Half.BitDecrement((Half)value));
             var distance = Rational.Abs(actual - exact);

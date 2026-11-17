@@ -59,10 +59,10 @@ public class BarCode39Tests
     public void ToSvg_Code39_CustomColors_Snapshot()
     {
         var barcode = Barcode.CreateCode39("A");
-        var svg = barcode.ToSvg(new BarcodeSvgOptions
+        var svg = barcode.ToSvg(new BarcodeRenderOptions
         {
-            DarkColor = Color.FromRgb(0xff, 0x00, 0x00),
-            LightColor = Color.FromRgb(0x00, 0xff, 0x00),
+            DarkPaint = new SceneColor(0xff, 0x00, 0x00),
+            LightPaint = new SceneColor(0x00, 0xff, 0x00),
             ModuleWidth = 1,
             ModuleHeight = 3,
             QuietZoneModules = 1,
@@ -102,7 +102,7 @@ public class BarCode39Tests
     {
         var barcode = Barcode.CreateCode39("A");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToSvg(new BarcodeSvgOptions { ModuleWidth = moduleWidth }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToSvg(new BarcodeRenderOptions { ModuleWidth = moduleWidth }));
     }
 
     [Theory]
@@ -112,7 +112,7 @@ public class BarCode39Tests
     {
         var barcode = Barcode.CreateCode39("A");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToSvg(new BarcodeSvgOptions { ModuleHeight = moduleHeight }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToSvg(new BarcodeRenderOptions { ModuleHeight = moduleHeight }));
     }
 
     [Fact]
@@ -148,13 +148,13 @@ public class BarCode39Tests
     public void ToPng_Code39_CustomColors_Snapshot()
     {
         var barcode = Barcode.CreateCode39("A");
-        var png = barcode.ToPng(new BarcodePngOptions
+        var png = barcode.ToPng(new BarcodeRenderOptions
         {
             ModuleWidth = 1,
             ModuleHeight = 1,
             QuietZoneModules = 0,
-            DarkColor = Color.FromRgb(0xff, 0x00, 0x00),
-            LightColor = Color.FromRgb(0x00, 0xff, 0x00),
+            DarkPaint = new SceneColor(0xff, 0x00, 0x00),
+            LightPaint = new SceneColor(0x00, 0xff, 0x00),
         });
 
         Snapshot.Validate(png, SnapshotType.Png);
@@ -164,13 +164,13 @@ public class BarCode39Tests
     public void ToPng_Code39_TransparentColors_Snapshot()
     {
         var barcode = Barcode.CreateCode39("A");
-        var png = barcode.ToPng(new BarcodePngOptions
+        var png = barcode.ToPng(new BarcodeRenderOptions
         {
             ModuleWidth = 1,
             ModuleHeight = 1,
             QuietZoneModules = 0,
-            DarkColor = Color.Transparent,
-            LightColor = Color.FromArgb(0x80, 0xff, 0xff, 0x00),
+            DarkPaint = SceneColor.Transparent,
+            LightPaint = new SceneColor(0xff, 0xff, 0x00, 0x80),
         });
 
         Snapshot.Validate(png, SnapshotType.Png);
@@ -183,7 +183,7 @@ public class BarCode39Tests
     {
         var barcode = Barcode.CreateCode39("A");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToPng(new BarcodePngOptions { ModuleWidth = moduleWidth }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToPng(new BarcodeRenderOptions { ModuleWidth = moduleWidth }));
     }
 
     [Theory]
@@ -193,7 +193,7 @@ public class BarCode39Tests
     {
         var barcode = Barcode.CreateCode39("A");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToPng(new BarcodePngOptions { ModuleHeight = moduleHeight }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToPng(new BarcodeRenderOptions { ModuleHeight = moduleHeight }));
     }
 
     private static (int Width, int Height) GetPngSize(byte[] data)

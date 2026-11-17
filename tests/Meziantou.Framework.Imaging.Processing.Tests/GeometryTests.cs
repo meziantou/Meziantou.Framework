@@ -2,6 +2,8 @@ namespace Meziantou.Framework.Imaging.Tests;
 
 public sealed class GeometryTests
 {
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
     [Fact]
     public void RectangleBoundsAreExclusive()
     {
@@ -685,5 +687,220 @@ public sealed class GeometryTests
         // A background color without alpha needs to be opaque
         using var opaque = new Image<Rgb24>(10, 10);
         Assert.Throws<UnsupportedImageFeatureException>(() => opaque.CorrectPerspective(new PointD(-2, 0), new PointD(5, 0), new PointD(5, 5), new PointD(0, 5)));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Homography estimation: the correspondences are made with a known homography (CreateFromQuadrilateral), so the
+    // expected result is that homography; deskew: documents drawn with known lines of text, rotated by known angles
+    // -----------------------------------------------------------------------------------------------------------------
+
+    #region EstimateHomography_FromCorrespondences
+    [Fact]
+    public void EstimateHomography_FromCorrespondences()
+    {
+        // The corners of a page found in a photo, and where they go: an upright 210x297 page
+        PointD[] photo = [new(31, 18), new(240, 42), new(225, 330), new(12, 300)];
+        PointD[] page = [new(0, 0), new(210, 0), new(210, 297), new(0, 297)];
+
+        var homography = ProjectiveTransform.EstimateHomography(photo, page);
+
+        // Four correspondences give the exact homography: each corner lands on its destination
+        for (var i = 0; i < 4; i++)
+        {
+            Assert.True(homography.TryTransform(photo[i], out var point));
+            Assert.InRange(point.DistanceTo(page[i]), 0, 1e-9);
+        }
+
+        // Warping the photo onto a 210x297 canvas with it gives the four-point perspective correction
+        using var image = new Image<Rgb24>(256, 340);
+        for (var y = 0; y < 340; y++)
+        {
+            for (var x = 0; x < 256; x++)
+            {
+                image.Frames[0][x, y] = new Rgb24((byte)x, (byte)(y / 2), 100);
+            }
+        }
+
+        var background = new Rgba64(65535, 65535, 65535, 65535);
+        using var corrected = image.Clone();
+        corrected.CorrectPerspective(photo[0], photo[1], photo[2], photo[3], new Size(210, 297), new TransformOptions { BackgroundColor = background });
+        image.Transform(homography, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(210, 297), BackgroundColor = background });
+
+        Assert.Equal(new Size(210, 297), image.Size);
+        for (var y = 0; y < 297; y++)
+        {
+            for (var x = 0; x < 210; x++)
+            {
+                Assert.InRange(Math.Abs(image.Frames[0][x, y].R - corrected.Frames[0][x, y].R), 0, 1);
+                Assert.InRange(Math.Abs(image.Frames[0][x, y].G - corrected.Frames[0][x, y].G), 0, 1);
+            }
+        }
+    }
+    #endregion
+
+    #region EstimateHomographyRobust_IgnoreTheOutliers
+    [Fact]
+    public void EstimateHomographyRobust_IgnoreTheOutliers()
+    {
+        // 20 corners matched between two photos of a poster, and 5 wrong matches
+        var truth = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 100, 100), new PointD(10, 12), new PointD(118, 5), new PointD(125, 110), new PointD(4, 98));
+        var source = new List<PointD>();
+        var destination = new List<PointD>();
+        for (var i = 0; i < 20; i++)
+        {
+            var point = new PointD(5 + (i * 37 % 90), 3 + (i * 53 % 94));
+            Assert.True(truth.TryTransform(point, out var image));
+            source.Add(point);
+            destination.Add(image);
+        }
+
+        for (var i = 0; i < 5; i++)
+        {
+            source.Add(new PointD(20 + (i * 15), 50));
+            destination.Add(new PointD(200 - (i * 31), 10 + (i * 40)));
+        }
+
+        // RANSAC keeps the homography the 20 good matches agree on
+        var estimate = ProjectiveTransform.EstimateHomographyRobust([.. source], [.. destination]);
+
+        Assert.Equal(20, estimate.InlierCount);
+        Assert.All(Enumerable.Range(0, 25), i => Assert.Equal(i < 20, estimate.Inliers[i]));
+        Assert.InRange(estimate.RootMeanSquareError, 0, 1e-6);
+    }
+    #endregion
+
+    [Fact]
+    public void EstimateHomographyFitsManyCorrespondencesByLeastSquares()
+    {
+        var truth = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 640, 480), new PointD(-30, 20), new PointD(700, -15), new PointD(610, 520), new PointD(40, 470));
+        var source = new PointD[30];
+        var destination = new PointD[30];
+        for (var i = 0; i < 30; i++)
+        {
+            source[i] = new PointD(i * 113 % 640, i * 71 % 480);
+            Assert.True(truth.TryTransform(source[i], out destination[i]));
+        }
+
+        var estimate = ProjectiveTransform.EstimateHomography(source, destination);
+        foreach (var point in (PointD[])[new(0, 0), new(320, 240), new(639, 479), new(100, 400)])
+        {
+            Assert.True(truth.TryTransform(point, out var expected));
+            Assert.True(estimate.TryTransform(point, out var actual));
+            Assert.InRange(actual.DistanceTo(expected), 0, 1e-6);
+        }
+
+        // W is 1 at the centroid of the source points
+        var centroid = new PointD(source.Average(point => point.X), source.Average(point => point.Y));
+        Assert.InRange((estimate.M13 * centroid.X) + (estimate.M23 * centroid.Y) + estimate.M33, 1 - 1e-12, 1 + 1e-12);
+
+        // The same points give the same homography, and the robust estimate of points without outliers is the same fit
+        Assert.Equal(estimate, ProjectiveTransform.EstimateHomography(source, destination));
+        var robust = ProjectiveTransform.EstimateHomographyRobust(source, destination, new HomographyRansacOptions { Iterations = 50, Seed = 7, Threshold = 0.5 });
+        Assert.Equal(30, robust.InlierCount);
+        Assert.Equal(robust.Transform, ProjectiveTransform.EstimateHomographyRobust(source, destination, new HomographyRansacOptions { Iterations = 50, Seed = 7, Threshold = 0.5 }).Transform);
+    }
+
+    [Fact]
+    public void EstimateHomographyRejectsDegenerateCorrespondences()
+    {
+        PointD[] square = [new(0, 0), new(1, 0), new(1, 1), new(0, 1)];
+        PointD[] line = [new(0, 0), new(1, 1), new(2, 2), new(3, 3)];
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomography(square, line));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomography(line, square));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomography(square.AsSpan(0, 3), square.AsSpan(0, 3)));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomography(square, square.AsSpan(0, 3)));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomography([.. square[..3], new PointD(double.NaN, 0)], square));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomography(square, [.. square[..3], new PointD(0, double.PositiveInfinity)]));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomography([new(1, 1), new(1, 1), new(1, 1), new(1, 1)], square));
+        Assert.Throws<ArgumentException>(() => ProjectiveTransform.EstimateHomographyRobust(line, square));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HomographyRansacOptions { Threshold = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HomographyRansacOptions { Threshold = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HomographyRansacOptions { Iterations = 0 });
+
+        // The identity, and a translation, are found exactly
+        Assert.True(ProjectiveTransform.EstimateHomography(square, square).TryTransform(new PointD(0.25, 0.75), out var same));
+        Assert.InRange(same.DistanceTo(new PointD(0.25, 0.75)), 0, 1e-12);
+    }
+
+    #region Deskew_StraightenAScan
+    [Fact]
+    public void Deskew_StraightenAScan()
+    {
+        // A page of 8 lines of text (words of dark pixels), scanned 3 degrees clockwise
+        using var scan = new Image<Gray8>(240, 180, new Gray8(250));
+        for (var line = 0; line < 8; line++)
+        {
+            for (var y = 20 + (line * 18); y < 26 + (line * 18); y++)
+            {
+                for (var x = 20; x < 220; x++)
+                {
+                    if (x % 23 < 18)
+                    {
+                        scan.Frames[0][x, y] = new Gray8(30);
+                    }
+                }
+            }
+        }
+
+        scan.Rotate(3, new TransformOptions { CanvasMode = TransformCanvasMode.Keep, BackgroundColor = new Rgba64(64250, 64250, 64250, 65535) });
+
+        // The skew is found, then corrected: the lines of text are horizontal again
+        Assert.InRange(scan.Frames[0].EstimateSkew(), 2.9, 3.1);
+        var corrected = scan.Deskew();
+        Assert.InRange(corrected, 2.9, 3.1);
+        Assert.InRange(scan.Frames[0].EstimateSkew(), -0.1, 0.1);
+        Assert.Equal(new Size(240, 180), scan.Size);
+    }
+    #endregion
+
+    [Theory]
+    [InlineData(-7.5, false)]
+    [InlineData(1.25, false)]
+    [InlineData(-2, true)]
+    [InlineData(12, true)]
+    public void EstimateSkewFindsTheAngleOfTheLines(double angle, bool lightOnDark)
+    {
+        var paper = lightOnDark ? new Rgba32(20, 30, 40, 255) : new Rgba32(255, 250, 240, 255);
+        var ink = lightOnDark ? new Rgba32(240, 240, 240, 255) : new Rgba32(10, 10, 60, 255);
+        using var page = new Image<Rgba32>(300, 220, paper);
+        for (var line = 0; line < 10; line++)
+        {
+            for (var y = 25 + (line * 17); y < 30 + (line * 17); y++)
+            {
+                for (var x = 40; x < 260; x++)
+                {
+                    if ((x + (line * 7)) % 19 < 14)
+                    {
+                        page.Frames[0][x, y] = ink;
+                    }
+                }
+            }
+        }
+
+        page.Rotate(angle, new TransformOptions { CanvasMode = TransformCanvasMode.Keep, BackgroundColor = new Rgba64((ushort)(paper.R * 257), (ushort)(paper.G * 257), (ushort)(paper.B * 257), 65535) });
+        var options = new SkewEstimationOptions { MaxAngle = 15, Precision = 0.05 };
+        Assert.InRange(page.Frames[0].EstimateSkew(options, Ct), angle - 0.15, angle + 0.15);
+        Assert.Equal(page.Frames[0].EstimateSkew(options, Ct), page.Frames[0].EstimateSkew(options, Ct));
+    }
+
+    [Fact]
+    public void EstimateSkewOfAFrameWithoutContrastIsZero()
+    {
+        using var blank = new Image<Rgb24>(40, 30, new Rgb24(250, 250, 250));
+        Assert.Equal(0, blank.Frames[0].EstimateSkew(cancellationToken: Ct));
+        Assert.Equal(0, blank.Deskew(cancellationToken: Ct));
+
+        // A transparent frame is paper
+        using var transparent = new Image<Rgba32>(20, 20);
+        Assert.Equal(0, transparent.Frames[0].EstimateSkew(cancellationToken: Ct));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SkewEstimationOptions { MaxAngle = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SkewEstimationOptions { MaxAngle = 46 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SkewEstimationOptions { Precision = 0.001 });
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).EstimateSkew());
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).Deskew());
+        Assert.Throws<OperationCanceledException>(() => blank.Frames[0].EstimateSkew(cancellationToken: new CancellationToken(canceled: true)));
+        using var cmyk = new Image<Cmyk32>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.Frames[0].EstimateSkew());
     }
 }

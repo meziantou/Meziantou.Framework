@@ -10,7 +10,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// The buffer is rented from the writer's allocation scope (<see cref="AllocationKind.Temporary"/>) and grows only to the
-/// largest amount a session appends between two flushes; it is released when the writer completes, faults or is disposed.
+/// largest amount a session appends between two flushes (the whole output, for an output kept until completion, see
+/// <see cref="ApplyPatches"/>); it is released when the writer completes, faults or is disposed.
 /// </remarks>
 internal sealed class ImageOutputBuffer : IBufferWriter<byte>, IDisposable
 {
@@ -61,6 +62,24 @@ internal sealed class ImageOutputBuffer : IBufferWriter<byte>, IDisposable
             throw new ArgumentOutOfRangeException(nameof(offset), offset, "A patch must cover bytes that were already written.");
 
         (_patches ??= []).Add((offset, data.ToArray()));
+    }
+
+    /// <summary>
+    /// Writes the patches over the buffered bytes, for an output kept in the buffer until completion (nothing flushed yet, so
+    /// that every patch offset is in the buffer).
+    /// </summary>
+    public void ApplyPatches()
+    {
+        if (_patches is null)
+            return;
+
+        if (TotalBytes != _length)
+            throw new InvalidOperationException("The patches of a flushed output are written to the destination.");
+
+        foreach (var (offset, data) in _patches)
+        {
+            data.CopyTo(_buffer!.Span[(int)offset..]);
+        }
     }
 
     /// <summary>Gets the buffered bytes.</summary>

@@ -10,7 +10,10 @@
 // With --opaque (TIFF pages without alpha), two 8-bit layouts without alpha are accepted because they convert
 // losslessly: one grayscale sample per pixel (written as gray, gray, gray, 255, the sample inverted when the decode array
 // of the image says that 0 is white) and "none skip last" RGB (the padding byte is replaced by 255).
-// Usage: swift imageio_frames.swift [--binary-alpha | --opaque] <input> (prints "frames <n> <width> <height> <bits>" on stderr)
+// With --half (Radiance HDR), the only accepted layout is 16-bit floating-point RGB with a padding sample ("none skip
+// last", little-endian halves), which ImageIO decodes high dynamic range images to: the frames are written as
+// little-endian half RGBA, the padding sample replaced by 1.
+// Usage: swift imageio_frames.swift [--binary-alpha | --opaque | --half] <input> (prints "frames <n> <width> <height> <bits>" on stderr)
 import Foundation
 import ImageIO
 
@@ -28,6 +31,11 @@ if opaque {
 func fail(_ message: String, _ code: Int32) -> Never {
     FileHandle.standardError.write((message + "\n").data(using: .utf8)!)
     exit(code)
+}
+
+let half = arguments.first == "--half"
+if half {
+    arguments.removeFirst()
 }
 
 let url = URL(fileURLWithPath: arguments[0])
@@ -51,7 +59,8 @@ for index in 0..<count {
     let binaryLayout = binaryAlpha && bits == 8 && channels == 4 && orderMatches && (image.alphaInfo == .noneSkipLast || image.alphaInfo == .premultipliedLast)
     let opaqueGray = opaque && bits == 8 && channels == 1 && image.alphaInfo == .none && image.colorSpace?.model == .monochrome
     let opaqueColor = opaque && bits == 8 && channels == 4 && orderMatches && image.alphaInfo == .noneSkipLast && image.colorSpace?.model == .rgb
-    guard binaryLayout || opaqueGray || opaqueColor || (image.alphaInfo == .last && (channels == 4 || channels == 2) && (bits == 8 || bits == 16) && orderMatches) else {
+    let halfColor = half && bits == 16 && channels == 4 && order == CGBitmapInfo.byteOrder16Little.rawValue && image.bitmapInfo.contains(.floatComponents) && image.alphaInfo == .noneSkipLast
+    guard halfColor || (!half && (binaryLayout || opaqueGray || opaqueColor || (image.alphaInfo == .last && (channels == 4 || channels == 2) && (bits == 8 || bits == 16) && orderMatches && !image.bitmapInfo.contains(.floatComponents)))) else {
         fail("unsupported decoded layout: bits \(bits), alpha \(image.alphaInfo.rawValue), bitmap \(image.bitmapInfo.rawValue)", 4)
     }
 
@@ -86,6 +95,18 @@ for index in 0..<count {
                 output.append(contentsOf: [value, value, value, 255])
             }
 
+            continue
+        }
+
+        if halfColor {
+            // The padding sample becomes an alpha of 1 (0x3C00)
+            var converted = [UInt8](row)
+            for x in 0..<image.width {
+                converted[x * 8 + 6] = 0x00
+                converted[x * 8 + 7] = 0x3C
+            }
+
+            output.append(contentsOf: converted)
             continue
         }
 

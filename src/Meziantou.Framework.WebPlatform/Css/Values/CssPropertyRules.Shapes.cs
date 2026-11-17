@@ -10,11 +10,11 @@ internal static partial class CssPropertyRules
     private static readonly GrammarNode AngleGrammar = ValueGrammarParser.Parse("<angle>");
 
     private static string SerializeShapeComponent(CssComponentValue value, CssPropertyDefinition? property) => value is CssPreservedToken { Type: CssTokenType.Ident } ident
-        ? InfraAscii.ToAsciiLowercase(ident.Token.Value)
+        ? InfraAscii.ToAsciiLowercase(ident.Value)
         : CssSerializer.SerializeValue([value], property);
 
     /// <summary>A &lt;length-percentage&gt; (or a keyword), whose unitless zero is serialized as a length (0px).</summary>
-    private static string SerializeLengthPercentage(CssComponentValue value, CssPropertyDefinition? property) => value is CssPreservedToken { Type: CssTokenType.Number } number && number.Token.NumericValue == 0
+    private static string SerializeLengthPercentage(CssComponentValue value, CssPropertyDefinition? property) => value is CssPreservedToken { Type: CssTokenType.Number } number && number.NumericValue == 0
         ? "0px"
         : SerializeShapeComponent(value, property);
 
@@ -22,7 +22,7 @@ internal static partial class CssPropertyRules
     /// A radius, which is not negative: the result of a math function (or of an extrapolation) is clamped to 0 in the computed
     /// value, keeping its type (0% for a percentage).
     /// </summary>
-    private static string SerializeRadius(CssComponentValue value, CssPropertyDefinition? property, bool computed) => computed && value is CssPreservedToken { Type: CssTokenType.Dimension or CssTokenType.Percentage } numeric && numeric.Token.NumericValue < 0
+    private static string SerializeRadius(CssComponentValue value, CssPropertyDefinition? property, bool computed) => computed && value is CssPreservedToken { Type: CssTokenType.Dimension or CssTokenType.Percentage } numeric && numeric.NumericValue < 0
         ? numeric.Type == CssTokenType.Percentage ? "0%" : "0px"
         : SerializeLengthPercentage(value, property);
 
@@ -67,7 +67,7 @@ internal static partial class CssPropertyRules
         if (radii is null)
             return "";
 
-        var slash = radii.FindIndex(value => value is CssPreservedToken token && token.Token.IsDelim('/'));
+        var slash = radii.FindIndex(value => value is CssPreservedToken token && token.IsDelim('/'));
         var horizontal = ExpandSides([.. (slash < 0 ? radii : radii[..slash]).Select(value => SerializeRadius(value, property, computed))]);
         var vertical = slash < 0 ? horizontal : ExpandSides([.. radii[(slash + 1)..].Select(value => SerializeRadius(value, property, computed))]);
         if (horizontal.All(IsZero) && vertical.All(IsZero))
@@ -111,18 +111,18 @@ internal static partial class CssPropertyRules
     /// <summary>The canonical &lt;position&gt; of a longhand (e.g. mask-position: top is center top); the keywords of the property are kept.</summary>
     private static string? CanonicalizePositionList(List<CssComponentValue> significant)
     {
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && InfraAscii.ToAsciiLowercase(keyword.Token.Value) is "auto" or "normal" or "none")
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } keyword] && InfraAscii.ToAsciiLowercase(keyword.Value) is "auto" or "normal" or "none")
             return null;
 
         // A single logical keyword of an axis is completed with center (x-start is x-start center)
-        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && InfraAscii.ToAsciiLowercase(single.Token.Value) is "x-start" or "x-end" or "y-start" or "y-end")
+        if (significant is [CssPreservedToken { Type: CssTokenType.Ident } single] && InfraAscii.ToAsciiLowercase(single.Value) is "x-start" or "x-end" or "y-start" or "y-end")
         {
-            var lower = InfraAscii.ToAsciiLowercase(single.Token.Value);
+            var lower = InfraAscii.ToAsciiLowercase(single.Value);
             return lower[0] == 'x' ? lower + " center" : "center " + lower;
         }
 
         // The other logical keywords (x-start, block-end...) keep their specified form
-        if (significant.Exists(value => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Token.Value) is { } name
+        if (significant.Exists(value => value is CssPreservedToken { Type: CssTokenType.Ident } ident && InfraAscii.ToAsciiLowercase(ident.Value) is { } name
             && (name.StartsWith("x-", StringComparison.Ordinal) || name.StartsWith("y-", StringComparison.Ordinal) || name.StartsWith("block-", StringComparison.Ordinal) || name.StartsWith("inline-", StringComparison.Ordinal) || name is "start" or "end")))
             return null;
 
@@ -154,24 +154,24 @@ internal static partial class CssPropertyRules
         {
             if (i % 2 == 1)
             {
-                if (terms[i] is not CssPreservedToken { Type: CssTokenType.Delim } operation || !(operation.Token.IsDelim('+') || operation.Token.IsDelim('-')))
+                if (terms[i] is not CssPreservedToken { Type: CssTokenType.Delim } operation || !(operation.IsDelim('+') || operation.IsDelim('-')))
                     return null;
 
-                sign = operation.Token.IsDelim('-') ? -1 : 1;
+                sign = operation.IsDelim('-') ? -1 : 1;
                 continue;
             }
 
             switch (terms[i])
             {
                 case CssPreservedToken { Type: CssTokenType.Percentage } term:
-                    percentage += sign * term.Token.NumericValue;
+                    percentage += sign * term.NumericValue;
                     hasPercentage = true;
                     break;
-                case CssPreservedToken { Type: CssTokenType.Dimension } term when InfraAscii.EqualsIgnoreAsciiCase(term.Token.Value, "px"):
-                    pixels += sign * term.Token.NumericValue;
-                    hasPixels = isCalc || term.Token.NumericValue != 0;
+                case CssPreservedToken { Type: CssTokenType.Dimension } term when InfraAscii.EqualsIgnoreAsciiCase(term.Value, "px"):
+                    pixels += sign * term.NumericValue;
+                    hasPixels = isCalc || term.NumericValue != 0;
                     break;
-                case CssPreservedToken { Type: CssTokenType.Number } term when term.Token.NumericValue == 0:
+                case CssPreservedToken { Type: CssTokenType.Number } term when term.NumericValue == 0:
                     break;
                 default:
                     return null;
@@ -228,9 +228,9 @@ internal static partial class CssPropertyRules
             {
                 shape = serialized;
             }
-            else if (box is null && value is CssPreservedToken { Type: CssTokenType.Ident } ident && !ident.Token.IsIdent("none"))
+            else if (box is null && value is CssPreservedToken { Type: CssTokenType.Ident } ident && !ident.IsIdent("none"))
             {
-                box = InfraAscii.ToAsciiLowercase(ident.Token.Value);
+                box = InfraAscii.ToAsciiLowercase(ident.Value);
             }
             else
             {
@@ -291,7 +291,7 @@ internal static partial class CssPropertyRules
             }
             else if (component is CssPreservedToken { Type: CssTokenType.Ident } ident && shapes.Count > 0 && shapes[^1].Box is null)
             {
-                shapes[^1] = (shapes[^1].Shape, InfraAscii.ToAsciiLowercase(ident.Token.Value));
+                shapes[^1] = (shapes[^1].Shape, InfraAscii.ToAsciiLowercase(ident.Value));
             }
             else
             {
@@ -444,7 +444,7 @@ internal static partial class CssPropertyRules
             if (position is not null)
             {
                 // The position ends at the angle or at a keyword of ray()
-                var isRayKeyword = argument is CssPreservedToken { Type: CssTokenType.Ident } && InfraAscii.ToAsciiLowercase(((CssPreservedToken)argument).Token.Value) is "contain" or "sides" or "closest-side" or "closest-corner" or "farthest-side" or "farthest-corner";
+                var isRayKeyword = argument is CssPreservedToken { Type: CssTokenType.Ident } && InfraAscii.ToAsciiLowercase(((CssPreservedToken)argument).Value) is "contain" or "sides" or "closest-side" or "closest-corner" or "farthest-side" or "farthest-corner";
                 if (!isRayKeyword && !ValueMatcher.Matches(AngleGrammar, [argument]))
                 {
                     position.Add(argument);
@@ -538,7 +538,7 @@ internal static partial class CssPropertyRules
                         else if (IsIdent(group[i], "rotate") && i + 1 < group.Count)
                         {
                             i++;
-                            rotation = group[i] is CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Dimension } angle && angle.Token.NumericValue == 0 ? null : "rotate " + SerializeLengthPercentage(group[i], property);
+                            rotation = group[i] is CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Dimension } angle && angle.NumericValue == 0 ? null : "rotate " + SerializeLengthPercentage(group[i], property);
                         }
                         else if (!IsIdent(group[i], "ccw") && !IsIdent(group[i], "small"))
                         {
@@ -582,7 +582,7 @@ internal static partial class CssPropertyRules
                 if (!hasEndPoint && computed && i == 2 && isAbsolute && value is CssPreservedToken { Type: CssTokenType.Ident } keyword)
                 {
                     // hline and vline: the keywords of the axis are percentages
-                    parts.Add(InfraAscii.ToAsciiLowercase(keyword.Token.Value) switch
+                    parts.Add(InfraAscii.ToAsciiLowercase(keyword.Value) switch
                     {
                         "left" or "top" => "0%",
                         "center" => "50%",
@@ -598,7 +598,7 @@ internal static partial class CssPropertyRules
                 if ((groupIndex == 0 && IsIdent(value, "from")) || (i == 1 && hasEndPoint && IsIdent(value, "to")))
                 {
                     var end = i + 1;
-                    while (end < group.Count && !(group[end] is CssPreservedToken { Type: CssTokenType.Ident } option && InfraAscii.ToAsciiLowercase(option.Token.Value) is "with" or "of" or "cw" or "ccw" or "large" or "small" or "rotate"))
+                    while (end < group.Count && !(group[end] is CssPreservedToken { Type: CssTokenType.Ident } option && InfraAscii.ToAsciiLowercase(option.Value) is "with" or "of" or "cw" or "ccw" or "large" or "small" or "rotate"))
                     {
                         end++;
                     }
@@ -628,7 +628,7 @@ internal static partial class CssPropertyRules
         if (values is [.., var from, CssPreservedToken { Type: CssTokenType.Ident } reference] && IsIdent(from, "from"))
         {
             var coordinates = string.Join(' ', values.GetRange(0, values.Count - 2).Select(value => SerializeLengthPercentage(value, property)));
-            var anchor = InfraAscii.ToAsciiLowercase(reference.Token.Value);
+            var anchor = InfraAscii.ToAsciiLowercase(reference.Value);
             return anchor == (isAbsolute ? "origin" : "start") ? coordinates : coordinates + " from " + anchor;
         }
 
@@ -668,7 +668,7 @@ internal static partial class CssPropertyRules
         if (keyword is null)
             return serializedAngle;
 
-        return angle is CssPreservedToken { Type: CssTokenType.Dimension or CssTokenType.Number } zero && zero.Token.NumericValue == 0 ? keyword : keyword + " " + serializedAngle;
+        return angle is CssPreservedToken { Type: CssTokenType.Dimension or CssTokenType.Number } zero && zero.NumericValue == 0 ? keyword : keyword + " " + serializedAngle;
     }
 
     /// <summary>https://drafts.csswg.org/motion-1/#offset-rotate-property: reverse is auto 180deg (the angle is added to 180deg).</summary>

@@ -4,7 +4,8 @@ using Meziantou.Framework.Imaging.Metadata;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// An image stored next to the primary image of a file: a thumbnail, a depth map, a gain map, a matte. It is borrowed
+/// An image stored next to the primary image of a file: a thumbnail, a depth map, a gain map, a matte, a lower resolution
+/// level. It is borrowed
 /// from its <see cref="AuxiliaryImageCollection"/>, and decoded on demand by <see cref="Decode(ImageDecodeOptions?)"/>.
 /// </summary>
 public sealed class AuxiliaryImage
@@ -45,7 +46,19 @@ public sealed class AuxiliaryImage
     /// </summary>
     public GainMapMetadata? GainMapMetadata { get; internal set; }
 
+    /// <summary>
+    /// Gets the indexes along x and y of a <see cref="AuxiliaryImageKind.ResolutionLevel"/> of an OpenEXR image (the
+    /// <see cref="OpenExrDecodingOptions.LevelX"/> and <see cref="OpenExrDecodingOptions.LevelY"/> that decode it), or
+    /// <see langword="null"/> for the other images.
+    /// </summary>
+    public Point? Level { get; internal init; }
+
     internal uint? HeifItemId { get; init; }
+
+    /// <summary>Gets the 8-bit RGBA pixels of the preview image of an OpenEXR file (its <c>preview</c> attribute).</summary>
+    internal byte[]? OpenExrPreview { get; init; }
+
+    internal int? DngDirectoryIndex { get; init; }
 
     internal (int Offset, int Length)? JpegRange { get; init; }
 

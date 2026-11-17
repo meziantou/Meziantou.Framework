@@ -1,0 +1,11 @@
+<p role="status">Current count: @_count</p>
+<button class="btn" @onclick="Increment">Click me</button>
+
+@code {
+    private int _count;
+
+    [Parameter]
+    public int IncrementAmount { get; set; } = 1;
+
+    private void Increment() => _count += IncrementAmount;
+}

@@ -1,0 +1,20 @@
+@page "/static"
+<PageTitle>Static</PageTitle>
+<h1>Static rendering</h1>
+<p id="message">@_message</p>
+<form method="post" @formname="greet" @onsubmit="Submit" data-enhance>
+    <AntiforgeryToken />
+    <label for="name">Name</label>
+    <InputText id="name" @bind-Value="Name" />
+    <button type="submit">Greet</button>
+</form>
+<a href="interactive">Interactive</a>
+
+@code {
+    private string? _message;
+
+    [SupplyParameterFromForm]
+    public string? Name { get; set; }
+
+    private void Submit() => _message = "Hello " + Name;
+}

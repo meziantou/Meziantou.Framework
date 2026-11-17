@@ -26,8 +26,8 @@ The public API is low level: it is the one these libraries need. Update the pack
 
 | | Supported |
 | --- | --- |
-| Containers | TrueType and OpenType fonts and collections, WOFF 1.0 and WOFF 2.0 |
-| Outlines | TrueType, CFF and CFF2 |
+| Containers | TrueType and OpenType fonts and collections, WOFF 1.0 and WOFF 2.0, PostScript Type 1 fonts (PFB and PFA) |
+| Outlines | TrueType, CFF and CFF2, Type 1 charstrings |
 | Variable fonts | The axes and named instances, and the variations of the outlines, the metrics and the layout tables |
 | Color fonts | `COLR` versions 0 and 1, `CPAL`, and glyphs that are images (`sbix`, `CBDT`) |
 | Metrics | Horizontal and vertical metrics, `BASE` baselines, the constants and glyph constructions of the `MATH` table |

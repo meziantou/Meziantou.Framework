@@ -68,6 +68,31 @@ internal sealed partial class TextLayoutEngine
     /// <summary>The most times the optimal breaks of a paragraph are chosen again after a line that does not fit anymore.</summary>
     private const int MaxReplans = 8;
 
+    /// <summary>
+    /// The characters the optimal breaks of a paragraph may measure per character of the rest of the paragraph, on top
+    /// of <see cref="MinOptimalWork"/>: each place a line can start measures the text up to the end of the longest line
+    /// that can start there, so a paragraph of lines of many break opportunities would take a time quadratic in its
+    /// length. Beyond it, the rest of the paragraph is broken greedily.
+    /// </summary>
+    private const int MaxOptimalWorkPerCharacter = 256;
+
+    /// <summary>The characters the optimal breaks of any paragraph may measure.</summary>
+    private const long MinOptimalWork = 1_000_000;
+
+    /// <summary>
+    /// Gets or sets, on the current thread, the characters the optimal breaks of a paragraph may measure instead of
+    /// <see cref="MaxOptimalWorkPerCharacter"/> and <see cref="MinOptimalWork"/>: the tests use it to check that the
+    /// work is bounded.
+    /// </summary>
+    internal static long? OptimalWorkLimitOnCurrentThread
+    {
+        get => s_optimalWorkLimit;
+        set => s_optimalWorkLimit = value;
+    }
+
+    [ThreadStatic]
+    private static long? s_optimalWorkLimit;
+
     /// <summary>The fewest characters of the text after a line that are shaped again for the next line.</summary>
     private const int MinShapingLength = 64;
 
@@ -927,6 +952,12 @@ internal sealed partial class TextLayoutEngine
                 live += item.GlyphCount;
                 items.Add(item);
             }
+            else
+            {
+                // An item without glyph (a control character, a tabulation) is not moved: its start must stay within
+                // the list once it is compacted
+                item.GlyphStart = 0;
+            }
         }
 
         if (live * 2L > glyphs.Count)
@@ -1237,8 +1268,12 @@ internal sealed partial class TextLayoutEngine
     /// <param name="paragraph">The paragraph.</param>
     /// <param name="start">Where the first line starts.</param>
     /// <param name="isFirst">Whether the first line is the first line of the paragraph, which has the indent of the first line.</param>
-    /// <returns>The end of each line, whether it ends with a hyphen, and whether it is wider than its width because nothing shorter could end it.</returns>
-    private List<(int End, bool IsHyphenated, bool IsForced)> FindOptimalBreaks(Paragraph paragraph, int start, bool isFirst)
+    /// <returns>
+    /// The end of each line, whether it ends with a hyphen, and whether it is wider than its width because nothing
+    /// shorter could end it; or <see langword="null"/> when finding them would measure more characters than
+    /// <see cref="MaxOptimalWorkPerCharacter"/> allows, and the rest of the paragraph is broken greedily.
+    /// </returns>
+    private List<(int End, bool IsHyphenated, bool IsForced)>? FindOptimalBreaks(Paragraph paragraph, int start, bool isFirst)
     {
         var withHyphens = _options.Hyphenation != TextHyphenation.None;
         var firstLineIndent = _options.FirstLineIndent * _scale;
@@ -1258,6 +1293,7 @@ internal sealed partial class TextLayoutEngine
         }
 
         var length = paragraph.End - start;
+        var work = OptimalWorkLimitOnCurrentThread ?? (MinOptimalWork + ((long)MaxOptimalWorkPerCharacter * length));
         var isHyphenation = new bool[length + 1];
         if (_options.Hyphenation == TextHyphenation.Automatic)
         {
@@ -1288,6 +1324,10 @@ internal sealed partial class TextLayoutEngine
             for (var index = first < 0 ? ~first : first; index < candidates.Count; index++)
             {
                 var to = candidates[index];
+                work -= to - position;
+                if (work < 0)
+                    return null;
+
                 Measure(paragraph, position, to, ref pen, ref contentWidth);
                 position = to;
                 if (contentWidth > available)
@@ -1307,6 +1347,10 @@ internal sealed partial class TextLayoutEngine
             if (!hasLine)
             {
                 var to = FindBreak(paragraph, from, available, out var isHyphenated);
+                work -= to - from;
+                if (work < 0)
+                    return null;
+
                 var width = Measure(paragraph, from, to) + (isHyphenated ? MeasureHyphen(paragraph, to) : 0);
                 var overflow = Math.Max(width - available, 0) / em;
                 Relax(from, to, 1e6 + (overflow * overflow) + (to < paragraph.End ? GetLineCost(paragraph, opportunities, start, from, to, Math.Max(available - width, 0), em) : 0), isHyphenated, isForced: true);

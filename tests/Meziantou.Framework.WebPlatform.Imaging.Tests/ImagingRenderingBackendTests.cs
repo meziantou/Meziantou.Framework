@@ -440,7 +440,6 @@ public sealed class ImagingRenderingBackendTests
         return pixels;
     }
 
-    /// <summary>A font of the tests of the glyph outlines of the core library (tests/Meziantou.Framework.WebPlatform.Tests/Css/Fonts/Resources/Outlines).</summary>
     /// <summary>Loads a font of the test data (fonts of WPT: COLR-palettes-test-font.ttf, and a subset of Noto Color Emoji under the OFL).</summary>
     private static Css.Fonts.FontFile LoadTestFont(string name)
     {
@@ -507,6 +506,30 @@ public sealed class ImagingRenderingBackendTests
         using var translucent = CreateSurface(width: 60, height: 60);
         translucent.Draw(List(new DrawGlyphsItem(run, new DisplayPaint(Blue with { A = 0.5f }))));
         Assert.InRange(ReadPixel(translucent, 30, 28)[3], (alpha / 2) - 2, (alpha / 2) + 2);
+    }
+
+    [Fact]
+    public void Draw_SvgGlyphs()
+    {
+        // The glyph A of the font is an SVG document (the SVG table) on whole pixels at 16px: a red square (2, -12)-(14, 0)
+        // from the origin, with a square in the first color of the palette (green) at (6, -8)-(10, -4); its outline is the
+        // red square, drawn in the color of the text where SVG glyphs are not drawn
+        var builder = Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgBoxes();
+        var file = Css.Fonts.FontFile.Load(builder.Build()) ?? throw new InvalidOperationException("The font is invalid");
+        using var surface = CreateSurface(width: 30, height: 30);
+        var run = new GlyphRun(new DisplayFont(file, 0, 16, [], SyntheticBold: false, SyntheticObliqueAngle: 0), [(ushort)Meziantou.Framework.Imaging.CorpusGenerator.Common.FontSamples.SvgA], [new PhysicalOffset(5, 20)], "A");
+        surface.Draw(List(new DrawGlyphsItem(run, new DisplayPaint(Blue))));
+
+        Assert.Equal([255, 0, 0, 255], ReadPixel(surface, 8, 10));
+        Assert.Equal([0, 255, 0, 255], ReadPixel(surface, 12, 14));
+        Assert.Equal([0, 0, 0, 0], ReadPixel(surface, 6, 14));
+        Assert.Equal([0, 0, 0, 0], ReadPixel(surface, 12, 7));
+        Assert.DoesNotContain(((byte)0, (byte)0, (byte)255), ReadOpaqueColors(surface));
+
+        // The alpha of the color of the text applies to the glyph
+        using var translucent = CreateSurface(width: 30, height: 30);
+        translucent.Draw(List(new DrawGlyphsItem(run, new DisplayPaint(Blue with { A = 0.5f }))));
+        Assert.InRange(ReadPixel(translucent, 8, 10)[3], 126, 129);
     }
 
     [Fact]

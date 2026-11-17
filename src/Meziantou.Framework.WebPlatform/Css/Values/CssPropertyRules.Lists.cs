@@ -87,7 +87,7 @@ internal static partial class CssPropertyRules
             }
             else if (position is null && (IsIdent(value, "inside") || IsIdent(value, "outside")))
             {
-                position = InfraAscii.ToAsciiLowercase(((CssPreservedToken)value).Token.Value);
+                position = InfraAscii.ToAsciiLowercase(((CssPreservedToken)value).Value);
             }
             else if (image is null && ParseLonghand("list-style-image", value) is { } imageValue)
             {

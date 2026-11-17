@@ -2267,4 +2267,340 @@ public sealed class ResizeTests
             return data;
         }
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Seam carving: the expected seams are derived by hand from the forward energy (Rubinstein et al. 2008): removing pixel
+    // (y, x) costs |I(y, x-1) - I(y, x+1)|, plus |I(y-1, x) - I(y, x-1)| when the seam comes from the upper left and
+    // |I(y-1, x) - I(y, x+1)| from the upper right, the edge pixels repeated beyond the edges; straight wins ties, then
+    // left, then right, then the leftmost end
+    // -----------------------------------------------------------------------------------------------------------------
+
+    #region SeamCarve_KeepTheSubjects
+    [Fact]
+    public void SeamCarve_KeepTheSubjects()
+    {
+        // A flat sky with two detailed subjects, 8 pixels wide each
+        using var image = new Image<Rgb24>(40, 20, new Rgb24(120, 170, 230));
+        for (var y = 4; y < 16; y++)
+        {
+            for (var x = 0; x < 8; x++)
+            {
+                var level = (byte)(40 + (45 * (((7 * x) + (3 * y)) % 5)));
+                var color = new Rgb24(level, (byte)(level / 2), 20);
+                image.Frames[0][4 + x, y] = color;
+                image.Frames[0][28 + x, y] = color;
+            }
+        }
+
+        // 16 seams go through the sky: the subjects keep their size, they only get closer to each other
+        image.SeamCarve(24, 20);
+
+        Assert.Equal(new Size(24, 20), image.Size);
+        var subjectPixels = 0;
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 24; x++)
+            {
+                if (image.Frames[0][x, y] != new Rgb24(120, 170, 230))
+                {
+                    subjectPixels++;
+                }
+            }
+        }
+
+        Assert.Equal(2 * 8 * 12, subjectPixels);
+    }
+    #endregion
+
+    [Fact]
+    public void SeamCarvingRemovesTheSeamOfLeastForwardEnergy()
+    {
+        // 0   0 100      line 0: removing x = 0, 1, 2 costs |0 - 0| = 0, |0 - 100| = 100, |0 - 100| = 100
+        // 100 0   0      line 1, x = 0: 100 + 0 straight (200 from the upper right); x = 2: 0 + 100 straight; x = 1: 200
+        // The seams of cost 100 end in columns 0 and 2: the leftmost wins, and column 0 is removed
+        using var image = CreateGray([[0, 0, 100], [100, 0, 0]]);
+        image.SeamCarve(2, 2, cancellationToken: Ct);
+        Assert.Equal([[0, 100], [0, 0]], ReadGray(image));
+
+        // One row: removing x = 0, 1, 2, 3 costs |10 - 30| = 20, |10 - 200| = 190, |30 - 210| = 180, |200 - 210| = 10
+        using var row = CreateGray([[10, 30, 200, 210]]);
+        row.SeamCarve(3, 1, cancellationToken: Ct);
+        Assert.Equal([[10, 30, 200]], ReadGray(row));
+
+        // The same column, carved vertically: the transposed rows are the lines of horizontal seams
+        using var column = CreateGray([[10], [30], [200], [210]]);
+        column.SeamCarve(1, 3, cancellationToken: Ct);
+        Assert.Equal([[10], [30], [200]], ReadGray(column));
+
+        // An unchanged size leaves the image as it is
+        using var same = CreateGray([[1, 2], [3, 4]]);
+        same.SeamCarve(2, 2, cancellationToken: Ct);
+        Assert.Equal([[1, 2], [3, 4]], ReadGray(same));
+    }
+
+    [Fact]
+    public void SeamCarvingDuplicatesTheSeamsItWouldRemove()
+    {
+        // The seam a reduction removes is column 3 (see above), at the end of the line: a pixel blended from it and its
+        // left neighbor comes before it, (200 + 210) / 2 = 205
+        using var row = CreateGray([[10, 30, 200, 210]]);
+        row.SeamCarve(5, 1, cancellationToken: Ct);
+        Assert.Equal([[10, 30, 200, 205, 210]], ReadGray(row));
+
+        // Elsewhere, the blend of the seam pixel and its right neighbor follows it: removing x = 0, 1, 2 costs 20, 190, 170,
+        // so column 0 is duplicated with (10 + 30) / 2 = 20
+        using var start = CreateGray([[10, 30, 200]]);
+        start.SeamCarve(4, 1, cancellationToken: Ct);
+        Assert.Equal([[10, 20, 30, 200]], ReadGray(start));
+
+        // Enlarging beyond twice the size inserts half of the current size at a time: 2 -> 3 -> 4 -> 6 -> 8
+        using var wide = CreateGray([[0, 255]]);
+        wide.SeamCarve(8, 2, cancellationToken: Ct);
+        Assert.Equal(new Size(8, 2), wide.Size);
+        Assert.Equal(0, ReadGray(wide)[0][0]);
+        Assert.Equal(255, ReadGray(wide)[0][7]);
+
+        // The blend is premultiplied by alpha: a transparent neighbor does not darken the inserted pixel
+        using var translucent = new Image<Rgba32>(2, 1);
+        translucent.Frames[0][0, 0] = new Rgba32(200, 100, 50, 255);
+        translucent.SeamCarve(3, 1, cancellationToken: Ct);
+        Assert.Equal(new Rgba32(200, 100, 50, 128), translucent.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public void SeamCarvingFollowsTheProtectedAndRemovedRegions()
+    {
+        // A flat image with a red object: the seams of the removed region take it away first
+        using var image = new Image<Rgb24>(8, 6, new Rgb24(250, 250, 250));
+        var removed = new PixelMask(8, 6);
+        for (var y = 0; y < 6; y++)
+        {
+            image.Frames[0][5, y] = new Rgb24(255, 0, 0);
+            image.Frames[0][6, y] = new Rgb24(255, 0, 0);
+        }
+
+        removed.Fill(new Rectangle(5, 0, 2, 6));
+        Assert.Equal(12, removed.Count);
+        image.SeamCarve(6, 6, new SeamCarvingOptions { RemovedRegion = removed }, Ct);
+        Assert.All(ReadPixels(image), pixel => Assert.Equal(new Rgb24(250, 250, 250), pixel));
+
+        // Without the region, the flat columns go first and the object stays
+        using var unprotected = new Image<Rgb24>(8, 6, new Rgb24(250, 250, 250));
+        unprotected.Frames[0][5, 0] = new Rgb24(255, 0, 0);
+        unprotected.SeamCarve(6, 6, cancellationToken: Ct);
+        Assert.Contains(new Rgb24(255, 0, 0), ReadPixels(unprotected));
+
+        // A protected region keeps its columns even where they hold no detail: 3 gray levels, the left 3 columns protected
+        using var levels = CreateGray([[1, 2, 3, 4, 5, 6]]);
+        var keep = new PixelMask(6, 1);
+        keep.Fill(new Rectangle(0, 0, 3, 1));
+        levels.SeamCarve(3, 1, new SeamCarvingOptions { ProtectedRegion = keep }, Ct);
+        Assert.Equal([[1, 2, 3]], ReadGray(levels));
+    }
+
+    [Fact]
+    public void SeamCarvingRemovesTheSameSeamsFromEveryFrame()
+    {
+        // Frame 0 has a vertical band in columns 1 and 2, frame 1 is flat: the sum of their energies keeps the band in both
+        // frames, which stay aligned (removing column 4 costs nothing, the others 240 each; a band one pixel wide would cost
+        // nothing either, since its removal brings together two equal pixels)
+        using var image = new Image<Rgb24>(5, 3, new Rgb24(10, 10, 10));
+        var line = image.Frames[0];
+        for (var y = 0; y < 3; y++)
+        {
+            line[1, y] = new Rgb24(250, 250, 250);
+            line[2, y] = new Rgb24(250, 250, 250);
+        }
+
+        image.InsertFrame(1, image.Frames[0]).ProcessPixelRows(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                pixels.GetRowSpan(y).Fill(new Rgb24(20, 20, 20));
+            }
+        });
+        image.SetPosterFrame(image.Frames[0]);
+        image.Frames[1].Metadata.Hotspot = new Point(1, 2);
+        image.SeamCarve(4, 3, cancellationToken: Ct);
+
+        Assert.Equal(new Size(4, 3), image.Size);
+        Assert.Equal(new Size(4, 3), image.PosterFrame!.Size);
+        Assert.Equal(new Rgb24(250, 250, 250), image.Frames[0][1, 2]);
+        Assert.Equal(new Rgb24(250, 250, 250), image.PosterFrame[2, 0]);
+        Assert.Equal(new Point(1, 2), image.Frames[1].Metadata.Hotspot);
+        Assert.All(ReadPixels(image.Frames[1]), pixel => Assert.Equal(new Rgb24(20, 20, 20), pixel));
+    }
+
+    [Fact]
+    public void FailedSeamCarvingLeavesTheImageUnchanged()
+    {
+        using var image = CreateGray([[10, 30, 200, 210], [10, 30, 200, 210]]);
+        var liveStorages = image.Owner.LiveStorageCount;
+
+        // A hotspot on the seam (column 3) is not kept
+        image.Frames[0].Metadata.Hotspot = new Point(3, 1);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.SeamCarve(3, 2, cancellationToken: Ct));
+        Assert.Equal("Cursor hotspot outside the kept region", exception.Feature);
+        image.Frames[0].Metadata.Hotspot = null;
+
+        Assert.Throws<OperationCanceledException>(() => image.SeamCarve(3, 2, cancellationToken: new CancellationToken(canceled: true)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.SeamCarve(0, 2, cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.SeamCarve(3, -1, cancellationToken: Ct));
+        Assert.Throws<ArgumentException>(() => image.SeamCarve(3, 2, new SeamCarvingOptions { ProtectedRegion = new PixelMask(3, 2) }, Ct));
+        Assert.Throws<ArgumentException>(() => image.SeamCarve(3, 2, new SeamCarvingOptions { RemovedRegion = new PixelMask(4, 3) }, Ct));
+        Assert.Equal([[10, 30, 200, 210], [10, 30, 200, 210]], ReadGray(image));
+        Assert.Equal(liveStorages, image.Owner.LiveStorageCount);
+
+        using var limited = new Image<Rgba32>(16, 16, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 4_096 } });
+        Assert.Throws<ImageResourceLimitException>(() => limited.SeamCarve(8, 8, cancellationToken: Ct));
+        Assert.Equal(new Size(16, 16), limited.Size);
+
+        using var large = new Image<Gray8>(4, 4, new ImageConfiguration { Limits = new ImageResourceLimits { MaxWidth = 8 } });
+        Assert.Throws<ImageResourceLimitException>(() => large.SeamCarve(9, 4, cancellationToken: Ct));
+
+        using var cmyk = new Image<Cmyk32>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.SeamCarve(1, 1, cancellationToken: Ct));
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    [InlineData(PixelFormat.La16)]
+    [InlineData(PixelFormat.Bgr565)]
+    public void SeamCarvingMovesTheStoredPixelsOfEveryFormat(PixelFormat format)
+    {
+        // The pixels that are only moved keep their stored bytes; the seam is column 0 in every format: removing x = 0, 1, 2,
+        // 3 costs |50 - 60|, |50 - 200|, |60 - 10|, |200 - 10|, and the order stays in linear light and in 5 or 6 bits
+        using var gray = CreateGray([[50, 60, 200, 10], [50, 60, 200, 10]]);
+        using Image image = format switch
+        {
+            PixelFormat.Rgba64 => gray.CloneAs<Rgba64>(),
+            PixelFormat.RgbaHalf => gray.CloneAs<RgbaHalf>(),
+            PixelFormat.La16 => gray.CloneAs<La16>(),
+            _ => gray.CloneAs<Bgr565>(),
+        };
+
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
+        var before = new byte[4 * 2 * bytesPerPixel];
+        image.Frames[0].CopyPixelBytesTo(before);
+        image.SeamCarve(3, 2, cancellationToken: Ct);
+        var after = new byte[3 * 2 * bytesPerPixel];
+        image.Frames[0].CopyPixelBytesTo(after);
+        Assert.Equal(before.AsSpan(bytesPerPixel, 3 * bytesPerPixel).ToArray(), after.AsSpan(0, 3 * bytesPerPixel).ToArray());
+    }
+
+    [Fact]
+    public void SeamCarvingKeepsTheStoredBytesOfTheMovedPixels()
+    {
+        // Halves that are not numbers keep their payloads when they are moved: the seam is column 3, the end of the line
+        using var image = new Image<RgbaHalf>(4, 1);
+        ushort[] green = [0x2400, 0x2C00, 0xFD0A, 0x7E01];
+        for (var x = 0; x < 4; x++)
+        {
+            image.Frames[0][x, 0] = new RgbaHalf((Half)0.5f, BitConverter.UInt16BitsToHalf(green[x]), (Half)0.5f, Half.One);
+        }
+
+        var before = new byte[32];
+        image.Frames[0].CopyPixelBytesTo(before);
+        image.SeamCarve(3, 1, cancellationToken: Ct);
+        var after = new byte[24];
+        image.Frames[0].CopyPixelBytesTo(after);
+        Assert.Equal(before.AsSpan(0, 24).ToArray(), after);
+    }
+
+    [Fact]
+    public void PixelMasksHoldOneBitPerPixel()
+    {
+        var mask = new PixelMask(70, 3);
+        Assert.Equal(new Size(70, 3), mask.Size);
+        Assert.Equal(0, mask.Count);
+
+        // A rectangle partly outside the mask is clipped
+        mask.Fill(new Rectangle(60, 1, 20, 5));
+        Assert.Equal(10 * 2, mask.Count);
+        Assert.True(mask[69, 2]);
+        Assert.False(mask[59, 2]);
+        mask[64, 1] = false;
+        mask.Fill(new Rectangle(65, 1, 1, 1), value: false);
+        Assert.Equal(18, mask.Count);
+        mask.Clear();
+        Assert.Equal(0, mask.Count);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => mask[70, 0]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => mask[0, -1]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PixelMask(0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PixelMask(65536, 65536));
+    }
+
+    [Fact]
+    public void PixelMasksAreReadFromTheLightPixelsOfAFrame()
+    {
+        // Gray levels: 128 is at least half of 255 (2 x 128 >= 255), 127 is not
+        using var gray = CreateGray([[0, 127, 128, 255]]);
+        var mask = PixelMask.FromFrame(gray.Frames[0]);
+        Assert.Equal([false, false, true, true], Enumerable.Range(0, 4).Select(x => mask[x, 0]));
+
+        // The luma is premultiplied by alpha: white at half coverage is set, white at a lower one is not
+        using var rgba = new Image<Rgba32>(3, 1);
+        rgba.Frames[0][0, 0] = new Rgba32(255, 255, 255, 128);
+        rgba.Frames[0][1, 0] = new Rgba32(255, 255, 255, 127);
+        rgba.Frames[0][2, 0] = new Rgba32(255, 255, 0, 255);
+        var coverage = PixelMask.FromFrame(rgba.Frames[0]);
+        Assert.Equal([true, false, true], Enumerable.Range(0, 3).Select(x => coverage[x, 0]));
+
+        // An alpha mask is read by its alpha
+        using var alpha = new Image<A8>(2, 1);
+        alpha.Frames[0][1, 0] = new A8(200);
+        var alphaMask = PixelMask.FromFrame(alpha.Frames[0]);
+        Assert.False(alphaMask[0, 0]);
+        Assert.True(alphaMask[1, 0]);
+
+        using var cmyk = new Image<Cmyk32>(1, 1);
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelMask.FromFrame(cmyk.Frames[0]));
+    }
+
+    private static Image<Gray8> CreateGray(int[][] rows)
+    {
+        var image = new Image<Gray8>(rows[0].Length, rows.Length);
+        for (var y = 0; y < rows.Length; y++)
+        {
+            for (var x = 0; x < rows[y].Length; x++)
+            {
+                image.Frames[0][x, y] = new Gray8((byte)rows[y][x]);
+            }
+        }
+
+        return image;
+    }
+
+    private static int[][] ReadGray(Image<Gray8> image)
+    {
+        var rows = new int[image.Height][];
+        for (var y = 0; y < image.Height; y++)
+        {
+            rows[y] = new int[image.Width];
+            for (var x = 0; x < image.Width; x++)
+            {
+                rows[y][x] = image.Frames[0][x, y].Value;
+            }
+        }
+
+        return rows;
+    }
+
+    private static List<Rgb24> ReadPixels(Image<Rgb24> image) => ReadPixels(image.Frames[0]);
+
+    private static List<Rgb24> ReadPixels(ImageFrame<Rgb24> frame)
+    {
+        var pixels = new List<Rgb24>();
+        for (var y = 0; y < frame.Height; y++)
+        {
+            for (var x = 0; x < frame.Width; x++)
+            {
+                pixels.Add(frame[x, y]);
+            }
+        }
+
+        return pixels;
+    }
 }

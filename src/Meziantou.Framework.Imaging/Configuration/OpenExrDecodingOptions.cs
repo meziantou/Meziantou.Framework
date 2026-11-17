@@ -63,6 +63,54 @@ public sealed class OpenExrDecodingOptions
     /// </remarks>
     public string? Part { get; init; }
 
+    /// <summary>
+    /// Gets the index along x of the level of a tiled image with mipmap or ripmap levels that is decoded: 0 (the default) for
+    /// the full resolution, 1 for the level of half the width, and so on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A level other than the full resolution is an image of its own: its data window, from the corner of the data window of
+    /// the file, whatever <see cref="WindowMode"/> says (a level has no display window). The levels of a mipmap have the
+    /// same index along both axes (<see cref="LevelX"/> equals <see cref="LevelY"/>); those of a ripmap may differ. A level
+    /// that the image does not have, also any level other than (0, 0) of an image of one level, is rejected with an
+    /// <see cref="UnsupportedImageFeatureException"/> (<c>Missing level</c>).
+    /// <see cref="AuxiliaryImageCollection"/> lists the levels of a file.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int LevelX
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the index along y of the level that is decoded: 0 (the default) for the full resolution (<see cref="LevelX"/>).</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int LevelY
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets a copy of the options that decodes another level.</summary>
+    internal OpenExrDecodingOptions WithLevel(int levelX, int levelY) => new()
+    {
+        Layer = Layer,
+        Part = Part,
+        DeepData = DeepData,
+        WindowMode = WindowMode,
+        LevelX = levelX,
+        LevelY = levelY,
+    };
+
     /// <summary>Gets how the pixels of deep data are decoded. Defaults to <see cref="OpenExrDeepDataMode.Reject"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="OpenExrDeepDataMode"/>.</exception>
     public OpenExrDeepDataMode DeepData

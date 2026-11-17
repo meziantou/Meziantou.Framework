@@ -7,9 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The examples of the specifications (CommonMark and the extensions) are the seeds -->
-    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\*.md" Exclude="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\readme.md" LogicalName="Specs.%(Filename)%(Extension)" Link="Seeds\%(Filename)%(Extension)" />
-    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\NormalizeSpecs\*.md" LogicalName="Specs.Normalize%(Filename)%(Extension)" Link="Seeds\Normalize%(Filename)%(Extension)" />
+    <!-- The invariants every tree of Meziantou.Framework.Language shares -->
+    <Compile Include="..\Meziantou.Framework.Language.Fuzz\SyntaxTreeInvariants.cs" Link="SyntaxTreeInvariants.cs" />
+    <Compile Include="..\Meziantou.Framework.Language.Fuzz\TreeShape.cs" Link="TreeShape.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The examples of the specifications of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\CommonMark.md" LogicalName="markdown.CommonMark.md" Link="Seeds\CommonMark.md" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\GfmExtensions.md" LogicalName="markdown.GfmExtensions.md" Link="Seeds\GfmExtensions.md" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\Extensions\*.md" Exclude="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\Extensions\readme.md" LogicalName="markdown.extensions.%(Filename).md" Link="Seeds\Extensions\%(Filename).md" />
   </ItemGroup>
 
   <ItemGroup>

@@ -168,6 +168,7 @@ internal sealed partial class ContentRenderer
         {
             SuppressHalftones = SuppressHalftones || suppressHalftones,
             ForcedColor = ForcedColor,
+            Plate = Plate,
             BaseMatrix = state.Ctm,
             DeviceSize = DeviceSize,
             IsKnockoutContext = isKnockout,
@@ -187,7 +188,16 @@ internal sealed partial class ContentRenderer
         if (area.Width <= 0 || area.Height <= 0)
             return;
 
-        var image = ShadingRasterizer.Rasterize(shading, _state.Ctm, area, _cache, includeBackground: false);
+        var rasterized = ShadingRasterizer.Rasterize(shading, _state.Ctm, area, _cache, includeBackground: false);
+        if (rasterized is null)
+            return;
+
+        var image = ToPlate(rasterized, out var isCopy);
+        if (isCopy || image is null)
+        {
+            rasterized.Dispose();
+        }
+
         if (image is null)
             return;
 
@@ -292,8 +302,22 @@ internal sealed partial class ContentRenderer
 
         var alpha = ElementAlpha(_state.FillAlpha);
         var blend = _state.BlendMode;
-        var source = image.Image.Frames[0];
-        PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(source, transform, sampling, alpha)), bounds, GetHalftone(_state.FillAlpha, hasSoftMask));
+        var plateImage = ToPlate(image.Image, out var isCopy);
+        if (plateImage is null)
+            return;
+
+        try
+        {
+            var source = plateImage.Frames[0];
+            PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(source, transform, sampling, alpha)), bounds, GetHalftone(_state.FillAlpha, hasSoftMask));
+        }
+        finally
+        {
+            if (isCopy)
+            {
+                plateImage.Dispose();
+            }
+        }
     }
 
     /// <summary>Gets the pixels an image covers once transformed, with a pixel around them for the filtering; <see langword="null"/> when none is on the device.</summary>

@@ -73,7 +73,7 @@ internal ref struct PixelLease
         if (source.Width != target.Width || source.Height != target.Height || source.BytesPerPixel != target.BytesPerPixel)
             throw new ArgumentException("The destination storage has a different geometry.", nameof(destination));
 
-        if (ReferenceEquals(source, target))
+        if (ReferenceEquals(source, target) || source.TryCopySlabsTo(target))
             return;
 
         for (var y = 0; y < source.Height; y++)

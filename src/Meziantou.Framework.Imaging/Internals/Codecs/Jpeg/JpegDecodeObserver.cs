@@ -42,6 +42,12 @@ internal abstract class JpegDecodeObserver : IImageDecodeObserver
     /// </summary>
     public virtual bool IsEmbedded => false;
 
+    /// <summary>
+    /// Gets a value indicating whether a lossless frame of two components is decoded: the container takes the stored samples
+    /// (<see cref="JpegSampleReceiver.ReceivesStoredSamples"/>) and gives them their meaning.
+    /// </summary>
+    public virtual bool AcceptsTwoComponentLosslessFrames => false;
+
     public virtual void OnEnd(JpegStructureParser structure)
     {
     }

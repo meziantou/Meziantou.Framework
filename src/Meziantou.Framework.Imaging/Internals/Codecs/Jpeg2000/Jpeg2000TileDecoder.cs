@@ -48,14 +48,20 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
     // The state of the calling thread, then the states of the other workers, kept from a tile to the next one
     private readonly List<BlockWorker> _workers = [];
+    private readonly bool _allQualityLayers;
 
     /// <summary>Initializes a new instance of the <see cref="Jpeg2000TileDecoder"/> class.</summary>
     /// <param name="context">The decoding context.</param>
     /// <param name="maxDegreeOfParallelism">The largest number of workers that decode a tile: one when the caller is already parallel.</param>
-    public Jpeg2000TileDecoder(ImageCodecContext context, int maxDegreeOfParallelism = 1)
+    /// <param name="allQualityLayers">
+    /// <see langword="true"/> to decode every quality layer, whatever <see cref="Jpeg2000DecodingOptions.QualityLayerLimit"/>
+    /// says: the codestream is the lossless compressed data of another format.
+    /// </param>
+    public Jpeg2000TileDecoder(ImageCodecContext context, int maxDegreeOfParallelism = 1, bool allQualityLayers = false)
     {
         _context = context;
         _maxDegreeOfParallelism = maxDegreeOfParallelism;
+        _allQualityLayers = allQualityLayers;
         _workers.Add(new BlockWorker(context.Scope));
     }
 
@@ -75,7 +81,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     {
         var scope = _context.Scope;
         var tools = coding.Tools;
-        using var packets = new Jpeg2000PacketReader(scope, siz, coding, geometry, tile, _context.Configuration.Jpeg2000Decoding.QualityLayerLimit ?? int.MaxValue, _context.CancellationToken);
+        using var packets = new Jpeg2000PacketReader(scope, siz, coding, geometry, tile, _allQualityLayers ? int.MaxValue : _context.Configuration.Jpeg2000Decoding.QualityLayerLimit ?? int.MaxValue, _context.CancellationToken);
         packets.ReadPackets();
         tools |= packets.Tools;
 

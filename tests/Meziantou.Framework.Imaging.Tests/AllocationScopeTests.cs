@@ -9,6 +9,102 @@ public sealed class AllocationScopeTests
         => new(new ImageResourceLimits { MaxLiveAllocationBytes = limit }, pool ?? new SlabPool());
 
     [Fact]
+    public void AConfigurationAllocatorProvidesEveryBufferOfItsImages()
+    {
+        #region ImageBufferAllocator_Usage
+        var allocator = new PinnedAllocator();
+        var configuration = new ImageConfiguration { BufferAllocator = allocator };
+        using (var image = new Image<Rgba32>(64, 64, configuration))
+        {
+            image.GaussianBlur(2);
+            using var clone = image.CloneAs<Rgba64>();
+            Assert.True(allocator.LiveBytes > 0);
+        }
+
+        // Every array is returned once the images are disposed
+        Assert.Equal(0, allocator.LiveBytes);
+        #endregion
+
+        Assert.True(allocator.Rentals > 2);
+    }
+
+    [Fact]
+    public void TheLimitsAreChargedBeforeTheAllocatorIsAsked()
+    {
+        var allocator = new PinnedAllocator();
+        var configuration = new ImageConfiguration { BufferAllocator = allocator, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 1000 } };
+        Assert.Throws<ImageResourceLimitException>(() => new Image<Rgba32>(20, 20, configuration));
+        Assert.Equal(0, allocator.Rentals);
+
+        // The charge is the length the allocator declares
+        var rounding = new PinnedAllocator { Granularity = 512 };
+        using var image = new Image<Gray8>(10, 10, new ImageConfiguration { BufferAllocator = rounding });
+        Assert.Equal(512, rounding.LiveBytes);
+        Assert.Equal(512, image.Owner.Scope.LiveBytes);
+    }
+
+    [Fact]
+    public void AnArrayOfAnotherLengthIsReturnedAndRejected()
+    {
+        var allocator = new PinnedAllocator { Shortfall = 1 };
+        var exception = Assert.Throws<InvalidOperationException>(() => new Image<Rgba32>(4, 4, new ImageConfiguration { BufferAllocator = allocator }));
+        Assert.Contains("GetBufferLength", exception.Message);
+        Assert.Equal(0, allocator.LiveBytes);
+
+        var declaresLess = new PinnedAllocator { Granularity = -1 };
+        Assert.Throws<InvalidOperationException>(() => new Image<Rgba32>(4, 4, new ImageConfiguration { BufferAllocator = declaresLess }));
+        Assert.Equal(0, declaresLess.Rentals);
+    }
+
+    [Fact]
+    public void LoadsAndConversionsUseTheAllocatorOfTheirConfiguration()
+    {
+        using var source = new Image<Rgb24>(8, 8);
+        using var stream = new MemoryStream();
+        source.Save(stream, new Formats.PngEncoder());
+        var allocator = new PinnedAllocator();
+        var configuration = new ImageConfiguration { BufferAllocator = allocator };
+        using (var image = Image.Load(stream.ToArray(), new ImageDecodeOptions { Configuration = configuration }))
+        {
+            using var converted = image.CloneAs<Gray8>();
+            Assert.True(allocator.Rentals > 0);
+        }
+
+        Assert.Equal(0, allocator.LiveBytes);
+    }
+
+    #region ImageBufferAllocator_Pinned
+    /// <summary>Gives pinned arrays, which native code can read without pinning them, and counts the bytes in use.</summary>
+    private sealed class PinnedAllocator : ImageBufferAllocator
+    {
+        private long _liveBytes;
+        private int _rentals;
+
+        public long LiveBytes => Interlocked.Read(ref _liveBytes);
+
+        public int Rentals => Volatile.Read(ref _rentals);
+
+        /// <summary>Gets the multiple the lengths are rounded up to (a negative value declares fewer bytes than requested, for the tests).</summary>
+        public int Granularity { get; init; } = 1;
+
+        /// <summary>Gets the number of bytes the arrays lack, for the tests.</summary>
+        public int Shortfall { get; init; }
+
+        public override int GetBufferLength(int length) => Granularity < 0 ? length - 1 : (length + Granularity - 1) / Granularity * Granularity;
+
+        public override byte[] Rent(int length)
+        {
+            var buffer = GC.AllocateArray<byte>(GetBufferLength(length) - Shortfall, pinned: true);
+            Interlocked.Add(ref _liveBytes, buffer.Length);
+            Interlocked.Increment(ref _rentals);
+            return buffer;
+        }
+
+        public override void Return(byte[] buffer) => Interlocked.Add(ref _liveBytes, -buffer.Length);
+    }
+    #endregion
+
+    [Fact]
     public void BuffersAreChargedAtActualCapacity()
     {
         var scope = CreateScope(1000);

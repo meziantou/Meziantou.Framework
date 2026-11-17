@@ -81,10 +81,12 @@ public sealed partial class FaultInjectionTests
                 audit.FailureInjector = null;
 
                 // Output failures at many positions of a non-seekable stream (a seekable stream for AVIF and HEIC image sequences,
-                // which write their moov box last, and for compressed OpenEXR files, which patch the offsets of their chunks:
-                // they reject non-seekable output before writing anything). WebP animations, which patch their RIFF size, keep
-                // their whole output in memory for a non-seekable stream and write it at completion: the failures happen there
-                var patched = (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None };
+                // which write their moov box last, for compressed OpenEXR files, which patch the offsets of their chunks, and for
+                // compressed TIFF files, which patch the pointer to their directory, and for DNG files, which patch the offset of
+                // their image file directory: they reject non-seekable output before writing anything). WebP animations, which
+                // patch their RIFF size, keep their whole output in memory for a non-seekable stream and write it at completion:
+                // the failures happen there
+                var patched = (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or TiffEncoder { Compression: not TiffCompression.None } or DngEncoder;
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();
@@ -106,18 +108,18 @@ public sealed partial class FaultInjectionTests
                 // Uncompleted writers abort: the destination is preserved and the temporary file removed
                 using (var writer = CreateWriter(destination, image, encoder))
                 {
-                    WriteFrames(writer, image, count: Math.Max(1, image.Frames.Count - 1));
+                    WriteFrames(writer, image, count: Math.Max(1, image.Frames.Count - 1), opaque: RejectsTransparency(encoder));
                 }
 
                 AssertDestinationPreserved(directory, destination, previous);
                 Assert.Equal(live, audit.LiveBytes);
 
                 // A writer faulted by an I/O failure stays faulted
-                var patchedWriter = (encoder is WebPEncoder or AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None };
+                var patchedWriter = (encoder is WebPEncoder or AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None } or TiffEncoder { Compression: not TiffCompression.None } or DngEncoder;
                 await using (var output = new TestOutputStream { FailAtPosition = 0, Seekable = patchedWriter, AllowPatching = patchedWriter })
                 using (var writer = CreateWriter(output, image, encoder))
                 {
-                    var exception = Catch(() => WriteFrames(writer, image, image.Frames.Count));
+                    var exception = Catch(() => WriteFrames(writer, image, image.Frames.Count, opaque: RejectsTransparency(encoder)));
                     if (exception is null)
                     {
                         exception = Catch(writer.Complete);
@@ -153,7 +155,7 @@ public sealed partial class FaultInjectionTests
         // The integer encoders reject floating-point pixels: an OpenEXR source is reduced to 16-bit integers first, its
         // samples clipped to [0, 1] (no conversion gives a value to a NaN sample: such a source is skipped)
         Image image;
-        if (encoderName is not ("exr" or "exr-tiled" or "exr-dwa" or "hdr") && SuiteReaders.ReadsFloats(data))
+        if (encoderName is not ("exr" or "exr-tiled" or "exr-dwa" or "hdr" or "dpx") && SuiteReaders.ReadsFloats(data))
         {
             using var floats = Image.Load<RgbaFloat>(data, new ImageDecodeOptions { Conversion = Conversion });
             if (!HasOnlyNumbers(floats))
@@ -301,6 +303,53 @@ public sealed partial class FaultInjectionTests
 
                 image.Dispose();
                 return null;
+            case "tiff-planar":
+                // Separate planes: every block of every plane serialized, cut from the chunky rows, predicted and compressed
+                encoder = new TiffEncoder { MetadataHandling = MetadataHandling.Strip, SeparatePlanes = true, Predictor = TiffPredictor.HorizontalDifferencing, TileWidth = 16, TileHeight = 16 };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
+                    return image;
+
+                image.Dispose();
+                return null;
+            case "dpx":
+                // Every packing of the default depths: 8, 16 or 32-bit components, as the source
+                encoder = new DpxEncoder { MetadataHandling = MetadataHandling.Strip };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
+                    return image;
+
+                image.Dispose();
+                return null;
+            case "psd":
+                // The image resources, then the planes of the composite image, PackBits rows and their table of lengths
+                encoder = new PsdEncoder { MetadataHandling = MetadataHandling.Strip };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
+                    return image;
+
+                image.Dispose();
+                return null;
+            case "dds":
+            case "ktx2":
+                // The uncompressed texels of the pixels, reduced to the formats of the container when they cannot store them
+                encoder = encoderName is "dds"
+                    ? new DdsEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, AllowChannelReduction = true }
+                    : new Ktx2Encoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, AllowChannelReduction = true };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated && !PixelFormats.IsCmyk(image.PixelFormat))
+                    return image;
+
+                image.Dispose();
+                return null;
+            case "dng":
+            case "cin":
+                // A DNG file stores lossless JPEG tiles of linear raw data, a Cineon file 10-bit film scans: neither stores
+                // transparency or CMYK samples
+                encoder = encoderName is "dng"
+                    ? new DngEncoder { MetadataHandling = MetadataHandling.Strip }
+                    : new CineonEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated && !PixelFormats.IsCmyk(image.PixelFormat) && IsOpaque(image))
+                    return image;
+
+                image.Dispose();
+                return null;
             case "hdr":
                 // The run-length encoding of every scanline; RGBE stores no alpha (composited over black), no negative color
                 // and no sample that is not a number (such a source is skipped)
@@ -341,6 +390,25 @@ public sealed partial class FaultInjectionTests
                 image.Dispose();
                 return null;
         }
+    }
+
+    private static bool IsOpaque(Image image)
+    {
+        if (!PixelFormats.HasAlpha(image.PixelFormat))
+            return true;
+
+        using var pixels = image.CloneAs<Rgba64>();
+        var frame = pixels.Frames[0];
+        for (var y = 0; y < frame.Height; y++)
+        {
+            for (var x = 0; x < frame.Width; x++)
+            {
+                if (frame[x, y].A != ushort.MaxValue)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool CanStoreAsRgbe(Image image)
@@ -413,11 +481,16 @@ public sealed partial class FaultInjectionTests
         ExpectedFrameCount = encoder is GifEncoder ? null : image.Frames.Count,
     };
 
-    private static void WriteFrames(ImageWriter<Rgba32> writer, Image image, int count)
+    /// <summary>Whether the encoder rejects transparent pixels instead of storing or compositing them (DNG, Cineon).</summary>
+    private static bool RejectsTransparency(ImageEncoder encoder) => encoder is DngEncoder or CineonEncoder;
+
+    private static void WriteFrames(ImageWriter<Rgba32> writer, Image image, int count, bool opaque)
     {
         for (var i = 0; i < count; i++)
         {
-            using var frame = image.Frames[i] is ImageFrame<Rgba32> ? null : Image.ImportPixelData<Rgba32>(new Rgba32[image.Width * image.Height], image.Width, image.Height);
+            // The substitute of a frame of another pixel type: transparent black, or opaque black for an encoder that rejects
+            // transparency
+            using var frame = image.Frames[i] is ImageFrame<Rgba32> ? null : CreateSubstitute(image.Width, image.Height, opaque);
             if (frame is not null)
             {
                 // The substitute keeps the timing of the frame: an encoder may reject a duration (JPEG XL frames without one)
@@ -426,6 +499,17 @@ public sealed partial class FaultInjectionTests
 
             writer.WriteFrame(frame?.Frames[0] ?? (ImageFrame<Rgba32>)image.Frames[i]);
         }
+    }
+
+    private static Image<Rgba32> CreateSubstitute(int width, int height, bool opaque)
+    {
+        var pixels = new Rgba32[width * height];
+        if (opaque)
+        {
+            pixels.AsSpan().Fill(new Rgba32(0, 0, 0, 255));
+        }
+
+        return Image.ImportPixelData<Rgba32>(pixels, width, height);
     }
 
     private static void AssertDestinationPreserved(FullPath directory, FullPath destination, byte[] previous)

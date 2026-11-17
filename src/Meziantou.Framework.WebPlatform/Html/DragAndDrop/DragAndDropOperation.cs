@@ -12,7 +12,8 @@ public readonly record struct DragPointerState(double X, double Y, ushort Button
 /// <summary>
 /// A drag-and-drop operation (https://html.spec.whatwg.org/multipage/dnd.html#drag-and-drop-processing-model), driven by the
 /// user interactions of a host (e.g. the test driver of the web-platform-tests): <see cref="TryStart"/> when the pointer
-/// moves with a pressed button, <see cref="Update"/> each time it moves, and <see cref="End"/> when the button is released.
+/// moves with a pressed button (or <see cref="StartFromOutside"/> for a drag from outside the user agent, such as files
+/// dragged from the file manager), <see cref="Update"/> each time it moves, and <see cref="End"/> when the button is released.
 /// The iterations of the processing model run on each move instead of every 350 ms.
 /// </summary>
 /// <remarks>
@@ -21,7 +22,14 @@ public readonly record struct DragPointerState(double X, double Y, ushort Button
 /// dragover is fired at the element under the pointer, and the drop is accepted when the dragover event is canceled (the
 /// specification instead makes the body element the current target element when the dragenter event is not canceled).
 /// A drop event that is not canceled keeps the current drag operation (the dropEffect of the dragend event), instead of
-/// resetting it to "none". There is no feedback (drag image) and the drop of files from outside the user agent is not supported.
+/// resetting it to "none". There is no feedback (drag image).
+/// <para>
+/// A drag from outside the user agent has no source node: there is no dragstart, drag or dragend event, and the drag data
+/// store holds the files, the directories and the strings of the <see cref="DragData"/>. A drop on a file input that does
+/// not cancel the event selects the files (the files of the directories when the input has the <c>webkitdirectory</c>
+/// attribute). As in the browsers, the page reads the directories with <c>webkitGetAsEntry()</c> or
+/// <c>getAsFileSystemHandle()</c>. A drop elsewhere does nothing (a browser would open the file).
+/// </para>
 /// </remarks>
 public sealed class DragAndDropOperation
 {
@@ -30,7 +38,7 @@ public sealed class DragAndDropOperation
     private Element? _currentTarget;
     private string _currentDragOperation = "none";
 
-    private DragAndDropOperation(Node sourceNode, DragDataStore store, DragSourceKind sourceKind)
+    private DragAndDropOperation(Node? sourceNode, DragDataStore store, DragSourceKind sourceKind)
     {
         SourceNode = sourceNode;
         _store = store;
@@ -42,10 +50,11 @@ public sealed class DragAndDropOperation
         Element,
         Link,
         Selection,
+        External,
     }
 
-    /// <summary>The source node: the dragged element, or the first Text node of the dragged selection.</summary>
-    public Node SourceNode { get; }
+    /// <summary>The source node: the dragged element, the first Text node of the dragged selection, or null for a drag from outside the user agent.</summary>
+    public Node? SourceNode { get; }
 
     /// <summary>Whether the operation ended (the button was released, or the drag event was canceled).</summary>
     public bool IsEnded { get; private set; }
@@ -59,6 +68,34 @@ public sealed class DragAndDropOperation
     {
         ArgumentNullException.ThrowIfNull(node);
         return TryStartCore(node, FindDraggableElement(node), pointerState, dragSelection);
+    }
+
+    /// <summary>
+    /// Starts a drag from outside the user agent (e.g. files dragged from the file manager of the operating system) over
+    /// the viewport of <paramref name="document"/>: nothing is fired until the first <see cref="Update"/>, the dragenter
+    /// event of the element under the pointer.
+    /// </summary>
+    /// <param name="data">The files, the directories and the strings that are dragged.</param>
+    /// <param name="document">The document of the viewport (the top-level document): its clock dates the files that have no last modification date.</param>
+    public static DragAndDropOperation StartFromOutside(DragData data, Document document)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(document);
+        var now = (document.DefaultView?.EventLoop.TimeProvider ?? TimeProvider.System).GetUtcNow().ToUnixTimeMilliseconds();
+        var store = new DragDataStore { AllowedEffectsState = data.EffectAllowed, ExternalData = data, DropTime = now };
+        foreach (var entry in data.Entries)
+        {
+            // As in Chromium, a directory is a File with an empty type and no content (its entries are read with the Entries API)
+            var file = entry is DragDataFile dataFile ? dataFile.CreateFile(now) : FileApi.File.Create([], "", entry.Name, now);
+            store.Items.Add(new DragDataItem(DragDataItemKind.File, file.Type, file) { Entry = entry });
+        }
+
+        foreach (var (type, value) in data.Strings)
+        {
+            store.Items.Add(new DragDataItem(DragDataItemKind.Text, type, value));
+        }
+
+        return new DragAndDropOperation(sourceNode: null, store, DragSourceKind.External);
     }
 
     /// <summary>
@@ -139,7 +176,7 @@ public sealed class DragAndDropOperation
         if (IsEnded)
             return;
 
-        if (!FireDndEvent("drag", SourceNode, relatedTarget: null, pointerState, out _))
+        if (SourceNode is not null && !FireDndEvent("drag", SourceNode, relatedTarget: null, pointerState, out _))
         {
             _currentDragOperation = "none";
             Finish(pointerState);
@@ -169,7 +206,7 @@ public sealed class DragAndDropOperation
         {
             if (FireDndEvent("dragover", _currentTarget, relatedTarget: null, pointerState, out var dataTransfer))
             {
-                _currentDragOperation = AcceptsText(_currentTarget) ? GetTextDropOperation() : "none";
+                _currentDragOperation = AcceptsText(_currentTarget) || AcceptsFiles(_currentTarget) ? GetDefaultDropOperation() : "none";
             }
             else
             {
@@ -188,7 +225,7 @@ public sealed class DragAndDropOperation
         if (IsEnded)
             return;
 
-        if (!FireDndEvent("drag", SourceNode, relatedTarget: null, pointerState, out _) || canceled)
+        if (canceled || (SourceNode is not null && !FireDndEvent("drag", SourceNode, relatedTarget: null, pointerState, out _)))
         {
             _currentDragOperation = "none";
         }
@@ -216,13 +253,17 @@ public sealed class DragAndDropOperation
             {
                 _currentDragOperation = dataTransfer.DropEffect;
             }
+            else if (AcceptsFiles(target))
+            {
+                SelectFiles(GetFileInput(target)!);
+            }
             else if (AcceptsText(target))
             {
                 InsertText(target, (string)_store.Items.Find(i => i.Kind == DragDataItemKind.Text && i.Type == "text/plain")!.Data);
             }
         }
 
-        if (SourceNode.IsConnected)
+        if (SourceNode is { IsConnected: true })
         {
             FireDndEvent("dragend", SourceNode, relatedTarget: null, pointerState, out _);
         }
@@ -236,6 +277,7 @@ public sealed class DragAndDropOperation
     private bool FireDndEvent(string type, Node target, EventTarget? relatedTarget, DragPointerState pointerState, out DataTransfer dataTransfer)
     {
         var window = target.NodeDocument.DefaultView;
+        _store.Window = window;
         var previousMode = _store.Mode;
         if (type == "dragstart")
         {
@@ -327,8 +369,8 @@ public sealed class DragAndDropOperation
         _ => "none",
     };
 
-    /// <summary>The drag operation when text is dropped in a text control or in editable content: a copy, or a move when only moving is allowed.</summary>
-    private string GetTextDropOperation() => _store.AllowedEffectsState switch
+    /// <summary>The drag operation when text is dropped in a text control or in editable content, or files in a file input: a copy, or a move when only moving is allowed.</summary>
+    private string GetDefaultDropOperation() => _store.AllowedEffectsState switch
     {
         "none" or "link" => "none",
         "move" or "linkMove" => "move",
@@ -339,6 +381,86 @@ public sealed class DragAndDropOperation
     private bool AcceptsText(Element target)
         => (IsTextControl(target) || target is HtmlElement { IsContentEditable: true })
            && _store.Items.Exists(i => i.Kind == DragDataItemKind.Text && i.Type == "text/plain");
+
+    /// <summary>Whether the target is a file input that is not disabled and the drag data store has files (the default action of the drop selects them).</summary>
+    private bool AcceptsFiles(Element target)
+        => GetFileInput(target) is { } input && !Css.Selectors.HtmlElementStates.IsActuallyDisabled(input)
+           && _store.Items.Exists(i => i.Kind == DragDataItemKind.File);
+
+    /// <summary>The file input of the target: the target, or the host of the shadow tree of the target (e.g. the button of the input).</summary>
+    private static HtmlInputElement? GetFileInput(Element target) => target switch
+    {
+        HtmlInputElement { InputType: InputType.File } input => input,
+        _ when target.GetRootNode() is ShadowRoot { Host: HtmlInputElement { InputType: InputType.File } input } => input,
+        _ => null,
+    };
+
+    /// <summary>
+    /// The default action of a drop on a file input, as in the browsers: the dropped files are selected (only the first one
+    /// without the <c>multiple</c> attribute), or, with the <c>webkitdirectory</c> attribute, the files of the dropped
+    /// directories, with their path relative to the dropped directory (<c>webkitRelativePath</c>). Then the input and change
+    /// events are fired.
+    /// </summary>
+    private void SelectFiles(HtmlInputElement input)
+    {
+        var files = new List<FileApi.File>();
+        var entries = new List<FileApi.FileSystemEntry>();
+        var directoryMode = input.Webkitdirectory;
+        foreach (var item in _store.Items)
+        {
+            if (item.Kind != DragDataItemKind.File)
+                continue;
+
+            if (directoryMode && item.Entry is DragDataDirectory directory)
+            {
+                AddDirectoryFiles(files, directory, directory.Name);
+            }
+            else if (item.Entry is null or DragDataFile)
+            {
+                files.Add((FileApi.File)item.Data);
+            }
+            else
+            {
+                continue;
+            }
+
+            if (_store.GetEntriesFileSystem() is { } fileSystem)
+            {
+                entries.Add(fileSystem.GetTopLevelEntry(_store.GetEntry(item)));
+            }
+        }
+
+        if (files.Count == 0)
+            return;
+
+        if (!input.Multiple && !directoryMode)
+        {
+            files.RemoveRange(1, files.Count - 1);
+            if (entries.Count > 1)
+            {
+                entries.RemoveRange(1, entries.Count - 1);
+            }
+        }
+
+        input.SelectFilesFromUser(files, entries);
+
+        void AddDirectoryFiles(List<FileApi.File> result, DragDataDirectory directory, string path)
+        {
+            foreach (var entry in directory.Entries)
+            {
+                var entryPath = path + "/" + entry.Name;
+                switch (entry)
+                {
+                    case DragDataFile file:
+                        result.Add(file.CreateFile(_store.DropTime, entryPath));
+                        break;
+                    case DragDataDirectory subdirectory:
+                        AddDirectoryFiles(result, subdirectory, entryPath);
+                        break;
+                }
+            }
+        }
+    }
 
     /// <summary>A textarea element, or an input element in the Text, Search, Tel, URL, Email, Password or Number state.</summary>
     private static bool IsTextControl(Element element) => element switch

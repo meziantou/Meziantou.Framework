@@ -1305,6 +1305,18 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A TIFF page in separate planes: the strips of each sample in turn.</summary>
+    #region Imaging_TiffSeparatePlanes
+    public static void SaveTiffInSeparatePlanes(string inputPath, string tiffPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // One strip set of red samples, then of green, blue and alpha samples (PlanarConfiguration = 2), each plane
+        // predicted and compressed on its own
+        image.Save(tiffPath, new TiffEncoder { SeparatePlanes = true, Predictor = TiffPredictor.HorizontalDifferencing });
+    }
+    #endregion
+
     /// <summary>A multi-size icon and a cursor: representations are alternatives, never animation frames.</summary>
     #region Imaging_IcoRepresentations
     public static Point WriteAndReadIcon(string inputPath, string iconPath, string cursorPath)
@@ -1720,6 +1732,183 @@ internal static class Examples
             Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
         });
         return (preview, exposure);
+    }
+    #endregion
+
+    /// <summary>DNG: a raw photo rendered, its raw mosaic before the demosaicing, and a display version.</summary>
+    #region Imaging_Dng
+    public static (Image<RgbaFloat> Rendering, Image<Rgba32> Display, string? Camera, float FirstLinearValue) ReadDng(string dngPath)
+    {
+        // DNG files render to RgbaFloat: scene-referred linear light (BT.709 primaries), the size of the default crop
+        var rendering = Image.Load<RgbaFloat>(dngPath);
+        var camera = rendering.Metadata.DngProperties?.UniqueCameraModel;
+
+        // The raw image before the demosaicing: the stored samples, the levels, the pattern and the linear values
+        using var raw = DngRawImage.Load(dngPath);
+        var row = new float[raw.ActiveArea.Width * raw.SamplesPerPixel];
+        raw.CopyLinearRow(0, row);
+
+        // The highlights are above 1: a display version tone maps them into 8-bit sRGB
+        var display = Image.Load<Rgba32>(dngPath, new ImageDecodeOptions
+        {
+            Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
+        return (rendering, display, camera, row[0]);
+    }
+    #endregion
+
+    /// <summary>DDS: the surfaces of a texture (mipmap levels, cube map faces, array elements, depth slices).</summary>
+    #region Imaging_DdsTexture
+    public static IReadOnlyList<string> ExportCubeFaces(string ddsPath, string outputDirectory)
+    {
+        // Image.Load gives the top level of the first face; a collection reaches every surface, decoded on demand
+        using var texture = ImageCollection.Load(ddsPath);
+        var written = new List<string>();
+        foreach (var entry in texture.Entries)
+        {
+            // Each entry says where it is in the texture: keep the full-size level of every face
+            if (entry.TextureSurface is not { MipLevel: 0, Face: { } face } surface)
+                continue;
+
+            var path = Path.Combine(outputDirectory, $"{surface.ArrayIndex}-{face}.png");
+            using var image = entry.Decode();
+            image.Save(path);
+            written.Add(path);
+        }
+
+        return written;
+    }
+    #endregion
+
+    /// <summary>DPX film scans: the code values as stored, the headers, and a copy with 10-bit components.</summary>
+    #region Imaging_Dpx
+    public static (string? TimeCode, DpxTransferCharacteristic Transfer) ConvertDpx(string dpxPath, string outputPath)
+    {
+        // 10-bit components load as Rgb48: each code value v is the 16-bit sample round(v × 65535 / 1023)
+        using var scan = Image.Load(dpxPath);
+
+        // The headers are reported: the time code, the film edge code, the frame rate, and how the code values encode
+        // light (printing densities are logarithmic: they are never converted implicitly)
+        var header = scan.Metadata.DpxHeader!;
+
+        // 10-bit components filled to 32-bit words with method A, big-endian; the orientation and the linear or BT.709
+        // labels are written too
+        scan.Save(outputPath, new DpxEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+        return (header.TimeCode, header.Transfer);
+    }
+    #endregion
+
+    /// <summary>Kodak Cineon film scans: read, then written as DPX, the format that succeeded Cineon.</summary>
+    #region Imaging_Cineon
+    public static int ConvertCineonToDpx(string cinPath, string dpxPath)
+    {
+        // The 10-bit printing densities of a Cineon file load as Rgb48, as stored
+        using var scan = Image.Load(cinPath);
+        var bits = scan.Metadata.CineonHeader!.BitsPerSample;
+        scan.Save(dpxPath, new DpxEncoder { BitDepth = bits == 10 ? 10 : null, AllowBitDepthReduction = true });
+        return bits;
+    }
+    #endregion
+
+    #region Imaging_CineonSave
+    public static void SaveCineon(string cinPath, string outputPath)
+    {
+        // The header of a loaded Cineon file (the film, the scanner, the designators and ranges of the channels) is copied
+        using var scan = Image.Load(cinPath);
+
+        // 10-bit code values by default for 8-bit pixels, packed one RGB pixel per 32-bit word (packing 5): 16-bit pixels are
+        // written with 16 bits unless the reduction is allowed
+        scan.Save(outputPath, new CineonEncoder { BitDepth = 10, AllowBitDepthReduction = true });
+    }
+    #endregion
+
+    #region Imaging_PsdSave
+    public static void SavePsd(Image image, string psdPath, string psbPath)
+    {
+        // A flat document whose composite is the image; an image with transparency also gets one layer that holds it.
+        // PackBits rows by default; the ICC profile, EXIF, XMP and the resolution are written as image resources
+        image.Save(psdPath, new PsdEncoder { Compression = PsdCompression.RunLength });
+
+        // The large document format: selected by the extension or by LargeDocument, and always above 30,000 pixels per side
+        image.Save(psbPath);
+    }
+    #endregion
+
+    #region Imaging_DngSave
+    public static void SaveDng(Image image, string dngPath)
+    {
+        // Linear raw data whose camera color space is linear BT.709: the samples are stored as they are, with a table that
+        // maps sRGB samples to linear values. Lossless JPEG tiles (Deflate for floating-point samples)
+        image.Save(dngPath, new DngEncoder { Compression = DngCompression.LosslessJpeg, TileSize = 256 });
+    }
+    #endregion
+
+    #region Imaging_Ktx2
+    public static IReadOnlyList<string> ExportKtx2Levels(string ktx2Path, string outputDirectory)
+    {
+        // Image.Load decodes the base level of the first face of the first layer (or the frames of an animation)
+        using (var texture = Image.Load(ktx2Path))
+        {
+            texture.Save(Path.Combine(outputDirectory, "base.png"));
+        }
+
+        // Every level, layer, face and depth slice is an entry of a collection, decoded on demand
+        var files = new List<string>();
+        using var collection = ImageCollection.Load(ktx2Path);
+        foreach (var entry in collection.Entries)
+        {
+            if (entry.TextureSurface is { ArrayIndex: 0, Face: null or CubeMapFace.PositiveX, DepthSlice: 0, MipLevel: var level })
+            {
+                using var image = entry.Decode();
+                var path = Path.Combine(outputDirectory, $"level-{level}.png");
+                image.Save(path);
+                files.Add(path);
+            }
+        }
+
+        return files;
+    }
+    #endregion
+
+    /// <summary>DDS writing: a BC7 texture with its mipmaps, and a cube map from six images.</summary>
+    #region Imaging_DdsEncode
+    public static void SaveDdsTextures(string albedoPath, IReadOnlyList<string> skyFacePaths, string outputDirectory)
+    {
+        // A color texture: BC7 with sRGB colors, and the full chain of mipmaps averaged in linear light
+        using (var albedo = Image.Load(albedoPath))
+        {
+            albedo.Save(Path.Combine(outputDirectory, "albedo.dds"), new DdsEncoder
+            {
+                TextureFormat = DdsTextureFormat.Bc7UnormSrgb,
+                GenerateMipmaps = true,
+            });
+        }
+
+        // A cube map: the six faces (+X, -X, +Y, -Y, +Z, -Z) are the entries of a collection of texture surfaces
+        using var sky = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+        for (var i = 0; i < 6; i++)
+        {
+            using var face = Image.Load(skyFacePaths[i]);
+            sky.Add(face, new TextureSurface(face: (CubeMapFace)i));
+        }
+
+        sky.Save(Path.Combine(outputDirectory, "sky.dds"), new DdsEncoder { TextureFormat = DdsTextureFormat.Bc1UnormSrgb, GenerateMipmaps = true });
+    }
+    #endregion
+
+    /// <summary>KTX 2.0 writing: an ASTC texture with its mip levels, supercompressed with ZLIB.</summary>
+    #region Imaging_Ktx2Encode
+    public static void SaveKtx2Texture(string inputPath, string outputPath)
+    {
+        // ASTC 6x6 blocks (3.56 bits per texel); an image labeled sRGB (the default) gives ASTC_6x6_SRGB_BLOCK
+        using var image = Image.Load(inputPath);
+        image.Save(outputPath, new Ktx2Encoder
+        {
+            TextureFormat = Ktx2TextureFormat.Astc6x6,
+            Quality = TextureCompressionQuality.Fast,
+            GenerateMipmaps = true,
+            Supercompression = Ktx2Supercompression.Zlib,
+        });
     }
     #endregion
 

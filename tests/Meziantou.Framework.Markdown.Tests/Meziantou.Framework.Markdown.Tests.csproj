@@ -1,17 +1,21 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
+
   <PropertyGroup>
-    <!-- Tests Meziantou.Framework.Markdown, which depends on ICU -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Markdown.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Specs/GfmPipeTableDifferential.json" LogicalName="Meziantou.Framework.Markdown.Tests.Specs.GfmPipeTableDifferential.json" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
+    <!-- The syntax tree the Markdown nodes are built on -->
+    <Using Include="Meziantou.Framework.Language" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
-    <Compile Include="../../common/ThreadCpuStopwatch.cs" Link="ThreadCpuStopwatch.cs" />
+    <None Update="Specs/CommonMark.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Specs/GfmExtensions.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Specs/Extensions/*.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
 </Project>

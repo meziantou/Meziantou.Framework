@@ -250,7 +250,9 @@ public sealed class DrawingFuzzTests
         // After the events of a height, the sweep passes quickly over the edges whose winding number did not change and
         // computes again only the crossings of the pairs of neighbors that are new or that cross
         // (CoverageRasterizer.WalksEveryEdge): the coverages must be those of the walk that updates every edge and every
-        // pair it passes, bit for bit. The contours are on grids of few heights, as the glyphs of a line of text share
+        // pair it passes, bit for bit. The pieces of boundary of the rows, accumulated apart as the workers of a large shape
+        // do (CoverageRasterizer.RecordPieces), with a limit that sends some rows back to the sweep, must give them too. The
+        // contours are on grids of few heights, as the glyphs of a line of text share
         // their baseline and their x-height, or anywhere, crossing each other or not
         var random = new FuzzRandom(FuzzSettings.Seed ^ 0x5377656570577BCAUL);
         var stopwatch = Stopwatch.StartNew();
@@ -311,20 +313,28 @@ public sealed class DrawingFuzzTests
             contours.Add(points);
         }
 
-        var exhaustive = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: true);
-        var skipping = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: false);
-        if (exhaustive.Count != skipping.Count)
-            return $"{skipping.Count} runs instead of {exhaustive.Count} ({width}x{height}, {fillRule})";
+        var pieceLimit = random.Chance(50) ? CoverageRasterizer.MaxPiecesPerRow : random.Next(0, 12);
+        var exhaustive = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: true, pieceLimit: -1);
+        var skipping = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: false, pieceLimit: -1);
+        var pieces = Rasterize(contours, width, height, fillRule, isAliased, walksEveryEdge: false, pieceLimit);
+        return Compare(exhaustive, skipping, "the skipping walk") ?? Compare(exhaustive, pieces, FormattableString.Invariant($"the pieces with a limit of {pieceLimit}"));
 
-        for (var i = 0; i < exhaustive.Count; i++)
+        string? Compare(List<string> expected, List<string> actual, string name)
         {
-            if (exhaustive[i] != skipping[i])
-                return $"run {i} differs: {skipping[i]} instead of {exhaustive[i]} ({width}x{height}, {fillRule})";
+            if (expected.Count != actual.Count)
+                return $"{name}: {actual.Count} runs instead of {expected.Count} ({width}x{height}, {fillRule})";
+
+            for (var i = 0; i < expected.Count; i++)
+            {
+                if (expected[i] != actual[i])
+                    return $"{name}: run {i} differs: {actual[i]} instead of {expected[i]} ({width}x{height}, {fillRule})";
+            }
+
+            return null;
         }
 
-        return null;
-
-        static List<string> Rasterize(List<(double X, double Y)[]> contours, int width, int height, FillRule fillRule, bool isAliased, bool walksEveryEdge)
+        // A piece limit of -1 gives the coverages of the sweep
+        static List<string> Rasterize(List<(double X, double Y)[]> contours, int width, int height, FillRule fillRule, bool isAliased, bool walksEveryEdge, int pieceLimit)
         {
             var scope = AllocationScope.Create(configuration: null);
             using var edges = new EdgeBuilder(scope, width, height);
@@ -342,9 +352,24 @@ public sealed class DrawingFuzzTests
             if (!rasterizer.Begin(edges, fillRule, isAliased, CancellationToken.None))
                 return runs;
 
+            if (pieceLimit >= 0)
+            {
+                rasterizer.PieceLimit = pieceLimit;
+                rasterizer.RecordPieces();
+            }
+
+            var accumulation = new double[width + 2];
+            var coverage = new uint[width];
             while (rasterizer.MoveNext())
             {
-                runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+                if (!rasterizer.HasPieces)
+                {
+                    runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{rasterizer.X}:{string.Join(',', rasterizer.Coverage.ToArray())}"));
+                }
+                else if (CoverageRasterizer.ReplayPieces(rasterizer.Pieces, accumulation, coverage, width, out var x, out var count))
+                {
+                    runs.Add(FormattableString.Invariant($"{rasterizer.Y}:{x}:{string.Join(',', coverage.AsSpan(x, count).ToArray())}"));
+                }
             }
 
             return runs;

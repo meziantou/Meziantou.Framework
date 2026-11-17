@@ -92,6 +92,9 @@ public static partial class ImagingFuzzTargets
             if (image is null)
             {
                 FuzzAssert.True(loaded.Exception is InvalidImageContentException, "The image data fails with an undocumented exception: " + loaded.Exception);
+
+                // The datastreams compressed here are valid, with valid filter types
+                FuzzAssert.True((mode & 1) == 0, "The decoder rejects the image data compressed by ZLibStream: " + loaded.Exception?.Message);
 #if NET11_0_OR_GREATER
                 FuzzAssert.True(expected is null, "The decoder rejects image data that the reference inflater decodes: " + loaded.Exception?.Message);
 #endif
@@ -101,9 +104,11 @@ public static partial class ImagingFuzzTargets
 #if NET11_0_OR_GREATER
             FuzzAssert.True(expected is not null, "The decoder accepts image data that the reference inflater rejects");
 #else
-            // ZLibStream does not report where the datastream ends: only the decoded bytes are compared
+            // ZLibStream does not report where the datastream ends: the decoded bytes are compared, and the datastream must
+            // end with their Adler-32 checksum
             expected ??= GetStreamScanlines(zlib, length);
             FuzzAssert.True(expected is not null, "The decoder accepts image data that the reference inflater rejects");
+            FuzzAssert.True(BinaryPrimitives.ReadUInt32BigEndian(zlib.AsSpan(zlib.Length - 4)) == ReferenceAdler32(expected), "The decoder accepts a datastream that does not end with the Adler-32 checksum of its data");
 #endif
 
             var reconstructed = Unfilter(expected, width, height, format.BytesPerPixel);
@@ -143,6 +148,20 @@ public static partial class ImagingFuzzTargets
     }
 
 #if !NET11_0_OR_GREATER
+    /// <summary>Computes the Adler-32 checksum (RFC 1950, section 8.2) byte by byte.</summary>
+    private static uint ReferenceAdler32(ReadOnlySpan<byte> data)
+    {
+        uint a = 1;
+        uint b = 0;
+        foreach (var value in data)
+        {
+            a = (a + value) % 65521;
+            b = (b + a) % 65521;
+        }
+
+        return (b << 16) | a;
+    }
+
     private static byte[]? GetStreamScanlines(byte[] zlib, int length)
     {
         try

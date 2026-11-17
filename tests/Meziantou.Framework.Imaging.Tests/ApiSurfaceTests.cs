@@ -74,7 +74,8 @@ public sealed class ApiSurfaceTests
     public void ExtensibilityIsClosed(Type type)
     {
         // The base types of the model cannot be derived outside the library: the extension points are their own types
-        // (CustomImageCodec, CustomImageEncoder, the pixel operations), and there is no custom pixel or frame contract
+        // (CustomImageCodec, CustomImageEncoder, the pixel operations, ICustomPixel and ImageBufferAllocator), and there
+        // is no custom frame contract
         var accessibleConstructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Where(constructor => constructor.IsPublic || constructor.IsFamily || constructor.IsFamilyOrAssembly);
         Assert.Empty(accessibleConstructors);
@@ -401,11 +402,53 @@ public sealed class ApiSurfaceTests
     }
 
     [Fact]
+    public void PsdAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(19, (int)ImageFormat.Psd);
+
+        var type = typeof(PsdEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(PsdEncoder.Compression), nameof(PsdEncoder.Format), nameof(PsdEncoder.LargeDocument)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(PsdCompression), GetDeclaredProperty(type, nameof(PsdEncoder.Compression)).PropertyType);
+        Assert.Equal([nameof(PsdCompression.None), nameof(PsdCompression.RunLength)], Enum.GetNames<PsdCompression>());
+        Assert.Equal([0, 1], Enum.GetValues<PsdCompression>().Select(value => (int)value));
+    }
+
+    [Fact]
+    public void DngAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(20, (int)ImageFormat.Dng);
+
+        var type = typeof(DngRawImage);
+        Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && typeof(IDisposable).IsAssignableFrom(type));
+        Assert.True(typeof(DngProperties).IsPublic && typeof(DngProperties).IsSealed);
+        Assert.Equal(typeof(DngProperties), typeof(ImageMetadata).GetProperty(nameof(ImageMetadata.DngProperties))!.PropertyType);
+
+        var encoder = typeof(DngEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", encoder.Namespace);
+        Assert.True(encoder.IsPublic && encoder.IsSealed && encoder.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(encoder.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(DngEncoder.Compression), nameof(DngEncoder.Format), nameof(DngEncoder.TileSize)],
+            encoder.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(DngCompression?), GetDeclaredProperty(encoder, nameof(DngEncoder.Compression)).PropertyType);
+        Assert.Equal(typeof(int?), GetDeclaredProperty(encoder, nameof(DngEncoder.TileSize)).PropertyType);
+        Assert.Equal([nameof(DngCompression.None), nameof(DngCompression.LosslessJpeg), nameof(DngCompression.Deflate)], Enum.GetNames<DngCompression>());
+        Assert.Equal([0, 1, 2], Enum.GetValues<DngCompression>().Select(value => (int)value));
+    }
+
+    [Fact]
     public void RadianceAdditionsHaveTheirPublicShape()
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(18, (int)ImageFormat.Radiance);
-        Assert.Equal(18, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(RadianceEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
@@ -418,6 +461,170 @@ public sealed class ApiSurfaceTests
         Assert.Equal(typeof(Rgba64?), GetDeclaredProperty(type, nameof(RadianceEncoder.BackgroundColor)).PropertyType);
         Assert.Equal([nameof(RadianceCompression.None), nameof(RadianceCompression.RunLength)], Enum.GetNames<RadianceCompression>());
         Assert.Equal([0, 1], Enum.GetValues<RadianceCompression>().Select(value => (int)value));
+    }
+
+    [Fact]
+    public void DdsAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(21, (int)ImageFormat.Dds);
+        Assert.Equal(3, (int)ImageCollectionKind.TextureSurfaces);
+
+        var type = typeof(TextureSurface);
+        Assert.Equal("Meziantou.Framework.Imaging", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed);
+        Assert.Equal([typeof(int), typeof(CubeMapFace?), typeof(int)], Assert.Single(type.GetConstructors()).GetParameters().Select(parameter => parameter.ParameterType));
+        Assert.Equal(
+            [nameof(TextureSurface.ArrayIndex), nameof(TextureSurface.DepthSlice), nameof(TextureSurface.Face), nameof(TextureSurface.MipLevel)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.All(type.GetProperties(), property => property.SetMethod is null);
+        Assert.Equal(typeof(CubeMapFace?), GetDeclaredProperty(type, nameof(TextureSurface.Face)).PropertyType);
+        Assert.Equal(typeof(TextureSurface), GetDeclaredProperty(typeof(ImageCollectionEntry), nameof(ImageCollectionEntry.TextureSurface)).PropertyType);
+        Assert.Equal(
+            [nameof(CubeMapFace.PositiveX), nameof(CubeMapFace.NegativeX), nameof(CubeMapFace.PositiveY), nameof(CubeMapFace.NegativeY), nameof(CubeMapFace.PositiveZ), nameof(CubeMapFace.NegativeZ)],
+            Enum.GetNames<CubeMapFace>());
+        Assert.Equal([0, 1, 2, 3, 4, 5], Enum.GetValues<CubeMapFace>().Select(value => (int)value));
+    }
+
+    [Fact]
+    public void DpxAndCineonAdditionsHaveTheirPublicShape()
+    {
+        // New formats are appended: the values of the existing members never change
+        Assert.Equal(22, (int)ImageFormat.Dpx);
+        Assert.Equal(23, (int)ImageFormat.Cineon);
+
+        var type = typeof(DpxEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(DpxEncoder.AllowBitDepthReduction), nameof(DpxEncoder.BitDepth), nameof(DpxEncoder.ByteOrder), nameof(DpxEncoder.Format)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(int?), GetDeclaredProperty(type, nameof(DpxEncoder.BitDepth)).PropertyType);
+        Assert.Equal([nameof(DpxByteOrder.BigEndian), nameof(DpxByteOrder.LittleEndian)], Enum.GetNames<DpxByteOrder>());
+
+        var cineon = typeof(CineonEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", cineon.Namespace);
+        Assert.True(cineon.IsPublic && cineon.IsSealed && cineon.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(cineon.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(CineonEncoder.AllowBitDepthReduction), nameof(CineonEncoder.BitDepth), nameof(CineonEncoder.Format)],
+            cineon.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(int?), GetDeclaredProperty(cineon, nameof(CineonEncoder.BitDepth)).PropertyType);
+
+        // The headers are informational records: sealed, value equality, init-only properties, attached by nullable read-write properties
+        foreach (var (header, propertyName) in new[] { (typeof(DpxHeader), nameof(ImageMetadata.DpxHeader)), (typeof(CineonHeader), nameof(ImageMetadata.CineonHeader)) })
+        {
+            Assert.Equal("Meziantou.Framework.Imaging.Metadata", header.Namespace);
+            Assert.True(header.IsPublic && header.IsSealed && header.IsClass);
+            Assert.True(typeof(IEquatable<>).MakeGenericType(header).IsAssignableFrom(header));
+            Assert.All(header.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.True(property.GetSetMethod() is null || property.GetSetMethod()!.ReturnParameter.GetRequiredCustomModifiers().Contains(typeof(IsExternalInit))));
+            var property = GetDeclaredProperty(typeof(ImageMetadata), propertyName);
+            Assert.Equal(header, property.PropertyType);
+            Assert.Equal(NullabilityState.Nullable, new NullabilityInfoContext().Create(property).ReadState);
+        }
+
+        // The codes of the tables of the standard are the values of the enumerations
+        Assert.Equal(50, (int)DpxDescriptor.Rgb);
+        Assert.Equal(100, (int)DpxDescriptor.CbYCrY);
+        Assert.Equal(13, (int)DpxTransferCharacteristic.Adx);
+        Assert.Equal(255, (int)DpxTransferCharacteristic.Undefined);
+        Assert.Equal(6, (int)DpxColorimetricSpecification.Bt709);
+        Assert.Equal([0, 1, 2], Enum.GetValues<DpxPacking>().Select(value => (int)value));
+    }
+
+    [Fact]
+    public void Ktx2AdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(24, (int)ImageFormat.Ktx2);
+        Assert.Equal(24, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
+        Assert.Equal(3, (int)ImageCollectionKind.TextureSurfaces);
+
+        // Where a texture entry is: an immutable description, created by the decoders or for a texture to save
+        var surface = typeof(TextureSurface);
+        Assert.True(surface.IsPublic && surface.IsSealed && surface.IsClass);
+        Assert.Single(surface.GetConstructors());
+        Assert.Equal(
+            [nameof(TextureSurface.ArrayIndex), nameof(TextureSurface.DepthSlice), nameof(TextureSurface.Face), nameof(TextureSurface.MipLevel)],
+            surface.GetProperties(BindingFlags.Instance | BindingFlags.Public).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(CubeMapFace?), GetDeclaredProperty(surface, nameof(TextureSurface.Face)).PropertyType);
+        Assert.Equal(typeof(TextureSurface), GetDeclaredProperty(typeof(ImageCollectionEntry), nameof(ImageCollectionEntry.TextureSurface)).PropertyType);
+
+        // The header of the file: immutable, created by the decoder only, attached to the metadata like the other labels
+        var header = typeof(Ktx2Header);
+        Assert.Equal("Meziantou.Framework.Imaging.Metadata", header.Namespace);
+        Assert.True(header.IsPublic && header.IsSealed && header.IsClass);
+        Assert.True(typeof(IEquatable<Ktx2Header>).IsAssignableFrom(header));
+        Assert.Empty(header.GetConstructors());
+        Assert.All(header.GetProperties(BindingFlags.Instance | BindingFlags.Public), property => Assert.Null(property.GetSetMethod(nonPublic: false)));
+        var property = GetDeclaredProperty(typeof(ImageMetadata), nameof(ImageMetadata.Ktx2Header));
+        Assert.Equal(header, property.PropertyType);
+        Assert.NotNull(property.GetSetMethod());
+    }
+
+    [Fact]
+    public void PixelFormatAndAllocatorAdditionsHaveTheirPublicShape()
+    {
+        // New pixel formats are appended: the values of the existing members never change
+        Assert.Equal(18, (int)PixelFormat.Cmyk64);
+        Assert.Equal([19, 20, 21, 22], new[] { PixelFormat.GrayFloat, PixelFormat.GrayHalf, PixelFormat.LaFloat, PixelFormat.LaHalf }.Select(format => (int)format));
+        Assert.Equal(22, Enum.GetValues<PixelFormat>().Max(format => (int)format));
+        foreach (var type in new[] { typeof(GrayFloat), typeof(GrayHalf), typeof(LaFloat), typeof(LaHalf) })
+        {
+            Assert.True(type.IsValueType && type.IsPublic && type.IsLayoutSequential);
+        }
+
+        // A custom pixel type: static members only, constrained to unmanaged implementations of the interface
+        var customPixel = typeof(ICustomPixel<>);
+        Assert.True(customPixel.IsInterface);
+        Assert.All(customPixel.GetMethods(), method => Assert.True(method.IsStatic && method.IsAbstract, method.Name));
+        Assert.Equal(
+            [nameof(ICustomPixel<>.FromStorage), nameof(ICustomPixel<>.ToStorage), "get_" + nameof(ICustomPixel<>.StorageFormat)],
+            customPixel.GetMethods().Select(method => method.Name).Order(StringComparer.Ordinal));
+        Assert.True(typeof(CustomPixelRowAction<>).IsSubclassOf(typeof(Delegate)));
+
+        // The allocator: an abstract class with a protected constructor, set on the immutable configuration
+        var allocator = typeof(ImageBufferAllocator);
+        Assert.True(allocator.IsPublic && allocator.IsAbstract && !allocator.IsSealed);
+        Assert.True(Assert.Single(allocator.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)).IsFamily);
+        Assert.True(allocator.GetMethod(nameof(ImageBufferAllocator.GetBufferLength))!.IsVirtual);
+        var property = GetDeclaredProperty(typeof(ImageConfiguration), nameof(ImageConfiguration.BufferAllocator));
+        Assert.Equal(allocator, property.PropertyType);
+        Assert.True(property.GetSetMethod()!.ReturnParameter.GetRequiredCustomModifiers().Contains(typeof(System.Runtime.CompilerServices.IsExternalInit)));
+    }
+
+    [Fact]
+    public void TextureEncoderAdditionsHaveTheirPublicShape()
+    {
+        foreach (var type in new[] { typeof(DdsEncoder), typeof(Ktx2Encoder) })
+        {
+            Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+            Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+            Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+            Assert.Equal(typeof(TextureCompressionQuality), GetDeclaredProperty(type, "Quality").PropertyType);
+        }
+
+        Assert.Equal(
+            [nameof(DdsEncoder.AllowBitDepthReduction), nameof(DdsEncoder.AllowChannelReduction), nameof(DdsEncoder.Format), nameof(DdsEncoder.GenerateMipmaps), nameof(DdsEncoder.HeaderVersion), nameof(DdsEncoder.Quality), nameof(DdsEncoder.TextureFormat)],
+            typeof(DdsEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            [nameof(Ktx2Encoder.AllowBitDepthReduction), nameof(Ktx2Encoder.AllowChannelReduction), nameof(Ktx2Encoder.Format), nameof(Ktx2Encoder.GenerateMipmaps), nameof(Ktx2Encoder.Quality), nameof(Ktx2Encoder.Supercompression), nameof(Ktx2Encoder.TextureFormat)],
+            typeof(Ktx2Encoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(DdsTextureFormat?), GetDeclaredProperty(typeof(DdsEncoder), nameof(DdsEncoder.TextureFormat)).PropertyType);
+        Assert.Equal(typeof(Ktx2TextureFormat?), GetDeclaredProperty(typeof(Ktx2Encoder), nameof(Ktx2Encoder.TextureFormat)).PropertyType);
+
+        // The values of the enumerations are their identity: appended, never renumbered
+        Assert.Equal([0, 1], Enum.GetValues<TextureCompressionQuality>().Select(value => (int)value));
+        Assert.Equal([0, 1, 2], Enum.GetValues<DdsHeaderVersion>().Select(value => (int)value));
+        Assert.Equal([0, 3], Enum.GetValues<Ktx2Supercompression>().Select(value => (int)value));
+        Assert.Equal(Enumerable.Range(0, 24), Enum.GetValues<DdsTextureFormat>().Select(value => (int)value));
+        Assert.Equal(Enumerable.Range(0, 39), Enum.GetValues<Ktx2TextureFormat>().Select(value => (int)value));
+        Assert.Equal(23, (int)DdsTextureFormat.Bc7UnormSrgb);
+        Assert.Equal(38, (int)Ktx2TextureFormat.Astc12x12);
+
+        // A collection of texture surfaces can be created and filled
+        Assert.NotNull(typeof(ImageCollection).GetMethod(nameof(ImageCollection.Add), [typeof(Image), typeof(TextureSurface)]));
     }
 
     [Theory]

@@ -19,6 +19,7 @@ internal sealed class ExrHeader
     private ExrChannel[]? _channels;
     private ExrCompressionMethod? _compression;
     private ExrBox? _dataWindow;
+    private ExrBox? _levelWindow;
     private ExrBox? _displayWindow;
     private ExrLineOrder? _lineOrder;
     private bool _hasTiles;
@@ -68,7 +69,26 @@ internal sealed class ExrHeader
 
     public ExrCompressionMethod Compression => _compression ?? ExrCompressionMethod.None;
 
-    public ExrBox DataWindow => _dataWindow ?? default;
+    /// <summary>
+    /// Gets the window of the stored pixels that are decoded: the data window of the file, or the data window of the level
+    /// <see cref="OpenExrDecodingOptions.LevelX"/> and <see cref="OpenExrDecodingOptions.LevelY"/> select.
+    /// </summary>
+    public ExrBox DataWindow => _levelWindow ?? _dataWindow ?? default;
+
+    /// <summary>Gets the data window of the file (the full-resolution level).</summary>
+    public ExrBox FileDataWindow => _dataWindow ?? default;
+
+    /// <summary>Gets the index along x of the level that is decoded (0 for the full resolution).</summary>
+    public int LevelX { get; private set; }
+
+    /// <summary>Gets the index along y of the level that is decoded (0 for the full resolution).</summary>
+    public int LevelY { get; private set; }
+
+    /// <summary>Gets the index in the offset table of the first chunk of the level that is decoded.</summary>
+    public long LevelFirstChunk { get; private set; }
+
+    /// <summary>Gets the <c>preview</c> attribute: its size and its 8-bit RGBA pixels, or <see langword="null"/>.</summary>
+    public (int Width, int Height, byte[] Pixels)? Preview { get; private set; }
 
     public ExrBox DisplayWindow => _displayWindow ?? default;
 
@@ -209,6 +229,11 @@ internal sealed class ExrHeader
                 _deepVersion = BinaryPrimitives.ReadInt32LittleEndian(value);
                 break;
 
+            case "preview":
+                ExpectType(name, type, "preview");
+                Preview = ReadPreview(value);
+                break;
+
             case "chunkCount":
                 ExpectType(name, type, "int");
                 ExpectSize(name, value, 4);
@@ -218,7 +243,7 @@ internal sealed class ExrHeader
     }
 
     /// <summary>Determines whether the value of an attribute is read (the structure parser skips the other values).</summary>
-    public static bool IsRead(string name) => name is "channels" or "compression" or "dataWindow" or "displayWindow" or "lineOrder" or "tiles" or "chromaticities" or "type" or "chunkCount" or "name" or "version";
+    public static bool IsRead(string name) => name is "channels" or "compression" or "dataWindow" or "displayWindow" or "lineOrder" or "tiles" or "chromaticities" or "type" or "chunkCount" or "name" or "version" or "preview";
 
     /// <summary>Checks the header once every attribute is read and computes the geometry of the chunks.</summary>
     /// <param name="limits">The resource limits of the operation.</param>
@@ -279,9 +304,26 @@ internal sealed class ExrHeader
         if (!ExrFormat.IsDecodable(Compression))
             throw ExrFormat.Unsupported($"The OpenEXR image is compressed with {ExrFormat.GetName(Compression)}, which is not supported.", "Compression: " + ExrFormat.GetName(Compression));
 
+        if (Compression is ExrCompressionMethod.Htj2k256 or ExrCompressionMethod.Htj2k32)
+        {
+            // Every channel is a component of the codestream; the 32-bit ones need more bit-planes than the block decoder has
+            foreach (var channel in Channels)
+            {
+                if (channel.PixelType != ExrPixelType.Half)
+                    throw ExrFormat.Unsupported($"The OpenEXR image is compressed with {ExrFormat.GetName(Compression)} and has the {(channel.PixelType == ExrPixelType.Float ? "FLOAT" : "UINT")} channel '{channel.Name}'; only HALF channels are supported with this compression.", "Compression: " + ExrFormat.GetName(Compression) + " with 32-bit channels");
+            }
+        }
+
         ResolveRoles(options.Layer);
         if (IsDeep && (!HasAlpha || !Roles.Contains(ExrChannelRole.Depth)))
             throw ExrFormat.Unsupported("The OpenEXR deep image has no Z channel or no alpha channel: its samples cannot be flattened.", "Deep data without depth or alpha");
+
+        if (options.LevelX != 0 || options.LevelY != 0)
+        {
+            // A level is the image of its own data window: the windows of the file do not apply to it
+            SelectLevel(limits, options.LevelX, options.LevelY);
+            return;
+        }
 
         if (options.WindowMode == OpenExrWindowMode.DisplayWindow && !display.Contains(data))
             throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR image has pixels outside its display window: the data window ({data.MinX}, {data.MinY}) - ({data.MaxX}, {data.MaxY}) is not inside the display window ({display.MinX}, {display.MinY}) - ({display.MaxX}, {display.MaxY}), and they would be lost. Set the WindowMode of ImageConfiguration.OpenExrDecoding to crop them or to decode the data window."), "Pixels outside the display window");
@@ -365,7 +407,7 @@ internal sealed class ExrHeader
     /// <summary>Gets the size of a level of a tiled image along one axis.</summary>
     public int GetLevelSize(int level, bool horizontal)
     {
-        var size = horizontal ? DataWindow.Width : DataWindow.Height;
+        var size = horizontal ? FileDataWindow.Width : FileDataWindow.Height;
         var result = RoundsLevelsUp ? (size + (1L << level) - 1) >> level : size >> level;
         return (int)Math.Max(result, 1);
     }
@@ -564,9 +606,60 @@ internal sealed class ExrHeader
         IsHalfOnly = isHalfOnly;
     }
 
+    /// <summary>Selects a level other than the full resolution, which becomes the data window and the image.</summary>
+    private void SelectLevel(ImageResourceLimits limits, int levelX, int levelY)
+    {
+        var exists = LevelMode switch
+        {
+            ExrLevelMode.MipmapLevels => IsTiled && levelX == levelY,
+            ExrLevelMode.RipmapLevels => IsTiled,
+            _ => false,
+        };
+
+        ComputeChunks();
+        if (!exists || levelX >= XLevelCount || levelY >= YLevelCount)
+        {
+            var levels = !IsTiled || LevelMode == ExrLevelMode.OneLevel
+                ? "it has one level"
+                : LevelMode == ExrLevelMode.MipmapLevels
+                    ? string.Create(CultureInfo.InvariantCulture, $"it has the mipmap levels (0, 0) to ({XLevelCount - 1}, {YLevelCount - 1})")
+                    : string.Create(CultureInfo.InvariantCulture, $"it has the ripmap levels (0 to {XLevelCount - 1}, 0 to {YLevelCount - 1})");
+            throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR image has no level ({levelX}, {levelY}): {levels}."), "Missing level");
+        }
+
+        var data = FileDataWindow;
+        var level = new ExrBox(data.MinX, data.MinY, data.MinX + GetLevelSize(levelX, horizontal: true) - 1, data.MinY + GetLevelSize(levelY, horizontal: false) - 1);
+        _levelWindow = level;
+        ImageWindow = level;
+        EnsureWithinLimits(limits, level);
+        LevelX = levelX;
+        LevelY = levelY;
+        LevelFirstChunk = GetFirstTileIndex(levelX, levelY);
+        FirstLevelChunkCount = (long)GetTileCount(levelX, horizontal: true) * GetTileCount(levelY, horizontal: false);
+        if (MaxChunkDataLength > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(limits);
+
+        if (_chunkCount is { } declared && declared != ChunkCount)
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunkCount attribute is {declared}, but the image has {ChunkCount} chunks."));
+    }
+
+    /// <summary>Reads the value of a <c>preview</c> attribute: its width and height, then its RGBA bytes.</summary>
+    private static (int Width, int Height, byte[] Pixels) ReadPreview(ReadOnlySpan<byte> value)
+    {
+        if (value.Length < 8)
+            throw ExrFormat.Invalid("the preview attribute is too short.");
+
+        var width = BinaryPrimitives.ReadUInt32LittleEndian(value);
+        var height = BinaryPrimitives.ReadUInt32LittleEndian(value[4..]);
+        if (width is 0 or > int.MaxValue || height is 0 or > int.MaxValue || (ulong)width * height * 4 != (ulong)(value.Length - 8))
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the preview attribute of {value.Length} bytes does not hold an image of {width}x{height} pixels."));
+
+        return ((int)width, (int)height, value[8..].ToArray());
+    }
+
     private void ComputeChunks()
     {
-        var data = DataWindow;
+        var data = FileDataWindow;
         var width = (int)Math.Min(data.Width, int.MaxValue);
         if (!IsTiled)
         {

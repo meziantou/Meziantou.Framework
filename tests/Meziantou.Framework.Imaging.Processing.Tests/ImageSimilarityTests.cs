@@ -1218,6 +1218,10 @@ public sealed class ImageSimilarityTests
         PixelFormat.Rgba1010102 => image.CloneAs<Rgba1010102>(),
         PixelFormat.RgbaFloat => image.CloneAs<RgbaFloat>(),
         PixelFormat.RgbaHalf => image.CloneAs<RgbaHalf>(),
+        PixelFormat.GrayFloat => image.CloneAs<GrayFloat>(),
+        PixelFormat.GrayHalf => image.CloneAs<GrayHalf>(),
+        PixelFormat.LaFloat => image.CloneAs<LaFloat>(),
+        PixelFormat.LaHalf => image.CloneAs<LaHalf>(),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, message: null),
     };
 

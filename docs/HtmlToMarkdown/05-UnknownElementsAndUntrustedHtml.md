@@ -66,4 +66,4 @@ Assert.Equal("Hello <u>world</u>", markdown);
   renderer must check their scheme.
 - Sanitize the HTML with [Meziantou.Framework.HtmlSanitizer](../HtmlSanitizer/01-Introduction.md).
 - Disable raw HTML, or sanitize the output, when you render the Markdown: see
-  [Security](../Markdown/10-Security.md) for Meziantou.Framework.Markdown.
+  [Security](../Markdown/07-Security.md) for Meziantou.Framework.Markdown.

@@ -11,6 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <param name="PayloadFormat">The format of the stored payload (a PNG or a DIB inside an icon), or <see cref="ImageFormat.Unknown"/>.</param>
 /// <param name="Hotspot">The hotspot of a cursor representation, or <see langword="null"/>.</param>
 /// <param name="Metadata">The metadata of the entry.</param>
+/// <param name="TextureSurface">Where the entry is in its texture (DDS), or <see langword="null"/>.</param>
 internal sealed record ImageCollectionEntryDescriptor(
     Size Size,
     PixelFormat PixelFormat,
@@ -19,4 +20,5 @@ internal sealed record ImageCollectionEntryDescriptor(
     bool MayHaveTransparency,
     ImageFormat PayloadFormat,
     Point? Hotspot,
-    ImageMetadata Metadata);
+    ImageMetadata Metadata,
+    TextureSurface? TextureSurface = null);

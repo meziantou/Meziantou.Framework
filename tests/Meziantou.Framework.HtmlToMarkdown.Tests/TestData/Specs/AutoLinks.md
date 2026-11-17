@@ -265,12 +265,12 @@ http://abc.net/foo#☃
 <p><a href="http://abc.net/foo#%E2%98%83">http://abc.net/foo#☃</a></p>
 ````````````````````````````````
 
-Unicode characters in the FQDN are matched and IDNA encoded
+Unicode characters in the FQDN are matched and percent-encoded, as commonmark.js does (1.x encodes them with IDNA)
 
 ```````````````````````````````` example
 http://☃.net?☃
 .
-<p><a href="http://xn--n3h.net?%E2%98%83">http://☃.net?☃</a></p>
+<p><a href="http://%E2%98%83.net?%E2%98%83">http://☃.net?☃</a></p>
 ````````````````````````````````
 
 Same goes for regular autolinks
@@ -293,7 +293,7 @@ Same goes for regular autolinks
 ```````````````````````````````` example
 <http://☃.net?☃>
 .
-<p><a href="http://xn--n3h.net?%E2%98%83">http://☃.net?☃</a></p>
+<p><a href="http://%E2%98%83.net?%E2%98%83">http://☃.net?☃</a></p>
 ````````````````````````````````
 
 It also complies with CommonMark's vision of priority.
@@ -302,7 +302,7 @@ This will therefore be seen as an autolink and not as code inline.
 ```````````````````````````````` example
 <http://foö.bar.`baz>`
 .
-<p><a href="http://xn--fo-gka.bar.%60baz">http://foö.bar.`baz</a>`</p>
+<p><a href="http://fo%C3%B6.bar.%60baz">http://foö.bar.`baz</a>`</p>
 ````````````````````````````````
 
 Unicode punctuation characters are not allowed, but symbols are.
@@ -315,7 +315,7 @@ http://🍉.net?🍉 // A UTF-16 surrogate pair, but code point is OtherSymbol
 
 http://‰.net?‰ // OtherPunctuation
 .
-<p><a href="http://xn--n3h.net?%E2%98%83">http://☃.net?☃</a> // OtherSymbol</p>
-<p><a href="http://xn--ji8h.net?%F0%9F%8D%89">http://🍉.net?🍉</a> // A UTF-16 surrogate pair, but code point is OtherSymbol</p>
+<p><a href="http://%E2%98%83.net?%E2%98%83">http://☃.net?☃</a> // OtherSymbol</p>
+<p><a href="http://%F0%9F%8D%89.net?%F0%9F%8D%89">http://🍉.net?🍉</a> // A UTF-16 surrogate pair, but code point is OtherSymbol</p>
 <p>http://‰.net?‰ // OtherPunctuation</p>
 ````````````````````````````````

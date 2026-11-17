@@ -921,11 +921,11 @@ internal static class FuzzOracle
         // The collection tells the formats apart from the detection prefix: the detection of a file of the HEIF family
         // reads the brands that follow it when it has them, and reports a file type box the prefix cuts as AVIF
         var prefixFormat = Image.DetectFormat(input.AsSpan(0, Math.Min(input.Length, Image.FormatDetectionPrefixLength)));
-        var isCollection = detected is ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur or ImageFormat.Pnm;
+        var isCollection = detected is ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur or ImageFormat.Pnm or ImageFormat.Dds;
 
-        // A load and an identification of a Netpbm file read its first image only: the collection also reads the images
-        // that follow it, which can be malformed
-        var loadReadsEveryEntry = detected is not ImageFormat.Pnm;
+        // A load and an identification of a Netpbm file read its first image only, and those of a DDS file its first
+        // surface: the collection also reads the images that follow it, which can be malformed or missing
+        var loadReadsEveryEntry = detected is not (ImageFormat.Pnm or ImageFormat.Dds);
         switch (fromSpan.Exception)
         {
             case null when !isCollection:
@@ -960,7 +960,7 @@ internal static class FuzzOracle
         // The default entry: the first page, or the largest representation (then the deepest, which the description of
         // an entry does not tell apart from the other representations of that size)
         var largest = fromSpan.Entries.Max(entry => (long)entry.Width * entry.Height);
-        List<int> candidates = detected is ImageFormat.Tiff or ImageFormat.Pnm ? [0] : Enumerable.Range(0, fromSpan.Entries.Count).Where(index => (long)fromSpan.Entries[index].Width * fromSpan.Entries[index].Height == largest).ToList();
+        List<int> candidates = detected is ImageFormat.Tiff or ImageFormat.Pnm or ImageFormat.Dds ? [0] : Enumerable.Range(0, fromSpan.Entries.Count).Where(index => (long)fromSpan.Entries[index].Width * fromSpan.Entries[index].Height == largest).ToList();
         if (candidates.Exists(index => index >= CollectionSummary.MaxDecodedEntries))
             return string.Empty;
 

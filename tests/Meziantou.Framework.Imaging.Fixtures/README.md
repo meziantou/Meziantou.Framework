@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; Radiance HDR entries: `hdr`, `RadianceCorpus.cs`; PSD entries: `psd`, `PsdCorpus.cs`; DNG entries: `dng`, `DngCorpus.cs`; DDS entries: `dds`, `DdsCorpus.cs`; DPX and Cineon entries: `dpx`, `DpxCorpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
@@ -23,7 +23,7 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/   hdr/   psd/   dng/   dds/   dpx/   cin/
                                       encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
@@ -40,9 +40,13 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
   containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder, `exr` for OpenEXR
-  files, `hdr` for Radiance HDR files). The expected frames of an OpenEXR or a Radiance HDR fixture are `rgbaf32le`
-  buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float exactly), compared bit
-  for bit; they are no source of the encoder suites.
+  files, `hdr` for Radiance HDR files, `psd` for PSD and PSB files, `dng` for DNG files, `dds` for DDS textures, `dpx`
+  for DPX files, `cin` for Kodak Cineon files). The expected frames of an OpenEXR, a Radiance HDR, a 32-bit PSD, a DNG or
+  a floating-point DPX fixture, and of a DDS fixture of a floating-point format, are `rgbaf32le` buffers: the 32-bit floats of its `RgbaHalf` or `RgbaFloat` pixels (a half converts to a float
+  exactly), compared bit for bit; they are no source of the encoder suites.
+  A DDS fixture of several surfaces (mipmaps, cube map faces, array elements, depth slices) lists them in `ddsSurfaces`,
+  in file order, each with its place in the texture and its pixels in the layout of the frame; the first one is the
+  image of the fixture.
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
   unsupported feature: `UnsupportedImageFeatureException`), `limit` (decoded with `decodeOptions.limits`:
   `ImageResourceLimitException` with `limitKind`). Error fixtures never carry fabricated expected pixels and are kept
@@ -370,14 +374,23 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   - *generated* (`synthetic-*`): built by `Common/IccProfileBuilder.cs` of the generator, a file without any dependency
     on the library that the test projects also compile (`IccTestProfiles`). They provide what no profile under an
     allowed license does: `lut8Type`, `lutAToBType` and `lutBToAType` tables, tables in both directions (including to
-    CMYK, one per rendering intent), the CIEXYZ connection space with tables, media white points and black points. Their
-    tables sample simple device models: they are not realistic, only well defined.
+    CMYK, one per rendering intent), the CIEXYZ connection space with tables, media white points and black points, and
+    a version 2 named color profile. Their tables sample simple device models: they are not realistic, only well
+    defined.
+  - *generated* (`iccmax-*`): version 5 (iccMAX) profiles written as XML by `Common/IccMaxProfileXml.cs` and built by
+    iccFromXml of iccDEV, the reference implementation of ICC.2:2023: `multiProcessElementsType` tables with curve sets
+    (every formula type, sampled segments, single sampled curves), matrices, float lookup tables, a calculator that
+    exercises the stack, conditional, selection and arithmetic operations and its sub-elements, the tags of the absolute
+    colorimetric intent (`A2B3`, `B2A3`) alone and with the others, and a named color array with tints. The tests do not
+    rebuild them: iccFromXml is not run by the tests.
 - **`colorTransforms`**: for a source profile, a destination profile, a rendering intent and the black point
   compensation setting, a file of vectors (`icc/vectors/<id>.u16le`): for each color, the source device samples then
   the samples **converted by an independent color management system**, as little-endian 16-bit numbers covering the
   device range. The reference is LittleCMS, through `transicc -n -c0` (no precalculation: each color is evaluated,
-  not interpolated in a device link; `-b` for black point compensation); its exact version and command line are
-  recorded in `reference`.
+  not interpolated in a device link; `-b` for black point compensation), and for the iccMAX profiles iccDEV, through
+  `iccApplyNamedCmm --cfg` (linear interpolation, floating-point colors); the exact version and command line are
+  recorded in `reference`. A named color profile as the source has one source sample per color, the index of the color
+  in the profile (`"sourceSamples": "named-color-index"`).
 - **Comparison**: two color management systems never agree bit for bit. Each entry declares `maxAbsoluteError` and
   `maxMeanAbsoluteError` in 16-bit units (257 is one level of 255; at most 64) with the measured `justification`.
   `ColorConversionGoldenTests` also fails when a declared limit is more than twice the measured difference, so a
@@ -386,15 +399,22 @@ The `colorProfiles` and `colorTransforms` sections of the manifest are the refer
   points), which change samples by whole levels and which the reference of the test harness (`ReferenceIccTransform`)
   would share with the library.
 - **Colors**: every 8-bit level and 64 random 16-bit values for grayscale sources; a 7-level grid and 157 random 16-bit
-  colors for RGB sources. For CMYK sources, every grid point of the color lookup table of the intent (the device
-  values that its input tables map to the grid).
-- **What the vectors do not cover**, because LittleCMS is not a valid judge there (`ReferenceIccTransform` and the
+  colors for RGB sources. For CMYK sources converted by LittleCMS, every grid point of the color lookup table of the
+  intent (the device values that its input tables map to the grid); for the iccMAX CMYK profile, whose tables both
+  systems interpolate multilinearly, a 7-level grid and 157 random colors. Every color of a named color profile.
+- **What the vectors do not cover**, because the reference is not a valid judge there (`ReferenceIccTransform` and the
   hand-computed values of `IccColorTransformTests` cover these):
   - *Four-channel interpolation between grid points.* The ICC specification does not define the interpolation and
     color management systems differ: on the coarse 6-point table of the external CMYK profile, LittleCMS (linear along
     the first input, tetrahedral on the others) and Apple ColorSync (multilinear, like the library) are several levels
     of 255 apart for some colors, while they agree on grid points. For one and three inputs the two systems use the
     same interpolation as the library, so those colors are not restricted to grid points.
+  - *Named colors in the CIEXYZ connection space.* ICC.1:2022 Table 66 stores them as u1Fixed15 numbers; LittleCMS
+    2.19 decodes them with the scale of the legacy CIELAB encoding (the media white comes out 0.4% too bright) and
+    iccDEV 2.4.2.5 twice too bright, so `IccColorTransformTests` checks them with hand-computed values.
+  - *The `solv` calculator operation of iccMAX*, which iccDEV 2.4.2.5 reports as failed for every system, and the
+    perceptual intent from an iccMAX profile to a version 4 profile, which iccDEV compensates for the perceptual
+    reference medium as LittleCMS does.
   - *Black point compensation where LittleCMS 2.19 was observed not to follow the published algorithm.* It applies no
     compensation with the relative colorimetric intent to a table-based monochrome profile whose device black is not
     black, nor (with the CMYK output profile of macOS) to a CMYK output profile used as a source; and with the
@@ -772,16 +792,18 @@ header (65,536 bytes) rejects.
 | APNG errors | Header defects: `acTL` with zero frames or `num_plays` 2^31, partial default-image `fcTL`, `dispose_op` 3, `fdAT` before `IDAT`; structure defects: sequence gap, region outside the canvas, fewer/more frames than declared, `fcTL` without data, `blend_op` 2, `fdAT` shorter than its sequence number; frame datastream defects (`fdAT` zlib truncated, one extra scanline); limits: `MaxFrames` counting the poster, `MaxTotalPixels` counting full-canvas displayed frames (decode-only) |
 | AVIF | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (lossless, lossy, under limited-range colors, under lossless colors; hidden colors kept), gray + alpha; premultiplied alpha (avifenc `-p`: lossless at 8 and 10 bits, lossy 4:2:0 under a lossy alpha plane, and a `prem` track reference assembled on a sequence whose colors are clipped); lossy 4:4:4 / 4:2:2 / 4:2:0 with the BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; the chromaticity-derived matrix with the BT.2020 primaries (4:4:4) and with the Display P3 primaries (4:2:0, limited range, 10-bit), and the SMPTE ST 2085 matrix on the planes of a y4m source; the matrices that go through the transfer characteristics, on patterns converted with the forward equations and coded without loss (BT.2020 constant luminance at 10 bits, chromaticity-derived constant luminance with the Display P3 primaries, ICtCp with PQ and with HLG at 12 bits) and on arbitrary 4:2:0 planes whose colors leave the gamut (BT.2020 constant luminance, ICtCp with PQ), and ICtCp with HLG in limited range in the sample entry of a sequence; identity derivations (`iden`, assembled on committed payloads): without transformation, a clean aperture and a mirror on the derivation of a turned image, two nested derivations with an alpha plane derived the same way, a derivation whose alpha plane is a derivation with the same clean aperture, an untransformed derivation whose alpha plane is a coded image, a clean aperture across the tiles of a grid, and a derivation without `colr` box whose input is matrixed; images built from other images (`iovl` and `grid` items assembled the same way): an overlay of four copies of an image with alpha on an opaque canvas, two of them across its edges, an overlay with a transparent fill, a clean aperture and a rotation, an overlay of a grid and of a turned and cropped identity derivation of one of its tiles on a half transparent canvas, a grid whose tiles are mirrored and turned identity derivations and exceed the image, an identity derivation of a mirrored 10-bit overlay, an overlay of lossy matrixed images, an overlay that takes its ICC profile from its input image, one that no `colr` box describes (the bitstream of its input image does), and an overlay of a PQ image on an opaque black canvas; sizes 1x1, 5x1, 1x5, odd 4:2:0 and 4:2:2 images at every depth, 33x17, 64x64, 67x65; vertical and co-located chroma samples (y4m inputs); a lossless 2x2 grid, lossy 4:2:0 2x1 (with alpha) and 3x1 grids, a 1x3 grid with an alpha grid, a 10-bit 2x1 grid, a 3x2 grid of 16x16 tiles, a grid cropped below its tiles, a grid whose tiles repeat its `clap`, `irot` and `imir` as avifenc writes them; `irot` 0-3, `imir` 0-1 and both; a clean aperture followed by a rotation, and one on 4:2:0 content; a clean aperture associated after a rotation, and one between a mirroring and a rotation (not the order of MIAF: the properties apply in the order of their association); Exif (whose orientation tag contradicts `irot`), XMP and ICC, an ICC profile without `nclx`; colr variants of one payload (`nclx` overriding the bitstream, no `colr` box with identity, BT.709 and undescribed bitstreams, after and before the media data); a pixel aspect ratio and a content light level (avifenc `--pasp`, `--clli`), a mastering display color volume with its light levels (`mdcv` and `clli` properties assembled on an HDR image), and the three boxes in the sample entry of a sequence; film grain (4:2:0, odd, monochrome 10-bit, 4:2:2 10-bit limited, 4:4:4 12-bit with chroma scaled from luma, under an alpha plane); assembled layouts (`layout-*`); sequences: lossless with three durations and infinite repetition, alpha with two repetitions, 10-bit played once at 1001/30000 s, 8 to 12 images with inter frames and frames that are not shown (4:2:0, 4:4:4 at speed 2, 4:2:2 with key frames every three images, monochrome, 10-bit, lossless 12-bit, a lossy alpha track, 10-bit alpha), XMP in the `meta` box of the track and an ICC profile (avifenc), Exif and XMP in the `meta` box of the file or of the track with their data in `mdat`, in `idat` and after the samples, a track `meta` box that wins over the file one, a file `meta` box after `moov` (not read), chunks written in reverse order, two from the FFmpeg muxer (libaom, SVT-AV1), a matrix that turns the images a quarter turn, a matrix that mirrors them with a clean aperture in the sample entries of both tracks, no edit list, edit lists that select parts of the media (an edit that starts inside the first image, an edit that ends before the second image, two edits around an image that the next one refers to, edits in another time scale than the media that show images for a part of their duration, three edits whose durations are thirds of a second on a media in tenths, the same edit on a color track and on its alpha track), fragmented sequences assembled on the same payloads (three fragments with offsets relative to the `moof` box; explicit base offsets, two runs per track fragment and no `tfdt`; images in the `moov` box followed by fragments; an alpha track whose data follow the color data without base flag; default durations in `tfhd` and in `trex`; alpha planes described by a later fragment than their images), `mdat` first, `co64` + `stz2` + one sample per chunk; layered images: `--progressive` (4:2:0, identity-matrix 10-bit, with a layered alpha item), `--layered` with 2, 3 and 4 quality layers (4:2:0 limited range, identity, monochrome 12-bit), three layers of growing sizes (4:2:2 10-bit), a second layer that is another picture, coded losslessly; `lsel` 0xFFFF, 0, 1, 2 and 3, `a1op` 0, 1 and 2, both together, a selected frame smaller than the last layer (`ispe` of its size) by `lsel` and by `a1op`, `lsel` on 4:2:0 content; a grid of two layered tiles, grids whose tiles select their own layer and their own operating point; a sequence of two layered samples |
 | AVIF errors | invalid: truncated `meta` box and item data, a box smaller than its header, a child box larger than its parent, no file type box and no AVIF brand (unknown format), no `pitm`, primary item, `ispe` or `av1C`, two `meta` boxes, item data outside the file and outside `idat`, `ispe` and `av1C` contradicting the bitstream, an `a1op` operating point the sequence header does not have (one and three operating points), an `lsel` layer the bitstream does not have (one and three layers) or that its operating point does not have, layer 4, a selected frame of another size than `ispe`, `lsel` and `a1op` on a grid item, grids (tile count, descriptor size, tile sizes), a sequence without AV1 track, with an edit whose media time is negative or that shows no image, with a `moof` box that the `moov` box does not announce, with a fragment that lacks the alpha plane of an image, without chunk offsets, truncated, with a malformed `meta` box in its track, with a metadata item of its track or of the file located after the end of the file; an identity derivation with two input images, with an input that does not exist, derived from itself, or of another size than its input; an overlay whose descriptor declares another size than its `ispe` property or lacks an offset, a derived image that is its own input, a grid of derived tiles of two sizes; unsupported: an overlay whose visible fill color would have to be converted to the color space of the image, an alpha plane for an overlay itself, an overlay of images of two color spaces, of two ICC profiles, or whose input image has another color space in its bitstream than the overlay declares, nine nested identity derivations (of a coded image and of an overlay), an untransformed alpha plane for an identity derivation that has a clean aperture, fractional `clap`, an essential unknown property, reserved matrix coefficients, ICtCp matrix coefficients with other transfer characteristics than PQ and HLG, chromaticity-derived constant luminance matrix coefficients with unspecified primaries, an alpha plane of another size, a `moof` box before the `moov` box, fragments that do not follow each other, with composition time offsets or whose samples precede them, a fragmented sequence whose edit list selects a part of its media, edit lists with an empty edit, with a media rate of 2 or of 0, with edits that are not in the order of the media or that overlap, an alpha track whose edit is not the one of its color track, constant luminance matrix coefficients with unspecified transfer characteristics in the sample entry of a sequence, a grid tile that declares another rotation than its grid, a sequence whose images change size; limits: width, height, frame pixels, encoded bytes, live allocations, metadata bytes (ICC, then Exif; the XMP packet of a sequence), sequence frames, displayed pixels, frames that are decoded without being shown, and the lower layers of a layered image |
-| HEIC | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy, at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (monochrome and 4:2:0 alpha pictures, both auxiliary types, a limited-range alpha plane, hidden colors kept), gray + alpha; lossy 4:4:4, 4:2:2 and 4:2:0 with the BT.709, BT.470BG, BT.601, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; 4:2:0 at the default chroma sample location and at each signalled one (0, 1, 2); sizes 1x1, odd sizes, 33x17, 64x64, 67x65; pictures of 64x64 under a clean aperture (`heif-enc`) and pictures with a conformance window (x265), a window that removes more than the padding, and both together; files without `colr` box whose bitstream has a color description, a range only or no video signal description, a `colr` box that overrides the bitstream, an ICC profile with and without `nclx`; lossless 2x2 and 3x2 grids (the second cropped below its tiles), a grid cropped by its descriptor, 10-bit and 4:2:0 grids, a grid with an alpha grid, the layout of a phone (grid, rotation, ICC profile, Exif item, hidden thumbnail and depth map) at 8 and 10 bits; `irot` 1-3, `imir` 0-1 and both, a clean aperture followed by a rotation and one at an odd position of 4:2:0 content; Exif (whose orientation tag contradicts `irot`) and XMP; configuration records with NAL unit lengths of 1 and 2 bytes, two parameter sets of each type, incomplete arrays, and parameter sets in the coded data only; assembled layouts (`layout-*`, generic and AVIF brands); sequences: lossless intra pictures played three times, lossless P pictures repeated forever, B pictures whose composition offsets reorder the samples (`heif-enc` and x265, with an edit list that starts at the first presentation time, without edit list, under an `hev1` sample entry with the parameter sets in the first sample, with two-byte NAL unit lengths), an alpha track, 10-bit, monochrome, 4:2:0 and 4:2:2 images, pictures with a conformance window, a clean aperture in the sample entry (an odd size, and an offset on a color and an alpha track), `mdat` first, `co64` + `stz2` + one sample per chunk, chunks written in reverse order, generic and AVIF brands, Exif and XMP in the `meta` box of the file after the samples and in the `idat` box of the `meta` box of the track |
-| HEIC errors | invalid: truncated `meta` box and item data, a child box larger than its parent, no file type box (unknown format), no `pitm`, `ispe` or `hvcC`, item data outside the file, `ispe` contradicting the picture, an `hvcC` record that is truncated, reserves its length size or contradicts its sequence parameter set (bit depth, chroma format), an item with no picture, with two pictures, whose picture is not an intra random access point, whose NAL unit lengths exceed or do not fill its data, whose slice data are truncated or are random bytes, grids (tile count, a tile that does not exist, descriptor size, tile sizes), a sequence without HEVC track, without chunk offsets, truncated, with two samples at one composition time, with a missing reference picture, with a record that contradicts its bitstream, with a malformed `meta` box in its track; unsupported: an `hvc1` item under the brands of AVIF and an `av01` item under the brands of HEIC, `lhv1` items and layer selectors, an `hvcC` record of another version, premultiplied alpha, `iden`/`iovl` derived images, a grid whose tiles have a `clap` property (as `heif-enc` writes small tiles), fractional `clap`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, luma and chroma planes of different depths, extended precision processing, `chroma_sample_loc_type` 3, `moof`, an edit that starts after the first image, a sequence whose pictures do not have the size of its sample entry (assembled, and as `heif-enc` writes small images); limits: width, height, frame pixels (of the image, and of the picture under a clean aperture), encoded bytes, live allocations, metadata bytes (ICC, then Exif; the items of a sequence), sequence frames and displayed pixels |
+| HEIC | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy, at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (monochrome and 4:2:0 alpha pictures, both auxiliary types, a limited-range alpha plane, hidden colors kept), gray + alpha; lossy 4:4:4, 4:2:2 and 4:2:0 with the BT.709, BT.470BG, BT.601, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; 4:2:0 at the default chroma sample location and at each signalled one (0, 1, 2); sizes 1x1, odd sizes, 33x17, 64x64, 67x65; pictures of 64x64 under a clean aperture (`heif-enc`) and pictures with a conformance window (x265), a window that removes more than the padding, and both together; files without `colr` box whose bitstream has a color description, a range only or no video signal description, a `colr` box that overrides the bitstream, an ICC profile with and without `nclx`; lossless 2x2 and 3x2 grids (the second cropped below its tiles), a grid cropped by its descriptor, 10-bit and 4:2:0 grids, a grid with an alpha grid, the layout of a phone (grid, rotation, ICC profile, Exif item, hidden thumbnail and depth map) at 8 and 10 bits; `irot` 1-3, `imir` 0-1 and both, a clean aperture followed by a rotation and one at an odd position of 4:2:0 content; Exif (whose orientation tag contradicts `irot`) and XMP; configuration records with NAL unit lengths of 1 and 2 bytes, two parameter sets of each type, incomplete arrays, and parameter sets in the coded data only; assembled layouts (`layout-*`, generic and AVIF brands); sequences: lossless intra pictures played three times, lossless P pictures repeated forever, B pictures whose composition offsets reorder the samples (`heif-enc` and x265, with an edit list that starts at the first presentation time, without edit list, under an `hev1` sample entry with the parameter sets in the first sample, with two-byte NAL unit lengths), an alpha track, 10-bit, monochrome, 4:2:0 and 4:2:2 images, pictures with a conformance window, a clean aperture in the sample entry (an odd size, and an offset on a color and an alpha track), `mdat` first, `co64` + `stz2` + one sample per chunk, chunks written in reverse order, generic and AVIF brands, Exif and XMP in the `meta` box of the file after the samples and in the `idat` box of the `meta` box of the track; premultiplied alpha (`heif-enc --premultiplied-alpha`, lossless and lossy 4:2:0), the BT.2020 and chromaticity-derived constant luminance and the chromaticity-derived matrix coefficients (`heif-enc`), ICtCp with PQ and HLG and SMPTE ST 2085 labeling arbitrary planes (a `colr` box) |
+| HEIC errors | invalid: truncated `meta` box and item data, a child box larger than its parent, no file type box (unknown format), no `pitm`, `ispe` or `hvcC`, item data outside the file, `ispe` contradicting the picture, an `hvcC` record that is truncated, reserves its length size or contradicts its sequence parameter set (bit depth, chroma format), an item with no picture, with two pictures, whose picture is not an intra random access point, whose NAL unit lengths exceed or do not fill its data, whose slice data are truncated or are random bytes, grids (tile count, a tile that does not exist, descriptor size, tile sizes), a sequence without HEVC track, without chunk offsets, truncated, with two samples at one composition time, with a missing reference picture, with a record that contradicts its bitstream, with a malformed `meta` box in its track; unsupported: an `hvc1` item under the brands of AVIF and an `av01` item under the brands of HEIC, `lhv1` items and layer selectors, an `hvcC` record of another version, `iden`/`iovl` derived images, a grid whose tiles have a `clap` property (as `heif-enc` writes small tiles), fractional `clap`, an essential unknown property, ICtCp matrix coefficients with the sRGB transfer characteristics, an alpha plane of another size, luma and chroma planes of different depths, extended precision processing, `chroma_sample_loc_type` 3, `moof`, an edit that starts after the first image, a sequence whose pictures do not have the size of its sample entry (assembled, and as `heif-enc` writes small images); limits: width, height, frame pixels (of the image, and of the picture under a clean aperture), encoded bytes, live allocations, metadata bytes (ICC, then Exif; the items of a sequence), sequence frames and displayed pixels |
 | JPEG XL | lossless (Modular): gray, gray + alpha, RGB and RGBA at 8 and 16 bits, 12-bit samples scaled to 16 bits, efforts 1 and 9, an image of few colors (palette), a responsive image (squeeze), four groups of 128x128 samples, a bare codestream and a container; metadata: Exif and XMP boxes, plain and compressed (`brob`), ICC profiles (RGB and gray) in the codestream, the linear transfer function, enumerated color encodings with code points (Display P3, BT.2100 PQ, gray BT.709), orientation 6 in the image header; containers assembled around one codestream: three `jxlp` parts, a 64-bit box size, a box that extends to the end of the file, unknown boxes, metadata after the codestream; lossy (references decoded by djxl): VarDCT RGB, RGBA, gray and 16-bit, effort 3, large transforms on a smooth image, progressive passes with a permuted table of contents, an LF frame, noise, patches, a frame upsampled by 2, a lossy Modular frame, without and with strong restoration filters, JPEG files recompressed without loss (4:2:0, 4:2:2, 4:4:4, gray), a spline; animations: full frames at 10 ticks per second, 30000/1001 ticks per second, a layer without duration and a cropped frame, a multiplied frame, an alpha animation played three times |
 | JPEG XL errors | invalid (rejected by djxl and jxl-oxide too): inverted bytes in the frame header and in the coded samples, a codestream without its signature, a container without codestream, with two codestreams, with parts out of order, with a box smaller than its header; unsupported: integer samples of 25 bits, premultiplied alpha, PQ with the white point E, an XYB image with an ICC profile based on lookup tables; limits: width, height, frame pixels, animation frames, metadata bytes, and the pixels of a layer that is decoded without being shown |
 | JPEG 2000 | reversible (5-3): gray, gray + opacity, RGB and RGBA at 8 and 16 bits, samples of 4 and 12 bits scaled exactly, signed samples (gray at 8 and 12 bits, RGB) offset by half their range, with and without the component transformation, zero to six decomposition levels, images of one pixel, one column and one row; the five progression orders with layers and precincts, a POC marker segment, tiles (with offsets of the image and of the tile grid), tile-parts by resolution level, layer and component, interleaved tile-parts, SOP/EPH, PLT/TLM, packet headers packed in the main header (PPM) and in tile-part headers (PPT), COC/QCC marker segments, a coding style in the tile-part headers, a region of interest, five guard bits, every style of the coding passes (bypass, reset, termination on each pass, vertically causal, predictable termination, segmentation symbols, all of them), code-blocks of 4x4 and 64x4; irreversible (9-7): gray, RGB with and without the component transformation, RGBA, 16 bits, layers, tiles, a region of interest, and a reversible codestream cut by a rate; JP2 files: written by opj_compress (RGB, gray 16 bits, RGBA), a palette (with an opacity column), channel definitions (colors reordered, opacity first, gray + opacity), sYCC with and without sub-sampled chrominances, ICC profiles (RGB and gray), a capture resolution, EXIF and XMP UUID boxes before and after the codestream, boxes of 64-bit length, a codestream box that extends to the end of the file; the high-throughput block coder (Rec. ITU-T T.814): reversible gray and RGB at 8, 12 and 16 bits, tiles, precincts, code-blocks of 1024 columns, images of one column and one row, irreversible, a JPH file, and hand-authored coding passes: HT SigProp and HT MagRef passes (with and without the vertically causal contexts), an HT SigProp pass alone, placeholder passes, the passes of a code-block over two and three layers |
 | JPEG 2000 errors | invalid (rejected by opj_decompress, and by FFmpeg unless stated): a codestream without EOC marker and one cut in its tile-part, a tile of width 0, no component, an empty image area, no COD and no QCD marker segment, a tile index, a tile-part length and a tile-part index out of range, a file without codestream box, without JP2 header box (FFmpeg reads it), with an image header that contradicts the codestream (FFmpeg reads it), with a codestream box that is cut (FFmpeg reads it), without color specification box and with a box length of 4 (the reference decoders read both: the Recommendation is the reference), an HT cleanup segment with a suffix longer than itself; unsupported: five components without color specification, a sub-sampled first component, a premultiplied opacity, several opacity channels, the extensions of ISO/IEC 15444-2, the brand of Motion JPEG 2000, two codestreams, mixed block coders, a second HT set, placeholder passes in another packet than the HT cleanup pass; limits: width, height, frame pixels, metadata bytes before and after the codestream |
-| OpenEXR | every compression the library reads (NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD) with HALF RGBA and FLOAT RGB samples; DWAA tiles (zlib AC coefficients), a DWAB colour set of HALF and FLOAT channels, a DWAA luminance with alpha, ZSTD tiles and ZSTD segments of 2-byte and 4-byte samples; luminance (Y) with and without alpha, a red channel alone, HALF, FLOAT and UINT channels in one file, UINT luminance, infinities, not-a-number and the extreme floats, one pixel; flat B44A blocks, a pLinear B44 channel, PXR24 rounding ties, a PIZ chunk of more than 16384 values (16-bit wavelet); tiles of one level, mipmaps rounded up, ripmaps, tiles in random order, B44 tiles of odd sizes; a decreasing line order, a data window inside the display window from negative coordinates, other attributes and a long name; the chromaticities of BT.709, BT.2020 and Display P3; four sample images of the OpenEXR project (stripes, every half value, mipmapped PXR24 tiles, t01 of DisplayWindow) |
-| OpenEXR errors | invalid (rejected by OpenEXR too): a file cut in its last chunk, an offset after the end of the file, a chunk with the coordinates of another one, corrupt zlib data, a PIZ chunk whose Huffman data declare more bits than they have, an RLE run longer than its chunk, no channel list; unsupported: the HTJ2K256 and HTJ2K32 compressions, multi-part files (a stereo pair; render passes in scan lines and tiles), deep data (scan lines in NONE, RLE, ZIPS and ZSTD, clipped tiles in RLE and ZSTD, a ZBack and another layer, no alpha), a Z channel, the channels of a layer, luminance and chroma (RY, BY), a data window larger than the display window (and three sample images of the OpenEXR project whose windows differ), deep data; renderer outputs rejected by default: RGBA with a depth and a normals layer in an overscan in every compression the library reads, tiles of several layers in an overscan, mipmapped tiles of layers without a default layer, a sub-sampled extra channel; each of these (but the compressions) declares its decodings with `OpenExrDecodingOptions` (`exrDecodings`: a part, deep data flattened, a layer, the crop to the display window, the data window, and the errors left: a missing part, a missing layer, a vector layer, chroma channels, deep data without alpha), referenced by OpenEXR and cross-checked with FFmpeg (its `layer` option) or the samples given to `exr-from-raw`; limits: frame pixels and the bytes of the attributes |
+| OpenEXR | every compression the library reads (NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD) with HALF RGBA and FLOAT RGB samples; HTJ2K256 and HTJ2K32 of HALF channels (RGBA through the color transform, a chunk stored raw next to a codestream, tiles, luminance and alpha, the special halves); DWAA tiles (zlib AC coefficients), a DWAB colour set of HALF and FLOAT channels, a DWAA luminance with alpha, ZSTD tiles and ZSTD segments of 2-byte and 4-byte samples; luminance (Y) with and without alpha, a red channel alone, HALF, FLOAT and UINT channels in one file, UINT luminance, infinities, not-a-number and the extreme floats, one pixel; flat B44A blocks, a pLinear B44 channel, PXR24 rounding ties, a PIZ chunk of more than 16384 values (16-bit wavelet); tiles of one level, mipmaps rounded up, ripmaps (and their other levels, declared as `exrDecodings` with `levelX` and `levelY`, the levels a file does not have included), tiles in random order, B44 tiles of odd sizes; a decreasing line order, a data window inside the display window from negative coordinates, other attributes and a long name; the chromaticities of BT.709, BT.2020 and Display P3; four sample images of the OpenEXR project (stripes, every half value, mipmapped PXR24 tiles, t01 of DisplayWindow) |
+| OpenEXR errors | invalid (rejected by OpenEXR too): a file cut in its last chunk, an offset after the end of the file, a chunk with the coordinates of another one, corrupt zlib data, a PIZ chunk whose Huffman data declare more bits than they have, an RLE run longer than its chunk, no channel list; unsupported: the LJ2K compression, HTJ2K256 and HTJ2K32 with a FLOAT or UINT channel, multi-part files (a stereo pair; render passes in scan lines and tiles), deep data (scan lines in NONE, RLE, ZIPS and ZSTD, clipped tiles in RLE and ZSTD, a ZBack and another layer, no alpha), a Z channel, the channels of a layer, luminance and chroma (RY, BY), a data window larger than the display window (and three sample images of the OpenEXR project whose windows differ), deep data; renderer outputs rejected by default: RGBA with a depth and a normals layer in an overscan in every compression the library reads, tiles of several layers in an overscan, mipmapped tiles of layers without a default layer, a sub-sampled extra channel (also in an HTJ2K256 file, coded without color transform); each of these (but the compressions) declares its decodings with `OpenExrDecodingOptions` (`exrDecodings`: a part, deep data flattened, a layer, the crop to the display window, the data window, and the errors left: a missing part, a missing layer, a vector layer, chroma channels, deep data without alpha), referenced by OpenEXR and cross-checked with FFmpeg (its `layer` option) or the samples given to `exr-from-raw`; limits: frame pixels and the bytes of the attributes |
 | Radiance HDR | RGBE patterns of high dynamic range in flat, "old" run-length encoded (repetitions whose count takes several pixels) and "new" run-length encoded scanlines (runs and literals longer than one code), the three mixed in one file; the seven other orientations of the resolution string (rows stored from the bottom or right to left, columns in the four directions), flat and run-length encoded; the identifier `#?RGBE` without FORMAT; commands, a comment and the variables EXPOSURE (twice), COLORCORR, PIXASPECT, GAMMA, VIEW, SOFTWARE and another one; variables whose values cannot be read (`PIXASPECT=inf`, as FFmpeg writes it); the standard primaries of Radiance, those of BT.709, BT.2020 and Display P3; exponents of 1 and 255, the exponent 0 with mantissas, a mantissa 0; one pixel; two files of the Radiance encoder of FFmpeg (run-length encoded and narrow, flat) |
 | Radiance HDR errors | invalid: a file cut in its header, its resolution string, after the marker of its first scanline and in its last scanline, two FORMAT lines, resolution strings of one axis, of the same axis twice, of a size 0 and of lowercase axes, a run-length encoded scanline whose marker declares another length, a run and a literal past the end of a scanline, a code 0, an old repetition without a previous pixel and one past the end of a scanline; unsupported: XYZE samples (rows and columns), another FORMAT; limits: frame pixels and the bytes of the header |
+| PSD | the composite image of bitmap (rows padded with 0 bits by psd-tools, 1 bits by ImageMagick), grayscale, duotone (read as gray), indexed (with a transparency index) and RGB documents of 1, 8, 16 and 32 bits, raw and PackBits; a transparency channel (a negative layer count in the layer info, the Lr16 and the Lr32 blocks) whose colors are matted over white, for RGB and gray; extra channels that are not transparency (saved selections, a spot channel after the transparency); layers (ZIP-compressed, in the layer info and in the Lr16 block), PSB files; image resources (resolution, ICC profiles, EXIF, XMP, a thumbnail, a resource of another signature, a named resource); files of psd-tools, of ImageMagick and assembled from the specification, cross-checked with psd-tools dump, ImageMagick and FFmpeg |
+| PSD errors | invalid: a version 3, a reserved byte, 0 and 57 channels, a width of 0, a PSD file wider than 30,000 pixels, a depth of 4 bits, the color mode 5, an 8-bit bitmap, fewer channels than colors, a color table of 767 bytes, a resource of another signature and one past its section, a layer info past its section, a tagged block of another signature, the compression 4, PackBits rows too long and too short, a literal past the stored length and a run without its byte, files cut in their header, resources, row lengths and image data; unsupported: CMYK samples of 8 and 16 bits and Lab samples without conversion, no composite ("Maximize Compatibility" off), ZIP and ZIP-with-prediction composites, multichannel documents, 32-bit CMYK, 16-bit Lab; limits: width, height, frame pixels, metadata bytes |
 | Errors | PNG header defects (bad IHDR CRC, IHDR not first, illegal bit depth, chunk length above 2^31 - 1, unknown critical chunk `CgBI` — unsupported), structure defects (truncated IDAT, bad IDAT CRC, non-consecutive IDAT, PLTE after IDAT, missing IEND) and pixel-data defects with valid containers (truncated zlib, missing or wrong Adler-32, bytes after the zlib datastream, one extra scanline, one missing scanline, filter type 5, out-of-range palette index); truncated GIF image data, GIF plain-text extension (unsupported), arithmetic-coded JPEG (unsupported); GIF LZW and color-table defects inside valid containers (code above the next table code, table code after a clear, end code too early, data ending without end code, an index outside the table, no color table) and block defects (unknown block, 3-byte Graphic Control Extension, minimum code size 12, missing trailer, no image, empty logical screen); resource limits: frame count, GIF displayed pixels (`MaxTotalPixels`, decode-only), width, frame pixels, encoded bytes (reached at IEND), and a `zTXt` whose 171-byte zlib stream inflates to 25,801 bytes with `MaxMetadataBytes` = 4096 (deterministic fixed-Huffman stream written by the generator) |
 
 ## Fixture coverage matrix
@@ -817,15 +839,20 @@ follows it, so keep both headings unique in this file.
 | --- | --- | --- | --- | --- |
 | avif | 189 | 45 | 28 | 12 |
 | bmp | 24 | 21 | 2 | 2 |
-| exr | 54 | 7 | 33 | 2 |
+| cin | 13 | 5 | 6 | 0 |
+| dds | 114 | 27 | 12 | 2 |
+| dng | 31 | 9 | 6 | 2 |
+| dpx | 60 | 10 | 8 | 2 |
+| exr | 59 | 7 | 35 | 2 |
 | gif | 24 | 13 | 1 | 2 |
 | hdr | 27 | 15 | 3 | 2 |
-| heic | 117 | 31 | 20 | 11 |
+| heic | 125 | 31 | 19 | 11 |
 | jpeg | 72 | 19 | 5 | 1 |
 | jp2 | 95 | 17 | 10 | 5 |
 | jxl | 54 | 7 | 4 | 6 |
 | png | 109 | 31 | 1 | 6 |
 | pnm | 15 | 12 | 1 | 2 |
+| psd | 31 | 24 | 9 | 4 |
 | qoi | 10 | 12 | 0 | 4 |
 | tga | 23 | 7 | 1 | 2 |
 | webp | 21 | 15 | 1 | 5 |
@@ -1264,54 +1291,60 @@ follows it, so keep both headings unique in this file.
 | AVIF edit list that does not play the media forward at its rate (rejected) | `avif.unsupported=edit-list` | 0 | 0 | 5 | 0 |
 | AVIF alpha track with another edit list than the color track (rejected) | `avif.unsupported=alpha-edit-list` | 0 | 0 | 1 | 0 |
 | AVIF sequence whose images change size (rejected) | `avif.unsupported=size-change` | 0 | 0 | 1 | 0 |
-| HEIC 8-bit samples | `heic.bitDepth=8` | 96 | 0 | 0 | 0 |
-| HEIC 10-bit samples | `heic.bitDepth=10` | 15 | 0 | 0 | 0 |
+| HEIC 8-bit samples | `heic.bitDepth=8` | 103 | 0 | 0 | 0 |
+| HEIC 10-bit samples | `heic.bitDepth=10` | 16 | 0 | 0 | 0 |
 | HEIC 12-bit samples | `heic.bitDepth=12` | 6 | 0 | 0 | 0 |
-| HEIC 4:4:4 | `heic.subsampling=4:4:4` | 74 | 0 | 0 | 0 |
+| HEIC 4:4:4 | `heic.subsampling=4:4:4` | 80 | 0 | 0 | 0 |
 | HEIC 4:2:2 (chroma samples on the luma samples of even columns) | `heic.subsampling=4:2:2` | 7 | 0 | 0 | 0 |
 | HEIC 4:2:2, 10-bit | `heic.subsampling=4:2:2` + `heic.bitDepth=10` | 1 | 0 | 0 | 0 |
 | HEIC 4:2:2, 12-bit | `heic.subsampling=4:2:2` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
-| HEIC 4:2:0 | `heic.subsampling=4:2:0` | 27 | 0 | 0 | 0 |
-| HEIC 4:2:0, 10-bit | `heic.subsampling=4:2:0` + `heic.bitDepth=10` | 5 | 0 | 0 | 0 |
+| HEIC 4:2:0 | `heic.subsampling=4:2:0` | 29 | 0 | 0 | 0 |
+| HEIC 4:2:0, 10-bit | `heic.subsampling=4:2:0` + `heic.bitDepth=10` | 6 | 0 | 0 | 0 |
 | HEIC 4:2:0, 12-bit | `heic.subsampling=4:2:0` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
 | HEIC monochrome | `heic.subsampling=4:0:0` | 9 | 0 | 0 | 0 |
 | HEIC monochrome, 10-bit | `heic.subsampling=4:0:0` + `heic.bitDepth=10` | 2 | 0 | 0 | 0 |
 | HEIC monochrome, 12-bit | `heic.subsampling=4:0:0` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
 | HEIC monochrome, limited range | `heic.subsampling=4:0:0` + `heic.range=limited` | 2 | 0 | 0 | 0 |
-| HEIC 4:2:0 chroma samples at the default location (left, between two rows: nothing is signalled) | `heic.chromaLoc=default` | 14 | 0 | 0 | 0 |
-| HEIC default chroma sample location above 8 bits | `heic.chromaLoc=default` + `heic.bitDepth=10` | 3 | 0 | 0 | 0 |
+| HEIC 4:2:0 chroma samples at the default location (left, between two rows: nothing is signalled) | `heic.chromaLoc=default` | 16 | 0 | 0 | 0 |
+| HEIC default chroma sample location above 8 bits | `heic.chromaLoc=default` + `heic.bitDepth=10` | 4 | 0 | 0 | 0 |
 | HEIC `chroma_sample_loc_type` 0, signalled | `heic.chromaLoc=0` | 1 | 0 | 0 | 0 |
 | HEIC `chroma_sample_loc_type` 1 (centered) | `heic.chromaLoc=1` | 9 | 0 | 0 | 0 |
 | HEIC `chroma_sample_loc_type` 2 (on the top-left luma sample) | `heic.chromaLoc=2` | 3 | 0 | 0 | 0 |
-| HEIC identity matrix (RGB planes) | `heic.matrix=0` | 45 | 0 | 0 | 0 |
+| HEIC identity matrix (RGB planes) | `heic.matrix=0` | 46 | 0 | 0 | 0 |
 | HEIC BT.709 matrix | `heic.matrix=1` | 7 | 0 | 0 | 0 |
 | HEIC unspecified matrix (BT.601) | `heic.matrix=2` | 19 | 0 | 0 | 0 |
 | HEIC BT.470BG matrix | `heic.matrix=5` | 6 | 0 | 0 | 0 |
-| HEIC BT.601 matrix | `heic.matrix=6` | 22 | 0 | 0 | 0 |
+| HEIC BT.601 matrix | `heic.matrix=6` | 23 | 0 | 0 | 0 |
 | HEIC YCgCo matrix | `heic.matrix=8` | 1 | 0 | 0 | 0 |
 | HEIC BT.2020 non-constant luminance matrix | `heic.matrix=9` | 8 | 0 | 0 | 0 |
-| HEIC full range | `heic.range=full` | 85 | 0 | 0 | 0 |
+| HEIC BT.2020 constant luminance matrix | `heic.matrix=10` | 1 | 0 | 0 | 0 |
+| HEIC SMPTE ST 2085 matrix | `heic.matrix=11` | 1 | 0 | 0 | 0 |
+| HEIC chromaticity-derived non-constant luminance matrix | `heic.matrix=12` | 1 | 0 | 0 | 0 |
+| HEIC chromaticity-derived constant luminance matrix | `heic.matrix=13` | 1 | 0 | 0 | 0 |
+| HEIC ICtCp matrix | `heic.matrix=14` | 2 | 0 | 0 | 0 |
+| HEIC premultiplied alpha (`prem` reference) | `heic.premultiplied` | 2 | 0 | 0 | 0 |
+| HEIC full range | `heic.range=full` | 93 | 0 | 0 | 0 |
 | HEIC limited range | `heic.range=limited` | 32 | 0 | 0 | 0 |
-| HEIC color description (`colr` `nclx`) | `heic.colr=nclx` | 63 | 0 | 0 | 0 |
+| HEIC color description (`colr` `nclx`) | `heic.colr=nclx` | 71 | 0 | 0 | 0 |
 | HEIC ICC profile (`colr` `prof`) | `heic.colr=icc` | 5 | 0 | 0 | 0 |
 | HEIC color description of the bitstream (no `colr`) | `heic.colr=none` | 50 | 0 | 0 | 0 |
-| HEIC bitstream with a color description (video signal description of the VUI) | `heic.videoSignal=colour` | 89 | 0 | 0 | 0 |
+| HEIC bitstream with a color description (video signal description of the VUI) | `heic.videoSignal=colour` | 97 | 0 | 0 | 0 |
 | HEIC bitstream whose video signal description only gives the range | `heic.videoSignal=range` | 9 | 0 | 0 | 0 |
 | HEIC bitstream without video signal description | `heic.videoSignal=none` | 19 | 0 | 0 | 0 |
 | HEIC no `colr` box and no video signal description (limited range, converted as BT.601) | `heic.colr=none` + `heic.videoSignal=none` | 18 | 0 | 0 | 0 |
 | HEIC monochrome without video signal description (limited range) | `heic.subsampling=4:0:0` + `heic.videoSignal=none` | 1 | 0 | 0 | 0 |
 | HEIC no `colr` box and media data first | `heic.colr=none` + `heic.layout=media-first` | 2 | 0 | 0 | 0 |
-| HEIC lossless HEVC coding (transform and quantization bypass) | `heic.lossless` | 38 | 0 | 0 | 0 |
+| HEIC lossless HEVC coding (transform and quantization bypass) | `heic.lossless` | 39 | 0 | 0 | 0 |
 | HEIC picture cropped by its conformance window | `heic.conformanceWindow` | 27 | 0 | 0 | 0 |
 | HEIC conformance window that removes more than the padding (the coded picture counts toward the canvas limits) | `heic.checkedSize` | 2 | 0 | 0 | 0 |
 | HEIC conformance window and clean aperture | `heic.conformanceWindow` + `heic.clap` | 5 | 0 | 0 | 0 |
-| HEIC alpha (auxiliary image or track) | `heic.alpha` | 14 | 0 | 0 | 0 |
+| HEIC alpha (auxiliary image or track) | `heic.alpha` | 16 | 0 | 0 | 0 |
 | HEIC alpha, 10-bit | `heic.alpha` + `heic.bitDepth=10` | 2 | 0 | 0 | 0 |
 | HEIC alpha, 12-bit | `heic.alpha` + `heic.bitDepth=12` | 1 | 0 | 0 | 0 |
 | HEIC alpha under limited-range colors | `heic.alpha` + `heic.range=limited` | 4 | 0 | 0 | 0 |
-| HEIC alpha plane coded as a monochrome picture | `heic.alpha.subsampling=4:0:0` | 13 | 0 | 0 | 0 |
+| HEIC alpha plane coded as a monochrome picture | `heic.alpha.subsampling=4:0:0` | 15 | 0 | 0 | 0 |
 | HEIC alpha plane that is the luma plane of a 4:2:0 picture | `heic.alpha.subsampling=4:2:0` | 1 | 0 | 0 | 0 |
-| HEIC alpha auxiliary type of HEVC (`urn:mpeg:hevc:2015:auxid:1`) | `heic.alpha.urn=hevc` | 13 | 0 | 0 | 0 |
+| HEIC alpha auxiliary type of HEVC (`urn:mpeg:hevc:2015:auxid:1`) | `heic.alpha.urn=hevc` | 15 | 0 | 0 | 0 |
 | HEIC alpha auxiliary type of MPEG-B | `heic.alpha.urn=mpegB` | 1 | 0 | 0 | 0 |
 | HEIC limited-range alpha plane | `heic.alpha.range=limited` | 1 | 0 | 0 | 0 |
 | HEIC grids | `heic.grid` | 10 | 0 | 0 | 0 |
@@ -1322,13 +1355,13 @@ follows it, so keep both headings unique in this file.
 | HEIC rotation (`irot`) | `heic.irot` | 9 | 0 | 0 | 0 |
 | HEIC mirror (`imir`) | `heic.imir` | 3 | 0 | 0 | 0 |
 | HEIC rotation and mirror | `heic.irot` + `heic.imir` | 1 | 0 | 0 | 0 |
-| HEIC clean aperture (`clap`) | `heic.clap` | 61 | 0 | 0 | 0 |
+| HEIC clean aperture (`clap`) | `heic.clap` | 66 | 0 | 0 | 0 |
 | HEIC Exif item | `heic.metadata=exif` | 7 | 0 | 0 | 0 |
 | HEIC XMP item | `heic.metadata=xmp` | 4 | 0 | 0 | 0 |
 | HEIC thumbnail (not read) | `heic.thumbnail` | 4 | 0 | 0 | 0 |
 | HEIC auxiliary image that is not an alpha plane (not read) | `heic.auxiliary=other` | 3 | 0 | 0 | 0 |
-| HEIC major brand `heic` | `heic.majorBrand=heic` | 17 | 0 | 0 | 0 |
-| HEIC major brand `heix` | `heic.majorBrand=heix` | 73 | 0 | 0 | 0 |
+| HEIC major brand `heic` | `heic.majorBrand=heic` | 18 | 0 | 0 | 0 |
+| HEIC major brand `heix` | `heic.majorBrand=heix` | 80 | 0 | 0 | 0 |
 | HEIC major brand `hevc` | `heic.majorBrand=hevc` | 4 | 0 | 0 | 0 |
 | HEIC major brand `hevx` | `heic.majorBrand=hevx` | 18 | 0 | 0 | 0 |
 | HEIC major brand `mif1`, an HEVC brand compatible | `heic.majorBrand=mif1` | 2 | 0 | 0 | 0 |
@@ -1337,8 +1370,8 @@ follows it, so keep both headings unique in this file.
 | HEIC file that also declares a brand of AVIF | `heic.brands=avif` | 2 | 0 | 0 | 0 |
 | HEIC NAL unit lengths of one byte | `heic.hvcc.lengthSize=1` | 1 | 0 | 0 | 0 |
 | HEIC NAL unit lengths of two bytes | `heic.hvcc.lengthSize=2` | 2 | 0 | 0 | 0 |
-| HEIC NAL unit lengths of four bytes | `heic.hvcc.lengthSize=4` | 114 | 0 | 0 | 0 |
-| HEIC configuration record whose arrays are not complete | `heic.hvcc.incompleteArrays` | 76 | 0 | 0 | 0 |
+| HEIC NAL unit lengths of four bytes | `heic.hvcc.lengthSize=4` | 122 | 0 | 0 | 0 |
+| HEIC configuration record whose arrays are not complete | `heic.hvcc.incompleteArrays` | 81 | 0 | 0 | 0 |
 | HEIC configuration record with several sequence and picture parameter sets | `heic.hvcc.severalParameterSets` | 1 | 0 | 0 | 0 |
 | HEIC parameter sets in the coded data | `heic.parameterSets=in-band` | 3 | 0 | 0 | 0 |
 | HEIC media data before their index | `heic.layout=media-first` | 3 | 0 | 0 | 0 |
@@ -1382,7 +1415,6 @@ follows it, so keep both headings unique in this file.
 | HEIC image of another codec than its brands, or brands of another codec than its image (rejected) | `heic.unsupported=codec` | 0 | 0 | 2 | 0 |
 | HEIC layers of a layered HEVC bitstream (rejected) | `heic.unsupported=layers` | 0 | 0 | 2 | 0 |
 | HEIC configuration record of another version (rejected) | `heic.unsupported=configuration-record` | 0 | 0 | 1 | 0 |
-| HEIC premultiplied alpha (rejected) | `heic.unsupported=premultiplied-alpha` | 0 | 0 | 1 | 0 |
 | HEIC derived images other than grids (rejected) | `heic.unsupported=derived-image` | 0 | 0 | 2 | 0 |
 | HEIC grid tile with a clean aperture that its grid does not have (rejected) | `heic.unsupported=grid-tile-transform` | 0 | 0 | 1 | 0 |
 | HEIC fractional clean aperture (rejected) | `heic.unsupported=clap` | 0 | 0 | 1 | 0 |
@@ -1527,15 +1559,17 @@ follows it, so keep both headings unique in this file.
 | OpenEXR DWAA compression | `exr.compression=dwaa` | 4 | 0 | 0 | 0 |
 | OpenEXR DWAB compression | `exr.compression=dwab` | 3 | 0 | 0 | 0 |
 | OpenEXR ZSTD compression | `exr.compression=zstd` | 4 | 0 | 0 | 0 |
-| OpenEXR scan lines | `exr.storage=scanline` | 46 | 0 | 0 | 0 |
-| OpenEXR tiles | `exr.storage=tiled` | 8 | 0 | 0 | 0 |
-| OpenEXR one level of tiles | `exr.levels=one-level` | 5 | 0 | 0 | 0 |
+| OpenEXR HTJ2K256 compression | `exr.compression=htj2k256` | 2 | 0 | 0 | 0 |
+| OpenEXR HTJ2K32 compression | `exr.compression=htj2k32` | 3 | 0 | 0 | 0 |
+| OpenEXR scan lines | `exr.storage=scanline` | 50 | 0 | 0 | 0 |
+| OpenEXR tiles | `exr.storage=tiled` | 9 | 0 | 0 | 0 |
+| OpenEXR one level of tiles | `exr.levels=one-level` | 6 | 0 | 0 | 0 |
 | OpenEXR mipmap levels | `exr.levels=mipmap` | 2 | 0 | 0 | 0 |
 | OpenEXR ripmap levels | `exr.levels=ripmap` | 1 | 0 | 0 | 0 |
-| OpenEXR HALF samples | `exr.type=half` | 37 | 0 | 0 | 0 |
+| OpenEXR HALF samples | `exr.type=half` | 42 | 0 | 0 | 0 |
 | OpenEXR FLOAT samples | `exr.type=float` | 19 | 0 | 0 | 0 |
 | OpenEXR UINT samples | `exr.type=uint` | 2 | 0 | 0 | 0 |
-| OpenEXR channel sets (R, G, B, A, Y) | `exr.channels` | 54 | 0 | 0 | 0 |
+| OpenEXR channel sets (R, G, B, A, Y) | `exr.channels` | 59 | 0 | 0 | 0 |
 | OpenEXR decreasing line order | `exr.lineOrder=decreasing-y` | 1 | 0 | 0 | 0 |
 | OpenEXR tiles in random order | `exr.lineOrder=random-y` | 1 | 0 | 0 | 0 |
 | OpenEXR data window inside the display window | `exr.dataWindow=inside` | 1 | 0 | 0 | 0 |
@@ -1564,6 +1598,203 @@ follows it, so keep both headings unique in this file.
 | Radiance HDR SOFTWARE | `hdr.software` | 1 | 0 | 0 | 0 |
 | Radiance HDR PRIMARIES | `hdr.primaries` | 4 | 0 | 0 | 0 |
 | Radiance HDR variables whose values cannot be read | `hdr.unreadableVariables` | 1 | 0 | 0 | 0 |
+| PSD bitmap documents | `psd.mode=bitmap` | 3 | 0 | 0 | 0 |
+| PSD grayscale documents | `psd.mode=grayscale` | 8 | 0 | 0 | 0 |
+| PSD duotone documents (read as gray) | `psd.mode=duotone` | 1 | 0 | 0 | 0 |
+| PSD indexed documents | `psd.mode=indexed` | 2 | 0 | 0 | 0 |
+| PSD RGB documents | `psd.mode=rgb` | 17 | 0 | 0 | 4 |
+| PSD CMYK documents (rejected) | `psd.mode=cmyk` | 0 | 0 | 3 | 0 |
+| PSD Lab documents (rejected) | `psd.mode=lab` | 0 | 0 | 2 | 0 |
+| PSD multichannel documents (rejected) | `psd.mode=multichannel` | 0 | 0 | 1 | 0 |
+| PSD 1-bit samples | `psd.depth=1` | 3 | 0 | 0 | 0 |
+| PSD 8-bit samples | `psd.depth=8` | 18 | 0 | 0 | 4 |
+| PSD 16-bit samples | `psd.depth=16` | 7 | 0 | 0 | 0 |
+| PSD 32-bit floating-point samples | `psd.depth=32` | 3 | 0 | 0 | 0 |
+| PSD raw image data | `psd.compression=raw` | 10 | 0 | 0 | 0 |
+| PSD PackBits image data | `psd.compression=rle` | 21 | 0 | 0 | 4 |
+| PSD large documents (PSB) | `psd.version=psb` | 3 | 0 | 0 | 0 |
+| PSD transparency channel (merged alpha) | `psd.alpha=merged` | 6 | 0 | 0 | 0 |
+| PSD extra channels that are not transparency | `psd.extraChannels` | 2 | 0 | 0 | 0 |
+| PSD layers in the layer info | `psd.layers=layerInfo` | 4 | 0 | 1 | 0 |
+| PSD layers in the Lr16 block | `psd.layers=lr16` | 2 | 0 | 0 | 0 |
+| PSD image resources | `psd.resources` | 2 | 0 | 0 | 1 |
+| PSD files of psd-tools | `psd.writer=psd-tools` | 24 | 0 | 0 | 3 |
+| PSD files of ImageMagick | `psd.writer=magick` | 5 | 0 | 0 | 0 |
+| PSD files assembled from the specification | `psd.writer=builder` | 2 | 0 | 0 | 1 |
+| DNG color filter array (CFA) | `dng.photometric=cfa` | 28 | 0 | 0 | 0 |
+| DNG linear raw data (LinearRaw) | `dng.photometric=linear-raw` | 3 | 0 | 0 | 0 |
+| DNG 2x2 repeating pattern | `dng.cfa=2x2` | 27 | 0 | 0 | 0 |
+| DNG 6x6 repeating pattern | `dng.cfa=6x6` | 1 | 0 | 0 | 0 |
+| DNG 8-bit samples | `dng.bits=8` | 2 | 0 | 0 | 0 |
+| DNG 10-bit packed samples | `dng.bits=10` | 1 | 0 | 0 | 0 |
+| DNG 12-bit packed samples | `dng.bits=12` | 1 | 0 | 0 | 0 |
+| DNG 14-bit packed samples | `dng.bits=14` | 1 | 0 | 0 | 0 |
+| DNG 16-bit samples | `dng.bits=16` | 24 | 0 | 0 | 0 |
+| DNG 16-bit floating-point samples | `dng.bits=16-float` | 1 | 0 | 0 | 0 |
+| DNG 32-bit floating-point samples | `dng.bits=32-float` | 1 | 0 | 0 | 0 |
+| DNG uncompressed raw image | `dng.compression=none` | 23 | 0 | 0 | 0 |
+| DNG Deflate compression | `dng.compression=deflate` | 6 | 0 | 0 | 0 |
+| DNG lossless JPEG compression | `dng.compression=lossless-jpeg` | 1 | 0 | 0 | 0 |
+| DNG JPEG XL compression | `dng.compression=jpeg-xl` | 1 | 0 | 0 | 0 |
+| DNG horizontal differencing | `dng.predictor=2` | 2 | 0 | 0 | 0 |
+| DNG floating-point predictor | `dng.predictor=3` | 1 | 0 | 0 | 0 |
+| DNG horizontal difference X2 | `dng.predictor=34892` | 1 | 0 | 0 | 0 |
+| DNG horizontal difference X4 | `dng.predictor=34893` | 1 | 0 | 0 | 0 |
+| DNG floating point X2 | `dng.predictor=34894` | 1 | 0 | 0 | 0 |
+| DNG tiles | `dng.tiles` | 2 | 0 | 0 | 0 |
+| DNG big-endian file | `dng.big-endian` | 2 | 0 | 0 | 0 |
+| DNG LinearizationTable | `dng.linearization` | 1 | 0 | 0 | 0 |
+| DNG black level pattern and deltas | `dng.black-level-pattern` | 1 | 0 | 0 | 0 |
+| DNG ActiveArea and default crop | `dng.active-area` | 1 | 0 | 0 | 0 |
+| DNG two calibrations, interpolated | `dng.two-illuminants` | 2 | 0 | 0 | 0 |
+| DNG ForwardMatrix | `dng.forward-matrix` | 1 | 0 | 0 | 0 |
+| DNG AsShotWhiteXY | `dng.white-xy` | 1 | 0 | 0 | 0 |
+| DNG BaselineExposure | `dng.baseline-exposure` | 1 | 0 | 0 | 0 |
+| DNG OpcodeList1 | `dng.opcodes=1` | 1 | 0 | 0 | 0 |
+| DNG OpcodeList2 | `dng.opcodes=2` | 1 | 0 | 0 | 0 |
+| DNG OpcodeList3 | `dng.opcodes=3` | 1 | 0 | 0 | 0 |
+| DNG preview in IFD 0 | `dng.preview` | 3 | 0 | 0 | 0 |
+| DNG orientation other than 1 | `dng.orientation` | 1 | 0 | 0 | 0 |
+| DNG RowInterleaveFactor and ColumnInterleaveFactor | `dng.interleave` | 1 | 0 | 0 | 0 |
+| DNG XMP packet | `dng.xmp` | 1 | 0 | 0 | 0 |
+| DDS DX10 header | `dds.header=dx10` | 56 | 0 | 0 | 0 |
+| DDS legacy header | `dds.header=legacy` | 51 | 0 | 0 | 0 |
+| DDS BC1 blocks | `dds.format=bc1` | 13 | 0 | 0 | 0 |
+| DDS BC2 blocks | `dds.format=bc2` | 3 | 0 | 0 | 0 |
+| DDS BC3 blocks | `dds.format=bc3` | 6 | 0 | 0 | 0 |
+| DDS BC4 unsigned blocks | `dds.format=bc4` | 4 | 0 | 0 | 0 |
+| DDS BC4 signed blocks | `dds.format=bc4s` | 3 | 0 | 0 | 0 |
+| DDS BC5 unsigned blocks | `dds.format=bc5` | 5 | 0 | 0 | 0 |
+| DDS BC5 signed blocks | `dds.format=bc5s` | 3 | 0 | 0 | 0 |
+| DDS BC6H unsigned blocks | `dds.format=bc6h` | 3 | 0 | 0 | 0 |
+| DDS BC6H signed blocks | `dds.format=bc6hs` | 2 | 0 | 0 | 0 |
+| DDS BC7 blocks | `dds.format=bc7` | 7 | 0 | 0 | 0 |
+| DDS random blocks (every BC6H and BC7 mode) | `dds.blocks=random` | 29 | 0 | 0 | 0 |
+| DDS R8G8B8A8_UNORM | `dds.format=r8g8b8a8-unorm` | 5 | 0 | 0 | 0 |
+| DDS R8G8B8A8_UNORM_SRGB | `dds.format=r8g8b8a8-unorm-srgb` | 1 | 0 | 0 | 0 |
+| DDS R8G8B8A8_TYPELESS | `dds.format=r8g8b8a8-typeless` | 1 | 0 | 0 | 0 |
+| DDS B8G8R8A8_UNORM | `dds.format=b8g8r8a8-unorm` | 1 | 0 | 0 | 0 |
+| DDS B8G8R8A8_UNORM_SRGB | `dds.format=b8g8r8a8-unorm-srgb` | 1 | 0 | 0 | 0 |
+| DDS B8G8R8X8_UNORM | `dds.format=b8g8r8x8-unorm` | 1 | 0 | 0 | 0 |
+| DDS B5G6R5_UNORM | `dds.format=b5g6r5-unorm` | 1 | 0 | 0 | 0 |
+| DDS B5G5R5A1_UNORM | `dds.format=b5g5r5a1-unorm` | 1 | 0 | 0 | 0 |
+| DDS B4G4R4A4_UNORM | `dds.format=b4g4r4a4-unorm` | 1 | 0 | 0 | 0 |
+| DDS R10G10B10A2_UNORM | `dds.format=r10g10b10a2-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16G16B16A16_UNORM | `dds.format=r16g16b16a16-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16G16_UNORM | `dds.format=r16g16-unorm` | 1 | 0 | 0 | 0 |
+| DDS R8G8_UNORM | `dds.format=r8g8-unorm` | 1 | 0 | 0 | 0 |
+| DDS R8_UNORM | `dds.format=r8-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16_UNORM | `dds.format=r16-unorm` | 1 | 0 | 0 | 0 |
+| DDS A8_UNORM | `dds.format=a8-unorm` | 1 | 0 | 0 | 0 |
+| DDS R16G16B16A16_FLOAT | `dds.format=r16g16b16a16-float` | 1 | 0 | 0 | 0 |
+| DDS R16G16_FLOAT | `dds.format=r16g16-float` | 1 | 0 | 0 | 0 |
+| DDS R16_FLOAT | `dds.format=r16-float` | 1 | 0 | 0 | 0 |
+| DDS R32G32B32A32_FLOAT | `dds.format=r32g32b32a32-float` | 1 | 0 | 0 | 0 |
+| DDS R32G32B32_FLOAT | `dds.format=r32g32b32-float` | 1 | 0 | 0 | 0 |
+| DDS R32G32_FLOAT | `dds.format=r32g32-float` | 1 | 0 | 0 | 0 |
+| DDS R32_FLOAT | `dds.format=r32-float` | 1 | 0 | 0 | 0 |
+| DDS R11G11B10_FLOAT | `dds.format=r11g11b10-float` | 1 | 0 | 0 | 0 |
+| DDS R9G9B9E5_SHAREDEXP | `dds.format=r9g9b9e5-sharedexp` | 1 | 0 | 0 | 0 |
+| DDS legacy A8R8G8B8 | `dds.format=legacy-a8r8g8b8` | 1 | 0 | 0 | 0 |
+| DDS legacy X8R8G8B8 | `dds.format=legacy-x8r8g8b8` | 1 | 0 | 0 | 0 |
+| DDS legacy A8B8G8R8 | `dds.format=legacy-a8b8g8r8` | 1 | 0 | 0 | 0 |
+| DDS legacy R8G8B8 (24 bits) | `dds.format=legacy-r8g8b8` | 1 | 0 | 0 | 0 |
+| DDS legacy R5G6B5 | `dds.format=legacy-r5g6b5` | 1 | 0 | 0 | 0 |
+| DDS legacy X1R5G5B5 | `dds.format=legacy-x1r5g5b5` | 1 | 0 | 0 | 0 |
+| DDS legacy A1R5G5B5 | `dds.format=legacy-a1r5g5b5` | 1 | 0 | 0 | 0 |
+| DDS legacy A4R4G4B4 | `dds.format=legacy-a4r4g4b4` | 1 | 0 | 0 | 0 |
+| DDS legacy X4R4G4B4 | `dds.format=legacy-x4r4g4b4` | 1 | 0 | 0 | 0 |
+| DDS legacy A8R3G3B2 | `dds.format=legacy-a8r3g3b2` | 1 | 0 | 0 | 0 |
+| DDS legacy R3G3B2 | `dds.format=legacy-r3g3b2` | 1 | 0 | 0 | 0 |
+| DDS legacy A2B10G10R10 | `dds.format=legacy-a2b10g10r10` | 1 | 0 | 0 | 0 |
+| DDS legacy A2R10G10B10 | `dds.format=legacy-a2r10g10b10` | 1 | 0 | 0 | 0 |
+| DDS legacy G16R16 | `dds.format=legacy-g16r16` | 1 | 0 | 0 | 0 |
+| DDS legacy L8 | `dds.format=legacy-l8` | 1 | 0 | 0 | 0 |
+| DDS legacy L16 | `dds.format=legacy-l16` | 1 | 0 | 0 | 0 |
+| DDS legacy A8L8 | `dds.format=legacy-a8l8` | 1 | 0 | 0 | 0 |
+| DDS legacy A4L4 | `dds.format=legacy-a4l4` | 1 | 0 | 0 | 0 |
+| DDS legacy A8 (DDPF_ALPHA) | `dds.format=legacy-a8` | 1 | 0 | 0 | 0 |
+| DDS FourCC 36 (A16B16G16R16) | `dds.format=fourcc-a16b16g16r16` | 1 | 0 | 0 | 0 |
+| DDS FourCC 111 (R16F) | `dds.format=fourcc-r16f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 112 (G16R16F) | `dds.format=fourcc-g16r16f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 113 (A16B16G16R16F) | `dds.format=fourcc-a16b16g16r16f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 114 (R32F) | `dds.format=fourcc-r32f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 115 (G32R32F) | `dds.format=fourcc-g32r32f` | 1 | 0 | 0 | 0 |
+| DDS FourCC 116 (A32B32G32R32F) | `dds.format=fourcc-a32b32g32r32f` | 1 | 0 | 0 | 0 |
+| DDS mipmaps | `dds.mips` | 11 | 0 | 0 | 0 |
+| DDS cube maps | `dds.cube` | 6 | 0 | 0 | 0 |
+| DDS partial cube maps | `dds.cube.partial` | 1 | 0 | 0 | 0 |
+| DDS texture arrays | `dds.array` | 5 | 0 | 0 | 0 |
+| DDS volume textures | `dds.volume` | 3 | 0 | 0 | 0 |
+| DDS 1D textures | `dds.dimension=1d` | 1 | 0 | 0 | 0 |
+| DDS surfaces after the first one (not read by a load) | `dds.trailingSurfaces` | 16 | 0 | 0 | 0 |
+| DDS sizes that are not multiples of 4 | `dds.oddSize` | 6 | 0 | 0 | 0 |
+| DDS alpha mode straight | `dds.alphaMode=straight` | 1 | 0 | 0 | 0 |
+| DDS alpha mode opaque | `dds.alphaMode=opaque` | 1 | 0 | 0 | 0 |
+| DDS alpha mode custom | `dds.alphaMode=custom` | 1 | 0 | 0 | 0 |
+| DDS written by texconv | `dds.writer=texconv` | 19 | 0 | 0 | 0 |
+| DDS assembled by texassemble | `dds.writer=texassemble` | 4 | 0 | 0 | 0 |
+| DDS written by ImageMagick | `dds.writer=magick` | 4 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr with alpha | `dpx.alpha` | 2 | 0 | 0 | 0 |
+| DPX 1-bit components | `dpx.bitDepth=1` | 1 | 0 | 0 | 0 |
+| DPX 10-bit components | `dpx.bitDepth=10` | 16 | 0 | 0 | 0 |
+| DPX 12-bit components | `dpx.bitDepth=12` | 8 | 0 | 0 | 0 |
+| DPX 16-bit components | `dpx.bitDepth=16` | 10 | 0 | 0 | 0 |
+| DPX 32-bit components | `dpx.bitDepth=32` | 4 | 0 | 0 | 0 |
+| DPX 64-bit components | `dpx.bitDepth=64` | 1 | 0 | 0 | 0 |
+| DPX 8-bit components | `dpx.bitDepth=8` | 20 | 0 | 0 | 0 |
+| DPX big-endian file | `dpx.byteOrder=big` | 39 | 0 | 0 | 0 |
+| DPX little-endian file | `dpx.byteOrder=little` | 10 | 0 | 0 | 0 |
+| DPX red element | `dpx.descriptor=1` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr, Y 4:2:2 element | `dpx.descriptor=100` | 2 | 0 | 0 | 0 |
+| DPX Cb, Y, A, Cr, Y, A 4:2:2:4 element | `dpx.descriptor=101` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr 4:4:4 element | `dpx.descriptor=102` | 2 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr, A 4:4:4:4 element | `dpx.descriptor=103` | 1 | 0 | 0 | 0 |
+| DPX alpha element | `dpx.descriptor=4` | 2 | 0 | 0 | 0 |
+| DPX RGB element | `dpx.descriptor=50` | 38 | 0 | 0 | 0 |
+| DPX RGBA element | `dpx.descriptor=51` | 4 | 0 | 0 | 0 |
+| DPX ABGR element | `dpx.descriptor=52` | 1 | 0 | 0 | 0 |
+| DPX luma element | `dpx.descriptor=6` | 8 | 0 | 0 | 0 |
+| DPX files of 2 image elements | `dpx.elements=2` | 1 | 0 | 0 | 0 |
+| DPX end-of-line padding | `dpx.endOfLinePadding` | 1 | 0 | 0 | 0 |
+| DPX film and television headers | `dpx.industryHeaders=filled` | 1 | 0 | 0 | 0 |
+| DPX without industry-specific headers | `dpx.industryHeaders=none` | 1 | 0 | 0 | 0 |
+| DPX orientation code 1 | `dpx.orientation=1` | 1 | 0 | 0 | 0 |
+| DPX orientation code 2 | `dpx.orientation=2` | 1 | 0 | 0 | 0 |
+| DPX orientation code 3 | `dpx.orientation=3` | 1 | 0 | 0 | 0 |
+| DPX orientation code 4 | `dpx.orientation=4` | 1 | 0 | 0 | 0 |
+| DPX orientation code 5 | `dpx.orientation=5` | 1 | 0 | 0 | 0 |
+| DPX orientation code 6 | `dpx.orientation=6` | 1 | 0 | 0 | 0 |
+| DPX orientation code 7 | `dpx.orientation=7` | 1 | 0 | 0 | 0 |
+| DPX components filled with method A | `dpx.packing=filled-a` | 13 | 0 | 0 | 0 |
+| DPX components filled with method B | `dpx.packing=filled-b` | 2 | 0 | 0 | 0 |
+| DPX packed 10 and 12-bit components | `dpx.packing=packed` | 3 | 0 | 0 | 0 |
+| DPX pixel aspect ratio | `dpx.pixelAspectRatio` | 1 | 0 | 0 | 0 |
+| DPX BT.709 transfer and colorimetry | `dpx.transfer=bt709` | 1 | 0 | 0 | 0 |
+| DPX linear transfer | `dpx.transfer=linear` | 1 | 0 | 0 | 0 |
+| DPX printing density | `dpx.transfer=printing-density` | 1 | 0 | 0 | 0 |
+| DPX user-defined data | `dpx.userData` | 1 | 0 | 0 | 0 |
+| DPX version 1.0 | `dpx.version=1.0` | 1 | 0 | 0 | 0 |
+| DPX files of FFmpeg | `dpx.writer=ffmpeg` | 4 | 0 | 0 | 0 |
+| DPX files of ImageMagick | `dpx.writer=magick` | 3 | 0 | 0 | 0 |
+| DPX files of OpenImageIO | `dpx.writer=oiio` | 4 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr with the BT.601 matrix | `dpx.ycbcr.matrix=bt601` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr with the BT.709 matrix | `dpx.ycbcr.matrix=bt709` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr in full range | `dpx.ycbcr.range=full` | 1 | 0 | 0 | 0 |
+| DPX Cb, Y, Cr in limited range | `dpx.ycbcr.range=limited` | 1 | 0 | 0 | 0 |
+| DPX 4:2:2 chroma subsampling | `dpx.ycbcr.subsampling=422` | 3 | 0 | 0 | 0 |
+| Cineon 10-bit samples | `cin.bits=10` | 8 | 0 | 0 | 0 |
+| Cineon 12-bit samples | `cin.bits=12` | 2 | 0 | 0 | 0 |
+| Cineon 16-bit samples | `cin.bits=16` | 1 | 0 | 0 | 0 |
+| Cineon 8-bit samples | `cin.bits=8` | 2 | 0 | 0 | 0 |
+| Cineon big-endian file | `cin.byteOrder=big` | 11 | 0 | 0 | 0 |
+| Cineon little-endian file | `cin.byteOrder=little` | 2 | 0 | 0 | 0 |
+| Cineon images of 1 channel | `cin.channels=1` | 1 | 0 | 0 | 0 |
+| Cineon images of 3 channels | `cin.channels=3` | 12 | 0 | 0 | 0 |
+| Cineon packing 133 | `cin.packing=133` | 1 | 0 | 0 | 0 |
+| Cineon packing 3 | `cin.packing=3` | 1 | 0 | 0 | 0 |
+| Cineon packing 5 | `cin.packing=5` | 10 | 0 | 0 | 0 |
+| Cineon packing 6 | `cin.packing=6` | 1 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2681,6 +2912,27 @@ tool version to see what changes; the interop CI job runs it on every build to d
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- exr --openexr-images <checkout> --write  # replace the OpenEXR fixtures, then review the diff
   ```
 
+- `dng` (`DngCorpus.cs`) generates the DNG fixtures; it replaces only the entries of format `dng` and their files (`dng/`,
+  `invalid/dng/`, `limit/dng/`). The files are the scenes of the test harness (`DngScenes`, assembled by `DngFileBuilder`
+  from the DNG specification 1.7.1): smooth color fields seen through a color filter array or as linear raw data, with
+  one feature each (bit depths, Deflate and its predictors, tiles, the byte orders, linearization, black levels, active
+  area and crop, camera profiles, opcode lists, a preview). Two more are the scene `bayer-rggb` rewritten by
+  `dng_validate` of the Adobe DNG SDK (pinned in `PinnedDngSdk`, currently 1.7.1, by the meziantou/prebuilt release of
+  the `Meziantou.Prebuilt` package) with lossless JPEG and with JPEG XL tiles; the generator runs it in UTC and replaces
+  the dates it writes with a fixed one of the same length, so that its output is reproducible. The reference of a file is
+  its rendering by `ReferenceDng`, an independent renderer of the harness (its own TIFF reader, the mapping of chapter 5,
+  the opcodes, a bilinear demosaicing, the color transform of chapter 6 to linear BT.709), compared exactly. Every valid
+  file is cross-checked with `dng_validate`: its stage 1 must be the samples of the scene and its stage 2 the linear
+  values of the reference to within its 16-bit rounding, unless a documented opcode differs (bad pixel repair,
+  DeltaPerRow/Column), and its sRGB rendering (made colorimetric by the identity `ProfileToneCurve` and
+  `DefaultBlackRender` 1 of the scenes) is measured against the reference and recorded, excluded from the tolerance: the
+  demosaicing algorithms differ:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dng          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dng --write  # replace the DNG fixtures, then review the diff
+  ```
+
 - `hdr` (`RadianceCorpus.cs`) generates the Radiance HDR fixtures; it replaces only the entries of format `hdr` and their
   files (`hdr/`, `invalid/hdr/`, `limit/hdr/`). Most files are assembled by the test harness (`RadianceFileBuilder`,
   written from the Radiance file format documentation and "Real Pixels" of Graphics Gems II) from RGBE patterns, in the
@@ -2702,6 +2954,74 @@ tool version to see what changes; the interop CI job runs it on every build to d
   ```shell
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr          # check
   dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- hdr --write  # replace the Radiance HDR fixtures, then review the diff
+  ```
+
+- `psd` (`PsdCorpus.cs`) generates the PSD fixtures; it replaces only the entries of format `psd` and their files
+  (`psd/`, `invalid/psd/`). The files are written from hand-defined patterns by `psd-tools write` (every color mode,
+  depth and compression, a transparency channel matted over white by the generator, layers in the layer info and in the
+  Lr16 and Lr32 blocks, PSB) and by ImageMagick (with a layer, flat, PSB), or assembled by the test harness
+  (`PsdFileBuilder`: the image resources and every malformed file), with psd-tools 1.26.1 and ImageMagick 7.1.2-35 of
+  the meziantou/prebuilt release of the `Meziantou.Prebuilt` package (pinned in `PinnedPsdTools` and `PinnedMagick`).
+  The reference is the pattern in RGBA (a bitmap sample of 1 is black, an index is its color, gray is repeated, the
+  colors of a transparency channel are un-matted from white, the stored samples kept where alpha is 0), which
+  `ReferencePsd`, an independent reader of the harness, must give back from the file. Every valid file is cross-checked
+  with `psd-tools dump` (the stored samples, exactly), ImageMagick and FFmpeg 9.0.2; their differences are declared in
+  `MagickDifferences` and `FfmpegDifferences` with their reason (ImageMagick ignores the transparency index, does not
+  un-matte gray composites and takes a second extra channel for transparency; FFmpeg does not un-matte, reads no PSB file
+  and no 32-bit RGB, rejects the PackBits rows of ImageMagick and clips floats), and the generator fails when a declared
+  difference disappears or another one appears. An invalid fixture is rejected by `ReferencePsd` too:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- psd          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- psd --write  # replace the PSD fixtures, then review the diff
+  ```
+
+- `dds` (`DdsCorpus.cs`) generates the DDS fixtures; it replaces only the entries of format `dds` and their files (`dds/`,
+  `invalid/dds/`, `limit/dds/`). It runs on Windows: `texconv` and `texassemble` of DirectXTex (pinned in
+  `PinnedDirectXTex`, currently may2026, by the meziantou/prebuilt release of the `Meziantou.Prebuilt` package) are
+  Windows-only. The test harness assembles most files (`DdsFileBuilder`, written from the DDS reference of Microsoft
+  Learn): every uncompressed DXGI and legacy pixel format from random bytes or floating-point patterns, random blocks of
+  every block-compressed format (the mode bits of the BC7 and BC6H blocks cycle through every mode and a reserved one),
+  partial cube maps, a legacy volume texture, alpha modes and the malformed headers. `texconv` encodes patterns to the
+  block-compressed formats and generates mipmaps, `texassemble` builds a cube map, an array, a volume texture and an
+  array of cube maps, and ImageMagick (pinned in `PinnedMagick`) writes the files of a common third-party writer. The
+  references: the uncompressed formats are hand-computed by `ReferenceDds` (an independent reader of the harness) from
+  the definitions of their samples; BC1 to BC5 by `ReferenceS3tc`, from the rational numbers of the Khronos Data Format
+  Specification rounded once to the precision of the format; BC6H and BC7, defined in half-float bit patterns and
+  integers, are what `texconv` decodes, cross-checked with the raw samples `oiiotool --dumpdata` prints (OpenImageIO,
+  pinned in `PinnedOpenImageIo`), which must agree exactly. Every hand-computed reference is cross-checked with
+  `texconv` (decoding to 32-bit floats, which carry the exact fractions: its direct conversion to 8 bits replicates the
+  bits of 5-bit and 6-bit channels); the disagreements are recorded, and the generator fails on any other one:
+  DirectXTex rounds the exact midpoints of the three-color mode of BC1 either way (single precision), multiplies the
+  signed BC5 values by 1/127 (1 ulp from the nearest float), swaps the red and blue masks of the legacy 10:10:10:2
+  layouts, reads the 3:3:2 layouts through a wider format, and reads a legacy luminance with alpha as two channels. The
+  partial cube map, which `texconv` rejects, is cross-checked with ImageMagick (which misplaces the faces after the first
+  when they have mipmaps: the fixture has none). `texconv` must reject the invalid fixtures except the two wrong pitches,
+  which it ignores (as lenient decoding does), and the notes say which ones it reads:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dds          # check (Windows)
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dds --write  # replace the DDS fixtures, then review the diff
+  ```
+
+- `dpx` (`DpxCorpus.cs`) generates the DPX and Kodak Cineon fixtures; it replaces only the entries of formats `dpx` and
+  `cin` and their files (`dpx/`, `cin/`, `invalid/dpx/`, `invalid/cin/`, `limit/dpx/`). Most files are assembled by the
+  test harness (`DpxFileBuilder` and `CineonFileBuilder`, written from SMPTE ST 268:2014 and the Cineon 4.5 draft) from
+  patterns of code values, in every descriptor, bit depth, packing method and orientation, in both byte orders; their
+  reference is the pattern, the code values scaled to the samples of the pixel format (`round(v × 65535 / max)` for 10
+  and 12 bits), Cb, Y, Cr converted with the BT.601 or BT.709 matrix. Other files are written by FFmpeg, ImageMagick and
+  OpenImageIO; their reference is the code values the file stores, read with the packing rules of the builders, which
+  must give the image data back. Every valid file is cross-checked with the three decoders of the pinned
+  meziantou/prebuilt release (`PinnedFfmpeg`, `PinnedOiio`, `PinnedMagick`): FFmpeg in the native layout of the element,
+  `oiiotool --dumpdata` (10 and 12-bit samples recovered from their bit-replicated 16-bit values) and
+  `magick -set colorspace sRGB` (which keeps the code values of printing densities). Each fixture declares what each
+  tool gives: the same code values, a documented difference (the line padding of odd widths, method B, the bit order of
+  1-bit components, the precision of the text output, ...) or a rejection, with a note; the generation fails when a
+  tool gives something else (`DPX_CORPUS_DISCOVER=1` lists every such tool instead of stopping at the first one):
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dpx          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- dpx --write  # replace the DPX and Cineon fixtures, then review the diff
   ```
 
 - `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;

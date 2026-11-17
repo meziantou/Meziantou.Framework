@@ -81,12 +81,110 @@ internal static class DefaultPixelFormats
     public static PixelFormat ForQoi(int channels) => channels == 4 ? PixelFormat.Rgba32 : PixelFormat.Rgb24;
 
     /// <summary>Selects the default pixel format of an OpenEXR image.</summary>
-    /// <param name="halfOnly">Whether every channel holds HALF samples.</param>
-    /// <returns><see cref="PixelFormat.RgbaHalf"/> for HALF samples, otherwise <see cref="PixelFormat.RgbaFloat"/> (FLOAT and UINT samples, which a half cannot hold).</returns>
-    public static PixelFormat ForOpenExr(bool halfOnly) => halfOnly ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+    /// <param name="halfOnly">Whether the image is decoded in half precision: every channel holds HALF samples and there is no alpha.</param>
+    /// <param name="isLuminance">Whether the image has a luminance channel (<c>Y</c>) rather than red, green and blue.</param>
+    /// <param name="hasAlpha">Whether the image has an alpha channel.</param>
+    /// <returns>
+    /// <see cref="PixelFormat.RgbaHalf"/> for HALF samples, otherwise <see cref="PixelFormat.RgbaFloat"/> (FLOAT and UINT
+    /// samples, which a half cannot hold); for a luminance image, the gray format of the same precision:
+    /// <see cref="PixelFormat.GrayHalf"/>, <see cref="PixelFormat.GrayFloat"/>, or <see cref="PixelFormat.LaFloat"/> with alpha.
+    /// </returns>
+    public static PixelFormat ForOpenExr(bool halfOnly, bool isLuminance, bool hasAlpha) => (isLuminance, halfOnly, hasAlpha) switch
+    {
+        (false, true, _) => PixelFormat.RgbaHalf,
+        (false, false, _) => PixelFormat.RgbaFloat,
+        (true, true, _) => PixelFormat.GrayHalf,
+        (true, false, false) => PixelFormat.GrayFloat,
+        (true, false, true) => PixelFormat.LaFloat,
+    };
 
     /// <summary>Gets the default pixel format of a Radiance HDR image: every RGBE pixel is an exact single-precision color.</summary>
     public static PixelFormat Radiance => PixelFormat.RgbaFloat;
+
+    /// <summary>Selects the default pixel format of the composite image of a PSD file of 1, 8 or 16-bit samples.</summary>
+    /// <param name="isGray">Whether the document is a bitmap, grayscale or duotone one.</param>
+    /// <param name="hasAlpha">Whether the composite has a transparency channel, or an indexed image a transparent index.</param>
+    /// <param name="is16Bit">Whether the samples have 16 bits.</param>
+    /// <returns>
+    /// The pixel format: 8-bit or 16-bit gray, gray with alpha, RGB or RGBA. Indexes are expanded to their colors, and
+    /// CMYK and Lab colors are converted to red, green and blue.
+    /// </returns>
+    public static PixelFormat ForPsd(bool isGray, bool hasAlpha, bool is16Bit) => Select(isGray, hasAlpha, is16Bit);
+
+    /// <summary>
+    /// Selects the default pixel format of the composite image of a 32-bit PSD file: its floating-point samples are stored
+    /// exactly.
+    /// </summary>
+    /// <param name="isGray">Whether the document is a grayscale one.</param>
+    /// <param name="hasAlpha">Whether the composite has a transparency channel.</param>
+    /// <returns>
+    /// <see cref="PixelFormat.GrayFloat"/> or <see cref="PixelFormat.LaFloat"/> for a grayscale document, otherwise
+    /// <see cref="PixelFormat.RgbaFloat"/> (samples without transparency are opaque).
+    /// </returns>
+    public static PixelFormat ForPsdFloatingPoint(bool isGray, bool hasAlpha) => ForFloatingPoint(isGray, hasAlpha, isHalf: false);
+
+    /// <summary>
+    /// Selects the default pixel format of a DNG image: the rendering of its raw samples is scene-referred linear light, whose
+    /// highlights and colors outside the gamut of the output primaries are values outside [0, 1].
+    /// </summary>
+    /// <param name="isMonochrome">Whether the raw image has a single plane (a monochrome linear raw image), whose rendering is a gray level.</param>
+    /// <returns><see cref="PixelFormat.GrayFloat"/> for a monochrome image, otherwise <see cref="PixelFormat.RgbaFloat"/>.</returns>
+    public static PixelFormat ForDng(bool isMonochrome) => isMonochrome ? PixelFormat.GrayFloat : PixelFormat.RgbaFloat;
+
+    /// <summary>Selects the default pixel format of a DDS surface.</summary>
+    /// <param name="floatingPoint">
+    /// <see cref="PixelFormat.RgbaHalf"/> for the formats whose values are halves (half floats, BC6H, R11G11B10_FLOAT,
+    /// R9G9B9E5_SHAREDEXP), <see cref="PixelFormat.RgbaFloat"/> for single-precision floats and the signed BC4 and BC5
+    /// formats, or <see langword="null"/> for the unsigned normalized formats.
+    /// </param>
+    /// <param name="hasColor">Whether the format has a color channel (A8 has none).</param>
+    /// <param name="isGray">Whether the colors are one channel (red or luminance).</param>
+    /// <param name="hasAlpha">Whether the format stores alpha.</param>
+    /// <param name="is16Bit">Whether a channel is wider than 8 bits.</param>
+    /// <returns>
+    /// The pixel format: <see cref="PixelFormat.A8"/> for an alpha mask, otherwise 8-bit or 16-bit gray, gray with alpha,
+    /// RGB or RGBA; for the floating-point formats, <see cref="PixelFormat.GrayHalf"/> or <see cref="PixelFormat.GrayFloat"/>
+    /// for one channel (R16_FLOAT, R32_FLOAT, the signed BC4 formats), otherwise <paramref name="floatingPoint"/>.
+    /// </returns>
+    public static PixelFormat ForDds(PixelFormat? floatingPoint, bool hasColor, bool isGray, bool hasAlpha, bool is16Bit)
+    {
+        if (floatingPoint is { } format)
+            return ForFloatingPoint(isGray, hasAlpha, format == PixelFormat.RgbaHalf);
+
+        if (!hasColor)
+            return PixelFormat.A8;
+
+        return Select(isGray, hasAlpha, is16Bit);
+    }
+
+    /// <summary>Gets the default pixel format of a DPX image element: the smallest built-in format that holds its samples.</summary>
+    /// <param name="descriptor">The descriptor of the element.</param>
+    /// <param name="bitDepth">The bit depth of its components.</param>
+    /// <returns>A gray, gray and alpha (black with alpha, for an alpha element), RGB or RGBA format of 8 bits (1 and 8-bit components) or 16 bits; for floating-point components, <see cref="PixelFormat.GrayFloat"/> for a single channel, <see cref="PixelFormat.LaFloat"/> for an alpha element, otherwise <see cref="PixelFormat.RgbaFloat"/>.</returns>
+    public static PixelFormat ForDpx(Metadata.DpxDescriptor descriptor, int bitDepth) => DpxRowReader.GetDefaultPixelFormat(descriptor, bitDepth);
+
+    /// <summary>Gets the default pixel format of a Cineon image.</summary>
+    /// <param name="isGrayscale">Whether the image has one channel.</param>
+    /// <param name="bitsPerSample">The depth of its samples.</param>
+    /// <returns>A gray or RGB format of 8 bits (samples of up to 8 bits) or 16 bits.</returns>
+    public static PixelFormat ForCineon(bool isGrayscale, int bitsPerSample) => Select(isGrayscale, hasAlpha: false, bitsPerSample > 8);
+
+    /// <summary>Selects the default pixel format of a KTX 2.0 texture, from the output channels its format and its swizzle give.</summary>
+    /// <param name="isGray">Whether the three colors are the same channel.</param>
+    /// <param name="hasAlpha">Whether alpha is not the constant 1.</param>
+    /// <param name="precision">The precision of the texels.</param>
+    /// <returns>
+    /// A gray, gray with alpha, RGB or RGBA format of 8 or 16 bits; for floating-point and signed texels, a gray or gray with
+    /// alpha format of the precision of the texels (<see cref="PixelFormat.GrayHalf"/>, <see cref="PixelFormat.LaHalf"/>,
+    /// <see cref="PixelFormat.GrayFloat"/>, <see cref="PixelFormat.LaFloat"/>), or <see cref="PixelFormat.RgbaHalf"/> or
+    /// <see cref="PixelFormat.RgbaFloat"/>.
+    /// </returns>
+    public static PixelFormat ForKtx2(bool isGray, bool hasAlpha, Ktx2OutputPrecision precision) => precision switch
+    {
+        Ktx2OutputPrecision.Half => ForFloatingPoint(isGray, hasAlpha, isHalf: true),
+        Ktx2OutputPrecision.Float => ForFloatingPoint(isGray, hasAlpha, isHalf: false),
+        _ => Select(isGray, hasAlpha, precision == Ktx2OutputPrecision.UInt16),
+    };
 
     /// <summary>Selects the default pixel format of a BMP image.</summary>
     /// <param name="hasAlphaMask">Whether the DIB layout defines a real (non-padding) alpha channel.</param>
@@ -121,13 +219,16 @@ internal static class DefaultPixelFormats
     public static PixelFormat ForTiff(bool isGrayscale, bool hasAlpha, bool is16Bit) => ForPnm(isGrayscale, hasAlpha, is16Bit);
 
     /// <summary>Selects the default pixel format of one TIFF page of floating-point samples (grayscale or RGB, with or without alpha).</summary>
+    /// <param name="isGrayscale">Whether the samples are grayscale.</param>
+    /// <param name="hasAlpha">Whether the page stores an unassociated alpha sample.</param>
     /// <param name="bitsPerSample">The number of bits of a sample: 16 (half precision), 24 or 32.</param>
     /// <returns>
-    /// <see cref="PixelFormat.RgbaHalf"/> for half-precision samples and <see cref="PixelFormat.RgbaFloat"/> for the others,
-    /// which it stores exactly (the library has no floating-point gray format, so gray samples are repeated in the three
-    /// colors, and samples without alpha are opaque).
+    /// A half-precision format for half-precision samples and a single-precision one for the others, which it stores
+    /// exactly: <see cref="PixelFormat.GrayHalf"/>, <see cref="PixelFormat.LaHalf"/>, <see cref="PixelFormat.GrayFloat"/>
+    /// or <see cref="PixelFormat.LaFloat"/> for gray samples, otherwise <see cref="PixelFormat.RgbaHalf"/> or
+    /// <see cref="PixelFormat.RgbaFloat"/> (samples without alpha are opaque).
     /// </returns>
-    public static PixelFormat ForTiffFloatingPoint(int bitsPerSample) => bitsPerSample == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+    public static PixelFormat ForTiffFloatingPoint(bool isGrayscale, bool hasAlpha, int bitsPerSample) => ForFloatingPoint(isGrayscale, hasAlpha, bitsPerSample == 16);
 
     /// <summary>Selects the default pixel format of one DIB-backed ICO or CUR representation.</summary>
     /// <param name="hasMask">Whether the entry stores an AND mask or an alpha channel.</param>
@@ -153,14 +254,17 @@ internal static class DefaultPixelFormats
     /// Selects the default pixel format of a JPEG XL image of floating-point samples, or of integer samples of more than
     /// 16 bits (grayscale or RGB, with or without alpha).
     /// </summary>
+    /// <param name="isGray">Whether the image has a single color channel.</param>
+    /// <param name="hasAlpha">Whether the image has an alpha channel.</param>
     /// <param name="isHalfPrecision">Whether every sample is a half-precision number.</param>
     /// <returns>
-    /// <see cref="PixelFormat.RgbaHalf"/> for half-precision samples and <see cref="PixelFormat.RgbaFloat"/> for the others,
-    /// which it stores exactly: floating-point samples have 23 bits of mantissa at most, and an integer of up to 24 bits
-    /// divided by its largest value goes back to itself (the library has no floating-point gray format, so gray samples are
-    /// repeated in the three colors, and samples without alpha are opaque).
+    /// A half-precision format for half-precision samples and a single-precision one for the others, which it stores
+    /// exactly: floating-point samples have 23 bits of mantissa at most, and an integer of up to 24 bits divided by its
+    /// largest value goes back to itself. A gray image is <see cref="PixelFormat.GrayHalf"/>, <see cref="PixelFormat.LaHalf"/>,
+    /// <see cref="PixelFormat.GrayFloat"/> or <see cref="PixelFormat.LaFloat"/>, a color image <see cref="PixelFormat.RgbaHalf"/>
+    /// or <see cref="PixelFormat.RgbaFloat"/> (samples without alpha are opaque).
     /// </returns>
-    public static PixelFormat ForJpegXlFloatingPoint(bool isHalfPrecision) => isHalfPrecision ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+    public static PixelFormat ForJpegXlFloatingPoint(bool isGray, bool hasAlpha, bool isHalfPrecision) => ForFloatingPoint(isGray, hasAlpha, isHalfPrecision);
 
     /// <summary>Selects the default pixel format of a JPEG 2000 image.</summary>
     /// <param name="isGray">Whether the image has a single color channel.</param>
@@ -171,6 +275,21 @@ internal static class DefaultPixelFormats
     /// red, green and blue.
     /// </returns>
     public static PixelFormat ForJpeg2000(bool isGray, bool hasAlpha, bool isSixteenBit) => ForJpegXl(isGray, hasAlpha, isSixteenBit);
+
+    /// <summary>Gets the floating-point format that stores samples of a color model exactly.</summary>
+    /// <param name="isGray">Whether the samples are a single gray level.</param>
+    /// <param name="hasAlpha">Whether the pixels have an alpha.</param>
+    /// <param name="isHalf">Whether the samples are half-precision numbers.</param>
+    /// <returns>The pixel format.</returns>
+    private static PixelFormat ForFloatingPoint(bool isGray, bool hasAlpha, bool isHalf) => (isGray, hasAlpha, isHalf) switch
+    {
+        (true, false, false) => PixelFormat.GrayFloat,
+        (true, false, true) => PixelFormat.GrayHalf,
+        (true, true, false) => PixelFormat.LaFloat,
+        (true, true, true) => PixelFormat.LaHalf,
+        (false, _, false) => PixelFormat.RgbaFloat,
+        (false, _, true) => PixelFormat.RgbaHalf,
+    };
 
     /// <summary>Gets the smallest built-in format that stores samples of a color model exactly.</summary>
     /// <param name="isGray">Whether the samples are a single gray level.</param>

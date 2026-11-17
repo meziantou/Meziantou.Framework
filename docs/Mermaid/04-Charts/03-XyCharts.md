@@ -137,8 +137,10 @@ var diagram = (XyChart)MermaidDocument.Parse("""
 `line name [values]`, where a value of a line can have a quoted label: `line [540 "PaLM", 65]`. The parser follows the
 grammar of Mermaid, quirks included: a text without quotes is made of pieces joined without their spaces
 (`title Sales Revenue` is `SalesRevenue`), and after `x-axis` and `y-axis` the digits are numbers, so a title such as
-`Q1` must be quoted. The entity codes, such as `#35;`, are read in quoted texts only. The labels of the values of a bar
-are read but not drawn, as in Mermaid, with a warning.
+`Q1` must be quoted. The entity codes, such as `#35;`, are read in quoted texts only. A quoted text that starts with a
+backtick, such as ``"`text`"``, is a Markdown string, which only a backtick followed by a quote ends: the writer writes
+the backtick that starts a text as `#96;`, so that the text reads back as it is. The labels of the values of a bar are
+read but not drawn, as in Mermaid, with a warning.
 
 The `xyChart` section of the configuration sets the options of the chart: `width`, `height`, `titleFontSize`,
 `titlePadding`, `showTitle`, `showLegend`, `legendFontSize`, `legendPadding`, `plotReservedSpacePercent`,

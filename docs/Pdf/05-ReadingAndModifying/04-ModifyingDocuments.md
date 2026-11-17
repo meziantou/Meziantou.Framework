@@ -1,6 +1,6 @@
 ---
 title: Modifying documents
-description: Draw over or under the pages of an existing document, add watermarks, add and remove pages, change its metadata, and save it in full or as an incremental update.
+description: Draw over or under the pages of an existing document, add watermarks, headers, footers and Bates numbers, add and remove pages, change its metadata, and save it in full or as an incremental update.
 ---
 
 ## Stamp the pages of a document
@@ -88,6 +88,54 @@ document.AddWatermark("DRAFT", new PdfWatermarkOptions { Opacity = 0.2 });
   [PdfPage.AddWatermark](cref:Meziantou.Framework.Pdf.PdfPage.AddWatermark) adds a watermark to one page.
 - The watermark is marked as an artifact, so that screen readers skip it in tagged documents. It is part of the content:
   the text extraction returns it, and it can be removed only by editing the content.
+
+## Add headers and footers
+
+[AddHeaderFooter](cref:Meziantou.Framework.Pdf.PdfDocument.AddHeaderFooter) stamps texts at the top and the bottom of the pages, such as page numbers or a date:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_HeaderFooter;format=md-fenced-code-block;dedent=true -->
+```csharp
+document.AddHeaderFooter(new PdfHeaderFooterOptions
+{
+    HeaderLeft = "Annual report",
+    HeaderRight = "{date}",
+    FooterCenter = "Page {page} of {pages}",
+    FooterRight = "{{{label}}}",
+    Date = new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
+    FontSize = 9,
+});
+```
+<!-- endref -->
+
+- [PdfHeaderFooterOptions](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions) has three texts for the header and three for the footer: on the left, in the center
+  and on the right of the page as it is displayed, its rotation applied, at [Margin](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.Margin) from its edges.
+- The tokens of a text are replaced for each page: `{page}` (from [StartPageNumber](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.StartPageNumber)), `{pages}` (the number
+  of pages, or [PageCount](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.PageCount)), `{label}` (the [page label](../04-MetadataAndNavigation/05-PageLabels.md)), `{date}` and
+  `{bates}`. `{{` and `}}` are braces. An unknown token throws `ArgumentException`.
+- `{date}` is [Date](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.Date) in [DateFormat](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.DateFormat): the library never writes the current date by itself, so
+  that a document is saved the same way every time.
+- [FirstPageIndex](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.FirstPageIndex) and [LastPageIndex](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.LastPageIndex) stamp a range of pages, such as all the pages but the cover.
+- The texts are pagination artifacts, which assistive technologies skip. A text the font cannot show throws
+  `ArgumentException` before any page changes.
+
+### Bates numbering
+
+Bates numbers identify each page of a legal production with a sequential number. [PdfBates.Apply](cref:Meziantou.Framework.Pdf.PdfBates.Apply) stamps them
+on several documents, the numbers of a document following those of the previous one:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_BatesNumbering;format=md-fenced-code-block;dedent=true -->
+```csharp
+var ranges = PdfBates.Apply([first, second], new PdfHeaderFooterOptions
+{
+    FooterRight = "{bates}",
+    Bates = new PdfBatesNumbering { Prefix = "ABC", Digits = 6, StartNumber = 41 },
+});
+```
+<!-- endref -->
+
+[PdfBatesNumbering](cref:Meziantou.Framework.Pdf.PdfBatesNumbering) has the prefix, the suffix, the number of digits and the first number; the `{bates}` token of the
+texts is the number of the page. Each [PdfBatesRange](cref:Meziantou.Framework.Pdf.PdfBatesRange) gives the first and last numbers of a document, for the index of
+the production. For one document, set [Bates](cref:Meziantou.Framework.Pdf.PdfHeaderFooterOptions.Bates) and call [AddHeaderFooter](cref:Meziantou.Framework.Pdf.PdfDocument.AddHeaderFooter).
 
 ## Full and incremental saves
 

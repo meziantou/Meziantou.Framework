@@ -46,7 +46,7 @@ jobs:
             git config --global user.name "meziantou"
             git checkout -b update-emoji-shortcodes
             # Staged explicitly: `git add .` would also pick up anything else the build left in the tree
-            git add src/Meziantou.Framework.HtmlToMarkdown/EmojiShortcodeMappings.g.cs
+            git add src/Meziantou.Framework.HtmlToMarkdown/EmojiShortcodeMappings.g.cs src/Meziantou.Framework.Markdown/Parsing/EmojiShortcodes.g.cs
             # An unchanged tree must never reach the force-push below: it would reset the shared branch and
             # wipe the diff of a pull request that is already open, while the step still reported success.
             git diff --cached --quiet

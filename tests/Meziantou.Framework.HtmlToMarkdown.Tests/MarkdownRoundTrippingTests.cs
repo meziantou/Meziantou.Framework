@@ -6,6 +6,7 @@ namespace Meziantou.Framework.HtmlToMarkdownTests;
 public sealed class MarkdownRoundTrippingTests
 {
     private static readonly Lazy<List<MarkdownSpecTestCase>> AllCases = new(LoadAllCases);
+    private static readonly MarkdownParseOptions AdvancedOptions = new() { Extensions = MarkdownExtensions.Advanced };
 
     private static List<MarkdownSpecTestCase> LoadAllCases()
     {
@@ -58,10 +59,7 @@ public sealed class MarkdownRoundTrippingTests
         var markdown = HtmlToMarkdown.Convert(testCase.Html);
 
         // 2. Convert the Markdown back to HTML using Meziantou.Framework.Markdown with advanced extensions
-        var pipeline = new MarkdownPipelineBuilder()
-            .UseAdvancedExtensions()
-            .Build();
-        var roundTrippedHtml = MarkdownConverter.ToHtml(markdown, pipeline);
+        var roundTrippedHtml = MarkdownConverter.ToHtml(markdown, AdvancedOptions);
 
         // 3. Compare the HTML outputs
         HtmlNormalizer.AssertEquivalent(testCase.Html, roundTrippedHtml);
@@ -79,10 +77,7 @@ public sealed class MarkdownRoundTrippingTests
             """, markdown);
 
         // Pipe tables and strikethrough are extensions of CommonMark: enable them to render the Markdown
-        var pipeline = new MarkdownPipelineBuilder()
-            .UseAdvancedExtensions()
-            .Build();
-        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        var html = MarkdownConverter.ToHtml(markdown, new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced });
         Assert.Contains("<td><del>1.50</del> 1.20</td>", html, StringComparison.Ordinal);
         #endregion
     }
@@ -99,7 +94,6 @@ public sealed class MarkdownRoundTrippingTests
 
     private static readonly Dictionary<(string FileName, int Example), string> SkippedExamples = new()
     {
-        [("EmphasisExtraSpecs.md", 6)] = "Emphasis delimiter parsing differs after round-trip",
         [("ListExtraSpecs.md", 1)] = "List tight/loose semantics differ after round-trip",
         [("ListExtraSpecs.md", 2)] = "List tight/loose semantics differ after round-trip",
         [("ListExtraSpecs.md", 3)] = "List tight/loose semantics differ after round-trip",
@@ -107,7 +101,6 @@ public sealed class MarkdownRoundTrippingTests
         [("ListExtraSpecs.md", 5)] = "List tight/loose semantics differ after round-trip",
         [("ListExtraSpecs.md", 6)] = "List tight/loose semantics differ after round-trip",
         [("ListExtraSpecs.md", 7)] = "List tight/loose semantics differ after round-trip",
-        [("PipeTableSpecs.md", 17)] = "Pipe table link title encoding differs after round-trip",
         [("PipeTableSpecs.md", 20)] = "Pipe table escaping semantics differ after round-trip",
     };
 }

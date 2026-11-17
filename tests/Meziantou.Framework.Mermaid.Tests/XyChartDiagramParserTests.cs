@@ -204,6 +204,28 @@ public sealed class XyChartDiagramParserTests
     }
 
     [Fact]
+    public void WriteTextsStartingWithABacktick()
+    {
+        // "` starts a Markdown string, which only a `" ends
+        var parsed = MermaidDocument.Parse("xychart\ntitle \"#96;title\"\nx-axis \"#96;x\" [\"#96;a\", b]\nline \"#96;line\" [1 \"#96;label\", 2]");
+        var chart = (XyChart)parsed.Content;
+        Assert.Equal("`title", chart.Title);
+        Assert.Equal("`x", chart.XAxis.Title);
+        Assert.Equal(["`a", "b"], chart.XAxis.Categories);
+        Assert.Equal("`line", chart.Series[0].Name);
+        Assert.Equal(["`label", null], ((XyChartLineSeries)chart.Series[0]).PointLabels);
+
+        var text = MermaidWriter.Write(parsed.Content);
+        var reparsed = (XyChart)MermaidDocument.Parse(text).Content;
+        Assert.Equal(text, MermaidWriter.Write(reparsed));
+        Assert.Equal("`title", reparsed.Title);
+        Assert.Equal("`x", reparsed.XAxis.Title);
+        Assert.Equal(["`a", "b"], reparsed.XAxis.Categories);
+        Assert.Equal("`line", reparsed.Series[0].Name);
+        Assert.Equal(["`label", null], ((XyChartLineSeries)reparsed.Series[0]).PointLabels);
+    }
+
+    [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
         var withCategories = new XyChart();

@@ -29,6 +29,10 @@ public class PdfFormField
     internal static readonly PdfName MKName = PdfName.Create("MK");
     internal static readonly PdfName WidgetName = PdfName.Create("Widget");
     internal static readonly PdfName OffName = PdfName.Create("Off");
+    private static readonly PdfName AAName = PdfName.Create("AA");
+    private static readonly PdfName KName = PdfName.Create("K");
+    private static readonly PdfName FName = PdfName.Create("F");
+    private static readonly PdfName CName = PdfName.Create("C");
 
     private protected PdfFormField(PdfInteractiveForm form, PdfDictionary dictionary, PdfReference? reference, PdfFormField? parent)
     {
@@ -136,6 +140,24 @@ public class PdfFormField
 
     /// <summary>Gets a value indicating whether the field is a terminal field: it has no child fields.</summary>
     public bool IsTerminal => Children.Count == 0;
+
+    /// <summary>
+    /// Gets the JavaScript actions of the field (<c>/AA</c>, ISO 32000-2, 12.6.3): its keystroke, format, validation and
+    /// calculation scripts. The library does not run them; <c>Meziantou.Framework.Pdf.JavaScript</c> does.
+    /// </summary>
+    public PdfFieldActions Actions
+    {
+        get
+        {
+            // The additional actions of the field, or of its widget when they are merged, inherited from the parents
+            var actions = GetInherited(AAName) as PdfDictionary;
+            return new PdfFieldActions(
+                PdfJavaScriptAction.Read(actions?.GetResolved(KName)),
+                PdfJavaScriptAction.Read(actions?.GetResolved(FName)),
+                PdfJavaScriptAction.Read(actions?.GetResolved(VName)),
+                PdfJavaScriptAction.Read(actions?.GetResolved(CName)));
+        }
+    }
 
     /// <summary>Gets the widgets of the field: the annotations that show it on the pages. A widget that is on no page is left out.</summary>
     public IReadOnlyList<PdfAnnotation> Widgets

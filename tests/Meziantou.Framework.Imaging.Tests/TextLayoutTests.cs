@@ -55,6 +55,22 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void AControlCharacterOfAWrappedLineIsLaidOutWhenTheGlyphsOfTheParagraphAreCompacted()
+    {
+        // A control character is an item without glyph. Wrapping shapes the items of a line again, and once the former
+        // glyphs are most of the list, it is compacted: the start of an item without glyph must stay within it. The
+        // synthetic bold changes the widths, so that the lines are broken where the list is compacted.
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var horizontal = TextLayout.Create("\u00C0la carte: \u0001\uDCF22!", new TextStyle(font, 35.125) { Synthesis = FontSynthesis.Bold }, new TextLayoutOptions { MaxWidth = 160 });
+        var vertical = TextLayout.Create("\u00C00li certe:fi \u0001\uFFFD2", new TextStyle(font, 28.75) { Synthesis = FontSynthesis.Bold }, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 160 });
+        foreach (var (layout, length) in new[] { (horizontal, 15), (vertical, 17) })
+        {
+            Assert.True(layout.LineCount > 1);
+            Assert.Equal(length, layout.Lines.Sum(line => line.Length));
+        }
+    }
+
+    [Fact]
     public void HintingIsOffByDefault()
     {
         Assert.Equal(TextHinting.None, TextLayoutOptions.Default.Hinting);

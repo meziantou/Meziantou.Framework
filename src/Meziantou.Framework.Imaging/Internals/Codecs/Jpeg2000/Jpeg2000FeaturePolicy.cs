@@ -32,17 +32,27 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class Jpeg2000FeaturePolicy
 {
     private const int CapabilityPart2 = 0x8000;
+
+    // The Part 2 extensions of the Rsiz field (ISO/IEC 15444-2, Table A.2), and the one of the non-linearity point transformation
+    private const int CapabilityPart2Extensions = 0x0FFF;
+    private const int CapabilityNonLinearity = 0x0200;
     private const int CapabilityHighThroughput = 0x4000;
     private const uint IccGray = 0x47524159;
     private const uint IccRgb = 0x52474220;
     private const uint IccCmyk = 0x434D594B;
 
     /// <summary>Rejects, as soon as the SIZ marker segment is read, the codestreams whose samples an image cannot hold.</summary>
+    /// <param name="siz">The SIZ marker segment.</param>
+    /// <param name="allowNonLinearity">
+    /// Whether the only extension of ISO/IEC 15444-2 the codestream may use is the non-linearity point transformation (NLT),
+    /// which the format that embeds the codestream applies (OpenEXR).
+    /// </param>
     /// <exception cref="UnsupportedImageFeatureException">The codestream uses such a feature.</exception>
-    public static void EnsureSupported(Jpeg2000Siz siz)
+    public static void EnsureSupported(Jpeg2000Siz siz, bool allowNonLinearity = false)
     {
         ArgumentNullException.ThrowIfNull(siz);
-        if ((siz.Capabilities & CapabilityPart2) != 0)
+        var isNonLinearityOnly = allowNonLinearity && (siz.Capabilities & CapabilityPart2Extensions & ~CapabilityNonLinearity) == 0;
+        if ((siz.Capabilities & CapabilityPart2) != 0 && !isNonLinearityOnly)
             throw Jpeg2000Format.Unsupported("The JPEG 2000 codestream uses the extensions of Rec. ITU-T T.801 | ISO/IEC 15444-2.", "extensions of ISO/IEC 15444-2");
 
         if (siz.Components.Length > Jpeg2000Format.MaxSupportedComponents)

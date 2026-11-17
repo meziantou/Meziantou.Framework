@@ -64,6 +64,7 @@ internal static partial class HeicCorpus
         ["heic/hvcc-length-size-2"] = (0, 0.0),
         ["heic/hvcc-several-parameter-sets"] = (0, 0.0),
         ["heic/lossy-420-alpha"] = (0, 0.0),
+        ["heic/lossy-420-bt2020-constant-luminance-10bit"] = (0, 0.0),
         ["heic/lossy-420-bt2020-limited-10bit"] = (0, 0.0),
         ["heic/lossy-420-bt601"] = (0, 0.0),
         ["heic/lossy-420-bt601-12bit"] = (1, 0.0),
@@ -85,6 +86,7 @@ internal static partial class HeicCorpus
         ["heic/lossy-444-bt2020-full-10bit"] = (0, 0.0),
         ["heic/lossy-444-bt470bg-limited-12bit"] = (0, 0.0),
         ["heic/lossy-444-bt709-limited"] = (0, 0.0),
+        ["heic/lossy-444-chromaticity-constant-luminance-p3"] = (0, 0.0),
         ["heic/lossy-444-unspecified-limited"] = (0, 0.0),
         ["heic/no-colr-bitstream-bt709"] = (0, 0.0),
         ["heic/no-colr-bitstream-bt709-limited"] = (0, 0.0),
@@ -94,6 +96,7 @@ internal static partial class HeicCorpus
         ["heic/phone-grid-420"] = (1, 0.0002),
         ["heic/phone-grid-420-10bit"] = (1, 0.0),
         ["heic/phone-grid-420-center"] = (1, 0.0002),
+        ["heic/premultiplied-alpha-lossy-420"] = (0, 0.0),
         ["heic/sequence-420"] = (1, 0.0),
         ["heic/sequence-420-center"] = (1, 0.0001),
         ["heic/sequence-422"] = (1, 0.0001),
@@ -387,8 +390,10 @@ internal static partial class HeicCorpus
     }
 
     /// <summary>Converts the planes of a color image and of its alpha plane to a frame, then keeps a rectangle of it.
-    /// The alpha plane is the luma plane of its picture, whatever its chroma format.</summary>
-    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop)
+    /// The alpha plane is the luma plane of its picture, whatever its chroma format. Premultiplied colors are divided by
+    /// the alpha of their pixel once they are converted; the matrices that go through the transfer characteristics (constant
+    /// luminance, ICtCp) use the color primaries and the transfer characteristics of the image.</summary>
+    private static Img ToFrame(PlaneImage color, PlaneImage? alpha, int matrix, bool fullRange, (int X, int Y, int Width, int Height) crop, bool isPremultiplied = false, int primaries = 2, int transfer = 2)
     {
         var deep = color.BitDepth > 8 || alpha?.BitDepth > 8;
         var maximum = deep ? 65535 : 255;
@@ -406,7 +411,7 @@ internal static partial class HeicCorpus
         {
             var (cositedHorizontally, cositedVertically) = ChromaSiting(color);
             rgb = ReferenceYuvConverter.ConvertToRgb(color.Planes[0], color.Planes[1], color.Planes[2], width, height, color.BitDepth, color.SubsamplingX, color.SubsamplingY,
-                cositedHorizontally, cositedVertically, matrix, fullRange, maximum);
+                cositedHorizontally, cositedVertically, matrix, fullRange, maximum, primaries, transfer);
         }
 
         if (alpha is not null)
@@ -420,6 +425,14 @@ internal static partial class HeicCorpus
             {
                 var i = (y * width) + x;
                 var a = alpha is null ? maximum : ReferenceYuvConverter.ScaleSample(alpha.Planes[0][i], alpha.BitDepth, alpha.AlphaFullRange, maximum);
+                if (isPremultiplied && alpha is not null)
+                {
+                    for (var channel = 0; channel < 3; channel++)
+                    {
+                        rgb[(3 * i) + channel] = ReferenceYuvConverter.Unpremultiply(rgb[(3 * i) + channel], a, maximum);
+                    }
+                }
+
                 pixels.Add(model switch
                 {
                     "gray" => new Px(rgb[3 * i]),
@@ -535,7 +548,9 @@ internal static partial class HeicCorpus
         {
             (alpha, var alphaPayloads, _) = DecodeItem(tools, scratch, file, alphaItem, "alpha");
             payloads.AddRange(alphaPayloads);
-            Py.Assert(!file.ItemReferences.Any(reference => reference.Type == "prem"), "premultiplied alpha is not a valid fixture");
+            if (file.IsPremultiplied)
+                features.Add("heic.premultiplied");
+
             features.Add("heic.alpha");
             features.Add("heic.alpha.urn=" + (alphaItem.AuxiliaryType == ReferenceHeif.HevcAlphaAuxiliaryType ? "hevc" : "mpegB"));
             features.Add("heic.alpha.subsampling=" + alpha.Subsampling);
@@ -607,7 +622,7 @@ internal static partial class HeicCorpus
 
         return new HeicReference
         {
-            Frames = [ToFrame(color, alpha, matrix, fullRange, crop)],
+            Frames = [ToFrame(color, alpha, matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)],
             PixelFormat = PixelFormatOf(color, alpha),
             ColorModel = ColorModelOf(color, alpha is not null, matrix),
             BitsPerComponent = color.BitDepth,
@@ -666,7 +681,9 @@ internal static partial class HeicCorpus
             payloads.Add(alphaPayload);
             Py.Assert(alphaImages.Count == images.Count, "one alpha plane per image");
             Py.Assert(alphaOrder.Select(entry => entry.Duration).SequenceEqual(order.Select(entry => entry.Duration)), "the alpha planes have the durations of the images");
-            Py.Assert(!track.References.Any(reference => reference.Type == "prem"), "premultiplied alpha is not a valid fixture");
+            if (file.IsPremultiplied)
+                features.Add("heic.premultiplied");
+
             features.Add("heic.alpha");
             features.Add("heic.alpha.urn=" + (alphaTrack.AuxiliaryType == ReferenceHeif.HevcAlphaAuxiliaryType ? "hevc" : "mpegB"));
             features.Add("heic.alpha.subsampling=" + alphaImages[0].Subsampling);
@@ -733,7 +750,7 @@ internal static partial class HeicCorpus
         if (file.AlphaTrack is { } alphaAperture)
             Py.Assert(alphaAperture.CleanAperture == track.CleanAperture, "the alpha track has the clean aperture of the color track");
 
-        var frames = images.Select((image, i) => ToFrame(image, alphaImages?[i], matrix, fullRange, crop)).ToList();
+        var frames = images.Select((image, i) => ToFrame(image, alphaImages?[i], matrix, fullRange, crop, file.IsPremultiplied, cicp?.ColorPrimaries ?? 2, cicp?.TransferCharacteristics ?? 2)).ToList();
         return new HeicReference
         {
             Frames = frames,

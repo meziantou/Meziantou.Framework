@@ -66,7 +66,7 @@ public sealed partial class UserInput
         if (pointer.DragOperation is { } drag)
         {
             // The pointer events are suppressed during a drag-and-drop operation
-            drag.Update(HitTest(x, y), GetDragState(pointer, drag.SourceNode));
+            UpdateDrag(pointer, drag);
             return;
         }
 
@@ -233,7 +233,7 @@ public sealed partial class UserInput
                 pointer.DragOperation = null;
                 pointer.PressedDocument = null;
                 pointer.DownTargets?.Remove(button);
-                drag.End(GetDragState(pointer, drag.SourceNode));
+                drag.End(GetDragState(pointer, drag.SourceNode ?? HitTest(pointer.X, pointer.Y)));
                 return;
             }
         }
@@ -303,6 +303,9 @@ public sealed partial class UserInput
         }
 
         if (pointer.Buttons == 0)
+            return;
+
+        if (CancelDrag(pointer))
             return;
 
         pointer.Buttons = 0;
@@ -1131,10 +1134,82 @@ public sealed partial class UserInput
     // Drag and drop
     // ----------------------------------------------------------------------------------------------------------------
 
-    private DragPointerState GetDragState(PointerInput pointer, Node node)
+    /// <summary>The state of the pointer for the events of a drag: the position in the viewport of the document of <paramref name="node"/> (the top-level document when null).</summary>
+    private DragPointerState GetDragState(PointerInput pointer, Node? node)
     {
-        var (x, y) = MapToDocument(node.NodeDocument, pointer.X, pointer.Y);
+        var (x, y) = MapToDocument(node?.NodeDocument ?? _browsingContext.Document, pointer.X, pointer.Y);
         return new DragPointerState(x, y, (ushort)pointer.Buttons);
+    }
+
+    private void UpdateDrag(PointerInput pointer, DragAndDropOperation drag)
+    {
+        var target = HitTest(pointer.X, pointer.Y);
+        drag.Update(target, GetDragState(pointer, drag.SourceNode ?? target));
+    }
+
+    /// <summary>
+    /// Starts a drag from outside the user agent at the position of the pointer, as when the user drags files from the file
+    /// manager into the window with the primary button pressed: the dragenter and dragover events are fired at the element
+    /// under the pointer, then the moves fire the drag events instead of the pointer events, and the release drops.
+    /// </summary>
+    internal void BeginDrag(PointerInput pointer, DragData data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (!pointer.IsMouse)
+            throw new InvalidOperationException("Only the mouse can drag data from outside the page");
+
+        if (pointer.Buttons != 0 || pointer.DragOperation is not null)
+            throw new InvalidOperationException("A button of the mouse is pressed");
+
+        Activate(pointer);
+        EndWheelTransaction();
+        var operation = DragAndDropOperation.StartFromOutside(data, _browsingContext.Document);
+
+        // The button was pressed outside the window: there is no pointerdown, and the pointer event stream is suppressed
+        pointer.Buttons = 1;
+        pointer.DragNode = null;
+        pointer.DragElement = null;
+        pointer.DragOperation = operation;
+        UpdateDrag(pointer, operation);
+    }
+
+    /// <summary>Drops data from outside the user agent at a position: the pointer enters the viewport there, then the button is released.</summary>
+    internal void DropFromOutside(PointerInput pointer, double x, double y, DragData data)
+    {
+        BeginDragAt(pointer, x, y, data);
+        Up(pointer, 0);
+    }
+
+    /// <summary>Starts a drag from outside the user agent at a position: the pointer enters the viewport there with its button pressed.</summary>
+    internal void BeginDragAt(PointerInput pointer, double x, double y, DragData data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (pointer.Buttons != 0 || pointer.DragOperation is not null)
+            throw new InvalidOperationException("A button of the mouse is pressed");
+
+        // The pointer comes from outside the window with the button pressed: it does not fire the pointer events of a move
+        pointer.MovementX = 0;
+        pointer.MovementY = 0;
+        pointer.X = x;
+        pointer.Y = y;
+        pointer.DeviceX = x;
+        pointer.DeviceY = y;
+        BeginDrag(pointer, data);
+    }
+
+    /// <summary>Cancels the drag-and-drop operation of the pointer (e.g. the user pressed Escape): returns false when there is none.</summary>
+    internal bool CancelDrag(PointerInput pointer)
+    {
+        if (pointer.DragOperation is not { } drag)
+            return false;
+
+        pointer.DragOperation = null;
+        pointer.Buttons = 0;
+        pointer.PressedDocument = null;
+        pointer.DownTargets?.Clear();
+        pointer.DragNode = null;
+        drag.End(GetDragState(pointer, drag.SourceNode ?? HitTest(pointer.X, pointer.Y)), canceled: true);
+        return true;
     }
 
     /// <summary>
@@ -1162,6 +1237,6 @@ public sealed partial class UserInput
         pointer.DetachedPreviousTarget = null;
         pointer.EnteredAncestors = null;
         pointer.PreventMouseEvent = false;
-        operation.Update(HitTest(pointer.X, pointer.Y), GetDragState(pointer, operation.SourceNode));
+        UpdateDrag(pointer, operation);
     }
 }

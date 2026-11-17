@@ -4,21 +4,31 @@ using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
-/// <content>How the runs of a large shape are composited by several workers.</content>
+/// <content>How the rows of a large shape are accumulated and composited by several workers.</content>
 /// <remarks>
 /// <para>
-/// <b>Contract.</b> With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1, the runs of a shape whose rows
+/// <b>Contract.</b> With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1, the rows of a shape that
 /// may cover at least <see cref="MinPixelsForParallelPaint"/> pixels are composited by up to that many workers, the
 /// calling thread included, and the pixels are those of one worker: each row is composited once, with the same paint and
 /// the same formulas, and the rows do not depend on one another. The sweep of the rasterizer carries its state from one
-/// row to the next, so it stays on the calling thread; it fills batches of about <see cref="PixelsPerBatch"/> covered
-/// pixels, which the workers composite while it sweeps the next rows. A paint that gives the pixels covered entirely the
-/// same samples, whatever they were (<see cref="IsWrittenFasterThanCopied"/>), stays on the calling thread: copying the
+/// row to the next, so it stays on the calling thread; it fills batches of about <see cref="PixelsPerBatch"/> pixels,
+/// which the workers composite while it sweeps the next rows.
+/// </para>
+/// <para>
+/// <b>Rasterization.</b> With antialiasing, the sweep only finds the pieces of boundary of each row
+/// (<see cref="CoverageRasterizer.RecordPieces"/>): the workers accumulate them in their own difference row, in the
+/// order the sweep found them, and turn it into coverages (<see cref="CoverageRasterizer.ReplayPieces"/>), which takes
+/// time in proportion to the width of the rows. The coverages are those of a sweep on one thread, bit for bit: the sums
+/// are made of the same terms, added in the same order. The rows with more than
+/// <see cref="CoverageRasterizer.MaxPiecesPerRow"/> pieces, the rows without antialiasing and the rectangles of whole
+/// pixels come as coverages, which the sweep copies to the batch; a paint that gives the pixels covered entirely the same
+/// samples, whatever they were (<see cref="IsWrittenFasterThanCopied"/>), then stays on the calling thread: copying the
 /// coverages to a batch costs about what writing those pixels costs.
 /// </para>
 /// <para>
-/// Each worker has its own scratch, rented before any pixel changes: the coverages of its batch, the products of the
-/// coverages with the clip and the opacity, the colors with the opacity of the brush, and a copy of the paint
+/// Each worker has its own scratch, rented before any pixel changes: the coverages and the pieces of boundary of its
+/// batch, a difference row and a row of coverages for the pieces, the products of the coverages with the clip and the
+/// opacity, the colors with the opacity of the brush, and a copy of the paint
 /// (<see cref="PaintEvaluator.CreateWorker"/>). A paint that has no copy for another thread (a gradient mixed in a paint
 /// profile) is composited on the calling thread, and so are the texts, the masks of the clips, the color glyphs, the
 /// blurs, the shadows and the filters, which do not go through <see cref="PaintRows"/>.
@@ -40,10 +50,27 @@ internal sealed partial class DrawingSession
     /// <summary>The largest number of runs of a batch, which bounds the work of the sweep between two hand-offs for narrow shapes.</summary>
     private const int MaxRunsPerBatch = 1024;
 
+    /// <summary>The number of pieces of boundary a batch holds: a batch is handed off before a row may not fit.</summary>
+    private const int MaxPiecesPerBatch = 8 * CoverageRasterizer.MaxPiecesPerRow;
+
+    /// <summary>The number of values of a run of a batch: its row, its first column (or -1 for pieces of boundary), and the offset and length of its values.</summary>
+    private const int ValuesPerRun = 4;
+
     // The scratch of the workers of the largest number of workers that composited a shape; kept until the session ends
     private PaintWorker[]? _paintWorkers;
 
     private static readonly AsyncLocal<Action<int, bool>?> TestBatchObserverValue = new();
+    private static readonly AsyncLocal<bool> TestDisablePiecesValue = new();
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the workers are given coverages only, as before the sweep gave them pieces of
+    /// boundary: a test hook that compares both ways of handing the rows to the workers.
+    /// </summary>
+    internal static bool TestDisablePieces
+    {
+        get => TestDisablePiecesValue.Value;
+        set => TestDisablePiecesValue.Value = value;
+    }
 
     /// <summary>
     /// Gets or sets a test hook called on the thread that composites a batch, when it starts (<see langword="true"/>) and
@@ -59,18 +86,56 @@ internal sealed partial class DrawingSession
     /// <returns><see langword="false"/> when the runs are to be composited on the calling thread: nothing was done.</returns>
     private bool TryPaintRowsInParallel(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, double alphaFactor)
     {
-        var rasterizer = _rasterizer!;
-        var workerCount = GetPaintWorkerCount(_image.Configuration.MaxDegreeOfParallelism, rasterizer.EstimatedPixels);
-        if (workerCount <= 1 || IsWrittenFasterThanCopied(color, evaluator, mode, blend, opacity))
+        if (!TryGetParallelPaint(color, evaluator, mode, blend, opacity, alphaFactor, out var workerCount, out var needsCoverageRow, out var needsAlphaRow, out var recordsPieces))
             return false;
 
-        var needsCoverageRow = _clipDepth != 0 || opacity != CoverageRasterizer.FullCoverage;
-        var needsAlphaRow = evaluator is not null && alphaFactor != 1;
-        if (!PreparePaintWorkers(workerCount, evaluator, needsCoverageRow, needsAlphaRow))
+        if (!PreparePaintWorkers(workerCount, evaluator, needsCoverageRow, needsAlphaRow, recordsPieces))
             return false;
 
-        PaintRowsInParallel(new PaintParameters(color, mode, blend, opacity, alphaFactor, workerCount, rasterizer.IsFullyCovered, TestBatchObserver));
+        PaintRowsInParallel(new PaintParameters(color, mode, blend, opacity, alphaFactor, workerCount, _rasterizer!.IsFullyCovered, TestBatchObserver));
         return true;
+    }
+
+    /// <summary>
+    /// Rents the scratch of the workers that <see cref="TryPaintRowsInParallel"/> would use for the shape that was prepared,
+    /// without painting it: a call that draws several shapes (the parts of a text) prepares them all before its first
+    /// pixel write.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
+    private void ReservePaintWorkers(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, double alphaFactor)
+    {
+        if (!TryGetParallelPaint(color, evaluator, mode, blend, CoverageRasterizer.FullCoverage, alphaFactor, out var workerCount, out var needsCoverageRow, out var needsAlphaRow, out var recordsPieces))
+            return;
+
+        var paintWorkers = EnsurePaintWorkers(workerCount);
+        for (var i = 0; i < workerCount; i++)
+        {
+            (paintWorkers[i] ??= new PaintWorker()).EnsureScratch(_image.Owner.Scope, Width, needsCoverageRow, needsAlphaRow, recordsPieces);
+        }
+
+        if (recordsPieces)
+        {
+            _rasterizer!.ReservePieces();
+        }
+    }
+
+    /// <summary>
+    /// Gets whether the shape that was prepared is composited by several workers, and what their scratch is: a paint that
+    /// has no copy for other threads is composited on the calling thread, and its shape rents no scratch for workers.
+    /// </summary>
+    private bool TryGetParallelPaint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, double alphaFactor, out int workerCount, out bool needsCoverageRow, out bool needsAlphaRow, out bool recordsPieces)
+    {
+        var rasterizer = _rasterizer!;
+        workerCount = evaluator is null || evaluator.CanCreateWorkers ? GetPaintWorkerCount(_image.Configuration.MaxDegreeOfParallelism, rasterizer.EstimatedPixels) : 1;
+        needsCoverageRow = _clipDepth != 0 || opacity != CoverageRasterizer.FullCoverage;
+        needsAlphaRow = evaluator is not null && alphaFactor != 1;
+
+        // The rows that come as pieces of boundary are not copied: the workers compute their coverages
+        recordsPieces = rasterizer.CanRecordPieces && !TestDisablePieces;
+        if (workerCount <= 1)
+            return false;
+
+        return recordsPieces || !IsWrittenFasterThanCopied(color, evaluator, mode, blend, opacity);
     }
 
     /// <summary>
@@ -130,7 +195,15 @@ internal sealed partial class DrawingSession
                     break;
                 }
 
-                current.Add(rasterizer.Y, rasterizer.X, rasterizer.Coverage);
+                if (rasterizer.HasPieces)
+                {
+                    current.AddPieces(rasterizer.Y, rasterizer.Pieces, rasterizer.PieceColumns);
+                }
+                else
+                {
+                    current.Add(rasterizer.Y, rasterizer.X, rasterizer.Coverage);
+                }
+
                 if (!current.IsFull)
                     continue;
 
@@ -200,24 +273,16 @@ internal sealed partial class DrawingSession
     /// <summary>Rents the scratch of the workers and the copies of the paint: every rental of the parallel composition happens here.</summary>
     /// <returns><see langword="false"/> when the paint cannot be evaluated by other threads.</returns>
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
-    private bool PreparePaintWorkers(int workerCount, PaintEvaluator? evaluator, bool needsCoverageRow, bool needsAlphaRow)
+    private bool PreparePaintWorkers(int workerCount, PaintEvaluator? evaluator, bool needsCoverageRow, bool needsAlphaRow, bool recordsPieces)
     {
         var scope = _image.Owner.Scope;
-        if (_paintWorkers is null || _paintWorkers.Length < workerCount)
-        {
-            var previous = _paintWorkers;
-            var workers = new PaintWorker[workerCount];
-            previous?.CopyTo(workers, 0);
-            _paintWorkers = workers;
-        }
-
-        var paintWorkers = _paintWorkers;
+        var paintWorkers = EnsurePaintWorkers(workerCount);
         try
         {
             for (var i = 0; i < workerCount; i++)
             {
                 var worker = paintWorkers[i] ??= new PaintWorker();
-                worker.EnsureScratch(scope, Width, needsCoverageRow, needsAlphaRow);
+                worker.EnsureScratch(scope, Width, needsCoverageRow, needsAlphaRow, recordsPieces);
                 worker.ResetDrawn();
                 if (evaluator is not null)
                 {
@@ -233,9 +298,15 @@ internal sealed partial class DrawingSession
                 }
             }
 
+            // A shape whose rows come as pieces is composited by the workers
+            if (recordsPieces)
+            {
+                _rasterizer!.RecordPieces();
+            }
+
             if (evaluator is not null)
             {
-                // The scratch that only saves time comes last: it never takes the room of the scratch a worker needs
+                // The scratch that only saves time comes last: it never takes the room of the scratch the call needs
                 for (var i = 0; i < workerCount; i++)
                 {
                     paintWorkers[i].Evaluator!.PrepareOptionalScratch();
@@ -249,6 +320,19 @@ internal sealed partial class DrawingSession
         }
 
         return true;
+    }
+
+    /// <summary>Gets the workers, with room for at least a number of them: the workers already created are kept.</summary>
+    private PaintWorker[] EnsurePaintWorkers(int workerCount)
+    {
+        if (_paintWorkers is null || _paintWorkers.Length < workerCount)
+        {
+            var workers = new PaintWorker[workerCount];
+            _paintWorkers?.CopyTo(workers, 0);
+            _paintWorkers = workers;
+        }
+
+        return _paintWorkers;
     }
 
     private void ReleasePaintEvaluators(int workerCount)
@@ -269,15 +353,27 @@ internal sealed partial class DrawingSession
             var runs = worker.RunSpan;
             for (var i = 0; i < worker.RunCount; i++)
             {
-                var y = runs[3 * i];
-                var x = runs[(3 * i) + 1];
-                var offset = runs[(3 * i) + 2];
-                var end = i + 1 < worker.RunCount ? runs[(3 * (i + 1)) + 2] : worker.PixelCount;
-                PaintSpan(worker, paint.Color, worker.Evaluator, paint.Mode, paint.Blend, paint.Opacity, y, x, coverage[offset..end], paint.AlphaFactor, paint.IsFullyCovered);
+                var y = runs[ValuesPerRun * i];
+                var x = runs[(ValuesPerRun * i) + 1];
+                var offset = runs[(ValuesPerRun * i) + 2];
+                var length = runs[(ValuesPerRun * i) + 3];
+                if (x >= 0)
+                {
+                    PaintSpan(worker, paint.Color, worker.Evaluator, paint.Mode, paint.Blend, paint.Opacity, y, x, coverage.Slice(offset, length), paint.AlphaFactor, paint.IsFullyCovered);
+                    continue;
+                }
+
+                var rowCoverage = worker.RowCoverageSpan;
+                if (CoverageRasterizer.ReplayPieces(worker.PieceSpan.Slice(offset, length), worker.AccumulationSpan, rowCoverage, Width, out x, out var count))
+                {
+                    PaintSpan(worker, paint.Color, worker.Evaluator, paint.Mode, paint.Blend, paint.Opacity, y, x, rowCoverage.Slice(x, count), paint.AlphaFactor);
+                }
             }
         }
         catch (Exception exception)
         {
+            // The difference row is all zeros for the next batch
+            worker.ClearAccumulation();
             worker.Fail(exception);
         }
         finally
@@ -358,6 +454,9 @@ internal sealed partial class DrawingSession
     {
         private PooledBuffer? _coverage;
         private PooledBuffer? _runs;
+        private PooledBuffer? _pieces;
+        private PooledBuffer? _accumulation;
+        private PooledBuffer? _rowCoverage;
         private int _width;
         private int _sequence;
 
@@ -375,10 +474,17 @@ internal sealed partial class DrawingSession
 
         public int RunCount { get; private set; }
 
+        /// <summary>Gets the number of pixels of the batch: the coverages it holds, and the columns its pieces of boundary go through.</summary>
         public int PixelCount { get; private set; }
 
-        /// <summary>Gets a value indicating whether the batch is handed off: enough pixels, or enough runs.</summary>
-        public bool IsFull => PixelCount >= PixelsPerBatch || RunCount == MaxRunsPerBatch;
+        /// <summary>Gets the number of coverages of the batch.</summary>
+        public int CoverageCount { get; private set; }
+
+        /// <summary>Gets the number of values of the pieces of boundary of the batch.</summary>
+        public int PieceValueCount { get; private set; }
+
+        /// <summary>Gets a value indicating whether the batch is handed off: enough pixels, enough runs, or not enough room for the pieces of one more row.</summary>
+        public bool IsFull => PixelCount >= PixelsPerBatch || RunCount == MaxRunsPerBatch || PieceValueCount > (MaxPiecesPerBatch - CoverageRasterizer.MaxPiecesPerRow) * CoverageRasterizer.ValuesPerPiece;
 
         public Exception? Failure { get; private set; }
 
@@ -398,27 +504,47 @@ internal sealed partial class DrawingSession
         /// <summary>The coverages of the runs, one after the other.</summary>
         public Span<uint> CoverageSpan => unsafe(MemoryMarshal.Cast<byte, uint>(_coverage!.Span));
 
-        /// <summary>For each run: its row, its first column and the offset of its coverages.</summary>
+        /// <summary>For each run: its row, its first column (or -1 for pieces of boundary), and the offset and length of its coverages or of its pieces.</summary>
         public Span<int> RunSpan => unsafe(MemoryMarshal.Cast<byte, int>(_runs!.Span));
+
+        /// <summary>The pieces of boundary of the runs, one after the other.</summary>
+        public Span<double> PieceSpan => unsafe(MemoryMarshal.Cast<byte, double>(_pieces!.Span));
+
+        /// <summary>The difference row the pieces of a row are accumulated in: all zeros between two rows.</summary>
+        public Span<double> AccumulationSpan => unsafe(MemoryMarshal.Cast<byte, double>(_accumulation!.Span));
+
+        /// <summary>The coverages of the row whose pieces were accumulated last.</summary>
+        public Span<uint> RowCoverageSpan => unsafe(MemoryMarshal.Cast<byte, uint>(_rowCoverage!.Span))[.._width];
 
         /// <summary>Rents what the worker needs for a canvas of a width: what it already has is kept.</summary>
         /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
-        public void EnsureScratch(AllocationScope scope, int width, bool needsCoverageRow, bool needsAlphaRow)
+        public void EnsureScratch(AllocationScope scope, int width, bool needsCoverageRow, bool needsAlphaRow, bool needsPieces)
         {
             if (_width != width)
             {
                 _coverage?.Dispose();
                 CoverageRow?.Dispose();
                 AlphaRow?.Dispose();
+                _accumulation?.Dispose();
+                _rowCoverage?.Dispose();
                 _coverage = null;
                 CoverageRow = null;
                 AlphaRow = null;
+                _accumulation = null;
+                _rowCoverage = null;
                 _width = width;
             }
 
             // A batch is handed off once it has PixelsPerBatch pixels: one more run of at most a row always fits
             _coverage ??= ResampleWeights.Rent<uint>(scope, (long)PixelsPerBatch + width);
-            _runs ??= ResampleWeights.Rent<int>(scope, 3L * MaxRunsPerBatch);
+            _runs ??= ResampleWeights.Rent<int>(scope, (long)ValuesPerRun * MaxRunsPerBatch);
+            if (needsPieces)
+            {
+                // The difference row has the two entries past the last column that the sweep's has
+                _pieces ??= ResampleWeights.Rent<double>(scope, (long)MaxPiecesPerBatch * CoverageRasterizer.ValuesPerPiece);
+                _accumulation ??= ResampleWeights.Rent<double>(scope, (long)width + 2);
+                _rowCoverage ??= ResampleWeights.Rent<uint>(scope, width);
+            }
             if (needsCoverageRow)
             {
                 CoverageRow ??= ResampleWeights.Rent<uint>(scope, width);
@@ -444,19 +570,40 @@ internal sealed partial class DrawingSession
             _sequence = sequence;
             RunCount = 0;
             PixelCount = 0;
+            CoverageCount = 0;
+            PieceValueCount = 0;
         }
 
-        /// <summary>Adds a run to the batch.</summary>
+        /// <summary>Adds a run of coverages to the batch.</summary>
         public void Add(int y, int x, ReadOnlySpan<uint> coverage)
         {
-            var runs = RunSpan;
-            runs[3 * RunCount] = y;
-            runs[(3 * RunCount) + 1] = x;
-            runs[(3 * RunCount) + 2] = PixelCount;
-            coverage.CopyTo(CoverageSpan[PixelCount..]);
+            AddRun(y, x, CoverageCount, coverage.Length);
+            coverage.CopyTo(CoverageSpan[CoverageCount..]);
+            CoverageCount += coverage.Length;
             PixelCount += coverage.Length;
+        }
+
+        /// <summary>Adds the pieces of boundary of a row to the batch, which go through about <paramref name="columns"/> columns.</summary>
+        public void AddPieces(int y, ReadOnlySpan<double> pieces, int columns)
+        {
+            AddRun(y, -1, PieceValueCount, pieces.Length);
+            pieces.CopyTo(PieceSpan[PieceValueCount..]);
+            PieceValueCount += pieces.Length;
+            PixelCount += columns;
+        }
+
+        private void AddRun(int y, int x, int offset, int length)
+        {
+            var runs = RunSpan[(ValuesPerRun * RunCount)..];
+            runs[0] = y;
+            runs[1] = x;
+            runs[2] = offset;
+            runs[3] = length;
             RunCount++;
         }
+
+        /// <summary>Clears the difference row, which a failure may leave with entries that are not zero.</summary>
+        public void ClearAccumulation() => _accumulation?.Span.Clear();
 
         public void MarkDrawn(int left, int top, int right, int bottom)
         {
@@ -508,10 +655,16 @@ internal sealed partial class DrawingSession
             ReleaseEvaluator();
             _coverage?.Dispose();
             _runs?.Dispose();
+            _pieces?.Dispose();
+            _accumulation?.Dispose();
+            _rowCoverage?.Dispose();
             CoverageRow?.Dispose();
             AlphaRow?.Dispose();
             _coverage = null;
             _runs = null;
+            _pieces = null;
+            _accumulation = null;
+            _rowCoverage = null;
             CoverageRow = null;
             AlphaRow = null;
             _width = 0;

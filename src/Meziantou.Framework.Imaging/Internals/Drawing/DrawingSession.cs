@@ -738,6 +738,9 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.SubpixelRendering != TextSubpixelRendering.None && TryFillSubpixelText(brush, layout, origin))
             return;
 
+        if (_textGlyphMasks is not null && layout.SubpixelRendering == TextSubpixelRendering.None && TryFillTextFromMasks(brush, layout, origin))
+            return;
+
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
@@ -777,27 +780,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var emboldener = GetEmboldener(layout);
-        if (layout.HasBackgrounds)
-        {
-            // Under the whole text: the background of a style never hides the glyphs of another one
-            for (var i = 0; i < layout.BrushCount; i++)
-            {
-                if (layout.GetBrush(i) is not { } background)
-                    continue;
-
-                if (measure is null)
-                {
-                    layout.EmitBackgrounds(BeginFill(), originX, originY, i);
-                }
-                else
-                {
-                    layout.EmitBackgroundsOnPath(BeginFill(), measure, options!, i);
-                }
-
-                Render(background, FillRule.NonZero);
-            }
-        }
-
+        DrawTextBackgrounds(layout, originX, originY, measure, options);
         for (var i = 0; i < layout.BrushCount; i++)
         {
             FillFrameWhenCovered(measure is null
@@ -807,6 +790,37 @@ internal sealed partial class DrawingSession : IDisposable
         }
 
         DrawColorGlyphs(brush, layout, originX, originY, measure, options, paint: !_isPreparing);
+        StrokeTextOutlines(layout, originX, originY, measure, options);
+    }
+
+    /// <summary>Fills the backgrounds of the styles of a text: under the whole text, so that the background of a style never hides the glyphs of another one.</summary>
+    private void DrawTextBackgrounds(TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        if (!layout.HasBackgrounds)
+            return;
+
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            if (layout.GetBrush(i) is not { } background)
+                continue;
+
+            if (measure is null)
+            {
+                layout.EmitBackgrounds(BeginFill(), originX, originY, i);
+            }
+            else
+            {
+                layout.EmitBackgroundsOnPath(BeginFill(), measure, options!, i);
+            }
+
+            Render(background, FillRule.NonZero);
+        }
+    }
+
+    /// <summary>Strokes the glyphs of the styles of a text that have a pen, once the text is filled.</summary>
+    private void StrokeTextOutlines(TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
         for (var i = 0; i < layout.OutlineCount; i++)
         {
             var pen = layout.GetOutline(i);
@@ -1164,11 +1178,17 @@ internal sealed partial class DrawingSession : IDisposable
     /// <summary>Rasterizes the edges of the call and composites every row onto every frame.</summary>
     private void Render(Brush brush, FillRule fillRule)
     {
-        // A shape that is only prepared rents what it needs, and changes no pixel
-        if (Prepare(brush, fillRule, out var color, out var evaluator) && !_isPreparing)
+        if (!Prepare(brush, fillRule, out var color, out var evaluator))
+            return;
+
+        // A shape that is only prepared rents what it needs, the scratch of the workers included, and changes no pixel
+        if (_isPreparing)
         {
-            Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
+            ReservePaintWorkers(color, evaluator, brush.CompositeMode, brush.BlendMode, brush.Opacity);
+            return;
         }
+
+        Paint(color, evaluator, brush.CompositeMode, brush.BlendMode, alphaFactor: brush.Opacity);
     }
 
     /// <summary>Composites every row of the sweep that was prepared onto every frame.</summary>
@@ -1416,7 +1436,7 @@ internal sealed partial class DrawingSession : IDisposable
 
         if (brush is SolidBrush solid)
         {
-            if (solid.FloatColor is { } floatColor && _frames[0].PixelFormat is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf)
+            if (solid.FloatColor is { } floatColor && PixelFormats.IsFloatingPoint(_frames[0].PixelFormat))
             {
                 var floatPaint = _floatSolidPaint ??= new FloatSolidEvaluator(_image.Owner.Scope);
                 floatPaint.Prepare(floatColor, Width);

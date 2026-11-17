@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -117,6 +119,59 @@ internal sealed class CmykColorConversion
         }
     }
 
+    /// <summary>
+    /// Converts 8-bit inks to 8-bit colors with the device formulas of <see cref="Cmyk"/>, on integers: the red of
+    /// <see cref="Cmyk.ToRgb"/> rounded to 8 bits is round((255 - C) * (255 - K) / 255), which is never halfway between two
+    /// integers (255 is odd), so the double evaluation and its rounding give the same byte.
+    /// </summary>
+    /// <param name="source">The inks, four bytes per pixel.</param>
+    /// <param name="rgb">The colors, three bytes per pixel.</param>
+    internal static void DeviceCmyk8ToRgb24(ReadOnlySpan<byte> source, Span<byte> rgb)
+    {
+        var count = source.Length / 4;
+        if (rgb.Length < count * 3)
+            throw new ArgumentException("The destination is too short.", nameof(rgb));
+
+        var i = 0;
+        if (AdvSimd.Arm64.IsSupported && !Resampler.TestForceScalar)
+        {
+            // 16 pixels: LD4 separates the inks, (255 - ink) * (255 - K) is widened to 16 bits and divided by 255 with
+            // rounding as (x + ((x + 128) >> 8) + 128) >> 8 (RSHR then RADDHN), and ST3 interleaves the colors
+            unsafe
+            {
+                fixed (byte* inputPointer = source)
+                fixed (byte* outputPointer = rgb)
+                {
+                    for (; i + 16 <= count; i += 16)
+                    {
+                        var (c, m, y, k) = AdvSimd.Arm64.Load4xVector128AndUnzip(inputPointer + (4 * i));
+                        var white = AdvSimd.Not(k);
+                        AdvSimd.Arm64.StoreVectorAndZip(outputPointer + (3 * i), (DeviceChannels(c, white), DeviceChannels(m, white), DeviceChannels(y, white)));
+                    }
+                }
+            }
+        }
+
+        for (; i < count; i++)
+        {
+            var white = 255 - source[(4 * i) + 3];
+            rgb[3 * i] = DeviceChannel(source[4 * i], white);
+            rgb[(3 * i) + 1] = DeviceChannel(source[(4 * i) + 1], white);
+            rgb[(3 * i) + 2] = DeviceChannel(source[(4 * i) + 2], white);
+        }
+
+        static byte DeviceChannel(byte ink, int white) => (byte)((((255 - ink) * white) + 127) / 255);
+
+        static Vector128<byte> DeviceChannels(Vector128<byte> ink, Vector128<byte> white)
+        {
+            var light = AdvSimd.Not(ink);
+            var lower = AdvSimd.MultiplyWideningLower(light.GetLower(), white.GetLower());
+            var upper = AdvSimd.MultiplyWideningUpper(light, white);
+            var lowerResult = AdvSimd.AddRoundedHighNarrowingLower(lower, AdvSimd.ShiftRightLogicalRounded(lower, 8));
+            return AdvSimd.AddRoundedHighNarrowingUpper(lowerResult, upper, AdvSimd.ShiftRightLogicalRounded(upper, 8));
+        }
+    }
+
     private static bool Is16Bit(PixelFormat format) => PixelFormats.GetBitsPerComponent(format) > 8;
 
     private static double ReadFraction(ReadOnlySpan<byte> samples, int index, bool deep)
@@ -139,6 +194,12 @@ internal sealed class CmykColorConversion
         var count = inks.Length / 4;
         var deepInks = _cmykFormat == PixelFormat.Cmyk64;
         var deepRgb = _rgbFormat == PixelFormat.Rgb48;
+        if (_pipeline is null && !deepInks && !deepRgb)
+        {
+            DeviceCmyk8ToRgb24(source, rgb);
+            return;
+        }
+
         if (_pipeline is null)
         {
             for (var i = 0; i < count; i++)

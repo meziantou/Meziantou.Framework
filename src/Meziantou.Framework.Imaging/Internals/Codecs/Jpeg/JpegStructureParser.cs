@@ -683,7 +683,8 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (height == 0)
             throw Unsupported("JPEG images whose height is defined by a DNL marker are not supported.", "JPEG DNL height");
 
-        if (count is not (1 or 3 or 4))
+        // The container of a lossless datastream may take its stored samples whatever their number (DNG)
+        if (count is not (1 or 3 or 4) && !(count == 2 && marker == MarkerSof3 && _observer is { AcceptsTwoComponentLosslessFrames: true }))
             throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"JPEG images with {count} components are not supported."), "JPEG " + count.ToString(CultureInfo.InvariantCulture) + " components");
 
         if (count > 1)

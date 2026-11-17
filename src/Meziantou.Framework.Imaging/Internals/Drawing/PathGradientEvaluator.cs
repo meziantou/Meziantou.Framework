@@ -219,6 +219,8 @@ internal sealed class PathGradientEvaluator : PaintEvaluator, IDisposable
         return colors;
     }
 
+    public override bool CanCreateWorkers => true;
+
     /// <remarks>The triangles and the vertices are shared; the triangles a row crosses and the colors are the worker's.</remarks>
     public override PaintEvaluator? CreateWorker()
     {

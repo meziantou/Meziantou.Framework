@@ -172,6 +172,7 @@
         "destination": { "type": "string", "description": "Id of the destination colorProfile." },
         "intent": { "enum": ["perceptual", "relative-colorimetric", "saturation", "absolute-colorimetric"] },
         "blackPointCompensation": { "type": "boolean" },
+        "sourceSamples": { "enum": ["named-color-index"], "description": "Absent for device samples; 'named-color-index' when the source is a named color profile and each source sample is the index of a color." },
         "sourceChannels": { "enum": [1, 3, 4] },
         "destinationChannels": { "enum": [1, 3, 4] },
         "sampleCount": { "type": "integer", "minimum": 1 },
@@ -181,7 +182,7 @@
           "additionalProperties": false,
           "required": ["tool", "command", "generator"],
           "properties": {
-            "tool": { "type": "string", "description": "Tool and exact version, e.g. 'transicc (LittleCMS 2.19)'." },
+            "tool": { "type": "string", "description": "Tool and exact version, e.g. 'transicc (LittleCMS 2.19)' or 'iccApplyNamedCmm (iccDEV 2.4.2.5)'." },
             "command": { "type": "string", "description": "Exact command line; the colors are its standard input." },
             "generator": { "type": "string", "description": "Committed script path and function." }
           }
@@ -317,9 +318,9 @@
       "properties": {
         "width": { "type": "integer", "minimum": 1 },
         "height": { "type": "integer", "minimum": 1 },
-        "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102", "Cmyk32", "Cmyk64"] },
+        "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102", "Cmyk32", "Cmyk64", "GrayFloat", "GrayHalf", "LaFloat", "LaHalf"] },
         "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck", "CieLab"] },
-        "bitsPerComponent": { "type": "integer", "minimum": 1, "maximum": 32, "description": "1, 2, 4, 8 or 16; 10 and 12 are the bit depths of AVIF and JPEG XL inputs only, 12 the one of JPEG inputs with 12-bit samples, any depth from 2 to 16 the one of a lossless JPEG input, and 32 the one of an OpenEXR input of FLOAT or UINT samples." },
+        "bitsPerComponent": { "type": "integer", "minimum": 1, "maximum": 32, "description": "1, 2, 4, 8 or 16; 10 and 12 are the bit depths of AVIF and JPEG XL inputs only, 12 the one of JPEG inputs with 12-bit samples, any depth from 2 to 16 the one of a lossless JPEG input, and 32 the one of an OpenEXR input of FLOAT or UINT samples, of a Radiance HDR input and of a DNG input (its rendering)." },
         "orientation": { "type": "integer", "minimum": 1, "maximum": 8 },
         "iccProfile": { "enum": ["none", "rgb", "gray"] },
         "cicp": {
@@ -523,6 +524,21 @@
         "frameLimit": { "type": "integer", "minimum": 1 }
       }
     },
+    "ddsSurface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arrayIndex", "face", "mipLevel", "depthSlice", "width", "height", "buffer"],
+      "description": "Valid DDS fixtures of several surfaces only: a surface of the texture (an entry of ImageCollection, in file order) and its pixels, in the layout of the frame of the fixture. The first one is the image of the fixture.",
+      "properties": {
+        "arrayIndex": { "type": "integer", "minimum": 0 },
+        "face": { "enum": [null, "PositiveX", "NegativeX", "PositiveY", "NegativeY", "PositiveZ", "NegativeZ"] },
+        "mipLevel": { "type": "integer", "minimum": 0 },
+        "depthSlice": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "buffer": { "$ref": "#/$defs/buffer" }
+      }
+    },
     "exrDecoding": {
       "type": "object",
       "additionalProperties": false,
@@ -535,7 +551,7 @@
         "windowMode": { "enum": ["DisplayWindow", "CropToDisplayWindow", "DataWindow"] },
         "width": { "type": "integer", "minimum": 1 },
         "height": { "type": "integer", "minimum": 1 },
-        "pixelFormat": { "enum": ["RgbaHalf", "RgbaFloat"] },
+        "pixelFormat": { "enum": ["RgbaHalf", "RgbaFloat", "GrayHalf", "GrayFloat", "LaFloat"] },
         "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba"] },
         "bitsPerComponent": { "enum": [16, 32] },
         "buffer": { "$ref": "#/$defs/buffer", "description": "The decoded pixels (rgbaf32le)." },
@@ -677,7 +693,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._/-]*$" },
         "kind": { "enum": ["valid", "invalid", "unsupported", "limit"] },
-        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr", "hdr"] },
+        "format": { "enum": ["png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr", "hdr", "psd", "dng", "dds", "dpx", "cin"] },
         "input": { "$ref": "#/$defs/file" },
         "provenance": { "$ref": "#/$defs/provenance" },
         "features": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
@@ -688,6 +704,7 @@
         "decodeOptions": { "$ref": "#/$defs/decodeOptions" },
         "inkConversion": { "$ref": "#/$defs/inkConversion" },
         "exrDecodings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/exrDecoding" } },
+        "ddsSurfaces": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/ddsSurface" } },
         "notes": { "type": "string" }
       },
       "allOf": [

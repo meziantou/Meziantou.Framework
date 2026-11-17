@@ -12,10 +12,12 @@ internal sealed class ExrChunkDecompressor : IDisposable
     private PooledBuffer? _scratch;
     private readonly ExrZstd? _zstd;
     private readonly ExrDwa? _dwa;
+    private readonly ExrHtj2k? _htj2k;
     private ExrZstd.Piece[] _pieces = [];
 
-    public ExrChunkDecompressor(AllocationScope scope, ExrCompressionMethod compression, int maxDataLength)
+    public ExrChunkDecompressor(ImageCodecContext context, ExrCompressionMethod compression, int maxDataLength)
     {
+        var scope = context.Scope;
         _scope = scope;
         _compression = compression;
         try
@@ -31,6 +33,10 @@ internal sealed class ExrChunkDecompressor : IDisposable
             else if (compression is ExrCompressionMethod.Dwaa or ExrCompressionMethod.Dwab)
             {
                 _dwa = new ExrDwa(scope);
+            }
+            else if (compression is ExrCompressionMethod.Htj2k256 or ExrCompressionMethod.Htj2k32)
+            {
+                _htj2k = new ExrHtj2k(context);
             }
             else if (compression != ExrCompressionMethod.None)
             {
@@ -89,6 +95,10 @@ internal sealed class ExrChunkDecompressor : IDisposable
 
             case ExrCompressionMethod.Piz:
                 _piz!.Decompress(stored, destination, layout);
+                break;
+
+            case ExrCompressionMethod.Htj2k256 or ExrCompressionMethod.Htj2k32:
+                _htj2k!.Decompress(stored, destination, layout);
                 break;
 
             case ExrCompressionMethod.Pxr24:
@@ -196,6 +206,7 @@ internal sealed class ExrChunkDecompressor : IDisposable
         _piz?.Dispose();
         _zstd?.Dispose();
         _dwa?.Dispose();
+        _htj2k?.Dispose();
     }
 
     /// <summary>Copies a deep buffer stored raw; with NONE, the buffer must be stored raw.</summary>

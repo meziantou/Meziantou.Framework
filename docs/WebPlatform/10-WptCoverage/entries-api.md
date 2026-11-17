@@ -9,23 +9,17 @@ description: "The results of the web-platform-tests of entries-api, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 4 | 4 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 4
+| **All** | **4** | **4** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`filesystemdirectoryreader.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryreader.html) | Disabled | – | NOT IMPLEMENTED | File and Directory Entries API |
-| [`filesystementry-getParent.html`](https://wpt.fyi/results/entries-api/filesystementry-getParent.html) | Disabled | – | NOT IMPLEMENTED | File and Directory Entries API |
-| [`idlharness.window.js`](https://wpt.fyi/results/entries-api/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | File and Directory Entries API |
-| [`webkitGetAsEntry.html`](https://wpt.fyi/results/entries-api/webkitGetAsEntry.html) | Disabled | – | NOT IMPLEMENTED | File and Directory Entries API |
+| [`filesystemdirectoryreader.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryreader.html) | Pass | 4 / 4 |  |  |
+| [`filesystementry-getParent.html`](https://wpt.fyi/results/entries-api/filesystementry-getParent.html) | Pass | 2 / 2 |  |  |
+| [`idlharness.window.js`](https://wpt.fyi/results/entries-api/idlharness.window.js) | Pass | 68 / 68 |  |  |
+| [`webkitGetAsEntry.html`](https://wpt.fyi/results/entries-api/webkitGetAsEntry.html) | Pass | 4 / 4 |  |  |

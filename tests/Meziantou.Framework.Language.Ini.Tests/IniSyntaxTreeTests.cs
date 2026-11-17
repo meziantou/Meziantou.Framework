@@ -1632,6 +1632,10 @@ key without separator
     [InlineData("k = b\\")]
     [InlineData("k = b \\")]
     [InlineData("k = \"b \\")]
+    [InlineData("k = b\\\r")]
+    [InlineData("k = b\\\n")]
+    [InlineData("k = b\\\r\n")]
+    [InlineData("k = \\\r")]
     public void SetValue_Git_ValueEndingTheTextWithABackslashDoesNotContinueOnTheNewLine(string text)
     {
         var root = IniSyntaxTree.ParseText(text, IniParseOptions.Git).GetRoot();

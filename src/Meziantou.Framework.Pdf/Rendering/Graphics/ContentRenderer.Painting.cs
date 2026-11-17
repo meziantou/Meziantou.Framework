@@ -19,6 +19,13 @@ internal sealed partial class ContentRenderer
     /// <summary>Gets or initializes the color every painting operator uses, instead of the colors of the content: the stencil of an uncolored pattern or of a <c>d1</c> glyph.</summary>
     public RgbColor? ForcedColor { get; set; }
 
+    /// <summary>
+    /// Gets the colorant whose plate is rendered, or <see langword="null"/> for the colors of the page: each painting
+    /// operation paints the tint of the colorant in gray (black for full ink), or leaves the plate unchanged when its color
+    /// does not paint the colorant and overprints (8.6.7).
+    /// </summary>
+    public string? Plate { get; init; }
+
     /// <summary>Gets or initializes the color of the glyph of a Type 3 font that turns out to be a stencil (<c>d1</c>).</summary>
     public RgbColor? StencilColor { get; init; }
 
@@ -202,8 +209,68 @@ internal sealed partial class ContentRenderer
             return CreatePatternBrush(pattern, patternSpace, components, deviceBounds, alpha, blend);
         }
 
-        var color = space.ToRgb(stroke ? _state.StrokeColor : _state.FillColor);
+        if (!TryGetColor(space, stroke ? _state.StrokeColor : _state.FillColor, stroke, out var color))
+            return null;
+
         return new SolidBrush(ToRgba64(color)) { Opacity = alpha, BlendMode = blend };
+    }
+
+    /// <summary>Gets the color a painting operation paints: the color, or the tint of the plate rendered; <see langword="false"/> when the operation leaves the plate unchanged.</summary>
+    private bool TryGetColor(RenderColorSpace space, ReadOnlySpan<double> components, bool stroke, out RgbColor color)
+    {
+        if (Plate is not { } plate)
+        {
+            color = space.ToRgb(components);
+            return true;
+        }
+
+        var overprint = stroke ? _state.StrokeOverprint : _state.FillOverprint;
+        if (space.TryGetTint(components, plate, overprint && _state.OverprintMode == 1, out var tint))
+        {
+            color = new RgbColor(1 - tint, 1 - tint, 1 - tint);
+            return true;
+        }
+
+        // The color does not paint the colorant: overprinting leaves the plate as it is, else the plate is erased
+        color = new RgbColor(1, 1, 1);
+        return !overprint;
+    }
+
+    /// <summary>
+    /// Converts the pixels of an image or a shading to the plate rendered: their colors separated into the process
+    /// colorants (a spot colorant is erased, or left unchanged when the operation overprints), their alpha kept. Returns
+    /// the image itself when no plate is rendered, and <see langword="null"/> when the plate is left unchanged.
+    /// </summary>
+    private Image<Rgba32>? ToPlate(Image<Rgba32> image, out bool isCopy)
+    {
+        isCopy = false;
+        if (Plate is not { } plate)
+            return image;
+
+        var isProcess = Array.IndexOf(RenderColorSpace.ProcessColorants, plate) >= 0;
+        if (!isProcess && _state.FillOverprint)
+            return null;
+
+        var copy = image.Clone();
+        isCopy = true;
+        copy.Frames[0].ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                foreach (ref var pixel in rows.GetRowSpan(y))
+                {
+                    var tint = 0.0;
+                    if (isProcess)
+                    {
+                        RenderColorSpace.TryGetProcessTint(new RgbColor(pixel.R / 255.0, pixel.G / 255.0, pixel.B / 255.0), plate, out tint);
+                    }
+
+                    var gray = RenderColorSpace.ToByte(1 - tint);
+                    pixel = new Rgba32(gray, gray, gray, pixel.A);
+                }
+            }
+        });
+        return copy;
     }
 
     internal static Rgba64 ToRgba64(RgbColor color) => new(ToUInt16(color.R), ToUInt16(color.G), ToUInt16(color.B));
@@ -227,7 +294,16 @@ internal sealed partial class ContentRenderer
                     if (area.Width <= 0 || area.Height <= 0 || dictionary.GetResolved(PdfNames.Shading) is not { } shading)
                         return null;
 
-                    var image = Shadings.ShadingRasterizer.Rasterize(shading, matrix, area, _cache, includeBackground: true);
+                    var rasterized = Shadings.ShadingRasterizer.Rasterize(shading, matrix, area, _cache, includeBackground: true);
+                    if (rasterized is null)
+                        return null;
+
+                    var image = ToPlate(rasterized, out var isCopy);
+                    if (isCopy || image is null)
+                    {
+                        rasterized.Dispose();
+                    }
+
                     if (image is null)
                         return null;
 
@@ -244,7 +320,10 @@ internal sealed partial class ContentRenderer
                         if (space.Underlying is null)
                             return null;
 
-                        color = space.Underlying.ToRgb(components);
+                        if (!TryGetColor(space.Underlying, components, stroke: false, out var underlying))
+                            return null;
+
+                        color = underlying;
                     }
 
                     return CreateTilingBrush(cell, matrix, color, alpha, blend);
@@ -294,7 +373,7 @@ internal sealed partial class ContentRenderer
                 for (var j = jMin; j <= jMax; j++)
                 {
                     var offset = PdfMatrix.CreateTranslation(i * Math.Abs(xStep), j * Math.Abs(yStep)) * toTile;
-                    RenderForm(canvas, cell, offset, bbox, color, offset, (width, height), applyFormMatrix: false);
+                    RenderForm(canvas, cell, offset, bbox, color, offset, (width, height), applyFormMatrix: false, Plate);
                 }
             }
         });
@@ -451,18 +530,19 @@ internal sealed partial class ContentRenderer
         var isKnockout = attributes?.Get<PdfBoolean>(PdfNames.K)?.Value is true;
         if (isKnockout || (isIsolated && _cache.UsesBlendModes(group.Dictionary.Get<PdfDictionary>(PdfNames.Resources))))
         {
-            canvas.Group(new GroupOptions { IsIsolated = isIsolated, IsKnockout = isKnockout }, content => RenderForm(content, group, matrix, bbox, forcedColor: null, formMatrix * matrix, DeviceSize, applyFormMatrix: true, isKnockout));
+            canvas.Group(new GroupOptions { IsIsolated = isIsolated, IsKnockout = isKnockout }, content => RenderForm(content, group, matrix, bbox, forcedColor: null, formMatrix * matrix, DeviceSize, applyFormMatrix: true, plate: null, isKnockout));
             return;
         }
 
-        RenderForm(canvas, group, matrix, bbox, forcedColor: null, formMatrix * matrix, DeviceSize, applyFormMatrix: true);
+        // A soft mask is a mask, not colors of the page: it is rendered in color even for a plate
+        RenderForm(canvas, group, matrix, bbox, forcedColor: null, formMatrix * matrix, DeviceSize, applyFormMatrix: true, plate: null);
     }
 
     /// <summary>
     /// Renders a form or a pattern cell with a new graphics state: the matrix (with the <c>/Matrix</c> of a form, which
     /// is the pattern matrix of a cell), the bounding box as clipping path.
     /// </summary>
-    private void RenderForm(DrawingCanvas canvas, PdfStream form, PdfMatrix matrix, PdfRectangle bbox, RgbColor? forcedColor, PdfMatrix baseMatrix, (int Width, int Height) deviceSize, bool applyFormMatrix, bool isKnockout = false)
+    private void RenderForm(DrawingCanvas canvas, PdfStream form, PdfMatrix matrix, PdfRectangle bbox, RgbColor? forcedColor, PdfMatrix baseMatrix, (int Width, int Height) deviceSize, bool applyFormMatrix, string? plate, bool isKnockout = false)
     {
         var formMatrix = applyFormMatrix ? ReadMatrix(form.Dictionary.Get<PdfArray>(PdfNames.Matrix)) : PdfMatrix.Identity;
         var state = new RenderGraphicsState { Ctm = formMatrix * matrix };
@@ -474,6 +554,7 @@ internal sealed partial class ContentRenderer
             BaseMatrix = baseMatrix,
             DeviceSize = deviceSize,
             IsKnockoutContext = isKnockout,
+            Plate = plate,
         };
         renderer.ClipToRectangle(bbox);
         renderer.Run(canvas, form.GetDecodedData(), form.Dictionary.Get<PdfDictionary>(PdfNames.Resources));

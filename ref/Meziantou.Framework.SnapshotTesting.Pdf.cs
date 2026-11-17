@@ -20,6 +20,7 @@ namespace Meziantou.Framework.SnapshotTesting.Pdf
         Outlines = 8,
         Annotations = 16,
         All = 31,
+        Content = 32,
     }
 
     public sealed class PdfSnapshotSettings

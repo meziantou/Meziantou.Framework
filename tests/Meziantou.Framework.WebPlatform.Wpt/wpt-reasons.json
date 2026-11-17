@@ -30,7 +30,6 @@
     "dpub-aam/*": [{ "kind": "TEST RUNNER", "description": "needs the platform accessibility API of a browser" }],
     "ecmascript/*": [{ "kind": "OUT OF SCOPE", "description": "ECMAScript tests are the responsibility of the JavaScript engine: Meziantou.Framework.JavaScriptEngine is tested by test262 (`tests/Meziantou.Framework.JavaScriptEngine.Test262`)" }],
     "encrypted-media/*": [{ "kind": "NOT IMPLEMENTED", "description": "Encrypted Media Extensions" }],
-    "entries-api/*": [{ "kind": "NOT IMPLEMENTED", "description": "File and Directory Entries API" }],
     "eyedropper/*": [{ "kind": "NOT IMPLEMENTED", "description": "EyeDropper API" }],
     "fedcm/*": [{ "kind": "NOT IMPLEMENTED", "description": "Federated Credential Management" }],
     "fenced-frame/*": [{ "kind": "NOT IMPLEMENTED", "description": "fenced frames" }],

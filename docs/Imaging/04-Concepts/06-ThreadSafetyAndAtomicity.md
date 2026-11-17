@@ -45,7 +45,7 @@ By default, an operation runs on the calling thread only ([ImageConfiguration.Ma
 higher value, large resizes, transformations, convolutions, blurs, medians and unsharp masks split their rows into
 bands processed concurrently, and the decoders and encoders of JPEG, TIFF, OpenEXR, JPEG 2000, JPEG XL, AVIF and HEIC
 split the independent parts of large images (rows, strips, chunks, code-blocks, groups, tiles) between threads, and
-drawing composites the rows of large shapes, images and layers on several threads. The
+drawing computes the coverages of the rows of large shapes, images and layers and composites them on several threads. The
 result is identical to the sequential one: the same pixels, the same encoded bytes and the same error. Each thread
 needs memory of its own, counted by
 [ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes),

@@ -12,7 +12,7 @@ public sealed class MetadataWritePlanTests
     private static readonly Size Canvas = new(4, 3);
 
     // Only AVIF stores a content light level, a mastering display color volume and the shape of the pixels
-    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Avif or ImageFormat.Heic or ImageFormat.Png))];
+    private static readonly ImageFormat[] FormatsWithoutHighDynamicRangeFields = [.. Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom or ImageFormat.Avif or ImageFormat.Heic or ImageFormat.Png or ImageFormat.Dpx))];
 
     [Fact]
     public void ValidIccProfilePassesValidation()
@@ -321,6 +321,22 @@ public sealed class MetadataWritePlanTests
             var square = MetadataWritePlan.Create(new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(3, 3), TransferFunction = transfer }, format, MetadataHandling.Strict, Canvas);
             Assert.Null(square.PixelAspectRatio);
         }
+    }
+
+    [Fact]
+    public void DpxStoresTheOrientationThePixelShapeAndTheTransfersOfItsTables()
+    {
+        var metadata = new ImageMetadata { Orientation = ExifOrientation.RightTop, PixelAspectRatio = new PixelAspectRatio(2, 1), Cicp = new CicpColorDescription(1, 1, 0, fullRange: true) };
+        var plan = MetadataWritePlan.Create(metadata, ImageFormat.Dpx, MetadataHandling.Strict, Canvas);
+        Assert.Equal(ExifOrientation.RightTop, plan.Orientation);
+        Assert.Equal(new PixelAspectRatio(2, 1), plan.PixelAspectRatio);
+        Assert.Equal(new CicpColorDescription(1, 1, 0, fullRange: true), plan.Cicp);
+        Assert.Equal(ColorTransferFunction.Linear, MetadataWritePlan.Create(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear }, ImageFormat.Dpx, MetadataHandling.Strict, Canvas).TransferFunction);
+
+        // A description Tables 5A and 5B have no code for, and the light levels, are metadata the format cannot store
+        AssertUnsupported(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true) }, ImageFormat.Dpx, "CICP color description (the samples would be read as sRGB)");
+        AssertUnsupported(new ImageMetadata { ContentLightLevel = new ContentLightLevel(1000, 400) }, ImageFormat.Dpx, "content light level");
+        AssertUnsupported(new ImageMetadata { MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50) }, ImageFormat.Dpx, "mastering display color volume");
     }
 
     [Theory]

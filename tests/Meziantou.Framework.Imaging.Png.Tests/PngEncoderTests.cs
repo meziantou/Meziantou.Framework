@@ -150,6 +150,61 @@ public sealed class PngEncoderTests
         }
     }
 
+    [Theory]
+    [InlineData(CompressionLevel.Optimal)]
+    [InlineData(CompressionLevel.Fastest)]
+    [InlineData(CompressionLevel.SmallestSize)]
+    [InlineData(CompressionLevel.NoCompression)]
+    public void ZlibDatastreamIsTheOneOfZLibStream(CompressionLevel level)
+    {
+        // The encoder writes the header and computes the Adler-32 trailer itself, around a raw deflate datastream
+        var data = new byte[70_000];
+        for (var i = 0; i < data.Length; i++)
+        {
+            data[i] = i < 20_000 ? (byte)((uint)i * 2654435761u >> 24) : (byte)(i % 251 / 3);
+        }
+
+        // zlib-ng's output depends on how the data is split into writes: both streams get the same writes
+        Assert.Equal(CompressWithZLibStream(level, data), CompressWithPngZlib(level, data));
+
+        // Like ZLibStream, a stream without data writes what zlib-ng gives for no data (nothing on .NET 10)
+        Assert.Equal(CompressWithZLibStream(level, []), CompressWithPngZlib(level, []));
+
+        static byte[] CompressWithZLibStream(CompressionLevel level, byte[] data)
+        {
+            using var output = new MemoryStream();
+            using (var zlib = level is CompressionLevel.Fastest
+                ? new ZLibStream(output, new ZLibCompressionOptions { CompressionLevel = PngZlib.FastestLevel }, leaveOpen: true)
+                : new ZLibStream(output, level, leaveOpen: true))
+            {
+                WritePieces(zlib, data);
+            }
+
+            return output.ToArray();
+        }
+
+        static byte[] CompressWithPngZlib(CompressionLevel level, byte[] data)
+        {
+            using var output = new MemoryStream();
+            using (var zlib = PngZlib.Create(output, level, leaveOpen: true))
+            {
+                WritePieces(zlib, data);
+            }
+
+            return output.ToArray();
+        }
+
+        static void WritePieces(Stream stream, byte[] data)
+        {
+            if (data.Length == 0)
+                return;
+
+            stream.Write(data.AsSpan(0, 1));
+            stream.Write(data.AsSpan(1, 30_000));
+            stream.Write(data.AsSpan(30_001));
+        }
+    }
+
     [Fact]
     public void FastestCompressionWritesDynamicHuffmanCodes()
     {

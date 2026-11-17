@@ -171,6 +171,15 @@ public sealed class JsonIncrementalParsingTests
         AssertMatchesFullParse(document, new TextChange(new TextSpan(start, length), replacement));
     }
 
+    [Fact]
+    public void AnEditThatMovesANodePastTheMaximumDepth_ParsesItAgain()
+    {
+        // The inner arrays parse whole just under the limit, and turning the space into a bracket pushes them one level past it
+        var document = "[ " + new string('[', 253) + "[[1]]" + new string(']', 254);
+
+        AssertMatchesFullParse(document, new TextChange(new TextSpan(1, 1), "["));
+    }
+
     private static TextChange RandomChange(DeterministicRandom random, string text)
     {
         var start = random.Next(text.Length + 1);

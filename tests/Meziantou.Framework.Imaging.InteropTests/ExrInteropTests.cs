@@ -59,6 +59,44 @@ public sealed class ExrInteropTests
     }
 
     [Theory]
+    [InlineData(PixelFormat.GrayFloat)]
+    [InlineData(PixelFormat.GrayHalf)]
+    [InlineData(PixelFormat.LaFloat)]
+    public async Task GrayOutputDecodesExactlyInOpenExr(PixelFormat format)
+    {
+        // A luminance channel Y (and A): OpenEXR reads the stored samples, the levels premultiplied by alpha
+        var openExr = await RequiredTools.OpenExrAsync();
+        var random = new Random(31);
+        var pixels = new LaFloat[37 * 5];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            // Halves, so that every format holds them: highlights, negative levels, and alphas that are powers of two
+            pixels[i] = new LaFloat((float)(Half)((random.NextDouble() * 6) - 1), format == PixelFormat.LaFloat ? 1f / (1 << random.Next(3)) : 1f);
+        }
+
+        using var source = Image.ImportPixelData<LaFloat>(pixels, 37, 5);
+        using var image = source.CloneAs(format, options: null);
+        image.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+        var path = InteropSettings.GetArtifactsDirectory("ExrInteropTests") / string.Create(CultureInfo.InvariantCulture, $"gray-{format}.exr");
+        await image.SaveAsync(path, new OpenExrEncoder(), XunitCancellationToken);
+
+        var part = await openExr.DecodeAsync(path, XunitCancellationToken);
+        Assert.Equal(format == PixelFormat.LaFloat ? ["A", "Y"] : ["Y"], part.Channels.Keys.Order(StringComparer.Ordinal));
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            Assert.Equal(pixels[i].L * pixels[i].A, part.Channels["Y"][i]);
+            if (format == PixelFormat.LaFloat)
+            {
+                Assert.Equal(pixels[i].A, part.Channels["A"][i]);
+            }
+        }
+
+        // And the library reads it back in the gray format of its samples
+        using var back = await Image.LoadAsync(path, cancellationToken: XunitCancellationToken);
+        Assert.Equal(format, back.PixelFormat);
+    }
+
+    [Theory]
     [MemberData(nameof(EncoderCases))]
     public async Task EncoderOutputDecodesExactlyInOpenExr(OpenExrCompression compression, OpenExrPixelType pixelType)
     {

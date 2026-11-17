@@ -537,6 +537,81 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RowSwapsMatchASwapOfCopies()
+    {
+        var random = new Random(42);
+        foreach (var forceScalar in new[] { false, true })
+        {
+            for (var length = 0; length <= 200; length++)
+            {
+                var first = new byte[length];
+                var second = new byte[length];
+                random.NextBytes(first);
+                random.NextBytes(second);
+                var expectedFirst = second.ToArray();
+                var expectedSecond = first.ToArray();
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    ProcessingKernels.SwapRows(first, second);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                Assert.Equal(expectedFirst, first);
+                Assert.Equal(expectedSecond, second);
+            }
+        }
+    }
+
+    [Fact]
+    public void DeviceCmykConversionMatchesTheDoubleFormulasForEveryInkAndBlack()
+    {
+        // Every (ink, black) pair, the ink in the cyan, magenta and yellow positions, in rows whose lengths are not multiples of the vector width
+        var inks = new byte[65536 * 4];
+        var expected = new byte[65536 * 3];
+        for (var i = 0; i < 65536; i++)
+        {
+            var ink = (byte)i;
+            var black = (byte)(i >> 8);
+            var other = (byte)(i * 7);
+            var c = (i % 3) is 0 ? ink : other;
+            var m = (i % 3) is 1 ? ink : other;
+            var y = (i % 3) is 2 ? ink : other;
+            inks[4 * i] = c;
+            inks[(4 * i) + 1] = m;
+            inks[(4 * i) + 2] = y;
+            inks[(4 * i) + 3] = black;
+            var color = new Cmyk(c / 255.0, m / 255.0, y / 255.0, black / 255.0).ToRgba32();
+            expected[3 * i] = color.R;
+            expected[(3 * i) + 1] = color.G;
+            expected[(3 * i) + 2] = color.B;
+        }
+
+        foreach (var forceScalar in new[] { false, true })
+        {
+            foreach (var length in new[] { 0, 1, 15, 16, 17, 33, 65536 })
+            {
+                var actual = new byte[length * 3];
+                Resampler.TestForceScalar = forceScalar;
+                try
+                {
+                    CmykColorConversion.DeviceCmyk8ToRgb24(inks.AsSpan(0, length * 4), actual);
+                }
+                finally
+                {
+                    Resampler.TestForceScalar = false;
+                }
+
+                Assert.Equal(expected.AsSpan(0, length * 3).ToArray(), actual);
+            }
+        }
+    }
+
+    [Fact]
     public void GifSortKeysAreSortedByTheRadixPasses()
     {
         // Unique 23-bit keys, below and above the length from which the counting passes are used
@@ -3399,12 +3474,74 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatSolidSourceOverMatchesTheGeneralLoop()
+    {
+        var random = new Random(17);
+        const int Width = 37;
+        const int Height = 23;
+        for (var round = 0; round < 32; round++)
+        {
+            // Opaque, transparent and translucent pixels and paints; colors out of [0, 1], which floating-point pixels keep
+            var pixels = new RgbaFloat[Width * Height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var alpha = random.Next(4) switch
+                {
+                    0 => 0f,
+                    1 => 1f,
+                    _ => random.NextSingle(),
+                };
+                pixels[i] = new RgbaFloat((random.NextSingle() * 2) - 0.5f, random.NextSingle(), random.NextSingle() * 1.5f, alpha);
+            }
+
+            var paintAlpha = (round % 4) switch
+            {
+                0 => ushort.MaxValue,
+                1 => (ushort)0,
+                _ => (ushort)random.Next(1, ushort.MaxValue),
+            };
+            var paint = new Rgba64((ushort)random.Next(ushort.MaxValue + 1), (ushort)random.Next(ushort.MaxValue + 1), (ushort)random.Next(ushort.MaxValue + 1), paintAlpha);
+            var center = new PointD(random.NextDouble() * Width, random.NextDouble() * Height);
+            var radiusX = 2 + (random.NextDouble() * Width);
+            var radiusY = 2 + (random.NextDouble() * Height);
+            Assert.Equal(Draw(forceGeneral: true), Draw(forceGeneral: false));
+
+            byte[] Draw(bool forceGeneral)
+            {
+                using var image = new Image<RgbaFloat>(Width, Height);
+                image.Frames[0].ProcessPixelRows(pixels, static (accessor, pixels) =>
+                {
+                    for (var y = 0; y < accessor.Height; y++)
+                    {
+                        pixels.AsSpan(y * Width, Width).CopyTo(accessor.GetRowSpan(y));
+                    }
+                });
+
+                FloatDrawingKernels.TestForceGeneral = forceGeneral;
+                try
+                {
+                    image.Draw(canvas => canvas.FillEllipse(new SolidBrush(paint), center, radiusX, radiusY));
+                }
+                finally
+                {
+                    FloatDrawingKernels.TestForceGeneral = false;
+                }
+
+                var result = new byte[Width * Height * 16];
+                image.Frames[0].CopyPixelBytesTo(result);
+                return result;
+            }
+        }
+    }
+
     public static TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace> ResizeCases()
     {
         var data = new TheoryData<PixelFormat, ResamplingFilter, ResizeWorkingSpace>();
         foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Gray8, PixelFormat.Rgba64, PixelFormat.Gray16 })
         {
-            foreach (var filter in new[] { ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
+            foreach (var filter in new[] { ResamplingFilter.NearestNeighbor, ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
             {
                 data.Add(format, filter, ResizeWorkingSpace.Encoded);
             }
@@ -6676,6 +6813,34 @@ public sealed class VectorizedKernelTests
             matrices.Add(new ColorMatrix(Enumerable.Range(0, 20).Select(_ => (random.NextDouble() * 4) - 2).ToArray()));
         }
 
+        // Without a constant column, and matrices whose rows each read one sample (looked up in tables on Arm64): with
+        // and without a constant column, the alpha kept or not, and coefficients that are negative zeros
+        for (var i = 0; i < 5; i++)
+        {
+            matrices.Add(new ColorMatrix(Enumerable.Range(0, 20).Select(index => index % 5 == 4 ? 0 : (random.NextDouble() * 4) - 2).ToArray()));
+        }
+
+        matrices.Add(ColorMatrix.CreateBrightness(1.7));
+        matrices.Add(ColorMatrix.CreateContrast(1.3));
+        matrices.Add(new([1, -0.0, 0, -0.0, 0, 0, 1, 0, 0, 0, -0.0, 0, 1, 0, 0, 0, 0, -0.0, 1, 0]));
+        for (var i = 0; i < 10; i++)
+        {
+            var values = new double[20];
+            for (var row = 0; row < 4; row++)
+            {
+                values[(row * 5) + row] = (random.NextDouble() * 6) - 3;
+                values[(row * 5) + 4] = i % 2 == 0 ? 0 : (random.NextDouble() * 2) - 1;
+            }
+
+            if (i % 3 == 0)
+            {
+                values[18] = 1;
+                values[19] = 0;
+            }
+
+            matrices.Add(new ColorMatrix(values));
+        }
+
         CheckColorMatrix<Rgba32>(random, matrices, 4);
         CheckColorMatrix<Bgra32>(random, matrices, 4);
         CheckColorMatrix<Rgb24>(random, matrices, 3);
@@ -6688,7 +6853,7 @@ public sealed class VectorizedKernelTests
         {
             foreach (var matrix in matrices)
             {
-                var count = random.Next(1, 40);
+                var count = random.Next(1, 80);
                 var x = random.Next(0, 3);
                 var row = new byte[(count + x) * bytesPerPixel];
                 random.NextBytes(row);
@@ -6698,6 +6863,17 @@ public sealed class VectorizedKernelTests
                 ColorMatrixKernel.ApplyVector<TPixel>(row, x, matrix, actual);
                 Assert.Equal(expected, actual);
             }
+        }
+    }
+
+    [Fact]
+    public void DrawingColorMatrixDivisionBy255MatchesTheDivision()
+    {
+        // Every value of (c a + 127) for 8-bit samples, which the colors over black of RGB pixels divide by 255
+        for (var i = 0; i <= (byte.MaxValue * byte.MaxValue) + (byte.MaxValue / 2); i += 8)
+        {
+            var values = Vector128.Create((ushort)i, (ushort)(i + 1), (ushort)(i + 2), (ushort)(i + 3), (ushort)(i + 4), (ushort)(i + 5), (ushort)(i + 6), (ushort)(i + 7));
+            Assert.Equal(Vector128.Create((ushort)(i / 255), (ushort)((i + 1) / 255), (ushort)((i + 2) / 255), (ushort)((i + 3) / 255), (ushort)((i + 4) / 255), (ushort)((i + 5) / 255), (ushort)((i + 6) / 255), (ushort)((i + 7) / 255)), ColorMatrixKernel.DivideBy255(values));
         }
     }
 
@@ -11897,6 +12073,31 @@ public sealed class VectorizedKernelTests
             finally
             {
                 Resampler.TestForceScalar = false;
+            }
+        }
+    }
+
+    [Fact]
+    public void CoverageRasterizerIndexOfNonZeroMatchesIndexOfAnyExcept()
+    {
+        // The zeros between the boundaries of a row, tested 8 entries at a time: a value before, inside or after a group
+        // of 8, -0 (whose bits are not zero), and no value at all
+        foreach (var length in new[] { 0, 1, 7, 8, 9, 15, 16, 17, 63, 64, 65, 200 })
+        {
+            Assert.Equal(-1, CoverageRasterizer.IndexOfNonZero(new ulong[length]));
+            for (var position = 0; position < length; position++)
+            {
+                foreach (var value in new[] { 1UL, (ulong)BitConverter.DoubleToInt64Bits(-0.0), ulong.MaxValue })
+                {
+                    var values = new ulong[length];
+                    values[position] = value;
+                    if (position + 3 < length)
+                    {
+                        values[position + 3] = 1;
+                    }
+
+                    Assert.Equal(values.AsSpan().IndexOfAnyExcept(0UL), CoverageRasterizer.IndexOfNonZero(values));
+                }
             }
         }
     }

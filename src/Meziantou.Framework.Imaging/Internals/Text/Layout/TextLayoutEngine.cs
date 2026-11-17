@@ -952,6 +952,12 @@ internal sealed partial class TextLayoutEngine
                 live += item.GlyphCount;
                 items.Add(item);
             }
+            else
+            {
+                // An item without glyph (a control character, a tabulation) is not moved: its start must stay within
+                // the list once it is compacted
+                item.GlyphStart = 0;
+            }
         }
 
         if (live * 2L > glyphs.Count)

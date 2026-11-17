@@ -1,12 +1,15 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Composites paints over the pixels of a frame of a floating-point format (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>),
-/// and applies color matrices to them: the formulas of <see cref="DrawingKernels"/> and <see cref="ColorMatrixKernel"/>
+/// Composites paints over the pixels of a frame of a floating-point format (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>,
+/// <see cref="GrayFloat"/>, <see cref="GrayHalf"/>, <see cref="LaFloat"/>, <see cref="LaHalf"/>), and applies color
+/// matrices to them: the formulas of <see cref="DrawingKernels"/> and <see cref="ColorMatrixKernel"/>
 /// in double precision, on the values of the samples, without rounding them to a grid and without clipping the colors.
 /// </summary>
 /// <remarks>
@@ -18,6 +21,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>(s S + d D) / A</c>, stored to the nearest value of the format. When <c>A</c> is not positive the pixel becomes
 /// transparent black, or is not written if it was transparent. A full coverage with an opaque paint that replaces the
 /// pixel writes the paint (<c>v / M</c>, and an alpha of 1).
+/// </para>
+/// <para>
+/// A gray pixel is read as its level in the three colors, and stores the gray level of the result
+/// (<see cref="PixelConverter.GetGrayLevel"/>: its level when the three colors are equal, else their Rec. 709 luma). A
+/// pixel without alpha (<see cref="GrayFloat"/>, <see cref="GrayHalf"/>) is opaque, and stores the colors of the result
+/// over black, <c>s S + d D</c>, as the integer formats without alpha do.
 /// </para>
 /// <para>
 /// <see cref="CompositeMode.Plus"/> adds light: the alpha is <c>k min(sa + da, 1) + (1 - k) da</c>, and the colors
@@ -37,8 +46,20 @@ internal static class FloatDrawingKernels
 {
     private const double PaintMax = ushort.MaxValue;
 
+    private static readonly AsyncLocal<bool> TestForceGeneralValue = new();
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the current asynchronous flow composites every paint with the general loop of
+    /// <see cref="Composite{TPixel}"/>. Tests compare it with the loop of a solid color bit for bit.
+    /// </summary>
+    internal static bool TestForceGeneral
+    {
+        get => TestForceGeneralValue.Value;
+        set => TestForceGeneralValue.Value = value;
+    }
+
     /// <summary>Composites a paint over a run of pixels of a row of a floating-point frame.</summary>
-    /// <typeparam name="TPixel"><see cref="RgbaFloat"/> or <see cref="RgbaHalf"/>.</typeparam>
+    /// <typeparam name="TPixel">A floating-point pixel type.</typeparam>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
     /// <param name="y">The row.</param>
     /// <param name="x">The first column.</param>
@@ -55,9 +76,15 @@ internal static class FloatDrawingKernels
         if (source.Curves is not null)
             throw new UnsupportedImageFeatureException("A floating-point image is not combined in the linear light of the tone curves of its ICC profile: label it as linear light (ColorTransferFunction.Linear), or draw in its encoded values.", ImageFormat.Unknown, "Linear light of floating-point pixels with an ICC profile");
 
-        var decode = isLinear ? CicpTransfer.GetDecode16(transfer) : default;
         var mode = source.Mode;
         var blend = source.Blend;
+        if (typeof(TPixel) == typeof(RgbaFloat) && !isLinear && mode == CompositeMode.SourceOver && blend == BlendMode.Normal && source.Colors.IsEmpty && source.FloatColors.IsEmpty && !TestForceGeneral)
+        {
+            CompositeSolidOver(unsafe(MemoryMarshal.Cast<TPixel, RgbaFloat>(pixels)), coverage, source.Color);
+            return;
+        }
+
+        var decode = isLinear ? CicpTransfer.GetDecode16(transfer) : default;
         var isInert = DrawingKernels.IsTransparentPaintInert(mode);
         var colors = source.Colors;
         var floatColors = source.FloatColors;
@@ -153,6 +180,21 @@ internal static class FloatDrawingKernels
                 }
             }
 
+            if (!HasAlpha<TPixel>())
+            {
+                // No alpha to store: the colors of the result over black
+                for (var c = 0; c < 3; c++)
+                {
+                    if (isLinear)
+                    {
+                        b[c] = CicpTransfer.Encode(transfer, b[c]);
+                    }
+                }
+
+                Write(ref pixel, b[0], b[1], b[2], 1);
+                continue;
+            }
+
             if (!(total > 0))
             {
                 if (destinationAlpha != 0)
@@ -177,12 +219,119 @@ internal static class FloatDrawingKernels
     }
 
     /// <summary>
+    /// Composites one color with <see cref="CompositeMode.SourceOver"/> and <see cref="BlendMode.Normal"/> over
+    /// <see cref="RgbaFloat"/> pixels in their encoded values: the operations of <see cref="Composite{TPixel}"/>, in the
+    /// same order, without what the other paints, operators and blend modes need.
+    /// </summary>
+    private static void CompositeSolidOver(Span<RgbaFloat> pixels, ReadOnlySpan<uint> coverage, DrawingColor color)
+    {
+        const double Full = CoverageRasterizer.FullCoverage;
+        var sourceAlpha = color.Alpha / PaintMax;
+        if (sourceAlpha == 0)
+            return;
+
+        var s0 = color.C0 / PaintMax;
+        var s1 = color.C1 / PaintMax;
+        var s2 = color.C2 / PaintMax;
+        var opaque = new RgbaFloat((float)s0, (float)s1, (float)s2, 1);
+        var destinationFactor = 1 - sourceAlpha;
+        if (Avx.IsSupported)
+        {
+            CompositeSolidOverAvx(pixels, coverage, Vector256.Create(s0, s1, s2, 0), sourceAlpha, destinationFactor, opaque);
+            return;
+        }
+
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            var q = coverage[i];
+            if (q == 0)
+                continue;
+
+            ref var pixel = ref pixels[i];
+            if (q == CoverageRasterizer.FullCoverage && sourceAlpha == 1)
+            {
+                pixel = opaque;
+                continue;
+            }
+
+            double backdrop = pixel.A;
+            var covered = q / Full;
+            var sourceWeight = covered * sourceAlpha;
+            var destinationWeight = ((1 - covered) * backdrop) + (covered * destinationFactor * backdrop);
+            var total = sourceWeight + destinationWeight;
+            if (!(total > 0))
+            {
+                if (backdrop != 0)
+                {
+                    pixel = default;
+                }
+
+                continue;
+            }
+
+            var r = ((s0 * sourceWeight) + (pixel.R * destinationWeight)) / total;
+            var g = ((s1 * sourceWeight) + (pixel.G * destinationWeight)) / total;
+            var b = ((s2 * sourceWeight) + (pixel.B * destinationWeight)) / total;
+            pixel = new RgbaFloat((float)r, (float)g, (float)b, (float)Math.Min(total, 1));
+        }
+    }
+
+    /// <summary>
+    /// The loop of <see cref="CompositeSolidOver"/> with AVX: each pixel is read as four doubles and its three colors are
+    /// divided at once, with the operations of the scalar loop in each lane.
+    /// </summary>
+    /// <remarks>
+    /// The pixel is read with one conversion of its four samples, which writes the whole register. A scalar conversion of
+    /// its alpha (<c>vcvtss2sd</c>) keeps the upper bits of its destination register, which the JIT may give to the result
+    /// of the previous pixel: every pixel then waits for the divisions of the previous one.
+    /// </remarks>
+    private static void CompositeSolidOverAvx(Span<RgbaFloat> pixels, ReadOnlySpan<uint> coverage, Vector256<double> paint, double sourceAlpha, double destinationFactor, RgbaFloat opaque)
+    {
+        const double Full = CoverageRasterizer.FullCoverage;
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            var q = coverage[i];
+            if (q == 0)
+                continue;
+
+            ref var pixel = ref pixels[i];
+            if (q == CoverageRasterizer.FullCoverage && sourceAlpha == 1)
+            {
+                pixel = opaque;
+                continue;
+            }
+
+            ref var samples = ref unsafe(Unsafe.As<RgbaFloat, float>(ref pixel));
+            var destination = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref samples)));
+            var backdrop = destination.GetElement(3);
+            var covered = q / Full;
+            var sourceWeight = covered * sourceAlpha;
+            var destinationWeight = ((1 - covered) * backdrop) + (covered * destinationFactor * backdrop);
+            var total = sourceWeight + destinationWeight;
+            if (!(total > 0))
+            {
+                if (backdrop != 0)
+                {
+                    pixel = default;
+                }
+
+                continue;
+            }
+
+            var blended = ((paint * Vector256.Create(sourceWeight)) + (destination * Vector256.Create(destinationWeight))) / Vector256.Create(total);
+            unsafe { Avx.ConvertToVector128Single(blended).WithElement(3, (float)Math.Min(total, 1)).StoreUnsafe(ref samples); }
+        }
+    }
+
+    /// <summary>
     /// Applies a color matrix to a run of pixels of a floating-point frame, in place: each component is
     /// <c>(((m0 R + m1 G) + m2 B) + m3 A) + m4</c> in double precision, the colors are not clipped and the alpha is kept
     /// between 0 and 1 (a value that is not a number is 0). A pixel covered in part is replaced in proportion to its
     /// coverage, as <see cref="CompositeMode.Source"/> does.
+    /// A pixel without alpha gets the colors of the result over black (multiplied by the alpha the matrix gives), and a gray
+    /// pixel their gray level.
     /// </summary>
-    /// <typeparam name="TPixel"><see cref="RgbaFloat"/> or <see cref="RgbaHalf"/>.</typeparam>
+    /// <typeparam name="TPixel">A floating-point pixel type.</typeparam>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
     /// <param name="y">The row.</param>
     /// <param name="x">The first column.</param>
@@ -207,6 +356,15 @@ internal static class FloatDrawingKernels
             var b2 = Row(m, 2, r, g, b, a);
             var a2 = Row(m, 3, r, g, b, a);
             a2 = a2 >= 1 ? 1 : a2 > 0 ? a2 : 0;
+            if (!HasAlpha<TPixel>())
+            {
+                // No alpha to store: the colors of the result over black, where the clip covers, and the pixel elsewhere
+                var resultWeight = q / Full * a2;
+                var pixelWeight = 1 - (q / Full);
+                Write(ref pixel, (r2 * resultWeight) + (r * pixelWeight), (g2 * resultWeight) + (g * pixelWeight), (b2 * resultWeight) + (b * pixelWeight), 1);
+                continue;
+            }
+
             if (q == CoverageRasterizer.FullCoverage)
             {
                 Write(ref pixel, r2, g2, b2, a2);
@@ -250,36 +408,17 @@ internal static class FloatDrawingKernels
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Read<TPixel>(ref TPixel pixel, out double r, out double g, out double b, out double a)
     {
-        if (typeof(TPixel) == typeof(RgbaFloat))
-        {
-            var p = unsafe(Unsafe.BitCast<TPixel, RgbaFloat>(pixel));
-            (r, g, b, a) = (p.R, p.G, p.B, p.A);
-        }
-        else if (typeof(TPixel) == typeof(RgbaHalf))
-        {
-            var p = unsafe(Unsafe.BitCast<TPixel, RgbaHalf>(pixel));
-            (r, g, b, a) = ((double)p.R, (double)p.G, (double)p.B, (double)p.A);
-        }
-        else
-        {
+        if (!PixelConverter.IsFloat<TPixel>())
             throw UnsupportedType.Create<TPixel>();
-        }
+
+        PixelConverter.ReadFloat(ref pixel, out r, out g, out b, out a);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Write<TPixel>(ref TPixel pixel, double r, double g, double b, double a)
-    {
-        if (typeof(TPixel) == typeof(RgbaFloat))
-        {
-            pixel = unsafe(Unsafe.BitCast<RgbaFloat, TPixel>(new RgbaFloat((float)r, (float)g, (float)b, (float)a)));
-        }
-        else if (typeof(TPixel) == typeof(RgbaHalf))
-        {
-            pixel = unsafe(Unsafe.BitCast<RgbaHalf, TPixel>(new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a)));
-        }
-        else
-        {
-            throw UnsupportedType.Create<TPixel>();
-        }
-    }
+        => PixelConverter.WriteFloat(ref pixel, r, g, b, a);
+
+    /// <summary>Gets a value indicating whether a floating-point pixel type stores alpha.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool HasAlpha<TPixel>() => typeof(TPixel) == typeof(RgbaFloat) || typeof(TPixel) == typeof(RgbaHalf) || typeof(TPixel) == typeof(LaFloat) || typeof(TPixel) == typeof(LaHalf);
 }

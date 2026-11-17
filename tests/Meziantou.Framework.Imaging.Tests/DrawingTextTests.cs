@@ -1510,6 +1510,210 @@ public sealed class DrawingTextTests
         }
     }
 
+    [Fact]
+    public void GlyphMasksDrawEachGlyphOfATextAsAGlyphRunDrawsIt()
+    {
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        const string Text = "Hamburgefonstiv AV. Ty\u00E9\n\u00C0 la carte: fi \u20AC42!";
+        var brush = new SolidBrush(new Rgba32(250, 120, 10, 150));
+        var layout = TextLayout.Create(Text, font, 15.3);
+        var origin = new PointD(3.3, 5.6);
+
+        // The glyphs and their origins are those of the layout, drawn with FillGlyphs: the same pixels, on a canvas that keeps
+        // the axes, scales them or swaps them. The fill of the text as one shape is not that.
+        foreach (var transform in (AffineTransform[])[new(1, 0, 0, 1, 0, 0), new(1.5, 0, 0, 0.75, 2.2, 7.1), new(0, 1, -1, 0, 260, 3.4)])
+        {
+            foreach (var format in (PixelFormat[])[PixelFormat.Rgba32, PixelFormat.Rgba64])
+            {
+                var expected = Render(format, 300, 300, canvas => canvas.Transform(transform, moved => FillGlyphRuns(moved, brush, layout, origin)));
+                Assert.Contains(expected, sample => sample != 0);
+                Assert.Equal(expected, Render(format, 300, 300, canvas => canvas.Transform(transform, moved => moved.GlyphMasks(cache: null, masked => masked.FillText(brush, layout, origin)))));
+                Assert.Equal(expected, Render(format, 300, 300, canvas => canvas.GlyphMasks(cache: null, masked => masked.Transform(transform, moved => moved.FillText(brush, Text, font, 15.3, origin)))));
+                Assert.NotEqual(expected, Render(format, 300, 300, canvas => canvas.Transform(transform, moved => moved.FillText(brush, layout, origin))));
+            }
+        }
+
+        // The same pixels with a cache, which keeps a mask per glyph and position in a pixel, and reuses them
+        var plain = Render(PixelFormat.Rgba32, 300, 120, canvas => FillGlyphRuns(canvas, brush, layout, origin));
+        var cache = new GlyphCache(1 << 22);
+        Assert.Equal(plain, Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache, masked => masked.FillText(brush, layout, origin))));
+        var count = cache.Count;
+        Assert.InRange(count, 10, 160);
+        Assert.Equal(plain, Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache, (brush, layout), static (masked, state) => masked.FillText(state.brush, state.layout, new PointD(3.3, 5.6)))));
+        Assert.Equal(count, cache.Count);
+
+        // A synthetic bold and oblique, and hard edges: those of the glyph runs
+        var styled = TextLayout.Create(Text, new TextStyle(font, 15.3) { Synthesis = FontSynthesis.Bold | FontSynthesis.Oblique });
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, 300, 120, canvas => FillGlyphRuns(canvas, brush, styled, origin)),
+            Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache, masked => masked.FillText(brush, styled, origin))));
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.Antialiasing(enabled: false, hard => FillGlyphRuns(hard, brush, layout, origin))),
+            Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache, masked => masked.Antialiasing(enabled: false, hard => hard.FillText(brush, layout, origin)))));
+
+        // In a layer, and in the tile of a pattern
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.Layer(0.5, layer => FillGlyphRuns(layer, brush, layout, origin))),
+            Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache: null, masked => masked.Layer(0.5, layer => layer.FillText(brush, layout, origin)))));
+        var tile = new RectangleD(0, 0, 150, 60);
+        var pattern = new PatternBrush(tile, inner => FillGlyphRuns(inner, brush, layout, origin));
+        var maskedPattern = new PatternBrush(tile, inner => inner.FillText(brush, layout, origin));
+        Assert.Equal(
+            Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.FillRectangle(pattern, new RectangleD(0, 0, 300, 120))),
+            Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache: null, masked => masked.FillRectangle(maskedPattern, new RectangleD(0, 0, 300, 120)))));
+
+        // A hinted layout draws its hinted outlines, which a cache keeps apart from the outlines of the font
+        var hinted = TextLayout.Create(Text, new TextStyle(font, 15.3), new TextLayoutOptions { Hinting = TextHinting.Full });
+        var hintedMasks = Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache: null, masked => masked.FillText(brush, hinted, origin)));
+        Assert.NotEqual(Render(PixelFormat.Rgba32, 300, 120, canvas => FillGlyphRuns(canvas, brush, hinted, origin)), hintedMasks);
+        Assert.Equal(hintedMasks, Render(PixelFormat.Rgba32, 300, 120, canvas => canvas.GlyphMasks(cache, masked => masked.FillText(brush, hinted, origin))));
+        Assert.True(cache.Count > count);
+
+        using var image = new Image<Gray8>(4, 4);
+        Assert.Throws<ArgumentNullException>(() => image.Draw(canvas => canvas.GlyphMasks(cache: null, null!), Ct));
+        Assert.Throws<ArgumentNullException>(() => image.Draw(canvas => canvas.GlyphMasks(cache: null, 0, null!), Ct));
+    }
+
+    [Fact]
+    public void GlyphMasksDrawTheRestOfATextAsOutsideTheScope()
+    {
+        // The glyphs of the boxes font on whole pixels are the same masks or shapes: with an opaque paint, the backgrounds, the
+        // decorations, the paints and the pens of the styles are drawn as outside the scope
+        var red = new SolidBrush(new Rgba32(255, 0, 0));
+        var blue = new SolidBrush(new Rgba32(0, 0, 255));
+        var text = new RichTextBuilder()
+            .Append("A", new TextStyle(Boxes, 16))
+            .Append("B A", new TextStyle(Boxes, 16) { BackgroundBrush = red, Brush = blue })
+            .Append("AB", new TextStyle(Boxes, 16) { Decorations = TextDecorations.Underline, Outline = new Pen(red, 1) })
+            .Build();
+        var layout = TextLayout.Create(text);
+        var outside = Render(PixelFormat.Rgb24, 120, 30, canvas => canvas.FillText(White, layout, new PointD(3, 4)));
+        Assert.Equal(outside, Render(PixelFormat.Rgb24, 120, 30, canvas => canvas.GlyphMasks(cache: null, masked => masked.FillText(White, layout, new PointD(3, 4)))));
+
+        // Each glyph is drawn over the ones before it: A and B that overlap at half their opacity. B is (64, 0)-(448, 512): 1 to
+        // 7 pixels right of its origin, 8 pixels up from the baseline
+        var over = TextLayout.Create("AB", new TextStyle(Boxes, 16) { LetterSpacing = -8 });
+        var b = over.GetGlyphOrigin(1).X;
+        Assert.InRange(b, 1, 11);
+        var expected = Render(PixelFormat.Rgb24, 40, 24, canvas =>
+        {
+            canvas.FillRectangle(Translucent, new RectangleD(5, 5, 12, 12));
+            canvas.FillRectangle(Translucent, new RectangleD(3 + b + 1, 9, 6, 8));
+        });
+        Assert.Equal(expected, Render(PixelFormat.Rgb24, 40, 24, canvas => canvas.GlyphMasks(cache: null, masked => masked.FillText(Translucent, over, new PointD(3, 4)))));
+        Assert.NotEqual(expected, Render(PixelFormat.Rgb24, 40, 24, canvas => canvas.FillText(Translucent, over, new PointD(3, 4))));
+
+        // A vertical line snaps its glyphs to a quarter of a pixel down the column and to a pixel across it
+        var vertical = TextLayout.Create("ABAB", new TextStyle(Boxes, 16), new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft });
+        int[] DrawVertical(double x, double y) => Render(PixelFormat.Gray8, 40, 80, canvas => canvas.GlyphMasks(cache: null, masked => masked.FillText(Translucent, vertical, new PointD(x, y))));
+        Assert.Equal(DrawVertical(3, 2), DrawVertical(3.2, 2));
+        Assert.NotEqual(DrawVertical(3, 2), DrawVertical(3, 2.25));
+
+        // What is not drawn from masks: a turned text, a text on a path, a text with subpixel rendering and a stroked text
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var words = TextLayout.Create("Wave To.", font, 21.5);
+        var turn = AffineTransform.CreateRotation(25, new PointD(40, 20));
+        var path = new VectorPathBuilder().MoveTo(3, 30).QuadraticBezierTo(60, 0, 117, 30).Build();
+        var subpixel = TextLayout.Create("Wave To.", new TextStyle(font, 21.5), new TextLayoutOptions { SubpixelRendering = TextSubpixelRendering.Rgb });
+        var pen = new Pen(Translucent, 1.3);
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(120, 0), [new GradientStop(0, new Rgba32(255, 255, 255)), new GradientStop(1, new Rgba32(0, 0, 255))]);
+        foreach (var draw in new DrawingAction[]
+        {
+            canvas => canvas.Transform(turn, turned => turned.FillText(Translucent, words, new PointD(3.3, 5.6))),
+            canvas => canvas.FillText(Translucent, words, path),
+            canvas => canvas.FillText(new Rgba32(10, 10, 10), subpixel, new PointD(3.3, 5.6)),
+            canvas => canvas.FillText(gradient, subpixel, new PointD(3.3, 5.6)),
+            canvas => canvas.StrokeText(pen, words, new PointD(3.3, 5.6)),
+        })
+        {
+            var shape = Render(PixelFormat.Rgb24, 120, 50, draw);
+            Assert.Contains(shape, sample => sample != 0);
+            Assert.Equal(shape, Render(PixelFormat.Rgb24, 120, 50, canvas => canvas.GlyphMasks(cache: null, draw)));
+        }
+
+        // A text with subpixel rendering on gray levels falls back to gray levels, and is still one shape
+        DrawingAction gray = canvas => canvas.FillText(Translucent, subpixel, new PointD(3.3, 5.6));
+        Assert.Equal(Render(PixelFormat.Gray8, 120, 50, gray), Render(PixelFormat.Gray8, 120, 50, canvas => canvas.GlyphMasks(cache: null, gray)));
+
+        // Once the callback returns, a text is one shape again
+        var oneShape = Render(PixelFormat.Rgb24, 120, 50, canvas => canvas.FillText(Translucent, words, new PointD(3.3, 5.6)));
+        Assert.Equal(oneShape, Render(PixelFormat.Rgb24, 120, 50, canvas =>
+        {
+            canvas.GlyphMasks(cache: null, masked => masked.GlyphMasks(new GlyphCache(1 << 20), _ => { }));
+            canvas.FillText(Translucent, words, new PointD(3.3, 5.6));
+        }));
+    }
+
+    [Fact]
+    public void GlyphMasksChargeTheCacheOfTheScopeToTheImage()
+    {
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var layout = TextLayout.Create("Wave To. Every mask of the scope", font, 21.5);
+        DrawingAction draw = canvas => canvas.FillText(Translucent, layout, new PointD(3.3, 25.6));
+
+        // The masks of the cache of a scope that was given none count in the live bytes of the image until the callback returns
+        using var image = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0));
+        long inside = 0;
+        long after = 0;
+        image.Draw(
+            canvas =>
+            {
+                canvas.GlyphMasks(cache: null, masked =>
+                {
+                    draw(masked);
+                    inside = image.Owner.Scope.LiveBytes;
+                });
+                after = image.Owner.Scope.LiveBytes;
+            },
+            Ct);
+        Assert.True(inside - after >= 64 * 1024, $"{inside - after} bytes are charged for the masks");
+
+        // The cache of a scope inside the tile of a pattern, under a scope of the canvas, is released when the tile is drawn
+        long Leftover(DrawingAction tile)
+        {
+            using var tiled = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0));
+            long bytes = 0;
+            tiled.Draw(
+                canvas =>
+                {
+                    canvas.GlyphMasks(cache: null, masked => masked.FillRectangle(new PatternBrush(new Rectangle(0, 0, 360, 40), tile), new RectangleD(0, 0, 360, 40)));
+                    bytes = tiled.Owner.Scope.LiveBytes;
+                },
+                Ct);
+            return bytes;
+        }
+
+        Assert.Equal(Leftover(draw), Leftover(tile => tile.GlyphMasks(cache: null, draw)));
+
+        // Under a limit that leaves no room for them, the masks are not kept: the text is drawn, with the same pixels
+        using var measured = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0));
+        measured.Draw(canvas => canvas.GlyphMasks(new GlyphCache(1 << 20), draw), Ct);
+        var peak = measured.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        using var tight = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak + 1024 } });
+        tight.Draw(canvas => canvas.GlyphMasks(cache: null, draw), Ct);
+        var expected = DrawingTestSupport.ReadSamples(measured.Frames[0]);
+        Assert.Contains(expected, sample => sample != 0);
+        Assert.Equal(expected, DrawingTestSupport.ReadSamples(tight.Frames[0]));
+        Assert.Equal(DrawingTestSupport.ReadSamples(image.Frames[0]), expected);
+    }
+
+    /// <summary>Draws the glyphs of a layout of upright glyphs with <see cref="DrawingCanvas.FillGlyphs"/>, one run after the other.</summary>
+    private static void FillGlyphRuns(DrawingCanvas canvas, Brush brush, TextLayout layout, PointD origin)
+    {
+        foreach (var run in layout.Runs)
+        {
+            var glyphs = new PositionedGlyph[run.Count];
+            for (var i = 0; i < run.Count; i++)
+            {
+                var position = layout.GetGlyphOrigin(run.Start + i);
+                glyphs[i] = new PositionedGlyph(layout.GetGlyph(run.Start + i), new PointD(origin.X + position.X, origin.Y + position.Y));
+            }
+
+            var paint = layout.BrushCount == 0 ? brush : layout.GetBrush(run.Brush) ?? brush;
+            canvas.FillGlyphs(paint, layout.GetFont(run.Font), run.Size, glyphs, new GlyphRunOptions { Synthesis = run.Synthesis });
+        }
+    }
+
     private static void AssertRectangles(string text, PointD origin, params RectangleD[] rectangles)
     {
         foreach (var format in (PixelFormat[])[PixelFormat.Gray8, PixelFormat.Rgba64])

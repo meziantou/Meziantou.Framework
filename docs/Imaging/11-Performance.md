@@ -40,6 +40,14 @@ public static void SavePreview(string animationPath, string previewPath)
   exactly ([Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Gray8](cref:Meziantou.Framework.Imaging.Gray8) for most JPEG files, [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) for GIF, 16-bit formats for 16-bit PNG files...).
   [Image.Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load) converts while loading: ask for the format your code processes, so that you do not convert the
   image a second time. See [Pixel formats](04-Concepts/05-PixelFormats.md).
+- **Use ICC profiles for CMYK files only when the colors matter.** A CMYK file loaded as RGB is converted with ICC
+  profiles, through a four-dimensional table, which costs more than decoding the file.
+  For thumbnails and previews, load the inks as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) and convert them with
+  [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs) and a [CmykPixelConversionOptions](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions)
+  without [CmykProfile](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions.CmykProfile): an image without
+  profile (set [Metadata.IccProfile](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.IccProfile) to `null` to drop the
+  profile of the file) is converted with the device CMYK formulas, which are much cheaper but do not describe what a
+  press prints. See [Convert between CMYK and RGB pixels](09-Color/03-ColorManagement.md#convert-between-cmyk-and-rgb-pixels).
 
 ## Bound the memory
 
@@ -63,6 +71,47 @@ public static void ConfigureForSmallContainer()
 {
     // At startup: keep at most 4 MiB of returned buffers for reuse (0 disables retention)
     ImageBufferPool.MaxRetainedBytes = 4 * 1024 * 1024;
+}
+```
+<!-- endref -->
+
+- **Bring your own memory.** [ImageConfiguration.BufferAllocator](cref:Meziantou.Framework.Imaging.ImageConfiguration.BufferAllocator) replaces the pool for the images and the operations
+  of a configuration: every array comes from your [ImageBufferAllocator](cref:Meziantou.Framework.Imaging.ImageBufferAllocator), for instance pinned arrays shared with native
+  code, or a pool of your own. The resource limits are charged before it is asked for an array, and every array is
+  returned once:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ExtensibilityExamples.cs;region=Imaging_BufferAllocator;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static long ResizeWithPinnedMemory(string inputPath, string outputPath)
+{
+    // Every buffer of the images and the operations of this configuration comes from the allocator; the resource
+    // limits are charged before it is asked for an array
+    var allocator = new PinnedBufferAllocator();
+    var configuration = new ImageConfiguration { BufferAllocator = allocator };
+    using (var image = Image.Load(inputPath, new ImageDecodeOptions { Configuration = configuration }))
+    {
+        image.Resize(new ResizeOptions(64, 64));
+        image.Save(outputPath);
+    }
+
+    // Every array was returned when the image was disposed
+    return allocator.LiveBytes; // 0
+}
+
+/// <summary>Gives pinned arrays (native code can read them without pinning them) and counts the bytes in use.</summary>
+public sealed class PinnedBufferAllocator : ImageBufferAllocator
+{
+    private long _liveBytes;
+
+    public long LiveBytes => Interlocked.Read(ref _liveBytes);
+
+    public override byte[] Rent(int length)
+    {
+        Interlocked.Add(ref _liveBytes, length);
+        return GC.AllocateArray<byte>(length, pinned: true);
+    }
+
+    public override void Return(byte[] buffer) => Interlocked.Add(ref _liveBytes, -buffer.Length);
 }
 ```
 <!-- endref -->
@@ -95,8 +144,9 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
 <!-- endref -->
 
 - The configuration is set when the image is loaded or created; every operation on the image uses it.
-- Resizing, transformations, convolutions, blurs, sharpening, edge detection, color matrices and the conversions of
-  floating-point pixels to other formats split large frames into bands.
+- Resizing, transformations, convolutions, blurs, sharpening, edge detection, color matrices, the conversions of
+  floating-point pixels to other formats and the conversion of colors to another profile ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)) split
+  large frames into bands.
 - The HEIC and AVIF decoders decode the tiles of large grid images (the photos of phones) concurrently, and the HEIC and
   AVIF encoders encode the tiles concurrently when `GridTileSize` is set.
 - The codecs split the independent parts of images of at least 65,536 pixels between threads:
@@ -116,8 +166,8 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   have a single tile, unless they are grids, frames wider than 4,096 pixels or files encoded with
   `AvifEncoder.AutoTiling`, so they decode with less parallelism than files with several tiles. The HEIC encoder writes
   the rows of a large still image as wavefront rows, which the decoder decodes concurrently.
-- Drawing composites the shapes, images and layers that may cover at least 131,072 pixels with several threads, by
-  batches of rows, except those painted with an opaque solid color: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
+- Drawing computes the coverages of the shapes, images and layers that may cover at least 131,072 pixels, and
+  composites them, with several threads, by batches of rows: see [Draw large canvases on several threads](#draw-large-canvases-on-several-threads).
 - The other decoders and encoders and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image. The TIFF encoder keeps
@@ -148,23 +198,38 @@ public static void DrawPoster(string outputPath)
 ```
 <!-- endref -->
 
-- The calling thread computes the coverage of each row of a shape, and hands batches of rows to the other threads,
-  which paint and composite them. Fills, strokes, images, image brushes, patterns, gradients and the end of a layer
-  are drawn this way when their rows may cover at least 131,072 pixels; smaller shapes stay on the calling thread.
-- The pixels are the same as with one thread, and so is the error when a draw call fails.
-- Paints that cost more per pixel gain the most: gradients, images that are turned, scaled or sampled with
+- The calling thread sweeps the rows of a shape, from top to bottom, and finds where the boundary of the shape crosses
+  each row. It hands batches of rows to the other threads, which compute the coverages of the pixels from the boundary,
+  then paint and composite them. Fills, strokes, images, image brushes, patterns, gradients and the end of a layer are
+  drawn this way when their rows may cover at least 131,072 pixels; smaller shapes stay on the calling thread.
+- The pixels are the same as with one thread, and so is the error when a draw call fails: the threads add the same
+  areas in the same order.
+- Large shapes with simple outlines gain the most, and so do the paints that cost more per pixel: gradients, images
+  that are turned, scaled or sampled with
   [ImageSampling.Bicubic](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Bicubic), translucent colors and
-  layers. An opaque solid color, or a solid color with
-  [CompositeMode.Source](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Source), is drawn on the calling
-  thread, unless it is clipped or has an opacity: handing its rows to other threads costs about as much as writing its
-  pixels.
+  layers. The sweep stays on one thread: a shape whose rows cross many edges, such as a long text drawn as one shape,
+  gains less. A row that crosses more than about a thousand pieces of boundary has its coverages computed by the calling
+  thread.
+- Without antialiasing, the calling thread computes the coverages. Such a shape, painted with an opaque solid color or a
+  solid color with [CompositeMode.Source](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Source), is drawn on
+  the calling thread, unless it is clipped or has an opacity: handing its rows to other threads costs about as much as
+  writing its pixels.
 - A rectangle on whole pixels painted with such a color is not swept row by row: its first row is composited, and its
   pixels are copied to the other rows. Filling it, or clearing the canvas, costs about what writing the pixels costs.
 - Texts, clip masks, shadows, blurs and filters, and gradients mixed in a
   [paint profile](07-Drawing/06-RenderingQuality.md#draw-colors-of-a-color-profile), are drawn on the calling thread.
-- Each thread needs about 128 KB and 40 bytes per pixel of the width of the canvas, counted by
+- Each thread needs about 320 KB and 52 bytes per pixel of the width of the canvas, counted by
   [ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes).
   Set the value to 1, the default, to draw on the calling thread only.
+
+## Draw many texts
+
+[FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) computes the exact coverage of all the
+glyphs of a text as one shape, which costs the most for long texts and many labels. Inside
+[GlyphMasks](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.GlyphMasks), each glyph is copied from a mask
+computed once for each position in a pixel, and a [GlyphCache](cref:Meziantou.Framework.Imaging.Typography.GlyphCache)
+you keep reuses the masks from one drawing to the next. The glyphs are snapped to a quarter of a pixel: see
+[Draw many labels quickly](08-Text/03-DrawingText.md#draw-many-labels-quickly).
 
 ## Choose encoder settings
 

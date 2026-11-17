@@ -715,6 +715,28 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void APaintWithoutWorkersRentsNoScratchForWorkers()
+    {
+        // A gradient converted from a paint profile is evaluated on the calling thread: the parts of a large text painted
+        // with it rent no scratch for the workers, and the call fits where it fits with one thread
+        var font = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(1000, 0), [new GradientStop(0, new Rgba32(255, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 255))]);
+        var small = new TextStyle(font, 12) { Brush = gradient };
+        var large = new TextStyle(font, 96) { Brush = gradient };
+        var text = new RichTextBuilder().Append("ab ", small).Append(string.Concat(Enumerable.Repeat("Hamburgefonstiv AV. ", 6)), large).Build();
+        var layout = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = 1000 });
+        long GetPeak(int workers)
+        {
+            using var image = new Image<Rgba64>(1000, 700, new Rgba64(0, 0, 0, 65535), new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Metadata.Cicp = new CicpColorDescription(9, 1, 0, fullRange: true);
+            image.Draw(canvas => canvas.PaintProfile(IccProfile.Srgb, inner => inner.FillText(gradient, layout, new PointD(0, 0))), Ct);
+            return image.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        Assert.Equal(GetPeak(1), GetPeak(4));
+    }
+
+    [Fact]
     public void DrawingWithSeveralThreadsGivesThePixelsOfOne()
     {
         // The configuration of the image lets its draw calls composite large shapes on several threads

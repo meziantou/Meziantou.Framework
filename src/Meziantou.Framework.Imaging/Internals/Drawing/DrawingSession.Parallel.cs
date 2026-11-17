@@ -119,11 +119,14 @@ internal sealed partial class DrawingSession
         }
     }
 
-    /// <summary>Gets whether the shape that was prepared is composited by several workers, and what their scratch is.</summary>
+    /// <summary>
+    /// Gets whether the shape that was prepared is composited by several workers, and what their scratch is: a paint that
+    /// has no copy for other threads is composited on the calling thread, and its shape rents no scratch for workers.
+    /// </summary>
     private bool TryGetParallelPaint(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, double alphaFactor, out int workerCount, out bool needsCoverageRow, out bool needsAlphaRow, out bool recordsPieces)
     {
         var rasterizer = _rasterizer!;
-        workerCount = GetPaintWorkerCount(_image.Configuration.MaxDegreeOfParallelism, rasterizer.EstimatedPixels);
+        workerCount = evaluator is null || evaluator.CanCreateWorkers ? GetPaintWorkerCount(_image.Configuration.MaxDegreeOfParallelism, rasterizer.EstimatedPixels) : 1;
         needsCoverageRow = _clipDepth != 0 || opacity != CoverageRasterizer.FullCoverage;
         needsAlphaRow = evaluator is not null && alphaFactor != 1;
 

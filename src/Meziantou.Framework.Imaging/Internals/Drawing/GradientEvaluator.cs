@@ -578,9 +578,11 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     /// colors when every row has the same ones. A gradient whose colors go through the conversion of a paint profile is
     /// evaluated on the calling thread.
     /// </remarks>
+    public override bool CanCreateWorkers => _paintPipeline is null;
+
     public override PaintEvaluator? CreateWorker()
     {
-        if (_paintPipeline is not null)
+        if (!CanCreateWorkers)
             return null;
 
         var worker = (GradientEvaluator)MemberwiseClone();

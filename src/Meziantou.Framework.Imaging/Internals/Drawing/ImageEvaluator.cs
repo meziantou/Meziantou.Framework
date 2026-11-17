@@ -636,6 +636,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         sum[3] += alpha;
     }
 
+    public override bool CanCreateWorkers => true;
+
     /// <remarks>
     /// The image and the lease that <see cref="Begin"/> took are shared: the worker only reads the pixels. Its scratch is
     /// its own: the colors, the samples, the rows it keeps, the sums of the reduced images, and the segments of the pixels

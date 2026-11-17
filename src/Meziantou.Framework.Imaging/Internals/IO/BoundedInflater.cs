@@ -89,7 +89,7 @@ internal static class BoundedInflater
         var chunk = ArrayPool<byte>.Shared.Rent(ChunkSize);
         try
         {
-            using var source = new InflateFeedStream(input, SyntheticZlibHeader.Length);
+            using var source = new InflateFeedStream(input);
             source.Push(SyntheticZlibHeader, compressed);
             using var zlib = new ZLibStream(source, CompressionMode.Decompress);
             var output = new ArrayBufferWriter<byte>(Math.Min(compressed.Length * 2, 64 * 1024));

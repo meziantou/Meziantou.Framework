@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -9,20 +11,21 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class InflateFeedStream : Stream
 {
     private readonly byte[] _buffer;
-    private readonly byte[] _prefix;
+    private PrefixStorage _prefix;
     private int _offset;
     private int _length;
     private int _prefixOffset;
     private int _prefixLength;
 
     /// <param name="buffer">The storage of one pushed piece (its capacity bounds each push).</param>
-    /// <param name="prefixCapacity">The maximum length of the prefix of a piece, stored apart from <paramref name="buffer"/>.</param>
-    public InflateFeedStream(byte[] buffer, int prefixCapacity = 0)
+    public InflateFeedStream(byte[] buffer)
     {
         ArgumentNullException.ThrowIfNull(buffer);
         _buffer = buffer;
-        _prefix = prefixCapacity == 0 ? [] : new byte[prefixCapacity];
     }
+
+    /// <summary>Gets the maximum length of the prefix of a piece, stored apart from the buffer of the pieces.</summary>
+    public const int MaxPrefixLength = 8;
 
     /// <summary>Gets the number of pushed bytes not read by the inflater yet.</summary>
     public int Available => _prefixLength - _prefixOffset + _length - _offset;
@@ -42,7 +45,7 @@ internal sealed class InflateFeedStream : Stream
     public int Push(ReadOnlySpan<byte> data) => Push([], data);
 
     /// <summary>
-    /// Copies a prefix (at most the prefix capacity), then the next piece of compressed data; the previous piece must have
+    /// Copies a prefix (at most <see cref="MaxPrefixLength"/> bytes), then the next piece of compressed data; the previous piece must have
     /// been read completely.
     /// </summary>
     /// <returns>The number of bytes of <paramref name="data"/> copied (at most the buffer capacity).</returns>
@@ -71,7 +74,7 @@ internal sealed class InflateFeedStream : Stream
         var count = Math.Min(destination.Length, Available);
         var fromBuffer = Math.Min(count, _length - _offset);
         var fromPrefix = count - fromBuffer;
-        _prefix.AsSpan(_prefixLength - fromPrefix, fromPrefix).CopyTo(destination);
+        ((ReadOnlySpan<byte>)_prefix).Slice(_prefixLength - fromPrefix, fromPrefix).CopyTo(destination);
         _buffer.AsSpan(_length - fromBuffer, fromBuffer).CopyTo(destination[fromPrefix..]);
         _prefixLength -= fromPrefix;
         _length -= fromBuffer;
@@ -83,7 +86,7 @@ internal sealed class InflateFeedStream : Stream
     public override int Read(Span<byte> buffer)
     {
         var fromPrefix = Math.Min(buffer.Length, _prefixLength - _prefixOffset);
-        _prefix.AsSpan(_prefixOffset, fromPrefix).CopyTo(buffer);
+        ((ReadOnlySpan<byte>)_prefix).Slice(_prefixOffset, fromPrefix).CopyTo(buffer);
         _prefixOffset += fromPrefix;
 
         var fromBuffer = Math.Min(buffer.Length - fromPrefix, _length - _offset);
@@ -101,4 +104,11 @@ internal sealed class InflateFeedStream : Stream
     public override void SetLength(long value) => throw new NotSupportedException();
 
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    // Inline, so that the few bytes of a prefix need no buffer of the allocation scope
+    [InlineArray(MaxPrefixLength)]
+    private struct PrefixStorage
+    {
+        private byte _element;
+    }
 }

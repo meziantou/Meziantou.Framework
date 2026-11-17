@@ -2,6 +2,7 @@
 using System.Buffers;
 #else
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 #endif
 using System.IO.Compression;
 using Meziantou.Framework.Hashing;
@@ -191,7 +192,7 @@ internal sealed class PngZlibInflater : IDisposable
     private readonly int _trailerLength;
 
     // The last pushed bytes, not given to the inflater yet: those that may follow the end of the deflate data
-    private readonly byte[] _held = new byte[5];
+    private HeldBytes _held;
     private int _heldLength;
     private InflateFeedStream? _feed;
     private DeflateStream? _deflate;
@@ -207,7 +208,7 @@ internal sealed class PngZlibInflater : IDisposable
         _rawDeflate = rawDeflate;
         _trailerLength = rawDeflate ? 0 : 4;
         _headerLength = rawDeflate ? -1 : 0;
-        _feed = new InflateFeedStream(buffer, _held.Length);
+        _feed = new InflateFeedStream(buffer);
         _deflate = new DeflateStream(_feed, CompressionMode.Decompress, leaveOpen: true);
     }
 
@@ -227,8 +228,9 @@ internal sealed class PngZlibInflater : IDisposable
         }
 
         // The bytes held back from the previous piece come first, and the last bytes of the result are held back in turn
-        var count = feed.Push(_held.AsSpan(0, _heldLength), compressed[header..]);
-        _heldLength = feed.Withhold(_held.AsSpan(0, _trailerLength + 1));
+        Span<byte> held = _held;
+        var count = feed.Push(held[.._heldLength], compressed[header..]);
+        _heldLength = feed.Withhold(held[..(_trailerLength + 1)]);
         return header + count;
     }
 
@@ -255,8 +257,9 @@ internal sealed class PngZlibInflater : IDisposable
         // the bytes held back that remain unread (Complete) or the byte the finished inflater does not read (Available)
         while (read == 0 && !destination.IsEmpty && feed.Available == 0 && _heldLength > _trailerLength)
         {
-            feed.Push(_held.AsSpan(0, 1));
-            _held.AsSpan(1, _heldLength - 1).CopyTo(_held);
+            Span<byte> held = _held;
+            feed.Push(held[..1]);
+            held[1.._heldLength].CopyTo(held);
             _heldLength--;
             read = Read(destination);
         }
@@ -334,6 +337,13 @@ internal sealed class PngZlibInflater : IDisposable
             // codes that are not data errors
             throw Invalid(_rawDeflate ? "The deflate datastream of the Apple CgBI image data is invalid." : "The zlib datastream of the PNG image data is invalid.", exception);
         }
+    }
+
+    // The Adler-32 trailer and one byte, inline, so that they need no buffer of the allocation scope
+    [InlineArray(5)]
+    private struct HeldBytes
+    {
+        private byte _element;
     }
 #endif
 

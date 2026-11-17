@@ -753,7 +753,9 @@ internal static class ColorMatrixKernel
             {
                 var m = matrix.Values;
                 var done = 0;
-                if (GetDiagonalTables(matrix) is { } tables)
+
+                // A run shorter than one block of the tables does not build them
+                if (Math.Min(destination.Length / 4, pixels.Length / (isRgb24 ? 3 : 4)) >= DiagonalBlock && GetDiagonalTables(matrix) is { } tables)
                 {
                     done = ApplyDiagonal(tables, KeepsAlpha(m), pixels, isRgb24, destination, isBlueFirst);
                     pixels = pixels[(done * (isRgb24 ? 3 : 4))..];
@@ -808,6 +810,9 @@ internal static class ColorMatrixKernel
                 return tables;
             }
 
+            /// <summary>The number of pixels <see cref="ApplyDiagonal"/> computes at once.</summary>
+            private const int DiagonalBlock = 16;
+
             /// <summary>
             /// Computes the colors of 8-bit pixels with the tables of <see cref="GetDiagonalTables"/>, sixteen pixels at
             /// a time; returns the number of pixels done. The samples are separated by LD3 or LD4, each one is looked up in
@@ -816,7 +821,7 @@ internal static class ColorMatrixKernel
             private static int ApplyDiagonal(byte[] tables, bool keepsAlpha, ReadOnlySpan<byte> pixels, bool isRgb24, Span<ushort> destination, bool isBlueFirst)
             {
                 var bytesPerPixel = isRgb24 ? 3 : 4;
-                var blocks = Math.Min(destination.Length / 4, pixels.Length / bytesPerPixel) / 16;
+                var blocks = Math.Min(destination.Length / 4, pixels.Length / bytesPerPixel) / DiagonalBlock;
                 var firstTable = isBlueFirst ? 512 : 0;
                 var thirdTable = isBlueFirst ? 0 : 512;
                 unsafe
@@ -854,7 +859,7 @@ internal static class ColorMatrixKernel
                     }
                 }
 
-                return blocks * 16;
+                return blocks * DiagonalBlock;
             }
 
             /// <summary>Looks up sixteen bytes in a table of 256 bytes: TBL on the first 64 bytes, then TBX on each next 64 bytes, with the indexes moved down by 64 (an index out of the 64 bytes leaves its result as it is).</summary>

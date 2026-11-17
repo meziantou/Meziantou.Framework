@@ -3,6 +3,7 @@ using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
+using Meziantou.Framework.Imaging.Typography;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.Imaging.Tests.Documentation;
@@ -168,6 +169,9 @@ public sealed class DocumentationImageTests : IDisposable
         var font = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-cjk" / "NotoSansCJKjp-Regular.subset.otf";
         AssertImage(Text, nameof(Examples.DrawVerticalText), output => Examples.DrawVerticalText(font, output));
     }
+
+    [Fact]
+    public void DrawTimingTable() => AssertImage(Text, nameof(TextExamples.DrawTimingTable), output => TextExamples.DrawTimingTable(Font.Load(RegularFont), output));
 
     [Fact]
     public void DrawTextOnPath() => AssertImage(Text, nameof(Examples.DrawTextOnPath), output => Examples.DrawTextOnPath(RegularFont, output));

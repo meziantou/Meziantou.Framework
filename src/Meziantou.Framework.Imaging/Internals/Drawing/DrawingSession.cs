@@ -738,6 +738,9 @@ internal sealed partial class DrawingSession : IDisposable
         if (layout.SubpixelRendering != TextSubpixelRendering.None && TryFillSubpixelText(brush, layout, origin))
             return;
 
+        if (_textGlyphMasks is not null && layout.SubpixelRendering == TextSubpixelRendering.None && TryFillTextFromMasks(brush, layout, origin))
+            return;
+
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
@@ -777,27 +780,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         var glyphSink = _glyphSink ??= new GlyphPathSink();
         var emboldener = GetEmboldener(layout);
-        if (layout.HasBackgrounds)
-        {
-            // Under the whole text: the background of a style never hides the glyphs of another one
-            for (var i = 0; i < layout.BrushCount; i++)
-            {
-                if (layout.GetBrush(i) is not { } background)
-                    continue;
-
-                if (measure is null)
-                {
-                    layout.EmitBackgrounds(BeginFill(), originX, originY, i);
-                }
-                else
-                {
-                    layout.EmitBackgroundsOnPath(BeginFill(), measure, options!, i);
-                }
-
-                Render(background, FillRule.NonZero);
-            }
-        }
-
+        DrawTextBackgrounds(layout, originX, originY, measure, options);
         for (var i = 0; i < layout.BrushCount; i++)
         {
             FillFrameWhenCovered(measure is null
@@ -807,6 +790,37 @@ internal sealed partial class DrawingSession : IDisposable
         }
 
         DrawColorGlyphs(brush, layout, originX, originY, measure, options, paint: !_isPreparing);
+        StrokeTextOutlines(layout, originX, originY, measure, options);
+    }
+
+    /// <summary>Fills the backgrounds of the styles of a text: under the whole text, so that the background of a style never hides the glyphs of another one.</summary>
+    private void DrawTextBackgrounds(TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        if (!layout.HasBackgrounds)
+            return;
+
+        for (var i = 0; i < layout.BrushCount; i++)
+        {
+            if (layout.GetBrush(i) is not { } background)
+                continue;
+
+            if (measure is null)
+            {
+                layout.EmitBackgrounds(BeginFill(), originX, originY, i);
+            }
+            else
+            {
+                layout.EmitBackgroundsOnPath(BeginFill(), measure, options!, i);
+            }
+
+            Render(background, FillRule.NonZero);
+        }
+    }
+
+    /// <summary>Strokes the glyphs of the styles of a text that have a pen, once the text is filled.</summary>
+    private void StrokeTextOutlines(TextLayout layout, double originX, double originY, PathMeasure? measure, TextPathOptions? options)
+    {
+        var glyphSink = _glyphSink ??= new GlyphPathSink();
         for (var i = 0; i < layout.OutlineCount; i++)
         {
             var pen = layout.GetOutline(i);

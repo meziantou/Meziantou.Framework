@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <!--
-    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD, DDS, DPX, Cineon and KTX 2.0 codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the separate planes of the TIFF encoder, the JPEG 2000 encoder, the processing operations, the strokes, the optimal line breaking, the ICC profiles of color conversion, and the layers and optimized animations of JPEG XL. The other codecs
+    SharpFuzz targets of Meziantou.Framework.Imaging: the Radiance HDR, PSD, DDS, DPX, Cineon and KTX 2.0 codecs, the DNG decoder, the BC1 to BC7 block decoders, the image data of PNG files, the lossy GIF compression, the separate planes of the TIFF encoder, the JPEG 2000 encoder, the processing operations, the strokes, the optimal line breaking, the texts drawn from glyph masks, the ICC profiles of color conversion, and the layers and optimized animations of JPEG XL. The other codecs
     are fuzzed by Meziantou.Framework.Imaging.FuzzTests, over the golden corpus. See fuzz/README.md.
   -->
   <PropertyGroup>
@@ -42,6 +42,9 @@
     <!-- The seeds of imaging-icc-named-colors and imaging-icc-conversion: the ICC profiles of the golden corpus (versions 2, 4 and 5, named colors) -->
     <SeedProfile Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\icc\profiles\*.icc" />
     <EmbeddedResource Include="@(SeedProfile)" LogicalName="Seeds/icc/%(Filename)%(Extension)" Link="Seeds\icc\%(Filename)%(Extension)" />
+
+    <!-- The subset of Noto Sans of the golden corpus: the font of imaging-glyph-masks -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans\NotoSans-Regular.subset.ttf" LogicalName="Fonts/NotoSans-Regular.subset.ttf" Link="Fonts\NotoSans-Regular.subset.ttf" />
 
     <!-- The PostScript Type 1 font of the font tests: the font of imaging-line-breaking -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontType1Writer.cs" Link="Shared\FontType1Writer.cs" />

@@ -2806,6 +2806,8 @@ namespace Meziantou.Framework.Imaging.Drawing
         public void FilterBackdrop(Meziantou.Framework.Imaging.ColorMatrix matrix) { }
         public void Flattening(double tolerance, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
         public void Flattening<TState>(double tolerance, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
+        public void GlyphMasks(Meziantou.Framework.Imaging.Typography.GlyphCache? cache, Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }
+        public void GlyphMasks<TState>(Meziantou.Framework.Imaging.Typography.GlyphCache? cache, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action) where TState : allows ref struct { }
         public void Group(Meziantou.Framework.Imaging.Drawing.GroupOptions options, Meziantou.Framework.Imaging.Drawing.DrawingAction content, Meziantou.Framework.Imaging.Drawing.DrawingAction? mask = null) { }
         public void Group<TState>(Meziantou.Framework.Imaging.Drawing.GroupOptions options, TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> content, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState>? mask = null) where TState : allows ref struct { }
         public void HighPrecision(Meziantou.Framework.Imaging.Drawing.DrawingAction action) { }

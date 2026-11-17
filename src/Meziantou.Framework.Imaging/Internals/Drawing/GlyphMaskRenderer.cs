@@ -64,9 +64,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
     public int Height { get; private set; }
 
     /// <summary>Computes the mask of a glyph.</summary>
-    /// <param name="face">The font.</param>
-    /// <param name="glyph">The glyph.</param>
-    /// <param name="size">The size of the text, for the outline.</param>
+    /// <param name="source">The outline of the glyph.</param>
     /// <param name="linear">The linear part of the transformation from font units to pixels (its translation is ignored).</param>
     /// <param name="fractionX">The position of the origin in its pixel, along x.</param>
     /// <param name="fractionY">The position of the origin in its pixel, along y.</param>
@@ -79,13 +77,12 @@ internal sealed class GlyphMaskRenderer : IDisposable
     /// <see cref="Coverage"/> is then not computed.
     /// </param>
     /// <returns><see langword="false"/> when the glyph is too large for a mask.</returns>
-    public bool Render(FontFace face, int glyph, double size, in Affine2D linear, double fractionX, double fractionY, double boldWidth, bool isAliased, GlyphScratch scratch, CancellationToken cancellationToken, bool prepareOnly = false)
+    public bool Render(in GlyphOutlineSource source, in Affine2D linear, double fractionX, double fractionY, double boldWidth, bool isAliased, GlyphScratch scratch, CancellationToken cancellationToken, bool prepareOnly = false)
     {
         // The outline is decoded once, measured and recorded, then replayed for the contours and for the bold
         Left = Top = Width = Height = 0;
         _outline.Begin();
-        var budget = new GlyphBudget(face.Data.Limits);
-        face.DecodeOutline(glyph, size, _outline, scratch, ref budget);
+        source.Send(_outline, scratch);
         var bounds = _outline.Bounds;
         if (bounds.IsEmpty)
             return true;
@@ -124,7 +121,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
         // The contours of the glyph, the ones that turn the other way reversed, then the stroke of the bold
         _edges.Reset();
         _glyphSink.Begin(_fill, placement);
-        SendOutline(face, glyph, size, scratch);
+        SendOutline(source, scratch);
         _fill.End();
         if (_glyphSink.SignedArea < 0)
         {
@@ -137,7 +134,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
             emboldener.SetOutput(hasTransform: false, default, 1);
             emboldener.Configure(boldWidth, LineJoin.Miter, GlyphRun.BoldMiterLimit);
             _glyphSink.Begin(emboldener, placement);
-            SendOutline(face, glyph, size, scratch);
+            SendOutline(source, scratch);
             emboldener.End();
         }
 
@@ -172,7 +169,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
     }
 
     /// <summary>Sends the outline measured last to the glyph sink: replayed, or decoded again when it was too large to be recorded.</summary>
-    private void SendOutline(FontFace face, int glyph, double size, GlyphScratch scratch)
+    private void SendOutline(in GlyphOutlineSource source, GlyphScratch scratch)
     {
         if (_outline.IsRecorded)
         {
@@ -180,8 +177,7 @@ internal sealed class GlyphMaskRenderer : IDisposable
             return;
         }
 
-        var budget = new GlyphBudget(face.Data.Limits);
-        face.DecodeOutline(glyph, size, _glyphSink, scratch, ref budget);
+        source.Send(_glyphSink, scratch);
     }
 
     public void Dispose()

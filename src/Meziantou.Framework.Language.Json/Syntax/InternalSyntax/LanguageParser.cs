@@ -28,7 +28,7 @@ internal sealed class LanguageParser
     /// nested document would end the process instead of reporting anything. The limit is far above anything a
     /// document written to be read reaches, and well below the depth at which the stack runs out.
     /// </remarks>
-    private const int MaxDepth = 256;
+    internal const int MaxDepth = 256;
 
     private readonly Lexer _lexer;
     private readonly Blender? _blender;
@@ -335,7 +335,7 @@ internal sealed class LanguageParser
     /// <summary>Takes the node the previous tree already has here, and moves the lexer past its text.</summary>
     private GreenNode? TryReuse(Blender.NodeContext context)
     {
-        if (_blender?.TryTakeNode(_currentFullStart, context) is not { } reused)
+        if (_blender?.TryTakeNode(_currentFullStart, _depth, context) is not { } reused)
             return null;
 
         // The reused node stands in for tokens that were never read, so the state the diagnostics depend on has to be

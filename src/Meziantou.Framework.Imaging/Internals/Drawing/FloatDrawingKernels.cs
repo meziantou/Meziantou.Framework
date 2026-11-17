@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -233,6 +235,12 @@ internal static class FloatDrawingKernels
         var s2 = color.C2 / PaintMax;
         var opaque = new RgbaFloat((float)s0, (float)s1, (float)s2, 1);
         var destinationFactor = 1 - sourceAlpha;
+        if (Avx.IsSupported)
+        {
+            CompositeSolidOverAvx(pixels, coverage, Vector256.Create(s0, s1, s2, 0), sourceAlpha, destinationFactor, opaque);
+            return;
+        }
+
         for (var i = 0; i < coverage.Length; i++)
         {
             var q = coverage[i];
@@ -265,6 +273,53 @@ internal static class FloatDrawingKernels
             var g = ((s1 * sourceWeight) + (pixel.G * destinationWeight)) / total;
             var b = ((s2 * sourceWeight) + (pixel.B * destinationWeight)) / total;
             pixel = new RgbaFloat((float)r, (float)g, (float)b, (float)Math.Min(total, 1));
+        }
+    }
+
+    /// <summary>
+    /// The loop of <see cref="CompositeSolidOver"/> with AVX: each pixel is read as four doubles and its three colors are
+    /// divided at once, with the operations of the scalar loop in each lane.
+    /// </summary>
+    /// <remarks>
+    /// The pixel is read with one conversion of its four samples, which writes the whole register. A scalar conversion of
+    /// its alpha (<c>vcvtss2sd</c>) keeps the upper bits of its destination register, which the JIT may give to the result
+    /// of the previous pixel: every pixel then waits for the divisions of the previous one.
+    /// </remarks>
+    private static void CompositeSolidOverAvx(Span<RgbaFloat> pixels, ReadOnlySpan<uint> coverage, Vector256<double> paint, double sourceAlpha, double destinationFactor, RgbaFloat opaque)
+    {
+        const double Full = CoverageRasterizer.FullCoverage;
+        for (var i = 0; i < coverage.Length; i++)
+        {
+            var q = coverage[i];
+            if (q == 0)
+                continue;
+
+            ref var pixel = ref pixels[i];
+            if (q == CoverageRasterizer.FullCoverage && sourceAlpha == 1)
+            {
+                pixel = opaque;
+                continue;
+            }
+
+            ref var samples = ref unsafe(Unsafe.As<RgbaFloat, float>(ref pixel));
+            var destination = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref samples)));
+            var backdrop = destination.GetElement(3);
+            var covered = q / Full;
+            var sourceWeight = covered * sourceAlpha;
+            var destinationWeight = ((1 - covered) * backdrop) + (covered * destinationFactor * backdrop);
+            var total = sourceWeight + destinationWeight;
+            if (!(total > 0))
+            {
+                if (backdrop != 0)
+                {
+                    pixel = default;
+                }
+
+                continue;
+            }
+
+            var blended = ((paint * Vector256.Create(sourceWeight)) + (destination * Vector256.Create(destinationWeight))) / Vector256.Create(total);
+            unsafe { Avx.ConvertToVector128Single(blended).WithElement(3, (float)Math.Min(total, 1)).StoreUnsafe(ref samples); }
         }
     }
 

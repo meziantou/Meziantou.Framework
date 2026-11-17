@@ -1209,13 +1209,16 @@ public static class HtmlToMarkdown
     /// a cell fills every position it spans, and the following cells of a row skip the positions that a cell of a
     /// previous row spans, as the table model of HTML does. A position that no cell fills is <see langword="null"/>.
     /// A span that would make the grid larger than <see cref="MaximumTableGridSize"/> positions is ignored, so that a
-    /// small document cannot allocate a huge grid.
+    /// small document cannot allocate a huge grid. When <see cref="TableSpanHandling.Duplicate"/> would copy more than
+    /// <see cref="MaximumDuplicatedTableContentLength"/> characters in the document, the other positions of the
+    /// following spans are empty, so that a small document cannot produce a huge Markdown by duplicating large cells.
     /// </summary>
     private static List<List<TableCell?>> BuildTableGrid(List<List<Element>> groups, ConversionState state, out bool hasSpans, out bool hasBlocks)
     {
         hasSpans = false;
         hasBlocks = false;
         var honorSpans = state.Options.TableSpanHandling is not TableSpanHandling.Ignore;
+        var duplicateSpans = state.Options.TableSpanHandling is TableSpanHandling.Duplicate;
         var rowCount = groups.Sum(group => group.Count);
         var width = 0;
         long spannedPositions = 0;
@@ -1266,8 +1269,23 @@ public static class HtmlToMarkdown
                     }
 
                     width = Math.Max(width, column + colSpan);
+                    var spannedContent = content;
                     if (colSpan > 1 || rowSpan > 1)
+                    {
                         spannedPositions += (long)colSpan * rowSpan;
+                        if (duplicateSpans)
+                        {
+                            var duplicatedLength = (((long)colSpan * rowSpan) - 1) * content.Length;
+                            if (duplicatedLength > state.RemainingDuplicatedTableContentLength)
+                            {
+                                spannedContent = "";
+                            }
+                            else
+                            {
+                                state.RemainingDuplicatedTableContentLength -= duplicatedLength;
+                            }
+                        }
+                    }
 
                     for (var r = 0; r < rowSpan; r++)
                     {
@@ -1278,7 +1296,8 @@ public static class HtmlToMarkdown
                             while (target.Count <= targetColumn)
                                 target.Add(null);
 
-                            target[targetColumn] = new TableCell(content, align, IsSpanned: r > 0 || c > 0);
+                            var isSpanned = r > 0 || c > 0;
+                            target[targetColumn] = new TableCell(isSpanned ? spannedContent : content, align, isSpanned);
                         }
                     }
 
@@ -1291,6 +1310,7 @@ public static class HtmlToMarkdown
     }
 
     private const int MaximumTableGridSize = 1_000_000;
+    private const int MaximumDuplicatedTableContentLength = 1_000_000;
 
     /// <summary>
     /// Parses a colspan or rowspan attribute with the rules for parsing non-negative integers of HTML: leading
@@ -2128,6 +2148,9 @@ public static class HtmlToMarkdown
         private Dictionary<Text, int>? _startColumns;
 
         public HtmlToMarkdownOptions Options { get; }
+
+        /// <summary>Gets or sets the number of characters that the spans of the tables can still duplicate in the document.</summary>
+        public long RemainingDuplicatedTableContentLength { get; set; } = MaximumDuplicatedTableContentLength;
 
         public ConversionState(HtmlToMarkdownOptions options, Node root)
         {

@@ -5113,6 +5113,26 @@ public sealed class HtmlToMarkdownConverterTests
     }
 
     [Fact]
+    public void TableSpans_DuplicatedContentIsLimited()
+    {
+        var content = new string('a', 2000);
+        var html = $"<table><tr><td colspan=\"1000\">{content}</td></tr><tr><td colspan=\"2\">b</td></tr></table>";
+        var markdown = HtmlToMarkdown.Convert(html, new() { TableSpanHandling = TableSpanHandling.Duplicate });
+        var lines = markdown.Split('\n');
+        Assert.StartsWith($"| {content} |  |", lines[0], StringComparison.Ordinal);
+        Assert.StartsWith("| b | b |  |", lines[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TableSpans_DuplicatedNestedTablesAreLimited()
+    {
+        var inner = "<table>" + string.Concat(Enumerable.Repeat("<tr><td colspan=\"1000\">x</td></tr>", 10)) + "</table>";
+        var html = "<table>" + string.Concat(Enumerable.Repeat($"<tr><td colspan=\"1000\" rowspan=\"0\">{inner}</td></tr>", 10)) + "</table>";
+        var markdown = HtmlToMarkdown.Convert(html, new() { TableSpanHandling = TableSpanHandling.Duplicate });
+        Assert.HasCountLessThan(10_000_000, markdown);
+    }
+
+    [Fact]
     public void TableSpans_CellsSkipPositionsOfRowSpans()
     {
         AssertHtmlToMarkdown(

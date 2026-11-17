@@ -420,6 +420,16 @@ public sealed class DragAndDropTests : IDisposable
             dataTransfer.items.add('text', 'text/plain');
             dataTransfer.items.add(new File([], 'future.txt', { lastModified: 1e15 }));
             dataTransfer.items[3].webkitGetAsEntry().file(f => log.push('lastModified:' + f.lastModified));
+
+            // Two files with the same name: each entry gives its own file, and a removed file is not found
+            const other = new DataTransfer();
+            other.items.add(new File(['first'], 'same.txt'));
+            other.items.add(new File(['second!'], 'same.txt'));
+            const second = other.items[1].webkitGetAsEntry();
+            second.file(f => log.push('duplicate:' + f.size));
+            const removed = other.items[0].webkitGetAsEntry();
+            other.items.remove(0);
+            removed.file(() => log.push('removed:found'), e => log.push('removed:' + e.name));
             const entry = dataTransfer.items[0].webkitGetAsEntry();
             log.push(entry.fullPath + ':' + (dataTransfer.items[2].webkitGetAsEntry() === null));
             entry.file(f => log.push('same:' + (f === file)));
@@ -427,7 +437,7 @@ public sealed class DragAndDropTests : IDisposable
             </script>
             """);
 
-        Assert.Equal("/a.txt:true|lastModified:1000000000000000|same:true|root:/a.txt,/b.txt,/future.txt", Evaluate(document, "log.join('|')"));
+        Assert.Equal("/a.txt:true|lastModified:1000000000000000|duplicate:7|removed:NotFoundError|same:true|root:/a.txt,/b.txt,/future.txt", Evaluate(document, "log.join('|')"));
     }
 
     [Fact]

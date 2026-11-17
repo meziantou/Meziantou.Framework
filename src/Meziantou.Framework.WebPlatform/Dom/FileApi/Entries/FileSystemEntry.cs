@@ -121,6 +121,32 @@ public sealed class FileSystem
         return true;
     }
 
+    /// <summary>Whether <paramref name="item"/> is still in the directory of its path (several entries of a directory can have the same name).</summary>
+    internal bool Contains(IReadOnlyList<string> path, DragDataEntry item)
+    {
+        if (path.Count == 0)
+            return false;
+
+        var parentPath = path.Take(path.Count - 1).ToArray();
+        if (!TryEvaluate(parentPath, out var parent))
+            return false;
+
+        IReadOnlyList<DragDataEntry> entries = parent switch
+        {
+            null => RootEntries,
+            DragDataDirectory directory => directory.Entries,
+            _ => [],
+        };
+
+        foreach (var entry in entries)
+        {
+            if (ReferenceEquals(entry, item))
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>Invokes a callback from a task of the window (the callbacks of the API are asynchronous): its exceptions are reported.</summary>
     internal void QueueCallback(Action callback)
     {
@@ -310,8 +336,9 @@ public sealed class FileSystemFileEntry : FileSystemEntry
         ArgumentNullException.ThrowIfNull(successCallback);
 
         // https://wicg.github.io/entries-api/#dom-filesystemfileentry-file: the file is looked up again in its file system
-        // (the files of a DataTransfer that a script changes can be removed)
-        if (!Filesystem.TryEvaluate(Path, out var item) || !ReferenceEquals(item, _file))
+        // (the files of a DataTransfer that a script changes can be removed). Several files can have the same name, so
+        // the lookup is for this file, not for the first file of its name.
+        if (!Filesystem.Contains(Path, _file))
         {
             Filesystem.QueueError(errorCallback, DomException.NotFound("The file does not exist"));
             return;

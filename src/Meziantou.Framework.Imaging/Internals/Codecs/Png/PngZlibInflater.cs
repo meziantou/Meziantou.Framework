@@ -31,8 +31,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// trailer are read here too (a <see cref="ZLibStream"/> would compute the checksum a second time, with scalar code on
 /// Arm64). The inflater reads ahead and reports neither where the deflate data ends nor a truncated datastream, so the
 /// last bytes pushed are held back and given to it one at a time once it needs them: it never reads past the end of the
-/// deflate data, except for the 4 bytes that can only be the trailer. Then one more byte is read only by an inflater that
-/// did not reach the end of the deflate data.
+/// deflate data, and the first of them it does not read follows the end. When none is left, one more byte is read only
+/// by an inflater that did not reach the end of the deflate data.
 /// </para>
 /// </remarks>
 internal sealed class PngZlibInflater : IDisposable
@@ -194,6 +194,9 @@ internal sealed class PngZlibInflater : IDisposable
     // The last pushed bytes, not given to the inflater yet: those that may follow the end of the deflate data
     private HeldBytes _held;
     private int _heldLength;
+
+    // Whether the inflater reached the end of the deflate data: it does not read the bytes that follow
+    private bool _ended;
     private InflateFeedStream? _feed;
     private DeflateStream? _deflate;
     private int _headerLength;
@@ -252,16 +255,23 @@ internal sealed class PngZlibInflater : IDisposable
         var read = Read(destination);
 
         // The inflater reads ahead and a finished inflater ignores the bytes it read after the end of the deflate data. It
-        // starves before the bytes held back: they are given one at a time, so that it reads none after the end, except
-        // those that can only be the trailer. A datastream that ends before them is followed by more than its trailer:
-        // the bytes held back that remain unread (Complete) or the byte the finished inflater does not read (Available)
-        while (read == 0 && !destination.IsEmpty && feed.Available == 0 && _heldLength > _trailerLength)
+        // starves before the bytes held back: they are given one at a time, so that it reads none after the end. Every
+        // byte is deflate data until one is not read: the inflater ended, and that byte is held back again (the start of
+        // the trailer, or extra data). So the rows of a datastream that is not complete yet are all decoded
+        while (read == 0 && !destination.IsEmpty && !_ended && feed.Available == 0 && _heldLength > 0)
         {
             Span<byte> held = _held;
             feed.Push(held[..1]);
+            read = Read(destination);
+            if (read == 0 && feed.Available == 1)
+            {
+                feed.Withhold(held[..1]);
+                _ended = true;
+                break;
+            }
+
             held[1.._heldLength].CopyTo(held);
             _heldLength--;
-            read = Read(destination);
         }
 
         if (!_rawDeflate)
@@ -278,6 +288,13 @@ internal sealed class PngZlibInflater : IDisposable
     {
         var feed = _feed;
         ObjectDisposedException.ThrowIf(feed is null, this);
+        Span<byte> probe = stackalloc byte[1];
+        if (!_ended && _heldLength > 0 && feed.Available == 0 && _headerLength < 0)
+        {
+            // The bytes held back are given to the inflater until it ends (it produces no byte: the image is complete)
+            Inflate(probe);
+        }
+
         if (feed.Available != 0 || _heldLength > _trailerLength)
         {
             throw Invalid(_rawDeflate
@@ -285,16 +302,14 @@ internal sealed class PngZlibInflater : IDisposable
                 : "The PNG image data has extra bytes after the end of its zlib datastream.");
         }
 
-        // Every byte before the trailer was read: one more byte is read only by an inflater that did not reach the end of
-        // the deflate data
-        var ended = false;
-        if (_heldLength == _trailerLength && _headerLength < 0)
+        // Every pushed byte was read: one more byte is read only by an inflater that did not reach the end of the deflate
+        // data
+        if (!_ended && _heldLength == 0 && _headerLength < 0)
         {
             feed.Push([0]);
-            Span<byte> probe = stackalloc byte[1];
             try
             {
-                ended = _deflate!.Read(probe) == 0 && feed.Available == 1;
+                _ended = _deflate!.Read(probe) == 0 && feed.Available == 1;
             }
             catch (Exception exception) when (exception is InvalidDataException or IOException)
             {
@@ -302,7 +317,7 @@ internal sealed class PngZlibInflater : IDisposable
             }
         }
 
-        if (!ended)
+        if (!_ended || _heldLength < _trailerLength)
         {
             throw Invalid(_rawDeflate
                 ? "The deflate datastream of the Apple CgBI image data does not end with its final block (truncated datastream)."

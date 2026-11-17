@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// <summary>
 /// The zlib datastreams of the PNG codec: the encoder writes a raw deflate datastream between a zlib header and an Adler-32
 /// trailer computed by the library, and the bytes must be those of a <see cref="ZLibStream"/> of the same level; the
-/// inflater of the decoder, pushed pieces of any size, must give the data back and see the end of the datastream.
+/// inflater of the decoder, pushed pieces of any size, must give the data back as soon as the bytes before the trailer
+/// were pushed and see the end of the datastream.
 /// </summary>
 /// <remarks>
 /// The input is a byte of zlib level (0 to 9), a byte of piece size (the size of the writes and of the pushes, 1 to 64, so
@@ -60,6 +61,10 @@ public static partial class ImagingFuzzTargets
 
             if (pushed == zlib.Length)
                 break;
+
+            // The rows of an image that is still loading are all decoded: the bytes held back are not data once the
+            // inflater needs them
+            FuzzAssert.True(pushed < zlib.Length - 4 || written == data.Length, "The inflater did not give the data of every byte pushed before the trailer");
 
             FuzzAssert.True(inflater.Available == 0, "The inflater stopped reading before the end of the zlib datastream");
             pushed += inflater.Push(zlib.AsSpan(pushed, Math.Min(pieceSize, zlib.Length - pushed)));

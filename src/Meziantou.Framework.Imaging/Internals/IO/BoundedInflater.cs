@@ -85,11 +85,11 @@ internal static class BoundedInflater
         if (compressed.IsEmpty)
             return null;
 
-        var input = ArrayPool<byte>.Shared.Rent(compressed.Length + SyntheticZlibHeader.Length);
+        var input = ArrayPool<byte>.Shared.Rent(compressed.Length);
         var chunk = ArrayPool<byte>.Shared.Rent(ChunkSize);
         try
         {
-            using var source = new InflateFeedStream(input);
+            using var source = new InflateFeedStream(input, SyntheticZlibHeader.Length);
             source.Push(SyntheticZlibHeader, compressed);
             using var zlib = new ZLibStream(source, CompressionMode.Decompress);
             var output = new ArrayBufferWriter<byte>(Math.Min(compressed.Length * 2, 64 * 1024));

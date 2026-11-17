@@ -207,7 +207,7 @@ internal sealed class PngZlibInflater : IDisposable
         _rawDeflate = rawDeflate;
         _trailerLength = rawDeflate ? 0 : 4;
         _headerLength = rawDeflate ? -1 : 0;
-        _feed = new InflateFeedStream(buffer);
+        _feed = new InflateFeedStream(buffer, _held.Length);
         _deflate = new DeflateStream(_feed, CompressionMode.Decompress, leaveOpen: true);
     }
 

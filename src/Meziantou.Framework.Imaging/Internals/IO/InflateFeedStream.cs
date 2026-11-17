@@ -9,18 +9,23 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class InflateFeedStream : Stream
 {
     private readonly byte[] _buffer;
+    private readonly byte[] _prefix;
     private int _offset;
     private int _length;
+    private int _prefixOffset;
+    private int _prefixLength;
 
     /// <param name="buffer">The storage of one pushed piece (its capacity bounds each push).</param>
-    public InflateFeedStream(byte[] buffer)
+    /// <param name="prefixCapacity">The maximum length of the prefix of a piece, stored apart from <paramref name="buffer"/>.</param>
+    public InflateFeedStream(byte[] buffer, int prefixCapacity = 0)
     {
         ArgumentNullException.ThrowIfNull(buffer);
         _buffer = buffer;
+        _prefix = prefixCapacity == 0 ? [] : new byte[prefixCapacity];
     }
 
     /// <summary>Gets the number of pushed bytes not read by the inflater yet.</summary>
-    public int Available => _length - _offset;
+    public int Available => _prefixLength - _prefixOffset + _length - _offset;
 
     public override bool CanRead => true;
 
@@ -34,10 +39,22 @@ internal sealed class InflateFeedStream : Stream
 
     /// <summary>Copies the next piece of compressed data; the previous piece must have been read completely.</summary>
     /// <returns>The number of bytes copied (at most the buffer capacity).</returns>
-    public int Push(ReadOnlySpan<byte> data)
+    public int Push(ReadOnlySpan<byte> data) => Push([], data);
+
+    /// <summary>
+    /// Copies a prefix (at most the prefix capacity), then the next piece of compressed data; the previous piece must have
+    /// been read completely.
+    /// </summary>
+    /// <returns>The number of bytes of <paramref name="data"/> copied (at most the buffer capacity).</returns>
+    public int Push(ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> data)
     {
         if (Available != 0)
             throw new InvalidOperationException("The previous compressed piece was not consumed by the inflater.");
+
+        // The prefix is stored apart, so that it never takes room from the piece: every push reads data
+        prefix.CopyTo(_prefix);
+        _prefixOffset = 0;
+        _prefixLength = prefix.Length;
 
         var count = Math.Min(data.Length, _buffer.Length);
         data[..count].CopyTo(_buffer);
@@ -46,29 +63,18 @@ internal sealed class InflateFeedStream : Stream
         return count;
     }
 
-    /// <summary>Copies a prefix, then the next piece of compressed data; the previous piece must have been read completely.</summary>
-    /// <returns>The number of bytes of <paramref name="data"/> copied (at most the buffer capacity, less the prefix).</returns>
-    public int Push(ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> data)
-    {
-        if (Available != 0)
-            throw new InvalidOperationException("The previous compressed piece was not consumed by the inflater.");
-
-        var count = Math.Min(data.Length, _buffer.Length - prefix.Length);
-        prefix.CopyTo(_buffer);
-        data[..count].CopyTo(_buffer.AsSpan(prefix.Length));
-        _offset = 0;
-        _length = prefix.Length + count;
-        return count;
-    }
-
     /// <summary>Removes the last pushed bytes that were not read yet, so that the inflater cannot read them.</summary>
-    /// <param name="destination">Receives the bytes removed: at most its length.</param>
+    /// <param name="destination">Receives the bytes removed, in order: at most its length.</param>
     /// <returns>The number of bytes removed.</returns>
     public int Withhold(Span<byte> destination)
     {
         var count = Math.Min(destination.Length, Available);
-        _buffer.AsSpan(_length - count, count).CopyTo(destination);
-        _length -= count;
+        var fromBuffer = Math.Min(count, _length - _offset);
+        var fromPrefix = count - fromBuffer;
+        _prefix.AsSpan(_prefixLength - fromPrefix, fromPrefix).CopyTo(destination);
+        _buffer.AsSpan(_length - fromBuffer, fromBuffer).CopyTo(destination[fromPrefix..]);
+        _prefixLength -= fromPrefix;
+        _length -= fromBuffer;
         return count;
     }
 
@@ -76,10 +82,14 @@ internal sealed class InflateFeedStream : Stream
 
     public override int Read(Span<byte> buffer)
     {
-        var count = Math.Min(buffer.Length, Available);
-        _buffer.AsSpan(_offset, count).CopyTo(buffer);
-        _offset += count;
-        return count;
+        var fromPrefix = Math.Min(buffer.Length, _prefixLength - _prefixOffset);
+        _prefix.AsSpan(_prefixOffset, fromPrefix).CopyTo(buffer);
+        _prefixOffset += fromPrefix;
+
+        var fromBuffer = Math.Min(buffer.Length - fromPrefix, _length - _offset);
+        _buffer.AsSpan(_offset, fromBuffer).CopyTo(buffer[fromPrefix..]);
+        _offset += fromBuffer;
+        return fromPrefix + fromBuffer;
     }
 
     public override void Flush()

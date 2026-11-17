@@ -105,8 +105,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleOptions Defaults_Dom_IdleOptions = new();
 
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions Defaults_Dom_IdleRequestOptions = new();
-
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions Defaults_Dom_ImageBitmapOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageDataSettings Defaults_Dom_ImageDataSettings = new();
@@ -1776,7 +1774,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static TValue FromDictionary_Dom_IdleRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions value)
     {
         var result = r.CreateObject();
-        if (value.Timeout is not null) r.SetMember(result, "timeout", (value.Timeout.HasValue ? r.FromNumber((double)value.Timeout.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "timeout", (value.Timeout.HasValue ? r.FromNumber((double)value.Timeout.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -7037,11 +7035,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         r.CheckDictionary(value, "IdleRequestOptions");
         var m0_value = r.GetDictionaryMember(value, "timeout");
-        var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (uint?)r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (uint)(uint)(0d) : r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         return new global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions
         {
-            Timeout = m0_present ? m0 : Defaults_Dom_IdleRequestOptions.Timeout,
+            Timeout = m0,
         };
     }
 

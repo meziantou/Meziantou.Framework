@@ -773,6 +773,12 @@
   "dom/idlharness.window.js?exclude=Node": {
     "total": 1366,
     "failures": {
+      "AbstractRange interface: attribute endContainer": "FAIL",
+      "AbstractRange interface: attribute startContainer": "FAIL",
+      "Range interface: existence and properties of interface object": "FAIL",
+      "Range interface: existence and properties of interface prototype object": "FAIL",
+      "StaticRange interface: existence and properties of interface object": "FAIL",
+      "StaticRange interface: existence and properties of interface prototype object": "FAIL",
       "Stringification of new XSLTProcessor()": "FAIL",
       "XSLTProcessor interface object length": "FAIL",
       "XSLTProcessor interface object name": "FAIL",

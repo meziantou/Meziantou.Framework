@@ -77,6 +77,15 @@ internal static partial class CssPropertiesGenerator
             }
         }
 
+        foreach (var (typeName, (file, grammar)) in MissingTypeGrammars)
+        {
+            if (!types.ContainsKey(typeName))
+            {
+                using var definition = JsonDocument.Parse(JsonSerializer.Serialize(new Dictionary<string, string>(StringComparer.Ordinal) { ["name"] = typeName, ["value"] = grammar }));
+                types[typeName] = [new PropertyEntry(file, definition.RootElement.Clone())];
+            }
+        }
+
         var writer = new CodeWriter("tests/Meziantou.Framework.WebPlatform.SpecData/webref/ed/css");
         writer.Line("namespace Meziantou.Framework.WebPlatform.Css.Values;");
         writer.Line();
@@ -337,6 +346,19 @@ internal static partial class CssPropertiesGenerator
         // https://svgwg.org/svg2-draft/text.html#ShapeInsideProperty: SVG 2 also defines shape-inside, as a list of shapes
         // ("auto | [ <basic-shape> | <uri> ]+"), whose union is the content area of an SVG text
         ["shape-inside"] = "auto | outside-shape | [ <basic-shape> || shape-box ] | <image> | display | [ <basic-shape> | <url> ]+",
+    };
+
+    /// <summary>
+    /// The grammars of the types that webref extracts as prose (no "value") although the specification defines them: the
+    /// specification, and the grammar.
+    /// </summary>
+    private static readonly Dictionary<string, (string File, string Grammar)> MissingTypeGrammars = new(StringComparer.Ordinal)
+    {
+        // https://svgwg.org/svg2-draft/painting.html#DataTypeDasharray
+        ["<dasharray>"] = ("SVG", "[ [ <length-percentage> | <number> ]+ ]#"),
+
+        // https://svgwg.org/svg2-draft/painting.html#DataTypeMarkerRef
+        ["<marker-ref>"] = ("SVG", "<url>"),
     };
 
     /// <summary>The shorthands whose property definition is not marked as a shorthand (webref has no longhands for them).</summary>

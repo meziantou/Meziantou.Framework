@@ -11,7 +11,7 @@ internal static class Binding_Range<TAdapter, TValue> where TAdapter : struct, g
     public static readonly global::Meziantou.Framework.WebPlatform.Scripting.InterfaceBinding<TAdapter, TValue> Binding = new()
     {
         Name = "Range",
-        ParentName = "AbstractRange",
+        ParentName = "NodeRange",
         ClrType = typeof(global::Meziantou.Framework.WebPlatform.Dom.Range),
         Flags = global::Meziantou.Framework.WebPlatform.Scripting.InterfaceBindingFlags.None,
         Exposure = global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window,

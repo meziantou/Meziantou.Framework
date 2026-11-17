@@ -20,7 +20,7 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 8
+- **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 25
 - **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
@@ -231,7 +231,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`historical-mutation-events.html`](https://wpt.fyi/results/dom/historical-mutation-events.html) | Pass | 10 / 10 |  |  |
 | [`historical.html`](https://wpt.fyi/results/dom/historical.html) | Pass | 80 / 80 |  |  |
 | [`idlharness.any.js`](https://wpt.fyi/results/dom/idlharness.any.js) | Pass | 438 / 438 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/dom/idlharness.window.js) | Fail | 1,949 / 1,979 | NOT IMPLEMENTED | `XSLTProcessor` |
+| [`idlharness.window.js`](https://wpt.fyi/results/dom/idlharness.window.js) | Fail | 1,943 / 1,979 | TEST BUG, NOT IMPLEMENTED | 6 subtests: the IDL of the test (`interfaces/dom.idl`) predates `NodeRange` (https://dom.spec.whatwg.org/#noderange): `startContainer` and `endContainer` are attributes of `NodeRange`, the parent interface of `StaticRange` and `Range`, not of `AbstractRange`; `XSLTProcessor` |
 | [`interface-objects.html`](https://wpt.fyi/results/dom/interface-objects.html) | Pass | 23 / 23 |  |  |
 | [`lists/DOMTokenList-Iterable.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-Iterable.html) | Pass | 6 / 6 |  |  |
 | [`lists/DOMTokenList-coverage-for-attributes.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-coverage-for-attributes.html) | Fail | 174 / 175 | NOT IMPLEMENTED | `relList` on the MathML `<a>` element (`MathMLAnchorElement` only reflects `href`) |

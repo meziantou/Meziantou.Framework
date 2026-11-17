@@ -383,7 +383,7 @@ internal sealed partial class IdlModel
         AddFontFaceStretch(model);
         AddFontFaceDescriptorsSizeAdjust(model);
         AddUIEventPseudoTarget(model);
-        AddElementMatchContainer(model);
+        AddContainerQueryListChangeEvent(model);
         AddPaintWorkletExtensions(model);
         AddMediaSourceHandleToMediaProvider(model);
         AddLayoutAndAnimationWorkletExtensions(model);
@@ -872,59 +872,42 @@ internal sealed partial class IdlModel
     }
 
     /// <summary>
-    /// Element.matchContainer() and the ContainerQueryList interface, proposed in https://github.com/w3c/csswg-drafts/pull/13551
-    /// and used by the tentative css-conditional tests. They are modeled on matchMedia() and MediaQueryList:
+    /// The change events of ContainerQueryList, proposed in https://github.com/w3c/csswg-drafts/pull/13551 and used by the
+    /// tentative css-conditional tests: CSS Conditional 5 defines Element.matchContainer() and ContainerQueryList, but not
+    /// their change events yet. They are modeled on MediaQueryList:
     /// <code>
-    /// partial interface Element { ContainerQueryList matchContainer(CSSOMString query); };
     /// [Exposed=Window] interface ContainerQueryList : EventTarget {
-    ///   readonly attribute CSSOMString query;
-    ///   readonly attribute boolean matches;
     ///   attribute EventHandler onchange;
     /// };
     /// </code>
     /// </summary>
-    private static void AddElementMatchContainer(IdlModel model)
+    private static void AddContainerQueryListChangeEvent(IdlModel model)
     {
-        if (!model.Definitions.TryGetValue("Element", out var element) || model.Definitions.ContainsKey("ContainerQueryList"))
+        if (!model.Definitions.TryGetValue("ContainerQueryList", out var list) || list.Inheritance is not null || list.Members.Exists(m => m.Name == "onchange"))
             return;
-
-        const string Source = "css-conditional-5";
-        element.Members.Add(new IdlMember
-        {
-            Kind = IdlMemberKind.Operation,
-            Name = "matchContainer",
-            Type = new IdlType { Name = "ContainerQueryList" },
-            Arguments = [new IdlArgument { Name = "query", Type = new IdlType { Name = "CSSOMString" } }],
-            Source = Source,
-            DeclaringDefinition = element.Name,
-            ExperimentalApi = "MatchContainer",
-        });
-
-        IdlMember Attribute(string name, string type, bool readOnly) => new()
-        {
-            Kind = IdlMemberKind.Attribute,
-            Name = name,
-            Type = new IdlType { Name = type },
-            Readonly = readOnly,
-            Source = Source,
-            DeclaringDefinition = "ContainerQueryList",
-        };
 
         model.Definitions["ContainerQueryList"] = new IdlDefinition
         {
-            Name = "ContainerQueryList",
-            Kind = IdlDefinitionKind.Interface,
+            Name = list.Name,
+            Kind = list.Kind,
             Inheritance = "EventTarget",
-            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Value = "Window" }],
+            ExtAttrs = list.ExtAttrs,
             Members =
             [
-                Attribute("query", "CSSOMString", readOnly: true),
-                Attribute("matches", "boolean", readOnly: true),
-                Attribute("onchange", "EventHandler", readOnly: false),
+                .. list.Members,
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Attribute,
+                    Name = "onchange",
+                    Type = new IdlType { Name = "EventHandler" },
+                    Source = list.Source,
+                    DeclaringDefinition = list.Name,
+                    ExperimentalApi = "ContainerQueryListChangeEvent",
+                },
             ],
-            Source = Source,
-            SpecUrl = "https://drafts.csswg.org/css-conditional-5/",
-            ExperimentalApi = "MatchContainer",
+            Source = list.Source,
+            Href = list.Href,
+            SpecUrl = list.SpecUrl,
         };
     }
 

@@ -8,6 +8,7 @@
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
     <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <Project Path="../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning.Tool/Meziantou.Framework.DependencyScanning.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="../src/Meziantou.Framework.Diagnostics.MemoryDump/Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
@@ -15,6 +16,7 @@
     <Project Path="../src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="../src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
     <Project Path="../src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
+    <Project Path="../src/Meziantou.Framework.FileConversion.Tool/Meziantou.Framework.FileConversion.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
@@ -46,6 +48,7 @@
     <Project Path="../src/Meziantou.Framework.Language.Tool/Meziantou.Framework.Language.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
     <Project Path="../src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
+    <Project Path="../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
     <Project Path="../src/Meziantou.Framework.NodeJs/Meziantou.Framework.NodeJs.csproj" />
     <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
     <Project Path="../src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
@@ -68,6 +71,8 @@
     <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
     <Project Path="../src/Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" />
@@ -85,6 +90,7 @@
     <Project Path="../tests/Meziantou.Framework.DiffEngine.Tests/Meziantou.Framework.DiffEngine.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.FileConversion.Tool.Tests/Meziantou.Framework.FileConversion.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Geo.Maps.Tool.Tests/Meziantou.Framework.Geo.Maps.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />

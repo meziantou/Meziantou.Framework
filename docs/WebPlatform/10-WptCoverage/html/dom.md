@@ -162,7 +162,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`elements/the-innertext-and-outertext-properties/outertext-setter.html`](https://wpt.fyi/results/html/dom/elements/the-innertext-and-outertext-properties/outertext-setter.html) | Pass | 43 / 43 |  |  |
 | [`historical.html`](https://wpt.fyi/results/html/dom/historical.html) | Pass | 13 / 13 |  |  |
 | [`idlharness.any.js`](https://wpt.fyi/results/html/dom/idlharness.any.js) | Pass | 808 / 808 |  |  |
-| [`idlharness.https.html`](https://wpt.fyi/results/html/dom/idlharness.https.html) | Fail | 6,105 / 6,131 | NOT IMPLEMENTED | `NotRestoredReasons` |
+| [`idlharness.https.html`](https://wpt.fyi/results/html/dom/idlharness.https.html) | Fail | 6,109 / 6,131 | NOT IMPLEMENTED | `NotRestoredReasons` |
 | [`reflection-embedded.html`](https://wpt.fyi/results/html/dom/reflection-embedded.html) | Pass | 9,429 / 9,429 |  |  |
 | [`reflection-forms-weekmonth.html`](https://wpt.fyi/results/html/dom/reflection-forms-weekmonth.html) | Pass | 1,618 / 1,618 |  |  |
 | [`reflection-forms.html`](https://wpt.fyi/results/html/dom/reflection-forms.html) | Pass | 8,817 / 8,817 |  |  |

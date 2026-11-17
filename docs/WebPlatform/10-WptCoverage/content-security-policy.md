@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 867 | 901 | 0 | 96% |
+| [Stable](#stable-tests) | 868 | 901 | 0 | 96% |
 | [Tentative](#tentative-tests) | 8 | 15 | 0 | 53% |
 | [Reftests](#reftests) | 8 | 8 | 0 | 100% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **883** | **924** | **0** | **96%** |
+| **All** | **884** | **924** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -23,7 +23,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **NOT IMPLEMENTED**: 21
 - **TEST RUNNER**: 1
 - **OUT OF SCOPE**: 7
-- *No reason documented*: 2
+- *No reason documented*: 1
 
 ## Stable tests
 
@@ -911,7 +911,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`worker-src/service-list.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-list.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-none.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-none.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-self.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-self.https.sub.html) | Pass | 1 / 1 |  |  |
-| [`worker-src/service-worker-src-child-fallback-blocked.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-child-fallback-blocked.https.sub.html) | Timeout | 0 / 1 |  | *No reason documented* |
+| [`worker-src/service-worker-src-child-fallback-blocked.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-child-fallback-blocked.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-worker-src-child-fallback.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-child-fallback.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-worker-src-default-fallback.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-default-fallback.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`worker-src/service-worker-src-script-fallback.https.sub.html`](https://wpt.fyi/results/content-security-policy/worker-src/service-worker-src-script-fallback.https.sub.html) | Pass | 1 / 1 |  |  |

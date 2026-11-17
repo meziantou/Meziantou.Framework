@@ -765,20 +765,14 @@
     "total": 80
   },
   "dom/idlharness.any.js#dedicatedworker": {
-    "total": 219
+    "total": 220
   },
   "dom/idlharness.any.js#sharedworker": {
-    "total": 219
+    "total": 220
   },
   "dom/idlharness.window.js?exclude=Node": {
-    "total": 1366,
+    "total": 1373,
     "failures": {
-      "AbstractRange interface: attribute endContainer": "FAIL",
-      "AbstractRange interface: attribute startContainer": "FAIL",
-      "Range interface: existence and properties of interface object": "FAIL",
-      "Range interface: existence and properties of interface prototype object": "FAIL",
-      "StaticRange interface: existence and properties of interface object": "FAIL",
-      "StaticRange interface: existence and properties of interface prototype object": "FAIL",
       "Stringification of new XSLTProcessor()": "FAIL",
       "XSLTProcessor interface object length": "FAIL",
       "XSLTProcessor interface object name": "FAIL",
@@ -1066,7 +1060,7 @@
     "total": 2
   },
   "dom/nodes/Document-importNode.html": {
-    "total": 5
+    "total": 7
   },
   "dom/nodes/DocumentFragment-constructor.html": {
     "total": 2
@@ -1500,6 +1494,9 @@
       "\"\u00A0\" should match with \"#\u00A0\"": "FAIL",
       "\"\u2003\" should match with \"#\u2003\"": "FAIL"
     }
+  },
+  "dom/nodes/ParentNode-querySelector-external-siblings.html": {
+    "total": 4
   },
   "dom/nodes/ParentNode-querySelector-host-pseudo-class.html": {
     "total": 1
@@ -1935,6 +1932,9 @@
   "dom/nodes/moveBefore/focus-within.html": {
     "total": 5
   },
+  "dom/nodes/moveBefore/form-associated-custom-element-reset.html": {
+    "total": 4
+  },
   "dom/nodes/moveBefore/fullscreen-preserve.html": {
     "total": 1
   },
@@ -1948,7 +1948,7 @@
     "crashtest": "PASS"
   },
   "dom/nodes/moveBefore/listed-form-element-reset.html": {
-    "total": 1
+    "total": 6
   },
   "dom/nodes/moveBefore/live-range-updates.html": {
     "total": 3
@@ -2143,19 +2143,92 @@
   "dom/nodes/prepend-on-Document.html": {
     "total": 5
   },
-  "dom/nodes/processing-instruction-attributes.html": {
-    "total": 140,
+  "dom/nodes/processing-instruction-attributes-clone-and-range.html": {
+    "total": 136,
     "failures": {
+      "Live range ending inside processing instruction data is updated by removeAttribute() (source: html-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by removeAttribute() (source: html-parser)": "FAIL",
+      "Live range ending inside processing instruction data is updated by removeAttribute() (source: xml-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by removeAttribute() (source: xml-parser)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of a new attribute (source: html-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of a new attribute (source: html-parser)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of a new attribute (source: xml-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of a new attribute (source: xml-parser)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of an existing attribute (source: html-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of an existing attribute (source: html-parser)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of an existing attribute (source: xml-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by setAttribute() of an existing attribute (source: xml-parser)": "FAIL",
+      "Live range ending inside processing instruction data is updated by toggleAttribute() (source: html-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by toggleAttribute() (source: html-parser)": "FAIL",
+      "Live range ending inside processing instruction data is updated by toggleAttribute() (source: xml-dom)": "FAIL",
+      "Live range ending inside processing instruction data is updated by toggleAttribute() (source: xml-parser)": "FAIL",
+      "Range cloneContents() with boundaries splitting an attribute value updates the cloned processing instruction's attributes (source: html-dom)": "FAIL",
+      "Range cloneContents() with boundaries splitting an attribute value updates the cloned processing instruction's attributes (source: html-parser)": "FAIL",
+      "Range cloneContents() with boundaries splitting an attribute value updates the cloned processing instruction's attributes (source: xml-dom)": "FAIL",
+      "Range cloneContents() with boundaries splitting an attribute value updates the cloned processing instruction's attributes (source: xml-parser)": "FAIL",
+      "Range cloneContents() with end inside the processing instruction updates the cloned processing instruction's attributes (source: html-dom)": "FAIL",
+      "Range cloneContents() with end inside the processing instruction updates the cloned processing instruction's attributes (source: html-parser)": "FAIL",
+      "Range cloneContents() with end inside the processing instruction updates the cloned processing instruction's attributes (source: xml-dom)": "FAIL",
+      "Range cloneContents() with end inside the processing instruction updates the cloned processing instruction's attributes (source: xml-parser)": "FAIL",
+      "Range cloneContents() with start and end inside the processing instruction updates the cloned processing instruction's attributes (source: html-dom)": "FAIL",
+      "Range cloneContents() with start and end inside the processing instruction updates the cloned processing instruction's attributes (source: html-parser)": "FAIL",
+      "Range cloneContents() with start and end inside the processing instruction updates the cloned processing instruction's attributes (source: xml-dom)": "FAIL",
+      "Range cloneContents() with start and end inside the processing instruction updates the cloned processing instruction's attributes (source: xml-parser)": "FAIL",
+      "Range cloneContents() with start inside the processing instruction updates the cloned processing instruction's attributes (source: html-dom)": "FAIL",
+      "Range cloneContents() with start inside the processing instruction updates the cloned processing instruction's attributes (source: html-parser)": "FAIL",
+      "Range cloneContents() with start inside the processing instruction updates the cloned processing instruction's attributes (source: xml-dom)": "FAIL",
+      "Range cloneContents() with start inside the processing instruction updates the cloned processing instruction's attributes (source: xml-parser)": "FAIL",
+      "Range extractContents() with boundaries splitting an attribute value updates the attributes of both processing instructions (source: html-dom)": "FAIL",
+      "Range extractContents() with boundaries splitting an attribute value updates the attributes of both processing instructions (source: html-parser)": "FAIL",
+      "Range extractContents() with boundaries splitting an attribute value updates the attributes of both processing instructions (source: xml-dom)": "FAIL",
+      "Range extractContents() with boundaries splitting an attribute value updates the attributes of both processing instructions (source: xml-parser)": "FAIL",
+      "Range extractContents() with end inside the processing instruction updates the attributes of both processing instructions (source: html-dom)": "FAIL",
+      "Range extractContents() with end inside the processing instruction updates the attributes of both processing instructions (source: html-parser)": "FAIL",
+      "Range extractContents() with end inside the processing instruction updates the attributes of both processing instructions (source: xml-dom)": "FAIL",
+      "Range extractContents() with end inside the processing instruction updates the attributes of both processing instructions (source: xml-parser)": "FAIL",
+      "Range extractContents() with start and end inside the processing instruction updates the attributes of both processing instructions (source: html-dom)": "FAIL",
+      "Range extractContents() with start and end inside the processing instruction updates the attributes of both processing instructions (source: html-parser)": "FAIL",
+      "Range extractContents() with start and end inside the processing instruction updates the attributes of both processing instructions (source: xml-dom)": "FAIL",
+      "Range extractContents() with start and end inside the processing instruction updates the attributes of both processing instructions (source: xml-parser)": "FAIL",
+      "Range extractContents() with start inside the processing instruction updates the attributes of both processing instructions (source: html-dom)": "FAIL",
+      "Range extractContents() with start inside the processing instruction updates the attributes of both processing instructions (source: html-parser)": "FAIL",
+      "Range extractContents() with start inside the processing instruction updates the attributes of both processing instructions (source: xml-dom)": "FAIL",
+      "Range extractContents() with start inside the processing instruction updates the attributes of both processing instructions (source: xml-parser)": "FAIL"
+    }
+  },
+  "dom/nodes/processing-instruction-attributes.html": {
+    "total": 199,
+    "failures": {
+      "Malformed pseudo-attributes \"junk name=\\\"p\\\"\" yield no attributes (source: xml-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\" yield no attributes (source: xml-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" =\\\"q\\\"\" yield no attributes (source: xml-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" junk\" yield no attributes (source: xml-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" name=\\\"q\\\"\" yield no attributes (source: html-dom)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" name=\\\"q\\\"\" yield no attributes (source: html-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" name=\\\"q\\\"\" yield no attributes (source: xml-dom)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" name=\\\"q\\\"\" yield no attributes (source: xml-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" other=\" yield no attributes (source: xml-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\" other=\\\"q\" yield no attributes (source: xml-parser)": "FAIL",
+      "Malformed pseudo-attributes \"name=\\\"p\\\"other=\\\"q\\\"\" yield no attributes (source: xml-parser)": "FAIL",
       "Processing instruction attribute mutation from xml-parser": "FAIL",
       "Processing instruction attribute parsing allows _ in attribute names from xml-parser": "FAIL",
       "Processing instruction attributes with xml-stylesheet from xml-parser": "FAIL",
       "Processing instruction toggleAttribute from xml-parser": "FAIL",
-      "check attribute value: \"'\"\"'\" (source: \"xml-parser\")": "FAIL",
+      "Removing a non-existent PI attribute doesn't normalize data from xml-parser": "FAIL",
+      "U+0000 NULL in processing instruction data invalidates pseudo-attributes from html-dom": "FAIL",
+      "U+0000 NULL in processing instruction data invalidates pseudo-attributes from xml-dom": "FAIL",
+      "U+0000 NULL in processing instruction data is replaced with U+FFFD in HTML parser": "FAIL",
+      "check attribute value: \"\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"&\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"'\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"<\" (source: \"xml-parser\")": "FAIL",
       "check attribute value: \"=\" (source: \"xml-parser\")": "FAIL",
-      "check attribute value: \"aa\"aa\"\" (source: \"xml-parser\")": "FAIL",
-      "check attribute value: \"axx\"\" (source: \"xml-parser\")": "FAIL",
-      "check attribute value: \"axx>\" (source: \"xml-parser\")": "FAIL",
-      "check attribute value: \"some<>\" (source: \"xml-parser\")": "FAIL"
+      "check attribute value: \">\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"\\\"\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"\\n\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"\\r\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"\\t\" (source: \"xml-parser\")": "FAIL",
+      "check attribute value: \"\u00A0\" (source: \"xml-parser\")": "FAIL"
     }
   },
   "dom/nodes/query-target-in-load-event.html": {
@@ -2511,6 +2584,9 @@
   },
   "dom/ranges/Range-mutations-splitText.html": {
     "total": 116
+  },
+  "dom/ranges/Range-selectNode-cross-document-crash.html": {
+    "crashtest": "PASS"
   },
   "dom/ranges/Range-selectNode.html": {
     "total": 292

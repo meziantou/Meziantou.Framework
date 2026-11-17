@@ -2074,13 +2074,7 @@
     "total": 298
   },
   "html/dom/idlharness.https.html?include=HTML.+": {
-    "total": 3955,
-    "failures": {
-      "HTMLEmbedElement interface: attribute hspace": "FAIL",
-      "HTMLEmbedElement interface: attribute vspace": "FAIL",
-      "HTMLEmbedElement interface: document.createElement(\"embed\") must inherit property \"hspace\" with the proper type": "FAIL",
-      "HTMLEmbedElement interface: document.createElement(\"embed\") must inherit property \"vspace\" with the proper type": "FAIL"
-    }
+    "total": 3955
   },
   "html/dom/partial-updates/tentative/chained-streaming-templates-with-custom-element.html": {
     "total": 1

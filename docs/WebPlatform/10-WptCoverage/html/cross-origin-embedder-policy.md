@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/cross-origin-embedde
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 67 | 74 | 0 | 91% |
+| [Stable](#stable-tests) | 68 | 74 | 0 | 92% |
 | [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **67** | **77** | **0** | **87%** |
+| **All** | **68** | **77** | **0** | **88%** |
 
 ## Failure reasons
 
@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 5
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -60,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`credentialless/websocket.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/credentialless/websocket.https.window.js) | Pass | 3 / 3 |  |  |
 | [`cross-origin-iframe-navigates-to-own-blob.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/cross-origin-iframe-navigates-to-own-blob.https.html) | Pass | 1 / 1 |  |  |
 | [`cross-origin-isolated-permission-iframe.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/cross-origin-isolated-permission-iframe.https.window.js) | Pass | 8 / 8 |  |  |
-| [`cross-origin-isolated-permission-worker.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/cross-origin-isolated-permission-worker.https.window.js) | Timeout | 13 / 15 |  | *No reason documented* |
+| [`cross-origin-isolated-permission-worker.https.window.js`](https://wpt.fyi/results/html/cross-origin-embedder-policy/cross-origin-isolated-permission-worker.https.window.js) | Pass | 15 / 15 |  |  |
 | [`data.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/data.https.html) | Pass | 1 / 1 |  |  |
 | [`dedicated-worker-cache-storage.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/dedicated-worker-cache-storage.https.html) | Pass | 8 / 8 |  |  |
 | [`dedicated-worker.https.html`](https://wpt.fyi/results/html/cross-origin-embedder-policy/dedicated-worker.https.html) | Fail | 12 / 14 | NOT IMPLEMENTED | `filesystem:` URLs (non-standard; the test helper reports them as unimplemented) |

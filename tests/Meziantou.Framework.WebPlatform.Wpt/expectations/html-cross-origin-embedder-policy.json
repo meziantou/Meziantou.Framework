@@ -150,12 +150,7 @@
     "total": 8
   },
   "html/cross-origin-embedder-policy/cross-origin-isolated-permission-worker.https.window.js": {
-    "harness": "TIMEOUT",
-    "total": 15,
-    "failures": {
-      "service_worker (withCoopCoep: false) cross origin isolated permission test": "TIMEOUT",
-      "service_worker (withCoopCoep: true) cross origin isolated permission test": "TIMEOUT"
-    }
+    "total": 15
   },
   "html/cross-origin-embedder-policy/data.https.html": {
     "total": 1

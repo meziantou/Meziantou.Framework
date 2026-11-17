@@ -310,3 +310,55 @@ public static void DrawWatermark(string fontPath, string inputPath, string outpu
 
 See [Transformations](../07-Drawing/04-Transformations.md) for the other transformations of the canvas, and
 [Add a watermark](../03-Guides/06-AddAWatermark.md) for a complete solution.
+
+## Draw many labels quickly
+
+[FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) fills the glyphs of a text as one shape, at
+their exact positions. For many texts (the labels of a chart, a table, a long document), draw them inside
+[GlyphMasks](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.GlyphMasks): each glyph is then copied from its
+coverage mask, computed once for each position in a pixel, as browsers draw text:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/TextExamples.cs;region=Imaging_DrawLabelsFromGlyphMasks;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Kept as long as the application draws: the masks computed by a drawing are reused by the next ones
+private static readonly GlyphCache LabelGlyphs = new(maxBytes: 4 * 1024 * 1024);
+
+public static void DrawTimingTable(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+    var ink = new SolidBrush(new Rgba32(40, 40, 40));
+    using var image = new Image<Rgba32>(400, 230, new Rgba32(255, 255, 255));
+    image.Draw(canvas =>
+    {
+        // Inside the callback, each glyph of a text is copied from its coverage mask, its origin snapped to a
+        // quarter of a pixel along the line: much faster for many labels than filling each text as one shape
+        canvas.GlyphMasks(LabelGlyphs, masked =>
+        {
+            for (var row = 0; row < 12; row++)
+            {
+                for (var column = 0; column < 4; column++)
+                {
+                    var value = ((row * 4) + column + 1) * 1.25;
+                    masked.FillText(ink, string.Create(CultureInfo.InvariantCulture, $"{value:0.00} ms"), font, 13, new PointD(10 + (column * 96), 8 + (row * 18)));
+                }
+            }
+        });
+    });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+![A table of twelve rows and four columns of durations in milliseconds, in small dark gray text on white](images/DrawTimingTable.png)
+
+- The origin of each glyph moves to the nearest quarter of a pixel along the line and to the nearest pixel across it:
+  the text is a little less exact, with sharper baselines. Each glyph is drawn over the ones before it, so a translucent
+  text is darker where two glyphs touch.
+- The masks are kept in the [GlyphCache](cref:Meziantou.Framework.Imaging.Typography.GlyphCache) you give, which you can
+  share between drawings and threads, or in a cache that is emptied when the callback returns (pass `null`). The pixels
+  are the same whatever the cache holds.
+- Both [FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) overloads that draw at a point use
+  the masks. A text that is turned or skewed, a text on a path and a text with subpixel rendering are filled as one
+  shape, as outside the callback.
+- Prefer the default fill for a few large titles: one short line gains little from masks, unless the cache already holds
+  its glyphs.

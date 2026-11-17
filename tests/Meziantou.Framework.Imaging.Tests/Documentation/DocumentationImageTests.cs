@@ -170,6 +170,9 @@ public sealed class DocumentationImageTests : IDisposable
     }
 
     [Fact]
+    public void DrawTimingTable() => AssertImage(Text, nameof(TextExamples.DrawTimingTable), output => TextExamples.DrawTimingTable(RegularFont, output));
+
+    [Fact]
     public void DrawTextOnPath() => AssertImage(Text, nameof(Examples.DrawTextOnPath), output => Examples.DrawTextOnPath(RegularFont, output));
 
     [Fact]

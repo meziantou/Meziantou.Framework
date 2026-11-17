@@ -4914,6 +4914,33 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawTimingTableDrawsTheSamePixelsOnceTheMasksAreCached()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var first = GetPath("timings-1.png");
+        var second = GetPath("timings-2.png");
+        Assert.False(TextLayout.Create("0123456789. ms", Font.Load(fontPath), 13).HasMissingGlyphs);
+        TextExamples.DrawTimingTable(fontPath, first);
+        TextExamples.DrawTimingTable(fontPath, second);
+
+        // The second drawing copies the masks the first one computed: the pixels are the same
+        using var image = Image.Load<Rgba32>(first);
+        using var cached = Image.Load<Rgba32>(second);
+        Assert.Equal((400, 230), (image.Width, image.Height));
+        var dark = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                Assert.Equal(image.Frames[0][x, y], cached.Frames[0][x, y]);
+                dark += image.Frames[0][x, y].R < 128 ? 1 : 0;
+            }
+        }
+
+        Assert.True(dark > 1000, $"{dark} dark pixels");
+    }
+
+    [Fact]
     public void DrawProductCardCutsTheDescriptionAfterTwoLines()
     {
         var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";

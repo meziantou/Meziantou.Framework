@@ -216,6 +216,15 @@ public static void DrawPoster(string outputPath)
   [ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes).
   Set the value to 1, the default, to draw on the calling thread only.
 
+## Draw many texts
+
+[FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) computes the exact coverage of all the
+glyphs of a text as one shape, which costs the most for long texts and many labels. Inside
+[GlyphMasks](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.GlyphMasks), each glyph is copied from a mask
+computed once for each position in a pixel, and a [GlyphCache](cref:Meziantou.Framework.Imaging.Typography.GlyphCache)
+you keep reuses the masks from one drawing to the next. The glyphs are snapped to a quarter of a pixel: see
+[Draw many labels quickly](08-Text/03-DrawingText.md#draw-many-labels-quickly).
+
 ## Choose encoder settings
 
 - **Lossless output is large.** AVIF, HEIC, JPEG XL, WebP and JPEG 2000 are lossless by default when saved by extension.

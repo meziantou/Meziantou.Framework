@@ -615,7 +615,9 @@ public readonly ref struct DrawingCanvas
     /// <param name="origin">The position of the top-left corner of the layout; the first baseline is <see cref="TextLayout.Baseline"/> below it, or on its right for a vertical layout.</param>
     /// <remarks>
     /// The glyphs are one shape: where they overlap, the brush is applied once. The call allocates nothing once the
-    /// working storage of the canvas has grown to the largest glyph. Glyphs are not snapped to the pixel grid.
+    /// working storage of the canvas has grown to the largest glyph. Glyphs are not snapped to the pixel grid, unless the
+    /// text is drawn in <see cref="GlyphMasks(GlyphCache, DrawingAction)"/>, which draws them one by one from cached
+    /// masks.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="brush"/> or <paramref name="layout"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
@@ -2418,6 +2420,82 @@ public readonly ref struct DrawingCanvas
         finally
         {
             session.RestoreFlattening(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose texts are drawn glyph by glyph, from coverage masks kept in a cache: much faster for paragraphs and labels, with glyphs snapped to the pixel grid.</summary>
+    /// <remarks>
+    /// <para>
+    /// Outside this callback, <see cref="FillText(Brush, TextLayout, PointD)"/> fills the glyphs of a layout as one shape,
+    /// at their exact positions. Inside it, that method and <see cref="FillText(Brush, string, Font, double, PointD)"/>
+    /// draw each glyph as <see cref="FillGlyphs"/> does: the origin of a glyph is moved to the nearest quarter of a pixel
+    /// along the line and to the nearest pixel across it (to the nearest pixel without antialiasing), as the glyph caches
+    /// of browsers do, and its coverage is computed once for each position in a pixel, then copied. The more glyphs a text
+    /// repeats, the faster it is drawn: several times faster for a paragraph, a long text or many labels.
+    /// </para>
+    /// <para>
+    /// The pixels differ from those of the fill of one shape: the glyphs are moved by up to an eighth of a pixel along the
+    /// line and half a pixel across it, and each glyph is composited over the ones before it, so a translucent paint is
+    /// applied twice where two glyphs overlap or share a pixel of their edges. The decorations of each paint are filled
+    /// once the glyphs are drawn. The backgrounds, the glyphs a font draws with its own colors and the pens of the styles
+    /// are drawn as outside the callback. A glyph gets the pixels <see cref="FillGlyphs"/> gives it at the same origin; a
+    /// hinted layout (<see cref="TextLayoutOptions.Hinting"/>) draws its hinted outlines.
+    /// </para>
+    /// <para>
+    /// What does not change: a text drawn under a transformation that turns, skews or is projective, along a path, or
+    /// with subpixel rendering is filled as one shape, and <see cref="StrokeText(Pen, TextLayout, PointD)"/> and
+    /// <see cref="FillGlyphs"/> are not affected. A glyph whose mask would exceed 16,384 pixels (128 by 128) or 512
+    /// pixels on a side is filled as a shape, where it is. The scope applies to the layers and the tiles of the patterns
+    /// drawn in the callback.
+    /// </para>
+    /// <para>
+    /// The masks are kept in <paramref name="cache"/>, which can be shared by several canvases and threads to reuse them
+    /// from one drawing to the next, or in a cache of up to 8 MiB that is emptied when the callback returns. A mask is
+    /// allocated when it is computed; the pixels are the same whatever the cache holds.
+    /// </para>
+    /// </remarks>
+    /// <param name="cache">The cache of the masks, or <see langword="null"/> for one that lives until the callback returns.</param>
+    /// <param name="action">The callback that draws. It must not be asynchronous and must not retain the canvas.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void GlyphMasks(GlyphCache? cache, DrawingAction action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetGlyphMasks(cache);
+        try
+        {
+            action(this);
+        }
+        finally
+        {
+            session.RestoreGlyphMasks(previous);
+        }
+    }
+
+    /// <summary>Runs a callback whose texts are drawn glyph by glyph from coverage masks, passing caller state to avoid closure allocations.</summary>
+    /// <typeparam name="TState">The type of the state.</typeparam>
+    /// <param name="cache">The cache of the masks, or <see langword="null"/> for one that lives until the callback returns.</param>
+    /// <param name="state">The state passed to <paramref name="action"/>.</param>
+    /// <param name="action">The callback that draws. Use a static lambda to avoid allocations. It must not retain the canvas.</param>
+    /// <remarks>See <see cref="GlyphMasks(GlyphCache, DrawingAction)"/>.</remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public void GlyphMasks<TState>(GlyphCache? cache, TState state, DrawingAction<TState> action)
+        where TState : allows ref struct
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        var session = GetSession();
+        var previous = session.SetGlyphMasks(cache);
+        try
+        {
+            action(this, state);
+        }
+        finally
+        {
+            session.RestoreGlyphMasks(previous);
         }
     }
 

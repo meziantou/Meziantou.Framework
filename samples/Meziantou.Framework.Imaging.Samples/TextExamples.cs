@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -171,6 +172,36 @@ internal static class TextExamples
         // A solid color on opaque pixels: on a transparent pixel, the colors would get fringes on any background
         using var image = new Image<Rgb24>((int)layout.Width + 8, (int)Math.Ceiling(layout.Height) + 8, new Rgb24(255, 255, 255));
         image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(4, 4)));
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>Many small labels, drawn from the glyph masks of a cache that the drawings share.</summary>
+    #region Imaging_DrawLabelsFromGlyphMasks
+    // Kept as long as the application draws: the masks computed by a drawing are reused by the next ones
+    private static readonly GlyphCache LabelGlyphs = new(maxBytes: 4 * 1024 * 1024);
+
+    public static void DrawTimingTable(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var ink = new SolidBrush(new Rgba32(40, 40, 40));
+        using var image = new Image<Rgba32>(400, 230, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            // Inside the callback, each glyph of a text is copied from its coverage mask, its origin snapped to a
+            // quarter of a pixel along the line: much faster for many labels than filling each text as one shape
+            canvas.GlyphMasks(LabelGlyphs, masked =>
+            {
+                for (var row = 0; row < 12; row++)
+                {
+                    for (var column = 0; column < 4; column++)
+                    {
+                        var value = ((row * 4) + column + 1) * 1.25;
+                        masked.FillText(ink, string.Create(CultureInfo.InvariantCulture, $"{value:0.00} ms"), font, 13, new PointD(10 + (column * 96), 8 + (row * 18)));
+                    }
+                }
+            });
+        });
         image.Save(outputPath);
     }
     #endregion

@@ -27,8 +27,11 @@ internal sealed partial class DrawingSession
     /// <summary>The cache of the masks of the texts of the scope, or <see langword="null"/> outside of a scope.</summary>
     private GlyphCache? _textGlyphMasks;
 
-    /// <summary>The cache of the scopes that were given none: emptied when the outermost scope ends.</summary>
+    /// <summary>The cache of the scopes of this session that were given none: emptied when the last of them ends.</summary>
     private GlyphCache? _scopeGlyphMasks;
+
+    /// <summary>The number of scopes of this session that use <see cref="_scopeGlyphMasks"/> and have not ended.</summary>
+    private int _scopeGlyphMaskUses;
 
     /// <summary>Draws the texts of the draw calls that follow from glyph masks kept in a cache.</summary>
     /// <param name="cache">The cache, or <see langword="null"/> for one that lives until the scope ends.</param>
@@ -37,18 +40,32 @@ internal sealed partial class DrawingSession
     {
         _cancellationToken.ThrowIfCancellationRequested();
         var previous = _textGlyphMasks;
-        _textGlyphMasks = cache ?? (_scopeGlyphMasks ??= new GlyphCache(ScopeGlyphMaskBytes, _image.Owner.Scope));
+        if (cache is null)
+        {
+            _textGlyphMasks = _scopeGlyphMasks ??= new GlyphCache(ScopeGlyphMaskBytes, _image.Owner.Scope);
+            _scopeGlyphMaskUses++;
+        }
+        else
+        {
+            _textGlyphMasks = cache;
+        }
+
         return previous;
     }
 
     /// <summary>Sets the cache back to what <see cref="SetGlyphMasks"/> returned: nothing is rented, and nothing fails.</summary>
+    /// <remarks>
+    /// The cache of this session is emptied, and its bytes released, when the last scope that uses it ends, even when the
+    /// scope around it uses a cache inherited from another session (a layer, or the tile of a pattern).
+    /// </remarks>
     public void RestoreGlyphMasks(GlyphCache? previous)
     {
-        _textGlyphMasks = previous;
-        if (previous is null)
+        if (_textGlyphMasks is not null && ReferenceEquals(_textGlyphMasks, _scopeGlyphMasks) && --_scopeGlyphMaskUses == 0)
         {
-            _scopeGlyphMasks?.Clear();
+            _scopeGlyphMasks.Clear();
         }
+
+        _textGlyphMasks = previous;
     }
 
     /// <summary>Fills a layout at a point glyph by glyph, from masks, when the transformation keeps the axes or swaps them.</summary>

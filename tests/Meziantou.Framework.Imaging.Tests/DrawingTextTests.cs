@@ -1668,6 +1668,23 @@ public sealed class DrawingTextTests
             Ct);
         Assert.True(inside - after >= 64 * 1024, $"{inside - after} bytes are charged for the masks");
 
+        // The cache of a scope inside the tile of a pattern, under a scope of the canvas, is released when the tile is drawn
+        long Leftover(DrawingAction tile)
+        {
+            using var tiled = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0));
+            long bytes = 0;
+            tiled.Draw(
+                canvas =>
+                {
+                    canvas.GlyphMasks(cache: null, masked => masked.FillRectangle(new PatternBrush(new Rectangle(0, 0, 360, 40), tile), new RectangleD(0, 0, 360, 40)));
+                    bytes = tiled.Owner.Scope.LiveBytes;
+                },
+                Ct);
+            return bytes;
+        }
+
+        Assert.Equal(Leftover(draw), Leftover(tile => tile.GlyphMasks(cache: null, draw)));
+
         // Under a limit that leaves no room for them, the masks are not kept: the text is drawn, with the same pixels
         using var measured = new Image<Rgb24>(360, 40, new Rgb24(0, 0, 0));
         measured.Draw(canvas => canvas.GlyphMasks(new GlyphCache(1 << 20), draw), Ct);

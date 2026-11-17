@@ -213,10 +213,11 @@ public sealed class DragAndDropTests : IDisposable
         input.Mouse.Down();
         input.Mouse.Move(50, 150);
 
-        // The drag consumes the keys pressed during it, and their releases, even after Escape ends it
+        // The drag consumes the keys pressed during it, their repeats and their releases, even after Escape ends it
         input.Keyboard.Press("a");
         input.Keyboard.Down("b");
         input.Keyboard.Press("Escape");
+        input.Keyboard.Down("b");
         input.Keyboard.Up("b");
         input.Mouse.Up();
         input.Keyboard.Press("c");

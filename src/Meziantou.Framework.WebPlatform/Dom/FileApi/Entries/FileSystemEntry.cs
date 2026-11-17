@@ -298,12 +298,25 @@ public sealed class FileSystemFileEntry : FileSystemEntry
     /// <inheritdoc/>
     public override bool IsFile => true;
 
-    /// <summary>Calls <paramref name="successCallback"/> (from a task) with a new <see cref="FileApi.File"/> of the content of the file.</summary>
+    /// <summary>
+    /// Calls <paramref name="successCallback"/> (from a task) with a <see cref="FileApi.File"/> of the content of the file, or
+    /// <paramref name="errorCallback"/> with a <c>NotFoundError</c> when the file is no longer in its file system (a file
+    /// that a script removed from its <c>DataTransfer</c>).
+    /// </summary>
     /// <seealso href="https://wicg.github.io/entries-api/#dom-filesystemfileentry-file"/>
     [IdlMember("file", "https://wicg.github.io/entries-api/#dom-filesystemfileentry-file")]
     public void File(FileCallback successCallback, ErrorCallback? errorCallback = null)
     {
         ArgumentNullException.ThrowIfNull(successCallback);
+
+        // https://wicg.github.io/entries-api/#dom-filesystemfileentry-file: the file is looked up again in its file system
+        // (the files of a DataTransfer that a script changes can be removed)
+        if (!Filesystem.TryEvaluate(Path, out var item) || !ReferenceEquals(item, _file))
+        {
+            Filesystem.QueueError(errorCallback, DomException.NotFound("The file does not exist"));
+            return;
+        }
+
         var file = _file.CreateFile(Filesystem.DropTime);
         Filesystem.QueueCallback(() => successCallback(file));
     }

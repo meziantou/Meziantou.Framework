@@ -5892,8 +5892,22 @@
         "partial": false,
         "href": "https://webaudio.github.io/web-audio-api/#DelayOptions"
       },
+      "MakeupGainOptions": {
+        "fragment": "enum MakeupGainOptions {\n    \"automatic\"\n};",
+        "type": "enum",
+        "name": "MakeupGainOptions",
+        "values": [
+          {
+            "type": "enum-value",
+            "value": "automatic",
+            "href": "https://webaudio.github.io/web-audio-api/#dom-makeupgainoptions-automatic"
+          }
+        ],
+        "extAttrs": [],
+        "href": "https://webaudio.github.io/web-audio-api/#enumdef-makeupgainoptions"
+      },
       "DynamicsCompressorNode": {
-        "fragment": "[Exposed=Window]\ninterface DynamicsCompressorNode : AudioNode {\n    constructor (BaseAudioContext context,\n                 optional DynamicsCompressorOptions options = {});\n    readonly attribute AudioParam threshold;\n    readonly attribute AudioParam knee;\n    readonly attribute AudioParam ratio;\n    readonly attribute float reduction;\n    readonly attribute AudioParam attack;\n    readonly attribute AudioParam release;\n};",
+        "fragment": "[Exposed=Window]\ninterface DynamicsCompressorNode : AudioNode {\n    constructor (BaseAudioContext context,\n                 optional DynamicsCompressorOptions options = {});\n    readonly attribute AudioParam threshold;\n    readonly attribute AudioParam knee;\n    readonly attribute AudioParam ratio;\n    readonly attribute float reduction;\n    readonly attribute AudioParam attack;\n    readonly attribute AudioParam release;\n    readonly attribute AudioParam makeupGain;\n};",
         "type": "interface",
         "name": "DynamicsCompressorNode",
         "inheritance": "AudioNode",
@@ -6034,6 +6048,22 @@
             "special": "",
             "readonly": true,
             "href": "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressornode-release"
+          },
+          {
+            "type": "attribute",
+            "name": "makeupGain",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "AudioParam"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressornode-makeupgain"
           }
         ],
         "extAttrs": [
@@ -6051,7 +6081,7 @@
         "href": "https://webaudio.github.io/web-audio-api/#DynamicsCompressorNode"
       },
       "DynamicsCompressorOptions": {
-        "fragment": "dictionary DynamicsCompressorOptions : AudioNodeOptions {\n    float attack = 0.003;\n    float knee = 30;\n    float ratio = 12;\n    float release = 0.25;\n    float threshold = -24;\n};",
+        "fragment": "dictionary DynamicsCompressorOptions : AudioNodeOptions {\n    float attack = 0.003;\n    float knee = 30;\n    (float or MakeupGainOptions) makeupGain = \"automatic\";\n    float ratio = 12;\n    float release = 0.25;\n    float threshold = -24;\n};",
         "type": "dictionary",
         "name": "DynamicsCompressorOptions",
         "inheritance": "AudioNodeOptions",
@@ -6093,6 +6123,42 @@
             },
             "required": false,
             "href": "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-knee"
+          },
+          {
+            "type": "field",
+            "name": "makeupGain",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": true,
+              "idlType": [
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "float"
+                },
+                {
+                  "type": "dictionary-type",
+                  "extAttrs": [],
+                  "generic": "",
+                  "nullable": false,
+                  "union": false,
+                  "idlType": "MakeupGainOptions"
+                }
+              ]
+            },
+            "default": {
+              "type": "string",
+              "value": "automatic"
+            },
+            "required": false,
+            "href": "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-makeupgain"
           },
           {
             "type": "field",
@@ -9526,7 +9592,8 @@
         "AudioParam"
       ],
       "DynamicsCompressorOptions": [
-        "AudioNodeOptions"
+        "AudioNodeOptions",
+        "MakeupGainOptions"
       ],
       "GainNode": [
         "AudioNode",

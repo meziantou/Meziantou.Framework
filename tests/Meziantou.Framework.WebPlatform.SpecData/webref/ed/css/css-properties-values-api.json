@@ -31,7 +31,7 @@
           "initial": "the guaranteed-invalid value"
         }
       ],
-      "value": "@property <custom-property-name># { <declaration-list> }"
+      "value": "@property <custom-property-name># { <declaration-list> } | @property <custom-property-name> <css-type>? [: <declaration-value>? ]? ;"
     }
   ],
   "selectors": [],

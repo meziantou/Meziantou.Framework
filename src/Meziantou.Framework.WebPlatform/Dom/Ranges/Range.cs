@@ -15,28 +15,18 @@ public abstract class AbstractRange
         EndOffsetInternal = endOffset;
     }
 
-    private protected Node StartContainerInternal { get; set; }
+    internal Node StartContainerInternal { get; private protected set; }
 
     private protected uint StartOffsetInternal { get; set; }
 
-    private protected Node EndContainerInternal { get; set; }
+    internal Node EndContainerInternal { get; private protected set; }
 
     private protected uint EndOffsetInternal { get; set; }
-
-    /// <summary>Gets the node in which the range starts.</summary>
-    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-startcontainer"/>
-    [IdlMember("startContainer", "https://dom.spec.whatwg.org/#dom-range-startcontainer")]
-    public Node StartContainer => StartContainerInternal;
 
     /// <summary>Gets the offset of the start of the range within <c>startContainer</c>.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-range-startoffset"/>
     [IdlMember("startOffset", "https://dom.spec.whatwg.org/#dom-range-startoffset")]
     public uint StartOffset => StartOffsetInternal;
-
-    /// <summary>Gets the node in which the range ends.</summary>
-    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-endcontainer"/>
-    [IdlMember("endContainer", "https://dom.spec.whatwg.org/#dom-range-endcontainer")]
-    public Node EndContainer => EndContainerInternal;
 
     /// <summary>Gets the offset of the end of the range within <c>endContainer</c>.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-range-endoffset"/>
@@ -177,10 +167,31 @@ public sealed class StaticRangeInit
     public required uint EndOffset { get; init; }
 }
 
+/// <summary>A range whose boundary points are in nodes of a tree: the base class of <see cref="StaticRange"/> and <see cref="Range"/>.</summary>
+/// <seealso href="https://dom.spec.whatwg.org/#noderange"/>
+[IdlInterface("NodeRange", "https://dom.spec.whatwg.org/#noderange")]
+public abstract class NodeRange : AbstractRange
+{
+    private protected NodeRange(Node startContainer, uint startOffset, Node endContainer, uint endOffset)
+        : base(startContainer, startOffset, endContainer, endOffset)
+    {
+    }
+
+    /// <summary>Gets the node in which the range starts.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-startcontainer"/>
+    [IdlMember("startContainer", "https://dom.spec.whatwg.org/#dom-range-startcontainer")]
+    public Node StartContainer => StartContainerInternal;
+
+    /// <summary>Gets the node in which the range ends.</summary>
+    /// <seealso href="https://dom.spec.whatwg.org/#dom-range-endcontainer"/>
+    [IdlMember("endContainer", "https://dom.spec.whatwg.org/#dom-range-endcontainer")]
+    public Node EndContainer => EndContainerInternal;
+}
+
 /// <summary>https://dom.spec.whatwg.org/#interface-staticrange</summary>
 /// <seealso href="https://dom.spec.whatwg.org/#staticrange"/>
 [IdlInterface("StaticRange", "https://dom.spec.whatwg.org/#staticrange")]
-public sealed class StaticRange : AbstractRange
+public sealed class StaticRange : NodeRange
 {
     /// <summary>Creates a static range with the boundary points of the given initializer.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-staticrange-staticrange"/>
@@ -212,7 +223,7 @@ public sealed class StaticRange : AbstractRange
 /// <summary>https://dom.spec.whatwg.org/#interface-range</summary>
 /// <seealso href="https://dom.spec.whatwg.org/#range"/>
 [IdlInterface("Range", "https://dom.spec.whatwg.org/#range")]
-public sealed partial class Range : AbstractRange
+public sealed partial class Range : NodeRange
 {
     /// <summary>Compares the start of the given range to the start of this range.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-range-start_to_start"/>

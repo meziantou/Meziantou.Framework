@@ -477,7 +477,7 @@ internal sealed partial class Painter
                     // https://drafts.csswg.org/css-highlight-api-1/#range-invalidation: the static ranges that are not valid are ignored
                     if (range is not StaticRange { IsValid: false })
                     {
-                        ranges.Add((range.StartContainer, range.StartOffset, range.EndContainer, range.EndOffset));
+                        ranges.Add((range.StartContainerInternal, range.StartOffset, range.EndContainerInternal, range.EndOffset));
                     }
                 }
 

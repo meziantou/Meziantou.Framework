@@ -504,7 +504,7 @@
           ]
         }
       ],
-      "value": "@container <container-condition># { <rule-list> }"
+      "value": "@container <container-query-list> { <rule-list> }"
     },
     {
       "name": "@supports-condition",
@@ -581,6 +581,12 @@
       "value": "supports( <declaration> )",
       "href": "https://drafts.csswg.org/css-conditional-5/#funcdef-supports",
       "type": "function"
+    },
+    {
+      "name": "<container-query-list>",
+      "href": "https://drafts.csswg.org/css-conditional-5/#typedef-container-query-list",
+      "type": "type",
+      "value": "<container-condition>#"
     },
     {
       "name": "<container-condition>",

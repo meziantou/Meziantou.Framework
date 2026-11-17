@@ -353,6 +353,13 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var a1 = r.ToDomString(a[1]);
         o.InsertAdjacentText(a0, a1); return r.Adapter.Undefined;
     }
+    private static TValue Op_matchContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("matchContainer", 1, a.Length);
+        var a0 = r.ToDomString(a[0]);
+        var result = o.MatchContainer(a0); return r.Wrap(result);
+    }
     private static TValue Op_pseudo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
@@ -733,15 +740,6 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.GetAnimationsOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_GetAnimationsOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_GetAnimationsOptions(r, a[0]);
         var result = o.GetAnimations(a0); return r.FromSequence(result, static (r, e) => r.Wrap(e));
     }
-    #pragma warning disable WEBPLATEXP0005 // The binding exposes the experimental Web IDL member
-    private static TValue Op_matchContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
-    {
-        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
-        if (a.Length < 1) throw r.NotEnoughArguments("matchContainer", 1, a.Length);
-        var a0 = r.ToDomString(a[0]);
-        var result = o.MatchContainer(a0); return r.Wrap(result);
-    }
-    #pragma warning restore WEBPLATEXP0005
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "namespaceURI", Get_namespaceURI, null);
@@ -856,6 +854,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         r.DefineOperation(instanceTarget, "getElementsByClassName", 1, Op_getElementsByClassName);
         r.DefineOperation(instanceTarget, "insertAdjacentElement", 2, Op_insertAdjacentElement, ceReactions: true);
         r.DefineOperation(instanceTarget, "insertAdjacentText", 2, Op_insertAdjacentText);
+        r.DefineOperation(instanceTarget, "matchContainer", 1, Op_matchContainer);
         r.DefineOperation(instanceTarget, "pseudo", 1, Op_pseudo);
         r.DefineOperation(instanceTarget, "computedStyleMap", 0, Op_computedStyleMap);
         r.DefineOperation(instanceTarget, "startViewTransition", 0, Op_startViewTransition);
@@ -901,6 +900,5 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         r.DefineOperation(instanceTarget, "remove", 0, Op_remove, ceReactions: true);
         r.DefineOperation(instanceTarget, "animate", 1, Op_animate);
         r.DefineOperation(instanceTarget, "getAnimations", 0, Op_getAnimations);
-        r.DefineOperation(instanceTarget, "matchContainer", 1, Op_matchContainer);
     }
 }

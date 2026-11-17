@@ -1612,7 +1612,7 @@ internal sealed partial class Painter
 
     /// <summary>Returns the characters of a text fragment in a range, or null when the range does not intersect it.</summary>
     private static (int Start, int End)? GetIntersection(AbstractRange range, Text node, TextFragment fragment)
-        => GetIntersection(range.StartContainer, range.StartOffset, range.EndContainer, range.EndOffset, node, fragment);
+        => GetIntersection(range.StartContainerInternal, range.StartOffset, range.EndContainerInternal, range.EndOffset, node, fragment);
 
     /// <summary>
     /// Returns the characters of a text fragment between two boundary points, or null when there is none. The text of the

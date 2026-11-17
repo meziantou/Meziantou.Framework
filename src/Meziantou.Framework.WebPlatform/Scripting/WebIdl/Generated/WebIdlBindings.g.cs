@@ -423,6 +423,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Node"] = Binding_Node<TAdapter, TValue>.Binding,
             ["NodeIterator"] = Binding_NodeIterator<TAdapter, TValue>.Binding,
             ["NodeList"] = Binding_NodeList<TAdapter, TValue>.Binding,
+            ["NodeRange"] = Binding_NodeRange<TAdapter, TValue>.Binding,
             ["Notification"] = Binding_Notification<TAdapter, TValue>.Binding,
             ["NotificationEvent"] = Binding_NotificationEvent<TAdapter, TValue>.Binding,
             ["OfflineAudioCompletionEvent"] = Binding_OfflineAudioCompletionEvent<TAdapter, TValue>.Binding,

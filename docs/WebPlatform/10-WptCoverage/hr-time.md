@@ -25,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`audioworklet.https.html`](https://wpt.fyi/results/hr-time/audioworklet.https.html) | Fail | 1 / 6 | NOT IMPLEMENTED | `performance` (`WorkletPerformance`) in `AudioWorkletGlobalScope` |
+| [`audioworklet.https.html`](https://wpt.fyi/results/hr-time/audioworklet.https.html) | Fail | 4 / 6 | NOT IMPLEMENTED | `performance` (`WorkletPerformance`) in `AudioWorkletGlobalScope` |
 | [`basic.any.js`](https://wpt.fyi/results/hr-time/basic.any.js) | Pass | 10 / 10 |  |  |
 | [`clamped-time-origin-isolated.https.html`](https://wpt.fyi/results/hr-time/clamped-time-origin-isolated.https.html) | Pass | 1 / 1 |  |  |
 | [`clamped-time-origin.html`](https://wpt.fyi/results/hr-time/clamped-time-origin.html) | Pass | 1 / 1 |  |  |

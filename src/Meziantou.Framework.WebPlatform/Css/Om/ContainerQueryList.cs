@@ -7,8 +7,8 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>
 /// A list of container conditions evaluated for an element, whose state can be observed, created by
-/// <see cref="Element.MatchContainer"/>. The API is proposed in https://github.com/w3c/csswg-drafts/pull/13551 and is
-/// modeled on <see cref="MediaQueryList"/>.
+/// <see cref="Element.MatchContainer"/>. The API is defined by CSS Conditional 5 and is modeled on
+/// <see cref="MediaQueryList"/>. The <c>change</c> events are proposed in https://github.com/w3c/csswg-drafts/pull/13551.
 /// </summary>
 /// <remarks>
 /// The conditions are evaluated like the conditions of a <c>@container</c> rule that applies to the element (see
@@ -18,7 +18,6 @@ namespace Meziantou.Framework.WebPlatform.Css.Om;
 /// </remarks>
 /// <seealso href="https://drafts.csswg.org/css-conditional-5/#containerquerylist"/>
 [IdlInterface("ContainerQueryList", "https://drafts.csswg.org/css-conditional-5/#containerquerylist")]
-[Experimental(ExperimentalApis.MatchContainer, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
 {
     /// <summary>The container query lists with event listeners, kept alive as long as their element.</summary>
@@ -77,6 +76,7 @@ public sealed class ContainerQueryList : EventTarget, IRealmBoundPlatformObject
     /// <summary>Gets or sets the event handler of the <c>change</c> event.</summary>
     /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-onchange"/>
     [IdlMember("onchange", "https://drafts.csswg.org/css-conditional-5/#dom-containerquerylist-onchange")]
+    [Experimental(ExperimentalApis.ContainerQueryListChangeEvent, UrlFormat = ExperimentalApis.UrlFormat)]
     public Action<Event>? OnChange
     {
         get => GetEventHandler("change");

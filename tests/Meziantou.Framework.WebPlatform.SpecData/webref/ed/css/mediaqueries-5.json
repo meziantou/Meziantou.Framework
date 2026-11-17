@@ -682,6 +682,29 @@
           ]
         },
         {
+          "name": "prefers-bold-text",
+          "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-prefers-bold-text",
+          "for": "@media",
+          "value": "no-preference | bold",
+          "type": "discrete",
+          "values": [
+            {
+              "name": "no-preference",
+              "prose": "Indicates that the user has made no preference known to the system. This keyword value evaluates as false in the boolean context.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-bold-text-no-preference",
+              "type": "value",
+              "value": "no-preference"
+            },
+            {
+              "name": "bold",
+              "prose": "Indicates that the user has notified the system that they prefer interface and page text to be rendered with a heavier/bolder weight.",
+              "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-prefers-bold-text-bold",
+              "type": "value",
+              "value": "bold"
+            }
+          ]
+        },
+        {
           "name": "prefers-reduced-data",
           "href": "https://drafts.csswg.org/mediaqueries-5/#descdef-media-prefers-reduced-data",
           "for": "@media",

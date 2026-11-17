@@ -19,8 +19,9 @@ identifier to use the feature:
 or locally:
 
 ```csharp
-#pragma warning disable WEBPLATEXP0005
 var query = element.MatchContainer("(width > 400px)");
+#pragma warning disable WEBPLATEXP0005
+query.OnChange = e => Console.WriteLine(query.Matches);
 #pragma warning restore WEBPLATEXP0005
 ```
 
@@ -46,11 +47,13 @@ and their `*Unsafe` variants) are defined by the
 
 <a id="WEBPLATEXP0002"></a>
 
-## WEBPLATEXP0002: Streaming HTML insertion
+## WEBPLATEXP0002: Streaming HTML insertion (retired)
 
-The streaming HTML insertion methods proposed by [whatwg/html#12758](https://github.com/whatwg/html/pull/12758):
-`HtmlStreamWriter`, and `StreamHtml()`, `StreamAppendHtml()`, `StreamPrependHtml()`, `StreamBeforeHtml()`,
-`StreamAfterHtml()`, `StreamReplaceWithHtml()` and their `*Unsafe` variants on `Element`, `ShadowRoot` and `CharacterData`.
+The streaming HTML insertion methods (`HtmlStreamWriter`, and `StreamHtml()`, `StreamAppendHtml()`, `StreamPrependHtml()`,
+`StreamBeforeHtml()`, `StreamAfterHtml()`, `StreamReplaceWithHtml()` and their `*Unsafe` variants on `Element`,
+`ShadowRoot` and `CharacterData`) are defined by the
+[HTML Standard](https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#html-insertion-methods) since
+[whatwg/html#12758](https://github.com/whatwg/html/pull/12758) was merged: they are not experimental anymore.
 
 <a id="WEBPLATEXP0003"></a>
 
@@ -71,10 +74,12 @@ specification no longer defines it), and `CssPrivateRule`, the `@private` rule
 
 <a id="WEBPLATEXP0005"></a>
 
-## WEBPLATEXP0005: Element.matchContainer()
+## WEBPLATEXP0005: ContainerQueryList change events
 
-`Element.MatchContainer()` and `ContainerQueryList`, proposed by
-[w3c/csswg-drafts#13551](https://github.com/w3c/csswg-drafts/pull/13551) as an extension of CSS Conditional 5.
+`ContainerQueryList.OnChange`: the `change` events of `ContainerQueryList`, proposed by
+[w3c/csswg-drafts#13551](https://github.com/w3c/csswg-drafts/pull/13551). `Element.MatchContainer()` and the other members
+of `ContainerQueryList` are defined by [CSS Conditional 5](https://drafts.csswg.org/css-conditional-5/#containerquerylist)
+and are not experimental.
 
 <a id="WEBPLATEXP0006"></a>
 

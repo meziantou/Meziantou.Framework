@@ -24,6 +24,7 @@ internal static class Binding_AudioWorkletGlobalScope<TAdapter, TValue> where TA
     private static TValue Get_sampleRate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletGlobalScope>(t, Binding); return r.FromNumber((double)o.SampleRate); }
     private static TValue Get_renderQuantumSize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletGlobalScope>(t, Binding); return r.FromNumber((double)o.RenderQuantumSize); }
     private static TValue Get_port(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletGlobalScope>(t, Binding); return r.Wrap(o.Port); }
+    private static TValue Get_performance(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletGlobalScope>(t, Binding); return r.Wrap(o.Performance); }
     private static TValue Op_registerProcessor(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletGlobalScope>(t, Binding);
@@ -39,6 +40,7 @@ internal static class Binding_AudioWorkletGlobalScope<TAdapter, TValue> where TA
         r.DefineAttribute(instanceTarget, "sampleRate", Get_sampleRate, null);
         r.DefineAttribute(instanceTarget, "renderQuantumSize", Get_renderQuantumSize, null);
         r.DefineAttribute(instanceTarget, "port", Get_port, null);
+        r.DefineReplaceableAttribute(instanceTarget, "performance", Get_performance);
         r.DefineOperation(instanceTarget, "registerProcessor", 2, Op_registerProcessor);
     }
 }

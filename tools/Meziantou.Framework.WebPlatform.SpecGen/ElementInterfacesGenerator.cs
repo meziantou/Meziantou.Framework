@@ -212,7 +212,7 @@ internal static class ElementInterfacesGenerator
             {
                 if (element.TryGetProperty("interface", out var interfaceName) && interfaceName.ValueKind == JsonValueKind.String)
                 {
-                    var name = element.GetProperty("name").GetString()!;
+                    var name = GetElementName(element);
                     if (!elements.Exists(e => e.Name == name))
                     {
                         elements.Add((name, interfaceName.GetString()!));
@@ -385,6 +385,25 @@ internal static class ElementInterfacesGenerator
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The local name of an element of the webref element files. When webref extracts the text of the definition with its
+    /// "Info about the 'a' reference" panel (e.g. the elements of SVG 2), the name is the fragment of its link
+    /// (<c>#elementdef-a</c>).
+    /// </summary>
+    private static string GetElementName(JsonElement element)
+    {
+        const string ElementDefinitionPrefix = "#elementdef-";
+        var name = element.GetProperty("name").GetString()!;
+        if (name.Contains(' ', StringComparison.Ordinal)
+            && element.TryGetProperty("href", out var href) && href.GetString() is { } url
+            && url.LastIndexOf(ElementDefinitionPrefix, StringComparison.Ordinal) is var index and >= 0)
+        {
+            return url[(index + ElementDefinitionPrefix.Length)..];
+        }
+
+        return name;
     }
 
     private static bool InheritsFrom(IdlModel idl, IdlDefinition definition, string baseName)

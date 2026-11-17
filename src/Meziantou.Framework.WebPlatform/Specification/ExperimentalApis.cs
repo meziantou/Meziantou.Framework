@@ -15,17 +15,14 @@ internal static class ExperimentalApis
     /// <summary>The URL of the documentation of the diagnostics.</summary>
     public const string UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}";
 
-    /// <summary>The streaming HTML insertion methods (https://github.com/whatwg/html/pull/12758): <c>streamHTML()</c>, <c>streamAppendHTML()</c>...</summary>
-    public const string StreamingHtmlInsertion = "WEBPLATEXP0002";
-
     /// <summary>The declarative partial updates (https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md).</summary>
     public const string DeclarativePartialUpdates = "WEBPLATEXP0003";
 
     /// <summary>The @result and @private rules of CSS Mixins (https://github.com/w3c/csswg-drafts/issues/14243).</summary>
     public const string CssMixinResultAndPrivateRules = "WEBPLATEXP0004";
 
-    /// <summary><c>Element.matchContainer()</c> and <c>ContainerQueryList</c> (https://github.com/w3c/csswg-drafts/pull/13551).</summary>
-    public const string MatchContainer = "WEBPLATEXP0005";
+    /// <summary>The <c>change</c> events of <c>ContainerQueryList</c> (https://github.com/w3c/csswg-drafts/pull/13551).</summary>
+    public const string ContainerQueryListChangeEvent = "WEBPLATEXP0005";
 
     /// <summary>The class prefix selector of Selectors 5.</summary>
     public const string ClassPrefixSelector = "WEBPLATEXP0006";

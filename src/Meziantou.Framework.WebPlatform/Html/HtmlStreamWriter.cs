@@ -9,7 +9,6 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <c>template for</c> elements patch the content as it arrives. In JavaScript, the methods return a <c>WritableStream</c>
 /// whose sink is this writer.
 /// </summary>
-[Experimental(ExperimentalApis.StreamingHtmlInsertion, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class HtmlStreamWriter
 {
     private readonly Node _target;

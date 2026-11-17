@@ -328,11 +328,10 @@ public partial class Element
 {
     /// <summary>
     /// Returns a <see cref="ContainerQueryList"/> that evaluates a comma-separated list of container conditions for the
-    /// element (https://github.com/w3c/csswg-drafts/pull/13551, a tentative extension of CSS Conditional 5).
+    /// element.
     /// </summary>
     /// <seealso href="https://drafts.csswg.org/css-conditional-5/#dom-element-matchcontainer"/>
     [IdlMember("matchContainer", "https://drafts.csswg.org/css-conditional-5/#dom-element-matchcontainer")]
-    [Experimental(ExperimentalApis.MatchContainer, UrlFormat = ExperimentalApis.UrlFormat)]
     public ContainerQueryList MatchContainer(string query)
     {
         ArgumentNullException.ThrowIfNull(query);

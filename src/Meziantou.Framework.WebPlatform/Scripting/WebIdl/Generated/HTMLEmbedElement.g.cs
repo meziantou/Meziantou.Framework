@@ -31,6 +31,10 @@ internal static class Binding_HTMLEmbedElement<TAdapter, TValue> where TAdapter 
     private static void Set_align(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding); var x = r.ToDomString(v); o.Align = x; }
     private static TValue Get_name(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding); return r.FromString(o.Name); }
     private static void Set_name(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding); var x = r.ToDomString(v); o.Name = x; }
+    private static TValue Get_hspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding); return r.FromNumber((double)o.Hspace); }
+    private static void Set_hspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding); var x = r.ToUnsignedLong(v, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None); o.Hspace = x; }
+    private static TValue Get_vspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding); return r.FromNumber((double)o.Vspace); }
+    private static void Set_vspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding); var x = r.ToUnsignedLong(v, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None); o.Vspace = x; }
     private static TValue Op_getSVGDocument(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlEmbedElement>(t, Binding);
@@ -44,6 +48,8 @@ internal static class Binding_HTMLEmbedElement<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "height", Get_height, Set_height);
         r.DefineAttribute(instanceTarget, "align", Get_align, Set_align);
         r.DefineAttribute(instanceTarget, "name", Get_name, Set_name);
+        r.DefineAttribute(instanceTarget, "hspace", Get_hspace, Set_hspace);
+        r.DefineAttribute(instanceTarget, "vspace", Get_vspace, Set_vspace);
         r.DefineOperation(instanceTarget, "getSVGDocument", 0, Op_getSVGDocument);
     }
 }

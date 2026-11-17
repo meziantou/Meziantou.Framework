@@ -200,28 +200,47 @@
         "href": "https://wicg.github.io/autofill-event/#dictdef-autofilleventinit"
       },
       "AutofillValueEntry": {
-        "fragment": "typedef sequence<any> AutofillValueEntry;",
-        "type": "typedef",
+        "fragment": "dictionary AutofillValueEntry {\n  required HTMLElement field;\n  required DOMString value;\n};",
+        "type": "dictionary",
         "name": "AutofillValueEntry",
-        "idlType": {
-          "type": "typedef-type",
-          "extAttrs": [],
-          "generic": "sequence",
-          "nullable": false,
-          "union": false,
-          "idlType": [
-            {
-              "type": "typedef-type",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "field",
+            "name": "field",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
               "extAttrs": [],
               "generic": "",
               "nullable": false,
               "union": false,
-              "idlType": "any"
-            }
-          ]
-        },
+              "idlType": "HTMLElement"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/autofill-event/#dom-autofillvalueentry-field"
+          },
+          {
+            "type": "field",
+            "name": "value",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "default": null,
+            "required": true,
+            "href": "https://wicg.github.io/autofill-event/#dom-autofillvalueentry-value"
+          }
+        ],
         "extAttrs": [],
-        "href": "https://wicg.github.io/autofill-event/#typedefdef-autofillvalueentry"
+        "partial": false,
+        "href": "https://wicg.github.io/autofill-event/#dictdef-autofillvalueentry"
       }
     },
     "idlExtendedNames": {},
@@ -241,11 +260,15 @@
       "AutofillEventInit": [
         "EventInit",
         "AutofillValueEntry"
+      ],
+      "AutofillValueEntry": [
+        "HTMLElement"
       ]
     },
     "externalDependencies": [
       "Event",
-      "EventInit"
+      "EventInit",
+      "HTMLElement"
     ],
     "hasObsoleteIdl": false
   }

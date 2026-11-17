@@ -46,7 +46,7 @@
     "total": 2
   },
   "webmcp/imperative/executeTool-error-window-onerror.https.html": {
-    "total": 2
+    "total": 6
   },
   "webmcp/imperative/executeTool-events.https.html": {
     "total": 3,
@@ -155,7 +155,13 @@
     }
   },
   "webmcp/imperative/opaque-origin-tools.https.html": {
-    "total": 2
+    "total": 5,
+    "failures": {
+      "A document inside a sandboxed (opaque) iframe can execute its own tool": "FAIL",
+      "An opaque origin document can register and execute its own tools": "FAIL",
+      "An opaque-origin srcdoc child can register and execute its own tool": "FAIL",
+      "Two Documents sharing a copied opaque origin can see and execute each other's tools": "FAIL"
+    }
   },
   "webmcp/imperative/permissions-policy.https.html": {
     "total": 8,

@@ -411,6 +411,9 @@
       "occluder.style.opacity = 0": "FAIL"
     }
   },
+  "intersection-observer/v2/fragmented-occluder.html": {
+    "total": 3
+  },
   "intersection-observer/v2/iframe-target.html": {
     "total": 2
   },

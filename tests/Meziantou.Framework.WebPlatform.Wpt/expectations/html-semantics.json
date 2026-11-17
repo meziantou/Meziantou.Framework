@@ -197,6 +197,195 @@
   "html/semantics/document-metadata/the-link-element/stylesheet-with-base.html": {
     "reftest": "PASS"
   },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-basic.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "A module stylesheet link is exposed via styleSheets, not adoptedStyleSheets.": "NOTRUN",
+      "A module stylesheet link resolves, connects, and applies styles.": "TIMEOUT",
+      "Module links expose pending, completed, and cached CSS module fetches.": "NOTRUN",
+      "The import attribute takes precedence over href.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-cache-lifetime.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "A connected clone shares the original module link's sheet.": "NOTRUN",
+      "A module link retries a failed fetch after the server recovers.": "FAIL"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-classic-sharing.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Module links expose one shared CSSOM object; classic links do not.": "TIMEOUT",
+      "declaration recalculates styles for shared module links and adopted sheets.": "NOTRUN",
+      "insertRule recalculates styles for shared module links and adopted sheets.": "NOTRUN",
+      "replaceSync recalculates styles for shared module links and adopted sheets.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-classification.html": {
+    "harness": "TIMEOUT",
+    "total": 9,
+    "failures": {
+      "A module stylesheet link with type=\"\" uses import.": "FAIL",
+      "A module stylesheet link with type=\"text/css\" uses import.": "FAIL",
+      "A module stylesheet link with type=\"text/plain\" uses import.": "TIMEOUT",
+      "A module stylesheet link with type=null uses import.": "FAIL",
+      "A nonempty import attribute takes precedence over a valid href.": "NOTRUN",
+      "Changing to preload before insertion selects the appropriate fetching mode.": "NOTRUN",
+      "Removing import before insertion selects classic fetching.": "NOTRUN",
+      "Restoring import before insertion selects module fetching.": "NOTRUN",
+      "Restoring stylesheet before insertion selects the appropriate fetching mode.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-constructed.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "@import is ignored (dropped, not fetched) in CSS module sheets.": "NOTRUN",
+      "Module sheets are ownerless; classic sheets are link-owned.": "TIMEOUT"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-document-context.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "A module link in a document without a window fires an asynchronous error.": "TIMEOUT",
+      "A module link inserted after iframe detachment can be reprocessed without crashing.": "NOTRUN",
+      "A module link pending during iframe detachment can be reprocessed without crashing.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-encoding.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "UTF-8 CSS module versus classic response charset, BOM false": "TIMEOUT",
+      "UTF-8 CSS module versus classic response charset, BOM true": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-failure-events.html": {
+    "harness": "TIMEOUT",
+    "total": 9,
+    "failures": {
+      "Changing import cancels the queued failure for \"\".": "NOTRUN",
+      "Changing import cancels the queued failure for \"https://[invalid]/\".": "NOTRUN",
+      "Changing import cancels the queued failure for \"unmapped-specifier\".": "NOTRUN",
+      "Removing a link cancels its queued failure for \"\".": "NOTRUN",
+      "Removing a link cancels its queued failure for \"https://[invalid]/\".": "NOTRUN",
+      "Removing a link cancels its queued failure for \"unmapped-specifier\".": "NOTRUN",
+      "Resolution failure for \"\" fires asynchronously.": "TIMEOUT",
+      "Resolution failure for \"https://[invalid]/\" fires asynchronously.": "NOTRUN",
+      "Resolution failure for \"unmapped-specifier\" fires asynchronously.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-fetch.html": {
+    "harness": "TIMEOUT",
+    "total": 7,
+    "failures": {
+      "A CSS response with HTTP status 404 fires error.": "NOTRUN",
+      "A CSS response with HTTP status 503 fires error.": "NOTRUN",
+      "A malformed absolute URL fires error and connects no sheet.": "NOTRUN",
+      "A revoked CSS blob URL fires error and connects no sheet.": "NOTRUN",
+      "A successful CSS module fetch fires load.": "NOTRUN",
+      "Non-CSS MIME type fires error and connects no sheet.": "NOTRUN",
+      "Unresolvable module specifier fires error and connects no sheet.": "TIMEOUT"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-implicit-scope.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Duplicate module links retain an implicit scope until the last reference is removed.": "NOTRUN",
+      "Empty-prelude @scope in a module sheet is rooted at the shadow host.": "TIMEOUT"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-import-map.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Import-map addresses keep the base URL used when the map was parsed.": "TIMEOUT",
+      "Late import maps can satisfy previously-unresolved bare specifiers.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-module-map-reuse.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "A script-added import map resolves a module link and shares its module with JavaScript.": "NOTRUN",
+      "JavaScript loads a CSS module first: the other consumer reuses the module map.": "TIMEOUT",
+      "link loads a CSS module first: the other consumer reuses the module map.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-modulepreload.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "modulepreload as=style, a module stylesheet link, and JavaScript import() share one CSSStyleSheet.": "FAIL"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-network.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "A failed network fetch fires error and connects no sheet.": "NOTRUN",
+      "A network CSS module connects after fetching and shares its identity.": "TIMEOUT",
+      "A redirected CSS module loads and resolves relative URLs from its response.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-ordering.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "document.styleSheets orders shared module links around a classic sheet that finishes fetching first.": "NOTRUN",
+      "document.styleSheets preserves interleaved shared module and classic entries after moving and removing links.": "TIMEOUT",
+      "shadowRoot.styleSheets orders shared module links around a classic sheet that finishes fetching first.": "NOTRUN",
+      "shadowRoot.styleSheets preserves interleaved shared module and classic entries after moving and removing links.": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-pending-import-removal.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Removing import while a connected module link's failed fetch is pending ignores its completion.": "NOTRUN",
+      "Removing import while a connected module link's successful fetch is pending ignores its completion.": "FAIL"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-reference-lifetime.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Async replace, declaration mutation, deleteRule, and disabled survive mixed reference removal.": "TIMEOUT"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-request-counts.html": {
+    "harness": "ERROR",
+    "total": 5,
+    "failures": {
+      "Request counter negative control does not merge ordinary fetches": "NOTRUN",
+      "import first, cached consumers share one request": "NOTRUN",
+      "import first, pending consumers share one request": "NOTRUN",
+      "link first, cached consumers share one request": "FAIL",
+      "link first, pending consumers share one request": "NOTRUN"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-scopes.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Mixed duplicate adoptions and module links retain independent counted tree-scope references.": "NOTRUN",
+      "Moving a module link transfers its stylesheet and mutation invalidation to the new tree scope.": "TIMEOUT"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-shared-identity.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Distinct specifiers resolving to a data URL share sheet identity.": "TIMEOUT",
+      "Distinct specifiers resolving to a static CSS file share sheet identity.": "NOTRUN"
+    }
+  },
   "html/semantics/document-metadata/the-meta-element/color-scheme/meta-color-scheme-attribute-changes.html": {
     "total": 8
   },
@@ -1830,6 +2019,9 @@
   "html/semantics/embedded-content/media-elements/track/track-element/track-selection-metadata.html": {
     "total": 1
   },
+  "html/semantics/embedded-content/media-elements/track/track-element/track-selection-parser-adoption-agency.html": {
+    "total": 2
+  },
   "html/semantics/embedded-content/media-elements/track/track-element/track-selection-task-order.html": {
     "total": 1
   },
@@ -2709,6 +2901,9 @@
   },
   "html/semantics/embedded-content/the-iframe-element/sandbox-toggle-in-inactive-document-crash.html": {
     "crashtest": "PASS"
+  },
+  "html/semantics/embedded-content/the-iframe-element/sandbox-top-close.sub.window.js": {
+    "total": 3
   },
   "html/semantics/embedded-content/the-iframe-element/sandbox-top-close.tentative.sub.window.js": {
     "total": 3
@@ -3834,6 +4029,12 @@
   "html/semantics/forms/form-control-infrastructure/association.window.js": {
     "total": 1
   },
+  "html/semantics/forms/form-control-infrastructure/form-attribute-tree-mutations.html": {
+    "total": 7
+  },
+  "html/semantics/forms/form-control-infrastructure/form-named-items-non-descendant.html": {
+    "total": 4
+  },
   "html/semantics/forms/form-control-infrastructure/form.html": {
     "total": 17
   },
@@ -4744,6 +4945,13 @@
   "html/semantics/forms/the-input-element/radio-focused-and-scrolled-into-view.html": {
     "total": 1
   },
+  "html/semantics/forms/the-input-element/radio-form-owner-reset.html": {
+    "total": 7,
+    "failures": {
+      "Changing the ID target reassociates a radio without joining the ownerless group": "FAIL",
+      "Disconnecting a subtree reassociates a radio with its ancestor form without joining the ownerless group": "FAIL"
+    }
+  },
   "html/semantics/forms/the-input-element/radio-form-owner.html": {
     "total": 1
   },
@@ -5431,8 +5639,10 @@
   "html/semantics/forms/the-select-element/customizable-select/select-input-parsing.tentative.html": {
     "total": 4,
     "failures": {
+      "Input tags should parse inside select before any options.": "FAIL",
       "Input tags should parse inside select if nested in another tag": "FAIL",
-      "Input tags should parse inside select if there are no options first.": "FAIL"
+      "Input tags should parse inside select when directly inside an <option>": "FAIL",
+      "Input tags should parse inside select when placed after an <option>": "FAIL"
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/select-inside-top-layer.html": {
@@ -5654,6 +5864,7 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-mutations.html": {
     "total": 8,
     "failures": {
+      "MutationObserver records during parsing of <select> with <selectedcontent>: test3": "FAIL",
       "MutationObserver records during parsing of <select> with <selectedcontent>: test6": "FAIL"
     }
   },
@@ -5671,7 +5882,10 @@
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html": {
-    "total": 8
+    "total": 10
+  },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-adoption-agency.html": {
+    "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.html": {
     "total": 1
@@ -5695,7 +5909,10 @@
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
-    "total": 10
+    "total": 10,
+    "failures": {
+      "Inserting selectedcontent performs a pending update of its select's selectedcontent elements.": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
     "total": 2
@@ -6888,6 +7105,12 @@
       "moving hover/focus between the invoker and the target prevents interest lost, method hover": "FAIL"
     }
   },
+  "html/semantics/interestfor/interestfor-delay-start-descendants.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Moving the pointer between descendants of an invoker does not restart interest-delay-start": "FAIL"
+    }
+  },
   "html/semantics/interestfor/interestfor-delay-start.tentative.html?layout=nested&method=focus": {
     "total": 8,
     "failures": {
@@ -6973,11 +7196,13 @@
     }
   },
   "html/semantics/interestfor/interestfor-hide-popover-interest-state.tentative.html": {
-    "total": 3,
+    "total": 5,
     "failures": {
-      "Canceling loseinterest during hidePopover() maintains interest": "FAIL",
       "Changing the popover attribute during hidePopover() clears interest": "FAIL",
-      "Disabling the invoker before hidePopover() clears interest": "FAIL"
+      "Disabling the invoker before hidePopover() clears interest": "FAIL",
+      "loseinterest fired due to hidePopover() is not cancelable, and interest is lost": "FAIL",
+      "loseinterest fired due to light dismiss is not cancelable, and interest is lost": "FAIL",
+      "loseinterest fired due to opening another popover is not cancelable, and interest is lost": "FAIL"
     }
   },
   "html/semantics/interestfor/interestfor-iframe-popover.tentative.html": {
@@ -7019,6 +7244,12 @@
   },
   "html/semantics/interestfor/interestfor-keyboard-invalidation.tentative.html": {
     "reftest": "FAIL"
+  },
+  "html/semantics/interestfor/interestfor-loseinterest-state-change.tentative.html": {
+    "total": 1,
+    "failures": {
+      "If a loseinterest handler changes the active interest target, the target popover is not hidden": "FAIL"
+    }
   },
   "html/semantics/interestfor/interestfor-on-popover-behavior.tentative.html": {
     "total": 2,
@@ -7121,6 +7352,13 @@
     "total": 1,
     "failures": {
       "Focusing invoker after closing popover with ESC should not re-trigger interest": "FAIL"
+    }
+  },
+  "html/semantics/interestfor/interestfor-suppress-focus-interest-reset.tentative.html": {
+    "total": 2,
+    "failures": {
+      "Focus interest isn't suppressed after focus restoration fails (display:none)": "FAIL",
+      "Focus interest isn't suppressed after focus restoration fails (inert)": "FAIL"
     }
   },
   "html/semantics/interestfor/interestfor-svg-a-event-dispatch.tentative.html": {
@@ -9430,10 +9668,16 @@
     "total": 5
   },
   "html/semantics/scripting-1/the-script-element/script-text-modifications-csp.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Modify inline script element's text after prepare-a-script before evaluation (CSP)": "FAIL"
+    }
   },
   "html/semantics/scripting-1/the-script-element/script-text-modifications.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Modify inline script element's text after prepare-a-script before evaluation": "FAIL"
+    }
   },
   "html/semantics/scripting-1/the-script-element/script-text-xhtml.xhtml": {
     "total": 1
@@ -9835,7 +10079,10 @@
     "total": 61
   },
   "html/semantics/sections/headingoffset-mutations.html": {
-    "total": 45
+    "total": 46
+  },
+  "html/semantics/sections/headingoffset-nested-shadow-roots-crash.html": {
+    "crashtest": "PASS"
   },
   "html/semantics/selectors/case-sensitivity/values.window.js": {
     "total": 276

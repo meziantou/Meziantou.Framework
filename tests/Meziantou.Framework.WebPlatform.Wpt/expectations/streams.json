@@ -134,6 +134,9 @@
   "streams/piping/transform-streams.any.js#sharedworker": {
     "total": 1
   },
+  "streams/queuing-strategies-size-function-navigation.window.js": {
+    "total": 24
+  },
   "streams/queuing-strategies-size-function-per-global.window.js": {
     "total": 2
   },

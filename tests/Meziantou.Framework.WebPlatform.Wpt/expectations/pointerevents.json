@@ -433,13 +433,7 @@
     "total": 1
   },
   "pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html": {
-    "total": 5,
-    "failures": {
-      "Nested same-origin iframes: relatedTarget is exposed across documents": "FAIL",
-      "Parent to same-origin iframe: relatedTarget is exposed across documents": "FAIL",
-      "Same-origin iframe to parent: relatedTarget is exposed across documents": "FAIL",
-      "Sibling same-origin iframes: relatedTarget is exposed across documents": "FAIL"
-    }
+    "total": 5
   },
   "pointerevents/pointerevent_boundary_events_cross_origin.html": {
     "total": 5

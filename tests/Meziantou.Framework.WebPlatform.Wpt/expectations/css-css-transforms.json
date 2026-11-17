@@ -1069,8 +1069,11 @@
   "css/css-transforms/parsing/backface-visibility-valid.html": {
     "total": 2
   },
+  "css/css-transforms/parsing/perspective-computed.html": {
+    "total": 8
+  },
   "css/css-transforms/parsing/perspective-invalid.html": {
-    "total": 3
+    "total": 4
   },
   "css/css-transforms/parsing/perspective-origin-computed.html": {
     "total": 21
@@ -1080,6 +1083,9 @@
   },
   "css/css-transforms/parsing/perspective-origin-valid.html": {
     "total": 18
+  },
+  "css/css-transforms/parsing/perspective-valid.html": {
+    "total": 9
   },
   "css/css-transforms/parsing/rotate-parsing-computed.html": {
     "total": 23

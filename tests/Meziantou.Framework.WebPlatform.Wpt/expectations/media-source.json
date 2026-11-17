@@ -41,6 +41,9 @@
   "media-source/URL-createObjectURL.html": {
     "total": 1
   },
+  "media-source/dedicated-worker/managed/mediasource-manager-worker-play.html": {
+    "total": 1
+  },
   "media-source/dedicated-worker/mediasource-worker-detach-element.html": {
     "total": 15
   },
@@ -77,6 +80,27 @@
   "media-source/last-frame-dimensions.html": {
     "total": 2
   },
+  "media-source/managed/mediasource-manager-bufferedchange-append.html": {
+    "total": 4
+  },
+  "media-source/managed/mediasource-manager-bufferedchange-endofstream.html": {
+    "total": 2
+  },
+  "media-source/managed/mediasource-manager-bufferedchange-remove.html": {
+    "total": 3
+  },
+  "media-source/managed/mediasource-manager-bufferedchangeevent-constructor.html": {
+    "total": 5
+  },
+  "media-source/managed/mediasource-manager-interfaces.html": {
+    "total": 4
+  },
+  "media-source/managed/mediasource-manager-streaming-detach.html": {
+    "total": 2
+  },
+  "media-source/managed/mediasource-manager-streaming.html": {
+    "total": 2
+  },
   "media-source/mediasource-activesourcebuffers.html": {
     "total": 8
   },
@@ -84,7 +108,7 @@
     "total": 2
   },
   "media-source/mediasource-addsourcebuffer.html": {
-    "total": 10
+    "total": 11
   },
   "media-source/mediasource-append-buffer.html": {
     "total": 24,

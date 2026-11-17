@@ -1398,6 +1398,41 @@
   "html/dom/documents/resource-metadata-management/document-lastModified.html": {
     "total": 1
   },
+  "html/dom/documents/resource-metadata-management/document-promises-with-defer-script.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "html/dom/documents/resource-metadata-management/document-promises-with-document-open-inside-domcontentloaded-of-parsed-document.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "The original document.loaded promise never fulfills": "NOTRUN",
+      "document.open() inside DOMContentLoaded resets the promises without affecting the fulfilled ones": "TIMEOUT"
+    }
+  },
+  "html/dom/documents/resource-metadata-management/document-promises-with-document-open-inside-domcontentloaded.tentative.html": {
+    "total": 1,
+    "failures": {
+      "document.parsed, document.contentLoaded, and document.loaded when document.open() happens inside DOMContentLoaded": "FAIL"
+    }
+  },
+  "html/dom/documents/resource-metadata-management/document-promises-with-document-open.tentative.html": {
+    "total": 1,
+    "failures": {
+      "document.parsed, document.contentLoaded, and document.loaded with document.open()": "FAIL"
+    }
+  },
+  "html/dom/documents/resource-metadata-management/document-promises.tentative.html": {
+    "total": 8,
+    "failures": {
+      "Setup code": "FAIL",
+      "The promise getters are unscopable": "FAIL",
+      "The promises are stable, distinct objects": "FAIL",
+      "document.contentLoaded": "FAIL",
+      "document.loaded": "FAIL",
+      "document.parsed": "FAIL"
+    }
+  },
   "html/dom/documents/resource-metadata-management/document-readyState.html": {
     "total": 7
   },
@@ -2009,7 +2044,7 @@
     "total": 808
   },
   "html/dom/idlharness.https.html?exclude=(Document|Window|HTML.+)": {
-    "total": 1806,
+    "total": 1878,
     "failures": {
       "Location interface: stringifier": "FAIL",
       "NotRestoredReasonDetails interface object length": "FAIL",
@@ -2039,7 +2074,7 @@
     "total": 298
   },
   "html/dom/idlharness.https.html?include=HTML.+": {
-    "total": 3951
+    "total": 3955
   },
   "html/dom/partial-updates/tentative/chained-streaming-templates-with-custom-element.html": {
     "total": 1
@@ -2076,24 +2111,33 @@
     "total": 1
   },
   "html/dom/partial-updates/tentative/fragment/sanitize-default.html": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Template with empty sanitize attribute applies default safe sanitization and discards script tags": "FAIL"
+      "Template with src applies default safe sanitization unless sanitize=\"unsafe\" is specified": "TIMEOUT"
     }
   },
   "html/dom/partial-updates/tentative/fragment/sanitize-nested.html": {
-    "total": 6
+    "total": 3,
+    "failures": {
+      "Default template src inside streamHTMLUnsafe with bespoke sanitizer clones sanitizer and calls removeUnsafe()": "FAIL",
+      "Nested template src with sanitize=\"unsafe\" inside a safe outer template src remains sanitized": "FAIL",
+      "template src with sanitize=\"unsafe\" inside streamHTML inherits the safe sanitizer": "FAIL"
+    }
   },
   "html/dom/partial-updates/tentative/fragment/sanitize-regular.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "The sanitize attribute only applies when src is present": "FAIL"
+    }
   },
   "html/dom/partial-updates/tentative/fragment/sanitize-template-element.html": {
     "total": 1
   },
   "html/dom/partial-updates/tentative/fragment/sanitize-unsafe.html": {
-    "total": 1,
+    "total": 3,
     "failures": {
-      "Template with non-empty sanitize attribute values (unsafe or invalid) bypasses safe sanitization and allows script tags": "FAIL"
+      "template src with sanitize=\"unsafe\" inside streamHTMLUnsafe() keeps but does not run scripts": "FAIL"
     }
   },
   "html/dom/partial-updates/tentative/fragment/src-buffered.sub.html": {
@@ -2107,6 +2151,12 @@
   },
   "html/dom/partial-updates/tentative/fragment/src-csp.sub.html": {
     "total": 1
+  },
+  "html/dom/partial-updates/tentative/fragment/src-mime-type.html": {
+    "total": 1,
+    "failures": {
+      "Template src accepts text/fragment and rejects text/html or text/plain": "FAIL"
+    }
   },
   "html/dom/partial-updates/tentative/fragment/src-nonce.sub.html": {
     "total": 2
@@ -2323,6 +2373,13 @@
   },
   "html/dom/render-blocking/element-render-blocking-top-of-document.html?top": {
     "total": 1
+  },
+  "html/dom/render-blocking/expect-parser-associated-form.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "A parser-inserted flag must not skip internal resource link processing on insertion": "FAIL"
+    }
   },
   "html/dom/render-blocking/link-rel-expect-supported.html": {
     "total": 1

@@ -14,6 +14,9 @@
   "resize-observer/devicepixel2.html": {
     "reftest": "PASS"
   },
+  "resize-observer/entry-size-arrays-cached.html": {
+    "total": 1
+  },
   "resize-observer/eventloop.html": {
     "total": 5
   },

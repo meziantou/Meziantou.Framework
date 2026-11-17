@@ -5,6 +5,9 @@
       "The third item should be snapped to by default, not the second's child.": "FAIL"
     }
   },
+  "css/css-scroll-snap/crashtests/br-as-overscroll-area.html": {
+    "crashtest": "PASS"
+  },
   "css/css-scroll-snap/crashtests/fractional-covering-area-crash.html": {
     "crashtest": "PASS"
   },
@@ -72,10 +75,10 @@
     "total": 14
   },
   "css/css-scroll-snap/parsing/scroll-margin-computed.html": {
-    "total": 11
+    "total": 12
   },
   "css/css-scroll-snap/parsing/scroll-margin-invalid.html": {
-    "total": 20
+    "total": 21
   },
   "css/css-scroll-snap/parsing/scroll-margin-shorthand.html": {
     "total": 20
@@ -96,7 +99,7 @@
     "total": 36
   },
   "css/css-scroll-snap/parsing/scroll-padding-computed.html": {
-    "total": 40
+    "total": 42
   },
   "css/css-scroll-snap/parsing/scroll-padding-invalid.html": {
     "total": 28
@@ -105,16 +108,16 @@
     "total": 20
   },
   "css/css-scroll-snap/parsing/scroll-padding-valid.html": {
-    "total": 35
+    "total": 36
   },
   "css/css-scroll-snap/parsing/scroll-snap-align-computed.html": {
     "total": 7
   },
   "css/css-scroll-snap/parsing/scroll-snap-align-invalid.html": {
-    "total": 3
+    "total": 4
   },
   "css/css-scroll-snap/parsing/scroll-snap-align-valid.html": {
-    "total": 7
+    "total": 8
   },
   "css/css-scroll-snap/parsing/scroll-snap-stop-before.html": {
     "total": 1,
@@ -135,7 +138,7 @@
     "total": 8
   },
   "css/css-scroll-snap/parsing/scroll-snap-type-invalid.html": {
-    "total": 14
+    "total": 16
   },
   "css/css-scroll-snap/parsing/scroll-snap-type-pair.html": {
     "total": 3

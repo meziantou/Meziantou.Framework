@@ -1,4 +1,16 @@
 {
+  "entries-api/filesystemdirectoryentry-getDirectory.html": {
+    "total": 10,
+    "failures": {
+      "getDirectory() rejects an invalid path: \"\\\\\"": "FAIL"
+    }
+  },
+  "entries-api/filesystemdirectoryentry-getFile.html": {
+    "total": 12,
+    "failures": {
+      "getFile() rejects an invalid path: \"\\\\\"": "FAIL"
+    }
+  },
   "entries-api/filesystemdirectoryreader.html": {
     "total": 4
   },

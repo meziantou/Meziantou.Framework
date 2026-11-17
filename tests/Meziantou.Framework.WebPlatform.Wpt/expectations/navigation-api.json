@@ -581,6 +581,15 @@
   "navigation-api/navigate-event/sourceElement-cross-origin.sub.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/sourceElement-shadow-tree.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "sourceElement for an <a> in a closed shadow root is the shadow host": "NOTRUN",
+      "sourceElement for an <a> in a open shadow root is the shadow host": "NOTRUN",
+      "sourceElement for an <svg:a> in a <use> shadow tree is the <use> element": "TIMEOUT"
+    }
+  },
   "navigation-api/navigate-event/traverseTo-detach.html": {
     "total": 1
   },
@@ -637,6 +646,9 @@
   },
   "navigation-api/navigation-activation/activation-initial-about-blank.html": {
     "total": 1
+  },
+  "navigation-api/navigation-activation/activation-javascript-url.html": {
+    "total": 2
   },
   "navigation-api/navigation-activation/activation-push-cross-origin.html": {
     "total": 1
@@ -695,6 +707,9 @@
   "navigation-api/navigation-history-entry/entries-after-cross-document-replace-with-forward-entries.html": {
     "total": 2
   },
+  "navigation-api/navigation-history-entry/entries-after-javascript-url-navigation-forward.html": {
+    "total": 1
+  },
   "navigation-api/navigation-history-entry/entries-after-javascript-url-navigation.html": {
     "total": 1
   },
@@ -710,10 +725,16 @@
   "navigation-api/navigation-history-entry/entries-after-srcdoc-navigation.html": {
     "total": 1
   },
+  "navigation-api/navigation-history-entry/entries-after-traversing-to-javascript-url-entry.html": {
+    "total": 1
+  },
   "navigation-api/navigation-history-entry/entries-array-equality.html": {
     "total": 1
   },
   "navigation-api/navigation-history-entry/entries-in-new-javascript-url-iframe.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-in-new-javascript-url-window.html": {
     "total": 1
   },
   "navigation-api/navigation-history-entry/entries-in-new-srcdoc-iframe.html": {
@@ -1227,13 +1248,21 @@
     "total": 1
   },
   "navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html": {
-    "total": 3
+    "total": 3,
+    "failures": {
+      "event and promise ordering when navigate() is to a 204s and then to a same-document navigation": "FAIL",
+      "event and promise ordering when navigate() is to a 205s and then to a same-document navigation": "FAIL",
+      "event and promise ordering when navigate() is to a Content-Disposition: attachment responses and then to a same-document navigation": "FAIL"
+    }
   },
   "navigation-api/ordering-and-transition/navigate-canceled.html": {
     "total": 1
   },
   "navigation-api/ordering-and-transition/navigate-cross-document-double.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "event and promise ordering when navigate() is called to a cross-document destination, interrupting another navigate() to a cross-document destination": "FAIL"
+    }
   },
   "navigation-api/ordering-and-transition/navigate-cross-document-event-order-with-pagehide.html": {
     "total": 1

@@ -215,6 +215,9 @@
   "editing/crashtests/inserthorizontalrule-with-selecting-text-in-document-element.html": {
     "crashtest": "PASS"
   },
+  "editing/crashtests/inserthtml-after-select-input-outside-editing-host.html": {
+    "crashtest": "PASS"
+  },
   "editing/crashtests/inserthtml-after-temporarily-removing-document-element.html": {
     "crashtest": "PASS"
   },
@@ -606,6 +609,18 @@
   "editing/other/copy-paste-in-styled-inline-editing-host.https.html": {
     "total": 1
   },
+  "editing/other/copy-table-selection-ending-at-row-end-in-contenteditable.html": {
+    "total": 2,
+    "failures": {
+      "Test for copying a table in a contenteditable with the selection ending at the end of a row": "FAIL"
+    }
+  },
+  "editing/other/copy-table-selection-ending-at-row-end.html": {
+    "total": 2,
+    "failures": {
+      "Test for copying a table with the selection ending at the end of a row": "FAIL"
+    }
+  },
   "editing/other/data_transfer_on_input_event_with_insertfrompaste_type.html": {
     "total": 1
   },
@@ -791,6 +806,45 @@
     "failures": {
       "<div contenteditable> in shadow of the <body>": "FAIL"
     }
+  },
+  "editing/other/delete-object-fallback.html?block-content-range": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?caret": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?forward": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?inline-block-range": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?inside-backward": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?inside-forward": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?inside-range": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?nested-cross-range": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?nested-range": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?paragraph-control": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?pre-wrap-range": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?range": {
+    "total": 1
+  },
+  "editing/other/delete-object-fallback.html?undo-redo": {
+    "total": 1
   },
   "editing/other/delete-without-unwrapping-first-line-of-child-block.html?method=BackspaceKey&lineBreak=br": {
     "total": 50,
@@ -1387,42 +1441,36 @@
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=p&white-space=normal&display=block&command=insertParagraph": {
     "total": 8,
     "failures": {
-      "<p contenteditable style=\"display:block; white-space:normal\"><div style=\"display:inline\">a[]b</div></p>": "FAIL",
       "<p contenteditable style=\"display:block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></p>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=p&white-space=normal&display=block&command=insertText": {
     "total": 8,
     "failures": {
-      "<p contenteditable style=\"display:block; white-space:normal\"><div style=\"display:inline\">a[]b</div></p>": "FAIL",
       "<p contenteditable style=\"display:block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></p>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=p&white-space=normal&display=inline&command=insertParagraph": {
     "total": 8,
     "failures": {
-      "<p contenteditable style=\"display:inline; white-space:normal\"><div style=\"display:inline\">a[]b</div></p>": "FAIL",
       "<p contenteditable style=\"display:inline; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></p>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=p&white-space=normal&display=inline&command=insertText": {
     "total": 8,
     "failures": {
-      "<p contenteditable style=\"display:inline; white-space:normal\"><div style=\"display:inline\">a[]b</div></p>": "FAIL",
       "<p contenteditable style=\"display:inline; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></p>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=p&white-space=normal&display=inline-block&command=insertParagraph": {
     "total": 8,
     "failures": {
-      "<p contenteditable style=\"display:inline-block; white-space:normal\"><div style=\"display:inline\">a[]b</div></p>": "FAIL",
       "<p contenteditable style=\"display:inline-block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></p>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=p&white-space=normal&display=inline-block&command=insertText": {
     "total": 8,
     "failures": {
-      "<p contenteditable style=\"display:inline-block; white-space:normal\"><div style=\"display:inline\">a[]b</div></p>": "FAIL",
       "<p contenteditable style=\"display:inline-block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></p>": "FAIL"
     }
   },
@@ -1537,42 +1585,36 @@
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=span&white-space=normal&display=block&command=insertParagraph": {
     "total": 8,
     "failures": {
-      "<span contenteditable style=\"display:block; white-space:normal\"><div style=\"display:inline\">a[]b</div></span>": "FAIL",
       "<span contenteditable style=\"display:block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></span>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=span&white-space=normal&display=block&command=insertText": {
     "total": 8,
     "failures": {
-      "<span contenteditable style=\"display:block; white-space:normal\"><div style=\"display:inline\">a[]b</div></span>": "FAIL",
       "<span contenteditable style=\"display:block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></span>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=span&white-space=normal&display=inline&command=insertParagraph": {
     "total": 8,
     "failures": {
-      "<span contenteditable style=\"display:inline; white-space:normal\"><div style=\"display:inline\">a[]b</div></span>": "FAIL",
       "<span contenteditable style=\"display:inline; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></span>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=span&white-space=normal&display=inline&command=insertText": {
     "total": 8,
     "failures": {
-      "<span contenteditable style=\"display:inline; white-space:normal\"><div style=\"display:inline\">a[]b</div></span>": "FAIL",
       "<span contenteditable style=\"display:inline; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></span>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=span&white-space=normal&display=inline-block&command=insertParagraph": {
     "total": 8,
     "failures": {
-      "<span contenteditable style=\"display:inline-block; white-space:normal\"><div style=\"display:inline\">a[]b</div></span>": "FAIL",
       "<span contenteditable style=\"display:inline-block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></span>": "FAIL"
     }
   },
   "editing/other/insertparagraph-in-editing-host-cannot-have-div.tentative.html?host=span&white-space=normal&display=inline-block&command=insertText": {
     "total": 8,
     "failures": {
-      "<span contenteditable style=\"display:inline-block; white-space:normal\"><div style=\"display:inline\">a[]b</div></span>": "FAIL",
       "<span contenteditable style=\"display:inline-block; white-space:normal\"><span style=\"display:block;white-space:normal\">a[]b</span></span>": "FAIL"
     }
   },
@@ -2656,6 +2698,122 @@
       "RemoveFormat should remove CSS styles of selected node": "FAIL"
     }
   },
+  "editing/other/trailing-linebreak-of-inline-editing-host.tentative.html?linebreak=br": {
+    "total": 224,
+    "failures": {
+      "\"delete\" should make a line break to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<br><span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<br><span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<div>child block</div><span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<div>child block</div><span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should make a line break to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the parent block (<span contenteditable></span>)": "FAIL"
+    }
+  },
+  "editing/other/trailing-linebreak-of-inline-editing-host.tentative.html?linebreak=linefeed": {
+    "total": 224,
+    "failures": {
+      "\"delete\" should make a line break to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" should make a linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"delete\" shouldn't delete the selected linebreak to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<br><span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<br><span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<div>child block</div><span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<div>child block</div><span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (<span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span><br>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" should delete the linebreak (XYZ<span contenteditable></span>XYZ)": "FAIL",
+      "\"forwarddelete\" should make a line break to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" should make a linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the linebreak to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the empty line (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"forwarddelete\" shouldn't delete the selected linebreak to preserve the parent block (<span contenteditable></span>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span><br>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span>XYZ)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span><br>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span>XYZ)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span><br>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span>XYZ)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span><br>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"insertHTML\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span>XYZ)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span><br>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<br><span contenteditable></span>XYZ)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span><br>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<div>child block</div><span contenteditable></span>XYZ)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span><br>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (<span contenteditable></span>XYZ)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span><br>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span><div>child block</div>)": "FAIL",
+      "\"paste\", \"<br>\" should make the editing host has 2 lines (XYZ<span contenteditable></span>XYZ)": "FAIL"
+    }
+  },
   "editing/other/typing-around-link-element-after-joining-paragraphs.html?action=Backspace": {
     "total": 24,
     "failures": {
@@ -2925,26 +3083,20 @@
     }
   },
   "editing/run/bold.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"foo[<span style=\\\"font-weight: bold\\\">bar</span>]baz\" queryCommandState(\"bold\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"foo[<span style=\\\"font-weight: bold\\\">bar</span>]baz\" queryCommandState(\"stylewithcss\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"bold\",\"\"]] \"foo[<span style=\\\"font-weight: bold\\\">bar]</span>baz\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/bold.html?2001-3000": {
-    "total": 1000,
-    "failures": {
-      "[[\"bold\",\"\"]] \"<span style=\\\"font-weight: 900\\\">foo[barbaz</span>}\" compare innerHTML": "FAIL",
-      "[[\"bold\",\"\"]] \"<span style=\\\"font-weight: 900\\\">foo[barbaz</span>}\" queryCommandState(\"bold\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"bold\",\"\"]] \"<h3>foo[bar]baz</h3>\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/bold.html?3001-last": {
-    "total": 48,
+    "total": 64,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"<span style=font-weight:100>fo[o</span><span style=font-weight:200>b]ar</span>\" queryCommandState(\"bold\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"<span style=font-weight:100>fo[o</span><span style=font-weight:200>b]ar</span>\" queryCommandState(\"stylewithcss\") after": "FAIL"
+      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"<span contenteditable=\\\"false\\\">ab[c</span>d]ef\" compare innerHTML": "FAIL",
+      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"<span contenteditable=\\\"false\\\">ab[c</span>d]ef\": execCommand(\"bold\", false, \"\") return value": "FAIL",
+      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"<span contenteditable=\\\"false\\\">ab[c</span>def<span contenteditable=\\\"false\\\">g]hi</span>\" compare innerHTML": "FAIL",
+      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"<span contenteditable=\\\"false\\\">ab[c</span>def<span contenteditable=\\\"false\\\">g]hi</span>\": execCommand(\"bold\", false, \"\") return value": "FAIL",
+      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"ab[c<span contenteditable=\\\"false\\\">d]ef</span>\" compare innerHTML": "FAIL",
+      "[[\"stylewithcss\",\"false\"],[\"bold\",\"\"]] \"ab[c<span contenteditable=\\\"false\\\">d]ef</span>\": execCommand(\"bold\", false, \"\") return value": "FAIL"
     }
   },
   "editing/run/caret-navigation-after-removing-line-break.html": {
@@ -2955,6 +3107,27 @@
   },
   "editing/run/caretnavigation.html": {
     "total": 2
+  },
+  "editing/run/conformance-subset-command-prefix.html?1-1": {
+    "total": 2
+  },
+  "editing/run/conformance-subset-command-prefix.html?2-2": {
+    "total": 2
+  },
+  "editing/run/conformance-subset-command-prefix.html?3-4": {
+    "total": 3
+  },
+  "editing/run/conformance-subset-prerequisites.html?1-18&css=true": {
+    "total": 19
+  },
+  "editing/run/conformance-subset-prerequisites.html?12-18&css=false": {
+    "total": 8
+  },
+  "editing/run/conformance-subset-prerequisites.html?13-18&css=false": {
+    "total": 7
+  },
+  "editing/run/conformance-subset-prerequisites.html?13-18&css=true": {
+    "total": 7
   },
   "editing/run/createlink-with-selecting-img.html": {
     "total": 3
@@ -2978,7 +3151,6 @@
   "editing/run/delete.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"foo<ol><li>[]bar<li>baz</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"delete\",\"\"]] \"<ol><li><p>foo<li>[]bar</ol>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<ol><li>foo<br><br><li>[]bar</ol>\" compare innerHTML": "FAIL",
       "[[\"delete\",\"\"]] \"<ol><li>foo<br><li>[]bar</ol>\" compare innerHTML": "FAIL",
@@ -2990,33 +3162,20 @@
   "editing/run/delete.html?2001-3000": {
     "total": 1000,
     "failures": {
-      "[[\"delete\",\"\"]] \"foo<blockquote>[]bar</blockquote>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"<p style=color:blue>foo<p>[]bar\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"delete\",\"\"]] \"foo<blockquote>[]bar</blockquote>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/delete.html?3001-4000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"<p style=color:blue>foo<p style=color:rgba(0,0,255,1)>[]bar\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/delete.html?4001-5000": {
-    "total": 1000,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"<p><u>foo</u><p>[]bar\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"<p>foo<p style=text-decoration:line-through>[]bar\" queryCommandState(\"stylewithcss\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"<p>foo<p style=text-decoration:line-through>[]bar\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"<p>foo<p style=text-decoration:line-through>[]bar\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"delete\",\"\"]] \"<p style=color:blue>foo</p>[]bar\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/delete.html?5001-6000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"<div>foo[bar</div><p>baz]quz\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"foo<br><br>{<p>]bar</p>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"foo<br><br>{<p>]bar</p>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"<p>foo[bar<p style=color:blue>baz]quz\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"foo<br><br>{<p>]bar</p>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/delete.html?6001-7000": {
@@ -3024,8 +3183,7 @@
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"delete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li><p>]baz</ol>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"delete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li><p>]baz</ol>\" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li>]baz</ol>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"delete\",\"\"]] \"<span style=display:block>fo[o</span><span style=display:block>b]ar</span>\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"delete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li>]baz</ol>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/delete.html?7001-last": {
@@ -3042,19 +3200,10 @@
     }
   },
   "editing/run/fontname.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"fontname\",\"sans-serif\"]] \"[foo<pre>bar</pre>baz]\" queryCommandIndeterm(\"fontname\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"fontname\",\"sans-serif\"]] \"[foo<pre>bar</pre>baz]\" queryCommandValue(\"fontname\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"fontname\",\"sans-serif\"]] \"[foo<samp>bar</samp>baz]\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/fontname.html?2001-last": {
-    "total": 225,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"fontname\",\"sans-serif\"]] \"fo[o<listing>b]ar</listing>\" queryCommandValue(\"fontname\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"fontname\",\"sans-serif\"]] \"fo[o<pre>b]ar</pre>\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 225
   },
   "editing/run/fontsize.html?1-1000": {
     "total": 1000,
@@ -3063,20 +3212,10 @@
     }
   },
   "editing/run/fontsize.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"fontsize\",\"4\"]] \"<table><tbody data-start=0 data-end=1><tr><td>foo<td>bar<td>baz</table>\" queryCommandValue(\"fontsize\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"fontsize\",\"4\"]] \"<table data-start=0 data-end=1><tbody><tr><td>foo<td>bar<td>baz</table>\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/fontsize.html?2001-last": {
-    "total": 422,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"fontsize\",\"4\"]] \"foo<font size=2>ba[r</font>b]az\" queryCommandIndeterm(\"fontsize\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"fontsize\",\"4\"]] \"foo<font size=2>ba[r</font>b]az\" queryCommandState(\"stylewithcss\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"fontsize\",\"4\"]] \"foo<font size=2>ba[r</font>b]az\" queryCommandValue(\"fontsize\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"fontsize\",\"4\"]] \"fo[o<font size=2>bar</font>b]az\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 422
   },
   "editing/run/forecolor.html?1-1000": {
     "total": 1000,
@@ -3087,17 +3226,13 @@
   "editing/run/forecolor.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<span style=\\\"color: blue\\\">foo<span style=\\\"color: brown\\\">[bar]</span>baz</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<table data-start=0 data-end=1><tbody><tr><td>foo<td>bar<td>baz</table>\" queryCommandValue(\"forecolor\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"forecolor\",\"#0000FF\"]] \"{<table><tr><td>foo<td>bar<td>baz</table>}\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<span style=\\\"color: blue\\\">foo<span style=\\\"color: brown\\\">[bar]</span>baz</span>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/forecolor.html?2001-last": {
     "total": 327,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<span style=color:brown>fo[o</span><span style=color:#0000ff>b]ar</span>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"forecolor\",\"#0000FF\"]] \"fo[o<font color=brown>bar</font>b]az\" queryCommandIndeterm(\"forecolor\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"forecolor\",\"#0000FF\"]] \"fo[o<font color=brown>bar</font>b]az\" queryCommandValue(\"forecolor\") after": "FAIL"
+      "[[\"stylewithcss\",\"false\"],[\"forecolor\",\"#0000FF\"]] \"<span style=color:brown>fo[o</span><span style=color:#0000ff>b]ar</span>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/formatblock.html?1-1000": {
@@ -3106,39 +3241,28 @@
   "editing/run/formatblock.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<quasit>[foobar]</quasit>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<dl><dt>[foo<dd>bar]</dl>\" queryCommandIndeterm(\"formatblock\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<del>[foobar]</del>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<dl><dt>[foo<dd>bar]</dl>\" queryCommandIndeterm(\"formatblock\") before": "FAIL"
     }
   },
   "editing/run/formatblock.html?2001-3000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<xmp>[foobar]</xmp>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<listing>[foobar]</listing>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<pre>\"]] \"<div>[foobar]</div>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"formatblock\",\"<blockquote>\"]] \"<p>[foo<p>bar]<p>baz\" queryCommandValue(\"formatblock\") before": "FAIL",
       "[[\"formatblock\",\"<blockquote>\"]] \"<section><hgroup><h1>[foo]</h1><h2>bar</h2></hgroup><p>baz</section>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/formatblock.html?3001-4000": {
-    "total": 1000,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<h5>\"]] \"<p>[foobar]</p>\" queryCommandValue(\"formatblock\") after": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/formatblock.html?4001-5000": {
     "total": 1000,
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<div>\"]] \"<div><ol><li>[foo]</ol></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<h1>\"]] \"<p>[foo<br>bar]</p>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"formatblock\",\"<p>\"]] \"<div>[foo<p>bar]</p></div>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<div>\"]] \"<div><ol><li>[foo]</ol></div>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<div>[foo<p>bar]</p></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<h1>[foo<br>bar]</h1>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<h1>[foo<br>bar]</h1>\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"formatblock\",\"<p>\"]] \"<h1>[foo<br>bar]</h1>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"formatblock\",\"p\"]] \"<div><div contenteditable=false><span contenteditable>[foo]</span></div></div>\" compare innerHTML": "FAIL",
       "[[\"formatblock\",\"p\"]] \"<div><div contenteditable=false><span contenteditable>[foo]</span></div></div>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"formatblock\",\"p\"]] \"<div><div contenteditable=false><span contenteditable>[foo]</span></div></div>\": execCommand(\"formatblock\", false, \"p\") return value": "FAIL",
@@ -3152,6 +3276,8 @@
       "[[\"formatblock\",\"div\"]] \"<div><div contenteditable=false><p contenteditable>[foo]</p></div></div>\" compare innerHTML": "FAIL",
       "[[\"formatblock\",\"div\"]] \"<div><div contenteditable=false><p contenteditable>[foo]</p></div></div>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"formatblock\",\"div\"]] \"<div><div contenteditable=false><p contenteditable>[foo]</p></div></div>\": execCommand(\"formatblock\", false, \"div\") return value": "FAIL",
+      "[[\"formatblock\",\"p\"]] \"<div><p contenteditable=false><span contenteditable>[foo]</span></p></div>\" compare innerHTML": "FAIL",
+      "[[\"formatblock\",\"p\"]] \"<div><p contenteditable=false><span contenteditable>[foo]</span></p></div>\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"formatblock\",\"p\"]] \"{ <span contenteditable=\\\"false\\\">A</span> ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> }\" compare innerHTML": "FAIL"
     }
   },
@@ -3164,7 +3290,6 @@
   "editing/run/forwarddelete.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<ol><li>foo[]<li><p>bar</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<p>foo<table><tr><td>bar[]<br></table><p>baz\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><td>bar</table>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><tr><td>bar</table>\" compare innerHTML": "FAIL",
@@ -3172,43 +3297,29 @@
     }
   },
   "editing/run/forwarddelete.html?2001-3000": {
-    "total": 1000,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"foo[]<blockquote><div>bar</div></blockquote>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"forwarddelete\",\"\"]] \"foo[]<blockquote style=\\\"color: blue\\\">bar</blockquote>\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/forwarddelete.html?3001-4000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"forwarddelete\",\"\"]] \"<p style=color:blue>foo[]<p style=color:brown>bar\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/forwarddelete.html?4001-5000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"true\"],[\"forwarddelete\",\"\"]] \"<p style=color:blue>foo[]</p>bar\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/forwarddelete.html?5001-6000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<div><p>foo[bar</div><p>baz]quz\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"foo<br><br>{<p>]bar</p>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"forwarddelete\",\"\"]] \"foo<br><br>{<p>]bar</p>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<p>foo[bar<p style=color:blue>baz]quz\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"defaultparagraphseparator\",\"p\"],[\"forwarddelete\",\"\"]] \"foo<br><br>{<p>]bar</p>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/forwarddelete.html?6001-7000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<ol><li>foo[</ol><p>bar]<ol><li>baz</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<div style=white-space:nowrap>[]f\\nbar</div>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li><p>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>[bar<ol><li>]baz</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><li>foo</ol><p>{}<br></p><ul><li>bar</ul>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<ol><li>foo[<li>]bar</ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><ol><li>foo</ol><li>{}<br></li><ol><li>bar</ol></ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ol><ol><li>foo</ol><li>{}<br><ol><li>bar</ol></ol>\" compare innerHTML": "FAIL",
       "[[\"forwarddelete\",\"\"]] \"<ul><li>foo</ul><p>{}<br></p><ol><li>bar</ol>\" compare innerHTML": "FAIL",
@@ -3315,7 +3426,6 @@
   "editing/run/insertorderedlist.html?1001-last": {
     "total": 761,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertorderedlist\",\"\"]] \"<p>[foo]<blockquote><p>bar</blockquote><p>baz\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" compare innerHTML": "FAIL",
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" queryCommandValue(\"insertorderedlist\") after": "FAIL",
       "[[\"insertorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" queryCommandValue(\"insertorderedlist\") before": "FAIL",
@@ -3349,7 +3459,6 @@
       "[[\"insertorderedlist\",\"\"]] \"<ul><li>[foo]<ul><li>bar</ul>baz</ul>\" queryCommandState(\"insertorderedlist\") after": "FAIL",
       "[[\"insertorderedlist\",\"\"]] \"<ul><li>foo<li>[bar]<ul><li>baz</ul><li>quz</ul>\" compare innerHTML": "FAIL",
       "[[\"insertorderedlist\",\"\"]] \"<ul><li>foo<li>[bar]<ul><li>baz</ul><li>quz</ul>\" queryCommandState(\"insertorderedlist\") after": "FAIL",
-      "[[\"insertorderedlist\",\"\"]] \"<ul><li>foo<ul><li>[bar]<li>baz</ul><li>quz</ul>\" queryCommandState(\"insertorderedlist\") after": "FAIL",
       "[[\"insertorderedlist\",\"\"]] \"<ul><li>foo<ul><li>bar</ul>[baz]</ul>\" compare innerHTML": "FAIL",
       "[[\"insertorderedlist\",\"\"]] \"<ul><li>foo<ul><li>bar</ul>[baz]</ul>\" queryCommandState(\"insertorderedlist\") after": "FAIL",
       "[[\"insertorderedlist\",\"\"]] \"{ <span contenteditable=\\\"false\\\">A</span> ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> }\" compare innerHTML": "FAIL",
@@ -3367,17 +3476,11 @@
   "editing/run/insertparagraph.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<script>foo[]bar</script>baz\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div style=display:none>foo[]bar</div>baz\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
   "editing/run/insertparagraph.html?2001-3000": {
-    "total": 1000,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<blockquote><p>foo[]<p>bar</blockquote>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<blockquote><p>foo[]<p>bar</blockquote>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<b>foo[]bar</b>\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/insertparagraph.html?3001-4000": {
     "total": 1000,
@@ -3389,32 +3492,18 @@
       "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div><a href=foo><b>foo&nbsp;[]<br></b></a></div>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div><a href=foo>foo&nbsp;[]<br></a></div>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div><b><a href=foo>foo&nbsp;[]<br></a></b></div>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div><b><a href=foo>foo[]</a></b></div>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div><b>foo[]bar</b></div>\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div><b><a href=foo>foo[]</a></b></div>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/insertparagraph.html?4001-5000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<p>foo<span style=color:#aBcDeF>[bar]</span>baz\" queryCommandState(\"stylewithcss\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<p>foo<span style=color:#aBcDeF>[bar]</span>baz\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<p>foo<span style=color:#aBcDeF>[bar]</span>baz\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<p>foo<span style=color:#aBcDeF>{bar}</span>baz\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<p>foo<span style=color:#aBcDeF>{bar}</span>baz\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/insertparagraph.html?5001-6000": {
-    "total": 1000,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div><p>foo[]</div>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<ul><li><div>foo[]</ul>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<ul><li><div>foo[]</ul>\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/insertparagraph.html?6001-7000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div class=a id=x><p class=b id=y>[]foo</div>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<div>[abc]</div>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"div\"],[\"insertparagraph\",\"\"]] \"<dl contenteditable=false><dt contenteditable>ab[]cd</dt></dl>\" compare innerHTML": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"insertparagraph\",\"\"]] \"<div>[abc]</div>\" compare innerHTML": "FAIL"
@@ -3435,7 +3524,6 @@
   "editing/run/inserttext.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"inserttext\",\"a\"]] \"<p>fo[o<p>b]ar\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"inserttext\",\" \"]] \"<b>a</b><i>@</i><u>b</u>{}\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\" \"]] \"a@b<b>[]c</b>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"a\"]] \"<a href=/>foo[]</a>bar\" compare innerHTML": "FAIL",
@@ -3450,8 +3538,7 @@
       "[[\"inserttext\",\"a\"]] \"foo<a href=http://www.google.com><font color=brown>[bar</font></a>baz]\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"a\"]] \"foo<a href=http://www.google.com><u>[bar</u></a>baz]\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"b\"]] \"<div>a<br>{}<span></span><p>c</p></div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"b\"]] \"<p>a<br>{}<span></span></p>\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"inserttext\",\"a\"]] \"[foo<font color=blue><a href=http://www.google.com>bar]</a></font>baz\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"inserttext\",\"b\"]] \"<p>a<br>{}<span></span></p>\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/insertunorderedlist.html?1-1000": {
@@ -3474,8 +3561,6 @@
   "editing/run/insertunorderedlist.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertunorderedlist\",\"\"]] \"<ul><li>foo<ul><li>b[ar</ul><li>b]az</ul>\" queryCommandIndeterm(\"insertunorderedlist\") after": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"insertunorderedlist\",\"\"]] \"<ul><li>foo<ul><li>b[ar</ul><li>b]az</ul>\" queryCommandState(\"insertunorderedlist\") after": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" compare innerHTML": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" queryCommandValue(\"insertunorderedlist\") after": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}</div>\" queryCommandValue(\"insertunorderedlist\") before": "FAIL",
@@ -3488,7 +3573,6 @@
   "editing/run/insertunorderedlist.html?2001-last": {
     "total": 65,
     "failures": {
-      "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}<br></div>\" queryCommandState(\"insertunorderedlist\") after": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}<br></div>\" queryCommandValue(\"insertunorderedlist\") after": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<div>{}<br></div>\" queryCommandValue(\"insertunorderedlist\") before": "FAIL",
       "[[\"insertunorderedlist\",\"\"],[\"inserttext\",\"abc\"]] \"<p>{}</p>\" compare innerHTML": "FAIL",
@@ -3511,17 +3595,10 @@
     }
   },
   "editing/run/italic.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"true\"],[\"italic\",\"\"]] \"fo[o<dfn>bar</dfn>b]az\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/italic.html?2001-last": {
-    "total": 73,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"italic\",\"\"]] \"<span style=font-style:italic>fo[o</span><span style=font-style:oblique>b]ar</span>\" queryCommandState(\"italic\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"italic\",\"\"]] \"<span style=font-style:oblique>fo[o</span><span style=font-style:italic>b]ar</span>\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 73
   },
   "editing/run/justifycenter.html?1-1000": {
     "total": 1000,
@@ -3530,41 +3607,16 @@
     }
   },
   "editing/run/justifycenter.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<center><p>[foo<p>bar]</center><p>extra\" queryCommandState(\"stylewithcss\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<center><p>[foo<p>bar]</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<center><p>[foo<p>bar]</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<table><tbody><tr><td>foo<td>b[a]r<td>baz</table><p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<table><tbody><tr><td>foo<td>b[a]r<td>baz</table><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifycenter.html?2001-3000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<table align=center data-start=0 data-end=1><tbody><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<table align=center data-start=0 data-end=1><tbody><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandState(\"justifycenter\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<table align=center data-start=0 data-end=1><tbody><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<table align=center data-start=0 data-end=1><tbody><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandValue(\"justifycenter\") after": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifycenter.html?3001-4000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<div style=text-align:justify><p>[foo]<p>bar</div><p>extra\" queryCommandState(\"justifycenter\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<div style=text-align:justify><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"justifycenter\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<div align=left><p>[foo]<p>bar</div><p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<div align=left><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifycenter.html?4001-5000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<div style=text-align:center><p>foo</div><p>[bar]<div style=text-align:center><p>baz</div><p>extra\" queryCommandState(\"justifycenter\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<div style=text-align:center><p>foo</div><p>[bar]<div style=text-align:center><p>baz</div><p>extra\" queryCommandState(\"stylewithcss\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<div style=text-align:center><p>foo</div><p>[bar]<div style=text-align:center><p>baz</div><p>extra\" queryCommandValue(\"justifycenter\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<div style=text-align:center><p>foo</div><p>[bar]<div style=text-align:center><p>baz</div><p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifycenter.html?5001-6000": {
     "total": 1000
@@ -3572,9 +3624,6 @@
   "editing/run/justifycenter.html?6001-last": {
     "total": 203,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<div style=text-align:center><p>foo</div> <p>[bar]</p> <div style=text-align:center><p>baz</div>\" queryCommandState(\"stylewithcss\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifycenter\",\"\"]] \"<div style=text-align:center><p>foo</div> <p>[bar]</p> <div style=text-align:center><p>baz</div>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"<center><p>foo</center> <p>[bar]</p> <center><p>baz</center>\" queryCommandState(\"stylewithcss\") before": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifycenter\",\"\"]] \"{ <span contenteditable=\\\"false\\\">A</span> ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> }\" compare innerHTML": "FAIL"
     }
   },
@@ -3585,39 +3634,18 @@
     }
   },
   "editing/run/justifyfull.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandState(\"justifyfull\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandValue(\"justifyfull\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyfull\",\"\"]] \"<center><p>[foo<p>bar]</center><p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyfull\",\"\"]] \"<center><p>[foo<p>bar]</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifyfull.html?2001-3000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<table align=justify><tbody data-start=0 data-end=1><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<table align=justify><tbody data-start=0 data-end=1><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandValue(\"justifyfull\") after": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifyfull.html?3001-4000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandState(\"justifyfull\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"justifyfull\") after": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifyfull.html?4001-last": {
     "total": 762,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyfull\",\"\"]] \"<p>[foo]<p align=justify>bar<p>extra\" queryCommandState(\"justifyfull\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyfull\",\"\"]] \"<p>[foo]<p align=justify>bar<p>extra\" queryCommandValue(\"justifyfull\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyfull\",\"\"]] \"{ <span contenteditable=\\\"false\\\">A</span> ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> }\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyfull\",\"\"]] \"<p>[foo]<p align=justify>bar<p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyfull\",\"\"]] \"{ <span contenteditable=\\\"false\\\">A</span> ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> }\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/justifyleft.html?1-1000": {
@@ -3627,19 +3655,10 @@
     }
   },
   "editing/run/justifyleft.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyleft\",\"\"]] \"<div style=text-align:justify><p>[foo<p>bar]</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifyleft.html?2001-last": {
-    "total": 503,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"justifyleft\",\"\"]] \"<div align=nonsense><p>[foo]</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyleft\",\"\"]] \"<div style=text-align:left>[foo<div style=text-align:left contenteditable=false>bar</div>baz]</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyleft\",\"\"]] \"<div style=text-align:left>[foo<div style=text-align:left contenteditable=false>bar</div>baz]</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyleft\",\"\"]] \"<div style=text-align:inherit><p>[foo]</div><p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 503
   },
   "editing/run/justifyright.html?1-1000": {
     "total": 1000,
@@ -3648,39 +3667,18 @@
     }
   },
   "editing/run/justifyright.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandState(\"justifyright\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<center><p>[foo]<p>bar</center><p>extra\" queryCommandValue(\"justifyright\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyright\",\"\"]] \"<center><p>[foo<p>bar]</center><p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyright\",\"\"]] \"<center><p>[foo<p>bar]</center><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifyright.html?2001-3000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<table align=right><tbody data-start=0 data-end=1><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<table align=right><tbody data-start=0 data-end=1><tr><td>foo<td>bar<td>baz</table><p>extra\" queryCommandValue(\"justifyright\") after": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifyright.html?3001-4000": {
-    "total": 1000,
-    "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandState(\"justifyright\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"defaultparagraphseparator\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<div style=text-align:center><p>[foo]<p>bar</div><p>extra\" queryCommandValue(\"justifyright\") after": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/justifyright.html?4001-last": {
     "total": 814,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyright\",\"\"]] \"<p>[foo]<p align=right>bar<p>extra\" queryCommandState(\"justifyright\") after": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyright\",\"\"]] \"<p>[foo]<p align=right>bar<p>extra\" queryCommandValue(\"justifyright\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyright\",\"\"]] \"{ <span contenteditable=\\\"false\\\">A</span> ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> }\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"p\"],[\"justifyright\",\"\"]] \"<p>[foo]<p align=right>bar<p>extra\" queryCommandState(\"stylewithcss\") before": "FAIL"
+      "[[\"stylewithcss\",\"true\"],[\"defaultparagraphseparator\",\"div\"],[\"justifyright\",\"\"]] \"{ <span contenteditable=\\\"false\\\">A</span> ; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span> }\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/misc.html": {
@@ -3757,8 +3755,6 @@
   "editing/run/multitest.html?2001-3000": {
     "total": 1000,
     "failures": {
-      "[[\"subscript\",\"\"],[\"formatblock\",\"<div>\"],[\"inserttext\",\"a\"]] \"foo[]bar\" queryCommandState(\"subscript\") after": "FAIL",
-      "[[\"subscript\",\"\"],[\"formatblock\",\"<div>\"],[\"inserttext\",\"a\"]] \"foo[]bar\" queryCommandValue(\"formatblock\") after": "FAIL",
       "[[\"subscript\",\"\"],[\"forwarddelete\",\"\"],[\"inserttext\",\"a\"]] \"foo[]bar\" compare innerHTML": "FAIL",
       "[[\"subscript\",\"\"],[\"insertparagraph\",\"\"],[\"inserttext\",\"a\"]] \"foo[]bar\" compare innerHTML": "FAIL",
       "[[\"subscript\",\"\"],[\"insertparagraph\",\"\"]] \"foo[]bar\" compare innerHTML": "FAIL",
@@ -3979,17 +3975,12 @@
     }
   },
   "editing/run/outdent.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"outdent\",\"\"]] \"<ol><li>[foo]<ol><li>bar</ol><li>baz</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"outdent\",\"\"]] \"<ol><li>foo</li><ol style=color:blue><li>[bar]</ol><li>baz</ol>\" queryCommandState(\"stylewithcss\") before": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/outdent.html?2001-last": {
     "total": 550,
     "failures": {
       "[[\"defaultparagraphseparator\",\"div\"],[\"outdent\",\"\"]] \"<blockquote><ol><li>foo<div><ol><li>[bar]</ol></div><li>baz</ol></blockquote>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"div\"],[\"outdent\",\"\"]] \"<blockquote><ol><li>foo<div><ol><li>[bar]</ol></div><li>baz</ol></blockquote>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
       "[[\"defaultparagraphseparator\",\"p\"],[\"outdent\",\"\"]] \"<blockquote><ol><li>foo<div><ol><li>[bar]</ol></div><li>baz</ol></blockquote>\" compare innerHTML": "FAIL"
     }
   },
@@ -4015,12 +4006,10 @@
     "total": 1000,
     "failures": {
       "[[\"strikethrough\",\"\"]] \"foo<s>ba[r</s>b]az\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"false\"],[\"strikethrough\",\"\"]] \"<strike>foo[bar]baz</strike>\" queryCommandState(\"strikethrough\") after": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: overline\\\">[bar]</s>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: overline\\\">b[a]r</s>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: underline\\\">[bar]</s>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"false\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: underline\\\">b[a]r</s>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"<strike>foo[b<span style=\\\"color:blue\\\">ar]ba</span>z</strike>\" queryCommandState(\"stylewithcss\") before": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"fo[o<s>bar</s>b]az\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<ins>[bar]</ins>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<s style=\\\"text-decoration: overline\\\">[bar]</s>baz\" compare innerHTML": "FAIL",
@@ -4034,8 +4023,7 @@
   "editing/run/strikethrough.html?2001-last": {
     "total": 147,
     "failures": {
-      "[[\"strikethrough\",\"\"]] \"fo[o<span style=text-decoration:line-through>b]ar</span>baz\" compare innerHTML": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"strikethrough\",\"\"]] \"foo<s>[bar]</s>baz\" queryCommandState(\"strikethrough\") after": "FAIL"
+      "[[\"strikethrough\",\"\"]] \"fo[o<span style=text-decoration:line-through>b]ar</span>baz\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/subscript.html": {
@@ -4074,8 +4062,6 @@
   "editing/run/underline.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"stylewithcss\",\"false\"],[\"underline\",\"\"]] \"foo<strike>[bar]</strike>baz\" queryCommandState(\"underline\") after": "FAIL",
-      "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"<strike>foo[bar]baz</strike>\" queryCommandState(\"stylewithcss\") before": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<del>[bar]</del>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<s style=\\\"text-decoration: overline\\\">[bar]</s>baz\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<span class=\\\"line-through\\\">[bar]</span>baz\" compare innerHTML": "FAIL",
@@ -4083,10 +4069,7 @@
     }
   },
   "editing/run/underline.html?2001-last": {
-    "total": 147,
-    "failures": {
-      "[[\"stylewithcss\",\"true\"],[\"underline\",\"\"]] \"foo<u>[bar]</u>baz\" queryCommandState(\"underline\") after": "FAIL"
-    }
+    "total": 147
   },
   "editing/run/undo-redo-after-mutation.html": {
     "total": 7

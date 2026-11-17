@@ -83,13 +83,7 @@
     "total": 26
   },
   "domparsing/html-unsafe-external-scripts-async.html": {
-    "harness": "ERROR",
-    "total": 15,
-    "failures": {
-      "ShadowRoot.appendHTMLUnsafe with { runScripts: true }: external scripts execute as async": "NOTRUN",
-      "ShadowRoot.prependHTMLUnsafe with { runScripts: true }: external scripts execute as async": "NOTRUN",
-      "ShadowRoot.setHTMLUnsafe with { runScripts: true }: external scripts execute as async": "TIMEOUT"
-    }
+    "total": 15
   },
   "domparsing/innerhtml-01.xhtml": {
     "total": 2

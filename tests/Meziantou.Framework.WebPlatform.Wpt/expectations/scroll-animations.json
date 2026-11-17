@@ -373,6 +373,9 @@
   "scroll-animations/crashtests/remove-pseudo-element-subject.html": {
     "crashtest": "PASS"
   },
+  "scroll-animations/crashtests/scroll-and-view-timeline-same-name-same-element-crash.html": {
+    "crashtest": "PASS"
+  },
   "scroll-animations/crashtests/scroll-timeline-becomes-scrollable-after-sampling.html": {
     "crashtest": "PASS"
   },
@@ -446,7 +449,7 @@
     "total": 7
   },
   "scroll-animations/css/animation-timeline-shared-name-removal.html": {
-    "total": 1
+    "total": 2
   },
   "scroll-animations/css/animation-timeline-view-functional-notation.tentative.html": {
     "total": 18
@@ -601,6 +604,9 @@
   "scroll-animations/css/scroll-timeline-shorthand.html": {
     "total": 51
   },
+  "scroll-animations/css/scroll-timeline-source-removal.html": {
+    "total": 2
+  },
   "scroll-animations/css/scroll-timeline-update-reversed-animation.html": {
     "reftest": "PASS"
   },
@@ -611,6 +617,9 @@
     }
   },
   "scroll-animations/css/siblings-with-anonymous-timelines.html": {
+    "total": 2
+  },
+  "scroll-animations/css/timeline-name-conflict-same-element-outside-hierarchy.html": {
     "total": 2
   },
   "scroll-animations/css/timeline-names-ident-function.html": {
@@ -639,6 +648,9 @@
   },
   "scroll-animations/css/timeline-scope-computed.html": {
     "total": 12
+  },
+  "scroll-animations/css/timeline-scope-nested-self-declared.html": {
+    "total": 2
   },
   "scroll-animations/css/timeline-scope-on-pseudo.html": {
     "total": 3,

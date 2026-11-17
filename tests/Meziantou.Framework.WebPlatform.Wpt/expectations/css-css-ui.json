@@ -9,7 +9,7 @@
     "reftest": "PASS"
   },
   "css/css-ui/accent-color-keyword-animation.html": {
-    "total": 3
+    "total": 12
   },
   "css/css-ui/accent-color-keyword-cyclic.html": {
     "total": 4
@@ -3043,10 +3043,13 @@
     }
   },
   "css/css-ui/parsing/cursor-invalid.html": {
-    "total": 10
+    "total": 15,
+    "failures": {
+      "e.style['cursor'] = \"image-set(linear-gradient(red) 1x), pointer\" should not set the property value": "FAIL"
+    }
   },
   "css/css-ui/parsing/cursor-valid.html": {
-    "total": 46
+    "total": 48
   },
   "css/css-ui/parsing/field-sizing-computed.html": {
     "total": 2

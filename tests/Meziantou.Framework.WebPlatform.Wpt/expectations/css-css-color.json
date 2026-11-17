@@ -623,7 +623,7 @@
     "total": 16
   },
   "css/css-color/parsing/color-invalid-color-function.html": {
-    "total": 124
+    "total": 125
   },
   "css/css-color/parsing/color-invalid-color-layers-function.html": {
     "total": 93
@@ -701,13 +701,13 @@
     "total": 2
   },
   "css/css-color/parsing/opacity-computed.html": {
-    "total": 30
+    "total": 33
   },
   "css/css-color/parsing/opacity-invalid.html": {
-    "total": 3
+    "total": 4
   },
   "css/css-color/parsing/opacity-valid.html": {
-    "total": 30
+    "total": 33
   },
   "css/css-color/parsing/relative-color-out-of-gamut.html": {
     "total": 27
@@ -737,10 +737,10 @@
     "reftest": "PASS"
   },
   "css/css-color/predefined-011.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-color/predefined-012.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-color/predefined-016.html": {
     "reftest": "PASS"
@@ -761,7 +761,7 @@
     "reftest": "PASS"
   },
   "css/css-color/rec2020-001.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-color/rec2020-002.html": {
     "reftest": "PASS"
@@ -773,7 +773,7 @@
     "reftest": "PASS"
   },
   "css/css-color/rec2020-005.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-color/relative-color-with-system-color.html": {
     "total": 3
@@ -815,7 +815,7 @@
     "reftest": "PASS"
   },
   "css/css-color/relative-currentcolor-rec2020-02.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-color/relative-currentcolor-rgb-01.html": {
     "reftest": "PASS"

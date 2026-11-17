@@ -168,6 +168,9 @@
   "web-animations/crashtests/color-mix-crashtest.html": {
     "crashtest": "PASS"
   },
+  "web-animations/crashtests/css-effect-in-non-css-animation.html": {
+    "crashtest": "PASS"
+  },
   "web-animations/crashtests/css-length-range.html": {
     "crashtest": "PASS"
   },
@@ -468,7 +471,7 @@
     "total": 12
   },
   "web-animations/interfaces/KeyframeEffect/target.html": {
-    "total": 24
+    "total": 28
   },
   "web-animations/interfaces/TimelineTrigger/constructor.html": {
     "total": 9,

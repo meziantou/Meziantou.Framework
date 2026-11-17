@@ -138,7 +138,7 @@
     "reftest": "PASS"
   },
   "css/css-images/gradient/color-stops-parsing.html": {
-    "total": 162
+    "total": 180
   },
   "css/css-images/gradient/conic-gradient-001.html": {
     "reftest": "PASS"
@@ -1512,22 +1512,25 @@
     "total": 1398
   },
   "css/css-images/parsing/gradient-position-computed.html": {
-    "total": 43
+    "total": 46
   },
   "css/css-images/parsing/gradient-position-invalid.html": {
-    "total": 9
+    "total": 11
   },
   "css/css-images/parsing/gradient-position-valid.html": {
-    "total": 18
+    "total": 22
   },
   "css/css-images/parsing/image-function-computed.html": {
     "total": 3
   },
   "css/css-images/parsing/image-function-invalid.html": {
-    "total": 6
+    "total": 5
   },
   "css/css-images/parsing/image-function-valid.html": {
-    "total": 13
+    "total": 14,
+    "failures": {
+      "e.style['background-image'] = \"image(url(foo.png))\" should set the property value": "FAIL"
+    }
   },
   "css/css-images/parsing/image-orientation-computed.html": {
     "total": 2
@@ -1551,7 +1554,14 @@
     "total": 5
   },
   "css/css-images/parsing/image-resolution-valid.html": {
-    "total": 12
+    "total": 12,
+    "failures": {
+      "e.style['image-resolution'] = \"2dpcm from-image\" should set the property value": "FAIL",
+      "e.style['image-resolution'] = \"3dppx from-image snap\" should set the property value": "FAIL",
+      "e.style['image-resolution'] = \"snap 7.5dpi\" should set the property value": "FAIL",
+      "e.style['image-resolution'] = \"snap from-image 0dppx\" should set the property value": "FAIL",
+      "e.style['image-resolution'] = \"snap from-image\" should set the property value": "FAIL"
+    }
   },
   "css/css-images/parsing/object-fit-computed.html": {
     "total": 6

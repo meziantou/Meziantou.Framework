@@ -14,11 +14,24 @@
   "css/css-multicol/abspos-containing-block-outside-spanner.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/abspos-in-inline-containing-block-after-spanner.html": {
+    "total": 2
+  },
+  "css/css-multicol/abspos-in-inline-containing-block-fragmentation.html": {
+    "total": 2,
+    "failures": {
+      "Lines of an absolutely positioned box with auto insets in an inline box containing block break at the column boundary": "FAIL",
+      "Lines of an absolutely positioned box with insets in an inline box containing block break at the column boundary": "FAIL"
+    }
+  },
   "css/css-multicol/abspos-in-multicol-with-spanner-crash.html": {
     "crashtest": "PASS"
   },
   "css/css-multicol/abspos-multicol-in-second-outer-clipped.html": {
     "reftest": "PASS"
+  },
+  "css/css-multicol/abspos-size-contained-in-inline-containing-block-balanced.html": {
+    "total": 2
   },
   "css/css-multicol/always-balancing-before-column-span.html": {
     "reftest": "PASS"
@@ -778,6 +791,9 @@
   },
   "css/css-multicol/hit-test-child-under-perspective.html": {
     "total": 1
+  },
+  "css/css-multicol/hit-test-fragmented-overflow.html": {
+    "total": 4
   },
   "css/css-multicol/hit-test-in-vertical-rl.html": {
     "total": 1
@@ -1923,10 +1939,7 @@
     "total": 3
   },
   "css/css-multicol/parsing/column-pseudo-computed.html": {
-    "total": 4,
-    "failures": {
-      "::column scroll-snap-margin": "FAIL"
-    }
+    "total": 4
   },
   "css/css-multicol/parsing/column-pseudo-invalid.html": {
     "total": 6

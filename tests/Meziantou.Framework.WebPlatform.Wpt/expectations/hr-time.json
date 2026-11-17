@@ -22,13 +22,22 @@
     "total": 1
   },
   "hr-time/idlharness.any.js": {
-    "total": 29
+    "total": 31,
+    "failures": {
+      "Partial interface AudioWorkletGlobalScope: original interface defined": "FAIL"
+    }
   },
   "hr-time/idlharness.any.js#dedicatedworker": {
-    "total": 29
+    "total": 31,
+    "failures": {
+      "Partial interface AudioWorkletGlobalScope: original interface defined": "FAIL"
+    }
   },
   "hr-time/idlharness.any.js#sharedworker": {
-    "total": 29
+    "total": 31,
+    "failures": {
+      "Partial interface AudioWorkletGlobalScope: original interface defined": "FAIL"
+    }
   },
   "hr-time/monotonic-clock.any.js": {
     "total": 2

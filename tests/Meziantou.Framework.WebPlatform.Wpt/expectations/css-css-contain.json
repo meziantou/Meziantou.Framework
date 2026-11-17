@@ -1224,10 +1224,7 @@
     "total": 1
   },
   "css/css-contain/content-visibility/content-visibility-090.html": {
-    "total": 1,
-    "failures": {
-      "Content Visibility: scrollLeft/scrollTop/scrollWidth/scrollHeight measure correctly": "FAIL"
-    }
+    "total": 1
   },
   "css/css-contain/content-visibility/content-visibility-091.html": {
     "total": 1
@@ -1372,6 +1369,9 @@
   },
   "css/css-contain/content-visibility/content-visibility-hidden-boundingbox-query.html": {
     "total": 1
+  },
+  "css/css-contain/content-visibility/content-visibility-hidden-grid-web-font-load.html": {
+    "reftest": "PASS"
   },
   "css/css-contain/content-visibility/content-visibility-hidden-list-item-marker.html": {
     "total": 1

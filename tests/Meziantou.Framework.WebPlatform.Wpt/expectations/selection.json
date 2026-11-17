@@ -108,6 +108,9 @@
   "selection/caret/move-around-generated-content.html": {
     "total": 15
   },
+  "selection/caret/move-through-overflow-scroll.html": {
+    "total": 2
+  },
   "selection/collapse-00.html": {
     "total": 2655
   },
@@ -655,6 +658,27 @@
       "isPointInRange() test for collapsed selection": "FAIL"
     }
   },
+  "selection/shadow-dom/tentative/Selection-anchor-focus-rescoping.tentative.html": {
+    "total": 21,
+    "failures": {
+      "Closed shadow tree, setBaseAndExtent(closedShadowText, 1, closedShadowText, 5): anchor is (body, index of closedHost), focus is (body, index of closedHost + 1)": "FAIL",
+      "Closed shadow tree, setBaseAndExtent(closedShadowText, 1, closedShadowText, 5): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL",
+      "Nested shadow tree, setBaseAndExtent(innerShadowText, 1, innerShadowText, 5): anchor is (body, index of outerHost), focus is (body, index of outerHost + 1)": "FAIL",
+      "Nested shadow tree, setBaseAndExtent(innerShadowText, 1, innerShadowText, 5): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL",
+      "Nested shadow tree, setBaseAndExtent(innerShadowText, 5, innerShadowText, 1): anchor is (body, index of outerHost + 1), focus is (body, index of outerHost)": "FAIL",
+      "Nested shadow tree, setBaseAndExtent(innerShadowText, 5, innerShadowText, 1): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL",
+      "Open shadow tree, setBaseAndExtent(openShadowText, 1, openShadowText, 5): anchor is (body, index of openHost), focus is (body, index of openHost + 1)": "FAIL",
+      "Open shadow tree, setBaseAndExtent(openShadowText, 1, openShadowText, 5): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL",
+      "Open shadow tree, setBaseAndExtent(openShadowText, 5, openShadowText, 1): anchor is (body, index of openHost + 1), focus is (body, index of openHost)": "FAIL",
+      "Open shadow tree, setBaseAndExtent(openShadowText, 5, openShadowText, 1): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL",
+      "Outer shadow tree, into a child of the inner host, setBaseAndExtent(outerShadowText, 1, innerAText, 3): anchor is (body, index of outerHost), focus is (body, index of outerHost + 1)": "FAIL",
+      "Outer shadow tree, into a child of the inner host, setBaseAndExtent(outerShadowText, 1, innerAText, 3): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL",
+      "Outer shadow tree, slotted nodes in reverse order, setBaseAndExtent(innerAText, 1, innerBText, 3): anchor is (body, index of outerHost), focus is (body, index of outerHost + 1)": "FAIL",
+      "Outer shadow tree, slotted nodes in reverse order, setBaseAndExtent(innerAText, 1, innerBText, 3): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL",
+      "Outer shadow tree, slotted nodes in reverse order, setBaseAndExtent(innerBText, 3, innerAText, 1): anchor is (body, index of outerHost + 1), focus is (body, index of outerHost)": "FAIL",
+      "Outer shadow tree, slotted nodes in reverse order, setBaseAndExtent(innerBText, 3, innerAText, 1): anchorNode and focusNode are rescoped out of the shadow tree": "FAIL"
+    }
+  },
   "selection/shadow-dom/tentative/Selection-collapse-and-extend.html": {
     "total": 4
   },
@@ -762,5 +786,8 @@
   },
   "selection/user-select-on-input-and-contenteditable.html": {
     "total": 5
+  },
+  "selection/visible-selection-form-controls.html": {
+    "reftest": "PASS"
   }
 }

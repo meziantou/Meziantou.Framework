@@ -2264,6 +2264,76 @@
   "css/css-break/grid/grid-lanes/overflow-clip-002.html": {
     "reftest": "PASS"
   },
+  "css/css-break/grid/grid-lanes/overflow-clip-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/overflow-clip-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/overflow-clip-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/overflow-clip-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-012.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-013.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-015.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-016.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-017.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-break/grid/grid-lanes/row-breaks-018.html": {
+    "total": 2,
+    "failures": {
+      "Row geometry is independent of overflow compensation with overflow: hidden": "FAIL",
+      "Row geometry is independent of overflow compensation with writing-mode: vertical-lr": "FAIL"
+    }
+  },
   "css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-001.html": {
     "reftest": "PASS"
   },
@@ -3755,6 +3825,9 @@
   "css/css-break/table/table-parts-offsets.tentative.html": {
     "total": 17
   },
+  "css/css-break/table/table-row-break-inside-avoid-later-forced-break-print.html": {
+    "reftest": "PASS"
+  },
   "css/css-break/table/table-row-end-border-1-crash.html": {
     "crashtest": "PASS"
   },
@@ -3763,6 +3836,12 @@
   },
   "css/css-break/table/table-row-end-padding-crash.html": {
     "crashtest": "PASS"
+  },
+  "css/css-break/table/table-row-group-break-inside-avoid-forced-break-moved-by-rowspan-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/table/table-row-group-break-inside-avoid-later-forced-break-print.html": {
+    "reftest": "PASS"
   },
   "css/css-break/table/table-row-paint-htb-ltr.html": {
     "reftest": "PASS"

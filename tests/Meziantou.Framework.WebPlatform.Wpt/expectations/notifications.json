@@ -41,6 +41,9 @@
   "notifications/historical.any.js#dedicatedworker": {
     "total": 2
   },
+  "notifications/icon-fetch-blob-url.https.window.js": {
+    "total": 8
+  },
   "notifications/icon-fetch.tentative.https.window.js": {
     "harness": "TIMEOUT",
     "total": 1,

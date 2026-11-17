@@ -138,7 +138,10 @@
     "total": 1
   },
   "event-timing/keydown-without-paint.tentative.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "keydown timing entry is dispatched without a repaint": "FAIL"
+    }
   },
   "event-timing/keydown.html": {
     "total": 1

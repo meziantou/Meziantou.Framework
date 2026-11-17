@@ -41,6 +41,12 @@
   "webmessaging/Channel_postMessage_target_source.any.js#dedicatedworker": {
     "total": 1
   },
+  "webmessaging/Channel_postMessage_transfer_target_port.any.js": {
+    "total": 3
+  },
+  "webmessaging/Channel_postMessage_transfer_target_port.any.js#dedicatedworker": {
+    "total": 3
+  },
   "webmessaging/Channel_postMessage_transfer_xsite_incoming_messages.window.js": {
     "total": 1
   },
@@ -121,6 +127,9 @@
   },
   "webmessaging/broadcastchannel/interface.any.js#dedicatedworker": {
     "total": 13
+  },
+  "webmessaging/broadcastchannel/messageerror-listener-gc.html": {
+    "total": 2
   },
   "webmessaging/broadcastchannel/opaque-origin.html": {
     "total": 4
@@ -233,6 +242,9 @@
   },
   "webmessaging/message-channels/implied-start.any.js#dedicatedworker": {
     "total": 1
+  },
+  "webmessaging/message-channels/messageerror-listener-gc.html": {
+    "total": 2
   },
   "webmessaging/message-channels/no-start.any.js": {
     "total": 1

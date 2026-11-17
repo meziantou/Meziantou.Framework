@@ -19,17 +19,12 @@
     "total": 1
   },
   "speculation-rules/inline-speculation-rules-base-url-errors.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Base URL changes do not re-fire error events on invalid speculation rules": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/inline-speculation-rules-errors.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "A script with invalid JSON should fire error events on the element and window": "TIMEOUT"
+      "A script with invalid JSON should report an error on the window but not fire an error event on the element": "FAIL"
     }
   },
   "speculation-rules/invalid-rules.https.html?prefetch": {
@@ -45,7 +40,13 @@
     "total": 1
   },
   "speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html": {
-    "total": 3
+    "total": 4
+  },
+  "speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cross-site.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "clear-site-data prefetchCache header in a cross-site iframe should not clear top-level prefetches": "FAIL"
+    }
   },
   "speculation-rules/prefetch/client-hints/basic.https.sub.html": {
     "total": 9
@@ -74,6 +75,15 @@
   "speculation-rules/prefetch/document-rules-pending-stylesheet.https.html": {
     "total": 1
   },
+  "speculation-rules/prefetch/document-rules-scope.tentative.https.html?include=documentScopeDescendant": {
+    "total": 1,
+    "failures": {
+      "test :scope descendant selector for links in the document": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/document-rules-scope.tentative.https.html?include=shadowRootScope": {
+    "total": 1
+  },
   "speculation-rules/prefetch/document-rules-visibility.https.html": {
     "harness": "ERROR",
     "total": 6,
@@ -97,11 +107,29 @@
   "speculation-rules/prefetch/document-rules.https.html?include=hrefMatches": {
     "total": 1
   },
+  "speculation-rules/prefetch/document-rules.https.html?include=hrefMatchesLoneSurrogateObject": {
+    "total": 1,
+    "failures": {
+      "href_matches replaces a lone surrogate in the object form": "FAIL"
+    }
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=hrefMatchesLoneSurrogateString": {
+    "total": 1,
+    "failures": {
+      "href_matches replaces a lone surrogate in the string form": "FAIL"
+    }
+  },
   "speculation-rules/prefetch/document-rules.https.html?include=immediateMutation": {
     "total": 1
   },
   "speculation-rules/prefetch/document-rules.https.html?include=invalidPredicate": {
     "total": 1
+  },
+  "speculation-rules/prefetch/document-rules.https.html?include=invalidRuleWithLoneSurrogate": {
+    "total": 1,
+    "failures": {
+      "a lone surrogate in an invalid rule does not invalidate the ruleset": "FAIL"
+    }
   },
   "speculation-rules/prefetch/document-rules.https.html?include=linkHrefChanged": {
     "total": 1
@@ -1446,17 +1474,15 @@
     }
   },
   "speculation-rules/prerender/restriction-encrypted-media-unsupported-config.https.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Encrypted Media API should be deferred with the\n    unsupported configurations until the prerendered page is activated": "TIMEOUT"
+      "the access to the Encrypted Media API should be deferred with the\n    unsupported configurations until the prerendered page is activated": "FAIL"
     }
   },
   "speculation-rules/prerender/restriction-encrypted-media.https.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Encrypted Media API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
+      "the access to the Encrypted Media API should be deferred until the\n    prerendered page is activated": "FAIL"
     }
   },
   "speculation-rules/prerender/restriction-focus.https.html": {

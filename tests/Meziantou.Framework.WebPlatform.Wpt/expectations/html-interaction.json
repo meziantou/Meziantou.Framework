@@ -125,6 +125,9 @@
       "focusreset is not fired synchronously": "FAIL"
     }
   },
+  "html/interaction/focus/processing-model/blur-non-focusable.html": {
+    "total": 3
+  },
   "html/interaction/focus/processing-model/focus-fixup-rule-disabled.tentative.html": {
     "total": 7,
     "failures": {

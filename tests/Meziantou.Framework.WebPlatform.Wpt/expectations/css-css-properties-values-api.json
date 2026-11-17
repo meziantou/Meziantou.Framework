@@ -233,6 +233,9 @@
   "css/css-properties-values-api/at-property-cssom.html": {
     "total": 40
   },
+  "css/css-properties-values-api/at-property-media-query.html": {
+    "total": 1
+  },
   "css/css-properties-values-api/at-property-non-matching-media-crash.html": {
     "crashtest": "PASS"
   },

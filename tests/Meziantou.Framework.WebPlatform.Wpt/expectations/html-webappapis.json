@@ -582,6 +582,12 @@
   "html/webappapis/microtask-queuing/queue-microtask.window.js": {
     "total": 2
   },
+  "html/webappapis/scripting/event-loops/document-without-browsing-context.window.js": {
+    "total": 7,
+    "failures": {
+      "Mutation observer watching template contents": "FAIL"
+    }
+  },
   "html/webappapis/scripting/event-loops/microtask_after_raf.html": {
     "total": 1
   },
@@ -596,6 +602,9 @@
   },
   "html/webappapis/scripting/event-loops/new-scroll-event-dispatched-at-next-updating-rendering-time.html": {
     "total": 1
+  },
+  "html/webappapis/scripting/event-loops/opaque-origin-same-agent.window.js": {
+    "total": 3
   },
   "html/webappapis/scripting/event-loops/raf-from-animation-event-serviced-in-same-rendering-update.html": {
     "total": 1

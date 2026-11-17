@@ -2509,7 +2509,7 @@
     "total": 8
   },
   "css/css-grid/grid-flex-spanning-items-001.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-grid/grid-flexible-track-fractional-flex-factor.html": {
     "reftest": "PASS"
@@ -2666,6 +2666,9 @@
   },
   "css/css-grid/grid-items/grid-item-aspect-ratio-percent-width-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-items/grid-item-auto-repeat-large-gap.html": {
+    "total": 2
   },
   "css/css-grid/grid-items/grid-item-block-axis-content-contribution-001.html": {
     "reftest": "PASS"
@@ -4600,7 +4603,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/items/column-flex-spanning-items.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-grid/grid-lanes/items/column-flex-track-intrinsic-sizes.html": {
     "total": 102
@@ -4621,13 +4624,13 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/items/column-item-percentage-sizes-001.html": {
-    "reftest": "FAIL"
+    "total": 49
   },
   "css/css-grid/grid-lanes/items/column-item-percentage-sizes-002.html": {
-    "reftest": "FAIL"
+    "total": 49
   },
   "css/css-grid/grid-lanes/items/column-item-percentage-sizes-003.html": {
-    "reftest": "FAIL"
+    "total": 49
   },
   "css/css-grid/grid-lanes/items/column-minimum-contribution-baseline-shim-vertical-lr.html": {
     "total": 6
@@ -6620,7 +6623,11 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-model/grid-gutters-and-flex-content-001.html": {
-    "total": 8
+    "total": 8,
+    "failures": {
+      ".grid 7": "FAIL",
+      ".grid 8": "FAIL"
+    }
   },
   "css/css-grid/grid-model/grid-gutters-and-tracks-001.html": {
     "total": 17
@@ -7007,7 +7014,10 @@
     "total": 4
   },
   "css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html": {
-    "total": 35
+    "total": 35,
+    "failures": {
+      ".grid 23": "FAIL"
+    }
   },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-001.html": {
     "total": 4
@@ -7196,7 +7206,14 @@
     "total": 40
   },
   "css/css-grid/parsing/grid-content-sized-columns-resolution.html": {
-    "total": 42
+    "total": 42,
+    "failures": {
+      "Element 'gridAutoMaxContentUnsortedConstrained' grid-template-columns value computes to '40px 50px'": "FAIL",
+      "Element 'gridFixedMinContentAndMaxContentUnsorted' grid-template-columns value computes to '30px 50px'": "FAIL",
+      "Element 'gridFixedMinContentAndMaxContentUnsortedConstrained' grid-template-columns value computes to '30px 50px'": "FAIL",
+      "Element 'gridMaxContentFixedAndAuto' grid-template-columns value computes to '15px 75px'": "FAIL",
+      "Element 'gridMinContentAndMaxContentFixed' grid-template-columns value computes to '60px 30px'": "FAIL"
+    }
   },
   "css/css-grid/parsing/grid-row-invalid.html": {
     "total": 31

@@ -70,6 +70,12 @@
   "geolocation/tojson.https.window.js": {
     "total": 1
   },
+  "geolocation/watchPosition-accuracyMode.https.html": {
+    "total": 2,
+    "failures": {
+      "watchPosition with accuracyMode: \"approximate\"": "FAIL"
+    }
+  },
   "geolocation/watchPosition_TypeError.https.html": {
     "total": 7
   },

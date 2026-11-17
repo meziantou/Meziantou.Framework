@@ -673,6 +673,227 @@ public sealed class DrawingReferenceTests
         Assert.Contains(areas, area => area > 0);
     }
 
+    public static TheoryData<string> PerspectiveStrokeCases => [.. CreatePerspectiveStrokeCases().Select(item => item.Name)];
+
+    [Theory]
+    [MemberData(nameof(PerspectiveStrokeCases))]
+    public void AStrokeInPerspectiveIsTheRegionOfTheStrokeOfTheTrueCurves(string name)
+    {
+        // In perspective, a curve is cut where the outline of its stroke lands (ProjectiveView.GetCurveScale): the
+        // outline stays within the flattening tolerance on the canvas. The reference is the stroke of the true curves,
+        // densely sampled, never flattened by the library: an aliased stroke paints a pixel when its center is inside,
+        // and the center of a pixel is mapped back to the plane. Only the pixels whose center is inside, or outside,
+        // with every point within twice the tolerance around it are compared.
+        var (_, transform, pen, curves) = CreatePerspectiveStrokeCases().Single(item => item.Name == name);
+        const int Size = 64;
+        const double Margin = 2 * PathFlattener.Tolerance;
+        Assert.True(transform.TryInvert(out var inverse));
+
+        var builder = new VectorPathBuilder();
+        var references = new List<ReferenceStroke>();
+        var capEnds = new List<(double X, double Y)>();
+        var h = pen.Width / 2;
+        var cap = pen.LineCap switch
+        {
+            LineCap.Butt => ReferenceLineCap.Butt,
+            LineCap.Round => ReferenceLineCap.Round,
+            _ => ReferenceLineCap.Square,
+        };
+        foreach (var (add, point, closed) in curves)
+        {
+            add(builder);
+            var samples = Enumerable.Range(0, 2001).Select(i => point(i / 2000.0)).ToList();
+            if (closed)
+            {
+                samples.RemoveAt(samples.Count - 1);
+            }
+
+            if (!pen.IsDashed)
+            {
+                references.Add(new ReferenceStroke(samples, closed, pen.Width, ReferenceLineJoin.Round, cap, pen.MiterLimit, [.. samples.Select((_, index) => closed || (index > 0 && index < samples.Count - 1))]));
+                continue;
+            }
+
+            // The dashes of the true curve, from its start. The caps of a dash end are turned with the chord the dash
+            // ends on, and the end moves with the length of the chords: the region a cap reaches is not compared.
+            if (closed)
+            {
+                samples.Add(samples[0]);
+            }
+
+            var pattern = pen.DashPattern.ToArray();
+            var dash = new List<(double X, double Y)> { samples[0] };
+            var (index, remaining, on) = (0, pattern[0], true);
+            capEnds.Add(samples[0]);
+            for (var i = 1; i < samples.Count; i++)
+            {
+                var (x0, y0) = samples[i - 1];
+                var (x1, y1) = samples[i];
+                var length = Math.Sqrt(((x1 - x0) * (x1 - x0)) + ((y1 - y0) * (y1 - y0)));
+                var done = 0.0;
+                while (length - done >= remaining)
+                {
+                    done += remaining;
+                    var end = (x0 + ((x1 - x0) * done / length), y0 + ((y1 - y0) * done / length));
+                    capEnds.Add(end);
+                    if (on)
+                    {
+                        dash.Add(end);
+                        references.Add(new ReferenceStroke(dash, closed: false, pen.Width, ReferenceLineJoin.Round, cap, pen.MiterLimit, [.. dash.Select((_, j) => j > 0 && j < dash.Count - 1)]));
+                    }
+
+                    dash = [end];
+                    on = !on;
+                    index = (index + 1) % pattern.Length;
+                    remaining = pattern[index];
+                }
+
+                remaining -= length - done;
+                if (on)
+                {
+                    dash.Add((x1, y1));
+                }
+            }
+
+            capEnds.Add(samples[^1]);
+            if (on && dash.Count > 1)
+            {
+                references.Add(new ReferenceStroke(dash, closed: false, pen.Width, ReferenceLineJoin.Round, cap, pen.MiterLimit, [.. dash.Select((_, j) => j > 0 && j < dash.Count - 1)]));
+            }
+        }
+
+        using var image = new Image<Rgba32>(Size, Size);
+        var path = builder.Build();
+        image.Draw(canvas => canvas.Antialiasing(enabled: false, aliased => aliased.Transform(transform, plane => plane.Stroke(pen, path))), Ct);
+
+        int inside = 0, outside = 0, near = 0;
+        var capReach = (h * Math.Sqrt(2)) + 1;
+        for (var y = 0; y < Size; y++)
+        {
+            for (var x = 0; x < Size; x++)
+            {
+                var center = IsInside(x + 0.5, y + 0.5);
+                if (center is null)
+                    continue;
+
+                var isStable = true;
+                for (var direction = 0; direction < 8 && isStable; direction++)
+                {
+                    var angle = direction * Math.PI / 4;
+                    isStable = IsInside(x + 0.5 + (Margin * Math.Cos(angle)), y + 0.5 + (Margin * Math.Sin(angle))) == center;
+                }
+
+                if (!isStable)
+                    continue;
+
+                // A pixel within two pixels of the boundary checks where the outline is
+                for (var direction = 0; direction < 8; direction++)
+                {
+                    var angle = direction * Math.PI / 4;
+                    if (IsInside(x + 0.5 + (2 * Math.Cos(angle)), y + 0.5 + (2 * Math.Sin(angle))) is { } other && other != center)
+                    {
+                        near++;
+                        break;
+                    }
+                }
+
+                var isPainted = image.Frames[0][x, y].A != 0;
+                Assert.Equal(center.Value, isPainted, $"pixel ({x}, {y}) is {(center.Value ? "inside" : "outside")} the stroke of the true curves");
+                if (center.Value)
+                {
+                    inside++;
+                }
+                else
+                {
+                    outside++;
+                }
+            }
+        }
+
+        Assert.True(inside >= 5 && outside >= 20 && near >= 20, $"{inside} pixels inside, {outside} outside, {near} near the boundary");
+
+        // Whether a point of the canvas is inside the stroke of the true curves; null when the region a cap of a dash
+        // reaches is around it
+        bool? IsInside(double x, double y)
+        {
+            // The point of the plane must be in front of the viewer: one at infinity, or behind the viewer, has no image
+            if (!inverse.TryTransform(new PointD(x, y), out var point) || (point.X * transform.M13) + (point.Y * transform.M23) + transform.M33 <= 0)
+                return false;
+
+            if (capEnds.Any(end => Math.Abs(end.X - point.X) < capReach && Math.Abs(end.Y - point.Y) < capReach))
+                return null;
+
+            return references.Any(reference => reference.GetSignedDistance(point.X, point.Y) > 0);
+        }
+    }
+
+    private static IEnumerable<(string Name, ProjectiveTransform Transform, Pen Pen, (Action<VectorPathBuilder> Add, Func<double, (double X, double Y)> Point, bool Closed)[] Curves)> CreatePerspectiveStrokeCases()
+    {
+        // The square of 100 pixels of the plane seen leaning back, its far side short; seen leaning forward, its near side
+        // far wider than the canvas; and a plane seen nearly edge-on, whose horizon passes close to the canvas (fuzz
+        // regression: the curves moved across its horizon, and its vanishing point moved into the canvas)
+        var transforms = new (string Name, ProjectiveTransform Transform)[]
+        {
+            ("back", ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 100, 100), new PointD(26, 2), new PointD(38, 2), new PointD(62, 62), new PointD(2, 62))),
+            ("forward", ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 100, 100), new PointD(-120, 0), new PointD(184, 0), new PointD(44, 63), new PointD(20, 63))),
+            ("edge-on", ((ProjectiveTransform)AffineTransform.CreateTranslation(-60, 0)).Then(new ProjectiveTransform(1.7422965749764903, 0.06924918865877217, 0.03463023903403511, 0, 7.710559872308175E-06, 0, 38.11527381090911, 1.5148101671147525, 0.7575883267617542)).Then(AffineTransform.CreateTranslation(-20, 10))),
+        };
+
+        // A cubic and a quadratic Bézier curve, an arc of an ellipse and a closed ellipse turned by 30 degrees
+        var curves = new (Action<VectorPathBuilder> Add, Func<double, (double X, double Y)> Point, bool Closed)[]
+        {
+            (builder => builder.MoveTo(5, 80).CubicBezierTo(30, 5, 70, 95, 95, 20), t => Cubic(t, (5, 80), (30, 5), (70, 95), (95, 20)), false),
+            (builder => builder.MoveTo(10, 15).QuadraticBezierTo(50, 70, 90, 10), t => Quadratic(t, (10, 15), (50, 70), (90, 10)), false),
+            (builder => builder.AddArc(new PointD(40, 55), 30, 18, 20, 230), t => Ellipse(t, (40, 55), 30, 18, 20, 230), false),
+            (builder => builder.AddEllipse(new PointD(60, 45), 22, 9, 30), t => TurnedEllipse(t, (60, 45), 22, 9, 30), true),
+        };
+
+        var pens = new (string Name, Pen Pen)[]
+        {
+            ("round", new Pen(new SolidBrush(new Rgba32(255, 255, 255)), 30) { LineJoin = LineJoin.Round, LineCap = LineCap.Round }),
+            ("square-dashes", new Pen(new SolidBrush(new Rgba32(255, 255, 255)), 16) { LineJoin = LineJoin.Miter, LineCap = LineCap.Square, DashPattern = [90, 10] }),
+        };
+
+        foreach (var (transformName, transform) in transforms)
+        {
+            foreach (var (penName, pen) in pens)
+            {
+                for (var i = 0; i < curves.Length; i++)
+                {
+                    yield return ($"{transformName}-{penName}-{i}", transform, pen, [curves[i]]);
+                }
+            }
+        }
+
+        static (double X, double Y) Cubic(double t, (double X, double Y) p0, (double X, double Y) p1, (double X, double Y) p2, (double X, double Y) p3)
+        {
+            var s = 1 - t;
+            return ((s * s * s * p0.X) + (3 * s * s * t * p1.X) + (3 * s * t * t * p2.X) + (t * t * t * p3.X), (s * s * s * p0.Y) + (3 * s * s * t * p1.Y) + (3 * s * t * t * p2.Y) + (t * t * t * p3.Y));
+        }
+
+        static (double X, double Y) Quadratic(double t, (double X, double Y) p0, (double X, double Y) p1, (double X, double Y) p2)
+        {
+            var s = 1 - t;
+            return ((s * s * p0.X) + (2 * s * t * p1.X) + (t * t * p2.X), (s * s * p0.Y) + (2 * s * t * p1.Y) + (t * t * p2.Y));
+        }
+
+        // The whole ellipse of center c and radii (rx, ry) turned clockwise on the image, from the end of its first axis
+        static (double X, double Y) TurnedEllipse(double t, (double X, double Y) center, double radiusX, double radiusY, double rotation)
+        {
+            var angle = t * 2 * Math.PI;
+            var (sin, cos) = Math.SinCos(rotation * Math.PI / 180);
+            var (x, y) = (radiusX * Math.Cos(angle), radiusY * Math.Sin(angle));
+            return (center.X + (x * cos) - (y * sin), center.Y + (x * sin) + (y * cos));
+        }
+
+        // An arc of the ellipse of center c and radii (rx, ry), clockwise on the image from an angle in degrees
+        static (double X, double Y) Ellipse(double t, (double X, double Y) center, double radiusX, double radiusY, double start, double sweep)
+        {
+            var angle = (start + (t * sweep)) * Math.PI / 180;
+            return (center.X + (radiusX * Math.Cos(angle)), center.Y + (radiusY * Math.Sin(angle)));
+        }
+    }
+
     [Fact]
     public void AFilledCurveIsTheExactAreaOfItsChords()
     {

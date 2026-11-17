@@ -68,7 +68,7 @@ static async Task<SortedDictionary<string, string>> LoadGitHubShortcodes()
 static Dictionary<string, string> GetEmojiToShortcode(SortedDictionary<string, string> shortcodes)
 {
     var result = new Dictionary<string, string>(StringComparer.Ordinal);
-    foreach (var (shortcode, emoji) in shortcodes.OrderBy(static entry => entry.Key.Trim(':'), StringComparer.Ordinal))
+    foreach (var (shortcode, emoji) in shortcodes.OrderBy(entry => entry.Key.Trim(':'), StringComparer.Ordinal))
     {
         if (result.TryGetValue(emoji, out var existingShortcode))
         {

@@ -343,6 +343,41 @@ public static class MarkdownFormatter
             return false;
         }
 
+        // The whitespace other than spaces and tabs after the marker of a container, such as \f, is in the trailing trivia of the
+        // marker when it is on its line: it is the start of the first line of the blocks, or a line of its own before them
+        private static List<string> WithMarkerLineText(SyntaxToken marker, List<string> lines)
+        {
+            var text = new StringBuilder();
+            var endsLine = false;
+            foreach (var trivia in marker.TrailingTrivia)
+            {
+                if (trivia.RawKind == (int)SyntaxKind.EndOfLineTrivia)
+                {
+                    endsLine = true;
+                    break;
+                }
+
+                text.Append(trivia.ToFullString());
+            }
+
+            var content = text.ToString().TrimStart(' ', '\t');
+            if (content.Length == 0)
+            {
+                return lines;
+            }
+
+            if (endsLine || lines.Count == 0)
+            {
+                lines.Insert(0, content);
+            }
+            else
+            {
+                lines[0] = content + lines[0];
+            }
+
+            return lines;
+        }
+
         private static bool HasLineEnding(SyntaxTriviaList trivia)
         {
             foreach (var item in trivia)
@@ -388,7 +423,7 @@ public static class MarkdownFormatter
                     break;
 
                 case MarkdownBlockQuoteSyntax quote:
-                    AddPrefixed(lines, WriteBlocks(quote.Blocks, BlankLines.Always), "> ", "> ");
+                    AddPrefixed(lines, WithMarkerLineText(quote.MarkerToken, WriteBlocks(quote.Blocks, BlankLines.Always)), "> ", "> ");
                     break;
 
                 case MarkdownAlertSyntax alert:
@@ -579,14 +614,21 @@ public static class MarkdownFormatter
             var text = source.AsSpan(paragraph.Span.Start, paragraph.Span.Length);
             for (var i = 0; i < lines.Count; i++)
             {
+                // The lines end with the line endings of the document: \r\n, \n or \r
                 if (i > 0)
                 {
-                    if (text.IsEmpty || text[0] != '\n')
+                    if (text is ['\r', '\n', ..])
+                    {
+                        text = text[2..];
+                    }
+                    else if (text is ['\n' or '\r', ..])
+                    {
+                        text = text[1..];
+                    }
+                    else
                     {
                         return false;
                     }
-
-                    text = text[1..];
                 }
 
                 if (!text.StartsWith(lines[i], StringComparison.Ordinal))
@@ -797,6 +839,13 @@ public static class MarkdownFormatter
                 }
 
                 AddPrefixed(lines, content, marker.PadRight(width) + taskMarkers[i], new string(' ', width));
+
+                // The content of an empty item starts after its marker and one space, whatever the width of the other items: the
+                // next block would be its content when it is indented as much. A blank line ends an empty item.
+                if (i == items.Count - 1 && content.Count == 0 && taskMarkers[i].Length == 0 && indentationOfNextBlock >= marker.Length + 1)
+                {
+                    AddBlankLine(lines);
+                }
             }
 
             return bulletMarker;
@@ -1210,9 +1259,15 @@ public static class MarkdownFormatter
 
                         break;
 
-                    // The indentation is spaces and tabs: other whitespace, such as \v, is text
+                    // The indentation is spaces and tabs: other whitespace, such as \v, is text, without the spaces and the tabs before it,
+                    // which are indentation, or the space after the marker of a block quote
                     case SyntaxKind.BlockQuoteMarkerTrivia or SyntaxKind.ListItemIndentTrivia or SyntaxKind.FooterMarkerTrivia when _atLineStart:
                     case SyntaxKind.WhitespaceTrivia when _atLineStart && !trivia.Text.AsSpan().ContainsAnyExcept(' ', '\t'):
+                        break;
+
+                    case SyntaxKind.WhitespaceTrivia when _atLineStart:
+                        _line.Append(trivia.Text.AsSpan().TrimStart(" \t"));
+                        _atLineStart = false;
                         break;
 
                     default:

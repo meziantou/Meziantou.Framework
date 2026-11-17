@@ -157,6 +157,7 @@ public static class MarkdownHtmlRenderer
         // that it wrote, whose state of the blocks around it is the one of the built-in rendering.
         private MarkdownSyntaxNode? _defaultNode;
         private MarkdownSyntaxNode? _lastDefaultNode;
+        private int _lastDefaultEnd;
 
         public MarkdownHtmlRendererOptions RendererOptions => rendererOptions;
 
@@ -861,15 +862,8 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownParagraphSyntax paragraph:
                 {
-                    // The paragraphs of a tight list have no <p>, as the ones of its custom containers in Markdig
-                    var parent = paragraph.Parent;
-                    while (parent is MarkdownCustomContainerSyntax or MarkdownDefinitionItemSyntax or MarkdownDefinitionListSyntax or MarkdownFigureSyntax)
-                    {
-                        parent = parent.Parent;
-                    }
-
-                    // The paragraphs of a footer have no <p> either
-                    var tight = parent is MarkdownListItemSyntax { Parent: MarkdownListSyntax { IsTight: true } } or MarkdownFooterSyntax;
+                    var parent = GetParagraphContainer(paragraph);
+                    var tight = IsTight(parent);
                     // In a footer, Markdig does not start a heading, a thematic break or HTML on a new line after a paragraph
                     var inFooter = parent is MarkdownFooterSyntax;
                     if (tight)
@@ -1117,9 +1111,9 @@ public static class MarkdownHtmlRenderer
                 return false;
             }
 
-            // A block that the node renderer wrote with WriteDefault updated the state itself, and a block that wrote nothing
-            // leaves the next block first in its container
-            if (!ReferenceEquals(_lastDefaultNode, block) && _output.Length != start)
+            // A block that the node renderer wrote with WriteDefault, and nothing after, updated the state itself, and a block that
+            // wrote nothing leaves the next block first in its container
+            if (_output.Length != start && !(ReferenceEquals(_lastDefaultNode, block) && _lastDefaultEnd == _output.Length))
             {
                 _firstInContainer = false;
             }
@@ -1186,6 +1180,7 @@ public static class MarkdownHtmlRenderer
             {
                 _defaultNode = previous;
                 _lastDefaultNode = node;
+                _lastDefaultEnd = _output.Length;
             }
         }
 
@@ -1223,13 +1218,44 @@ public static class MarkdownHtmlRenderer
 
         public void EnsureNewLine() => Cr();
 
+        // The container whose tightness the paragraphs of a block follow: the paragraphs of a tight list have no <p>, as the ones
+        // of its custom containers in Markdig
+        private static MarkdownSyntaxNode? GetParagraphContainer(MarkdownBlockSyntax block)
+        {
+            var parent = (MarkdownSyntaxNode?)block.Parent;
+            while (parent is MarkdownCustomContainerSyntax or MarkdownDefinitionItemSyntax or MarkdownDefinitionListSyntax or MarkdownFigureSyntax)
+            {
+                parent = (MarkdownSyntaxNode?)parent.Parent;
+            }
+
+            return parent;
+        }
+
+        // The paragraphs of a footer have no <p> either
+        private static bool IsTight(MarkdownSyntaxNode? paragraphContainer) => paragraphContainer is MarkdownListItemSyntax { Parent: MarkdownListSyntax { IsTight: true } } or MarkdownFooterSyntax;
+
+        // Whether the trailing trivia of a child ends its line
+        private static bool EndsLine(SyntaxNodeOrToken child)
+        {
+            foreach (var trivia in child.GetTrailingTrivia())
+            {
+                if (trivia.RawKind == (int)SyntaxKind.EndOfLineTrivia)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         // The block of a syntax extension that no node renderer writes: its lines in <pre><code>, its blocks, or its text and its
         // inlines in <p>, without its markers and its info. The text of a line starts on a new line.
         private void WriteExtensionBlock(MarkdownExtensionBlockSyntax extension)
         {
+            // As a code block, which starts on a new line even as the first block of a container
             if (extension.Lines.Count > 0)
             {
-                CrUnlessFirstInContainer();
+                Cr();
                 Markup.Append("<pre><code");
                 AppendAttributes(extension);
                 Markup.Append('>');
@@ -1245,14 +1271,25 @@ public static class MarkdownHtmlRenderer
                 return;
             }
 
-            CrUnlessFirstInContainer(paragraph: true);
-            Markup.Append("<p");
-            AppendAttributes(extension);
-            Markup.Append('>');
+            // As a paragraph: no <p> in a tight list
+            var parent = GetParagraphContainer(extension);
+            var tight = IsTight(parent);
+            if (tight)
+            {
+                _firstInContainer = false;
+            }
+            else
+            {
+                CrUnlessFirstInContainer(paragraph: true);
+                Markup.Append("<p");
+                AppendAttributes(extension);
+                Markup.Append('>');
+            }
+
             SyntaxNodeOrToken previous = default;
             foreach (var child in extension.Inlines)
             {
-                if (previous.RawKind != 0 && previous.ToFullString().EndsWith("\n", StringComparison.Ordinal))
+                if (previous.RawKind != 0 && EndsLine(previous))
                 {
                     _output.Append('\n');
                 }
@@ -1272,8 +1309,16 @@ public static class MarkdownHtmlRenderer
                 previous = child;
             }
 
-            Markup.Append("</p>");
-            Cr();
+            if (parent is MarkdownFooterSyntax)
+            {
+                _firstInContainer = true;
+            }
+
+            if (!tight)
+            {
+                Markup.Append("</p>");
+                Cr();
+            }
         }
 
         public void WriteFootnotes(MarkdownDocumentSyntax document)

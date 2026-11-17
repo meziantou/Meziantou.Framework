@@ -17,6 +17,9 @@ namespace Meziantou.Framework.Markdown;
 public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
 {
     private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private IReadOnlyList<SyntaxToken>? _markers;
+    private IReadOnlyList<SyntaxToken>? _texts;
+    private IReadOnlyList<SyntaxToken>? _lines;
 
     internal MarkdownExtensionBlockSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
@@ -30,7 +33,7 @@ public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
     public bool IsFenced => GetFirstChildToken().RawKind == (int)SyntaxKind.ExtensionFenceToken;
 
     /// <summary>Gets the fences of a fenced block, or the markers of the block of a paragraph, in the order of the text.</summary>
-    public IReadOnlyList<SyntaxToken> Markers => [.. ChildTokens().Where(token => token.RawKind is (int)SyntaxKind.ExtensionFenceToken or (int)SyntaxKind.ExtensionMarkerToken)];
+    public IReadOnlyList<SyntaxToken> Markers => _markers ??= [.. ChildTokens().Where(token => token.RawKind is (int)SyntaxKind.ExtensionFenceToken or (int)SyntaxKind.ExtensionMarkerToken)];
 
     /// <summary>Gets the text after the opening fence, without the whitespace around it, or an empty string.</summary>
     public string Info
@@ -58,7 +61,7 @@ public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
     }
 
     /// <summary>Gets the lines between the fences of a block of <see cref="MarkdownFencedBlockContent.RawLines"/>, with their line endings.</summary>
-    public IReadOnlyList<SyntaxToken> Lines => [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionLineToken)];
+    public IReadOnlyList<SyntaxToken> Lines => _lines ??= [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionLineToken)];
 
     /// <summary>Gets the text of the lines between the fences, each line ending with <c>\n</c>.</summary>
     public string Content
@@ -88,7 +91,7 @@ public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
     public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     /// <summary>Gets the text tokens of the block of a paragraph, in the order of the text.</summary>
-    public IReadOnlyList<SyntaxToken> Texts => [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionTextToken)];
+    public IReadOnlyList<SyntaxToken> Texts => _texts ??= [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionTextToken)];
 
     /// <summary>
     /// Gets the text and the inlines of the block of a paragraph, or the info of a fenced block that reads it as inlines: the

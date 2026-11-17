@@ -11,10 +11,10 @@ internal sealed class BlockParser
 {
     private const int CodeIndent = 4;
 
-    // The kind of the block of a fenced block extension of raw lines while the blocks are read: a token kind, which no block
-    // has. Its own kind lets the checks of the kinds that run for each line, such as AcceptsLines, cover it without another
-    // comparison. The tree has an ExtensionBlock.
-    private const SyntaxKind RawExtensionBlock = SyntaxKind.ExtensionLineToken;
+    // The kind of the block of a fenced block extension of raw lines while the blocks are read: a value that SyntaxKind does not
+    // define, above the kinds of the nodes, so that it is not taken for a token. Its own kind lets the checks of the kinds that
+    // run for each line, such as AcceptsLines, cover it without another comparison. Convert writes an ExtensionBlock.
+    private const SyntaxKind RawExtensionBlock = (SyntaxKind)int.MaxValue;
 
     // The empty cells that complete the short rows of a GFM table, as cmark-gfm limits them: once a table has more, its next
     // line is not a row. Without the limit, a header of many columns followed by many short rows makes the HTML grow
@@ -487,7 +487,7 @@ internal sealed class BlockParser
 
                 if (_blank)
                 {
-                    if (!block.LastIsBlankLine && block.LastChild is not { Kind: SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock })
+                    if (!block.LastIsBlankLine && block.LastChild is not { Kind: SyntaxKind.FencedCodeBlock or SyntaxKind.MathBlock or RawExtensionBlock })
                     {
                         block.BlankLineCount++;
                         block.LastIsBlankLine = true;
@@ -1869,7 +1869,7 @@ internal sealed class BlockParser
                 _tree.AddRange(block.DefinitionsOrNull);
                 if (block.ExtensionSegments is { } segments)
                 {
-                    ConvertSegments(segments);
+                    ConvertSegments(segments, trimEnd: block.GridLineCount != block.LineCount);
                     return;
                 }
 
@@ -2183,13 +2183,15 @@ internal sealed class BlockParser
     }
 
     // A paragraph that paragraph extensions split: their blocks, and the paragraphs around them
-    private void ConvertSegments(List<ParagraphSegment> segments)
+    // A paragraph that comes from a grid table keeps the whitespace at its end, as Markdig does: its last segment keeps it
+    private void ConvertSegments(List<ParagraphSegment> segments, bool trimEnd)
     {
-        foreach (var segment in segments)
+        for (var i = 0; i < segments.Count; i++)
         {
+            var segment = segments[i];
             if (segment.Ranges is null)
             {
-                ConvertParagraphSegment(_lines.AsSpan(segment.LineStart, segment.LineCount));
+                ConvertParagraphSegment(_lines.AsSpan(segment.LineStart, segment.LineCount), trimEnd || i < segments.Count - 1);
             }
             else
             {
@@ -2199,17 +2201,17 @@ internal sealed class BlockParser
     }
 
     // Lines of a paragraph that a paragraph extension split, which are a paragraph, or a pipe table
-    private void ConvertParagraphSegment(ReadOnlySpan<Line> lines)
+    private void ConvertParagraphSegment(ReadOnlySpan<Line> lines, bool trimEnd)
     {
         var subject = Subject.FromLines(_text, lines);
         if (HasExtension(MarkdownExtensions.PipeTables) && subject.From(subject.Start).Contains('|'))
         {
-            ConvertPipeTables(subject, subject.Start, trimEnd: true);
+            ConvertPipeTables(subject, subject.Start, trimEnd);
             return;
         }
 
         var node = _tree.StartNode(SyntaxKind.Paragraph);
-        _inlineParser.Parse(subject, _tree);
+        _inlineParser.Parse(subject, _tree, trimEnd);
         _tree.EndNode(node);
     }
 

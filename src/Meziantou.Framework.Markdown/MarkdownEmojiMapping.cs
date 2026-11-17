@@ -84,7 +84,8 @@ public sealed class MarkdownEmojiMapping
 
         foreach (var length in lengths)
         {
-            if (length <= text.Length && _emojisBySpan.TryGetValue(text[..length], out var key, out _))
+            // A smiley that ends with a letter or a digit, such as :p, does not end in the middle of a word, such as :param
+            if (length <= text.Length && _emojisBySpan.TryGetValue(text[..length], out var key, out _) && !(length < text.Length && char.IsLetterOrDigit(text[length - 1]) && char.IsLetterOrDigit(text[length])))
             {
                 return key;
             }

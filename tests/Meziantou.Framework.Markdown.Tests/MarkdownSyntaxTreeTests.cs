@@ -992,6 +992,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a :-* b X-) c :-| d\n", "<p>a \U0001F617 b \U0001F606 c \U0001F610 d</p>\n")]
     [InlineData(":p :-s :Z :@\n", "<p>\U0001F61B \U0001F612 \U0001F612 \U0001F621</p>\n")]
     [InlineData("</3 <- =>\n", "<p>\U0001F494 \u2190 \u21D2</p>\n")]
+    [InlineData("Use :param, :Dog and :p.\n", "<p>Use :param, :Dog and \U0001F61B.</p>\n")]
     public void RendersEmoji(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Emoji });
@@ -1756,6 +1757,61 @@ public sealed class MarkdownSyntaxTreeTests
         }
     }
 
+    [Theory]
+    [InlineData("> \n>\f\n``<|<ba", "> \f\n> ``<|<ba\n")]
+    [InlineData("aaa\n\n\nbb\n>\u001D\n> bar>\n\f|-|", "aaa\n\nbb\n\n> \u001D\n> bar>\n> \f|-|\n")]
+    [InlineData("- foo\n\n\u0012      bar\n a\n  > b\n\f </style> >||\n*", "- foo\n\n\u0012      bar\na\n\n> b\n> \f </style> >||\n\n-\n")]
+    public void FormatterKeepsTheWhitespaceOtherThanSpacesInBlockQuotes(string text, string expected)
+    {
+        // A form feed is whitespace around the cells of a pipe table: on the line of the marker of a quote, or after its space
+        var options = new MarkdownParseOptions
+        {
+            Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension),
+            PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false, UseHeaderForColumnCount = true, InferColumnWidthsFromSeparator = true },
+        };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal(expected, formatted.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+    }
+
+    [Theory]
+    [InlineData("[^1]: 1.  \n   <!-- --> - L    bar", "[^1]:\n    1.\n\n       <!-- --> - L    bar\n")]
+    [InlineData("a[^1]\n\n[^1]: 1.  \n   <!-- --> b\n", "a[^1]\n\n[^1]:\n    1.\n\n       <!-- --> b\n")]
+    public void FormatterKeepsTheBlockAfterAnEmptyListItemOutOfIt(string text, string expected)
+    {
+        // The content of an empty item starts after its marker and one space: the HTML block, indented as much, would be its content
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        var formatted = MarkdownFormatter.Format(tree);
+        var footnote = formatted.GetRoot().Blocks.OfType<MarkdownFootnoteDefinitionSyntax>().Single();
+
+        Assert.Equal(expected, formatted.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+        Assert.IsType<MarkdownHtmlBlockSyntax>(footnote.Blocks[^1]);
+    }
+
+    [Theory]
+    [InlineData("\n")]
+    [InlineData("\r\n")]
+    [InlineData("\r")]
+    public void FormatterKeepsTheLinesOfAParagraphWhateverItsLineEndings(string newLine)
+    {
+        // Alone, the lines are a pipe table, as [ref] is not a link without its definition: they stay as they are in the document
+        var options = new MarkdownParseOptions
+        {
+            Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.GenericAttributes,
+            PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false },
+        };
+        var text = $"a *[{newLine}|{{.c}}foo*][ref]{newLine}{newLine}[ref]: /url{newLine}";
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        Assert.Equal(text, MarkdownFormatter.FormatText(tree, new MarkdownFormattingOptions { NewLine = newLine }));
+    }
+
     [Fact]
     public void FormatterReturnsTheTreeOfAFormattedDocument()
     {
@@ -1859,6 +1915,15 @@ public sealed class MarkdownSyntaxTreeTests
                 Assert.Equal(plainText, MarkdownPlainTextRenderer.ToPlainText(tree, withRenderer));
             }
         }
+    }
+
+    [Fact]
+    public void NodeRenderersThatWriteAfterTheDefaultRenderingEndTheirLine()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("^^ a\n^^ <title>b\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footers });
+        var options = new MarkdownHtmlRendererOptions { NodeRenderers = [new CommentAfterParagraphRenderer()] };
+
+        Assert.Equal("<footer>a<!--x-->\n<title>b\n</footer>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
     }
 
     [Fact]
@@ -2163,6 +2228,29 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void FencedBlockExtensionsOfRawLinesKeepTheirBlankLinesInDefinitions()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.DefinitionLists, SyntaxExtensions = [new RawFenceExtension()] };
+        var extension = MarkdownSyntaxTree.ParseText("Term\n:   %%%\n    a\n\n    b\n    %%%\n", options);
+        var code = MarkdownSyntaxTree.ParseText("Term\n:   ```\n    a\n\n    b\n    ```\n", options);
+
+        // The blank line is a line of the block, not a blank line of the definition
+        Assert.Equal(0, code.GetRoot().DescendantNodes().OfType<MarkdownDefinitionItemSyntax>().Single().BlankLineCount);
+        Assert.Equal(0, extension.GetRoot().DescendantNodes().OfType<MarkdownDefinitionItemSyntax>().Single().BlankLineCount);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(code), MarkdownHtmlRenderer.ToHtml(extension));
+    }
+
+    [Fact]
+    public void InlineExtensionsDoNotSpanTheRowsOfPipeTables()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables, SyntaxExtensions = [new WikiLinkExtension()] };
+        var tree = MarkdownSyntaxTree.ParseText("| [[a | b |\n|---|---|\n| c]] | [[d]] |\n", options);
+
+        Assert.Single(tree.GetRoot().Blocks.OfType<MarkdownTableSyntax>());
+        Assert.Equal("| [[a | b |\n|---|---|\n| c]] | [[d]] |\n", tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
     public void FencedBlockExtensionsCloseTheirBlocks()
     {
         var tree = MarkdownSyntaxTree.ParseText("!!! note\n```\ncode\n!!!\nafter\n", new MarkdownParseOptions { SyntaxExtensions = [new AdmonitionExtension()] });
@@ -2218,6 +2306,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("Alice: a\nBob: b\n===\n", "<h1>Alice: a\nBob: b</h1>\n")]
     [InlineData("[r]:/u\n===\nAlice: a\nBob: b\n", "<p>===</p>\n<p>Alicea\nBobb</p>\n")]
     [InlineData("> Alice: a\nBob:   *b*  \n", "<blockquote>\n<p>Alicea\nBob<em>b</em></p>\n</blockquote>\n")]
+    [InlineData("- Alice: a\n  Bob: b\n", "<ul>\n<li>Alicea\nBobb</li>\n</ul>\n")]
     [InlineData("no speakers\n", "<p>no speakers</p>\n")]
     public void ParagraphExtensionsSplitParagraphs(string text, string html)
     {
@@ -3045,6 +3134,21 @@ public sealed class MarkdownSyntaxTreeTests
         }
     }
     #endregion
+
+    private sealed class CommentAfterParagraphRenderer : MarkdownHtmlNodeRenderer
+    {
+        public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
+        {
+            if (node is not MarkdownParagraphSyntax)
+            {
+                return false;
+            }
+
+            writer.WriteDefault(node);
+            writer.WriteRawHtml("<!--x-->");
+            return true;
+        }
+    }
 
     private sealed class DecliningRenderer : MarkdownHtmlNodeRenderer
     {

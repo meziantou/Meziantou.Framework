@@ -1,0 +1,4 @@
+www.commonmark*[
+|{.c}foo*][ref]
+
+[ref]: /urio:

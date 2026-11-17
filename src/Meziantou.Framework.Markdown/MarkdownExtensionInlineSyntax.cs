@@ -14,6 +14,9 @@ namespace Meziantou.Framework.Markdown;
 /// </remarks>
 public sealed class MarkdownExtensionInlineSyntax : MarkdownInlineSyntax
 {
+    private IReadOnlyList<SyntaxToken>? _markers;
+    private IReadOnlyList<SyntaxToken>? _texts;
+
     internal MarkdownExtensionInlineSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
     {
@@ -23,10 +26,10 @@ public sealed class MarkdownExtensionInlineSyntax : MarkdownInlineSyntax
     public string Name => GetFirstChildToken().Value as string ?? "";
 
     /// <summary>Gets the markers, such as the <c>@</c> of a mention or the runs of a delimiter extension, in the order of the text.</summary>
-    public IReadOnlyList<SyntaxToken> Markers => [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionMarkerToken)];
+    public IReadOnlyList<SyntaxToken> Markers => _markers ??= [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionMarkerToken)];
 
     /// <summary>Gets the text tokens, in the order of the text. A text on several lines has a token for each line.</summary>
-    public IReadOnlyList<SyntaxToken> Texts => [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionTextToken)];
+    public IReadOnlyList<SyntaxToken> Texts => _texts ??= [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionTextToken)];
 
     /// <summary>Gets the text of the construct: its text tokens, and its line endings between them.</summary>
     public string Text

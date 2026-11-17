@@ -2144,6 +2144,13 @@ internal sealed class InlineParser
                 throw new InvalidOperationException($"The inline extension '{extension.Name}' read a construct without calling {nameof(MarkdownInlineParseContext.Complete)}.");
             }
 
+            // The line endings of a paragraph that is scanned for a pipe table end its rows: a construct does not span them, as a
+            // code span does not continue on the next row. Its pipes are its own, as the ones of a code span.
+            if (_scanningPipeTable && _text.AsSpan(_pos, context.Length).Contains('\n'))
+            {
+                continue;
+            }
+
             // The content of the construct can have constructs of extensions, which report their own parts
             AppendExtensionInline(index, context.Length, [.. _extensionRanges]);
             return true;

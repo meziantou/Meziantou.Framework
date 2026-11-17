@@ -127,6 +127,34 @@ public sealed class ScaleTests
     }
 
     [Fact]
+    public void TimeFormats_TimesPastTheBoundsOfDateTime()
+    {
+        Assert.Equal(DateTime.MaxValue, TimeFormats.FromMilliseconds(TimeFormats.ToMilliseconds(DateTime.MaxValue)));
+        Assert.Equal(DateTime.MinValue, TimeFormats.FromMilliseconds(TimeFormats.ToMilliseconds(DateTime.MinValue)));
+        Assert.Equal(DateTime.MaxValue, TimeFormats.FromMilliseconds(double.MaxValue));
+        Assert.Equal(DateTime.MinValue, TimeFormats.FromMilliseconds(double.NegativeInfinity));
+        Assert.Equal("9999-12-31 23:59", TimeFormats.FormatCategory(TimeFormats.ToMilliseconds(DateTime.MaxValue)));
+        Assert.Equal("0001-01-01", TimeFormats.FormatCategory(TimeFormats.ToMilliseconds(DateTime.MinValue)));
+        Assert.Null(TimeFormats.FormatCategory(TimeFormats.ToMilliseconds(DateTime.MaxValue) * 2));
+        Assert.Null(TimeFormats.FormatCategory(TimeFormats.ToMilliseconds(DateTime.MinValue) * 2));
+        Assert.Null(TimeFormats.FormatCategory(double.PositiveInfinity));
+        Assert.Null(TimeFormats.FormatCategory(double.NaN));
+    }
+
+    [Fact]
+    public void TimeBandScale_IgnoresDerivedTimesPastTheBoundsOfDateTime()
+    {
+        // The grid of the contour extends past the last time, beyond the year 9999
+        var times = new[] { new DateTime(9940, 1, 1, 0, 0, 0, DateTimeKind.Utc), new DateTime(9999, 12, 31, 0, 0, 0, DateTimeKind.Utc), new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
+        var plot = new Plot { XScale = new BandScale() };
+        plot.Add(new ContourMark<DateTime>(times, x: time => time, y: time => time.Year));
+        plot.Add(new DotMark<DateTime>([DateTime.MaxValue], x: time => time, y: time => time.Year));
+
+        var svg = plot.ToSvg();
+        Assert.Contains("9999-12-31 23:59", svg);
+    }
+
+    [Fact]
     public void BandScale_MatchesD3()
     {
         var scale = new ResolvedOrdinalScale(["a", "b", "c"], isBand: true, paddingInner: 0.1, paddingOuter: 0.1, align: 0.5, reverse: false);

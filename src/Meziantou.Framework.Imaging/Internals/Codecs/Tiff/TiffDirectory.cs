@@ -312,6 +312,42 @@ internal sealed class TiffDirectory
         return double.IsFinite(value) && value > 0 ? value : null;
     }
 
+    /// <summary>
+    /// Reads the leading values of a tag of SRATIONAL (or RATIONAL) values, or returns <see langword="null"/> when the tag
+    /// is absent.
+    /// </summary>
+    /// <param name="tag">The tag.</param>
+    /// <param name="count">The number of values to read: the tag must have at least as many, and at most twice as many.</param>
+    /// <returns>The values.</returns>
+    /// <exception cref="InvalidImageContentException">The tag has another number of values, another type, or a zero denominator.</exception>
+    public double[]? TryReadSignedRationalArray(ushort tag, int count)
+    {
+        if (Find(tag) is not { } field)
+            return null;
+
+        if (field.Count < (ulong)count || field.Count > (ulong)count * 2)
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF tag {tag} declares {field.Count} values; {count} to {count * 2} are expected."));
+
+        if (field.Type is not (TiffFieldType.SRational or TiffFieldType.Rational))
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF tag {tag} uses {TiffFieldTypes.GetName(field.Type)}; SRATIONAL is expected."));
+
+        var isSigned = field.Type == TiffFieldType.SRational;
+        var result = new double[count];
+        using var buffer = ReadValues(field);
+        var span = buffer.Span;
+        for (var i = 0; i < result.Length; i++)
+        {
+            var numerator = _header.ReadUInt32(span[(i * 8)..]);
+            var denominator = _header.ReadUInt32(span[((i * 8) + 4)..]);
+            if (denominator == 0)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF tag {tag} stores a rational value with a zero denominator."));
+
+            result[i] = isSigned ? (double)(int)numerator / (int)denominator : (double)numerator / denominator;
+        }
+
+        return result;
+    }
+
     /// <summary>Reads an array of RATIONAL values whose length is known.</summary>
     /// <param name="tag">The tag.</param>
     /// <param name="expectedCount">The required number of values.</param>

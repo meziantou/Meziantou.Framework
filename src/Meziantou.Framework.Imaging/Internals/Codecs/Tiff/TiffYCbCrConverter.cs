@@ -41,9 +41,15 @@ internal sealed class TiffYCbCrConverter
     private readonly double _lumaRed;
     private readonly double _lumaGreen;
     private readonly double _lumaBlue;
+    private readonly double[] _coefficients;
+    private readonly double[] _reference;
+    private readonly double[] _fullRange;
 
     private TiffYCbCrConverter(double[] coefficients, double[] reference, double[] fullRange, int horizontal, int vertical)
     {
+        _coefficients = coefficients;
+        _reference = reference;
+        _fullRange = fullRange;
         _lumaRed = coefficients[0];
         _lumaGreen = coefficients[1];
         _lumaBlue = coefficients[2];
@@ -104,6 +110,14 @@ internal sealed class TiffYCbCrConverter
 
         return new TiffYCbCrConverter(coefficients, reference, fullRange, horizontal, vertical);
     }
+
+    /// <summary>
+    /// Gets the conversion of the same samples without subsampling: each pixel is a data unit of its own, which is how the
+    /// planes of a planar page are once they are interleaved.
+    /// </summary>
+    /// <returns>The conversion, which is this one when it has no subsampling.</returns>
+    public TiffYCbCrConverter WithoutSubsampling()
+        => HorizontalSubsampling == 1 && VerticalSubsampling == 1 ? this : new TiffYCbCrConverter(_coefficients, _reference, _fullRange, 1, 1);
 
     /// <summary>Gets the number of bytes of the data units of a block.</summary>
     /// <param name="width">The number of pixels of a row of the block.</param>

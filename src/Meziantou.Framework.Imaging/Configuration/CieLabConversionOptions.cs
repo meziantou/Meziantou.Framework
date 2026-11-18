@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Imaging;
 
 /// <summary>
 /// Immutable options of the color conversion that loads images whose samples are CIE 1976 L*a*b* colors (TIFF pages
-/// with the <c>CIELab</c> and <c>ICCLab</c> photometric interpretations): see <see cref="ImageDecodeOptions.CieLabConversion"/>
+/// with the <c>CIELab</c>, <c>ICCLab</c> and <c>ITULab</c> photometric interpretations): see <see cref="ImageDecodeOptions.CieLabConversion"/>
 /// and <see cref="ImageReaderOptions.CieLabConversion"/>.
 /// </summary>
 /// <remarks>

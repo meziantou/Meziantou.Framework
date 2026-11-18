@@ -131,7 +131,7 @@ internal sealed class TiffBlockReader : IDisposable
         ArgumentNullException.ThrowIfNull(scope);
 
         // A buffer that cannot be rented makes the decoding of the first block fail: it is left to one worker
-        var unitsLength = page.BlockYCbCr?.GetStoredLength(page.BlockWidth, page.BlockHeight) ?? 0;
+        var unitsLength = GetUnitsLength(page);
         var changesLength = page.IsCcitt ? TiffCcittDecoder.GetChangeListLength(page.BlockWidth) * 2 * sizeof(int) : 0;
         if (unitsLength > CheckedSizes.MaxBufferLength || changesLength > CheckedSizes.MaxBufferLength)
             return long.MaxValue;
@@ -196,7 +196,7 @@ internal sealed class TiffBlockReader : IDisposable
 
         // A tile is always stored in full, even when it extends past the bottom edge of the page; a strip is not
         var storedRows = page.IsTiled ? page.BlockHeight : rowCount;
-        var stored = GetStored(storedRows, workspace);
+        var stored = GetStored(index, storedRows, workspace);
         if (page.Compression == TiffFormat.CompressionNone)
         {
             var (offset, storedLength) = GetStoredRange(index);
@@ -227,7 +227,7 @@ internal sealed class TiffBlockReader : IDisposable
             return;
 
         var compressed = block.Copy is { } copy ? copy.Span : GetCompressedInPlace(block);
-        DecompressBlock(block.Index, block.StoredRows, compressed, block.Copy, GetStored(block.StoredRows, workspace), workspace);
+        DecompressBlock(block.Index, block.StoredRows, compressed, block.Copy, GetStored(block.Index, block.StoredRows, workspace), workspace);
     }
 
     /// <summary>Undoes the predictors and the sample transformations of a decompressed block, like <see cref="Decompress(in FetchedBlock, Workspace)"/>.</summary>
@@ -237,7 +237,7 @@ internal sealed class TiffBlockReader : IDisposable
         ArgumentNullException.ThrowIfNull(workspace);
         var page = _page;
         var storedRows = block.StoredRows;
-        var stored = GetStored(storedRows, workspace);
+        var stored = GetStored(block.Index, storedRows, workspace);
         if (page.HasHorizontalDifferencing)
         {
             UndoHorizontalDifferencing(stored, storedRows);
@@ -254,6 +254,11 @@ internal sealed class TiffBlockReader : IDisposable
 
         var destination = workspace.GetBlock(page).Span[..(block.RowCount * page.BlockRowLength)];
         page.BlockYCbCr?.Convert(stored, destination, page.BlockWidth, block.RowCount);
+        if (page.GetPlaneSubsampling(block.Index) is (var horizontal, var vertical) and not (1, 1))
+        {
+            Upsample(stored, destination, page.BlockWidth, block.RowCount, horizontal, vertical);
+        }
+
         return destination;
     }
 
@@ -306,13 +311,60 @@ internal sealed class TiffBlockReader : IDisposable
         return (decodedLength * MaxCompressionExpansion) + (page.IsJpeg || page.IsJpeg2000 ? MaxJpegOverhead : MaxBlockOverhead);
     }
 
-    /// <summary>Gets the buffer the stored samples of a block are decompressed into: the rows of the block, or its YCbCr data units.</summary>
-    private Span<byte> GetStored(int storedRows, Workspace workspace)
+    /// <summary>
+    /// Gets the buffer the stored samples of a block are decompressed into: the rows of the block, its YCbCr data units, or
+    /// the rows of a block of a subsampled chroma plane.
+    /// </summary>
+    private Span<byte> GetStored(int index, int storedRows, Workspace workspace)
     {
         var page = _page;
-        return page.BlockYCbCr is { } conversion
-            ? workspace.GetUnits(conversion.GetStoredLength(page.BlockWidth, storedRows), _source.Limits)
-            : workspace.GetBlock(page).Span[..(storedRows * page.BlockRowLength)];
+        if (page.BlockYCbCr is { } conversion)
+            return workspace.GetUnits(conversion.GetStoredLength(page.BlockWidth, storedRows), _source.Limits);
+
+        if (page.GetPlaneSubsampling(index) is (var horizontal, var vertical) and not (1, 1))
+            return workspace.GetUnits(GetSubsampledPlaneLength(page.BlockWidth, storedRows, horizontal, vertical), _source.Limits);
+
+        return workspace.GetBlock(page).Span[..(storedRows * page.BlockRowLength)];
+    }
+
+    /// <summary>Gets the length of the largest stored samples of a block that are not its rows: YCbCr data units, or a block of a subsampled chroma plane.</summary>
+    private static long GetUnitsLength(TiffPage page)
+    {
+        if (page.BlockYCbCr is { } conversion)
+            return conversion.GetStoredLength(page.BlockWidth, page.BlockHeight);
+
+        return page.HasSubsampledPlanes ? GetSubsampledPlaneLength(page.BlockWidth, page.BlockHeight, page.YCbCr!.HorizontalSubsampling, page.YCbCr.VerticalSubsampling) : 0;
+    }
+
+    /// <summary>
+    /// Gets the length of a block of a subsampled chroma plane of 8-bit samples: one sample for <paramref name="horizontal"/>
+    /// x <paramref name="vertical"/> pixels, the width and the height of the block rounded up.
+    /// </summary>
+    private static long GetSubsampledPlaneLength(int width, int rowCount, int horizontal, int vertical)
+        => (((long)width + horizontal - 1) / horizontal) * (((long)rowCount + vertical - 1) / vertical);
+
+    /// <summary>
+    /// Replicates the samples of a block of a subsampled chroma plane over the pixels they cover, as the chroma samples of
+    /// the data units of chunky YCbCr data are (<see cref="TiffYCbCrConverter"/>).
+    /// </summary>
+    /// <param name="samples">The rows of the plane, as <see cref="GetSubsampledPlaneLength"/> describes them.</param>
+    /// <param name="destination">Exactly <paramref name="rowCount"/> rows of <paramref name="width"/> samples.</param>
+    /// <param name="width">The number of pixels of a row of the block.</param>
+    /// <param name="rowCount">The number of rows of the block.</param>
+    /// <param name="horizontal">The number of pixels a sample covers horizontally.</param>
+    /// <param name="vertical">The number of pixels a sample covers vertically.</param>
+    internal static void Upsample(ReadOnlySpan<byte> samples, Span<byte> destination, int width, int rowCount, int horizontal, int vertical)
+    {
+        var samplesAcross = (width + horizontal - 1) / horizontal;
+        for (var y = 0; y < rowCount; y++)
+        {
+            var source = samples.Slice(y / vertical * samplesAcross, samplesAcross);
+            var row = destination.Slice(y * width, width);
+            for (var x = 0; x < width; x++)
+            {
+                row[x] = source[x / horizontal];
+            }
+        }
     }
 
     /// <summary>Gets the compressed bytes of a fetched block that are read where they are, in an input held in memory (already charged by <see cref="Fetch"/>).</summary>
@@ -398,7 +450,7 @@ internal sealed class TiffBlockReader : IDisposable
     {
         rows = default;
         var page = _page;
-        if (page.Compression != TiffFormat.CompressionNone || page.IsJpeg || page.IsJpeg2000 || page.BlockYCbCr is not null || page.Predictor != TiffFormat.PredictorNone || page.IsSigned || page.IsLeastSignificantBitFirst)
+        if (page.Compression != TiffFormat.CompressionNone || page.IsJpeg || page.IsJpeg2000 || page.BlockYCbCr is not null || page.HasSubsampledPlanes || page.Predictor != TiffFormat.PredictorNone || page.IsSigned || page.IsLeastSignificantBitFirst)
             return false;
 
         // A tile is always stored in full, even when it extends past the bottom edge of the page; a strip is not
@@ -975,9 +1027,9 @@ internal sealed class TiffBlockReader : IDisposable
             ArgumentNullException.ThrowIfNull(page);
             ArgumentNullException.ThrowIfNull(limits);
             _ = GetBlock(page);
-            if (page.BlockYCbCr is { } conversion)
+            if (GetUnitsLength(page) is > 0 and var unitsLength)
             {
-                _ = GetUnits(conversion.GetStoredLength(page.BlockWidth, page.BlockHeight), limits);
+                _ = GetUnits(unitsLength, limits);
             }
 
             if (page.IsCcitt)

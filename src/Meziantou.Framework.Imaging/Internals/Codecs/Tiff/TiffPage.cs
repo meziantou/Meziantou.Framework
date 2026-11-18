@@ -11,9 +11,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The supported subset is checked here, once: unsigned integer samples; grayscale (<c>WhiteIsZero</c> and
 /// <c>BlackIsZero</c>, 1, 2, 4, 8 or 16 bits), RGB (8 or 16 bits), palette color (1, 2, 4 or 8 bits), CMYK (8 or 16 bits)
-/// YCbCr (8 bits) and CIE L*a*b* (8 or 16 bits, 8 for <c>ICCLab</c>) data; signed integer grayscale and RGB samples of 8
-/// or 16 bits; floating-point <c>BlackIsZero</c> grayscale and RGB samples of 16 (half precision), 24 or 32 bits; chunky
-/// and separate planar configurations (separate planes of YCbCr data without subsampling only); strips or tiles; no
+/// YCbCr (8 bits) and L*a*b* (<c>CIELab</c> and <c>ITULab</c> of 8 or 16 bits, <c>ICCLab</c> of 8 bits, lightness only or
+/// with a* and b*) data; signed integer grayscale and RGB samples of 8 or 16 bits; floating-point <c>BlackIsZero</c>
+/// grayscale and RGB samples of 16 (half precision), 24 or 32 bits; chunky and separate planar configurations (separate
+/// planes of subsampled YCbCr data with the lossless compressions only); strips or tiles; no
 /// compression, Deflate, LZW, PackBits, the CCITT facsimile compressions, JPEG, old-style JPEG and JPEG 2000; the horizontal differencing
 /// predictor, and the floating-point predictor of TIFF Technical Note 3. Everything else is recognized and rejected with
 /// <see cref="UnsupportedImageFeatureException"/>, never guessed.
@@ -99,7 +100,7 @@ internal sealed class TiffPage
     /// <summary>Gets the number of bits of one pixel of a decoded block.</summary>
     public int BitsPerPixel => SamplesPerPixel * DecodedBitsPerSample;
 
-    /// <summary>Gets the photometric interpretation (0, 1, 2, 3, 5, 6, 8 or 9).</summary>
+    /// <summary>Gets the photometric interpretation (0, 1, 2, 3, 5, 6, 8, 9 or 10).</summary>
     public int Photometric { get; private set; }
 
     /// <summary>Gets a value indicating whether 0 is white (<c>WhiteIsZero</c>): the decoder inverts the samples.</summary>
@@ -118,10 +119,24 @@ internal sealed class TiffPage
     public bool IsYCbCr => Photometric == TiffFormat.PhotometricYCbCr;
 
     /// <summary>
-    /// Gets a value indicating whether the samples are CIE L*a*b* colors: <c>CIELab</c> (signed a* and b*) or
-    /// <c>ICCLab</c> (a* and b* offset by half of their range, as ICC profiles encode them).
+    /// Gets a value indicating whether the samples are CIE L*a*b* colors: <c>CIELab</c> (signed a* and b*),
+    /// <c>ICCLab</c> (a* and b* offset by half of their range, as ICC profiles encode them) or <c>ITULab</c> (each sample
+    /// a linear encoding of a range of its component, <see cref="ItuLabRanges"/>).
     /// </summary>
-    public bool IsCieLab => Photometric is TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab;
+    public bool IsCieLab => Photometric is TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab or TiffFormat.PhotometricItuLab;
+
+    /// <summary>
+    /// Gets a value indicating whether an L*a*b* page stores the lightness only (one color sample, TIFF 6.0 section 23):
+    /// its colors are neutral, a* and b* are 0.
+    /// </summary>
+    public bool IsLightnessOnly => IsCieLab && SamplesPerPixel - (HasAlpha ? 1 : 0) == 1;
+
+    /// <summary>
+    /// Gets the ranges of L*, a* and b* that the samples of an <c>ITULab</c> page encode (<c>Decode</c>, RFC 2301 section
+    /// 6.2.3): the minimum and the maximum of each component, the value of the samples 0 and <c>2^n - 1</c>. The defaults
+    /// are 0 to 100 for L*, -85 to 85 for a* and -75 to 125 for b* (ITU-T T.42). Empty for the other pages.
+    /// </summary>
+    public double[] ItuLabRanges { get; private set; } = [];
 
     /// <summary>
     /// Gets the chromaticity of the white the L*a*b* colors of the page are relative to (<c>WhitePoint</c>), or
@@ -156,6 +171,12 @@ internal sealed class TiffPage
     /// once the planes are interleaved (<see cref="TiffRowExpander"/>).
     /// </summary>
     public TiffYCbCrConverter? BlockYCbCr => IsPlanar ? null : YCbCr;
+
+    /// <summary>
+    /// Gets the conversion of the interleaved planes of a planar YCbCr page, or <see langword="null"/>: each pixel is a data
+    /// unit of its own, the samples of subsampled chroma planes being replicated over the pixels they cover.
+    /// </summary>
+    public TiffYCbCrConverter? PlaneYCbCr { get; private set; }
 
     /// <summary>Gets the compression (1, 2, 3, 4, 5, 7, 8, 32773 or 32946).</summary>
     public int Compression { get; private set; }
@@ -282,7 +303,7 @@ internal sealed class TiffPage
         TiffFormat.PhotometricPalette => ImageColorModel.Indexed,
         TiffFormat.PhotometricCmyk => ImageColorModel.Cmyk,
         TiffFormat.PhotometricYCbCr => ImageColorModel.YCbCr,
-        TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab => ImageColorModel.CieLab,
+        TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab or TiffFormat.PhotometricItuLab => ImageColorModel.CieLab,
         TiffFormat.PhotometricRgb => HasAlpha ? ImageColorModel.Rgba : ImageColorModel.Rgb,
         _ => HasAlpha ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale,
     };
@@ -362,6 +383,22 @@ internal sealed class TiffPage
     /// <returns>The row of blocks, from 0 to <see cref="BlocksDown"/>.</returns>
     public int GetBlockRow(int index) => (index % BlocksPerPlane) / BlocksAcross;
 
+    /// <summary>
+    /// Gets a value indicating whether the page stores subsampled YCbCr data in separate planes: its chroma planes have
+    /// fewer samples than the page has pixels (<see cref="GetPlaneSubsampling"/>).
+    /// </summary>
+    public bool HasSubsampledPlanes => IsPlanar && YCbCr is { } conversion && (conversion.HorizontalSubsampling > 1 || conversion.VerticalSubsampling > 1);
+
+    /// <summary>
+    /// Gets the subsampling of the plane a block belongs to. A block of a chroma plane of subsampled YCbCr data (TIFF 6.0
+    /// section 21) covers the area of the blocks of the other planes with one sample for <c>h</c> x <c>v</c> pixels: its
+    /// rows have <c>ceil(BlockWidth / h)</c> samples, and it has <c>ceil(rows / v)</c> rows.
+    /// </summary>
+    /// <param name="index">The index of the block in <see cref="BlockOffsets"/>.</param>
+    /// <returns>The horizontal and vertical subsampling: (1, 1) for the other blocks.</returns>
+    public (int Horizontal, int Vertical) GetPlaneSubsampling(int index)
+        => HasSubsampledPlanes && index / BlocksPerPlane is 1 or 2 ? (YCbCr!.HorizontalSubsampling, YCbCr.VerticalSubsampling) : (1, 1);
+
     private void ResolveGeometry(ImageCodecContext context)
     {
         var width = GetRequiredUnsigned(TiffFormat.ImageWidthTag, "ImageWidth");
@@ -422,8 +459,8 @@ internal sealed class TiffPage
         if (!Directory.TryGetUnsigned(TiffFormat.PhotometricInterpretationTag, out var photometric))
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} has no PhotometricInterpretation tag, which is required."));
 
-        if (photometric is not (TiffFormat.PhotometricWhiteIsZero or TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb or TiffFormat.PhotometricPalette or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricYCbCr or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; WhiteIsZero, BlackIsZero, RGB, palette color, CMYK, YCbCr, CIE L*a*b* and ICC L*a*b* are supported."),string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric}"));
+        if (photometric is not (TiffFormat.PhotometricWhiteIsZero or TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb or TiffFormat.PhotometricPalette or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricYCbCr or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab or TiffFormat.PhotometricItuLab))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; WhiteIsZero, BlackIsZero, RGB, palette color, CMYK, YCbCr, CIE L*a*b*, ICC L*a*b* and ITU L*a*b* are supported."),string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric}"));
 
         Photometric = (int)photometric;
         var isSampleFormatSupported = SampleFormat switch
@@ -439,7 +476,7 @@ internal sealed class TiffPage
 
         switch (Photometric)
         {
-            case TiffFormat.PhotometricRgb or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab when BitsPerSample < 8:
+            case TiffFormat.PhotometricRgb or TiffFormat.PhotometricCmyk or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab or TiffFormat.PhotometricItuLab when BitsPerSample < 8:
                 throw UnsupportedBitsPerSample(bits[0], string.Create(CultureInfo.InvariantCulture, $"{TiffFormat.GetPhotometricName(Photometric)} data is supported with 8 and 16 bits"));
 
             // The 16-bit encodings of ICC L*a*b* differ between the versions of the ICC specification, and nothing tells them apart
@@ -453,13 +490,11 @@ internal sealed class TiffPage
                 throw UnsupportedBitsPerSample(bits[0], "YCbCr data is supported with 8 bits, and with 9 to 16 bits with JPEG compression");
         }
 
-        // An L*a*b* page may store the lightness only (TIFF 6.0 section 23): it is not read
-        if (IsCieLab && SamplesPerPixel < 3)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores {SamplesPerPixel} {TiffFormat.GetPhotometricName(Photometric)} sample(s) per pixel; the three samples of L*, a* and b* are supported, with or without an alpha sample."), "PhotometricInterpretation: L*a*b* lightness only");
-
+        // An L*a*b* page may store the lightness only (TIFF 6.0 section 23): one color sample, then the alpha sample
         var colorSamples = Photometric switch
         {
-            TiffFormat.PhotometricRgb or TiffFormat.PhotometricYCbCr or TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab => 3,
+            TiffFormat.PhotometricRgb or TiffFormat.PhotometricYCbCr => 3,
+            TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab or TiffFormat.PhotometricItuLab => SamplesPerPixel < 3 ? 1 : 3,
             TiffFormat.PhotometricCmyk => 4,
             _ => 1,
         };
@@ -505,6 +540,11 @@ internal sealed class TiffPage
 
             case TiffFormat.PhotometricCieLab or TiffFormat.PhotometricIccLab:
                 ResolveWhitePoint();
+                break;
+
+            case TiffFormat.PhotometricItuLab:
+                ResolveWhitePoint();
+                ResolveItuLabRanges(colorSamples);
                 break;
         }
     }
@@ -737,6 +777,24 @@ internal sealed class TiffPage
         WhitePoint = (chromaticity[0], chromaticity[1]);
     }
 
+    /// <summary>
+    /// Resolves the ranges of the components of an <c>ITULab</c> page: the <c>Decode</c> tag gives the minimum and the
+    /// maximum of each sample (two values per sample, those of the alpha sample are not read), or the defaults of RFC 2301.
+    /// </summary>
+    private void ResolveItuLabRanges(int colorSamples)
+    {
+        double[] defaults = [0, 100, -85, 85, -75, 125];
+        var ranges = Directory.TryReadSignedRationalArray(TiffFormat.DecodeTag, colorSamples * 2) ?? defaults[..(colorSamples * 2)];
+        foreach (var value in ranges)
+        {
+            // A range runs from the value of the sample 0 to the one of the largest sample; a decreasing one is valid
+            if (!double.IsFinite(value) || Math.Abs(value) > 1000)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares the Decode values ({string.Join(", ", ranges)}); each must be a component of an L*a*b* color, between -1000 and 1000."));
+        }
+
+        ItuLabRanges = ranges;
+    }
+
     private void ResolveYCbCr()
     {
         var subsampling = Directory.TryReadUnsignedArray(TiffFormat.YCbCrSubSamplingTag, 2) ?? [2, 2];
@@ -766,11 +824,12 @@ internal sealed class TiffPage
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the planar configuration {planar}; chunky (1) and separate (2) planes are supported."), string.Create(CultureInfo.InvariantCulture, $"PlanarConfiguration: {planar}"));
 
         IsPlanar = planar == TiffFormat.PlanarSeparate && SamplesPerPixel > 1;
+        PlaneYCbCr = IsPlanar ? YCbCr?.WithoutSubsampling() : null;
 
-        // The chroma planes of subsampled YCbCr data would each have their own size, which libtiff does not read either:
-        // the planes of YCbCr data are read when they are not subsampled, and uncompressed or with a lossless compression
-        if (IsPlanar && IsYCbCr && (YCbCr is not { HorizontalSubsampling: 1, VerticalSubsampling: 1 } || Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg or TiffFormat.CompressionJpeg2000))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores subsampled or JPEG-compressed YCbCr data in separate planes; YCbCr planes are supported without subsampling and with the lossless compressions, and YCbCr data with chunky samples otherwise."), "PlanarConfiguration: 2 with YCbCr data");
+        // The planes of YCbCr data are read uncompressed or with a lossless compression. The chroma planes of subsampled
+        // data have fewer samples (GetPlaneSubsampling); a JPEG or JPEG 2000 datastream would hold each plane as an image
+        if (IsPlanar && IsYCbCr && Compression is TiffFormat.CompressionJpeg or TiffFormat.CompressionOldJpeg or TiffFormat.CompressionJpeg2000)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores JPEG-compressed YCbCr data in separate planes; YCbCr planes are supported uncompressed and with the lossless compressions, and JPEG-compressed YCbCr data with chunky samples."), "PlanarConfiguration: 2 with YCbCr data");
 
         // The reversed order is the order of fax devices, which TIFF 6.0 recommends for bilevel data only. It reverses the bits
         // of every stored byte, whatever the width of the samples, before the decompression (libtiff does the same); a JPEG
@@ -852,8 +911,10 @@ internal sealed class TiffPage
         if (BitsPerSample < 8)
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {BitsPerSample}-bit samples; samples of 8 to 16 bits are supported."), string.Create(CultureInfo.InvariantCulture, $"Compression: JPEG with {BitsPerSample}-bit samples"));
 
-        if (IsPalette || HasAlpha || IsCieLab)
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses JPEG compression with {(IsPalette ? "palette indexes" : HasAlpha ? "an alpha channel" : TiffFormat.GetPhotometricName(Photometric) + " data")}; grayscale, RGB, YCbCr and CMYK data without extra sample are supported."), "Compression: JPEG with this sample layout");
+        // TIFF-FX (RFC 2301) codes ITU L*a*b* data with JPEG: the components of the datastream are the samples, without color transformation
+        var isJpegLab = Photometric == TiffFormat.PhotometricItuLab && Compression == TiffFormat.CompressionJpeg;
+        if (IsPalette || HasAlpha || (IsCieLab && !isJpegLab))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses {TiffFormat.GetCompressionName(Compression)} compression with {(IsPalette ? "palette indexes" : HasAlpha ? "an alpha channel" : TiffFormat.GetPhotometricName(Photometric) + " data")}; grayscale, RGB, YCbCr and CMYK data without extra sample are supported, and ITU L*a*b* data with JPEG (not old-style JPEG) compression."), "Compression: JPEG with this sample layout");
 
         if (IsOldJpeg)
         {

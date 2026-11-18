@@ -61,6 +61,9 @@ internal static class FuzzOracle
     // the inks and the embedded CMYK profile instead of stopping at the frame header
     private static readonly CmykConversionOptions CmykConversion = CmykConversionOptions.Default;
 
+    // L*a*b* TIFF pages are only loaded with a color conversion: with it, their mutations reach the decoding of the samples
+    private static readonly CieLabConversionOptions CieLabConversion = CieLabConversionOptions.Default;
+
     // A 3D table of 3 points per axis whose colors are a nonlinear function of the lattice point
     private static readonly CubeLut Lut = CreateLut();
 
@@ -91,7 +94,7 @@ internal static class FuzzOracle
 
         var eager = Run(audit, "load", () =>
         {
-            using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+            using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion });
             return DecodedSummary.Capture(image);
         });
         if (eager.Failure is not null)
@@ -106,7 +109,7 @@ internal static class FuzzOracle
 
         var typed = Run(audit, "load-rgba64", () =>
         {
-            using var image = Image.Load<Rgba64>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+            using var image = Image.Load<Rgba64>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion });
             return DecodedSummary.Capture(image);
         });
         if (typed.Failure is not null)
@@ -311,10 +314,10 @@ internal static class FuzzOracle
     /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
     private static string CheckDecodedImage(byte[] input, DecodedSummary decoded, int variant)
     {
-        using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+        using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion });
 
         // A frame limit selects a prefix of a valid input
-        using (var first = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, FrameLimit = 1 }))
+        using (var first = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion, FrameLimit = 1 }))
         {
             if (first.Frames.Count != 1 || !FrameSummary.Capture(first.Frames[0]).Equals(decoded.Frames[0]))
                 return $"frame-limit-prefix: FrameLimit = 1 returned {first.Frames.Count} frame(s) that differ from the first frame of {decoded}";
@@ -348,7 +351,7 @@ internal static class FuzzOracle
         // too, at 1/8 of the size or at full size
         if (format == ImageFormat.JpegXl)
         {
-            using var reduced = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, TargetSize = new Size(1, 1) });
+            using var reduced = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion, TargetSize = new Size(1, 1) });
             var eighth = new Size((image.Width + 7) / 8, (image.Height + 7) / 8);
             if ((reduced.Size != eighth && reduced.Size != image.Size) || reduced.PixelFormat != image.PixelFormat || reduced.Frames.Count != image.Frames.Count)
                 return $"jxl-target-size: a target of 1x1 gave {reduced.Size} {reduced.PixelFormat} with {reduced.Frames.Count} frame(s) for a {decoded} image";
@@ -385,7 +388,7 @@ internal static class FuzzOracle
 
         if (encoded is not null)
         {
-            using var reloaded = Image.Load(encoded, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+            using var reloaded = Image.Load(encoded, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion });
             if (reloaded.Width != image.Width || reloaded.Height != image.Height || reloaded.Frames.Count != image.Frames.Count)
                 return $"re-encode-structure: the re-encoded {format} file decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s), the source as {decoded}";
 
@@ -504,7 +507,7 @@ internal static class FuzzOracle
     {
         // A level whose data are damaged fails like the page would; a level that is used has the pixel format of the page
         var target = new Size(Math.Max(1, decoded.Width / 3), Math.Max(1, decoded.Height / 5));
-        using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, TargetSize = target });
+        using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion, TargetSize = target });
         if (image.Width < target.Width || image.Height < target.Height || image.Width > decoded.Width || image.Height > decoded.Height || image.PixelFormat != decoded.PixelFormat)
             return $"tiff-target-size: the target {target} gave a {image.Width}x{image.Height} {image.PixelFormat} image for a {decoded} page";
 
@@ -519,7 +522,7 @@ internal static class FuzzOracle
         var y = (variant & 4) is 0 ? (variant * 13) % image.Height : (variant * 3) % Math.Min(image.Height, 16);
         var region = new Rectangle(x, y, 1 + ((variant * 5) % 61), 1 + ((variant * 11) % 37));
         var area = Rectangle.Intersect(region, new Rectangle(0, 0, image.Width, image.Height));
-        using var decoded = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, Region = region });
+        using var decoded = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion, Region = region });
         if (decoded.Size != area.Size || decoded.PixelFormat != image.PixelFormat || decoded.Frames.Count != image.Frames.Count)
             return $"heif-region-geometry: the region {region} decodes as {decoded.Size} {decoded.PixelFormat} with {decoded.Frames.Count} frame(s), the area {area} of the {image.Size} {image.PixelFormat} image of {image.Frames.Count} frame(s) was expected";
 
@@ -545,7 +548,7 @@ internal static class FuzzOracle
         Image reduced;
         try
         {
-            reduced = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, ScaleDenominator = scale });
+            reduced = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion, ScaleDenominator = scale });
         }
         catch (UnsupportedImageFeatureException exception) when (exception.Feature == "Scaled decoding")
         {
@@ -586,7 +589,7 @@ internal static class FuzzOracle
         var x = (variant * 7) % image.Width;
         var y = (variant * 13) % image.Height;
         var region = new Rectangle(x, y, 1 + ((variant * 5) % 41), 1 + ((variant * 11) % 37));
-        var options = new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, ScaleDenominator = scale };
+        var options = new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion, ScaleDenominator = scale };
         Image full;
         try
         {
@@ -599,7 +602,7 @@ internal static class FuzzOracle
         }
 
         using (full)
-        using (var decoded = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, ScaleDenominator = scale, Region = region }))
+        using (var decoded = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion, ScaleDenominator = scale, Region = region }))
         {
             var area = Rectangle.FromLTRB(x / scale, y / scale, (Math.Min(region.Right, image.Width) + scale - 1) / scale, (Math.Min(region.Bottom, image.Height) + scale - 1) / scale);
             if (decoded.Size != area.Size || decoded.PixelFormat != full.PixelFormat || decoded.Frames.Count != 1)
@@ -627,7 +630,7 @@ internal static class FuzzOracle
         if (image.PixelFormat != PixelFormat.Rgb24 || image.Frames.Count != 1)
             return string.Empty;
 
-        using var rgba = Image.Load<Rgba32>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+        using var rgba = Image.Load<Rgba32>(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion });
         if (rgba.Size != image.Size || rgba.Frames.Count != 1)
             return $"jpeg-rgba-geometry: the Rgba32 decode is {rgba.Size} with {rgba.Frames.Count} frame(s), the Rgb24 decode is {image.Size}";
 
@@ -980,7 +983,7 @@ internal static class FuzzOracle
 
     private static async Task<string> CheckInterruptedDecodingAsync(byte[] input, int variant, int frameCount)
     {
-        var options = new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
+        var options = new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion };
         using (var cancellation = new CancellationTokenSource())
         {
             // The token is cancelled when the reading of the file reaches a position: an eighth to seven eighths of the file
@@ -1007,7 +1010,7 @@ internal static class FuzzOracle
         {
             // Some of the images of a sequence, then the reader is disposed
             await using var stream = new TestInputStream(input);
-            using var reader = Image.OpenReader<Rgba64>(stream, new ImageReaderOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+            using var reader = Image.OpenReader<Rgba64>(stream, new ImageReaderOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion });
             var count = 1 + ((variant >> 4) % (frameCount - 1));
             for (var i = 0; i < count; i++)
             {
@@ -1181,7 +1184,7 @@ internal static class FuzzOracle
             ForbidSynchronousReads = asynchronous,
             ForbidAsynchronousReads = !asynchronous,
         };
-        var options = new ImageReaderOptions { Configuration = configuration ?? Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
+        var options = new ImageReaderOptions { Configuration = configuration ?? Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion };
         using var reader = await OpenReaderAsync(stream, options, asynchronous).ConfigureAwait(false);
         var info = reader.Info;
         FrameSummary? poster = null;
@@ -1341,7 +1344,7 @@ internal static class FuzzOracle
                     var index = (variant & 2) != 0 ? decodedCount - 1 - i : i;
                     try
                     {
-                        using var image = collection[index].Decode(new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+                        using var image = collection[index].Decode(new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, CieLabConversion = CieLabConversion });
                         if (image.Frames.Count != 1 || image.PosterFrame is not null || image.IsAnimated)
                             throw new UnreachableException($"The entry {index} decodes as {image.Frames.Count} frame(s), animated: {image.IsAnimated}");
 

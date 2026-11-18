@@ -18,10 +18,13 @@ internal sealed record TiffFieldSpec(ushort Tag, ushort Type, ulong[] Values)
 
     public static TiffFieldSpec Rational(ushort tag, uint numerator, uint denominator) => new(tag, 5, [numerator, denominator]);
 
+    /// <summary>A SRATIONAL field of integer values (a denominator of 1 each).</summary>
+    public static TiffFieldSpec SignedRationals(ushort tag, int[] values) => new(tag, 10, [.. values.SelectMany(value => new ulong[] { unchecked((uint)value), 1 })]);
+
     /// <summary>An override of the declared value count, for malformed files.</summary>
     public ulong? CountOverride { get; init; }
 
-    public ulong GetCount() => CountOverride ?? (ulong)(Type == 5 ? Values.Length / 2 : Values.Length);
+    public ulong GetCount() => CountOverride ?? (ulong)(Type is 5 or 10 ? Values.Length / 2 : Values.Length);
 
     public byte[] Serialize(bool bigEndian, bool bigTiff)
     {

@@ -5905,10 +5905,7 @@
     }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
-    "total": 10,
-    "failures": {
-      "Inserting selectedcontent performs a pending update of its select's selectedcontent elements.": "FAIL"
-    }
+    "total": 10
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
     "total": 2

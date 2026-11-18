@@ -35,7 +35,7 @@ public sealed partial class OffscreenCanvas
 
         // (an element is only given on the thread of its document)
         placeholder.UpdateElementGeometry(element, options);
-        placeholder.UpdateGeometryFromOffscreenCanvas((Element)element, RelevantGlobal?.EventLoop, static () => { });
+        placeholder.UpdateGeometryFromOffscreenCanvas((Element)element, RelevantGlobal?.EventLoop, () => { });
     }
 
     /// <summary>Clears the canvas transform of an element of the placeholder canvas (see <see cref="UpdateElementGeometry"/>).</summary>
@@ -56,7 +56,7 @@ public sealed partial class OffscreenCanvas
         }
 
         placeholder.ClearElementGeometry(element);
-        placeholder.UpdateGeometryFromOffscreenCanvas((Element)element, RelevantGlobal?.EventLoop, static () => { });
+        placeholder.UpdateGeometryFromOffscreenCanvas((Element)element, RelevantGlobal?.EventLoop, () => { });
     }
 
     /// <summary>Returns the size of an element image in the pixels of the bitmap of the canvas (see <see cref="HtmlCanvasElement.GetElementImageDefaultSize"/>).</summary>

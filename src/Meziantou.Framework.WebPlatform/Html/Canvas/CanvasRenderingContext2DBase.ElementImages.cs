@@ -136,21 +136,19 @@ public abstract partial class CanvasRenderingContext2DBase
             return;
 
         // The canvas transform maps the element to the content box of the canvas: the pixels of the bitmap are scaled back to CSS
-        // pixels of the canvas. It is in the CSS pixels of the element (its zoom scales it): the snapshot is in the ones of the canvas
-        var ratio = snapshot.ZoomRatio;
-        var transform = DisplayMatrix.Scale(ratio / scaleX, ratio / scaleY).PreConcat(_state.Transform).PreConcat(imageMatrix).PreConcat(DisplayMatrix.Scale(1 / ratio, 1 / ratio));
-        // The hit testing is clipped to the source rectangle, in the CSS pixels of the element
-        var matrix = transform.ToMatrix4x4();
-        var is2D = transform.Matrix3d is null;
-        var clip = new PhysicalRect(sourceRect.X * ratio / scaleX, sourceRect.Y * ratio / scaleY, sourceRect.Width * ratio / scaleX, sourceRect.Height * ratio / scaleY);
+        // pixels of the canvas (it is converted to the CSS pixels of the element when the geometry is updated, see
+        // UpdateGeometryFromDrawing). The hit testing is clipped to the source rectangle
+        var transform = DisplayMatrix.Scale(1 / scaleX, 1 / scaleY).PreConcat(_state.Transform).PreConcat(imageMatrix);
+        var clip = new PhysicalRect(sourceRect.X / scaleX, sourceRect.Y / scaleY, sourceRect.Width / scaleX, sourceRect.Height / scaleY);
+        var fallbackRatio = snapshot.ZoomRatio;
         if (offscreen is null)
         {
-            canvas!.UpdateGeometry(target, matrix, is2D, clip, preserveHitTestOrder: false);
+            canvas!.UpdateGeometryFromDrawing(target, transform, clip, fallbackRatio);
         }
         else
         {
             // The geometry of the elements of the placeholder canvas is updated in its event loop (the OffscreenCanvas may be in a worker)
-            canvas!.UpdateGeometryFromOffscreenCanvas(target, Global?.EventLoop, () => canvas.UpdateGeometry(target, matrix, is2D, clip, preserveHitTestOrder: false));
+            canvas!.UpdateGeometryFromOffscreenCanvas(target, Global?.EventLoop, () => canvas.UpdateGeometryFromDrawing(target, transform, clip, fallbackRatio));
         }
     }
 }

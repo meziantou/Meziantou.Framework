@@ -42,6 +42,15 @@ public static partial class WebPlatformFuzzTargets
             return;
 
         document.RunCanvasPaintSteps();
+
+        // The geometry of the elements is compared with the drawing when nothing transforms or zooms the canvas: the input can style it
+        var hasTransformedAncestor = false;
+        for (Element? ancestor = canvas; ancestor is not null; ancestor = ancestor.ParentElement)
+        {
+            var ancestorStyle = document.DefaultView!.GetComputedStyle(ancestor);
+            hasTransformedAncestor |= IsTransformed(ancestorStyle) || ancestorStyle.GetPropertyValue("zoom") != "1";
+        }
+
         var offset = 0;
         foreach (var element in canvas.QuerySelectorAll("[drawable]").OfType<Element>().Take(CanvasDrawablesMaxElements))
         {
@@ -82,7 +91,7 @@ public static partial class WebPlatformFuzzTargets
             FuzzAssert.True(transform.Is2D && transform.B == 0 && transform.C == 0, "the canvas transform of an element drawn without rotation is a 2D scale and translation");
 
             var style = document.DefaultView!.GetComputedStyle(element);
-            if (style.GetPropertyValue("transform") == "none" && style.GetPropertyValue("translate") == "none" && style.GetPropertyValue("rotate") == "none" && style.GetPropertyValue("scale") == "none")
+            if (!IsTransformed(style) && !hasTransformedAncestor)
             {
                 var rect = element.GetBoundingClientRect();
                 FuzzAssert.True(Math.Abs(rect.Left - (2 * offset)) < 0.01 && Math.Abs(rect.Top - (2 * (offset + 1))) < 0.01, $"the element is at ({rect.Left}, {rect.Top}) instead of where it is drawn ({2 * offset}, {2 * (offset + 1)})");
@@ -96,4 +105,8 @@ public static partial class WebPlatformFuzzTargets
         // The pixels are read: the display lists of the canvas are rasterized (and checked by the backend)
         _ = context2D.GetImageData(0, 0, 1, 1);
     }
+
+    private static bool IsTransformed(Css.Om.CssStyleDeclaration style)
+        => style.GetPropertyValue("transform") != "none" || style.GetPropertyValue("translate") != "none" || style.GetPropertyValue("rotate") != "none"
+            || style.GetPropertyValue("scale") != "none" || style.GetPropertyValue("offset-path") != "none";
 }

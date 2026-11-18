@@ -100,10 +100,13 @@ internal static class CanvasDrawables
         var bounds = GetBounds(box);
         var list = Painter.PaintCanvasDrawable(engine, document, fragment, fragment.GetOffsetInRoot() - bounds.Offset, bounds.Size, out nextFrameDelay);
         var zoom = GetCanvasZoom(box);
-        zoomRatio = zoom / box.Style.Layout.EffectiveZoom;
+        zoomRatio = GetZoomRatio(box);
         size = new PhysicalSize(bounds.Width / zoom, bounds.Height / zoom);
         return zoom == 1 ? list : new DisplayList(list.WithTransform(DisplayMatrix.Scale(1 / zoom, 1 / zoom)).Items.ToArray(), size);
     }
+
+    /// <summary>Returns the zoom of the canvas of a drawable box divided by the zoom of the box.</summary>
+    public static double GetZoomRatio(ContainerBox box) => GetCanvasZoom(box) / box.Style.Layout.EffectiveZoom;
 
     /// <summary>Returns the zoom of the canvas of a drawable box (the one of the contents box of the canvas).</summary>
     private static double GetCanvasZoom(ContainerBox box)

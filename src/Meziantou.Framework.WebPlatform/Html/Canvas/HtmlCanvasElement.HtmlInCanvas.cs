@@ -212,6 +212,19 @@ public partial class HtmlCanvasElement
         }
     }
 
+    /// <summary>
+    /// Updates the geometry of an element drawn by <c>drawElementImage()</c>: <paramref name="transform"/> and <paramref name="clip"/>
+    /// are in the CSS pixels of the canvas, the canvas transform is in the ones of the element, with its current zoom (the zoom of
+    /// the element when its snapshot was recorded, <paramref name="fallbackRatio"/>, when it is not rendered).
+    /// </summary>
+    internal void UpdateGeometryFromDrawing(Element element, DisplayMatrix transform, PhysicalRect clip, double fallbackRatio)
+    {
+        var ratio = NodeDocument.LayoutEngineOrNull?.GetFragments(element) is [{ Box: { IsCanvasDrawable: true } box }, ..] ? CanvasDrawables.GetZoomRatio(box) : fallbackRatio;
+        var elementTransform = DisplayMatrix.Scale(ratio, ratio).PreConcat(transform).PreConcat(DisplayMatrix.Scale(1 / ratio, 1 / ratio));
+        var elementClip = new PhysicalRect(clip.X * ratio, clip.Y * ratio, clip.Width * ratio, clip.Height * ratio);
+        UpdateGeometry(element, elementTransform.ToMatrix4x4(), elementTransform.Matrix3d is null, elementClip, preserveHitTestOrder: false);
+    }
+
     /// <summary>The elements whose geometry was updated, in the hit testing order (the last one is the topmost), or null.</summary>
     internal IReadOnlyList<Element>? HitTestOrder => _hitTestOrder;
 

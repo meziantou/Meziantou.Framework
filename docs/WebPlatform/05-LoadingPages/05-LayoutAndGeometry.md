@@ -77,3 +77,47 @@ The text is measured with the fonts bundled with the library (Tinos for `serif`,
 `monospace`, metric-compatible with Times New Roman, Arial and Courier New), the web fonts of the page (`@font-face`), and,
 when you allow it, the fonts installed on the machine: see [Fonts](../07-Rendering/06-Fonts.md). The positions of the
 text are the same on every machine with the bundled fonts.
+
+## SVG text in shapes
+
+An SVG `text` element is laid out on one line, unless it is auto-wrapped: with `inline-size`, its lines are broken in a
+block of that width; with `shape-inside`, they are broken in shapes. The shapes are basic shapes (`circle()`, `ellipse()`,
+`polygon()`, `path()`...) or references to SVG shape elements (`url(#id)`), in the coordinates of the text. The text fills
+the first shape, then flows into the next ones:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_SvgTextInShapes;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    Viewport = new ViewportOptions { Width = 360, Height = 200 },
+    RenderingBackend = new ImagingRenderingBackend(),
+});
+var document = context.Navigate("https://example.com/", _ => """
+    <style>body { margin: 0 }</style>
+    <svg width="360" height="200" style="font: 13px sans-serif">
+      <circle id="circle" cx="100" cy="100" r="90" fill="#e0f2fe" />
+      <rect id="photo" x="20" y="70" width="70" height="60" fill="#94a3b8" style="shape-margin: 6px" />
+      <rect id="box" x="200" y="10" width="150" height="180" fill="#fef3c7" />
+      <!-- The text fills the circle around the photo, then overflows into the box -->
+      <text style="shape-inside: url(#circle) url(#box); shape-subtract: url(#photo); shape-padding: 8px; text-align: center">
+        The text of an SVG text element with shape-inside is wrapped in the shapes: the lines are broken where
+        they fit, around the shapes of shape-subtract, and aligned by text-align. When the first shape is full,
+        the text flows into the next one, and the text that does not fit in the last shape is not rendered.
+      </text>
+    </svg>
+    """);
+context.EventLoop.RunUntilIdle();
+
+using var screenshot = context.TakeScreenshot();
+```
+<!-- endref -->
+
+![Text wrapped in a circle around a gray rectangle, which continues in a yellow box](images/SvgTextInShapes.png)
+
+- A line box is placed where it fits in the shape, from its top: the edges of the shapes are sampled every pixel, and a
+  line is broken into several segments when a shape or `shape-subtract` cuts it.
+- `shape-padding` insets the shapes, and `shape-subtract` removes shapes from them, each expanded by its own
+  `shape-margin` (the one of the text element for a basic shape).
+- The segments are aligned by `text-align` (`justify` widens the spaces); `text-anchor` and the `x`, `y`, `dx`, `dy` and
+  `rotate` attributes do not apply. The text that does not fit in the last shape is not rendered.
+

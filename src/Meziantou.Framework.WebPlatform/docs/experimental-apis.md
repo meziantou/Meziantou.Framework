@@ -218,7 +218,18 @@ of the SVG scripts are processed as the ones of the HTML scripts). Its API and b
 
 <a id="WEBPLATEXP0021"></a>
 
-## WEBPLATEXP0021: scroll performance timing
+## WEBPLATEXP0021: CanvasFilter objects
+
+`CanvasFilter` implements the `CanvasFilter` objects of the [proposal](https://github.com/whatwg/html/issues/5621) (see the
+[explainer](https://github.com/fserb/canvas2D/blob/master/spec/filters.md)), as tested by the tentative web-platform-tests of
+`html/canvas/element/filters`: a filter described by a list of filter primitives (`gaussianBlur`, `dropShadow`,
+`colorMatrix`, `componentTransfer`, `convolveMatrix` and `turbulence`), which is the `filter` of a 2D context or of a
+canvas layer. Chromium implements them behind a flag. Their API and behavior may change while the proposal is under
+discussion.
+
+<a id="WEBPLATEXP0022"></a>
+
+## WEBPLATEXP0022: scroll performance timing
 
 `PerformanceScrollTiming` and `WebPlatformFeatures.ScrollTimingEnabled` implement the scroll performance timing of the
 [proposal](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md) of Microsoft

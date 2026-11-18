@@ -187,7 +187,7 @@ the frames have no `presentationTime`.
 The scrolls of the user (the wheel, the keys, a touch, a scrollbar) are reported as a
 [PerformanceScrollTiming](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceScrollTiming) to the `scroll` performance observers of the window of the scrolled document, as in the
 [proposal](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md) of Microsoft
-Edge. The API is experimental (diagnostic `WEBPLATEXP0021`):
+Edge. The API is experimental (diagnostic `WEBPLATEXP0022`):
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/UserScrollingTests.cs;region=WebPlatform_ScrollTiming;format=md-fenced-code-block;dedent=true -->
 ```csharp

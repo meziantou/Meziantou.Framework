@@ -463,6 +463,12 @@ public abstract class ScriptEngine
     internal virtual IIndexedDBValueOperations? GetIndexedDBValueOperations(GlobalScope global) => null;
 
     /// <summary>
+    /// Returns the conversions of the values of the realm of <paramref name="global"/> that the .NET APIs read themselves (the
+    /// values of the type <c>any</c>), or null when the engine does not support them: the .NET values are then supported.
+    /// </summary>
+    internal virtual IScriptValueOperations? GetScriptValueOperations(GlobalScope global) => null;
+
+    /// <summary>
     /// Returns the operations of the service workers on the <c>Request</c> and <c>Response</c> objects of the realm of
     /// <paramref name="global"/> (the Fetch API is implemented in JavaScript), or null when the engine does not support them:
     /// the service workers then cannot answer the requests.

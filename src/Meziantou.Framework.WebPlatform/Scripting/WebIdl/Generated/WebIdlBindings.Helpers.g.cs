@@ -4,6 +4,10 @@
 // </auto-generated>
 #nullable enable
 
+#pragma warning disable WEBPLATEXP0004 // The conversions use the experimental Web IDL interfaces
+#pragma warning disable WEBPLATEXP0021 // The conversions use the experimental Web IDL interfaces
+#pragma warning disable WEBPLATEXP0022 // The conversions use the experimental Web IDL interfaces
+
 namespace Meziantou.Framework.WebPlatform.Scripting.Generated;
 
 /// <summary>The conversions of the dictionaries, enumerations, callback functions and unions.</summary>
@@ -12227,6 +12231,19 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         }
         if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
         return r.ToDouble(value, restricted: true);
+    }
+
+    /// <summary>(DOMString or CanvasFilter)</summary>
+    internal static object? ToUnion_2c1b817c(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.CanvasFilter) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        return r.ToDomString(value);
     }
 
     /// <summary>(DOMString or sequence&lt;(CSSNumericValue or CSSKeywordValue)&gt;)</summary>

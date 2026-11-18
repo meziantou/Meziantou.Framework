@@ -5094,6 +5094,16 @@ public sealed class DrawingSessionTests
         Assert.Equal(default, image.Frames[0][150, 100]);
         Assert.Equal(default, image.Frames[0][250, 50]);
 
+        // A filter graph of the window reads what the window holds within its region, beyond the canvas: the shadow of a
+        // filtered drawing is cast from as far as its offset
+        image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
+        image.Draw(
+            canvas => canvas.Filter(new DropShadowFilter(green, new PointD(1000, 0), 0) { ShadowOnly = true }, shadowed =>
+                shadowed.Filter(new FilterGraph(new ColorMatrixPrimitive(new ColorMatrix([0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0]))) { Region = new RectangleD(-1100, -100, 2000, 800) }, layer => layer.FillRectangle(red, new RectangleD(-1000, 0, 100, 100)))),
+            Ct);
+        Assert.Equal(green, image.Frames[0][50, 50]);
+        Assert.Equal(default, image.Frames[0][150, 50]);
+
         // A shadow cast from beyond anything that can be drawn is transparent, and what casts it is still drawn
         image.Draw(canvas => canvas.Clear(Colors.Transparent), Ct);
         image.Draw(canvas => canvas.Transform(AffineTransform.CreateScale(16, 16), scaled => scaled.Filter(new DropShadowFilter(green, new PointD(16777216, 0), 0), layer => layer.FillRectangle(red, new RectangleD(1, 1, 1, 1)))), Ct);

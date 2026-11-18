@@ -1071,7 +1071,7 @@ and the work of the user agent outside of the tasks are not reported; a synchron
 `DocumentLoader` takes.
 
 **[Scroll timing](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md)** (a
-proposal, experimental: `WEBPLATEXP0021`): a scroll of the user (the wheel, the keys, a touch, a scrollbar) of a scrolling
+proposal, experimental: `WEBPLATEXP0022`): a scroll of the user (the wheel, the keys, a touch, a scrollbar) of a scrolling
 box, from its first input to its `scrollend` event, is reported as a `PerformanceScrollTiming` entry to the window of the
 document (`buffered` observers included: the buffer holds 150 entries; the entries are not in `getEntries()`). An input
 of another source, or in the opposite direction, starts a new entry. The frames are the rendering updates: `framesProduced`

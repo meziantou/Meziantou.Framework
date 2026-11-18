@@ -524,39 +524,50 @@ internal static class SvgFilterBuilder
         switch (element.GetAnimatedAttributeValue("type"))
         {
             case "saturate":
-            {
-                var s = hasValues && values.Count == 1 ? values[0] : 1;
-                return
-                [
-                    0.213f + (0.787f * s), 0.715f - (0.715f * s), 0.072f - (0.072f * s), 0, 0,
-                    0.213f - (0.213f * s), 0.715f + (0.285f * s), 0.072f - (0.072f * s), 0, 0,
-                    0.213f - (0.213f * s), 0.715f - (0.715f * s), 0.072f + (0.928f * s), 0, 0,
-                    0, 0, 0, 1, 0,
-                ];
-            }
+                return CreateSaturateMatrix(hasValues && values.Count == 1 ? values[0] : 1);
 
             case "hueRotate":
-            {
-                var radians = (hasValues && values.Count == 1 ? values[0] : 0) * Math.PI / 180;
-                var cos = (float)Math.Cos(radians);
-                var sin = (float)Math.Sin(radians);
-                return
-                [
-                    0.213f + (cos * 0.787f) - (sin * 0.213f), 0.715f - (cos * 0.715f) - (sin * 0.715f), 0.072f - (cos * 0.072f) + (sin * 0.928f), 0, 0,
-                    0.213f - (cos * 0.213f) + (sin * 0.143f), 0.715f + (cos * 0.285f) + (sin * 0.140f), 0.072f - (cos * 0.072f) - (sin * 0.283f), 0, 0,
-                    0.213f - (cos * 0.213f) - (sin * 0.787f), 0.715f - (cos * 0.715f) + (sin * 0.715f), 0.072f + (cos * 0.928f) + (sin * 0.072f), 0, 0,
-                    0, 0, 0, 1, 0,
-                ];
-            }
+                return CreateHueRotateMatrix(hasValues && values.Count == 1 ? values[0] : 0);
 
             case "luminanceToAlpha":
-                return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2125f, 0.7154f, 0.0721f, 0, 0];
+                return CreateLuminanceToAlphaMatrix();
 
             default:
                 // matrix: 20 values (the identity when the list is missing or invalid)
                 return hasValues && values.Count == 20 ? [.. values] : [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
         }
     }
+
+    /// <summary>The matrix of feColorMatrix type="saturate" (https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-type).</summary>
+    internal static float[] CreateSaturateMatrix(double saturation)
+    {
+        var s = (float)saturation;
+        return
+        [
+            0.213f + (0.787f * s), 0.715f - (0.715f * s), 0.072f - (0.072f * s), 0, 0,
+            0.213f - (0.213f * s), 0.715f + (0.285f * s), 0.072f - (0.072f * s), 0, 0,
+            0.213f - (0.213f * s), 0.715f - (0.715f * s), 0.072f + (0.928f * s), 0, 0,
+            0, 0, 0, 1, 0,
+        ];
+    }
+
+    /// <summary>The matrix of feColorMatrix type="hueRotate" (the angle in degrees).</summary>
+    internal static float[] CreateHueRotateMatrix(double degrees)
+    {
+        var radians = degrees * Math.PI / 180;
+        var cos = (float)Math.Cos(radians);
+        var sin = (float)Math.Sin(radians);
+        return
+        [
+            0.213f + (cos * 0.787f) - (sin * 0.213f), 0.715f - (cos * 0.715f) - (sin * 0.715f), 0.072f - (cos * 0.072f) + (sin * 0.928f), 0, 0,
+            0.213f - (cos * 0.213f) + (sin * 0.143f), 0.715f + (cos * 0.285f) + (sin * 0.140f), 0.072f - (cos * 0.072f) - (sin * 0.283f), 0, 0,
+            0.213f - (cos * 0.213f) - (sin * 0.787f), 0.715f - (cos * 0.715f) + (sin * 0.715f), 0.072f + (cos * 0.928f) + (sin * 0.072f), 0, 0,
+            0, 0, 0, 1, 0,
+        ];
+    }
+
+    /// <summary>The matrix of feColorMatrix type="luminanceToAlpha".</summary>
+    internal static float[] CreateLuminanceToAlphaMatrix() => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2125f, 0.7154f, 0.0721f, 0, 0];
 
     /// <summary>feComponentTransfer (https://drafts.fxtf.org/filter-effects/#feComponentTransferElement): a table per channel.</summary>
     private static ComponentTransferPrimitive CreateComponentTransfer(Element element)
@@ -602,49 +613,59 @@ internal static class SvgFilterBuilder
             if (type is not ("table" or "discrete" or "linear" or "gamma") || (type is "table" or "discrete" && tableValues.Count == 0))
                 return null;
 
-            var table = new byte[256];
-            for (var i = 0; i < table.Length; i++)
+            return CreateTransferTable(type, tableValues, slope, intercept, amplitude, exponent, offset);
+        }
+    }
+
+    /// <summary>
+    /// Returns the lookup table of a transfer function of feComponentTransfer
+    /// (https://drafts.fxtf.org/filter-effects/#element-attrdef-fecomponenttransfer-type): <c>table</c>, <c>discrete</c>,
+    /// <c>linear</c> or <c>gamma</c> (<paramref name="tableValues"/> is not empty for <c>table</c> and <c>discrete</c>).
+    /// </summary>
+    internal static byte[] CreateTransferTable(string type, IReadOnlyList<float> tableValues, double slope, double intercept, double amplitude, double exponent, double offset)
+    {
+        var table = new byte[256];
+        for (var i = 0; i < table.Length; i++)
+        {
+            var c = i / 255d;
+            double result;
+            switch (type)
             {
-                var c = i / 255d;
-                double result;
-                switch (type)
+                case "table":
                 {
-                    case "table":
+                    var n = tableValues.Count - 1;
+                    if (n == 0)
                     {
-                        var n = tableValues.Count - 1;
-                        if (n == 0)
-                        {
-                            result = tableValues[0];
-                            break;
-                        }
-
-                        var k = Math.Min((int)Math.Floor(c * n), n - 1);
-                        result = tableValues[k] + ((c - ((double)k / n)) * n * (tableValues[k + 1] - tableValues[k]));
+                        result = tableValues[0];
                         break;
                     }
 
-                    case "discrete":
-                    {
-                        var n = tableValues.Count;
-                        var k = Math.Min((int)Math.Floor(c * n), n - 1);
-                        result = tableValues[k];
-                        break;
-                    }
-
-                    case "linear":
-                        result = (slope * c) + intercept;
-                        break;
-
-                    default:
-                        result = (amplitude * Math.Pow(c, exponent)) + offset;
-                        break;
+                    var k = Math.Min((int)Math.Floor(c * n), n - 1);
+                    result = tableValues[k] + ((c - ((double)k / n)) * n * (tableValues[k + 1] - tableValues[k]));
+                    break;
                 }
 
-                table[i] = (byte)Math.Round(Math.Clamp(result, 0, 1) * 255, MidpointRounding.AwayFromZero);
+                case "discrete":
+                {
+                    var n = tableValues.Count;
+                    var k = Math.Min((int)Math.Floor(c * n), n - 1);
+                    result = tableValues[k];
+                    break;
+                }
+
+                case "linear":
+                    result = (slope * c) + intercept;
+                    break;
+
+                default:
+                    result = (amplitude * Math.Pow(c, exponent)) + offset;
+                    break;
             }
 
-            return table;
+            table[i] = (byte)Math.Round(Math.Clamp(result, 0, 1) * 255, MidpointRounding.AwayFromZero);
         }
+
+        return table;
     }
 
     /// <summary>feConvolveMatrix (https://drafts.fxtf.org/filter-effects/#feConvolveMatrixElement).</summary>

@@ -17,8 +17,8 @@ internal sealed partial class WebIdlBindingsGenerator
         var writer = new CodeWriter("the webref IDL of " + model.Name + " and the .NET members annotated with [IdlMember]");
         var clrType = model.ClrType!;
 
-        // The bindings of an experimental type (e.g. PerformanceScrollTiming) use it without reporting its diagnostic
-        if (clrType.GetCustomAttribute<ExperimentalAttribute>()?.DiagnosticId is { } typeExperimentalId)
+        // The bindings of an experimental type (e.g. CanvasFilter) use it without reporting its diagnostic
+        if (clrType.GetCustomAttribute<ExperimentalAttribute>(inherit: false)?.DiagnosticId is { } typeExperimentalId)
         {
             writer.Line($"#pragma warning disable {typeExperimentalId} // The binding exposes the experimental Web IDL interface");
             writer.Line();

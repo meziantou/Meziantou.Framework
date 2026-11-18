@@ -1,7 +1,7 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.Extensions.Time.Testing;
 
-#pragma warning disable WEBPLATEXP0021 // The scroll performance timing is a proposal
+#pragma warning disable WEBPLATEXP0022 // The scroll performance timing is a proposal
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 

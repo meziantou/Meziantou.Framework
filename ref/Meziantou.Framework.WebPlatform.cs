@@ -3663,6 +3663,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         EvenOdd = 1,
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0021", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class CanvasFilter
+    {
+        public CanvasFilter(object? filters) { }
+    }
+
     public enum CanvasFontKerning
     {
         Auto = 0,
@@ -3732,7 +3738,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.CanvasDirection Direction { get => throw null; set { } }
         [System.Diagnostics.CodeAnalysis.AllowNull]
         public object FillStyle { get => throw null; set { } }
-        public string Filter { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNull]
+        public object Filter { get => throw null; set { } }
         public string Font { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.CanvasFontKerning FontKerning { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.CanvasFontStretch FontStretch { get => throw null; set { } }
@@ -10148,7 +10155,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution WindowAttribution { get => throw null; }
     }
 
-    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0021", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0022", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
     public sealed class PerformanceScrollTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
     {
         public double CheckerboardTime { get => throw null; }
@@ -14116,7 +14123,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ResizeObserverEnabled { get => throw null; init { } }
         public bool ScreenOrientationEnabled { get => throw null; init { } }
         public bool ScrollDrivenAnimationsEnabled { get => throw null; init { } }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0021", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0022", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public bool ScrollTimingEnabled { get => throw null; init { } }
         public bool SensorsEnabled { get => throw null; init { } }
         public bool ServiceWorkersEnabled { get => throw null; init { } }

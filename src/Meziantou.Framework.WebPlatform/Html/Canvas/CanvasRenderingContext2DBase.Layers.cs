@@ -3,6 +3,7 @@ using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Rendering;
 
 #pragma warning disable WEBPLATEXP0017 // The members of the proposal use each other
+#pragma warning disable WEBPLATEXP0021 // The CanvasFilter objects are a proposal
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
@@ -31,9 +32,10 @@ public abstract partial class CanvasRenderingContext2DBase
     /// the layer when it is drawn. The transformation matrix is not reset.
     /// </summary>
     /// <param name="options">
-    /// The options of the layer: its <c>filter</c>, a CSS filter applied to the layer before the filter of the state, in the
-    /// coordinates of the current transformation matrix (the <c>CanvasFilter</c> objects are ignored).
+    /// The options of the layer: its <c>filter</c>, a CSS filter or a <see cref="CanvasFilter"/> (or the description of one)
+    /// applied to the layer before the filter of the state, in the coordinates of the current transformation matrix.
     /// </param>
+    /// <exception cref="TypeErrorException">The filter is the description of a <c>CanvasFilter</c> that is not valid: the layer is not opened.</exception>
     /// <remarks>
     /// While a layer is open, the pixels of the canvas cannot be read (<c>getImageData()</c>, <c>toDataURL()</c>,
     /// <c>drawImage()</c> of the canvas...): these methods throw an <c>InvalidStateError</c>. The canvas displays the pixels
@@ -44,8 +46,16 @@ public abstract partial class CanvasRenderingContext2DBase
     [Experimental(ExperimentalApis.CanvasLayers, UrlFormat = ExperimentalApis.UrlFormat)]
     public void BeginLayer(BeginLayerOptions? options = null)
     {
-        // The filter is resolved before the state changes (with the font of the current state)
-        var filter = options?.Filter is string value && ParseFilter(value) is { } parsed ? GetFilters(parsed) : null;
+        // The filter is resolved before the state changes (with the font of the current state): an invalid description of a
+        // CanvasFilter throws before the layer is opened. The filter applies in the coordinates of the transformation matrix.
+        var (canvasFilter, cssFilter) = options?.Filter switch
+        {
+            null => default,
+            string value => (null, value),
+            var value => CanvasFilter.FromLayerFilter(value),
+        };
+        var filter = canvasFilter is not null ? canvasFilter.GetDisplayFilters(Invert(_state.Transform) is { } inverse ? MapBounds(inverse, GetFilteredArea()) : default, Bitmap.Options.ColorSpace)
+            : cssFilter is not null && ParseFilter(cssFilter) is { } parsed ? GetFilters(parsed) : null;
 
         // A layer opened with a non-invertible transformation matrix is not drawn
         var layer = new CanvasLayer(_layerBuilder, filter, IsDrawn: Invert(_state.Transform) is not null);
@@ -136,6 +146,20 @@ public abstract partial class CanvasRenderingContext2DBase
             return (image, false);
 
         return (Rasterize(target, addFilteredLayer), true);
+    }
+
+    /// <summary>
+    /// Returns the area of the canvas that the filters of the drawings must cover (the region of the filter graphs of a
+    /// <see cref="CanvasFilter"/>): the canvas, and the area that the shadow of the drawing state moves onto it.
+    /// </summary>
+    private PhysicalRect GetFilteredArea()
+    {
+        var canvas = new PhysicalRect(0, 0, Bitmap.Width, Bitmap.Height);
+        if (!ShadowsAreDrawn)
+            return canvas;
+
+        var reach = Math.Ceiling(_state.ShadowBlur * 1.5) + 1;
+        return canvas.Union(canvas.Translate(new PhysicalOffset(-_state.ShadowOffsetX, -_state.ShadowOffsetY)).Expand(new Sides<double>(reach, reach, reach, reach)));
     }
 
     /// <summary>Returns an image of the drawings in an area (rounded to whole pixels), or null when it cannot be created.</summary>
@@ -271,7 +295,8 @@ public sealed class BeginLayerOptions
 {
     /// <summary>
     /// Gets the filter of the layer: a string is a CSS filter (as <see cref="CanvasRenderingContext2DBase.Filter"/>; an
-    /// invalid value is no filter). The other values (the <c>CanvasFilter</c> objects and their descriptions) are ignored.
+    /// invalid value is no filter), another value is a <see cref="CanvasFilter"/> or the description of one (see
+    /// <see cref="CanvasFilter(object)"/>).
     /// </summary>
     /// <seealso href="https://github.com/fserb/canvas2D/blob/master/spec/layers.md#proposal"/>
     [IdlMember("filter", "https://github.com/fserb/canvas2D/blob/master/spec/layers.md#proposal")]

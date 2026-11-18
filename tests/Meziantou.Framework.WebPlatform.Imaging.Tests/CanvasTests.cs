@@ -569,6 +569,18 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void StrokeText_TextOfTheGlyphsIsNotRepeated()
+    {
+        // The glyphs of a stroked text are stroked one by one: the text (e.g. of a PDF) is on the first one only
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.StrokeText("ABC", 10, 30);
+        var glyphs = context.Bitmap.TakeRecording().Items.ToArray().OfType<Meziantou.Framework.WebPlatform.Rendering.DrawGlyphsItem>().ToList();
+        Assert.Equal(3, glyphs.Count);
+        Assert.Equal("ABC", string.Concat(glyphs.Select(item => item.Run.Text)));
+    }
+
+    [Fact]
     public void ShapedText_LigatureCarets()
     {
 #pragma warning disable WEBPLATEXP0025

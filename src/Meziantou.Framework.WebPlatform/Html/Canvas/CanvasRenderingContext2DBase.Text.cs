@@ -409,7 +409,9 @@ public abstract partial class CanvasRenderingContext2DBase
         });
 
         // As in the browsers, the outline of each glyph is stroked on its own: the strokes of overlapping glyphs are
-        // composited (instead of stroking their union), so that drawing the clusters of a text one by one draws the same pixels
+        // composited (instead of stroking their union), so that drawing the clusters of a text one by one draws the same pixels.
+        // The first glyph carries the text of the run (e.g. the text of a PDF), and the other glyphs none, so that the text is
+        // not repeated for each glyph
         static void AddGlyphs(DisplayListBuilder builder, GlyphRun run, DisplayPaint paint, bool stroke)
         {
             if (!stroke || run.Glyphs.Length <= 1)
@@ -420,7 +422,7 @@ public abstract partial class CanvasRenderingContext2DBase
 
             for (var i = 0; i < run.Glyphs.Length; i++)
             {
-                builder.Add(new DrawGlyphsItem(run with { Glyphs = [run.Glyphs[i]], Positions = [run.Positions[i]] }, paint));
+                builder.Add(new DrawGlyphsItem(run with { Glyphs = [run.Glyphs[i]], Positions = [run.Positions[i]], Text = i == 0 ? run.Text : "" }, paint));
             }
         }
     }

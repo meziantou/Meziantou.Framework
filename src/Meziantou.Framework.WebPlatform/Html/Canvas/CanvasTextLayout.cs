@@ -13,6 +13,18 @@ internal readonly record struct CanvasTextGlyph(MatchedFont Font, double EmSize,
 internal readonly record struct CanvasTextCluster(int Start, int End, double Left, double Width, bool IsRightToLeft, int Run)
 {
     public double Right => Left + Width;
+
+    /// <summary>The distance of the left edge of the cluster from the left of the text (its right edge when a negative spacing gives it a negative advance).</summary>
+    public double Low => Math.Min(Left, Right);
+
+    /// <summary>The distance of the right edge of the cluster from the left of the text (its left edge when a negative spacing gives it a negative advance).</summary>
+    public double High => Math.Max(Left, Right);
+
+    /// <summary>The caret position at the start of the cluster: its left edge in a left-to-right run, its right edge in a right-to-left run.</summary>
+    public double StartEdge => IsRightToLeft ? Right : Left;
+
+    /// <summary>The caret position at the end of the cluster: its right edge in a left-to-right run, its left edge in a right-to-left run.</summary>
+    public double EndEdge => IsRightToLeft ? Left : Right;
 }
 
 /// <summary>
@@ -218,8 +230,12 @@ internal sealed record CanvasTextLayout(
             // The selected part of a ligature ends at its caret positions
             var from = GetCaretX(cluster, Math.Max((int)start, cluster.Start), snapToEnd: false);
             var to = GetCaretX(cluster, Math.Min((int)end, cluster.End), snapToEnd: true);
-            var (left, right) = (Math.Min(from, to), Math.Max(from, to));
-            var run = GetFragmentRun(cluster);
+            var (run, left, right) = GetFragment(cluster);
+            if (cluster.Width != 0)
+            {
+                (left, right) = (Math.Min(from, to), Math.Max(from, to));
+            }
+
             bounds[run] = bounds.TryGetValue(run, out var value) ? (Math.Min(value.Left, left), Math.Max(value.Right, right)) : (left, right);
         }
 
@@ -232,16 +248,19 @@ internal sealed record CanvasTextLayout(
     }
 
     /// <summary>
-    /// Returns the bidi run of the fragment of a cluster: a cluster without advance (e.g. a bidi control) is in the fragment of
-    /// the character after it, as in the inline layout, which gives the characters removed by the bidi algorithm the level of
-    /// the following character.
+    /// Returns the bidi run of the fragment of a cluster and its edges from the left of the text: a cluster without advance
+    /// (e.g. a bidi control) is in the fragment of the character after it, as in the inline layout, which gives the characters
+    /// removed by the bidi algorithm the level of the following character, at the start edge of that character.
     /// </summary>
-    public int GetFragmentRun(CanvasTextCluster cluster)
+    public (int Run, double Left, double Right) GetFragment(CanvasTextCluster cluster)
     {
-        if (cluster.Width == 0 && Clusters.FindIndex(c => c.Start == cluster.End && c.Width > 0) is var next and >= 0)
-            return Clusters[next].Run;
+        if (cluster.Width == 0 && Clusters.FindIndex(c => c.Start == cluster.End && c.Width != 0) is var index and >= 0)
+        {
+            var next = Clusters[index];
+            return (next.Run, next.StartEdge, next.StartEdge);
+        }
 
-        return cluster.Run;
+        return (cluster.Run, cluster.Low, cluster.High);
     }
 
     /// <summary>
@@ -257,24 +276,25 @@ internal sealed record CanvasTextLayout(
         CanvasTextCluster? next = null;
         foreach (var cluster in Clusters)
         {
-            if (!(cluster.Width > 0))
+            // A negative spacing gives the clusters negative advances: they are hit between their right and left edges
+            if (cluster.Width == 0 || !double.IsFinite(cluster.Width))
                 continue;
 
-            if (first is null || cluster.Left < first.Value.Left)
+            if (first is null || cluster.Low < first.Value.Low)
             {
                 first = cluster;
             }
 
-            if (last is null || cluster.Right > last.Value.Right)
+            if (last is null || cluster.High > last.Value.High)
             {
                 last = cluster;
             }
 
-            if (cluster.Left <= x && x < cluster.Right)
+            if (cluster.Low <= x && x < cluster.High)
             {
                 hit = cluster;
             }
-            else if (cluster.Left > x && (next is null || cluster.Left < next.Value.Left))
+            else if (cluster.Low > x && (next is null || cluster.Low < next.Value.Low))
             {
                 next = cluster;
             }
@@ -283,29 +303,31 @@ internal sealed record CanvasTextLayout(
         if (first is null || last is null)
             return 0;
 
-        bool isFirstHalf;
+        bool isLowHalf;
         CanvasTextCluster target;
-        if (x < first.Value.Left)
+        if (x < first.Value.Low)
         {
-            (target, isFirstHalf) = (first.Value, true);
+            (target, isLowHalf) = (first.Value, true);
         }
-        else if (x >= last.Value.Right)
+        else if (x >= last.Value.High)
         {
-            (target, isFirstHalf) = (last.Value, false);
+            (target, isLowHalf) = (last.Value, false);
         }
         else if (hit is { } value)
         {
             if (GetLigatureIndex(value, x) is { } index)
                 return index;
 
-            (target, isFirstHalf) = (value, x <= value.Left + (value.Width / 2));
+            (target, isLowHalf) = (value, x <= (value.Low + value.High) / 2);
         }
         else
         {
-            (target, isFirstHalf) = (next ?? last.Value, true);
+            (target, isLowHalf) = (next ?? last.Value, true);
         }
 
-        return (uint)(isFirstHalf != target.IsRightToLeft ? target.Start : target.End);
+        // The caret position at the edge of the cluster on the side of the point
+        var isStartLow = target.StartEdge <= target.EndEdge;
+        return (uint)(isLowHalf == isStartLow ? target.Start : target.End);
     }
 
     /// <summary>
@@ -346,18 +368,16 @@ internal sealed record CanvasTextLayout(
     /// </summary>
     private double GetCaretX(CanvasTextCluster cluster, int position, bool snapToEnd)
     {
-        var startEdge = cluster.IsRightToLeft ? cluster.Right : cluster.Left;
-        var endEdge = cluster.IsRightToLeft ? cluster.Left : cluster.Right;
         if (position <= cluster.Start)
-            return startEdge;
+            return cluster.StartEdge;
 
         if (position >= cluster.End)
-            return endEdge;
+            return cluster.EndEdge;
 
         if (LigatureCarets.TryGetValue(position, out var caret))
             return caret;
 
-        return snapToEnd ? endEdge : startEdge;
+        return snapToEnd ? cluster.EndEdge : cluster.StartEdge;
     }
 
     /// <summary>
@@ -386,7 +406,7 @@ internal sealed record CanvasTextLayout(
             return GetCaretX(value, position, snapToEnd: false);
 
         if (lastLogical is { } end)
-            return end.IsRightToLeft ? end.Left : end.Right;
+            return end.EndEdge;
 
         return 0;
     }

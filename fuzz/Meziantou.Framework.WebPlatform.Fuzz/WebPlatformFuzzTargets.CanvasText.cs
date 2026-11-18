@@ -9,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 
 /// <summary>
 /// The target of the text clusters and of the shaped text of the 2D canvas: a byte of options (direction, alignment,
-/// baseline, letter spacing) followed by a text. The clusters must cover the text in logical order, the caret positions,
+/// baseline, letter spacing, which can be negative) followed by a text. The clusters must cover the text in logical order, the caret positions,
 /// the advances and the selection rectangles must stay in the text, the bounding box of the whole text must be the one of
 /// <c>measureText()</c>, the glyph runs must add up to the width of the text, and the invalid ranges must throw an
 /// <c>IndexSizeError</c>.
@@ -49,7 +49,11 @@ public static partial class WebPlatformFuzzTargets
         context.Direction = (options & 1) != 0 ? CanvasDirection.Rtl : CanvasDirection.Ltr;
         context.TextAlign = CanvasTextAligns[(options >> 1) % CanvasTextAligns.Length];
         context.TextBaseline = CanvasTextBaselines[(options >> 4) % CanvasTextBaselines.Length];
-        context.LetterSpacing = (options & 0x80) != 0 ? "3px" : "0px";
+        // An alignment value after the five alignments (they wrap) with spacing selects a negative spacing, which gives the
+        // clusters negative advances: the positions then go from right to left, and only hold the properties that do not
+        // depend on the order of the edges
+        var isNegativeSpacing = (options & 0x80) != 0 && ((options >> 1) & 7) >= CanvasTextAligns.Length;
+        context.LetterSpacing = isNegativeSpacing ? "-9px" : (options & 0x80) != 0 ? "3px" : "0px";
 
         var metrics = context.MeasureText(text);
         var shaped = context.ShapeText(text);
@@ -74,7 +78,7 @@ public static partial class WebPlatformFuzzTargets
             var cluster = clusters[i];
             FuzzAssert.True(cluster.Start >= end && cluster.End > cluster.Start && cluster.End <= length, $"cluster {i} [{cluster.Start}, {cluster.End}) follows the previous one in the text");
             FuzzAssert.True(text.AsSpan((int)end, (int)(cluster.Start - end)).IndexOfAnyExcept('\0') < 0, $"only null characters precede cluster {i}");
-            FuzzAssert.True(double.IsFinite(cluster.X) && cluster.X >= -alignment - CanvasTextTolerance && cluster.X <= metrics.Width - alignment + CanvasTextTolerance, $"cluster {i} is in the text");
+            FuzzAssert.True(double.IsFinite(cluster.X) && (isNegativeSpacing || (cluster.X >= -alignment - CanvasTextTolerance && cluster.X <= metrics.Width - alignment + CanvasTextTolerance)), $"cluster {i} is in the text");
             FuzzAssert.Equal(cluster.Start, glyphClusters[i].Start, "the glyph clusters start as the text clusters");
             FuzzAssert.Equal(cluster.End, glyphClusters[i].End, "the glyph clusters end as the text clusters");
             end = cluster.End;
@@ -89,12 +93,12 @@ public static partial class WebPlatformFuzzTargets
         foreach (var run in runs)
         {
             FuzzAssert.True(run.Start < run.End && run.End <= length && run.Width >= 0, "a glyph run is a range of the text");
-            FuzzAssert.True(run.X >= runLeft - CanvasTextTolerance, "the glyph runs are sorted from left to right");
+            FuzzAssert.True(double.IsFinite(run.X) && run.X >= runLeft - CanvasTextTolerance, "the glyph runs are sorted from left to right");
             runLeft = run.X;
             runWidth += run.Width;
         }
 
-        FuzzAssert.True(Math.Abs(runWidth - shaped.Width) <= CanvasTextTolerance * Math.Max(1, shaped.Width), $"the glyph runs add up to the width of the text ({runWidth} and {shaped.Width})");
+        FuzzAssert.True(isNegativeSpacing || Math.Abs(runWidth - shaped.Width) <= CanvasTextTolerance * Math.Max(1, shaped.Width), $"the glyph runs add up to the width of the text ({runWidth} and {shaped.Width})");
 
         // The caret positions and the advances stay in the text
         foreach (var offset in (ReadOnlySpan<double>)[double.NegativeInfinity, -1000, -alignment, 0, metrics.Width / 3, metrics.Width - alignment, 1000, double.PositiveInfinity, double.NaN])
@@ -106,7 +110,7 @@ public static partial class WebPlatformFuzzTargets
         for (var position = 0u; position <= length; position++)
         {
             var advance = shaped.PositionToAdvance(position);
-            FuzzAssert.True(advance >= -alignment - CanvasTextTolerance && advance <= metrics.Width - alignment + CanvasTextTolerance, $"positionToAdvance({position}) is in the text");
+            FuzzAssert.True(double.IsFinite(advance) && (isNegativeSpacing || (advance >= -alignment - CanvasTextTolerance && advance <= metrics.Width - alignment + CanvasTextTolerance)), $"positionToAdvance({position}) is in the text");
         }
 
         // The selection rectangles are in the text, with the height of the font
@@ -117,7 +121,7 @@ public static partial class WebPlatformFuzzTargets
             FuzzAssert.True(start < stop || rects.Count == 1, "a collapsed selection is a caret rectangle");
             foreach (var rect in rects)
             {
-                FuzzAssert.True(rect.Width >= 0 && rect.X >= -alignment - CanvasTextTolerance && rect.X + rect.Width <= metrics.Width - alignment + CanvasTextTolerance, "a selection rectangle is in the text");
+                FuzzAssert.True(rect.Width >= 0 && (isNegativeSpacing || (rect.X >= -alignment - CanvasTextTolerance && rect.X + rect.Width <= metrics.Width - alignment + CanvasTextTolerance)), "a selection rectangle is in the text");
                 FuzzAssert.True(Math.Abs(rect.Height - height) <= CanvasTextTolerance && Math.Abs(rect.Y + metrics.FontBoundingBoxAscent) <= CanvasTextTolerance, "a selection rectangle has the height of the font");
             }
 
@@ -185,6 +189,8 @@ public static partial class WebPlatformFuzzTargets
             ("\U0001FFFD\u200D\U0001FFFD", 0),
             ("", 0),
             ("\0\0", 0),
+            ("ABC", 0x80 | (5 << 1)),
+            ("A\u202EB\u202CC", 0x80 | (7 << 1)),
         ];
 
         for (var i = 0; i < scenarios.Length; i++)

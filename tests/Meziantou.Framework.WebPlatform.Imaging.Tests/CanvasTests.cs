@@ -501,6 +501,51 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void ShapedText_ClosingControlIsAtTheStartOfTheNextCharacter()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        var shaped = context.ShapeText("A\u202EB\u202CC");
+        Assert.Equal(60, shaped.Width);
+
+        // The closing control is in the run of C, at its left edge: the runs do not overlap
+        var runs = shaped.GlyphRuns();
+        Assert.Equal(60, runs.Sum(run => run.Width));
+        var last = runs[^1];
+        Assert.Equal(3u, last.Start);
+        Assert.Equal(5u, last.End);
+        Assert.Equal(40, last.X);
+        Assert.Equal(20, last.Width);
+
+        // Selecting the closing control and C does not select B
+        var rect = Assert.Single(shaped.SelectionRects(3, 5));
+        Assert.Equal(40, rect.X);
+        Assert.Equal(20, rect.Width);
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_NegativeLetterSpacing()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.LetterSpacing = "-30px";
+        var shaped = context.ShapeText("ABC");
+
+        // Each character advances by -10px: the caret positions go from right to left
+        Assert.Equal(-10, shaped.PositionToAdvance(1));
+        Assert.Equal(-20, shaped.PositionToAdvance(2));
+        Assert.Equal(1u, shaped.AdvanceToPosition(-10));
+        Assert.Equal(2u, shaped.AdvanceToPosition(-19));
+        Assert.Equal(0u, shaped.AdvanceToPosition(-4));
+        Assert.Equal(0u, shaped.AdvanceToPosition(5));
+        Assert.Equal(3u, shaped.AdvanceToPosition(-100));
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
     public void ShapedText_LigatureCarets()
     {
 #pragma warning disable WEBPLATEXP0025

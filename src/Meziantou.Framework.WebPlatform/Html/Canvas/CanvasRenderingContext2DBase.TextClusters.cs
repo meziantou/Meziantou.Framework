@@ -365,11 +365,11 @@ public sealed class CanvasShapedText
     [IdlMember("glyphRuns", Href)]
     public IReadOnlyList<CanvasGlyphRun> GlyphRuns()
     {
-        // The clusters grouped by the bidi run of their fragment (see CanvasTextLayout.GetFragmentRun), then by font
+        // The clusters grouped by the bidi run of their fragment (see CanvasTextLayout.GetFragment), then by font
         var groups = new List<(int Run, object? Font, List<int> Clusters)>();
         for (var i = 0; i < _layout.Clusters.Count; i++)
         {
-            var run = _layout.GetFragmentRun(_layout.Clusters[i]);
+            var run = _layout.GetFragment(_layout.Clusters[i]).Run;
             object? font = _layout.GetGlyphs(i) is [var first, ..] ? first.Font : null;
             var group = groups.FindLastIndex(g => g.Run == run);
             if (group >= 0 && (font is null || groups[group].Font is null || ReferenceEquals(font, groups[group].Font)) && group == groups.Count - 1)
@@ -386,7 +386,7 @@ public sealed class CanvasShapedText
             groups.Add((run, font, [i]));
         }
 
-        var result = groups.ConvertAll(group => CreateRun(group.Clusters));
+        var result = groups.ConvertAll(group => CreateRun(group.Clusters, useFragments: true));
         result.Sort((a, b) => a.Left.CompareTo(b.Left));
         return result;
     }
@@ -448,22 +448,28 @@ public sealed class CanvasShapedText
         var result = new List<CanvasGlyphRun>(clusters.Count);
         foreach (var index in clusters)
         {
-            result.Add(CreateRun([index]));
+            result.Add(CreateRun([index], useFragments: false));
         }
 
         return result;
     }
 
-    private CanvasGlyphRun CreateRun(List<int> clusters)
+    /// <summary>
+    /// Creates the glyph run of a set of clusters. A run of the fragments of the text (<paramref name="useFragments"/>) places a
+    /// cluster without advance at the start edge of the character after it, whose fragment it is in (e.g. a bidi control that
+    /// closes a run of the other direction).
+    /// </summary>
+    private CanvasGlyphRun CreateRun(List<int> clusters, bool useFragments)
     {
         var (start, end, left, right) = (int.MaxValue, 0, double.PositiveInfinity, double.NegativeInfinity);
         foreach (var index in clusters)
         {
             var cluster = _layout.Clusters[index];
+            var (_, clusterLeft, clusterRight) = useFragments ? _layout.GetFragment(cluster) : (cluster.Run, cluster.Low, cluster.High);
             start = Math.Min(start, cluster.Start);
             end = Math.Max(end, cluster.End);
-            left = Math.Min(left, cluster.Left);
-            right = Math.Max(right, cluster.Right);
+            left = Math.Min(left, clusterLeft);
+            right = Math.Max(right, clusterRight);
         }
 
         return new CanvasGlyphRun(_layout, clusters, (uint)start, (uint)end, left, right - left);

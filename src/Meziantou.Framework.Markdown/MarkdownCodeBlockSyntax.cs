@@ -159,14 +159,22 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
         }
         else if (index >= 0)
         {
-            children[index] = MarkdownNodeEditor.WithText(children[index]!, MarkdownEscaper.EscapeInfoString(info));
+            children[index] = MarkdownNodeEditor.WithText(children[index]!, EscapeInfo(info));
         }
         else
         {
-            MarkdownNodeEditor.InsertOnLineAfter(children, fence, MarkdownNodeEditor.Token(SyntaxKind.InfoStringToken, MarkdownEscaper.EscapeInfoString(info), leadingTrivia: null, trailingTrivia: null), space: false);
+            MarkdownNodeEditor.InsertOnLineAfter(children, fence, MarkdownNodeEditor.Token(SyntaxKind.InfoStringToken, EscapeInfo(info), leadingTrivia: null, trailingTrivia: null), space: false);
         }
 
         return MarkdownNodeEditor.WithChildren(this, children);
+    }
+
+    // The info string, escaped: a ~ that starts it would lengthen a fence of tildes, and a { would start generic attributes, which
+    // are written as entities
+    private static string EscapeInfo(string info)
+    {
+        var escaped = MarkdownEscaper.EscapeInfoString(info).Replace("{", "&#123;", StringComparison.Ordinal);
+        return escaped.StartsWith('~', StringComparison.Ordinal) ? string.Concat("&#126;", escaped.AsSpan(1)) : escaped;
     }
 
     public override string GetPlainText() => Code;

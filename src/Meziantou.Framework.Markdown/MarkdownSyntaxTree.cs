@@ -252,7 +252,7 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// their containers. A blank line separates this line from the paragraph before it, or from a thematic break that would make it a setext
     /// heading.
     /// </para>
-    /// <para>The text is parsed again, and checked to give the attributes to the block.</para>
+    /// <para>The text is parsed again, and checked to give the attributes to the block and to keep its text.</para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
@@ -275,6 +275,9 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
         if (block.GetGenericAttributes().Equals(attributes))
             return this;
 
+        // The text of the block, which the attributes are not part of, does not change, but the whitespace around them can, such as
+        // the line ending that attributes in a paragraph end with
+        var plainText = CollapseWhitespace(block.GetPlainText());
         var text = _text.Text;
         var removals = GetAttributesRemovals(text, block);
         foreach (var insertion in GetAttributesInsertions(text, block, markdown))
@@ -305,7 +308,7 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
             }
 
             var updated = WithText(updatedText.ToString());
-            if (updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().FirstOrDefault(node => node.SpanStart == blockStart && node.RawKind == block.RawKind) is { } updatedBlock && updatedBlock.GetGenericAttributes().Equals(attributes))
+            if (updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().FirstOrDefault(node => node.SpanStart == blockStart && node.RawKind == block.RawKind) is { } updatedBlock && updatedBlock.GetGenericAttributes().Equals(attributes) && CollapseWhitespace(updatedBlock.GetPlainText()) == plainText)
                 return updated;
         }
 
@@ -338,8 +341,19 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
                 return;
             }
 
+            // The attributes end with the line ending after them, which separates the text of the lines around them
             var start = attributes.SpanStart;
             var end = attributes.Span.End;
+            if (end > start && text[end - 1] == '\n')
+            {
+                end--;
+            }
+
+            if (end > start && text[end - 1] == '\r')
+            {
+                end--;
+            }
+
             while (start > 0 && text[start - 1] is ' ' or '\t')
             {
                 start--;
@@ -412,6 +426,24 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
                 ? (start, start, newLine + prefix + markdown + newLine + after)
                 : (lineStart, start, blank + newLine + prefix + markdown + newLine + after);
         }
+    }
+
+    private static string CollapseWhitespace(string text)
+    {
+        var builder = new StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            if (!char.IsWhiteSpace(c))
+            {
+                builder.Append(c);
+            }
+            else if (builder.Length > 0 && builder[^1] != ' ')
+            {
+                builder.Append(' ');
+            }
+        }
+
+        return builder.ToString().TrimEnd();
     }
 
     private static int GetEndOfLine(string text, int position)

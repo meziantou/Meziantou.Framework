@@ -3324,6 +3324,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("> {.c}\n> - a\n", "> - a\n")]
     [InlineData("```cs {.c}\nx\n```\n", "```cs\nx\n```\n")]
     [InlineData("text {.c}\n", "text\n")]
+    [InlineData("hello {.x}\nworld\n", "hello\nworld\n")]
+    [InlineData("hello {.x}\r\nworld\r\n", "hello\r\nworld\r\n")]
     [InlineData("# a\n", "# a\n")]
     public void WithGenericAttributesRemovesTheAttributes(string text, string expected)
     {
@@ -3500,6 +3502,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("```cs title\ncode\n```\n", "a`b", "```a&#96;b\ncode\n```\n")]
     [InlineData("> ~~~\n> x\n> ~~~\n", " py ", "> ~~~py\n> x\n> ~~~\n")]
     [InlineData("```cs\ncode\n```\n", "  ", "```\ncode\n```\n")]
+    [InlineData("~~~cs\ncode\n~~~\n\nafter\n", "~", "~~~&#126;\ncode\n~~~\n\nafter\n")]
+    [InlineData("~~~\ncode\n~~~\n\nafter\n", "~x", "~~~&#126;x\ncode\n~~~\n\nafter\n")]
     public void CodeBlockWithInfo(string text, string? info, string expected)
     {
         var root = MarkdownSyntaxTree.ParseText(text).GetRoot();
@@ -3511,6 +3515,21 @@ public sealed class MarkdownSyntaxTreeTests
         var reparsed = MarkdownSyntaxTree.ParseText(updated).GetRoot().DescendantNodes().OfType<MarkdownCodeBlockSyntax>().Single();
         Assert.Equal(string.IsNullOrWhiteSpace(info) ? null : info.Trim(), reparsed.Info);
         Assert.Equal(codeBlock.Code, reparsed.Code);
+    }
+
+    [Fact]
+    public void CodeBlockWithInfoIsNotReadAsGenericAttributes()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes };
+        var root = MarkdownSyntaxTree.ParseText("```\ncode\n```\n", options).GetRoot();
+        var codeBlock = root.Blocks.OfType<MarkdownCodeBlockSyntax>().Single();
+
+        var updated = root.ReplaceNode(codeBlock, codeBlock.WithInfo("cs {#sample}")).ToFullString();
+
+        Assert.Equal("```cs &#123;#sample}\ncode\n```\n", updated);
+        var reparsed = MarkdownSyntaxTree.ParseText(updated, options).GetRoot().Blocks.OfType<MarkdownCodeBlockSyntax>().Single();
+        Assert.Equal("cs {#sample}", reparsed.Info);
+        Assert.True(reparsed.GetGenericAttributes().IsEmpty);
     }
 
     [Fact]

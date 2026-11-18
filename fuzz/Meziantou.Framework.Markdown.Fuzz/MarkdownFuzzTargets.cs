@@ -414,7 +414,7 @@ public static class MarkdownFuzzTargets
     {
         const string Destination = "a b|(\\c<";
         const string Title = "t\"'|)\\\n2";
-        const string Info = "x`y \\& z";
+        const string Info = "~x`y {#a} \\& z";
 
         var options = tree.Options;
         var root = tree.GetRoot();

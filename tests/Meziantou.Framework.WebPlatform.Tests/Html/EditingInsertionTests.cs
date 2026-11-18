@@ -147,6 +147,23 @@ public sealed class EditingInsertionTests : IDisposable
         Assert.Equal("<div><br></div><div><table><tbody><tr><td>abc</td></tr></tbody></table></div>", host.InnerHtml);
     }
 
+    // The text inserted with a caret in an inline void element goes at the end of the text before it, after the empty
+    // inline elements and the collapsed white space; the white space that is rendered and a block void element stop it
+    [Theory]
+    [InlineData("<div>abc<span></span>[]<br></div>", "br", "<div>abcdef<span></span><br></div>")]
+    [InlineData("<div><span>abc</span>[]<img></div>", "img", "<div><span>abcdef</span><img></div>")]
+    [InlineData("<div>abc<span><i></i></span>[]<wbr></div>", "wbr", "<div>abcdef<span><i></i></span><wbr></div>")]
+    [InlineData("<div>abc<span></span> []<img></div>", "img", "<div>abc<span></span> def<img></div>")]
+    [InlineData("<div><span></span>[]<img></div>", "img", "<div><span></span>def<img></div>")]
+    [InlineData("<div><span>abc</span>[]<hr></div>", "hr", "<div><span>abc</span>def<hr></div>")]
+    public void InsertText_CaretInVoidElementAfterInlineContent(string html, string selector, string expected)
+    {
+        var (document, host) = Load(html);
+        document.GetSelection()!.Collapse(host.QuerySelector(selector), 0);
+        Assert.True(document.ExecCommand("insertText", showUI: false, "def"));
+        Assert.Equal(expected, host.InnerHtml);
+    }
+
     [Fact]
     public void InsertParagraph_CaretInVoidElement()
     {

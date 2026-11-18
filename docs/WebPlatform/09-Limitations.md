@@ -22,7 +22,9 @@ fails.
   the web APIs only (CSSOM View, the computed styles, the observers; see [Layout and geometry](05-LoadingPages/05-LayoutAndGeometry.md)).
   It does not implement:
   - the layout of the content of a page whose inline size differs from the previous page when the page starts inside a
-    line box, a flex, grid or table container or a multi-column container: it keeps the inline size of the previous page;
+    line box, a multi-column container, a table row, between the lines of a flex container that wraps, inside a row flex
+    container, or inside a grid row or a grid whose number of columns depends on its width (`auto-fill`, `auto-fit`, a
+    subgrid): it keeps the inline size of the previous page;
   - the spelling changes at a hyphenation break that replace a character at the start of the next line (the Dutch trema)
     or that need a dictionary (the triple consonants of the Swedish and Norwegian compound words);
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);

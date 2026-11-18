@@ -1,0 +1,139 @@
+using System.Globalization;
+using System.Text;
+using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.WebPlatform.Css.Layout;
+using Meziantou.Framework.WebPlatform.Dom;
+
+namespace Meziantou.Framework.WebPlatform.Fuzz;
+
+/// <summary>
+/// The target of the pages of another inline size (the content of a page whose page area has another inline size is laid out
+/// again in it, from the break): the input is decoded to the sizes of the first page and of the next ones, a container of rows
+/// (a table with or without a header, a column flex container, a grid with a fixed or an automatic number of columns, a row
+/// flex container that wraps, a block) and its rows (their block sizes, whether they avoid breaks, a paragraph). Each row is in
+/// a page, the first pages of the rows follow their order, each word of the paragraphs is laid out once, and the rectangles of
+/// the fragments are finite.
+/// </summary>
+public static partial class WebPlatformFuzzTargets
+{
+    private const int PagedInlineSizeMaxRows = 12;
+
+    /// <summary>The containers of the rows: the opening markup, the markup of a row (its id, its style and its content), the closing markup.</summary>
+    private static readonly (string Start, string Row, string End)[] PagedInlineSizeContainers =
+    [
+        ("<table style='width: 100%; border-spacing: 0'><tbody>", "<tr id={0} style='{1}'><td>{2}</td></tr>", "</tbody></table>"),
+        ("<table style='width: 100%; border-spacing: 0'><thead><tr style='height: 15px'><td></td></tr></thead><tbody>", "<tr id={0} style='{1}'><td>{2}</td></tr>", "</tbody></table>"),
+        ("<div style='display: flex; flex-direction: column'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<div style='display: grid; grid-template-columns: 1fr 1fr'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<div style='display: grid; grid-template-columns: repeat(auto-fill, 90px)'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<div style='display: flex; flex-wrap: wrap'>", "<div id={0} style='width: 90px; {1}'>{2}</div>", "</div>"),
+        ("<div>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+    ];
+
+    /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>
+    public static void PagedInlineSize(ReadOnlySpan<byte> data)
+    {
+        var position = 0;
+        byte Next(ReadOnlySpan<byte> input) => position < input.Length ? input[position++] : (byte)0;
+
+        // (the sizes of the pages are multiples of 5px, from 25px to 520px)
+        var firstWidth = ((Next(data) % 100) + 5) * 5;
+        var width = ((Next(data) % 100) + 5) * 5;
+        var height = ((Next(data) % 100) + 5) * 5;
+        var (start, row, end) = PagedInlineSizeContainers[Next(data) % PagedInlineSizeContainers.Length];
+        var rowCount = (Next(data) % PagedInlineSizeMaxRows) + 1;
+        var markup = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"<!DOCTYPE html><style>body {{ margin: 0; font: 10px/1 Ahem }} @page {{ size: {width}px {height}px; margin: 0 }} @page :first {{ size: {firstWidth}px {height}px }}</style>"));
+        markup.Append(start);
+        var words = 0;
+        for (var i = 0; i < rowCount; i++)
+        {
+            var flags = Next(data);
+            var style = string.Create(CultureInfo.InvariantCulture, $"height: {Next(data) % 200}px{((flags & 1) != 0 ? "; break-inside: avoid" : "")}");
+            var wordCount = (flags & 2) != 0 ? Next(data) % 40 : 0;
+            if (wordCount > 0)
+            {
+                // (the row grows with its paragraph)
+                style = (flags & 1) != 0 ? "break-inside: avoid" : "";
+            }
+
+            words += wordCount;
+            var content = string.Join(' ', Enumerable.Repeat("XXXX", wordCount));
+            markup.Append(string.Format(CultureInfo.InvariantCulture, row, "r" + i.ToString(CultureInfo.InvariantCulture), style, content));
+        }
+
+        markup.Append(end);
+
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => markup.ToString());
+        context.EventLoop.RunUntilIdle();
+        using var session = document.BeginPrint(new PrintOptions { PageWidth = width, PageHeight = height });
+        var pages = session.GetPages();
+        FuzzAssert.True(pages.Count > 0, "the document has a page");
+
+        // The first page of each row, and the words of the text fragments
+        var firstPages = new int?[rowCount];
+        var laidOutWords = 0;
+        foreach (var page in pages)
+        {
+            Visit(page.Content, page.Index);
+        }
+
+        var previous = 0;
+        for (var i = 0; i < rowCount; i++)
+        {
+            FuzzAssert.True(firstPages[i] is not null, string.Create(CultureInfo.InvariantCulture, $"the row {i} is in a page: {markup}"));
+            FuzzAssert.True(firstPages[i] >= previous, string.Create(CultureInfo.InvariantCulture, $"the row {i} starts in a page after the one of the previous row: {markup}"));
+            previous = firstPages[i]!.Value;
+        }
+
+        FuzzAssert.Equal(words, laidOutWords, $"the number of words laid out in the pages: {markup}");
+
+        void Visit(Fragment fragment, int index)
+        {
+            FuzzAssert.True(double.IsFinite(fragment.Offset.X) && double.IsFinite(fragment.Offset.Y) && double.IsFinite(fragment.Size.Width) && double.IsFinite(fragment.Size.Height), "the rectangle of a fragment is finite");
+            if (fragment is BoxFragment { Box: { Element: { } element, PseudoElement: null } } && element.Id is ['r', .. var number] && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var rowIndex) && rowIndex < rowCount)
+            {
+                firstPages[rowIndex] ??= index;
+            }
+
+            if (fragment is TextFragment text)
+            {
+                laidOutWords += text.Run.Data[text.Start..text.End].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            }
+
+            foreach (var child in fragment.ChildrenSpan)
+            {
+                Visit(child, index);
+            }
+        }
+    }
+
+    /// <summary>The seeds: the scenarios of the unit tests (rows of 100px on a first page of 200x300 then pages of 400x300, a paragraph in a column flex container, an automatic grid).</summary>
+    private static IEnumerable<FuzzSeed> GetPagedInlineSizeSeeds()
+    {
+        byte[][] scenarios =
+        [
+            // Tables, a column flex container, a grid: 5 rows of 100px
+            [35, 75, 55, 0, 4, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+            [35, 75, 55, 1, 3, 1, 100, 1, 100, 1, 100, 1, 100],
+            [35, 75, 55, 2, 4, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+            [35, 75, 55, 3, 9, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+
+            // A paragraph broken in a column flex container, in a block
+            [35, 75, 55, 2, 1, 0, 100, 2, 0, 39],
+            [35, 75, 55, 6, 0, 2, 0, 39],
+
+            // The containers whose rows depend on their inline size keep their layout
+            [35, 75, 55, 4, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+            [35, 75, 55, 5, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+        ];
+
+        for (var i = 0; i < scenarios.Length; i++)
+        {
+            yield return new FuzzSeed("paged-inline-size-" + i.ToString(CultureInfo.InvariantCulture), scenarios[i]);
+        }
+    }
+
+    /// <summary>The tokens of the target: a row of 100px, a row that avoids breaks, a row with a paragraph.</summary>
+    private static string[] PagedInlineSizeTokens => ["\u0000d", "\u0001d", "\u0002\u0000'"];
+}

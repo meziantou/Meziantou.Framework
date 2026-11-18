@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.Extensions.Time.Testing;
@@ -356,6 +357,141 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([(0, new PhysicalRect(0, 0, 200, 10))], GetPageRects(pages, document.GetElementById("a")!));
         Assert.Equal([(1, new PhysicalRect(0, 0, 250, 10))], GetPageRects(pages, document.GetElementById("b")!));
         Assert.Equal([(2, new PhysicalRect(0, 0, 400, 10))], GetPageRects(pages, document.GetElementById("c")!));
+    }
+
+    [Theory]
+    [InlineData("<table id=c style='width: 100%; border-spacing: 0'><tr id=r0 style='height: 100px'><td></td></tr><tr id=r1 style='height: 100px'><td></td></tr><tr id=r2 style='height: 100px'><td></td></tr><tr id=r3 style='height: 100px'><td></td></tr><tr id=r4 style='height: 100px'><td></td></tr></table>")]
+    [InlineData("<div id=c style='display: flex; flex-direction: column'><div id=r0 style='height: 100px'></div><div id=r1 style='height: 100px'></div><div id=r2 style='height: 100px'></div><div id=r3 style='height: 100px'></div><div id=r4 style='height: 100px'></div></div>")]
+    [InlineData("<div id=c style='display: grid; grid-auto-rows: 100px'><div id=r0></div><div id=r1></div><div id=r2></div><div id=r3></div><div id=r4></div></div>")]
+    public void Pages_ContainerContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string html)
+    {
+        // The first page is 200px wide, the next ones 400px wide: the rows (table rows, flex items, grid items) after the break
+        // are laid out again in the page area of the second page, and none is repeated or skipped
+        var document = Parse($"<style>@page {{ size: 400px 300px; margin: 0 }} @page :first {{ size: 200px 300px }}</style>{html}");
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Equal([(0, new PhysicalRect(0, i * 100, 200, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        for (var i = 3; i < 5; i++)
+        {
+            Assert.Equal([(1, new PhysicalRect(0, (i - 3) * 100, 400, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+    }
+
+    [Fact]
+    public void Pages_TableWithRepeatedHeaderContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
+    {
+        // The header is repeated on the second page, in the table laid out again in its page area (the rows are not broken: the
+        // break is between two rows)
+        var document = Parse("""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } tr { break-inside: avoid }</style>
+            <table style='width: 100%; border-spacing: 0'>
+              <thead><tr id=h style='height: 20px'><td></td></tr></thead>
+              <tbody><tr id=r0 style='height: 100px'><td></td></tr><tr id=r1 style='height: 100px'><td></td></tr><tr id=r2 style='height: 100px'><td></td></tr><tr id=r3 style='height: 100px'><td></td></tr></tbody>
+            </table>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 0, 200, 20)), (1, new PhysicalRect(0, 0, 400, 20))], GetPageRects(pages, document.GetElementById("h")!));
+        Assert.Equal([(0, new PhysicalRect(0, 120, 200, 100))], GetPageRects(pages, document.GetElementById("r1")!));
+        Assert.Equal([(1, new PhysicalRect(0, 20, 400, 100))], GetPageRects(pages, document.GetElementById("r2")!));
+        Assert.Equal([(1, new PhysicalRect(0, 120, 400, 100))], GetPageRects(pages, document.GetElementById("r3")!));
+    }
+
+    [Fact]
+    public void Pages_TableWithOversizedHeaderContinuedOnAPageOfAnotherInlineSizeDoesNotRepeatIt()
+    {
+        // The header avoids breaks (it can be repeated) but is taller than a quarter of the page where the table starts: it is not
+        // repeated, also in the pages laid out again in another inline size
+        var document = Parse("""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } tr { break-inside: avoid }</style>
+            <table style='width: 100%; border-spacing: 0'>
+              <thead style='break-inside: avoid'><tr id=h style='height: 100px'><td></td></tr></thead>
+              <tbody><tr id=r0 style='height: 100px'><td></td></tr><tr id=r1 style='height: 100px'><td></td></tr><tr id=r2 style='height: 100px'><td></td></tr><tr id=r3 style='height: 100px'><td></td></tr><tr id=r4 style='height: 100px'><td></td></tr><tr id=r5 style='height: 100px'><td></td></tr><tr id=r6 style='height: 100px'><td></td></tr><tr id=r7 style='height: 100px'><td></td></tr></tbody>
+            </table>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(3, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 0, 200, 100))], GetPageRects(pages, document.GetElementById("h")!));
+        Assert.Equal([(0, new PhysicalRect(0, 200, 200, 100))], GetPageRects(pages, document.GetElementById("r1")!));
+        Assert.Equal([(1, new PhysicalRect(0, 0, 400, 100))], GetPageRects(pages, document.GetElementById("r2")!));
+        Assert.Equal([(1, new PhysicalRect(0, 200, 400, 100))], GetPageRects(pages, document.GetElementById("r4")!));
+        Assert.Equal([(2, new PhysicalRect(0, 0, 400, 100))], GetPageRects(pages, document.GetElementById("r5")!));
+        Assert.Equal([(2, new PhysicalRect(0, 200, 400, 100))], GetPageRects(pages, document.GetElementById("r7")!));
+    }
+
+    [Fact]
+    public void Pages_FlexItemContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
+    {
+        // The break is inside the only item of a column flex container: its line boxes after the break are laid out again in
+        // the page area of the second page (2 words of 90px per line on the first page, 4 on the second one), without repeating
+        // or skipping a word
+        var words = string.Join(' ', Enumerable.Repeat("XXXXXXXXX", 100));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='display: flex; flex-direction: column'><div id=before style='height: 100px'></div><p id=p style='margin: 0'>{{words}}</p></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 100, 200, 200)), (1, new PhysicalRect(0, 0, 400, 150))], GetPageRects(pages, document.GetElementById("p")!));
+
+        Assert.Equal(40, CountWords(pages[0].Content));
+        Assert.Equal(60, CountWords(pages[1].Content));
+    }
+
+    [Theory]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr'><div style='break-inside: avoid'>{0}</div><div>{1}</div><div>{2}</div><div style='height: 42px'></div></div>", 36, 3, 37)] // the first item continues after the end of its row
+    [InlineData("<div style='display: flex; flex-direction: column'><div>{0}</div><div>{1}</div><div style='break-inside: avoid'>{2}</div></div>", 19, 34, 7)] // the break of the second item is before the break of the page
+    [InlineData("<table style='width: 100%; border-spacing: 0'><thead><tr style='height: 15px'><td></td></tr></thead><tbody><tr><td>{0}</td></tr><tr style='height: 56px'><td></td></tr><tr><td>{1}</td></tr><tr style='height: 171px'><td></td></tr><tr><td>{2}</td></tr></tbody></table>", 20, 26, 5)] // the cell of the third row continues after the end of its row
+    public void Pages_RowsContinuedAfterTheBreakAreNotLaidOutAgain(string format, int words0, int words1, int words2)
+    {
+        // The content of a row continues in the page after the break (a parallel flow breaks apart from the flow of its
+        // container): the page is laid out in the inline size of the strip, until a page that starts with the content after the
+        // break. No word is lost or repeated.
+        var html = string.Format(CultureInfo.InvariantCulture, format, Words(words0), Words(words1), Words(words2));
+        var document = Parse($"<style>@page {{ size: 400px 75px; margin: 0 }} @page :first {{ size: 115px 75px }}</style>{html}");
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(words0 + words1 + words2, pages.Sum(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    /// <summary>Returns the number of words of the text fragments of a fragment and of its descendants.</summary>
+    private static int CountWords(Fragment fragment)
+    {
+        var count = fragment is TextFragment text ? text.Run.Data[text.Start..text.End].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length : 0;
+        foreach (var child in fragment.ChildrenSpan)
+        {
+            count += CountWords(child);
+        }
+
+        return count;
+    }
+
+    [Fact]
+    public void Pages_GridWhoseColumnsDependOnItsInlineSizeKeepsItsLayout()
+    {
+        // The number of columns of the grid depends on its inline size: its items would not be in the same rows in the page area
+        // of the second page, so the grid keeps the layout of the first page
+        var items = string.Concat(Enumerable.Range(0, 8).Select(i => $"<div id=i{i}></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='display: grid; grid-template-columns: repeat(auto-fill, 100px); grid-auto-rows: 100px'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(100, 200, 100, 100))], GetPageRects(pages, document.GetElementById("i5")!));
+        Assert.Equal([(1, new PhysicalRect(0, 0, 100, 100))], GetPageRects(pages, document.GetElementById("i6")!));
+        Assert.Equal([(1, new PhysicalRect(100, 0, 100, 100))], GetPageRects(pages, document.GetElementById("i7")!));
     }
 
     [Fact]

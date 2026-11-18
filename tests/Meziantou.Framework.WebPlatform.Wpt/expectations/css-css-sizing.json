@@ -1580,13 +1580,13 @@
     "reftest": "PASS"
   },
   "css/css-sizing/fit-content-length-percentage-box-sizing-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/fit-content-length-percentage-contribution-margins-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/fit-content-length-percentage-margins-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/fit-content-max-inline-size.tentative.html": {
     "reftest": "PASS"

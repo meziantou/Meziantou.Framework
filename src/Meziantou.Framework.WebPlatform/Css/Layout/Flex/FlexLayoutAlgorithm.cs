@@ -537,6 +537,7 @@ internal sealed partial class FlexLayoutAlgorithm
             PaddingAndBorder = paddingAndBorder,
             Edges = paddingAndBorder + (main ? item.MainGutters : item.CrossGutters),
             StretchSize = basis is { } size ? Math.Max((main ? size : GetAvailableCrossSize(size)) - margins, paddingAndBorder) : null,
+            Margins = margins,
         };
     }
 

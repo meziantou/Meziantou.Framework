@@ -1218,7 +1218,7 @@
     "total": 4
   },
   "css/css-flexbox/flex-basis-fit-content-function-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/flex-basis-intrinsics-001.html": {
     "total": 12

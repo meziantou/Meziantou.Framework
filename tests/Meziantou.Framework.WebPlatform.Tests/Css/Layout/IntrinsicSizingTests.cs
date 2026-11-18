@@ -62,7 +62,10 @@ public sealed class IntrinsicSizingTests : IDisposable
     [InlineData("width: min-content", 70)]
     [InlineData("width: max-content", 150)]
     [InlineData("width: fit-content", 150)]
-    [InlineData("width: fit-content(100px)", 110)]
+    [InlineData("width: fit-content(100px)", 100)]
+    [InlineData("width: fit-content(100px); margin-right: 10px", 90)]
+    [InlineData("width: fit-content(100px); margin-right: auto", 100)]
+    [InlineData("width: fit-content(100px); box-sizing: border-box", 100)]
     [InlineData("width: fit-content(10px)", 70)]
     [InlineData("width: min-content; padding: 0 5px; border: 2px solid", 74)]
     [InlineData("width: min-content; box-sizing: border-box; padding: 0 5px", 70)]
@@ -76,8 +79,8 @@ public sealed class IntrinsicSizingTests : IDisposable
     [InlineData("width: calc-size(any, 50% + 5px)", 415)]
     public void InlineSizeKeywords_BlockLevel(string style, double width)
     {
-        // "XXX XXX" in the 20px Ahem font: min-content 60px, max-content 140px, plus the 10px of paddings (the keywords are not
-        // affected by box-sizing, fit-content() and calc-size() are)
+        // "XXX XXX" in the 20px Ahem font: min-content 60px, max-content 140px, plus the 10px of paddings (the keywords and
+        // fit-content(), whose argument is the size of the margin box, are not affected by box-sizing, calc-size() is)
         var document = Parse($"<div id=t style='font-size: 20px; padding: 0 5px; box-sizing: content-box; {style}'>XXX XXX</div>");
         Assert.Equal(width, GetSize(document, "t").Width);
     }
@@ -103,6 +106,7 @@ public sealed class IntrinsicSizingTests : IDisposable
     [InlineData("min-width: calc(100px + 50%); width: 0", 110)] // The cyclic percentage of a minimum size resolves against zero
     [InlineData("min-width: 50%; width: 0", 10)]
     [InlineData("min-width: fit-content(50%); width: 0", 70)] // fit-content(0): the min-content size
+    [InlineData("width: fit-content(100px); margin-right: 10px", 110)] // The argument is the size of the margin box
     [InlineData("max-width: fit-content(50%); width: 500px", 150)] // The maximum behaves as none: the max-content size
     public void Contributions_OfKeywordSizedChild(string style, double width)
     {

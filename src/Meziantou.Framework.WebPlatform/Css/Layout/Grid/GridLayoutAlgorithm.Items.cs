@@ -125,6 +125,7 @@ internal sealed partial class GridLayoutAlgorithm
             PaddingAndBorder = axisPaddingAndBorder,
             Edges = axisPaddingAndBorder + (isInlineAxis ? gutters.InlineSum() : gutters.BlockSum()),
             StretchSize = areaSize is { } area ? Math.Max(area - axisMargins, axisPaddingAndBorder) : null,
+            Margins = axisMargins,
             ContentBlockSize = contentBlockSize,
         };
     }

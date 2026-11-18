@@ -751,7 +751,9 @@ browsers ship): the intrinsic sizes of the boxes, their contributions, and the r
   `Resolve(size, SizingProperty)` returns the border-box size or null when the value behaves as `auto`/`0`/`none`, and
   `Clamp(size, transferredMin, transferredMax)` applies the min/max sizes (the maximum first). In the inline axis,
   `min-content`/`max-content` are the intrinsic sizes plus the edges, `fit-content` is `min(max-content, max(min-content,
-  stretch))`, `fit-content(<length-percentage>)` the same formula with the argument; they are not affected by `box-sizing`.
+  stretch))`, `fit-content(<length-percentage>)` the same formula with `stretch(<argument>)` as the available space (the
+  margin box fits the argument: the margins, `auto` as zero, are subtracted from it); they are not affected by
+  `box-sizing`.
   In the block axis, the intrinsic keywords are the automatic (content-based) block size (`AxisSizing.ContentSize`): a
   preferred size behaves as `auto`, and the minimum and maximum sizes are applied again once the contents are laid out (the
   replaced elements know it before: their natural block size, or the size transferred from the used inline size).

@@ -2059,9 +2059,6 @@
   "css/css-backgrounds/border-radius-clip-001.html": {
     "reftest": "PASS"
   },
-  "css/css-backgrounds/border-radius-clip-002.htm": {
-    "reftest": "FAIL"
-  },
   "css/css-backgrounds/border-radius-clipping-002.html": {
     "reftest": "PASS"
   },

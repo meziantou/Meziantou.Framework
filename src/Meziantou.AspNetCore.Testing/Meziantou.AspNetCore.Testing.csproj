@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <IsTrimmable>false</IsTrimmable>
     <!-- Microsoft.JSInterop does not pass trim analysis (IL2065/IL2111) -->
     <SkipTrimmableValidation>true</SkipTrimmableValidation>

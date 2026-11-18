@@ -111,6 +111,7 @@ public sealed class EditingCommandsTests : IDisposable
     [InlineData("[foo]<blockquote>bar</blockquote>", "formatBlock", "<blockquote>", "<blockquote>foo</blockquote><blockquote>bar</blockquote>")]
     [InlineData("<p>[foo]</p><p>bar</p>", "indent", "", "<blockquote><p>foo</p></blockquote><p>bar</p>")]
     [InlineData("<blockquote><p>[foo]</p></blockquote>", "outdent", "", "<p>foo</p>")]
+    [InlineData("<blockquote><ol><li>foo<div><ol><li>[bar]</li></ol></div></li><li>baz</li></ol></blockquote>", "outdent", "", "<blockquote><ol><li>foo</li><li>bar</li><li>baz</li></ol></blockquote>")]
     [InlineData("<p>[foo]</p>", "insertOrderedList", "", "<ol><li>foo</li></ol>")]
     [InlineData("<ol><li>[foo]</li></ol>", "insertOrderedList", "", "<div>foo</div>")]
     [InlineData("<ol><li>[foo]</li></ol>", "insertUnorderedList", "", "<ul><li>foo</li></ul>")]

@@ -3968,11 +3968,7 @@
     "total": 1000
   },
   "editing/run/outdent.html?2001-last": {
-    "total": 550,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"outdent\",\"\"]] \"<blockquote><ol><li>foo<div><ol><li>[bar]</ol></div><li>baz</ol></blockquote>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"outdent\",\"\"]] \"<blockquote><ol><li>foo<div><ol><li>[bar]</ol></div><li>baz</ol></blockquote>\" compare innerHTML": "FAIL"
-    }
+    "total": 550
   },
   "editing/run/removeformat.html": {
     "total": 1832,

@@ -112,6 +112,26 @@ public sealed class SpeculationRulesTests : IDisposable
     }
 
     [Fact]
+    public async Task DocumentRule_SelectorsAreScopedToTheDocument_AndLoneSurrogatesAreReplaced()
+    {
+        _loader.Resources["https://example.com/a.html"] = new DocumentResource("a");
+        _loader.Resources["https://example.com/b%EF%BF%BD.html"] = new DocumentResource("b");
+        Load("""
+            <script type="speculationrules">
+            { "prefetch": [{ "source": "document", "eagerness": "immediate", "where": { "selector_matches": ":scope .a" } },
+                           { "source": "document", "eagerness": "immediate", "where": { "href_matches": "/b\uDEAD.html" } }] }
+            </script>
+            <a href="a.html" class="a">a</a>
+            <a href="b&#xFFFD;.html">b</a>
+            """);
+        await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
+
+        Assert.Single(RequestsOf("https://example.com/a.html"));
+        Assert.Single(RequestsOf("https://example.com/b%EF%BF%BD.html"));
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public async Task InvalidRules_AreIgnored_AndInvalidJsonIsReported()
     {
         _loader.Resources["https://example.com/ok.html"] = new DocumentResource("ok");

@@ -76,10 +76,7 @@
     "total": 1
   },
   "speculation-rules/prefetch/document-rules-scope.tentative.https.html?include=documentScopeDescendant": {
-    "total": 1,
-    "failures": {
-      "test :scope descendant selector for links in the document": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/document-rules-scope.tentative.https.html?include=shadowRootScope": {
     "total": 1
@@ -108,16 +105,10 @@
     "total": 1
   },
   "speculation-rules/prefetch/document-rules.https.html?include=hrefMatchesLoneSurrogateObject": {
-    "total": 1,
-    "failures": {
-      "href_matches replaces a lone surrogate in the object form": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/document-rules.https.html?include=hrefMatchesLoneSurrogateString": {
-    "total": 1,
-    "failures": {
-      "href_matches replaces a lone surrogate in the string form": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/document-rules.https.html?include=immediateMutation": {
     "total": 1
@@ -126,10 +117,7 @@
     "total": 1
   },
   "speculation-rules/prefetch/document-rules.https.html?include=invalidRuleWithLoneSurrogate": {
-    "total": 1,
-    "failures": {
-      "a lone surrogate in an invalid rule does not invalidate the ruleset": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/document-rules.https.html?include=linkHrefChanged": {
     "total": 1

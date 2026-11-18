@@ -224,6 +224,11 @@ public sealed class InlineFormattingContextTests : IDisposable
     [InlineData("hu", "&#xD6;s&shy;szeg", "\U000000D6s\U000000AD-|szeg", 20)] // the long double consonants of Hungarian: Ösz-szeg
     [InlineData("zh-Latn-pinyin", "t&#xFA;&shy;&#x2019;&#xE0;n", "t\U000000FA\U000000AD-|\U000000E0n", 10)] // the apostrophe between the syllables of Pinyin
     [InlineData("en", "cafee&shy;tje", "cafee\U000000AD-|tje", 10)]
+    [InlineData("ca", "col&#xB7;&shy;lecci&#xF3;", "col-|lecci\U000000F3", 10)] // the geminate l of Catalan: col-lecció (the hyphen replaces the middle dot)
+    [InlineData("ca", "co&#x140;&shy;lecci&#xF3;", "co-|lecci\U000000F3", 20)] // the precomposed l with middle dot: col-lecció
+    [InlineData("de-1901", "Zuc&shy;ker", "Zu-|ker", 20)] // the ck of the 1901 German orthography: Zuk-ker
+    [InlineData("de-CH-1901", "Zuc&shy;ker", "Zu-|ker", 20)]
+    [InlineData("de", "Zuc&shy;ker", "Zuc\U000000AD-|ker", 10)]
     public void HyphensManual_SpellingChanges(string language, string text, string expected, double hyphenWidth)
     {
         // https://drafts.csswg.org/css-text-4/#valdef-hyphens-manual: "should apply any appropriate spelling changes just as for
@@ -237,9 +242,36 @@ public sealed class InlineFormattingContextTests : IDisposable
     [InlineData("zh-Latn-pinyin", "manual", "ab-|-cd")] // the hyphen between two syllables of Pinyin starts the next line too
     [InlineData("zh-Latn-pinyin", "none", "ab-|cd")]
     [InlineData("en", "manual", "ab-|cd")]
-    public void Hyphens_PinyinRepeatsTheHyphen(string language, string hyphens, string expected)
+    [InlineData("en", "auto", "ab-|cd")]
+    [InlineData("pl", "auto", "ab-|-cd")] // the languages that repeat the hyphen of a compound word at the start of the next line
+    [InlineData("pt-BR", "auto", "ab-|-cd")]
+    [InlineData("cs", "auto", "ab-|-cd")]
+    [InlineData("es", "auto", "ab-|-cd")]
+    [InlineData("pl", "manual", "ab-|cd")] // (only with hyphens: auto or a soft hyphen before the hyphen, as the browsers break by default)
+    [InlineData("pl", "none", "ab-|cd")]
+    public void Hyphens_RepeatsTheHyphen(string language, string hyphens, string expected)
     {
         var document = Parse($"<div id=d lang={language} style='width: 30px; hyphens: {hyphens}'>ab-cd</div>");
+        Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+    }
+
+    [Theory]
+    [InlineData("pl", "manual", "ab\U000000AD-|-cd")]
+    [InlineData("pl", "none", "ab\U000000AD-|cd")]
+    [InlineData("en", "manual", "ab\U000000AD-|cd")]
+    public void Hyphens_RepeatsTheHyphenAfterSoftHyphen(string language, string hyphens, string expected)
+    {
+        var document = Parse($"<div id=d lang={language} style='width: 30px; hyphens: {hyphens}'>ab&shy;-cd</div>");
+        Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+    }
+
+    [Theory]
+    [InlineData("ca", "auto", "col-|lecci\U000000F3")]
+    [InlineData("ca", "manual", "col\U000000B7lecci\U000000F3")]
+    [InlineData("en", "auto", "col\U000000B7lecci\U000000F3")]
+    public void Hyphens_CatalanGeminateL(string language, string hyphens, string expected)
+    {
+        var document = Parse($"<div id=d lang={language} style='width: 10px; hyphens: {hyphens}'>col&#xB7;lecci&#xF3;</div>");
         Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
     }
 

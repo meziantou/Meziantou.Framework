@@ -23,8 +23,8 @@ fails.
   It does not implement:
   - the layout of the content of a page whose inline size differs from the previous page when the page starts inside a
     line box, a flex, grid or table container or a multi-column container: it keeps the inline size of the previous page;
-  - the repetition of a hyphen at the start of the next line;
-  - the spelling changes at a hyphenation break, except in Dutch, Hungarian and Pinyin;
+  - the spelling changes at a hyphenation break that replace a character at the start of the next line (the Dutch trema)
+    or that need a dictionary (the triple consonants of the Swedish and Norwegian compound words);
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);
   - the scrolling of a `::scroll-marker-group` that is a scroll container;
   - the values of `shape-inside` of CSS Shapes 2 (`display`, `outside-shape`, an image, a shape box): only the shapes of

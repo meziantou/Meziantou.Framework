@@ -78,6 +78,16 @@ The text is measured with the fonts bundled with the library (Tinos for `serif`,
 when you allow it, the fonts installed on the machine: see [Fonts](../07-Rendering/06-Fonts.md). The positions of the
 text are the same on every machine with the bundled fonts.
 
+The hyphenation (`hyphens`) follows the typographic conventions of the content language (the `lang` attribute), which the
+browsers do not apply:
+
+- The spelling changes at a hyphenation break: Dutch (`cafeetje` is `café-` `tje`), Hungarian (`Összeg` is `Ösz-` `szeg`),
+  Pinyin (`tú’àn` is `tú-` `àn`), Catalan (`col·lecció` is `col-` `lecció`), and the 1901 German orthography (`Zucker` is
+  `Zuk-` `ker`).
+- The hyphen of a compound word broken at its hyphen is repeated at the start of the next line in Pinyin and, with
+  `hyphens: auto` or a soft hyphen before the hyphen, in Bosnian, Croatian, Czech, Polish, Portuguese, Serbian, Slovak,
+  Slovenian, Sorbian and Spanish (`biało-czerwony` is `biało-` `-czerwony`).
+
 ## SVG text in shapes
 
 An SVG `text` element is laid out on one line, unless it is auto-wrapped: with `inline-size`, its lines are broken in a

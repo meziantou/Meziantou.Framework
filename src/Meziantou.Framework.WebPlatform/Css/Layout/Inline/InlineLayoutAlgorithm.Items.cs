@@ -1314,8 +1314,8 @@ internal sealed partial class InlineLayoutAlgorithm
             AddAutomaticHyphenationOpportunities(opportunities);
         }
 
-        // The syllables of Pinyin (see AddPinyinOpportunities)
-        AddPinyinOpportunities(opportunities);
+        // The hyphenation opportunities of the typographic conventions of the languages (see AddLanguageHyphenationOpportunities)
+        AddLanguageHyphenationOpportunities(opportunities);
 
         if (_hasNoWrap)
         {

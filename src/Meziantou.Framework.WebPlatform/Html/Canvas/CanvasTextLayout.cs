@@ -383,17 +383,24 @@ internal sealed record CanvasTextLayout(
     /// <summary>
     /// Returns the distance of the caret position before a UTF-16 index from the left of the text: the start edge of the
     /// cluster of the character at the index (its left edge in a left-to-right run, its right edge in a right-to-left run), the
-    /// caret position inside a ligature, or the end edge of the last cluster for the end of the text.
+    /// caret position inside a ligature, the start edge of the next cluster for a character that has no cluster (a null
+    /// character, which the text preparation removes), or the end edge of the last cluster for the end of the text.
     /// </summary>
     public double GetCaretX(int position)
     {
         CanvasTextCluster? containing = null;
+        CanvasTextCluster? next = null;
         CanvasTextCluster? lastLogical = null;
         foreach (var cluster in Clusters)
         {
             if (cluster.Start <= position && position < cluster.End && (containing is null || cluster.Start > containing.Value.Start))
             {
                 containing = cluster;
+            }
+
+            if (cluster.Start > position && (next is null || cluster.Start < next.Value.Start))
+            {
+                next = cluster;
             }
 
             if (lastLogical is null || cluster.End > lastLogical.Value.End)
@@ -404,6 +411,9 @@ internal sealed record CanvasTextLayout(
 
         if (containing is { } value)
             return GetCaretX(value, position, snapToEnd: false);
+
+        if (next is { } following)
+            return following.StartEdge;
 
         if (lastLogical is { } end)
             return end.EndEdge;

@@ -542,6 +542,29 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal(0u, shaped.AdvanceToPosition(-4));
         Assert.Equal(0u, shaped.AdvanceToPosition(5));
         Assert.Equal(3u, shaped.AdvanceToPosition(-100));
+
+        // A cluster expanded into several glyphs (the synthesized small capitals of a sharp s) starts at its pen position
+        context.Font = "small-caps 20px Ahem";
+        var expanded = context.ShapeText("x\u00DF");
+        Assert.Equal(0, expanded.PositionToAdvance(0));
+        Assert.Equal(expanded.Width, expanded.PositionToAdvance(2));
+        Assert.True(expanded.PositionToAdvance(1) > expanded.PositionToAdvance(2));
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_NullCharactersHaveTheCaretOfTheNextCharacter()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        var shaped = context.ShapeText("\0AB\0C");
+        Assert.Equal(60, shaped.Width);
+        Assert.Equal(0, shaped.PositionToAdvance(0));
+        Assert.Equal(20, shaped.PositionToAdvance(2));
+        Assert.Equal(40, shaped.PositionToAdvance(4));
+        Assert.Equal(60, shaped.PositionToAdvance(5));
+        Assert.Equal(0, Assert.Single(shaped.SelectionRects(0, 0)).X);
 #pragma warning restore WEBPLATEXP0025
     }
 

@@ -556,6 +556,10 @@ public abstract partial class CanvasRenderingContext2DBase
                     unitOfCharacter.AsSpan(units[i], units[i + 1] - units[i]).Fill(firstCluster + i);
                 }
 
+                // The pen position at the start of each cluster: its start edge, whatever the sign of the advances of its glyphs
+                // (a negative spacing gives a cluster expanded into several glyphs, e.g. a synthesized small capital, a negative width)
+                var clusterPens = new double[clusters.Count - firstCluster];
+                clusterPens.AsSpan().Fill(double.NaN);
                 var pens = shaped.Glyphs;
                 var pen = 0d;
                 foreach (var fontRun in shaped.Runs)
@@ -564,13 +568,20 @@ public abstract partial class CanvasRenderingContext2DBase
                     {
                         var glyph = pens[i];
                         var glyphX = run.IsRightToLeft ? x + shaped.Width - pen - glyph.Advance : x + pen;
-                        pen += glyph.Advance;
                         var clusterIndex = unitOfCharacter[Math.Clamp(glyph.Cluster, 0, runText.Length - 1)];
+                        ref var clusterPen = ref clusterPens[clusterIndex - firstCluster];
+                        if (double.IsNaN(clusterPen))
+                        {
+                            clusterPen = pen;
+                        }
+
+                        pen += glyph.Advance;
                         var cluster = clusters[clusterIndex];
+                        var width = cluster.Width + glyph.Advance;
                         clusters[clusterIndex] = cluster with
                         {
-                            Left = double.IsNaN(cluster.Left) ? glyphX : Math.Min(cluster.Left, glyphX),
-                            Width = cluster.Width + glyph.Advance,
+                            Left = run.IsRightToLeft ? x + shaped.Width - clusterPen - width : x + clusterPen,
+                            Width = width,
                         };
 
                         if (!glyph.IsInvisible)

@@ -846,9 +846,9 @@ public partial class Element : Node
         }
 
         _id = newId;
-        if (IsConnected && NodeDocument.HasFormAttributeCustomElements)
+        if (IsConnected && NodeDocument.HasFormAttributeElements)
         {
-            NodeDocument.OnIdChangedForFormAttributeCustomElements();
+            NodeDocument.OnIdChangedForFormAttributeElements();
         }
     }
 

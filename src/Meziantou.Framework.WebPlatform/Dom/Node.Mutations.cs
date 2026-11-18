@@ -375,13 +375,13 @@ public abstract partial class Node
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#reset-the-form-owner: an element with an ID is
-    /// inserted into the document, which may change the form owner of the custom elements with a form attribute.
+    /// inserted into the document, which may change the form owner of the elements with a form attribute.
     /// </summary>
     private void ConnectedIdSteps()
     {
-        if (this is Element { IdValue: not null } && NodeDocument.HasFormAttributeCustomElements)
+        if (this is Element { IdValue: not null } && NodeDocument.HasFormAttributeElements)
         {
-            NodeDocument.OnIdChangedForFormAttributeCustomElements();
+            NodeDocument.OnIdChangedForFormAttributeElements();
         }
     }
 
@@ -815,9 +815,9 @@ public abstract partial class Node
         }
 
         // https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#reset-the-form-owner: an element with an ID is removed from the document
-        if (isParentConnected && document.HasFormAttributeCustomElements && ContainsElementWithId(node))
+        if (isParentConnected && document.HasFormAttributeElements && ContainsElementWithId(node))
         {
-            document.OnIdChangedForFormAttributeCustomElements();
+            document.OnIdChangedForFormAttributeElements();
         }
 
         if (document.HasMutationObservers)

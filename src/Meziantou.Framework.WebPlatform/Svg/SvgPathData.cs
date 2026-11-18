@@ -209,7 +209,7 @@ internal static class SvgPathData
     /// <summary>
     /// Validates the segments given to setPathData(): the valid prefix of the segments. A segment is invalid when its type is not
     /// a command letter, when it does not have the number of values of the command or when a value is not finite; the first
-    /// segment must be a moveto. The flags of an arc are true when they are not zero.
+    /// segment must be a moveto. A flag of an arc that is not 0 or 1 is invalid.
     /// </summary>
     public static List<SvgPathCommand> FromSegments(IEnumerable<SvgPathSegment> segments)
     {
@@ -241,7 +241,19 @@ internal static class SvgPathData
                     break;
                 }
 
-                copy[i] = command is 'A' or 'a' && i is 3 or 4 ? (number != 0 ? 1 : 0) : number;
+                if (command is 'A' or 'a' && i is 3 or 4)
+                {
+                    // A flag is 0 or 1 (flag ::= ("0"|"1"), https://w3c.github.io/svgwg/specs/paths/#PathDataBNF); -0 is 0
+                    if (number is not (0 or 1))
+                    {
+                        valid = false;
+                        break;
+                    }
+
+                    number = number == 0 ? 0 : 1;
+                }
+
+                copy[i] = number;
             }
 
             if (!valid)

@@ -2785,21 +2785,7 @@
     "total": 1
   },
   "svg/path/interfaces/setPathData-malformed.html": {
-    "total": 22,
-    "failures": {
-      "setPathData() rejects A large-arc flag -1": "FAIL",
-      "setPathData() rejects A large-arc flag 0.5": "FAIL",
-      "setPathData() rejects A large-arc flag 2": "FAIL",
-      "setPathData() rejects A sweep flag -1": "FAIL",
-      "setPathData() rejects A sweep flag 0.5": "FAIL",
-      "setPathData() rejects A sweep flag 2": "FAIL",
-      "setPathData() rejects a large-arc flag -1": "FAIL",
-      "setPathData() rejects a large-arc flag 0.5": "FAIL",
-      "setPathData() rejects a large-arc flag 2": "FAIL",
-      "setPathData() rejects a sweep flag -1": "FAIL",
-      "setPathData() rejects a sweep flag 0.5": "FAIL",
-      "setPathData() rejects a sweep flag 2": "FAIL"
-    }
+    "total": 22
   },
   "svg/path/interfaces/setPathData-mutation-observer.html": {
     "total": 2

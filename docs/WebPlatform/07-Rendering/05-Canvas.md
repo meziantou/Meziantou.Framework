@@ -295,6 +295,8 @@ using var screenshot = canvas.TakeScreenshot();
 
 ![A blue label with white text, drawn rotated in the middle of a canvas](images/CanvasDrawElementImage.png)
 
+- A canvas whose `content` is `drawable` is a stacking context, as each of its drawable elements (which is also the
+  containing block of all its descendants).
 - Each rendering update records a snapshot of each drawable element (its stacking context with its CSS transform, in the
   coordinates of its border box before the transform, without its drawable descendants), then fires the `paint` event ([CanvasPaintEvent](cref:Meziantou.Framework.WebPlatform.Dom.CanvasPaintEvent))
   at the canvases whose drawable elements changed, in reverse tree order. [RequestPaint](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.RequestPaint)

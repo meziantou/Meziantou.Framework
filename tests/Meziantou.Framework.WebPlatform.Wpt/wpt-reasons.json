@@ -1577,7 +1577,6 @@
   },
   "failingReftests": {
     "html/canvas/element/manual/draw-element-image/backdrop-filter-nested.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: a nested `backdrop-filter` in a drawable element is drawn differently from the reference (not analyzed individually)" }],
-    "html/canvas/element/manual/draw-element-image/canvas-content-drawable-stacking-context.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: the drawn element differs from the reference (the stacking context of the canvas, not analyzed individually)" }],
     "html/canvas/element/manual/draw-element-image/css-backdrop-filter-and-mask.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: only the antialiased edges of the drawn element differ from the reference (not analyzed individually)" }],
     "html/canvas/element/manual/draw-element-image/css-backdrop-filter-on-div.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: only the antialiased edges of the drawn element differ from the reference (not analyzed individually)" }],
     "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-blend-mode-over-content.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: only the antialiased edges of the drawn element differ from the reference (not analyzed individually)" }],

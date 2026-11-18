@@ -2094,7 +2094,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/canvas-content-drawable-stacking-context.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/canvas-in-custom-element-multiple.tentative.html": {
     "reftest": "PASS"

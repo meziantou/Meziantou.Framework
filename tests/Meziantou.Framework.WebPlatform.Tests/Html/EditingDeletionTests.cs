@@ -143,6 +143,15 @@ public sealed class EditingDeletionTests : IDisposable
     public void EmptiedLineKeepsALineBreak(string html, string command, string expected)
         => Assert.Equal(expected, Run(html, command));
 
+    // The line break of an inline element is deleted, even when the element contains blocks around it
+    [Theory]
+    [InlineData("<div><font><table><tbody><tr><td>a</td></tr></tbody></table><br>[]<br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>", "delete", "<div><font><table><tbody><tr><td>a</td></tr></tbody></table><br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>")]
+    [InlineData("<div><font><table><tbody><tr><td>a</td></tr></tbody></table>[]<br><br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>", "forwardDelete", "<div><font><table><tbody><tr><td>a</td></tr></tbody></table><br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>")]
+    [InlineData("<p><b>foo<br>[]bar</b></p>", "delete", "<p><b>foobar</b></p>")]
+    [InlineData("<p><b>foo[]<br>bar</b></p>", "forwardDelete", "<p><b>foobar</b></p>")]
+    public void LineBreakInInlineElementIsDeleted(string html, string command, string expected)
+        => Assert.Equal(expected, Run(html, command));
+
     // The blocks of the only empty line of the editing host are removed; the other lines are kept
     [Theory]
     [InlineData("<div><div>[]<br></div></div>", "delete", "<br>")]

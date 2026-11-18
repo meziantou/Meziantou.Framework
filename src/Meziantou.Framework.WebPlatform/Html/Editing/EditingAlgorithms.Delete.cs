@@ -1780,8 +1780,11 @@ if (_activeRange is null)
             }
         }
 
+        // The specification only deletes a br, hr or img child of a block node, so it deletes nothing when the loop stops in
+        // an inline element before a line break that it cannot enter (<font><table>...</table><br>{}<br><table>...</font>).
+        // As in the browsers, the line break of an inline element is deleted too
         if ((node is Text && offset != 0)
-            || (IsBlockNode(node) && ChildAt(node, offset - 1) is { } previous && (IsHtmlElement(previous, "br") || IsHtmlElement(previous, "hr") || IsHtmlElement(previous, "img")))
+            || ((IsBlockNode(node) || (node is Element && IsEditable(node))) && ChildAt(node, offset - 1) is { } previous && (IsHtmlElement(previous, "br") || IsHtmlElement(previous, "hr") || IsHtmlElement(previous, "img")))
             || IsAtomicElement(ChildAt(node, offset - 1)))
         {
             // The previous character of the text, with the code unit of its surrogate pair
@@ -2326,6 +2329,15 @@ if (_activeRange is null)
         if (IsInlineNode(node) && IsFlexOrGridContainer(node) && ChildAt(node, offset) is Element firstItem && IsBlockNode(firstItem) && IsEditable(firstItem))
         {
             SetRange(range.StartContainer, (int)range.StartOffset, firstItem, 0);
+            DeleteSelectionAndRebalance();
+            return true;
+        }
+
+        // As for the delete command, the line break of an inline element that the loop cannot enter is deleted, as in the
+        // browsers (<font><table>...</table>{}<br><br><table>...</font>); the specification deletes nothing
+        if (IsInlineNode(node) && node is Element && IsEditable(node) && ChildAt(node, offset) is { } nextLineBreak && (IsHtmlElement(nextLineBreak, "br") || IsHtmlElement(nextLineBreak, "hr")) && !IsCollapsedBlockProp(nextLineBreak))
+        {
+            SetRange(node, offset, node, offset + 1);
             DeleteSelectionAndRebalance();
             return true;
         }

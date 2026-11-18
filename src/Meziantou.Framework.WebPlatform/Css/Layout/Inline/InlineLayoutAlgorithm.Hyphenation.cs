@@ -91,7 +91,9 @@ internal sealed partial class InlineLayoutAlgorithm
             return false;
 
         var style = items[itemIndex].Style;
-        if (GetHyphenator(style) is not { } hyphenator)
+        var hyphenator = GetHyphenator(style);
+        var isCatalan = GetHyphenationLanguage(style) == HyphenationLanguage.Catalan;
+        if (hyphenator is null && !isCatalan)
             return false;
 
         if (_hyphenationPoints.Length < text.Length)
@@ -102,7 +104,13 @@ internal sealed partial class InlineLayoutAlgorithm
         var points = _hyphenationPoints.AsSpan(0, text.Length);
         points.Clear();
         var limits = style.Layout.Text.HyphenateLimitChars;
-        if (!hyphenator.FindOpportunities(text, limits.Word, limits.Before, limits.After, points))
+        var hasPoints = hyphenator is not null && hyphenator.FindOpportunities(text, limits.Word, limits.Before, limits.After, points);
+        if (isCatalan)
+        {
+            hasPoints |= AddCatalanOpportunities(text, limits, points);
+        }
+
+        if (!hasPoints)
             return false;
 
         var found = false;

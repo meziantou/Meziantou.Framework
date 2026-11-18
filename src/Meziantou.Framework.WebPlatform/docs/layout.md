@@ -2078,8 +2078,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   baseline is the one of a horizontal line of 1em (the half-leading is floored as in the lines), so it is painted like a
   `1em` inline-block with a horizontal writing mode. The glyphs are in logical order: a right-to-left composition (an
   override) is painted from its right end.
-- Not done: the repetition of a hyphen at the start of the next line (Pinyin, Polish, Portuguese...), the spelling changes
-  of the other languages (German 1901 `ck`, Dutch trema...), the hyphenation dictionaries of Uyghur and Cree, the
+- Not done: the spelling changes that replace a character at the start of the next line (the Dutch trema: `zeeën` is
+  `zee-en` at the break) or that need a dictionary (the triple consonants of the Swedish and Norwegian compounds), the hyphenation dictionaries of Uyghur and Cree, the
   hyphenation dictionaries whose license is copyleft (cs, hu, hy, lv), the values of the `halt`/`vhal`/`chws` font features of
   `text-spacing-trim` (the half of a fullwidth glyph of a font that has `halt`/`vhal` is half of its advance), `text-autospace: punctuation`, the half of
   `letter-spacing` on each side of the characters (the spacing is after each character and removed at the end of the line: the
@@ -6139,7 +6139,17 @@ hyphenator of Android `hyphenator_aosp.cc`):
   again (`cafee|tje` is `café-tje`); in Hungarian (`hu`), a long double consonant written with a digraph is two digraphs
   (`Ös|szeg` is `Ösz-szeg`, also `cs`, `dz`, `dzs`, `gy`, `ly`, `ny`, `ty`, `zs`); in Pinyin (`zh-*-pinyin`), the apostrophe that
   separates two syllables is removed at the start of the next line (`tú|’àn` is `tú-` `àn`), and it is a hyphenation
-  opportunity of `hyphens: auto` (and of a soft hyphen before it, which UAX #14 forbids before a quotation mark). The letters
+  opportunity of `hyphens: auto` (and of a soft hyphen before it, which UAX #14 forbids before a quotation mark); in Catalan
+  (`ca`), the middle dot of a geminate l is replaced by the hyphen (`col·|lecció` is `col-lecció`, `coŀ|lecció` too), and it is a
+  hyphenation opportunity of `hyphens: auto` (there is no Catalan dictionary: `AddCatalanOpportunities` adds it to the
+  opportunities of the word in `HyphenateWord`, with the same limits and soft hyphen rule as the dictionaries); in the 1901 German orthography (`de-1901`,
+  `de-CH-1901`), `ck` is `k-k` (`Zuc|ker` is `Zuk-ker`). A line broken at a hyphen between two letters (U+2010 or U+002D)
+  repeats it at the start of the next line (`AddLanguageHyphenationOpportunities`: the opportunity after the hyphen becomes a
+  hyphenation opportunity before it, so `hyphenate-character` ends the line and the hyphen starts the next one): between two
+  syllables of Pinyin (`àizēng‐fēnmíng` is `àizēng-` `‐fēnmíng`, unless `hyphens: none`), and in the compound words of the
+  languages whose typographic conventions repeat the hyphen (`bs`, `cs`, `dsb`, `es`, `hr`, `hsb`, `pl`, `pt`, `sh`, `sk`,
+  `sl`, `sr`) with `hyphens: auto` or a soft hyphen before the hyphen: with the default `hyphens: manual`, the lines break as
+  in the browsers, which do not repeat it. The letters
   of the spelling change are shaped with the hyphen (the hyphen fragment), the characters they replace are removed from the end
   of the line, the line breaking measures them, and the next line starts after the removed characters (its `ContentStart`).
   No browser implements them (WPT `css/css-text/hyphens/i18n`).

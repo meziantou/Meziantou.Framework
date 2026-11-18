@@ -10,7 +10,9 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 // at the same point". The spelling changes of the WPT tests css/css-text/hyphens/i18n are applied at the soft hyphens and at the
 // automatic hyphenation opportunities (no browser applies them): the Dutch diminutives of the words in -é (cafeetje is
 // café-tje), the long double consonants of Hungarian (Összeg is Ösz-szeg), and the apostrophe that separates the syllables of
-// Pinyin, which is removed at the break (tú’àn is tú-àn).
+// Pinyin, which is removed at the break (tú’àn is tú-àn). The typographic conventions of other languages are applied too: the
+// geminate l of Catalan (col·lecció is col-lecció), the ck of the 1901 German orthography (Zucker is Zuk-ker), and the hyphen of a
+// compound word repeated at the start of the next line (see AddLanguageHyphenationOpportunities).
 internal sealed partial class InlineLayoutAlgorithm
 {
     private Dom.Element? _lastHyphenationLanguageElement;
@@ -24,7 +26,19 @@ internal sealed partial class InlineLayoutAlgorithm
         Hungarian,
         Pinyin,
         Uyghur,
+        Catalan,
+        German1901,
+
+        /// <summary>The languages whose typographic conventions repeat the hyphen of a compound word broken at its hyphen at the start of the next line.</summary>
+        RepeatedHyphen,
     }
+
+    /// <summary>
+    /// The primary language subtags of the languages whose typographic conventions repeat the hyphen of a compound word broken at
+    /// its hyphen at the start of the next line: Bosnian, Croatian, Czech, Lower and Upper Sorbian, Polish, Portuguese, Serbian,
+    /// Slovak, Slovenian, and Spanish (Ortografía de la lengua española, 2010).
+    /// </summary>
+    private static readonly string[] RepeatedHyphenLanguages = ["bs", "cs", "dsb", "es", "hr", "hsb", "pl", "pt", "sh", "sk", "sl", "sr"];
 
     /// <summary>
     /// The text displayed at a hyphenation break before <c>_text[position]</c>: <see cref="RemovedBefore"/> characters before the
@@ -36,8 +50,8 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>The digraphs of Hungarian whose long form doubles their first letter (e.g. ssz is the long sz), longest first.</summary>
     private static readonly string[] HungarianDigraphs = ["dzs", "cs", "dz", "gy", "ly", "ny", "sz", "ty", "zs"];
 
-    /// <summary>The apostrophes and the hyphens between the syllables of Pinyin (see <see cref="AddPinyinOpportunities"/>).</summary>
-    private static readonly System.Buffers.SearchValues<char> PinyinSeparators = System.Buffers.SearchValues.Create("\u2019'\u2010-");
+    /// <summary>The characters of the hyphenation opportunities of <see cref="AddLanguageHyphenationOpportunities"/>: the apostrophes and the hyphens.</summary>
+    private static readonly System.Buffers.SearchValues<char> LanguageHyphenationCharacters = System.Buffers.SearchValues.Create("\u2019'\u2010-");
 
     /// <summary>The hyphenation break at a hyphenation opportunity of the text before <paramref name="position"/>, whose style is <paramref name="style"/>.</summary>
     private HyphenationBreak GetHyphenationBreak(int position, ComputedStyle style)
@@ -81,6 +95,26 @@ internal sealed partial class InlineLayoutAlgorithm
                 // The apostrophe that separates two syllables is not needed at the start of the line
                 if (position < text.Length && IsPinyinApostrophe(text[position]))
                     return new HyphenationBreak(0, hyphen, 1);
+
+                break;
+
+            case HyphenationLanguage.Catalan:
+                // The geminate l (l·l, or ŀl with the precomposed letter) is broken as l-l: the hyphen replaces the middle dot
+                if (end > 0 && position < text.Length && text[position] is 'l' or 'L')
+                {
+                    if (end >= 2 && IsCatalanMiddleDot(text[end - 1]) && text[end - 2] is 'l' or 'L')
+                        return new HyphenationBreak(position - end + 1, hyphen, 0);
+
+                    if (text[end - 1] is (char)0x0140 or (char)0x013F)
+                        return new HyphenationBreak(position - end + 1, (text[end - 1] == (char)0x013F ? "L" : "l") + hyphen, 0);
+                }
+
+                break;
+
+            case HyphenationLanguage.German1901:
+                // The ck is broken as k-k (Zucker is Zuk-ker)
+                if (end > 0 && position < text.Length && text[end - 1] is 'c' or 'C' && text[position] is 'k' or 'K')
+                    return new HyphenationBreak(position - end + 1, (text[end - 1] == 'C' ? "K" : "k") + hyphen, 0);
 
                 break;
         }
@@ -137,34 +171,46 @@ internal sealed partial class InlineLayoutAlgorithm
     }
 
     /// <summary>
-    /// Adds the hyphenation opportunities of Pinyin: an apostrophe between two letters separates two syllables, a hyphenation
-    /// opportunity of the automatic hyphenation (<c>hyphens: auto</c>), or of a soft hyphen before it (a quotation mark for the
-    /// rules of UAX #14, which forbid the break before it). A line broken at a hyphen between two syllables (U+2010 HYPHEN or
-    /// U+002D HYPHEN-MINUS) repeats it at the start of the next line: the opportunity after the hyphen is a hyphenation
-    /// opportunity before it (the hyphenation character ends the line, the hyphen starts the next one).
+    /// Adds the hyphenation opportunities of the typographic conventions of the languages:
+    /// <list type="bullet">
+    /// <item>Pinyin: an apostrophe between two letters separates two syllables, a hyphenation opportunity of the automatic
+    /// hyphenation (<c>hyphens: auto</c>), or of a soft hyphen before it (a quotation mark for the rules of UAX #14, which forbid
+    /// the break before it).</item>
+    /// <item>A line broken at a hyphen between two letters (U+2010 HYPHEN or U+002D HYPHEN-MINUS) repeats it at the start of the
+    /// next line, between two syllables of Pinyin (unless <c>hyphens: none</c>), and in a compound word of the languages that
+    /// repeat the hyphen (<see cref="RepeatedHyphenLanguages"/>) with <c>hyphens: auto</c> or a soft hyphen before the hyphen (so
+    /// that the default <c>hyphens: manual</c> breaks as the browsers do): the opportunity after the hyphen is a hyphenation
+    /// opportunity before it (the hyphenation character ends the line, the hyphen starts the next one).</item>
+    /// </list>
     /// </summary>
-    private void AddPinyinOpportunities(Span<LineBreakOpportunity> opportunities)
+    private void AddLanguageHyphenationOpportunities(Span<LineBreakOpportunity> opportunities)
     {
         var text = _text.AsSpan(0, _length);
-        if (text.IndexOfAny(PinyinSeparators) < 0)
+        if (text.IndexOfAny(LanguageHyphenationCharacters) < 0)
             return;
 
         foreach (ref readonly var item in Items)
         {
-            if (item.Kind != InlineItemKind.Text || text[item.Start..item.End].IndexOfAny(PinyinSeparators) < 0)
+            if (item.Kind != InlineItemKind.Text || text[item.Start..item.End].IndexOfAny(LanguageHyphenationCharacters) < 0)
                 continue;
 
             var options = GetLineBreakOptions(item.Style);
-            if (options.Hyphens == HyphensMode.None || GetHyphenationLanguage(item.Style) != HyphenationLanguage.Pinyin)
+            if (options.Hyphens == HyphensMode.None)
                 continue;
 
-            for (var i = Math.Max(item.Start, 1); i < item.End - 1; i++)
+            var language = GetHyphenationLanguage(item.Style);
+            if (language is not (HyphenationLanguage.Pinyin or HyphenationLanguage.RepeatedHyphen))
+                continue;
+
+            // (the character after the last one of the item may be in the next text item: a word may span inline boxes)
+            for (var i = Math.Max(item.Start, 1); i < item.End && i + 1 < text.Length; i++)
             {
                 if (text[i] is (char)0x2010 or '-')
                 {
-                    // (a soft hyphen before the hyphen is already a hyphenation opportunity before it)
+                    // (a soft hyphen before the hyphen does not make an opportunity before it: UAX #14 forbids the break before a hyphen)
                     var syllableBefore = char.IsLetter(text[i - 1]) || (text[i - 1] == SoftHyphen && i >= 2 && char.IsLetter(text[i - 2]));
-                    if (syllableBefore && char.IsLetter(text[i + 1]) && opportunities[i + 1] == LineBreakOpportunity.Allowed && opportunities[i] is LineBreakOpportunity.None or LineBreakOpportunity.Hyphen)
+                    var repeats = language == HyphenationLanguage.Pinyin || options.Hyphens == HyphensMode.Auto || text[i - 1] == SoftHyphen;
+                    if (repeats && syllableBefore && char.IsLetter(text[i + 1]) && opportunities[i + 1] == LineBreakOpportunity.Allowed && opportunities[i] is LineBreakOpportunity.None or LineBreakOpportunity.Hyphen)
                     {
                         opportunities[i] = LineBreakOpportunity.Hyphen;
                         opportunities[i + 1] = LineBreakOpportunity.None;
@@ -173,7 +219,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     continue;
                 }
 
-                if (!IsPinyinApostrophe(text[i]) || !char.IsLetter(text[i + 1]) || opportunities[i] is LineBreakOpportunity.Mandatory or LineBreakOpportunity.Allowed)
+                if (language != HyphenationLanguage.Pinyin || !IsPinyinApostrophe(text[i]) || !char.IsLetter(text[i + 1]) || opportunities[i] is LineBreakOpportunity.Mandatory or LineBreakOpportunity.Allowed)
                     continue;
 
                 if (text[i - 1] == SoftHyphen && i >= 2 && char.IsLetter(text[i - 2]))
@@ -189,6 +235,39 @@ internal sealed partial class InlineLayoutAlgorithm
     }
 
     private static bool IsPinyinApostrophe(char c) => c is (char)0x2019 or '\'';
+
+    /// <summary>
+    /// Adds the automatic hyphenation opportunities of the geminate l of a Catalan word (l·l, or ŀl): the syllables are
+    /// separated after the middle dot, which the hyphen replaces at the break (see <see cref="GetHyphenationBreak"/>). There is
+    /// no Catalan dictionary. The limits are the ones of <see cref="HyphenationDictionary.FindOpportunities"/> (the minimum length
+    /// of the word, and of the parts before and after the opportunity), and the word has no soft hyphen (see <see cref="HyphenateWord"/>).
+    /// </summary>
+    private static bool AddCatalanOpportunities(ReadOnlySpan<char> word, HyphenateLimitChars limits, Span<bool> points)
+    {
+        var prefix = limits.Before > 0 ? limits.Before : 2;
+        var suffix = limits.After > 0 ? limits.After : prefix;
+        if (word.Length < Math.Max(limits.Word > 0 ? limits.Word : 5, prefix + suffix))
+            return false;
+
+        var found = false;
+        for (var i = Math.Max(prefix, 2); i <= word.Length - suffix; i++)
+        {
+            if (word[i] is not ('l' or 'L'))
+                continue;
+
+            if ((i >= 3 && IsCatalanMiddleDot(word[i - 1]) && word[i - 2] is 'l' or 'L' && char.IsLetter(word[i - 3]))
+                || (word[i - 1] is (char)0x0140 or (char)0x013F && char.IsLetter(word[i - 2])))
+            {
+                points[i] = true;
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>Whether a character is the middle dot of a Catalan geminate l: U+00B7 MIDDLE DOT, or U+2027 HYPHENATION POINT that some texts use instead.</summary>
+    private static bool IsCatalanMiddleDot(char c) => c is (char)0x00B7 or (char)0x2027;
 
     /// <summary>The language of the hyphenation of the text of a style (its content language).</summary>
     private HyphenationLanguage GetHyphenationLanguage(ComputedStyle style)
@@ -222,6 +301,19 @@ internal sealed partial class InlineLayoutAlgorithm
             {
                 // The Pinyin romanization of Chinese (zh-Latn-pinyin)
                 result = HyphenationLanguage.Pinyin;
+            }
+            else if (primary.Equals("ca", StringComparison.OrdinalIgnoreCase))
+            {
+                result = HyphenationLanguage.Catalan;
+            }
+            else if (primary.Equals("de", StringComparison.OrdinalIgnoreCase) && subtags.Contains("1901", StringComparer.OrdinalIgnoreCase))
+            {
+                // The 1901 orthography of German (de-1901, de-CH-1901)
+                result = HyphenationLanguage.German1901;
+            }
+            else if (RepeatedHyphenLanguages.Contains(primary, StringComparer.OrdinalIgnoreCase))
+            {
+                result = HyphenationLanguage.RepeatedHyphen;
             }
         }
 

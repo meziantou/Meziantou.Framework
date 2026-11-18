@@ -475,6 +475,21 @@ public sealed class BrowsingContextTests
         Assert.Equal("null", popup.Document.Origin.Serialize());
     }
 
+    [Theory]
+    [InlineData("https://example.com/", true)]
+    [InlineData("http://example.com/", false)]
+    public void WindowOpen_InitialDocumentIsASecureContextWhenItsCreatorIs(string url, bool secure)
+    {
+        using var context = new BrowsingContext();
+        context.Navigate(url, _ => new DocumentResource(""));
+        context.EventLoop.RunUntilIdle();
+
+        // about:blank is potentially trustworthy, but the initial about:blank document has the top-level creation URL of its creator
+        var popup = context.Window.Open("", "_blank")!;
+        Assert.True(popup.Document.IsInitialAboutBlank);
+        Assert.Equal(secure, popup.IsSecureContext);
+    }
+
     [Fact]
     public void Iframe_Src_UsesDocumentLoader()
     {

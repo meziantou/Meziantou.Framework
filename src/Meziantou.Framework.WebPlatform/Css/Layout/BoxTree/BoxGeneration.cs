@@ -255,7 +255,8 @@ internal static class BoxGeneration
         if (element.TagId == TagId.Option && element.IsHtmlNamespace)
             return style.SelectStyle is { } selectStyle && FormControlContents.IsNativeListBox(selectStyle.Element, selectStyle);
 
-        return IsReplaced(element, style) && !FormControlContents.IsNativeListBox(element, style);
+        // (nor a canvas whose content is drawable, whose children are laid out: https://github.com/WICG/html-in-canvas)
+        return IsReplaced(element, style) && !FormControlContents.IsNativeListBox(element, style) && element is not HtmlCanvasElement { IsContentDrawable: true };
     }
 
     /// <summary>

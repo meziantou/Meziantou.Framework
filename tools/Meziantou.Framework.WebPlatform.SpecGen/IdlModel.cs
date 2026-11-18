@@ -404,7 +404,204 @@ internal sealed partial class IdlModel
         AddCanvasLayers(model);
         AddCanvasGradientInterpolation(model);
         AddWebMcpPullRequests(model);
+        AddHtmlInCanvas(model);
         return model;
+    }
+
+    /// <summary>
+    /// The HTML-in-canvas proposal (https://github.com/WICG/html-in-canvas), which the tentative web-platform-tests of
+    /// html/canvas/element/manual/draw-element-image test (the WebGL and WebGPU members are not included: the library has no
+    /// WebGL nor WebGPU context, and <c>ElementImage</c> is not transferable):
+    /// <code>
+    /// dictionary UpdateElementGeometryOptions { boolean preserveHitTestOrder = false; DOMRectInit canvasClip; DOMMatrixInit canvasTransform; };
+    /// dictionary ElementImageDefaultSize { double width; double height; };
+    /// partial interface HTMLCanvasElement {
+    ///   [CEReactions, Reflect] attribute DOMString content;
+    ///   attribute EventHandler onpaint;
+    ///   undefined requestPaint();
+    ///   ElementImage captureElementImage(Element element);
+    ///   undefined updateElementGeometry((Element or ElementImage) element, optional UpdateElementGeometryOptions options = {});
+    ///   undefined clearElementGeometry((Element or ElementImage) element);
+    ///   [NewObject] DOMMatrix getElementTransform(Element element);
+    ///   attribute EventHandler onelementgeometryupdate;
+    ///   ElementImageDefaultSize getElementImageDefaultSize((Element or ElementImage) element);
+    /// };
+    /// partial interface OffscreenCanvas {
+    ///   undefined updateElementGeometry((Element or ElementImage) element, optional UpdateElementGeometryOptions options = {});
+    ///   undefined clearElementGeometry((Element or ElementImage) element);
+    ///   ElementImageDefaultSize getElementImageDefaultSize((Element or ElementImage) element);
+    /// };
+    /// dictionary DrawElementImageOptions { boolean preserveElementGeometry = false; };
+    /// interface mixin CanvasDrawElementImage {
+    ///   undefined drawElementImage((Element or ElementImage) element, unrestricted double dx, unrestricted double dy, optional DrawElementImageOptions options = {});
+    ///   undefined drawElementImage((Element or ElementImage) element, unrestricted double dx, unrestricted double dy, unrestricted double dwidth, unrestricted double dheight, optional DrawElementImageOptions options = {});
+    ///   undefined drawElementImage((Element or ElementImage) element, unrestricted double sx, unrestricted double sy, unrestricted double swidth, unrestricted double sheight, unrestricted double dx, unrestricted double dy, optional DrawElementImageOptions options = {});
+    ///   undefined drawElementImage((Element or ElementImage) element, unrestricted double sx, unrestricted double sy, unrestricted double swidth, unrestricted double sheight, unrestricted double dx, unrestricted double dy, unrestricted double dwidth, unrestricted double dheight, optional DrawElementImageOptions options = {});
+    /// };
+    /// CanvasRenderingContext2D includes CanvasDrawElementImage;
+    /// OffscreenCanvasRenderingContext2D includes CanvasDrawElementImage;
+    /// [Exposed=Window] interface CanvasPaintEvent : Event {
+    ///   constructor(DOMString type, optional CanvasPaintEventInit eventInitDict = {});
+    ///   [SameObject] readonly attribute FrozenArray&lt;Element&gt; changedElements;
+    /// };
+    /// dictionary CanvasPaintEventInit : EventInit { sequence&lt;Element&gt; changedElements = []; };
+    /// [Exposed=(Window,Worker)] interface ElementImage { undefined close(); };
+    /// [Exposed=Window] interface ElementGeometryUpdateEvent : Event {
+    ///   constructor(DOMString type, optional ElementGeometryUpdateEventInit eventInitDict = {});
+    ///   [SameObject] readonly attribute FrozenArray&lt;Element&gt; elements;
+    /// };
+    /// dictionary ElementGeometryUpdateEventInit : EventInit { sequence&lt;Element&gt; elements = []; };
+    /// </code>
+    /// </summary>
+    private static void AddHtmlInCanvas(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("HTMLCanvasElement", out var canvas) || model.Definitions.ContainsKey("ElementImage"))
+            return;
+
+        const string Href = "https://github.com/WICG/html-in-canvas#idl-changes";
+        const string Experimental = "HtmlInCanvas";
+        var source = canvas.Source;
+        using var emptyDictionary = JsonDocument.Parse("""{"type":"dictionary"}""");
+        using var emptySequence = JsonDocument.Parse("""{"type":"sequence","value":[]}""");
+        using var falseValue = JsonDocument.Parse("""{"type":"boolean","value":false}""");
+        var emptyDictionaryDefault = emptyDictionary.RootElement.Clone();
+        var emptySequenceDefault = emptySequence.RootElement.Clone();
+        var falseDefault = falseValue.RootElement.Clone();
+
+        IdlType Type(string name, bool nullable = false) => new() { Name = name, Nullable = nullable };
+        IdlType ElementOrImage() => new() { Union = true, Subtypes = [Type("Element"), Type("ElementImage")] };
+        IdlType FrozenElements() => new() { Generic = "FrozenArray", Subtypes = [Type("Element")] };
+        IdlType SequenceOfElements() => new() { Generic = "sequence", Subtypes = [Type("Element")] };
+        IdlArgument Argument(string name, IdlType type, bool optional = false, JsonElement? defaultValue = null) => new() { Name = name, Type = type, Optional = optional, Default = defaultValue };
+        IdlMember Field(string declaring, string name, IdlType type, JsonElement? defaultValue = null) => new()
+        {
+            Kind = IdlMemberKind.Field,
+            Name = name,
+            Type = type,
+            Default = defaultValue,
+            Source = source,
+            DeclaringDefinition = declaring,
+            Href = Href,
+        };
+        IdlMember Operation(string declaring, string name, IdlType returnType, List<IdlArgument> arguments, List<IdlExtendedAttribute>? extAttrs = null) => new()
+        {
+            Kind = IdlMemberKind.Operation,
+            Name = name,
+            Type = returnType,
+            Arguments = arguments,
+            ExtAttrs = extAttrs ?? [],
+            Source = source,
+            DeclaringDefinition = declaring,
+            Href = Href,
+            ExperimentalApi = Experimental,
+        };
+        IdlMember Attribute(string declaring, string name, IdlType type, bool readOnly = false, List<IdlExtendedAttribute>? extAttrs = null) => new()
+        {
+            Kind = IdlMemberKind.Attribute,
+            Name = name,
+            Type = type,
+            Readonly = readOnly,
+            ExtAttrs = extAttrs ?? [],
+            Source = source,
+            DeclaringDefinition = declaring,
+            Href = Href,
+            ExperimentalApi = Experimental,
+        };
+        void AddDefinition(string name, IdlDefinitionKind kind, List<IdlMember> members, string? inheritance = null, List<IdlExtendedAttribute>? extAttrs = null)
+        {
+            model.Definitions[name] = new IdlDefinition
+            {
+                Name = name,
+                Kind = kind,
+                Inheritance = inheritance,
+                Members = members,
+                ExtAttrs = extAttrs ?? [],
+                Href = Href,
+                Source = source,
+                SpecUrl = Href,
+                ExperimentalApi = Experimental,
+            };
+        }
+
+        var exposedWindow = new IdlExtendedAttribute { Name = "Exposed", Value = "Window" };
+        AddDefinition("UpdateElementGeometryOptions", IdlDefinitionKind.Dictionary,
+        [
+            Field("UpdateElementGeometryOptions", "preserveHitTestOrder", Type("boolean"), falseDefault),
+            Field("UpdateElementGeometryOptions", "canvasClip", Type("DOMRectInit")),
+            Field("UpdateElementGeometryOptions", "canvasTransform", Type("DOMMatrixInit")),
+        ]);
+        AddDefinition("ElementImageDefaultSize", IdlDefinitionKind.Dictionary,
+        [
+            Field("ElementImageDefaultSize", "width", Type("double")),
+            Field("ElementImageDefaultSize", "height", Type("double")),
+        ]);
+        AddDefinition("DrawElementImageOptions", IdlDefinitionKind.Dictionary,
+        [
+            Field("DrawElementImageOptions", "preserveElementGeometry", Type("boolean"), falseDefault),
+        ]);
+        AddDefinition("CanvasPaintEventInit", IdlDefinitionKind.Dictionary, [Field("CanvasPaintEventInit", "changedElements", SequenceOfElements(), emptySequenceDefault)], inheritance: "EventInit");
+        AddDefinition("ElementGeometryUpdateEventInit", IdlDefinitionKind.Dictionary, [Field("ElementGeometryUpdateEventInit", "elements", SequenceOfElements(), emptySequenceDefault)], inheritance: "EventInit");
+        AddDefinition("ElementImage", IdlDefinitionKind.Interface,
+        [
+            Operation("ElementImage", "close", Type("undefined"), []),
+        ], extAttrs: [new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "Worker"] }]);
+        foreach (var (name, attribute, init) in (ReadOnlySpan<(string, string, string)>)[("CanvasPaintEvent", "changedElements", "CanvasPaintEventInit"), ("ElementGeometryUpdateEvent", "elements", "ElementGeometryUpdateEventInit")])
+        {
+            AddDefinition(name, IdlDefinitionKind.Interface,
+            [
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Constructor,
+                    Arguments = [Argument("type", Type("DOMString")), Argument("eventInitDict", Type(init), optional: true, emptyDictionaryDefault)],
+                    Source = source,
+                    DeclaringDefinition = name,
+                    Href = Href,
+                    ExperimentalApi = Experimental,
+                },
+                Attribute(name, attribute, FrozenElements(), readOnly: true, extAttrs: [new IdlExtendedAttribute { Name = "SameObject" }]),
+            ], inheritance: "Event", extAttrs: [exposedWindow]);
+        }
+
+        List<IdlMember> GeometryMembers(string declaring) =>
+        [
+            Operation(declaring, "updateElementGeometry", Type("undefined"), [Argument("element", ElementOrImage()), Argument("options", Type("UpdateElementGeometryOptions"), optional: true, emptyDictionaryDefault)]),
+            Operation(declaring, "clearElementGeometry", Type("undefined"), [Argument("element", ElementOrImage())]),
+            Operation(declaring, "getElementImageDefaultSize", Type("ElementImageDefaultSize"), [Argument("element", ElementOrImage())]),
+        ];
+
+        canvas.Members.AddRange(
+        [
+            Attribute("HTMLCanvasElement", "content", Type("DOMString"), extAttrs: [new IdlExtendedAttribute { Name = "CEReactions" }, new IdlExtendedAttribute { Name = "Reflect" }]),
+            Attribute("HTMLCanvasElement", "onpaint", Type("EventHandler")),
+            Operation("HTMLCanvasElement", "requestPaint", Type("undefined"), []),
+            Operation("HTMLCanvasElement", "captureElementImage", Type("ElementImage"), [Argument("element", Type("Element"))]),
+            .. GeometryMembers("HTMLCanvasElement"),
+            Operation("HTMLCanvasElement", "getElementTransform", Type("DOMMatrix"), [Argument("element", Type("Element"))], [new IdlExtendedAttribute { Name = "NewObject" }]),
+            Attribute("HTMLCanvasElement", "onelementgeometryupdate", Type("EventHandler")),
+        ]);
+        if (model.Definitions.TryGetValue("OffscreenCanvas", out var offscreenCanvas))
+        {
+            offscreenCanvas.Members.AddRange(GeometryMembers("OffscreenCanvas"));
+        }
+
+        var unrestrictedDouble = new IdlType { Name = "unrestricted double" };
+        List<IdlArgument> Numbers(params string[] names) => [.. names.Select(name => Argument(name, unrestrictedDouble))];
+        // (CanvasState, the .NET type of the members of the mixins of the 2D contexts, see CanvasLayers)
+        foreach (var name in (string[])["CanvasState", "CanvasRenderingContext2D", "OffscreenCanvasRenderingContext2D"])
+        {
+            if (!model.Definitions.TryGetValue(name, out var context))
+                continue;
+
+            foreach (var numbers in (string[][])[["dx", "dy"], ["dx", "dy", "dwidth", "dheight"], ["sx", "sy", "swidth", "sheight", "dx", "dy"], ["sx", "sy", "swidth", "sheight", "dx", "dy", "dwidth", "dheight"]])
+            {
+                context.Members.Add(Operation("CanvasDrawElementImage", "drawElementImage", Type("undefined"),
+                [
+                    Argument("element", ElementOrImage()),
+                    .. Numbers(numbers),
+                    Argument("options", Type("DrawElementImageOptions"), optional: true, emptyDictionaryDefault),
+                ]));
+            }
+        }
     }
 
     /// <summary>

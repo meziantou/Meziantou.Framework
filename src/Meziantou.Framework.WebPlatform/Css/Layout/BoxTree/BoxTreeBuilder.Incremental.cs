@@ -28,6 +28,9 @@ internal sealed partial class BoxTreeBuilder
         /// <summary>Whether the subtree read the counters of an element that the counters of the previous build do not have.</summary>
         public bool Failed { get; set; }
 
+        /// <summary>The temporary parent of the new boxes, and the parent of the box they replace, which is their parent once patched.</summary>
+        public (ContainerBox Temporary, ContainerBox Actual)? Parent { get; set; }
+
         /// <summary>
         /// The boxes of the elements of the subtree that did not change, kept (with their descendants and the state the layout
         /// attached to them), and the boxes that stand for them in the new boxes until they replace them (same kind, style and
@@ -290,6 +293,7 @@ internal sealed partial class BoxTreeBuilder
         var patch = new PatchState(tree, engine, changed);
         var builder = new BoxTreeBuilder(documentElement) { _counters = tree.Counters, _patch = patch };
         var parent = new ContainerBox(ContainerBoxKind.Anonymous, previous.Parent!.Style, Display.Block, element: null);
+        patch.Parent = (parent, previous.Parent);
         builder.BuildElement(root, parent);
         if (patch.Failed || !builder.IsPatchable())
             return null;

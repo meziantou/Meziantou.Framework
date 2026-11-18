@@ -95,6 +95,12 @@ internal sealed partial class Painter
     /// </summary>
     private BoxFragment? _captureRoot;
 
+    /// <summary>
+    /// Whether the painting is the snapshot of a drawable element of a canvas (https://github.com/WICG/html-in-canvas, see
+    /// <see cref="CanvasDrawables"/>): the nested drawable elements (other than <see cref="_captureRoot"/>) are not painted.
+    /// </summary>
+    private bool _skipsCanvasDrawables;
+
     private Painter(LayoutEngine engine, Document document, PhysicalOffset rootOrigin)
     {
         _engine = engine;
@@ -356,6 +362,27 @@ internal sealed partial class Painter
     /// <param name="snapOrigin">The position of the origin of the border box in the display list (the fractional part of its position in the viewport: the painting is snapped to the device pixels of the viewport).</param>
     /// <param name="order">The painting order of the document with the markers of the stacking contexts (<see cref="PaintOrder.Collect"/>), or null to compute it.</param>
     public static DisplayList PaintViewTransitionCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order = null)
+        => PaintCapture(engine, document, fragment, snapOrigin, order, canvasDrawable: false);
+
+    /// <summary>
+    /// Paints the snapshot of a drawable element of a canvas (https://github.com/WICG/html-in-canvas: "the rendering starts at the
+    /// element's border box, before CSS transformations"), in the coordinates of its border box: its stacking context with its
+    /// effects, without its transform, without the clips and the effects of its ancestors, and without its drawable descendants
+    /// (their subtrees are not in its drawable subtree).
+    /// </summary>
+    /// <param name="engine">The layout of the document.</param>
+    /// <param name="document">The document.</param>
+    /// <param name="fragment">The first fragment of the element.</param>
+    /// <param name="origin">The position of the fragment in the display list (an inline box is painted from the union of its fragments).</param>
+    /// <param name="size">The size of the display list.</param>
+    /// <param name="nextFrameDelay">The time in milliseconds after which the snapshot changes (the next frame of an animated image), or null.</param>
+    public static DisplayList PaintCanvasDrawable(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset origin, PhysicalSize size, out double? nextFrameDelay)
+        => PaintCapture(engine, document, fragment, origin, order: null, canvasDrawable: true, out nextFrameDelay, size);
+
+    private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, PhysicalSize? size = null)
+        => PaintCapture(engine, document, fragment, snapOrigin, order, canvasDrawable, out _, size);
+
+    private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, out double? nextFrameDelay, PhysicalSize? size = null)
     {
         var root = fragment;
         while (root.Parent is BoxFragment parent)
@@ -367,8 +394,9 @@ internal sealed partial class Painter
         var painter = new Painter(engine, document, origin)
         {
             _rootFragment = root,
-            _isViewTransitionCapture = true,
-            _skipsCapturedElements = true,
+            _isViewTransitionCapture = !canvasDrawable,
+            _skipsCapturedElements = !canvasDrawable,
+            _skipsCanvasDrawables = canvasDrawable,
             _captureElement = fragment.Box.Element,
             _capturePseudoElement = fragment.Box.PseudoElement,
             _captureRoot = fragment,
@@ -381,17 +409,18 @@ internal sealed partial class Painter
 
         // The stacking context of the element in the painting order of the document: it contains the positioned descendants whose
         // containing block is outside of the element (e.g. a fixed positioned descendant)
+        // (the drawable elements of a canvas are not in the painting order of the document: the contents of the canvas are hidden)
         var items = new List<PaintItem>();
-        if (order is null)
+        if (order is null && !canvasDrawable)
         {
             order = [];
             PaintOrder.Collect(root, order, markers: true);
         }
 
-        var begin = order.FindIndex(item => item.Marker == PaintItemMarker.BeginStackingContext && ReferenceEquals(item.Fragment, fragment));
+        var begin = order is null ? -1 : order.FindIndex(item => item.Marker == PaintItemMarker.BeginStackingContext && ReferenceEquals(item.Fragment, fragment));
         if (begin >= 0)
         {
-            items.AddRange(order.GetRange(begin, FindEndOfStackingContext(order, begin) - begin + 1));
+            items.AddRange(order!.GetRange(begin, FindEndOfStackingContext(order, begin) - begin + 1));
         }
         else
         {
@@ -401,7 +430,8 @@ internal sealed partial class Painter
         painter.CollectIsolatedGroups(items);
         painter.PaintItems(items);
         painter.PaintOutlines(painter._group);
-        return builder.ToDisplayList(fragment.Size);
+        nextFrameDelay = painter._nextFrameDelay;
+        return builder.ToDisplayList(size ?? fragment.Size);
     }
 
     private static DisplayList Paint(LayoutEngine engine, Document document, BoxFragment root, PhysicalOffset viewportScrollOffset, DisplayColor baseColor, bool capture, bool hidesAnimatedCaret, out double? nextFrameDelay, out bool hasAnimatedCaret, PhysicalOffset rootOrigin = default, PhysicalSize? fullPageSize = null)
@@ -516,6 +546,9 @@ internal sealed partial class Painter
     private bool SkipsStackingContext(BoxFragment fragment)
     {
         var box = fragment.Box;
+        if (_skipsCanvasDrawables)
+            return box.IsCanvasDrawable && !ReferenceEquals(fragment, _captureRoot);
+
         if (box.IsViewTransitionRoot)
             return _isViewTransitionCapture;
 
@@ -579,7 +612,7 @@ internal sealed partial class Painter
                         break;
                     }
 
-                    if ((_skipsCapturedElements || _isViewTransitionCapture) && SkipsStackingContext(fragment))
+                    if ((_skipsCapturedElements || _isViewTransitionCapture || _skipsCanvasDrawables) && SkipsStackingContext(fragment))
                     {
                         i = FindEndOfStackingContext(items, i);
                         break;

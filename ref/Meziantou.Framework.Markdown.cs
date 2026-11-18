@@ -181,6 +181,8 @@ namespace Meziantou.Framework.Markdown
     {
         public static Meziantou.Framework.Markdown.MarkdownEmojiMapping Default { get => throw null; }
         public static Meziantou.Framework.Markdown.MarkdownEmojiMapping DefaultWithoutSmileys { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> Shortcodes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> Smileys { get => throw null; }
         public MarkdownEmojiMapping(System.Collections.Generic.IReadOnlyDictionary<string, string> shortcodes, System.Collections.Generic.IReadOnlyDictionary<string, string> smileys) { }
         public bool TryGetEmoji(string text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? emoji) => throw null;
     }

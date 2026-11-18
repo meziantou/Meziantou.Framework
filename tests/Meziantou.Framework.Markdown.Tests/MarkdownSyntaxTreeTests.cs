@@ -978,6 +978,11 @@ public sealed class MarkdownSyntaxTreeTests
         // A mapping of its own: shortcodes, and smileys for them
         var mapping = new MarkdownEmojiMapping(new Dictionary<string, string> { [":ok:"] = "\u2705" }, new Dictionary<string, string> { ["(y)"] = ":ok:" });
         Assert.Equal("<p>\u2705 \u2705 :rocket:</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(":ok: (y) :rocket:\n", options with { EmojiMapping = mapping })));
+
+        // The default shortcodes, with a few of the default smileys: -> stays as it is
+        var smileys = new[] { ":)", ";)" }.ToDictionary(smiley => smiley, smiley => MarkdownEmojiMapping.Default.Smileys[smiley], StringComparer.Ordinal);
+        var fewSmileys = new MarkdownEmojiMapping(MarkdownEmojiMapping.Default.Shortcodes, smileys);
+        Assert.Equal("<p>\U0001F680 \U0001F603 -&gt; b</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(":rocket: :) -> b\n", options with { EmojiMapping = fewSmileys })));
         #endregion
     }
 
@@ -1011,6 +1016,29 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.True(MarkdownEmojiMapping.Default.TryGetEmoji(":)", out var emoji));
         Assert.Equal("\U0001F603", emoji);
         Assert.Throws<ArgumentException>(() => new MarkdownEmojiMapping(new Dictionary<string, string>(), new Dictionary<string, string> { [":)"] = ":missing:" }));
+    }
+
+    [Fact]
+    public void EmojiMappingExposesItsShortcodesAndSmileys()
+    {
+        Assert.Equal("\U0001F680", MarkdownEmojiMapping.Default.Shortcodes[":rocket:"]);
+        Assert.Equal("→", MarkdownEmojiMapping.Default.Shortcodes[":custom_arrow_right:"]);
+        Assert.Equal("\U0001F603", MarkdownEmojiMapping.Default.Shortcodes[MarkdownEmojiMapping.Default.Smileys[":)"]]);
+        Assert.Equal(":custom_arrow_right:", MarkdownEmojiMapping.Default.Smileys["->"]);
+        Assert.False(MarkdownEmojiMapping.Default.Shortcodes.ContainsKey(":)"));
+        Assert.Empty(MarkdownEmojiMapping.DefaultWithoutSmileys.Smileys);
+        Assert.HasCount(MarkdownEmojiMapping.Default.Shortcodes.Count, MarkdownEmojiMapping.DefaultWithoutSmileys.Shortcodes);
+
+        var shortcodes = new Dictionary<string, string> { [":ok:"] = "✅" };
+        var smileys = new Dictionary<string, string> { ["(y)"] = ":ok:" };
+        var mapping = new MarkdownEmojiMapping(shortcodes, smileys);
+        shortcodes[":ko:"] = "❌";
+        smileys["(n)"] = ":ko:";
+
+        Assert.Equal(":ok:", Assert.Single(mapping.Shortcodes).Key);
+        Assert.Equal(new KeyValuePair<string, string>("(y)", ":ok:"), Assert.Single(mapping.Smileys));
+        Assert.IsNotType<Dictionary<string, string>>(mapping.Shortcodes);
+        Assert.IsNotType<Dictionary<string, string>>(mapping.Smileys);
     }
 
     [Fact]

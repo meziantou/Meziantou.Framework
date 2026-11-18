@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Markdown.Parsing;
 
@@ -6,6 +7,10 @@ namespace Meziantou.Framework.Markdown;
 /// <summary>The shortcodes, such as <c>:smile:</c>, and the smileys, such as <c>:)</c>, that <see cref="MarkdownExtensions.Emoji"/> reads, and their emoji.</summary>
 public sealed class MarkdownEmojiMapping
 {
+    private readonly Dictionary<string, string> _shortcodes = new(StringComparer.Ordinal);
+
+    private readonly Dictionary<string, string> _smileys = new(StringComparer.Ordinal);
+
     private readonly Dictionary<string, string> _emojis = new(StringComparer.Ordinal);
 
     private readonly Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> _emojisBySpan;
@@ -36,6 +41,7 @@ public sealed class MarkdownEmojiMapping
                 throw new ArgumentException("The shortcodes and their emoji cannot be empty.", nameof(shortcodes));
             }
 
+            _shortcodes[shortcode] = emoji;
             _emojis[shortcode] = emoji;
         }
 
@@ -55,11 +61,23 @@ public sealed class MarkdownEmojiMapping
             {
                 throw new ArgumentException($"The smiley '{smiley}' is already a shortcode.", nameof(smileys));
             }
+
+            _smileys[smiley] = shortcode;
         }
+
+        Shortcodes = new ReadOnlyDictionary<string, string>(_shortcodes);
+        Smileys = new ReadOnlyDictionary<string, string>(_smileys);
 
         _emojisBySpan = _emojis.GetAlternateLookup<ReadOnlySpan<char>>();
         _lengthsByFirstCharacter = _emojis.Keys.GroupBy(key => key[0]).ToDictionary(group => group.Key, group => group.Select(key => key.Length).Distinct().OrderDescending().ToArray());
     }
+
+    /// <summary>Gets the emoji of the shortcodes, such as <c>:smile:</c>.</summary>
+    /// <remarks>Use it with <see cref="Smileys"/> to make a mapping from another one, such as <see cref="Default"/> with fewer smileys.</remarks>
+    public IReadOnlyDictionary<string, string> Shortcodes { get; }
+
+    /// <summary>Gets the shortcode of the smileys, such as <c>:)</c>: each one is a key of <see cref="Shortcodes"/>.</summary>
+    public IReadOnlyDictionary<string, string> Smileys { get; }
 
     /// <summary>Gets the emoji of a shortcode or of a smiley.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>

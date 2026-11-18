@@ -472,7 +472,7 @@ public partial class HtmlCanvasElement
                     nextFrameDelay = frameDelay;
                 }
 
-                // (the CSS transform of the element is not painted, but its change is a change of the rendering, as in Chromium)
+                // (a change of the CSS transform of the element is a change of the rendering, even when the display list is the same)
                 var transform = box.FirstFragment is BoxFragment fragment && LayoutTransforms.GetMatrix(fragment) is { } matrix ? string.Join(',', matrix.Select(value => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) : "";
                 var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{size.Width}x{size.Height} {zoomRatio} {transform} {GetPaintsKey(content)}\n{content.Dump()}");
                 if (previous is not null && previous.TryGetValue(element, out var old) && old.Key == key)

@@ -91,13 +91,15 @@ internal sealed partial class Painter
 
     /// <summary>
     /// The fragment of the element whose image is painted, or null for the document element: the root of the painting, whose
-    /// transform and whose ancestors (their clips, their effects) are ignored.
+    /// ancestors (their clips, their effects) are ignored, and whose transform is ignored unless <see cref="_skipsCanvasDrawables"/>.
     /// </summary>
     private BoxFragment? _captureRoot;
 
     /// <summary>
     /// Whether the painting is the snapshot of a drawable element of a canvas (https://github.com/WICG/html-in-canvas, see
-    /// <see cref="CanvasDrawables"/>): the nested drawable elements (other than <see cref="_captureRoot"/>) are not painted.
+    /// <see cref="CanvasDrawables"/>): the nested drawable elements (other than <see cref="_captureRoot"/>) are not painted, and the
+    /// CSS transform of <see cref="_captureRoot"/> is painted (https://github.com/WICG/html-in-canvas/issues/135: the snapshot is in
+    /// the coordinates of its border box before its CSS transforms, as Chromium does).
     /// </summary>
     private bool _skipsCanvasDrawables;
 
@@ -679,7 +681,8 @@ internal sealed partial class Painter
                         break;
                     }
 
-                    // The root of the image of a captured element is painted without its transform
+                    // The root of the image of a captured element is painted without its transform (with it in the snapshot of a
+                    // drawable element of a canvas, see BeginStackingContext)
                     if (ReferenceEquals(fragment, _captureRoot))
                     {
                         BeginStackingContext(fragment);
@@ -875,6 +878,7 @@ internal sealed partial class Painter
         // The image of an element captured by a view transition: "if the referenced element has a transform applied to it (or its
         // ancestors), then the transform is ignored", "effects applied to the element from its ancestors are ignored"
         var isCaptureRoot = ReferenceEquals(fragment, _captureRoot);
+        var ignoresTransform = isCaptureRoot && !_skipsCanvasDrawables;
         List<ClipEntry>? deferredClips = null;
         if (!isCaptureRoot)
         {
@@ -922,7 +926,7 @@ internal sealed partial class Painter
         // does not participate in it is flattened into the plane of its parent, even when that plane is itself in a 3D transform
         // (e.g. a plane of another 3D rendering context): the depth of the planes of the inner context must not compose with it
         var isFlattened = false;
-        if (planeMatrix is null && has3D && !isCaptureRoot && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.UsesPreserve3D(box))
+        if (planeMatrix is null && has3D && !ignoresTransform && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.UsesPreserve3D(box))
         {
             _builder.Transform(Flattening);
             isFlattened = true;
@@ -935,7 +939,7 @@ internal sealed partial class Painter
             has3D = true;
             isTransformed = true;
         }
-        else if (!isCaptureRoot && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.GetMatrixWithPerspective(fragment) is { } matrix)
+        else if (!ignoresTransform && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.GetMatrixWithPerspective(fragment) is { } matrix)
         {
             if (IsPlaneTranslation(matrix, out var translation) && !LayoutTransforms.UsesPreserve3D(box))
             {

@@ -2229,7 +2229,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-transform-on-div.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/date-input-slot-assignment-crash.tentative.html": {
     "crashtest": "PASS"

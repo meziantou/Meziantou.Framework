@@ -295,8 +295,8 @@ using var screenshot = canvas.TakeScreenshot();
 
 ![A blue label with white text, drawn rotated in the middle of a canvas](images/CanvasDrawElementImage.png)
 
-- Each rendering update records a snapshot of each drawable element (its stacking context, without its CSS transform and
-  without its drawable descendants), then fires the `paint` event ([CanvasPaintEvent](cref:Meziantou.Framework.WebPlatform.Dom.CanvasPaintEvent))
+- Each rendering update records a snapshot of each drawable element (its stacking context with its CSS transform, in the
+  coordinates of its border box before the transform, without its drawable descendants), then fires the `paint` event ([CanvasPaintEvent](cref:Meziantou.Framework.WebPlatform.Dom.CanvasPaintEvent))
   at the canvases whose drawable elements changed, in reverse tree order. [RequestPaint](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.RequestPaint)
   fires it at the next rendering update even when nothing changed. `DrawElementImage()` draws the last snapshot, and throws
   an `InvalidStateError` before the first one.

@@ -1427,4 +1427,54 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal([0, 255, 0, 255], GetPixel(context, 15, 5));
     }
 #pragma warning restore WEBPLATEXP0021
+
+#pragma warning disable WEBPLATEXP0023
+    [Fact]
+    public void DrawElementImage_DrawsTheCurrentBitmapOfTheNestedCanvases()
+    {
+        var page = _pages.Load("""
+            <canvas id=c width=20 height=10 content=drawable>
+              <div drawable id=d style="width: 20px; height: 10px; background: red"><canvas id=n width=10 height=10 style="display: block"></canvas></div>
+            </canvas>
+            """, scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)page.Document!.GetElementById("c")!;
+        var nested = (HtmlCanvasElement)page.Document.GetElementById("n")!;
+        var element = page.Document.GetElementById("d")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        var events = new List<string>();
+        canvas.OnPaint = e => events.Add(string.Join('+', ((CanvasPaintEvent)e).ChangedElements.Select(changed => changed.Id)));
+
+        void Render()
+        {
+            _pages.Clock.Advance(TimeSpan.FromMilliseconds(20));
+            page.EventLoop.RunUntilIdle();
+        }
+
+        // (the canvases are rendered when scripting is enabled)
+        Render();
+        Assert.Equal(["d"], events);
+
+        // The snapshot was recorded before the nested canvas had a context: it draws its current bitmap
+        var nestedContext = (CanvasRenderingContext2D)nested.GetContext("2d")!;
+        nestedContext.FillStyle = "blue";
+        nestedContext.FillRect(0, 0, 10, 10);
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 15, 5));
+
+        // A change of the bitmap changes the snapshot once
+        Render();
+        Render();
+        Assert.Equal(["d", "d"], events);
+
+        // An element image draws the bitmap of the nested canvas when it was captured
+        var image = canvas.CaptureElementImage(element);
+        nestedContext.FillStyle = "lime";
+        nestedContext.FillRect(0, 0, 10, 10);
+        context.DrawElementImage(image, 0, 0);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 5, 5));
+    }
+#pragma warning restore WEBPLATEXP0023
 }

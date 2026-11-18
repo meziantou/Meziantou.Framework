@@ -10,9 +10,17 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The snapshot of the rendering of a drawable element (https://github.com/WICG/html-in-canvas), recorded by a rendering update:
 /// its display list in the coordinates of its border box, in CSS pixels (unzoomed), and the size of its border box.
 /// </summary>
-internal sealed class ElementSnapshot(DisplayList content, PhysicalSize size, double zoomRatio, string key)
+/// <remarks>
+/// The bitmaps of the canvases of the element are not recorded: the snapshot refers to them, and draws their current bitmap
+/// (<see cref="GetContent"/>, as in Chromium: the drawings made by the paint event of a nested canvas, fired before the one of the
+/// canvas of the element, are drawn with the snapshot recorded by the same rendering update).
+/// </remarks>
+internal sealed class ElementSnapshot(DisplayList content, PhysicalSize size, double zoomRatio, string key, LiveCanvasImage[]? canvases = null)
 {
-    /// <summary>The display list, in the CSS pixels of the canvas.</summary>
+    /// <summary>The bitmaps of <see cref="Canvases"/> when the last paint step looked at them (see <see cref="UpdateCanvasImages"/>), or null.</summary>
+    private PaintImage?[]? _canvasImages;
+
+    /// <summary>The display list, in the CSS pixels of the canvas, without the bitmaps of the canvases (see <see cref="GetContent"/>).</summary>
     public DisplayList Content { get; } = content;
 
     /// <summary>The size of the border box, in the CSS pixels of the canvas.</summary>
@@ -23,7 +31,81 @@ internal sealed class ElementSnapshot(DisplayList content, PhysicalSize size, do
 
     /// <summary>The text of the display list and the size, to know whether the rendering changed.</summary>
     public string Key { get; } = key;
+
+    /// <summary>The canvases whose bitmap is drawn with the snapshot, or null.</summary>
+    public LiveCanvasImage[]? Canvases { get; } = canvases;
+
+    /// <summary>Returns the display list with the current bitmaps of the canvases of the element.</summary>
+    public DisplayList GetContent()
+    {
+        if (Canvases is null)
+            return Content;
+
+        var items = new List<DisplayItem>(Content.Count + (Canvases.Length * 4));
+        foreach (var item in Content.Items)
+        {
+            items.Add(item);
+            if (item is not SaveItem || Array.Find(Canvases, canvas => ReferenceEquals(canvas.Marker, item)) is not { } canvas)
+                continue;
+
+            // (the marker is an empty save and restore: the bitmap is drawn in it)
+            if (canvas.Canvas.GetLiveImage() is not { Width: > 0, Height: > 0 } image)
+                continue;
+
+            if (canvas.Clip is { } clip)
+            {
+                items.Add(SaveItem.Instance);
+                items.Add(new ClipRectItem(clip));
+            }
+
+            items.Add(new DrawImageItem(image, new PhysicalRect(0, 0, image.Width, image.Height), canvas.Destination, canvas.Sampling) { Source = canvas.Canvas });
+            if (canvas.Clip is not null)
+            {
+                items.Add(RestoreItem.Instance);
+            }
+        }
+
+        return new DisplayList([.. items], Content.Size);
+    }
+
+    /// <summary>Returns a snapshot that draws the current bitmaps of the canvases of the element, even after they change (for an element image).</summary>
+    public ElementSnapshot Freeze() => Canvases is null ? this : new ElementSnapshot(GetContent(), Size, ZoomRatio, Key);
+
+    /// <summary>
+    /// Records the current bitmaps of the canvases of the element, and returns whether one of them changed since the last call
+    /// (the snapshot is drawn differently).
+    /// </summary>
+    public bool UpdateCanvasImages()
+    {
+        if (Canvases is null)
+            return false;
+
+        _canvasImages ??= new PaintImage?[Canvases.Length];
+        var changed = false;
+        for (var i = 0; i < Canvases.Length; i++)
+        {
+            var image = Canvases[i].Canvas.GetLiveImage();
+            if (!ReferenceEquals(image, _canvasImages[i]))
+            {
+                _canvasImages[i] = image;
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
 }
+
+/// <summary>
+/// A canvas in the snapshot of a drawable element (https://github.com/WICG/html-in-canvas): its bitmap is drawn when the snapshot
+/// is drawn (see <see cref="ElementSnapshot.GetContent"/>), in <see cref="Marker"/> (an empty save and restore of the display list).
+/// </summary>
+/// <param name="Marker">The save of the display list where the bitmap is drawn.</param>
+/// <param name="Canvas">The canvas.</param>
+/// <param name="Destination">The rectangle of the bitmap (<c>object-fit</c>, <c>object-position</c>).</param>
+/// <param name="Clip">The content box of the canvas when it clips the bitmap, or null.</param>
+/// <param name="Sampling">The sampling of the bitmap (<c>image-rendering</c>).</param>
+internal sealed record LiveCanvasImage(SaveItem Marker, HtmlCanvasElement Canvas, PhysicalRect Destination, PhysicalRect? Clip, ImageSampling Sampling);
 
 // HTML-in-canvas (https://github.com/WICG/html-in-canvas): the content attribute, the paint event, the snapshots of the drawable
 // elements and their canvas transforms
@@ -88,7 +170,9 @@ public partial class HtmlCanvasElement
     public ElementImage CaptureElementImage(Element element)
     {
         ArgumentNullException.ThrowIfNull(element);
-        return new ElementImage(this, element, GetSnapshot(element), GetGridScale(), BitmapSize);
+
+        // (the image draws the bitmaps of the canvases of the element when it is captured: it can be drawn in a worker)
+        return new ElementImage(this, element, GetSnapshot(element).Freeze(), GetGridScale(), BitmapSize);
     }
 
     /// <summary>Sets the canvas transform of an element (its geometry), which maps its border box to the content box of the canvas.</summary>
@@ -464,7 +548,7 @@ public partial class HtmlCanvasElement
             foreach (var box in CanvasDrawables.GetDrawableBoxes(canvasBox))
             {
                 var element = box.Element!;
-                if (CanvasDrawables.PaintSnapshot(engine, NodeDocument, box, out var size, out var zoomRatio, out var delay) is not { } content)
+                if (CanvasDrawables.PaintSnapshot(engine, NodeDocument, box, out var size, out var zoomRatio, out var delay, out var canvases) is not { } content)
                     continue;
 
                 if (delay is { } frameDelay && (nextFrameDelay is null || frameDelay < nextFrameDelay))
@@ -474,14 +558,14 @@ public partial class HtmlCanvasElement
 
                 // (a change of the CSS transform of the element is a change of the rendering, even when the display list is the same)
                 var transform = box.FirstFragment is BoxFragment fragment && LayoutTransforms.GetMatrix(fragment) is { } matrix ? string.Join(',', matrix.Select(value => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) : "";
-                var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{size.Width}x{size.Height} {zoomRatio} {transform} {GetPaintsKey(content)}\n{content.Dump()}");
+                var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{size.Width}x{size.Height} {zoomRatio} {transform} {GetPaintsKey(content)} {GetCanvasesKey(canvases)}\n{content.Dump()}");
                 if (previous is not null && previous.TryGetValue(element, out var old) && old.Key == key)
                 {
                     (snapshots ??= new(ReferenceEqualityComparer.Instance))[element] = old;
                     continue;
                 }
 
-                (snapshots ??= new(ReferenceEqualityComparer.Instance))[element] = new ElementSnapshot(content, size, zoomRatio, key);
+                (snapshots ??= new(ReferenceEqualityComparer.Instance))[element] = new ElementSnapshot(content, size, zoomRatio, key, canvases?.ToArray());
                 changed.Add(element);
             }
         }
@@ -519,6 +603,51 @@ public partial class HtmlCanvasElement
         _paintRequested = false;
         return fires || IsContentDrawable ? (changed, fires) : null;
     }
+
+    /// <summary>
+    /// Adds to the elements whose snapshot changed (<paramref name="changed"/>, in tree order) the drawable elements whose snapshot
+    /// draws a canvas whose bitmap changed since the last paint step (e.g. drawn by the paint event of a nested canvas, fired
+    /// before the one of this canvas), and returns whether there is one. Called just before the paint event of the canvas would fire.
+    /// </summary>
+    internal bool UpdateCanvasImages(List<Element> changed)
+    {
+        if (_snapshots is null)
+            return false;
+
+        List<Element>? updated = null;
+        foreach (var (element, snapshot) in _snapshots)
+        {
+            if (snapshot.UpdateCanvasImages() && !changed.Contains(element))
+            {
+                (updated ??= []).Add(element);
+            }
+        }
+
+        if (updated is null)
+            return false;
+
+        // (the snapshots are in tree order)
+        var all = _snapshots.Keys.Where(element => changed.Contains(element) || updated.Contains(element)).ToList();
+        changed.Clear();
+        changed.AddRange(all);
+        return true;
+    }
+
+    /// <summary>Returns the places where the bitmaps of the canvases of a snapshot are drawn (they are not in the dump of its display list).</summary>
+    private static string GetCanvasesKey(List<LiveCanvasImage>? canvases)
+        => canvases is null ? "" : string.Join(';', canvases.Select(canvas => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{canvas.Destination.X},{canvas.Destination.Y},{canvas.Destination.Width},{canvas.Destination.Height} {canvas.Clip} {canvas.Sampling}")));
+
+    /// <summary>
+    /// Returns the current bitmap of the canvas, which the snapshots of the drawable elements draw (see <see cref="LiveCanvasImage"/>),
+    /// or null. A bitmap that is not origin-clean is not drawn (https://github.com/WICG/html-in-canvas#read-back-allowed-rendering:
+    /// "&lt;canvas&gt; elements tainted with cross-origin data" are not painted).
+    /// </summary>
+    internal PaintImage? GetLiveImage() => RenderingContext switch
+    {
+        CanvasRenderingContext2D context => context.Bitmap.IsOriginClean ? context.Bitmap.GetSnapshot() : null,
+        ImageBitmapRenderingContext => null,
+        _ => PlaceholderFrame is { Pixels.IsOriginClean: true } frame ? frame.Image : null,
+    };
 
     /// <summary>
     /// The data of a display list that its dump does not show (see <see cref="DisplayList.Dump"/>): the identities of the images

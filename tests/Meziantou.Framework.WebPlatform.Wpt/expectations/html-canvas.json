@@ -2217,7 +2217,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-nested-canvas.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-none-tall.tentative.html": {
     "reftest": "PASS"
@@ -2403,7 +2403,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-invalidation.tentative.html": {
     "reftest": "PASS"
@@ -2415,13 +2415,10 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-scale.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/nested-content-drawable-canvas.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Nested content=drawable canvas should draw": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/manual/draw-element-image/nested-div-content-drawable-canvas.tentative.html": {
     "total": 1
@@ -2488,10 +2485,7 @@
     "total": 1
   },
   "html/canvas/element/manual/draw-element-image/onpaint-post-tree-order.tentative.html": {
-    "total": 5,
-    "failures": {
-      "Drawing operations in nested canvas onpaint should not cause outer onpaint to fire again": "FAIL"
-    }
+    "total": 5
   },
   "html/canvas/element/manual/draw-element-image/onpaint-remove-drawable-element.tentative.html": {
     "total": 7,
@@ -2701,10 +2695,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/nested-tainted-canvas-ignored.tentative.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "drawElementImage does not draw nested tainted canvases": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/manual/draw-element-image/privacy/nested-tainted-html-in-canvas-ignored.tentative.https.sub.html": {
     "total": 1

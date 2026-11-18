@@ -60,6 +60,9 @@ internal sealed partial class Painter
     // The time in milliseconds until the next frame of an animated image painted in the document, or null
     private double? _nextFrameDelay;
 
+    /// <summary>The canvases of the snapshot of a drawable element, whose bitmap is drawn when the snapshot is drawn (see <see cref="PaintCanvas"/>), or null.</summary>
+    private List<LiveCanvasImage>? _liveCanvasImages;
+
     /// <summary>The root of the fragment tree of the document.</summary>
     private BoxFragment? _rootFragment;
 
@@ -369,8 +372,9 @@ internal sealed partial class Painter
     /// <summary>
     /// Paints the snapshot of a drawable element of a canvas (https://github.com/WICG/html-in-canvas: "the rendering starts at the
     /// element's border box, before CSS transformations"), in the coordinates of its border box: its stacking context with its
-    /// effects, without its transform, without the clips and the effects of its ancestors, and without its drawable descendants
-    /// (their subtrees are not in its drawable subtree).
+    /// effects and its transform, without the clips and the effects of its ancestors, and without its drawable descendants
+    /// (their subtrees are not in its drawable subtree). The bitmaps of the canvases it contains are not painted: they are drawn
+    /// when the snapshot is drawn (see <see cref="LiveCanvasImage"/>).
     /// </summary>
     /// <param name="engine">The layout of the document.</param>
     /// <param name="document">The document.</param>
@@ -378,13 +382,14 @@ internal sealed partial class Painter
     /// <param name="origin">The position of the fragment in the display list (an inline box is painted from the union of its fragments).</param>
     /// <param name="size">The size of the display list.</param>
     /// <param name="nextFrameDelay">The time in milliseconds after which the snapshot changes (the next frame of an animated image), or null.</param>
-    public static DisplayList PaintCanvasDrawable(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset origin, PhysicalSize size, out double? nextFrameDelay)
-        => PaintCapture(engine, document, fragment, origin, order: null, canvasDrawable: true, out nextFrameDelay, size);
+    /// <param name="canvases">The canvases whose bitmap is drawn when the snapshot is drawn, or null.</param>
+    public static DisplayList PaintCanvasDrawable(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset origin, PhysicalSize size, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases)
+        => PaintCapture(engine, document, fragment, origin, order: null, canvasDrawable: true, out nextFrameDelay, out canvases, size);
 
     private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, PhysicalSize? size = null)
-        => PaintCapture(engine, document, fragment, snapOrigin, order, canvasDrawable, out _, size);
+        => PaintCapture(engine, document, fragment, snapOrigin, order, canvasDrawable, out _, out _, size);
 
-    private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, out double? nextFrameDelay, PhysicalSize? size = null)
+    private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases, PhysicalSize? size = null)
     {
         var root = fragment;
         while (root.Parent is BoxFragment parent)
@@ -433,6 +438,7 @@ internal sealed partial class Painter
         painter.PaintItems(items);
         painter.PaintOutlines(painter._group);
         nextFrameDelay = painter._nextFrameDelay;
+        canvases = painter._liveCanvasImages;
         return builder.ToDisplayList(size ?? fragment.Size);
     }
 

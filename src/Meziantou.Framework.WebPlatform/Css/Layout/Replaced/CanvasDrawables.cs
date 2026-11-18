@@ -81,24 +81,25 @@ internal static class CanvasDrawables
     }
 
     /// <summary>
-    /// Paints the snapshot of a drawable element (see <see cref="Painter.PaintCanvasDrawable"/>) in unzoomed CSS pixels, or returns
-    /// null when it has no fragment.
+    /// Paints the snapshot of a drawable element (see <see cref="Painter.PaintCanvasDrawable"/>) in unzoomed CSS pixels, with the
+    /// canvases whose bitmap is drawn with it, or returns null when it has no fragment.
     /// </summary>
     /// <remarks>
     /// The snapshot is in the CSS pixels of the canvas (the zoom of the element relative to the one of the canvas scales it, as
     /// the element is displayed); <paramref name="zoomRatio"/> is the zoom of the canvas divided by the one of the element.
     /// </remarks>
-    public static DisplayList? PaintSnapshot(LayoutEngine engine, Document document, ContainerBox box, out PhysicalSize size, out double zoomRatio, out double? nextFrameDelay)
+    public static DisplayList? PaintSnapshot(LayoutEngine engine, Document document, ContainerBox box, out PhysicalSize size, out double zoomRatio, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases)
     {
         size = default;
         zoomRatio = 1;
         nextFrameDelay = null;
+        canvases = null;
         if (box.FirstFragment is not BoxFragment fragment)
             return null;
 
         // (an inline box is painted from the origin of the union of its fragments)
         var bounds = GetBounds(box);
-        var list = Painter.PaintCanvasDrawable(engine, document, fragment, fragment.GetOffsetInRoot() - bounds.Offset, bounds.Size, out nextFrameDelay);
+        var list = Painter.PaintCanvasDrawable(engine, document, fragment, fragment.GetOffsetInRoot() - bounds.Offset, bounds.Size, out nextFrameDelay, out canvases);
         var zoom = GetCanvasZoom(box);
         zoomRatio = GetZoomRatio(box);
         size = new PhysicalSize(bounds.Width / zoom, bounds.Height / zoom);

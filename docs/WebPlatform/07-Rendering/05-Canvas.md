@@ -302,6 +302,11 @@ using var screenshot = canvas.TakeScreenshot();
   at the canvases whose drawable elements changed, in reverse tree order. [RequestPaint](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.RequestPaint)
   fires it at the next rendering update even when nothing changed. `DrawElementImage()` draws the last snapshot, and throws
   an `InvalidStateError` before the first one.
+- A snapshot refers to the canvases of the element (as in Chromium): `DrawElementImage()` draws their current bitmap, so the
+  drawings made by the `paint` event of a nested canvas, which fires first, are drawn with the snapshot recorded by the same
+  rendering update, and a change of their bitmap fires the `paint` event of the canvas. An element image
+  ([CaptureElementImage](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.CaptureElementImage)) keeps the bitmaps
+  of the time it was captured. A canvas that is not origin-clean (tainted by cross-origin data) is not drawn.
 - The default size of an element image is the size of its border box scaled by the ratio of the size of the bitmap to the
   size of the canvas ([GetElementImageDefaultSize](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.GetElementImageDefaultSize)).
   The source rectangle of `DrawElementImage()` can extend beyond the border box to include the ink overflow.

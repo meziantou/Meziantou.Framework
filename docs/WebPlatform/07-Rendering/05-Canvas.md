@@ -322,7 +322,7 @@ using var screenshot = canvas.TakeScreenshot();
   [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) of the canvas in a worker (it is transferable): the
   geometry updates of an `OffscreenCanvas` are applied in the event loop of the canvas, which fires an `elementgeometryupdate` event.
 - The snapshots paint the cross-origin images and iframes and the colors of the visited links: the proposal excludes them
-  (read-back-allowed rendering), the library does not yet. WebGL and WebGPU are not supported, so `texElementSubImage2D()` and
+  (read-back-allowed rendering), the library does not yet (it only excludes the canvases tainted by cross-origin data). WebGL and WebGPU are not supported, so `texElementSubImage2D()` and
   `drawElementImageToTexture()` are not available.
 - The API is experimental (`WEBPLATEXP0023`, see [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts of the page use
   it without restriction.

@@ -262,6 +262,90 @@ public sealed class DocumentationImageTests
     }
 
     [Fact]
+    public void CanvasFilters()
+    {
+        #region WebPlatformImaging_CanvasFilters
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            RenderingBackend = new ImagingRenderingBackend(),
+            ScriptingEnabled = true,
+        });
+        var document = context.Navigate("https://example.com/", _ => """<canvas id="filters" width="360" height="120"></canvas>""");
+        context.EventLoop.RunUntilIdle();
+
+        var canvas = (HtmlCanvasElement)document.GetElementById("filters")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.FillStyle = "#f8fafc";
+        context2D.FillRect(0, 0, 360, 120);
+
+        #pragma warning disable WEBPLATEXP0021 // The CanvasFilter objects are a proposal
+        // A blur along the X axis only
+        context2D.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "gaussianBlur", ["stdDeviation"] = new[] { 8, 0 } });
+        context2D.FillStyle = "#0ea5e9";
+        context2D.FillRect(30, 30, 60, 60);
+
+        // A blue shadow, then the colors are posterized: each component is rounded to 3 levels
+        var posterize = new Dictionary<string, object?> { ["type"] = "discrete", ["tableValues"] = new[] { 0, 0.5, 1 } };
+        context2D.Filter = new CanvasFilter(new object[]
+        {
+            new Dictionary<string, object?> { ["name"] = "dropShadow", ["dx"] = 8, ["dy"] = 8, ["stdDeviation"] = 4, ["floodColor"] = "#1e3a8a" },
+            new Dictionary<string, object?> { ["name"] = "componentTransfer", ["funcR"] = posterize, ["funcG"] = posterize, ["funcB"] = posterize },
+        });
+        var gradient = context2D.CreateLinearGradient(140, 0, 220, 0);
+        gradient.AddColorStop(0, "#ea580c");
+        gradient.AddColorStop(1, "#facc15");
+        context2D.FillStyle = gradient;
+        context2D.FillRect(140, 30, 80, 60);
+
+        // Noise: the turbulence replaces the drawings
+        context2D.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "turbulence", ["baseFrequency"] = 0.05, ["numOctaves"] = 2 });
+        context2D.Rect(260, 20, 80, 80);
+        context2D.Clip();
+        context2D.Fill();
+        #pragma warning restore WEBPLATEXP0021
+
+        using var screenshot = canvas.TakeScreenshot();
+        #endregion
+
+        // The blur spreads the square horizontally, not vertically
+        Assert.NotEqual(screenshot.GetPixel(25, 60), screenshot.GetPixel(25, 25));
+        Assert.Equal(screenshot.GetPixel(60, 25), screenshot.GetPixel(60, 10));
+        AssertImage(Rendering, "CanvasFilters", screenshot);
+    }
+
+    [Fact]
+    public void SvgTextInShapes()
+    {
+        #region WebPlatformImaging_SvgTextInShapes
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 360, Height = 200 },
+            RenderingBackend = new ImagingRenderingBackend(),
+        });
+        var document = context.Navigate("https://example.com/", _ => """
+            <style>body { margin: 0 }</style>
+            <svg width="360" height="200" style="font: 13px sans-serif">
+              <circle id="circle" cx="100" cy="100" r="90" fill="#e0f2fe" />
+              <rect id="photo" x="20" y="70" width="70" height="60" fill="#94a3b8" style="shape-margin: 6px" />
+              <rect id="box" x="200" y="10" width="150" height="180" fill="#fef3c7" />
+              <!-- The text fills the circle around the photo, then overflows into the box -->
+              <text style="shape-inside: url(#circle) url(#box); shape-subtract: url(#photo); shape-padding: 8px; text-align: center">
+                The text of an SVG text element with shape-inside is wrapped in the shapes: the lines are broken where
+                they fit, around the shapes of shape-subtract, and aligned by text-align. When the first shape is full,
+                the text flows into the next one, and the text that does not fit in the last shape is not rendered.
+              </text>
+            </svg>
+            """);
+        context.EventLoop.RunUntilIdle();
+
+        using var screenshot = context.TakeScreenshot();
+        #endregion
+
+        Assert.Equal((360, 200), (screenshot.Width, screenshot.Height));
+        AssertImage(LoadingPages, "SvgTextInShapes", screenshot);
+    }
+
+    [Fact]
     public void CanvasTextClusters()
     {
         #region WebPlatformImaging_CanvasTextClusters

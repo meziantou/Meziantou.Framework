@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
@@ -930,21 +931,41 @@ public abstract partial class CanvasRenderingContext2DBase
 
     /// <summary>
     /// Gets or sets the filter of the drawing operations (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter):
-    /// <c>none</c> or a list of CSS filter functions (the lengths are resolved against the current font); the other values are
-    /// ignored. The references to SVG filter elements (<c>url()</c>) are resolved in the document of the canvas element (an
-    /// <see cref="OffscreenCanvas"/> does not filter its drawings with them).
+    /// <c>none</c> or a list of CSS filter functions (the lengths are resolved against the current font), or a
+    /// <see cref="CanvasFilter"/> (a proposal, https://github.com/whatwg/html/issues/5621); the strings that are not filters
+    /// and null are ignored. The references to SVG filter elements (<c>url()</c>) are resolved in the document of the canvas
+    /// element (an <see cref="OffscreenCanvas"/> does not filter its drawings with them).
     /// </summary>
+    /// <exception cref="ArgumentException">The value is not a string or a <c>CanvasFilter</c>.</exception>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter"/>
     [IdlMember("filter", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter")]
-    public string Filter
+    [AllowNull]
+    public object Filter
     {
         get => _state.Filter;
         set
         {
-            ArgumentNullException.ThrowIfNull(value);
-            if (ParseFilter(value) is { } filter)
+            switch (value)
             {
-                _state.Filter = filter;
+                case null:
+                    break;
+
+#pragma warning disable WEBPLATEXP0021 // The CanvasFilter objects are a proposal
+                case CanvasFilter canvasFilter:
+                    _state.Filter = canvasFilter;
+                    break;
+#pragma warning restore WEBPLATEXP0021
+
+                case string text:
+                    if (ParseFilter(text) is { } filter)
+                    {
+                        _state.Filter = filter;
+                    }
+
+                    break;
+
+                default:
+                    throw new ArgumentException("The filter must be a string or a CanvasFilter", nameof(value));
             }
         }
     }
@@ -965,7 +986,13 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>Returns the filters of the drawing state, or null for <c>none</c>.</summary>
-    private DisplayFilter[]? GetFilters() => GetFilters(_state.Filter);
+    private DisplayFilter[]? GetFilters() => _state.Filter switch
+    {
+#pragma warning disable WEBPLATEXP0021 // The CanvasFilter objects are a proposal
+        CanvasFilter filter => filter.GetDisplayFilters(GetFilteredArea(), Bitmap.Options.ColorSpace),
+#pragma warning restore WEBPLATEXP0021
+        var value => GetFilters((string)value),
+    };
 
     /// <summary>Returns the filters of a valid filter value (see <see cref="ParseFilter"/>), or null for <c>none</c>.</summary>
     private DisplayFilter[]? GetFilters(string value)

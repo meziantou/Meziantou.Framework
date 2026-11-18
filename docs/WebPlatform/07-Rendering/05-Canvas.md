@@ -159,14 +159,80 @@ using var screenshot = canvas.TakeScreenshot();
 
 - The layers nest, and they share the stack of [Save](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.Save): `Restore()` throws an
   `InvalidStateError` when the last saved state is a layer, and `EndLayer()` when it is not. `Reset()` discards the open layers.
-- The filter of [BeginLayerOptions](cref:Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions) is a CSS filter applied to the layer before the
-  filter of the state, in the coordinates of the transformation matrix. The `CanvasFilter` objects are not supported: a
-  filter that is not a string is ignored.
+- The filter of [BeginLayerOptions](cref:Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions) is a CSS filter, a
+  [CanvasFilter](#filter-objects) or the description of one, applied to the layer before the filter of the state, in the
+  coordinates of the transformation matrix.
 - While a layer is open, the pixels of the canvas cannot be read or replaced: `GetImageData()`, `PutImageData()`,
   `ToDataUrl()`, `ToBlob()`, `createImageBitmap()` and drawing the canvas into another one throw an `InvalidStateError`.
   The page shows the pixels drawn before the layer was opened.
 - The API is experimental (`WEBPLATEXP0017`, see [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts of the page use
   it without restriction.
+
+## Filter objects
+
+A [CanvasFilter](cref:Meziantou.Framework.WebPlatform.Dom.CanvasFilter) describes a filter with a list of SVG filter
+primitives instead of CSS filter functions. It is the [Filter](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.Filter)
+of a context, or the filter of a layer. Each primitive is a dictionary whose `name` is `gaussianBlur`, `dropShadow`,
+`colorMatrix`, `componentTransfer`, `convolveMatrix` or `turbulence`, and whose other entries are the attributes of the
+SVG primitive (`stdDeviation`, `dx`, `floodColor`, `funcR`, `kernelMatrix`, `baseFrequency`...):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasFilters;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    RenderingBackend = new ImagingRenderingBackend(),
+    ScriptingEnabled = true,
+});
+var document = context.Navigate("https://example.com/", _ => """<canvas id="filters" width="360" height="120"></canvas>""");
+context.EventLoop.RunUntilIdle();
+
+var canvas = (HtmlCanvasElement)document.GetElementById("filters")!;
+var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+context2D.FillStyle = "#f8fafc";
+context2D.FillRect(0, 0, 360, 120);
+
+#pragma warning disable WEBPLATEXP0021 // The CanvasFilter objects are a proposal
+// A blur along the X axis only
+context2D.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "gaussianBlur", ["stdDeviation"] = new[] { 8, 0 } });
+context2D.FillStyle = "#0ea5e9";
+context2D.FillRect(30, 30, 60, 60);
+
+// A blue shadow, then the colors are posterized: each component is rounded to 3 levels
+var posterize = new Dictionary<string, object?> { ["type"] = "discrete", ["tableValues"] = new[] { 0, 0.5, 1 } };
+context2D.Filter = new CanvasFilter(new object[]
+{
+    new Dictionary<string, object?> { ["name"] = "dropShadow", ["dx"] = 8, ["dy"] = 8, ["stdDeviation"] = 4, ["floodColor"] = "#1e3a8a" },
+    new Dictionary<string, object?> { ["name"] = "componentTransfer", ["funcR"] = posterize, ["funcG"] = posterize, ["funcB"] = posterize },
+});
+var gradient = context2D.CreateLinearGradient(140, 0, 220, 0);
+gradient.AddColorStop(0, "#ea580c");
+gradient.AddColorStop(1, "#facc15");
+context2D.FillStyle = gradient;
+context2D.FillRect(140, 30, 80, 60);
+
+// Noise: the turbulence replaces the drawings
+context2D.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "turbulence", ["baseFrequency"] = 0.05, ["numOctaves"] = 2 });
+context2D.Rect(260, 20, 80, 80);
+context2D.Clip();
+context2D.Fill();
+#pragma warning restore WEBPLATEXP0021
+
+using var screenshot = canvas.TakeScreenshot();
+```
+<!-- endref -->
+
+![A square blurred horizontally, an orange and yellow rectangle with a dark blue shadow, and a square of colored noise](images/CanvasFilters.png)
+
+- The primitives apply in the order of the list, in sRGB. A pair of numbers (`stdDeviation`, `baseFrequency`) is one
+  number, used for both axes, or a list of two numbers.
+- The values are converted as Chromium converts them: a number can be a string or `null` (`"10"` is 10, `null` is 0), and
+  a primitive without a name, or with an unknown name, is ignored. An invalid value (a number that is not finite, a color
+  that cannot be parsed, a negative frequency...) throws a [TypeErrorException](cref:Meziantou.Framework.WebPlatform.Dom.TypeErrorException);
+  `BeginLayer()` then does not open the layer.
+- The scripts create them with `new CanvasFilter({ name: "gaussianBlur", stdDeviation: 5 })`. Reading the `filter` of a
+  context returns the `CanvasFilter` that was set, and a CSS filter that is not valid does not replace it.
+- The API is experimental (`WEBPLATEXP0021`, see [Experimental APIs](../09-Limitations.md#experimental-apis)): it
+  implements a [proposal](https://github.com/whatwg/html/issues/5621) that Chromium ships behind a flag.
 
 ## Text clusters
 

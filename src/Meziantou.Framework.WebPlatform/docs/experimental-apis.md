@@ -216,6 +216,17 @@ elements, as tested by the web-platform-tests of `svg/interact/scripted`: it ref
 true for a script created by a script until it is set. SVG 2 does not define it (the `async` and `defer` content attributes
 of the SVG scripts are processed as the ones of the HTML scripts). Its API and behavior may change.
 
+<a id="WEBPLATEXP0021"></a>
+
+## WEBPLATEXP0021: CanvasFilter objects
+
+`CanvasFilter` implements the `CanvasFilter` objects of the [proposal](https://github.com/whatwg/html/issues/5621) (see the
+[explainer](https://github.com/fserb/canvas2D/blob/master/spec/filters.md)), as tested by the tentative web-platform-tests of
+`html/canvas/element/filters`: a filter described by a list of filter primitives (`gaussianBlur`, `dropShadow`,
+`colorMatrix`, `componentTransfer`, `convolveMatrix` and `turbulence`), which is the `filter` of a 2D context or of a
+canvas layer. Chromium implements them behind a flag. Their API and behavior may change while the proposal is under
+discussion.
+
 <a id="WEBPLATEXP0024"></a>
 
 ## WEBPLATEXP0024: canvas text clusters

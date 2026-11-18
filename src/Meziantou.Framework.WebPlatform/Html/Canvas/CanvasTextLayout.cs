@@ -131,7 +131,7 @@ internal sealed record CanvasTextLayout(
             result.AddRange(GetGlyphs(cluster));
         }
 
-        result.Sort(static (a, b) => a.X.CompareTo(b.X));
+        result.Sort((a, b) => a.X.CompareTo(b.X));
         return result;
     }
 
@@ -328,7 +328,7 @@ internal sealed record CanvasTextLayout(
 
         positions.Add((cluster.Start, GetCaretX(cluster, cluster.Start, snapToEnd: false)));
         positions.Add((cluster.End, GetCaretX(cluster, cluster.End, snapToEnd: true)));
-        positions.Sort(static (a, b) => a.X.CompareTo(b.X));
+        positions.Sort((a, b) => a.X.CompareTo(b.X));
         for (var i = 0; i < positions.Count - 1; i++)
         {
             var (left, right) = (positions[i], positions[i + 1]);

@@ -419,7 +419,7 @@ public partial class Document
     /// </summary>
     private void ReportLargestContentfulPaint(PaintTimingState state, LayoutEngine engine, Window window, PaintTimingInfo paintTimingInfo, List<(PendingImageRecord Record, PhysicalRect PaintedRect)> paintedImages, List<Element> paintedTextElements, ContentfulPaintScan scan)
     {
-        if (window.HasDispatchedInputEvent)
+        if (window.HasDispatchedInputEvent || window.HasDispatchedScrollEvent)
             return;
 
         var currentCandidate = state.LargestContentfulPaintCandidate;
@@ -670,11 +670,21 @@ public partial class Document
     }
 }
 
-// The flag of a window that stops the reporting of the largest contentful paint (https://w3c.github.io/largest-contentful-paint/#sec-modifications-DOM).
-// As in the browsers, only the user scrolls stop it, not the scroll events of the scripted scrolls (the trusted scroll events of
-// the specification): the user scrolling is not implemented, so the scrolls never stop it.
+// The flags of a window that stop the reporting of the largest contentful paint and of the container timing
+// (https://w3c.github.io/largest-contentful-paint/#sec-modifications-DOM, https://w3c.github.io/container-timing/#sec-modifications-DOM).
+// As in the browsers, only the scrolls of the user stop it, not the scroll events of the scripted scrolls (the trusted scroll
+// events of the specification).
 public partial class Window
 {
+    /// <summary>
+    /// https://w3c.github.io/container-timing/#window-has-dispatched-scroll-event: the user scrolled a scrolling box of the
+    /// document of the window (a wheel, a key, a touch or a scrollbar).
+    /// </summary>
+    internal bool HasDispatchedScrollEvent { get; private set; }
+
+    /// <summary>Records a scroll of the user of a scrolling box of the document of the window.</summary>
+    internal void NotifyUserScroll() => HasDispatchedScrollEvent = true;
+
     /// <summary>
     /// https://w3c.github.io/event-timing/#has-dispatched-input-event: a trusted input event that is not a hover nor a scroll was
     /// dispatched (a press of a key or of a pointer button, a click).

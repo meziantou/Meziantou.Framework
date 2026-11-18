@@ -60,6 +60,18 @@ internal sealed partial class LayoutEngine
     /// <param name="scrollSource">The source of the scroll for the scroll performance timing, or null for the one of <paramref name="kind"/> (see <see cref="GetScrollSource"/>).</param>
     public void ScrollByUser(ScrollState state, PhysicalOffset delta, UserScrollKind kind, bool isAbsolute = false, string? scrollSource = null)
     {
+        var offset = state.Offset;
+        ScrollByUserCore(state, delta, kind, isAbsolute, scrollSource);
+
+        // The scroll of the user stops the reporting of the largest contentful paint and of the container timing
+        if (state.Offset != offset || state.SmoothScroll is not null)
+        {
+            _document.RelevantWindow?.NotifyUserScroll();
+        }
+    }
+
+    private void ScrollByUserCore(ScrollState state, PhysicalOffset delta, UserScrollKind kind, bool isAbsolute, string? scrollSource)
+    {
         scrollSource ??= GetScrollSource(kind);
 
         // https://drafts.csswg.org/css-overflow-5/#current-scroll-target: the scroll of the user has no target

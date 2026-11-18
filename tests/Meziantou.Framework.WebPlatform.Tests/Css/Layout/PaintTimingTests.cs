@@ -189,6 +189,34 @@ public sealed class PaintTimingTests : IDisposable
     }
 
     [Fact]
+    public void LargestContentfulPaintAndContainerTiming_StopAfterAUserScroll()
+    {
+        var document = Parse("<div id=root containertiming=main><p>ab</p></div><div style='height: 2000px'></div>");
+        var largestContentfulPaints = Observe<LargestContentfulPaint>(document, "largest-contentful-paint");
+        var containers = Observe<PerformanceContainerTiming>(document, "container");
+        RunFrames(2);
+        Assert.Single(largestContentfulPaints);
+        Assert.Single(containers);
+
+        // A scroll of a script does not stop them
+        _ = document.DefaultView!.ScrollTo(0, 1);
+        var paragraph = document.CreateElement("p");
+        paragraph.TextContent = "abcdefghijklmnop";
+        Get(document, "root").InsertBefore(paragraph, Get(document, "root").FirstChild);
+        RunFrames(2);
+        Assert.Equal(2, largestContentfulPaints.Count);
+        Assert.Equal(2, containers.Count);
+
+        Assert.True(document.BrowsingContext!.Input.Wheel(10, 10, 0, 2));
+        paragraph = document.CreateElement("p");
+        paragraph.TextContent = "abcdefghijklmnopqrstuvwxyz0123456789";
+        Get(document, "root").InsertBefore(paragraph, Get(document, "root").FirstChild);
+        RunFrames(2);
+        Assert.Equal(2, largestContentfulPaints.Count);
+        Assert.Equal(2, containers.Count);
+    }
+
+    [Fact]
     public void ElementTiming_ImageAndText()
     {
         var document = Parse("<img id=image elementtiming=picture src='/40x30.png' style='display: block; margin-left: 10px'><p id=text elementtiming=paragraph style='margin: 0'>abc</p><p>no attribute</p>");

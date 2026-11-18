@@ -396,6 +396,12 @@ public sealed partial class UserInput
                 break;
         }
 
+        // The scroll of the visual viewport stops the reporting of the largest contentful paint and of the container timing
+        if (scrolledVisualViewport)
+        {
+            document.RelevantWindow?.NotifyUserScroll();
+        }
+
         if (deltaX == 0 && deltaY == 0)
             return scrolledVisualViewport;
 

@@ -59,7 +59,7 @@ public static partial class WebPlatformFuzzTargets
         var contentTop = canvasRect.Top + canvas.ClientTop + GetPixels(canvasStyle, "padding-top");
         var scaleX = (canvas.ClientWidth - GetPixels(canvasStyle, "padding-left") - GetPixels(canvasStyle, "padding-right")) / 64.0;
         var scaleY = (canvas.ClientHeight - GetPixels(canvasStyle, "padding-top") - GetPixels(canvasStyle, "padding-bottom")) / 48.0;
-        var checksGeometry = !hasTransformedAncestor && canvasStyle.GetPropertyValue("object-fit") == "fill" && canvas.ClientWidth == canvasRect.Width - (2 * canvas.ClientLeft) && canvas.ClientHeight == canvasRect.Height - (2 * canvas.ClientTop);
+        var checksGeometry = !hasTransformedAncestor && double.IsFinite(contentLeft) && double.IsFinite(contentTop) && double.IsFinite(scaleX) && double.IsFinite(scaleY) && canvasStyle.GetPropertyValue("object-fit") == "fill" && canvas.ClientWidth == canvasRect.Width - (2 * canvas.ClientLeft) && canvas.ClientHeight == canvasRect.Height - (2 * canvas.ClientTop);
 
         var offset = 0;
         foreach (var element in canvas.QuerySelectorAll("[drawable]").OfType<Element>().Take(CanvasDrawablesMaxElements))
@@ -117,8 +117,12 @@ public static partial class WebPlatformFuzzTargets
         _ = context2D.GetImageData(0, 0, 1, 1);
     }
 
+    /// <summary>Returns a computed length in pixels, or NaN when it is not resolved (a percentage of an element without box).</summary>
     private static double GetPixels(Css.Om.CssStyleDeclaration style, string property)
-        => double.Parse(style.GetPropertyValue(property).AsSpan().TrimEnd("px"), System.Globalization.CultureInfo.InvariantCulture);
+    {
+        var value = style.GetPropertyValue(property).AsSpan();
+        return value.EndsWith("px") && double.TryParse(value[..^2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var result) ? result : double.NaN;
+    }
 
     private static bool IsTransformed(Css.Om.CssStyleDeclaration style)
         => style.GetPropertyValue("transform") != "none" || style.GetPropertyValue("translate") != "none" || style.GetPropertyValue("rotate") != "none"

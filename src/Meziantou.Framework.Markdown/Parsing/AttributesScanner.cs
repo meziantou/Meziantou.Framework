@@ -280,12 +280,12 @@ internal static class AttributesScanner
 
     private static char At(string text, int position, int end) => position < end ? text[position] : '\0';
 
-    private static bool IsStartAttributeName(char c) => char.IsAsciiLetter(c) || c is '_' or ':';
+    public static bool IsStartAttributeName(char c) => char.IsAsciiLetter(c) || c is '_' or ':';
 
-    private static bool IsAttributeNameChar(char c) => char.IsAsciiLetterOrDigit(c) || c is '_' or ':' or '.' or '-';
+    public static bool IsAttributeNameChar(char c) => char.IsAsciiLetterOrDigit(c) || c is '_' or ':' or '.' or '-';
 
     // As Markdig: the whitespace of CommonMark, without the vertical tab
-    private static bool IsWhitespace(char c) => c is ' ' or '\t' or '\n' or '\f' or '\r' || (c >= '\u00A0' && CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator);
+    public static bool IsWhitespace(char c) => c is ' ' or '\t' or '\n' or '\f' or '\r' || (c >= '\u00A0' && CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator);
 
     private static bool IsWhiteSpaceOrZero(char c) => c == '\0' || IsWhitespace(c);
 }

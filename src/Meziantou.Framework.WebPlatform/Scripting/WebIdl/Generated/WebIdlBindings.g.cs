@@ -154,6 +154,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["CSSViewTransitionRule"] = Binding_CSSViewTransitionRule<TAdapter, TValue>.Binding,
             ["CanvasFilter"] = Binding_CanvasFilter<TAdapter, TValue>.Binding,
             ["CanvasGradient"] = Binding_CanvasGradient<TAdapter, TValue>.Binding,
+            ["CanvasPaintEvent"] = Binding_CanvasPaintEvent<TAdapter, TValue>.Binding,
             ["CanvasPattern"] = Binding_CanvasPattern<TAdapter, TValue>.Binding,
             ["CanvasRenderingContext2D"] = Binding_CanvasRenderingContext2D<TAdapter, TValue>.Binding,
             ["CaretPosition"] = Binding_CaretPosition<TAdapter, TValue>.Binding,
@@ -217,6 +218,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["DragEvent"] = Binding_DragEvent<TAdapter, TValue>.Binding,
             ["DynamicsCompressorNode"] = Binding_DynamicsCompressorNode<TAdapter, TValue>.Binding,
             ["Element"] = Binding_Element<TAdapter, TValue>.Binding,
+            ["ElementGeometryUpdateEvent"] = Binding_ElementGeometryUpdateEvent<TAdapter, TValue>.Binding,
+            ["ElementImage"] = Binding_ElementImage<TAdapter, TValue>.Binding,
             ["ElementInternals"] = Binding_ElementInternals<TAdapter, TValue>.Binding,
             ["ErrorEvent"] = Binding_ErrorEvent<TAdapter, TValue>.Binding,
             ["Event"] = Binding_Event<TAdapter, TValue>.Binding,
@@ -797,6 +800,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.BufferedChangeEventInit dictionaryDom_BufferedChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BufferedChangeEventInit(r, dictionaryDom_BufferedChangeEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.CanvasPaintEventInit dictionaryDom_CanvasPaintEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CanvasPaintEventInit(r, dictionaryDom_CanvasPaintEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ClipboardChangeEventInit dictionaryDom_ClipboardChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ClipboardChangeEventInit(r, dictionaryDom_ClipboardChangeEventInit);
                 return true;
@@ -832,6 +838,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DomMatrixInit dictionaryDom_DomMatrixInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomMatrixInit(r, dictionaryDom_DomMatrixInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ElementGeometryUpdateEventInit dictionaryDom_ElementGeometryUpdateEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ElementGeometryUpdateEventInit(r, dictionaryDom_ElementGeometryUpdateEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ErrorEventInit dictionaryDom_ErrorEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ErrorEventInit(r, dictionaryDom_ErrorEventInit);
@@ -1199,11 +1208,17 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.DomRectInit dictionaryDom_DomRectInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomRectInit(r, dictionaryDom_DomRectInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions dictionaryDom_DrawElementImageOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DrawElementImageOptions(r, dictionaryDom_DrawElementImageOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ElementCreationOptions dictionaryDom_ElementCreationOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ElementCreationOptions(r, dictionaryDom_ElementCreationOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ElementDefinitionOptions dictionaryDom_ElementDefinitionOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ElementDefinitionOptions(r, dictionaryDom_ElementDefinitionOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ElementImageDefaultSize dictionaryDom_ElementImageDefaultSize:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ElementImageDefaultSize(r, dictionaryDom_ElementImageDefaultSize);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.EventInit dictionaryDom_EventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_EventInit(r, dictionaryDom_EventInit);
@@ -1546,6 +1561,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.UnknownCredentialOptions dictionaryDom_UnknownCredentialOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UnknownCredentialOptions(r, dictionaryDom_UnknownCredentialOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions dictionaryDom_UpdateElementGeometryOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UpdateElementGeometryOptions(r, dictionaryDom_UpdateElementGeometryOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.UrlPatternComponentResult dictionaryDom_UrlPatternComponentResult:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UrlPatternComponentResult(r, dictionaryDom_UrlPatternComponentResult);

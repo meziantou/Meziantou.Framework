@@ -739,6 +739,26 @@ public sealed partial class HtmlCanvasElement : HtmlElement
 
     /// <summary>Runs when the element is created.</summary>
     partial void OnCreated();
+
+    /// <summary>Gets or sets the event handler of the <c>paint</c> event (the <c>onpaint</c> event handler attribute).</summary>
+    /// <seealso href="https://github.com/WICG/html-in-canvas#idl-changes"/>
+    [IdlMember("onpaint", "https://github.com/WICG/html-in-canvas#idl-changes")]
+    [Experimental(ExperimentalApis.HtmlInCanvas, UrlFormat = ExperimentalApis.UrlFormat)]
+    public Action<Event>? OnPaint
+    {
+        get => GetEventHandler("paint");
+        set => SetEventHandler("paint", value);
+    }
+
+    /// <summary>Gets or sets the event handler of the <c>elementgeometryupdate</c> event (the <c>onelementgeometryupdate</c> event handler attribute).</summary>
+    /// <seealso href="https://github.com/WICG/html-in-canvas#idl-changes"/>
+    [IdlMember("onelementgeometryupdate", "https://github.com/WICG/html-in-canvas#idl-changes")]
+    [Experimental(ExperimentalApis.HtmlInCanvas, UrlFormat = ExperimentalApis.UrlFormat)]
+    public Action<Event>? OnElementGeometryUpdate
+    {
+        get => GetEventHandler("elementgeometryupdate");
+        set => SetEventHandler("elementgeometryupdate", value);
+    }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/grouping-content.html#htmldlistelement</summary>

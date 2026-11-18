@@ -1,6 +1,7 @@
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using System.Text;
+using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
 namespace Meziantou.Framework.Markdown;
@@ -89,6 +90,120 @@ public sealed class MarkdownLinkSyntax : MarkdownInlineSyntax
             return index;
         }
     }
+
+    /// <summary>Returns this inline link with the destination <paramref name="destination"/>, or itself when it has this destination.</summary>
+    /// <param name="destination">The destination, which is escaped: it is the <see cref="Destination"/> of the link.</param>
+    /// <remarks>
+    /// The link is in no tree: replace this one with it, with <see cref="SyntaxNodeExtensions.ReplaceNode{TRoot}(TRoot, SyntaxNode, SyntaxNode)"/>.
+    /// The destination of a reference link is the one of its definition: change the definition with
+    /// <see cref="MarkdownLinkReferenceDefinitionSyntax.WithDestination(string)"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="destination"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">The link is a reference link.</exception>
+    public MarkdownLinkSyntax WithDestination(string destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        EnsureInline();
+
+        if (Destination == destination)
+            return this;
+
+        return WithDestination(this, destination, CloseIndex + 1);
+    }
+
+    /// <summary>Returns this inline link with the title <paramref name="title"/>, or itself when it has this title.</summary>
+    /// <param name="title">The title, which is escaped: it is the <see cref="Title"/> of the link. <see langword="null"/> removes the title.</param>
+    /// <remarks>
+    /// The link is in no tree: replace this one with it, with <see cref="SyntaxNodeExtensions.ReplaceNode{TRoot}(TRoot, SyntaxNode, SyntaxNode)"/>.
+    /// The title of a reference link is the one of its definition: change the definition with
+    /// <see cref="MarkdownLinkReferenceDefinitionSyntax.WithTitle(string?)"/>.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">The link is a reference link.</exception>
+    public MarkdownLinkSyntax WithTitle(string? title)
+    {
+        EnsureInline();
+
+        if (Title == title)
+            return this;
+
+        return WithTitle(this, title, CloseIndex + 1);
+    }
+
+    private void EnsureInline()
+    {
+        if (LinkKind != MarkdownLinkKind.Inline)
+            throw new InvalidOperationException("A reference link has the destination and the title of its definition: change the definition instead.");
+    }
+
+    // The destination and the title of a link or of a definition, whose tokens are after the child at start
+    internal static TNode WithDestination<TNode>(TNode node, string destination, int start)
+        where TNode : MarkdownSyntaxNode
+    {
+        var text = EscapePipes(MarkdownEscaper.EscapeLinkDestination(destination));
+        var children = MarkdownNodeEditor.GetChildren(node);
+        var index = MarkdownNodeEditor.IndexOfToken(children, SyntaxKind.LinkDestinationToken, start);
+        if (index >= 0)
+        {
+            children[index] = MarkdownNodeEditor.WithText(children[index]!, text);
+        }
+        else
+        {
+            // An inline link without destination, such as [a]()
+            var open = MarkdownNodeEditor.IndexOfToken(children, SyntaxKind.OpenParenthesisToken, start);
+            children.Insert(open + 1, MarkdownNodeEditor.Token(SyntaxKind.LinkDestinationToken, text, leadingTrivia: null, trailingTrivia: null));
+        }
+
+        return MarkdownNodeEditor.WithChildren(node, children);
+    }
+
+    internal static TNode WithTitle<TNode>(TNode node, string? title, int start)
+        where TNode : MarkdownSyntaxNode
+    {
+        // A title can span lines: its tokens are separated by line endings
+        var children = MarkdownNodeEditor.GetChildren(node);
+        var first = MarkdownNodeEditor.IndexOfToken(children, SyntaxKind.LinkTitleToken, start);
+        var last = MarkdownNodeEditor.LastIndexOfToken(children, SyntaxKind.LinkTitleToken);
+        if (title is null)
+        {
+            if (first < 0)
+                return node;
+
+            MarkdownNodeEditor.RemoveOnLine(children, first, last);
+
+            // A backslash that ends the destination of a link would escape its closing parenthesis
+            if (node is MarkdownLinkSyntax link && children[first - 1] is { RawKind: (int)SyntaxKind.LinkDestinationToken } destinationToken && link.DestinationToken.Text.EndsWith('\\', StringComparison.Ordinal))
+            {
+                children[first - 1] = MarkdownNodeEditor.WithText(destinationToken, EscapePipes(MarkdownEscaper.EscapeLinkDestination(link.Destination)));
+            }
+
+            return MarkdownNodeEditor.WithChildren(node, children);
+        }
+
+        var text = EscapePipes(MarkdownEscaper.EscapeLinkTitle(title));
+        if (first >= 0)
+        {
+            var firstToken = (GreenToken)children[first]!;
+            var lastToken = (GreenToken)children[last]!;
+            children.RemoveRange(first + 1, last - first);
+            children[first] = MarkdownNodeEditor.Token(SyntaxKind.LinkTitleToken, text, firstToken.LeadingTrivia, lastToken.TrailingTrivia);
+            return MarkdownNodeEditor.WithChildren(node, children);
+        }
+
+        // The title follows the destination, which an inline link without destination gets
+        var destination = MarkdownNodeEditor.IndexOfToken(children, SyntaxKind.LinkDestinationToken, start);
+        if (destination < 0)
+        {
+            destination = MarkdownNodeEditor.IndexOfToken(children, SyntaxKind.OpenParenthesisToken, start) + 1;
+            children.Insert(destination, MarkdownNodeEditor.Token(SyntaxKind.LinkDestinationToken, "<>", leadingTrivia: null, trailingTrivia: null));
+        }
+
+        MarkdownNodeEditor.InsertOnLineAfter(children, destination, MarkdownNodeEditor.Token(SyntaxKind.LinkTitleToken, text, leadingTrivia: null, trailingTrivia: null));
+        return MarkdownNodeEditor.WithChildren(node, children);
+    }
+
+    // In a cell of a table, a pipe would end the cell. The node can be in no tree, as the result of another edit, so the pipes
+    // are escaped wherever it is: \| is read as a pipe everywhere.
+    private static string EscapePipes(string text) => text.Replace("|", "\\|", StringComparison.Ordinal);
 
     internal override void AppendPlainText(StringBuilder builder) => AppendPlainText(Text, builder);
 

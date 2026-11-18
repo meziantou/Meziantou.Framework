@@ -171,6 +171,13 @@ internal static class HitTesting
                     return true;
             }
 
+            // https://github.com/WICG/html-in-canvas: the drawable elements of a canvas whose geometry was updated are above it
+            if (fragment is BoxFragment { Box: { Kind: ContainerBoxKind.Replaced, Element: HtmlCanvasElement { HitTestOrder.Count: > 0 } canvas } } canvasFragment
+                && HitTestCanvasDrawables(context, canvasFragment, canvas, local) && !all)
+            {
+                return true;
+            }
+
             if (anonymousCellOwner is not null ? !IsHitTestTarget(anonymousCellOwner.Style, anonymousCellOwner.Element!) : !IsHitTestTarget(fragment.Box.Style, fragment.Box.Element!, fragment.Box.PseudoElement))
                 continue;
 
@@ -206,6 +213,56 @@ internal static class HitTesting
         {
             results.Add(hit);
             return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Hit tests the drawable elements of a canvas whose content is drawable (https://github.com/WICG/html-in-canvas: "hit testing
+    /// proceeds straight from the canvas element to each descendant, skipping intervening clips and transforms"): the elements
+    /// whose geometry was updated, from the topmost, each one with the point mapped by the inverse of its canvas transform and
+    /// of its CSS transform, and clipped by its canvas clip. A drawable element hit tests its subtree without its drawable
+    /// descendants. Returns whether the hit testing must stop.
+    /// </summary>
+    private static bool HitTestCanvasDrawables(HitTestContext context, BoxFragment canvasFragment, HtmlCanvasElement canvas, PhysicalOffset local)
+    {
+        if (!canvas.IsContentDrawable || canvas.HitTestOrder is not { } order || context.Engine.BoxTree is not { } tree
+            || canvasFragment.ChildrenSpan is not [BoxFragment { Box.IsFormControlContents: true } contents, ..])
+        {
+            return false;
+        }
+
+        // (the contents box is in the content box of the canvas: no transform nor scroll position between them)
+        var point = local - contents.Offset;
+        for (var i = order.Count - 1; i >= 0; i--)
+        {
+            if (tree.GetPrincipalBox(order[i]) is not { IsCanvasDrawable: true } box || box.FirstFragment is not BoxFragment first)
+                continue;
+
+            var drawableContext = new HitTestContext(context.Engine, context.RootPoint, context.Results, context.All);
+            var seeded = false;
+            for (var part = box; part is not null; part = part.Continuation)
+            {
+                for (var fragment = part.FirstFragment; fragment is not null; fragment = fragment.NextFragmentOfBox)
+                {
+                    if (fragment is BoxFragment boxFragment && CanvasDrawables.TryGetHitTestPoint(boxFragment, point, out var drawablePoint))
+                    {
+                        drawableContext.LocalPoints[boxFragment] = drawablePoint;
+                        seeded = true;
+                    }
+                }
+            }
+
+            if (!seeded)
+                continue;
+
+            // The nested drawable elements are hit tested on their own
+            var items = new List<PaintItem>();
+            PaintOrder.CollectStackingContext(first, items);
+            items.RemoveAll(item => CanvasDrawables.IsInNestedDrawable(item.Fragment, box));
+            if (HitTest(drawableContext, items) && !context.All)
+                return true;
         }
 
         return false;

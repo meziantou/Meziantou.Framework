@@ -236,3 +236,16 @@ discussion.
 Edge: the `scroll` entries of the performance timeline report the frames of the scrolls of the user. No specification
 defines it, and the web-platform-tests of `scroll-performance-timing` are tentative. Its API and behavior may change while
 the proposal is under discussion.
+
+<a id="WEBPLATEXP0023"></a>
+
+## WEBPLATEXP0023: HTML-in-canvas
+
+`HtmlCanvasElement.Content`, `HtmlCanvasElement.RequestPaint()`, the `paint` events (`CanvasPaintEvent`),
+`CanvasRenderingContext2DBase.DrawElementImage()`, `HtmlCanvasElement.CaptureElementImage()` (`ElementImage`) and the
+element geometries (`UpdateElementGeometry()`, `ClearElementGeometry()`, `GetElementTransform()`,
+`GetElementImageDefaultSize()`, also on `OffscreenCanvas`) implement the [HTML-in-canvas
+proposal](https://github.com/WICG/html-in-canvas), as tested by the tentative web-platform-tests of
+`html/canvas/element/manual/draw-element-image`: the children of a canvas whose `content` attribute is `drawable` are laid
+out but not painted, and its `drawable` descendants are drawn into the canvas. Chromium implements it behind a flag. Its
+API and behavior may change while the proposal is under discussion.

@@ -3723,6 +3723,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Miter = 2,
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class CanvasPaintEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Element> ChangedElements { get => throw null; }
+        public CanvasPaintEvent(string type, Meziantou.Framework.WebPlatform.Dom.CanvasPaintEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class CanvasPaintEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Element> ChangedElements { get => throw null; init { } }
+    }
+
     public sealed class CanvasPattern
     {
         public void SetTransform(Meziantou.Framework.WebPlatform.Dom.DomMatrix2DInit? transform = null) { }
@@ -3781,6 +3794,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.CanvasGradient CreateLinearGradient(double x0, double y0, double x1, double y1) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.CanvasPattern? CreatePattern(object? image, string repetition) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.CanvasGradient CreateRadialGradient(double x0, double y0, double r0, double x1, double y1, double r1) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void DrawElementImage(object? element, double dx, double dy, Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions? options = null) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void DrawElementImage(object? element, double dx, double dy, double dwidth, double dheight, Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions? options = null) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void DrawElementImage(object? element, double sx, double sy, double swidth, double sheight, double dx, double dy, Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions? options = null) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void DrawElementImage(object? element, double sx, double sy, double swidth, double sheight, double dx, double dy, double dwidth, double dheight, Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions? options = null) { }
         public void DrawFocusIfNeeded(Meziantou.Framework.WebPlatform.Dom.Element element) { }
         public void DrawFocusIfNeeded(Meziantou.Framework.WebPlatform.Dom.Path2D path, Meziantou.Framework.WebPlatform.Dom.Element element) { }
         public void DrawImage(object? image, double dx, double dy) { }
@@ -5498,6 +5519,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DragPointerState left, Meziantou.Framework.WebPlatform.Dom.DragPointerState right) => throw null;
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class DrawElementImageOptions
+    {
+        public bool PreserveElementGeometry { get => throw null; init { } }
+    }
+
     public enum EffectiveConnectionType
     {
         Cellular4G = 0,
@@ -5721,6 +5748,33 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class ElementDefinitionOptions
     {
         public string? Extends { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class ElementGeometryUpdateEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Element> Elements { get => throw null; }
+        public ElementGeometryUpdateEvent(string type, Meziantou.Framework.WebPlatform.Dom.ElementGeometryUpdateEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class ElementGeometryUpdateEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Element> Elements { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class ElementImage
+    {
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void Close() { }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class ElementImageDefaultSize
+    {
+        public double Height { get => throw null; init { } }
+        public double Width { get => throw null; init { } }
     }
 
     public sealed class ElementInternals
@@ -6666,12 +6720,30 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class HtmlCanvasElement : Meziantou.Framework.WebPlatform.Dom.HtmlElement
     {
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public string Content { get => throw null; set { } }
         public uint Height { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnElementGeometryUpdate { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnPaint { get => throw null; set { } }
         public uint Width { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.ElementImage CaptureElementImage(Meziantou.Framework.WebPlatform.Dom.Element element) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void ClearElementGeometry(object? element) { }
         public object? GetContext(string contextId, Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings? options = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.ElementImageDefaultSize GetElementImageDefaultSize(object? element) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.DomMatrix GetElementTransform(Meziantou.Framework.WebPlatform.Dom.Element element) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void RequestPaint() { }
         public void ToBlob(Meziantou.Framework.WebPlatform.Dom.BlobCallback callback, string type = "image/png", double? quality = null) { }
         public string ToDataUrl(string type = "image/png", double? quality = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas TransferControlToOffscreen() => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void UpdateElementGeometry(object? element, Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions? options = null) { }
     }
 
     public class HtmlCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Dom.Element>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Dom.Element>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Element>, System.Collections.IEnumerable
@@ -9759,9 +9831,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnContextRestored { get => throw null; set { } }
         public ulong Width { get => throw null; set { } }
         public OffscreenCanvas(ulong width, ulong height) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void ClearElementGeometry(object? element) { }
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.FileApi.Blob> ConvertToBlob(Meziantou.Framework.WebPlatform.Dom.ImageEncodeOptions? options = null) => throw null;
         public object? GetContext(Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId contextId, Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings? options = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.ElementImageDefaultSize GetElementImageDefaultSize(object? element) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ImageBitmap TransferToImageBitmap() => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void UpdateElementGeometry(object? element, Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions? options = null) { }
     }
 
     public sealed class OffscreenCanvasRenderingContext2D : Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase
@@ -13524,6 +13602,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public required string CredentialId { get => throw null; init { } }
         public required string RpId { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class UpdateElementGeometryOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DomRectInit? CanvasClip { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DomMatrixInit? CanvasTransform { get => throw null; init { } }
+        public bool PreserveHitTestOrder { get => throw null; init { } }
     }
 
     public sealed class Url

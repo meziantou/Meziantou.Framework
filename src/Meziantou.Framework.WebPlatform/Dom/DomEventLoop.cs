@@ -499,6 +499,20 @@ public sealed partial class DomEventLoop
     /// <summary>Registers a document whose layout shifts are observed (see <see cref="Document.StartLayoutShiftTracking"/>), reported when the rendering is updated.</summary>
     internal void AddDocumentWithLayoutShiftTracking(Document document) => _documentsWithLayoutShiftTracking.Add(new WeakReference<Document>(document));
 
+    private readonly List<WeakReference<Document>> _documentsWithRenderedCanvases = [];
+
+    /// <summary>Registers a document whose canvases record the snapshots of their drawable elements and fire paint events when the rendering is updated (https://github.com/WICG/html-in-canvas).</summary>
+    internal void AddDocumentWithRenderedCanvases(Document document)
+    {
+        foreach (var reference in _documentsWithRenderedCanvases)
+        {
+            if (reference.TryGetTarget(out var existing) && ReferenceEquals(existing, document))
+                return;
+        }
+
+        _documentsWithRenderedCanvases.Add(new WeakReference<Document>(document));
+    }
+
     private readonly List<WeakReference<Document>> _documentsWithPaintTiming = [];
 
     /// <summary>Registers a document whose paint timing is tracked (see <see cref="Document.StartPaintTiming"/>), marked when the rendering is updated.</summary>
@@ -948,6 +962,27 @@ public sealed partial class DomEventLoop
             if (reference.TryGetTarget(out var document) && document.IsFullyActive && !document.IsSkippedByRenderingUpdate(renderingUpdate))
             {
                 document.RunUpdateIntersectionObservationsSteps(frameTimestamp);
+            }
+        }
+
+        // https://github.com/WICG/html-in-canvas: the paint events of the canvases fire "just after intersection observer steps have
+        // run", "in reverse document order (child frames before their parent documents)"
+        _documentsWithRenderedCanvases.RemoveAll(reference => !reference.TryGetTarget(out var document) || !document.HasRenderedCanvases);
+        if (_documentsWithRenderedCanvases.Count > 0)
+        {
+            var canvasDocuments = new List<Document>();
+            foreach (var reference in _documentsWithRenderedCanvases)
+            {
+                if (reference.TryGetTarget(out var document) && document.IsFullyActive && !document.IsSkippedByRenderingUpdate(renderingUpdate))
+                {
+                    canvasDocuments.Add(document);
+                }
+            }
+
+            canvasDocuments.Sort(Comparer<Document>.Create((a, b) => CompareDocsOrder(b, a)));
+            foreach (var document in canvasDocuments)
+            {
+                document.RunCanvasPaintSteps();
             }
         }
 

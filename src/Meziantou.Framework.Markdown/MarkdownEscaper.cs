@@ -217,6 +217,14 @@ public static class MarkdownEscaper
         return escaped.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' ');
     }
 
+    // The info string of a fenced code block, whose fence is not written
+    internal static string EscapeInfoString(string infoString)
+    {
+        var builder = new StringBuilder(infoString.Length);
+        AppendInfoString(builder, infoString);
+        return builder.ToString();
+    }
+
     private static void AppendInfoString(StringBuilder builder, string infoString)
     {
         // The info string cannot contain a backtick after a backtick fence; it is unescaped and its entities are decoded

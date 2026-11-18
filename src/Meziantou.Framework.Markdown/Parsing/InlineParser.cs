@@ -340,6 +340,12 @@ internal sealed class InlineParser
             MarkAbbreviations(_root);
         }
 
+        // The email addresses and the abbreviations are inlines around the tokens of an inline, which can be at the limit
+        if (_autolinks || Abbreviations.Count > 0)
+        {
+            FlattenDeepInlines();
+        }
+
         for (var child = _root.FirstChild; child is not null; child = child.Next)
         {
             AddBuildElements(child, output);
@@ -733,7 +739,8 @@ internal sealed class InlineParser
         List<(int Start, int End)>? attributes = null;
         for (var node = rowEnd == _root ? _root.LastChild : rowEnd.Previous; node is not null && node.Kind is not (SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken); node = node.Previous)
         {
-            if (node.Kind == SyntaxKind.GenericAttributes)
+            // An inline that spans lines, such as a link, can be before the row's line ending: the attributes before it are not in the row
+            if (node.Kind == SyntaxKind.GenericAttributes && node.Start >= start && node.End <= end)
             {
                 (attributes ??= []).Insert(0, (node.Start, node.End));
             }
@@ -962,8 +969,9 @@ internal sealed class InlineParser
             }
         }
 
-        var lineEnd = _text.AsSpan(lineStart, _end - lineStart).IndexOf('\n') is >= 0 and var length ? lineStart + length : _end;
+        // Attributes can span lines: the row ends at the first line ending that is not in attributes
         var (text, textOffset) = withoutAttributes is null ? (_text, 0) : (new string(withoutAttributes), lineStart);
+        var lineEnd = text.AsSpan(lineStart - textOffset, _end - lineStart).IndexOf('\n') is >= 0 and var length ? lineStart + length : _end;
         if (!PipeTableScanner.IsDelimiterRowText(text, lineStart - textOffset, lineEnd - textOffset))
         {
             return null;

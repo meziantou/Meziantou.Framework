@@ -37,9 +37,18 @@ public partial class Document
 
     /// <summary>
     /// Paints the document for a screenshot (see <see cref="Css.Layout.LayoutEngine.PaintScreenshot"/>): over a transparent
-    /// canvas, and the whole document instead of its viewport. Returns null when the document is not rendered.
+    /// canvas, and the whole document instead of its viewport. The delegated ink trails of the window that did not expire are
+    /// drawn over the document (https://wicg.github.io/ink-enhancement/, see <see cref="DelegatedInkTrailPresenter"/>). Returns
+    /// null when the document is not rendered.
     /// </summary>
-    internal DisplayList? PaintScreenshot(bool transparentCanvas, bool fullPage) => GetLayoutEngine().PaintScreenshot(transparentCanvas, fullPage);
+    internal DisplayList? PaintScreenshot(bool transparentCanvas, bool fullPage)
+    {
+        var displayList = GetLayoutEngine().PaintScreenshot(transparentCanvas, fullPage);
+        if (displayList is null || RelevantWindow?.NavigatorOrNull?.InkOrNull is not { } ink)
+            return displayList;
+
+        return ink.AddInkTrails(displayList, fullPage);
+    }
 
     /// <summary>Returns the size of the document painted by a full page screenshot, in CSS pixels (see <see cref="Css.Layout.LayoutEngine.GetFullPageSize"/>).</summary>
     internal Css.Layout.PhysicalSize GetFullPageSize()

@@ -225,6 +225,9 @@ public sealed partial class Navigator
     [IdlMember("ink", "https://wicg.github.io/ink-enhancement/#dom-navigator-ink")]
     public Ink Ink => _ink ??= new Ink(_window);
 
+    /// <summary>The Ink API of the window, if it was created.</summary>
+    internal Ink? InkOrNull => _ink;
+
     /// <summary>The clipboard of the window, if it was created.</summary>
     internal Clipboard? ClipboardOrNull => _clipboard;
 

@@ -227,6 +227,16 @@ of the SVG scripts are processed as the ones of the HTML scripts). Its API and b
 canvas layer. Chromium implements them behind a flag. Their API and behavior may change while the proposal is under
 discussion.
 
+<a id="WEBPLATEXP0022"></a>
+
+## WEBPLATEXP0022: scroll performance timing
+
+`PerformanceScrollTiming` and `WebPlatformFeatures.ScrollTimingEnabled` implement the scroll performance timing of the
+[proposal](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md) of Microsoft
+Edge: the `scroll` entries of the performance timeline report the frames of the scrolls of the user. No specification
+defines it, and the web-platform-tests of `scroll-performance-timing` are tentative. Its API and behavior may change while
+the proposal is under discussion.
+
 <a id="WEBPLATEXP0023"></a>
 
 ## WEBPLATEXP0023: HTML-in-canvas

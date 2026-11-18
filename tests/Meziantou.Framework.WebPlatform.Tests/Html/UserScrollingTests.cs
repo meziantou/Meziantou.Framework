@@ -1,6 +1,8 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.Extensions.Time.Testing;
 
+#pragma warning disable WEBPLATEXP0022 // The scroll performance timing is a proposal
+
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
 /// <summary>The scrolls of the user: the smooth scrolls of the wheel, the gestures and their scrollend event, the wheel event transactions.</summary>
@@ -584,5 +586,222 @@ public sealed class UserScrollingTests : IDisposable
         finger2.Up();
         finger1.Up();
         Assert.Equal(1, document.DefaultView!.VisualViewport!.Scale);
+    }
+
+    private static List<PerformanceScrollTiming> ObserveScrolls(Document document)
+    {
+        var entries = new List<PerformanceScrollTiming>();
+        var observer = new PerformanceObserver(document.DefaultView!, (list, _, _) => entries.AddRange(list.GetEntries().Cast<PerformanceScrollTiming>()));
+        observer.Observe(new PerformanceObserverInit { Type = "scroll" });
+        return entries;
+    }
+
+    [Fact]
+    public void ScrollTiming_Wheel()
+    {
+        var document = Load("<div id=scroller><div id=content></div></div>");
+        var scroller = document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        Assert.True(document.BrowsingContext!.Input.Wheel(50, 50, 0, 40));
+        RunFrames();
+
+        var entry = Assert.Single(entries);
+        Assert.Equal("scroll", entry.Name);
+        Assert.Equal("scroll", entry.EntryType);
+        Assert.Equal("wheel", entry.ScrollSource);
+        Assert.Equal((0, 40), (entry.DeltaX, entry.DeltaY));
+        Assert.Same(scroller, entry.Target);
+        Assert.Equal(0, entry.Duration);
+        Assert.Equal(1u, entry.FramesProduced);
+        Assert.Equal(1u, entry.FramesExpected);
+        Assert.Equal(0, entry.CheckerboardTime);
+        Assert.True(entry.FirstFrameTime > entry.StartTime);
+
+        // The target is null once it is disconnected
+        scroller.Remove();
+        Assert.Null(entry.Target);
+    }
+
+    [Fact]
+    public void ScrollTiming_WheelGesture_IsOneEntry()
+    {
+        var document = Load("<div id=scroller><div id=content></div></div>", smooth: true);
+        var entries = ObserveScrolls(document);
+        var input = document.BrowsingContext!.Input;
+        Assert.True(input.Wheel(50, 50, 0, 40));
+        RunFrames(2);
+        Assert.True(input.Wheel(50, 50, 0, 40));
+        RunFrames(2);
+        Assert.Empty(entries);
+
+        // The gesture ends 100 ms after the last wheel event
+        RunFrames(8);
+        var entry = Assert.Single(entries);
+        Assert.Equal("wheel", entry.ScrollSource);
+        Assert.Equal(80, entry.DeltaY);
+        Assert.Equal(2u, entry.FramesProduced);
+        Assert.InRange(entry.Duration, 33, 35);
+        Assert.Equal(3u, entry.FramesExpected);
+    }
+
+    [Fact]
+    public void ScrollTiming_DirectionChange_StartsANewEntry()
+    {
+        var document = Load("<div id=scroller><div id=content></div></div>", smooth: true);
+        var entries = ObserveScrolls(document);
+        var input = document.BrowsingContext!.Input;
+        Assert.True(input.Wheel(50, 50, 0, 40));
+        RunFrames();
+        Assert.True(input.Wheel(50, 50, 0, -10));
+        RunFrames(10);
+        Assert.Equal([40, -10], entries.Select(entry => entry.DeltaY));
+    }
+
+    [Fact]
+    public void ScrollTiming_Keys_SmoothScroll()
+    {
+        var document = Load("<div id=scroller tabindex=0><div id=content></div></div>", smooth: true);
+        var scroller = (HtmlElement)document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        scroller.Focus();
+        EventDispatcher.Dispatch(new KeyboardEvent("keydown", new KeyboardEventInit { Key = "ArrowDown", Bubbles = true, Cancelable = true, Composed = true }) { IsTrusted = true }, scroller);
+        RunFrames(30);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal("keyboard", entry.ScrollSource);
+        Assert.Equal(40, entry.DeltaY);
+        Assert.Same(scroller, entry.Target);
+        Assert.True(entry.FramesProduced > 1);
+        Assert.True(entry.FramesExpected >= entry.FramesProduced);
+        Assert.True(entry.Duration > 0);
+    }
+
+    [Fact]
+    public void ScrollTiming_ProgrammaticScroll_EndsTheUserScroll()
+    {
+        var document = Load("<div id=scroller><div id=content></div></div>", smooth: true);
+        var scroller = document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        Assert.True(document.BrowsingContext!.Input.Wheel(50, 50, 0, 40));
+        RunFrames();
+        scroller.ScrollTop = 500;
+        RunFrames(10);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal("wheel", entry.ScrollSource);
+        Assert.Equal(40, entry.DeltaY);
+    }
+
+    private static void PressKey(Element target, string key)
+        => EventDispatcher.Dispatch(new KeyboardEvent("keydown", new KeyboardEventInit { Key = key, Bubbles = true, Cancelable = true, Composed = true }) { IsTrusted = true }, target);
+
+    [Fact]
+    public void ScrollTiming_Keys_RepeatedBeforeTheFirstFrame_KeepTheStartTime()
+    {
+        var document = Load("<div id=scroller tabindex=0><div id=content></div></div>", smooth: true);
+        var scroller = (HtmlElement)document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        scroller.Focus();
+        var start = document.DefaultView!.Performance.Now();
+        PressKey(scroller, "ArrowDown");
+        _clock.Advance(TimeSpan.FromMilliseconds(5));
+        PressKey(scroller, "ArrowDown");
+        RunFrames(30);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal(80, entry.DeltaY);
+        Assert.Equal(start, entry.StartTime);
+    }
+
+    [Fact]
+    public void ScrollTiming_Keys_OppositeDirectionDuringTheAnimation_StartsANewEntry()
+    {
+        var document = Load("<div id=scroller tabindex=0><div id=content></div></div>", smooth: true);
+        var scroller = (HtmlElement)document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        scroller.Focus();
+        PressKey(scroller, "ArrowDown");
+        PressKey(scroller, "ArrowDown");
+        RunFrames(2);
+        PressKey(scroller, "ArrowUp");
+        RunFrames(30);
+
+        // (the animation goes on to the new destination, below the position of the key)
+        Assert.Equal(2, entries.Count);
+        Assert.All(entries, entry => Assert.Equal("keyboard", entry.ScrollSource));
+        Assert.Equal(40, entries.Sum(entry => entry.DeltaY));
+    }
+
+    [Fact]
+    public void ScrollTiming_SnapBackToTheStart_IsReported()
+    {
+        var document = Load("<style>#scroller { scroll-snap-type: y mandatory } #scroller > div { height: 100px; scroll-snap-align: start }</style><div id=scroller><div></div><div></div><div></div></div>", smooth: true);
+        var scroller = document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        Assert.True(document.BrowsingContext!.Input.Wheel(50, 50, 0, 10));
+        RunFrames(30);
+        Assert.Equal(0, scroller.ScrollTop);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal((0, 0), (entry.DeltaX, entry.DeltaY));
+        Assert.True(entry.FramesProduced > 0);
+    }
+
+    [Fact]
+    public void ScrollTiming_Viewport_TargetIsTheDocument()
+    {
+        var document = Load("<div style='height: 5000px'></div>");
+        var entries = ObserveScrolls(document);
+        Assert.True(document.BrowsingContext!.Input.Wheel(50, 50, 0, 100));
+        RunFrames();
+
+        var entry = Assert.Single(entries);
+        Assert.Same(document, entry.Target);
+        Assert.Equal(100, entry.DeltaY);
+    }
+
+    [Fact]
+    public void ScrollTiming_Observer()
+    {
+        var document = Load("<div style='height: 5000px'></div>");
+        #region WebPlatform_ScrollTiming
+        var window = document.DefaultView!;
+        var scrolls = new List<string>();
+        var observer = new PerformanceObserver(window, (entries, _, _) =>
+        {
+            foreach (var entry in entries.GetEntriesByType("scroll").Cast<PerformanceScrollTiming>())
+            {
+                // e.g. "wheel: 0,100 px in 0 ms, 1/1 frames"
+                scrolls.Add($"{entry.ScrollSource}: {entry.DeltaX},{entry.DeltaY} px in {entry.Duration} ms, {entry.FramesProduced}/{entry.FramesExpected} frames");
+            }
+        });
+        observer.Observe(new PerformanceObserverInit { Type = "scroll", Buffered = true });
+        #endregion
+
+        document.BrowsingContext!.Input.Wheel(50, 50, 0, 100);
+        RunFrames();
+        Assert.Equal(["wheel: 0,100 px in 0 ms, 1/1 frames"], scrolls);
+    }
+
+    [Fact]
+    public void ScrollTiming_NoScroll_NoEntry()
+    {
+        var document = Load("<div id=scroller><div id=content></div></div>");
+        var entries = ObserveScrolls(document);
+        Assert.False(document.BrowsingContext!.Input.Wheel(50, 50, 0, -40));
+        RunFrames();
+        Assert.Empty(entries);
+    }
+
+    [Fact]
+    public void ScrollTiming_Disabled()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, Features = new WebPlatformFeatures { ScrollTimingEnabled = false } });
+        var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html>" + Style + "<div id=scroller><div id=content></div></div>");
+        _contexts.EventLoop.RunUntilIdle();
+        var entries = ObserveScrolls(document);
+        Assert.True(document.BrowsingContext!.Input.Wheel(50, 50, 0, 40));
+        RunFrames();
+        Assert.Empty(entries);
     }
 }

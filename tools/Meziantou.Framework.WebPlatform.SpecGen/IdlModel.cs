@@ -394,6 +394,7 @@ internal sealed partial class IdlModel
         AddAnimationRanges(model);
         AddUrlPatternTentativeMethods(model);
         AddLongTasks(model);
+        AddScrollTiming(model);
         ReplaceSvgPathSegmentInterfaceWithDictionary(model);
         RemoveSvgPathElementGeometryMembers(model);
         FixCssParserApiTypes(model);
@@ -691,6 +692,73 @@ internal sealed partial class IdlModel
                 SpecUrl = SpecUrl,
             };
         }
+    }
+
+    /// <summary>
+    /// The PerformanceScrollTiming interface of the scroll performance timing proposal
+    /// (https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md), which no specification
+    /// defines and the tentative web-platform-tests of <c>scroll-performance-timing</c> test:
+    /// <code>
+    /// [Exposed=Window] interface PerformanceScrollTiming : PerformanceEntry {
+    ///   readonly attribute DOMString entryType;
+    ///   readonly attribute DOMString name;
+    ///   readonly attribute DOMHighResTimeStamp startTime;
+    ///   readonly attribute DOMHighResTimeStamp firstFrameTime;
+    ///   readonly attribute DOMHighResTimeStamp duration;
+    ///   readonly attribute unsigned long framesExpected;
+    ///   readonly attribute unsigned long framesProduced;
+    ///   readonly attribute DOMHighResTimeStamp checkerboardTime;
+    ///   readonly attribute long deltaX;
+    ///   readonly attribute long deltaY;
+    ///   readonly attribute DOMString scrollSource;
+    ///   readonly attribute Node? target;
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddScrollTiming(IdlModel model)
+    {
+        const string Name = "PerformanceScrollTiming";
+        if (!model.Definitions.ContainsKey("PerformanceEntry") || model.Definitions.ContainsKey(Name))
+            return;
+
+        const string Source = "scroll-timing";
+        const string SpecUrl = "https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md";
+        List<(string Name, IdlType Type)> attributes =
+        [
+            ("entryType", new IdlType { Name = "DOMString" }),
+            ("name", new IdlType { Name = "DOMString" }),
+            ("startTime", new IdlType { Name = "DOMHighResTimeStamp" }),
+            ("firstFrameTime", new IdlType { Name = "DOMHighResTimeStamp" }),
+            ("duration", new IdlType { Name = "DOMHighResTimeStamp" }),
+            ("framesExpected", new IdlType { Name = "unsigned long" }),
+            ("framesProduced", new IdlType { Name = "unsigned long" }),
+            ("checkerboardTime", new IdlType { Name = "DOMHighResTimeStamp" }),
+            ("deltaX", new IdlType { Name = "long" }),
+            ("deltaY", new IdlType { Name = "long" }),
+            ("scrollSource", new IdlType { Name = "DOMString" }),
+            ("target", new IdlType { Name = "Node", Nullable = true }),
+        ];
+        model.Definitions[Name] = new IdlDefinition
+        {
+            Name = Name,
+            Kind = IdlDefinitionKind.Interface,
+            Inheritance = "PerformanceEntry",
+            Members = attributes.ConvertAll(attribute => new IdlMember
+            {
+                Kind = IdlMemberKind.Attribute,
+                Name = attribute.Name,
+                Type = attribute.Type,
+                Readonly = true,
+                Href = SpecUrl + "#attribute-reference",
+                Source = Source,
+                DeclaringDefinition = Name,
+            }),
+            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Value = "Window" }],
+            Href = SpecUrl + "#performancescrolltiming-interface",
+            Source = Source,
+            SpecUrl = SpecUrl,
+            ExperimentalApi = "ScrollTiming",
+        };
     }
 
     /// <summary>

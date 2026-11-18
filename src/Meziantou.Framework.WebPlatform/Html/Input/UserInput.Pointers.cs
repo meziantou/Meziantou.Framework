@@ -505,6 +505,13 @@ public sealed partial class UserInput
         var @event = CreateEvent(pointer, type, target, button, relatedTarget: null, detail: 0);
         @event.PseudoTargetValue = pointer.PseudoTarget;
         canceled = !Dispatch(@event, target);
+
+        // The position of the pointer extends the delegated ink trails of the window (https://wicg.github.io/ink-enhancement/)
+        if (type == "pointermove" && @event is PointerEvent pointerEvent && (target as Document ?? target.NodeDocument).RelevantWindow?.NavigatorOrNull?.InkOrNull is { } ink)
+        {
+            ink.OnPointerMove(pointerEvent);
+        }
+
         return pointer.PreviousTarget;
     }
 

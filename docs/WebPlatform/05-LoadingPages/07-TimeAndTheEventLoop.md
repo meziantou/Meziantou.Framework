@@ -182,6 +182,36 @@ last times the event loop read the clock (`performance.now()`, the timers). The 
 spends on the styles and the layout: `styleDuration`, `layoutDuration` and the `forced*Duration` of the scripts are 0, and
 the frames have no `presentationTime`.
 
+## Scroll timing
+
+The scrolls of the user (the wheel, the keys, a touch, a scrollbar) are reported as a
+[PerformanceScrollTiming](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceScrollTiming) to the `scroll` performance observers of the window of the scrolled document, as in the
+[proposal](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md) of Microsoft
+Edge. The API is experimental (diagnostic `WEBPLATEXP0022`):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/UserScrollingTests.cs;region=WebPlatform_ScrollTiming;format=md-fenced-code-block;dedent=true -->
+```csharp
+var window = document.DefaultView!;
+var scrolls = new List<string>();
+var observer = new PerformanceObserver(window, (entries, _, _) =>
+{
+    foreach (var entry in entries.GetEntriesByType("scroll").Cast<PerformanceScrollTiming>())
+    {
+        // e.g. "wheel: 0,100 px in 0 ms, 1/1 frames"
+        scrolls.Add($"{entry.ScrollSource}: {entry.DeltaX},{entry.DeltaY} px in {entry.Duration} ms, {entry.FramesProduced}/{entry.FramesExpected} frames");
+    }
+});
+observer.Observe(new PerformanceObserverInit { Type = "scroll", Buffered = true });
+```
+<!-- endref -->
+
+A scroll starts with its first input and ends with its `scrollend` event: a gesture of the wheel, a smooth scroll of a
+key and the snap at the end of a gesture are one scroll. An input from another source, or in the opposite direction,
+starts a new scroll. The frames are the rendering updates of the event loop: `framesProduced` counts the ones that
+displayed a new scroll position, `framesExpected` the frames at 60 Hz during the scroll (at least the frames produced:
+an instant scroll is displayed by one frame), and `checkerboardTime` is 0. The scrolls of the scripts (`scrollTo()`...)
+are not reported.
+
 ## Run the event loop on your own thread
 
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is

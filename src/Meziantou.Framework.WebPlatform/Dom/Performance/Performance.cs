@@ -1,3 +1,5 @@
+#pragma warning disable WEBPLATEXP0022 // The scroll performance timing is a proposal
+
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>
@@ -34,6 +36,7 @@ public sealed class Performance : EventTarget
     private List<PerformanceEntry>? _interactionContentfulPaintBuffer;
     private List<PerformanceEntry>? _softNavigationBuffer;
     private List<PerformanceEntry>? _longTaskBuffer;
+    private List<PerformanceEntry>? _scrollBuffer;
     private List<PerformanceEntry>? _longAnimationFrameBuffer;
     private EventCounts? _eventCounts;
     private ulong _paintDroppedEntriesCount;
@@ -45,6 +48,7 @@ public sealed class Performance : EventTarget
     private ulong _interactionContentfulPaintDroppedEntriesCount;
     private ulong _softNavigationDroppedEntriesCount;
     private ulong _longTaskDroppedEntriesCount;
+    private ulong _scrollDroppedEntriesCount;
     private ulong _longAnimationFrameDroppedEntriesCount;
     private IReadOnlyList<string>? _supportedEntryTypes;
     private ulong _lastEntryId = (ulong)System.Security.Cryptography.RandomNumberGenerator.GetInt32(1, 10_000);
@@ -65,7 +69,7 @@ public sealed class Performance : EventTarget
     /// <c>event</c> and <c>first-input</c> (see <see cref="WebPlatformFeatures.EventTimingEnabled"/>), <c>interaction-contentful-paint</c>
     /// and <c>soft-navigation</c> (see <see cref="WebPlatformFeatures.SoftNavigationsEnabled"/>), <c>largest-contentful-paint</c> (see <see cref="WebPlatformFeatures.LargestContentfulPaintEnabled"/>), <c>layout-shift</c>
     /// (see <see cref="WebPlatformFeatures.LayoutInstabilityEnabled"/>), <c>long-animation-frame</c> (see <see cref="WebPlatformFeatures.LongAnimationFramesEnabled"/>), <c>longtask</c> (see <see cref="WebPlatformFeatures.LongTasksEnabled"/>), <c>navigation</c> (see <see cref="WebPlatformFeatures.NavigationTimingEnabled"/>)
-    /// <c>paint</c> (see <see cref="WebPlatformFeatures.PaintTimingEnabled"/>) and <c>visibility-state</c> (see
+    /// <c>paint</c> (see <see cref="WebPlatformFeatures.PaintTimingEnabled"/>), <c>scroll</c> (see <see cref="WebPlatformFeatures.ScrollTimingEnabled"/>) and <c>visibility-state</c> (see
     /// <see cref="WebPlatformFeatures.VisibilityStateEntryEnabled"/>); <c>mark</c> and <c>measure</c> (see
     /// <see cref="WebPlatformFeatures.UserTimingEnabled"/>); and <c>resource</c>.
     /// </summary>
@@ -134,6 +138,11 @@ public sealed class Performance : EventTarget
         }
 
         types.Add(PerformanceResourceTiming.ResourceEntryType);
+        if (isWindow && features.ScrollTimingEnabled)
+        {
+            types.Add(PerformanceScrollTiming.ScrollEntryType);
+        }
+
         if (isWindow && features.SoftNavigationsEnabled)
         {
             types.Add(PerformanceSoftNavigation.SoftNavigationEntryType);
@@ -477,6 +486,7 @@ public sealed class Performance : EventTarget
         InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintBuffer ?? [],
         PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationBuffer ?? [],
         PerformanceLongTaskTiming.LongTaskEntryType => _longTaskBuffer ?? [],
+        PerformanceScrollTiming.ScrollEntryType => _scrollBuffer ?? [],
         PerformanceLongAnimationFrameTiming.LongAnimationFrameEntryType => _longAnimationFrameBuffer ?? [],
         _ => [],
     };
@@ -495,6 +505,7 @@ public sealed class Performance : EventTarget
         InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintDroppedEntriesCount,
         PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationDroppedEntriesCount,
         PerformanceLongTaskTiming.LongTaskEntryType => _longTaskDroppedEntriesCount,
+        PerformanceScrollTiming.ScrollEntryType => _scrollDroppedEntriesCount,
         PerformanceLongAnimationFrameTiming.LongAnimationFrameEntryType => _longAnimationFrameDroppedEntriesCount,
         _ => 0,
     };
@@ -696,6 +707,12 @@ public sealed class Performance : EventTarget
     /// timeline (<see cref="GetEntries"/>).
     /// </summary>
     internal void QueueLongTaskEntry(PerformanceLongTaskTiming entry) => QueueBufferedEntry(entry, ref _longTaskBuffer, PerformanceLongTaskTiming.MaxBufferSize, ref _longTaskDroppedEntriesCount);
+
+    /// <summary>
+    /// A scroll entry: queued to the observers and added to the buffer of the <c>scroll</c> type, which the <c>buffered</c>
+    /// observers read; it is not available from the performance timeline (<see cref="GetEntries"/>).
+    /// </summary>
+    internal void QueueScrollEntry(PerformanceScrollTiming entry) => QueueBufferedEntry(entry, ref _scrollBuffer, PerformanceScrollTiming.MaxBufferSize, ref _scrollDroppedEntriesCount);
 
     /// <summary>
     /// A long animation frame entry (https://w3c.github.io/long-animation-frames/#queue-a-long-animation-frame-entry): queued

@@ -1,6 +1,8 @@
 using System.Collections.Frozen;
 using Meziantou.Framework.WebPlatform.Dom;
 
+#pragma warning disable WEBPLATEXP0022 // The scroll performance timing is a proposal
+
 namespace Meziantou.Framework.WebPlatform.Scripting;
 
 // The features of the web platform disabled by BrowsingContextOptions.Features, as the runtime flags of a browser
@@ -153,6 +155,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         ["PerformanceNavigation"] = static features => features.NavigationTimingEnabled,
         ["PerformanceLongTaskTiming"] = static features => features.LongTasksEnabled,
         ["TaskAttributionTiming"] = static features => features.LongTasksEnabled,
+        ["PerformanceScrollTiming"] = features => features.ScrollTimingEnabled,
         ["PerformanceLongAnimationFrameTiming"] = static features => features.LongAnimationFramesEnabled,
         ["PerformanceScriptTiming"] = static features => features.LongAnimationFramesEnabled,
         ["Scheduling"] = static features => features.InputPendingEnabled,

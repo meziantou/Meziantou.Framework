@@ -6,6 +6,7 @@
 
 #pragma warning disable WEBPLATEXP0004 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0021 // The conversions use the experimental Web IDL interfaces
+#pragma warning disable WEBPLATEXP0022 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0023 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0024 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0025 // The conversions use the experimental Web IDL interfaces

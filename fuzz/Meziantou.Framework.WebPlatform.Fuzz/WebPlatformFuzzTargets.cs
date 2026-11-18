@@ -105,6 +105,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-dictionary-decompression", DictionaryDecompression) { Seeds = GetDictionaryDecompressionSeeds },
         new("webplatform-integrity-signatures", data => IntegritySignatureVerification(FuzzText.Decode(data))) { Seeds = GetIntegritySignatureSeeds, Dictionary = StructuredFieldTokens },
         new("webplatform-pinch-zoom", PinchZoom) { Seeds = GetPinchZoomSeeds, Dictionary = PinchZoomTokens },
+        new("webplatform-user-scroll", UserScroll) { Seeds = GetUserScrollSeeds, Dictionary = UserScrollTokens },
         new("webplatform-entries-path", data => EntriesPathResolution(FuzzText.Decode(data))) { Seeds = GetEntriesPathSeeds, Dictionary = EntriesPathTokens },
         new("webplatform-drag-and-drop", DragAndDrop) { Seeds = GetDragAndDropSeeds, Dictionary = DragTokens },
     ];

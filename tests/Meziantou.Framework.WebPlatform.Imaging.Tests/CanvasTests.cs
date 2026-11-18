@@ -1366,6 +1366,19 @@ public sealed class CanvasTests : IDisposable
         Assert.Contains(pixels, value => value is > 0 and < 255);
     }
 
+    [Fact]
+    public void CanvasFilter_TurbulenceIsTheNoiseOfAnSvgFeTurbulenceElement()
+    {
+        var context = _pages.Load("<svg width=0 height=0><filter id=t><feTurbulence baseFrequency='0.05' numOctaves='2' seed='3'/></filter></svg><canvas id=a width=20 height=10></canvas><canvas id=b width=20 height=10></canvas>", scriptingEnabled: true);
+        var filtered = (CanvasRenderingContext2D)((HtmlCanvasElement)context.Document!.GetElementById("a")!).GetContext("2d")!;
+        var referenced = (CanvasRenderingContext2D)((HtmlCanvasElement)context.Document!.GetElementById("b")!).GetContext("2d")!;
+        filtered.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "turbulence", ["baseFrequency"] = 0.05, ["numOctaves"] = 2, ["seed"] = 3 });
+        filtered.FillRect(0, 0, 1, 1);
+        referenced.Filter = "url(#t)";
+        referenced.FillRect(0, 0, 1, 1);
+        Assert.Equal(referenced.GetImageData(0, 0, 20, 10).Data.ToArray(), filtered.GetImageData(0, 0, 20, 10).Data.ToArray());
+    }
+
 #pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
     [Fact]
     public void CanvasFilter_IsTheFilterOfALayer()

@@ -180,7 +180,8 @@ A [CanvasFilter](cref:Meziantou.Framework.WebPlatform.Dom.CanvasFilter) describe
 primitives instead of CSS filter functions. It is the [Filter](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.Filter)
 of a context, or the filter of a layer. Each primitive is a dictionary whose `name` is `gaussianBlur`, `dropShadow`,
 `colorMatrix`, `componentTransfer`, `convolveMatrix` or `turbulence`, and whose other entries are the attributes of the
-SVG primitive (`stdDeviation`, `dx`, `floodColor`, `funcR`, `kernelMatrix`, `baseFrequency`...):
+SVG primitive (`stdDeviation`, `dx`, `floodColor`, `funcR`, `kernelMatrix`, `baseFrequency`...). The primitives apply in
+sRGB, except `turbulence`, whose noise is generated in linearRGB as the one of `feTurbulence`:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasFilters;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -2178,7 +2178,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-blend-mode.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-blur-filter-on-div.tentative.html": {
     "reftest": "PASS"

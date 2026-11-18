@@ -1070,6 +1070,15 @@ reports the cross-origin descendants), or `window`. The durations are whole mill
 and the work of the user agent outside of the tasks are not reported; a synchronous `XMLHttpRequest` lasts as long as the
 `DocumentLoader` takes.
 
+**[Scroll timing](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md)** (a
+proposal, experimental: `WEBPLATEXP0021`): a scroll of the user (the wheel, the keys, a touch, a scrollbar) of a scrolling
+box, from its first input to its `scrollend` event, is reported as a `PerformanceScrollTiming` entry to the window of the
+document (`buffered` observers included: the buffer holds 150 entries; the entries are not in `getEntries()`). An input
+of another source, or in the opposite direction, starts a new entry. The frames are the rendering updates: `framesProduced`
+counts the ones whose scroll position changed, `framesExpected` is `ceil(duration / 16.67)` but at least `framesProduced`,
+`checkerboardTime` is 0, and `target` is the scroll container, or the document for the viewport. Not done: the scrolls of
+the scripts (`programmatic`) and of the zoomed visual viewport are not reported.
+
 **[Long Animation Frames](https://w3c.github.io/long-animation-frames/)** (a draft that Chromium implements): the tasks of
 a window that run scripts, until the rendering update when one is scheduled (the frame then ends with the rendering update,
 whose `renderStart` and `styleAndLayoutStart`, the time after the animation frame callbacks, are set), that last 50 ms or
@@ -4325,6 +4334,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `UserTimingEnabled` | `PerformanceMark`, `PerformanceMeasure`, `performance.mark()`, `measure()`, `clearMarks()`, `clearMeasures()` and the `mark` and `measure` entry types |
 | `NavigationTimingEnabled` | `PerformanceNavigationTiming`, `PerformanceTiming`, `PerformanceNavigation`, `performance.timing`, `performance.navigation` and the `navigation` entry type |
 | `LongTasksEnabled` | `PerformanceLongTaskTiming`, `TaskAttributionTiming` and the `longtask` entry type: no task is reported |
+| `ScrollTimingEnabled` | `PerformanceScrollTiming` and the `scroll` entry type: no scroll is reported |
 | `LongAnimationFramesEnabled` | `PerformanceLongAnimationFrameTiming`, `PerformanceScriptTiming` and the `long-animation-frame` entry type: no frame is reported |
 | `ScrollDrivenAnimationsEnabled` | `ScrollTimeline`, `ViewTimeline`, `Animation.rangeStart` and `Animation.rangeEnd`; the scroll and view timelines of `animation-timeline` are then no timeline |
 | `SvgAnimationsEnabled` | The SVG animations (SMIL): the `animate`, `set`, `animateMotion` and `animateTransform` elements have no effect and fire no event, and `TimeEvent` is hidden |

@@ -103,6 +103,8 @@ The size of a screenshot is the size of its area in CSS pixels multiplied by the
 A screenshot paints the current state of the page: the layout is computed when it is out of date, and the CSS
 animations are painted at the time of the clock of the event loop. Take it from the thread of the event loop, after the
 resources are loaded ([RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync)): an image that is not loaded yet is not drawn.
+The delegated ink trails of `navigator.ink` that did not expire are drawn over the page (see
+[User input](../05-LoadingPages/06-UserInput.md)).
 
 ## Animated images
 

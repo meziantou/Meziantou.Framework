@@ -406,9 +406,10 @@ public sealed partial class UserInput
     /// Scrolls a scrolling box by the deltas in the axes the user can scroll (<c>overflow: auto</c> or <c>scroll</c>, with
     /// overflow) and that are not at their limit (from the destination of its smooth scroll in progress, except for a direct
     /// manipulation, which moves the contents under the pointer). A scroll snap container snaps (https://drafts.csswg.org/css-scroll-snap-1/#choosing),
-    /// see <see cref="LayoutEngine.ScrollByUser"/>. Returns whether the box scrolled.
+    /// see <see cref="LayoutEngine.ScrollByUser"/>. The source of the scroll for the scroll performance timing is the one of
+    /// <paramref name="kind"/> unless <paramref name="scrollSource"/> is set (see <see cref="LayoutEngine.GetScrollSource"/>). Returns whether the box scrolled.
     /// </summary>
-    private static bool ScrollBox(Document document, ScrollState state, ref double deltaX, ref double deltaY, UserScrollUnit unit, UserScrollKind kind)
+    private static bool ScrollBox(Document document, ScrollState state, ref double deltaX, ref double deltaY, UserScrollUnit unit, UserScrollKind kind, string? scrollSource = null)
     {
         if (kind == UserScrollKind.Directional)
         {
@@ -432,7 +433,7 @@ public sealed partial class UserInput
             _ => (1d, 1d),
         };
         var delta = new PhysicalOffset(canScrollX ? deltaX * scaleX : 0, canScrollY ? deltaY * scaleY : 0);
-        document.GetLayoutEngine().ScrollByUser(state, delta, kind, isAbsolute: unit == UserScrollUnit.Document);
+        document.GetLayoutEngine().ScrollByUser(state, delta, kind, isAbsolute: unit == UserScrollUnit.Document, scrollSource);
         return true;
     }
 }

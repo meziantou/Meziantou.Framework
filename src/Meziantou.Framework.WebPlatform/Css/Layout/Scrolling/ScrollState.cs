@@ -105,6 +105,9 @@ internal sealed class ScrollState
     /// <summary>Whether the scroll position changed since the last <c>scrollend</c> event was queued (the scroll operations that change nothing fire no <c>scrollend</c>).</summary>
     internal bool ChangedSinceScrollEnd { get; set; }
 
+    /// <summary>The scroll of the user measured for the scroll performance timing, or null (see <see cref="LayoutEngine.TrackUserScroll"/>).</summary>
+    internal ScrollTimingRecord? ScrollTiming { get; set; }
+
     /// <summary>Whether the state was associated with a fragment by the last layout (the states of the boxes that are not scroll containers anymore are discarded).</summary>
     internal int LayoutVersion { get; set; }
 

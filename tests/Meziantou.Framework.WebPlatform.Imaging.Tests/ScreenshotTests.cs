@@ -945,4 +945,71 @@ public sealed class ScreenshotTests : IDisposable
 
         return ink;
     }
+
+    [Fact]
+    public async Task DelegatedInkTrail()
+    {
+        var context = _pages.Load("<div id=area style='position: absolute; left: 10px; top: 10px; width: 100px; height: 60px'></div>");
+        var area = context.Document.GetElementById("area")!;
+        var presenter = await context.Window.Navigator.Ink.RequestPresenter(new InkPresenterParam { PresentationArea = area });
+        var style = new InkTrailStyle { Color = "lime", Diameter = 6 };
+        var started = false;
+        area.AddEventListener("pointermove", e =>
+        {
+            if (!started)
+            {
+                presenter.UpdateInkTrailStartPoint((PointerEvent)e, style);
+                started = true;
+            }
+        });
+
+        var pen = context.Input.CreatePointer("pen");
+        pen.Move(20, 30);
+        pen.Move(80, 30);
+        pen.Move(150, 30);
+
+        // The trail goes from the start point through the later positions of the pen, clipped to the presentation area
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.White, screenshot.GetPixel(15, 30));
+            Assert.Equal(Colors.Lime, screenshot.GetPixel(20, 30));
+            Assert.Equal(Colors.Lime, screenshot.GetPixel(50, 31));
+            Assert.Equal(Colors.Lime, screenshot.GetPixel(105, 30));
+            Assert.Equal(Colors.White, screenshot.GetPixel(115, 30));
+            Assert.Equal(Colors.White, screenshot.GetPixel(50, 36));
+        }
+
+        // The trail is removed after the next animation frame
+        for (var i = 0; i < 2; i++)
+        {
+            context.Window.RequestAnimationFrame(_ => { });
+            _pages.Clock.Advance(TimeSpan.FromMilliseconds(17));
+            context.EventLoop.RunUntilIdle();
+        }
+
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.White, screenshot.GetPixel(50, 30));
+        }
+    }
+
+    [Fact]
+    public async Task DelegatedInkTrail_InfiniteDiameter_CoversThePresentationArea()
+    {
+        var context = _pages.Load("<div id=area style='position: absolute; left: 10px; top: 10px; width: 100px; height: 60px'></div>");
+        var area = context.Document.GetElementById("area")!;
+        var presenter = await context.Window.Navigator.Ink.RequestPresenter(new InkPresenterParam { PresentationArea = area });
+        var style = new InkTrailStyle { Color = "blue", Diameter = double.PositiveInfinity };
+        area.AddEventListener("pointermove", e => presenter.UpdateInkTrailStartPoint((PointerEvent)e, style), new AddEventListenerOptions { Once = true });
+
+        var pen = context.Input.CreatePointer("pen");
+        pen.Move(20, 30);
+        pen.Move(30, 30);
+
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(10, 10));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(109, 69));
+        Assert.Equal(Colors.White, screenshot.GetPixel(9, 9));
+        Assert.Equal(Colors.White, screenshot.GetPixel(110, 70));
+    }
 }

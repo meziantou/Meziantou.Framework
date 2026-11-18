@@ -541,6 +541,9 @@ public sealed partial class DomEventLoop
     /// <summary>The number of rendering updates: the documents remember whether a rendering update skips them (see <see cref="Document.IsSkippedByRenderingUpdate"/>).</summary>
     private long _renderingUpdateCount;
 
+    /// <summary>The number of rendering updates the event loop ran (e.g. the delegated ink trails expire after the rendering update that follows their start).</summary>
+    internal long RenderingUpdateCount => _renderingUpdateCount;
+
     /// <summary>
     /// "Filter non-renderable documents" of https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering, for the
     /// documents that wait for a step of the rendering update: returns the documents that are not render-blocked. The

@@ -215,3 +215,13 @@ behavior may change while the proposal is under discussion.
 elements, as tested by the web-platform-tests of `svg/interact/scripted`: it reflects the `async` content attribute, and is
 true for a script created by a script until it is set. SVG 2 does not define it (the `async` and `defer` content attributes
 of the SVG scripts are processed as the ones of the HTML scripts). Its API and behavior may change.
+
+<a id="WEBPLATEXP0021"></a>
+
+## WEBPLATEXP0021: scroll performance timing
+
+`PerformanceScrollTiming` and `WebPlatformFeatures.ScrollTimingEnabled` implement the scroll performance timing of the
+[proposal](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md) of Microsoft
+Edge: the `scroll` entries of the performance timeline report the frames of the scrolls of the user. No specification
+defines it, and the web-platform-tests of `scroll-performance-timing` are tentative. Its API and behavior may change while
+the proposal is under discussion.

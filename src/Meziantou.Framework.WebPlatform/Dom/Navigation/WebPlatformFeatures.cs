@@ -515,6 +515,14 @@ public sealed record WebPlatformFeatures
     public bool LongTasksEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the scroll performance timing is exposed (https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md,
+    /// a proposal): the <c>PerformanceScrollTiming</c> interface and the <c>scroll</c> entry type. The scrolls of the user (the
+    /// wheel, the keys, the touches and the scrollbars) are reported to the windows of their documents. The default is true.
+    /// </summary>
+    [Experimental(ExperimentalApis.ScrollTiming, UrlFormat = ExperimentalApis.UrlFormat)]
+    public bool ScrollTimingEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Long Animation Frames API is exposed (https://w3c.github.io/long-animation-frames/): the
     /// <c>PerformanceLongAnimationFrameTiming</c> and <c>PerformanceScriptTiming</c> interfaces and the
     /// <c>long-animation-frame</c> entry type. The tasks of a window that run scripts until the rendering is updated, for 50

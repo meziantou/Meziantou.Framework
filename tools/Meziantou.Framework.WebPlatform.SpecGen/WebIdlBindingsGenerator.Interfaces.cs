@@ -15,9 +15,17 @@ internal sealed partial class WebIdlBindingsGenerator
     private string GenerateInterface(InterfaceModel model)
     {
         var writer = new CodeWriter("the webref IDL of " + model.Name + " and the .NET members annotated with [IdlMember]");
+        var clrType = model.ClrType!;
+
+        // The bindings of an experimental type (e.g. PerformanceScrollTiming) use it without reporting its diagnostic
+        if (clrType.GetCustomAttribute<ExperimentalAttribute>()?.DiagnosticId is { } typeExperimentalId)
+        {
+            writer.Line($"#pragma warning disable {typeExperimentalId} // The binding exposes the experimental Web IDL interface");
+            writer.Line();
+        }
+
         writer.Line("namespace Meziantou.Framework.WebPlatform.Scripting.Generated;");
         writer.Line();
-        var clrType = model.ClrType!;
         var clrName = TypeName(clrType);
         using (writer.Block($"internal static class {BindingClass(model.Name)} {Constraints}"))
         {

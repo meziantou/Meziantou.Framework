@@ -57,8 +57,11 @@ internal sealed partial class LayoutEngine
     /// box, https://drafts.csswg.org/css-scroll-snap-1/#absolute-scroll): it snaps to the closest snap position and it is not a
     /// relative scroll for the <c>scrolled</c> feature of the scroll-state queries.
     /// </param>
-    public void ScrollByUser(ScrollState state, PhysicalOffset delta, UserScrollKind kind, bool isAbsolute = false)
+    /// <param name="scrollSource">The source of the scroll for the scroll performance timing, or null for the one of <paramref name="kind"/> (see <see cref="GetScrollSource"/>).</param>
+    public void ScrollByUser(ScrollState state, PhysicalOffset delta, UserScrollKind kind, bool isAbsolute = false, string? scrollSource = null)
     {
+        scrollSource ??= GetScrollSource(kind);
+
         // https://drafts.csswg.org/css-overflow-5/#current-scroll-target: the scroll of the user has no target
         SetCurrentScrollTarget(state, target: null);
         switch (kind)
@@ -84,6 +87,8 @@ internal sealed partial class LayoutEngine
                     return;
                 }
 
+                TrackUserScroll(state, scrollSource, position - state.Offset);
+
                 _ = PerformScroll(state, position, SmoothUserScrolling ? ScrollBehavior.Smooth : ScrollBehavior.Instant, associatedElement: null);
                 if (state.SmoothScroll is { } userScroll)
                 {
@@ -101,6 +106,7 @@ internal sealed partial class LayoutEngine
                 var start = state.UserGestureStart ?? state.Offset;
                 BeginUserGesture(state, start);
                 var position = state.Clamp(state.Offset + delta);
+                TrackUserScroll(state, scrollSource, position - state.Offset);
                 RecordRelativeScroll(state, position - state.Offset);
                 UpdateUserGestureSnapTargets(state, start, position);
                 SetScrollPosition(state, position);
@@ -133,6 +139,7 @@ internal sealed partial class LayoutEngine
                 state.UserGestureHeld = true;
                 state.UserGestureVersion++;
                 var position = state.Clamp(state.Offset + delta);
+                TrackUserScroll(state, scrollSource, position - state.Offset);
                 if (kind == UserScrollKind.DirectManipulation)
                 {
                     RecordRelativeScroll(state, position - state.Offset);

@@ -191,6 +191,65 @@ public sealed class SvgLayoutTests : IDisposable
         Assert.Equal((100d, 80d), (preformatted.GetStartPositionOfChar(3).X, preformatted.GetStartPositionOfChar(3).Y));
     }
 
+    [Theory]
+    [InlineData("start", 10, 10, 10)]
+    [InlineData("center", 30, 20, 40)]
+    [InlineData("end", 50, 30, 70)]
+    public void Text_ShapeInsideWrapsTheLinesInTheShape(string align, double expectedFirstLineX, double expectedSecondLineX, double expectedThirdLineX)
+    {
+        // "aaa", "bbbb" and "cc" are on three lines of 30px stacked from the top of the rectangle (21px above the baseline),
+        // each aligned in the rectangle by text-align; the x and y attributes are ignored
+        var document = Parse($"<svg><rect id=r x=10 y=20 width=100 height=100 /><text id=t x=500 y=500 style='font: 20px/30px Ahem; shape-inside: url(#r); text-align: {align}'>aaa bbbb cc</text></svg>");
+        var text = Get<SvgTextContentElement>(document, "t");
+        Assert.Equal((expectedFirstLineX, 41d), (text.GetStartPositionOfChar(0).X, text.GetStartPositionOfChar(0).Y));
+        Assert.Equal((expectedSecondLineX, 71d), (text.GetStartPositionOfChar(4).X, text.GetStartPositionOfChar(4).Y));
+        Assert.Equal((expectedThirdLineX, 101d), (text.GetStartPositionOfChar(9).X, text.GetStartPositionOfChar(9).Y));
+    }
+
+    [Fact]
+    public void Text_ShapeInsideFlowsIntoTheNextShapeAroundTheSubtractedShapes()
+    {
+        // The first rectangle holds one line; the text overflows into the second one, where the subtracted rectangle breaks the
+        // first line into two segments; "eeeeeeee" does not fit in the shapes and is not rendered
+        var document = Parse("""
+            <svg>
+              <rect id=a x=0 y=0 width=100 height=30 /><rect id=b x=200 y=0 width=100 height=60 /><rect id=hole x=240 y=0 width=20 height=30 />
+              <text id=t style='font: 20px/30px Ahem; shape-inside: url(#a) url(#b); shape-subtract: url(#hole)'>aaaa bb cc dddd eeeeeeee</text>
+            </svg>
+            """);
+        var text = Get<SvgTextContentElement>(document, "t");
+        Assert.Equal((0d, 21d), (text.GetStartPositionOfChar(0).X, text.GetStartPositionOfChar(0).Y));
+        Assert.Equal((200d, 21d), (text.GetStartPositionOfChar(5).X, text.GetStartPositionOfChar(5).Y));
+        Assert.Equal((260d, 21d), (text.GetStartPositionOfChar(8).X, text.GetStartPositionOfChar(8).Y));
+        Assert.Equal((200d, 51d), (text.GetStartPositionOfChar(11).X, text.GetStartPositionOfChar(11).Y));
+        Assert.Equal(55, Get<SvgGraphicsElement>(document, "t").GetBBox().Height + Get<SvgGraphicsElement>(document, "t").GetBBox().Y);
+    }
+
+    [Fact]
+    public void Text_ShapeInsidePaddingMarginAndJustification()
+    {
+        // The padding insets the polygon of the viewport (300x150) to [20, 280], the margin of the subtracted rectangle expands it to x=20; the
+        // first line is justified: its space is widened so that the second "aa" ends at the end of the segment. The long word
+        // fits nowhere, so it and the text after it are not rendered
+        var document = Parse("""
+            <svg>
+              <rect id=hole x=0 y=0 width=10 height=200 style='shape-margin: 10px' />
+              <text id=t style='font: 20px/30px Ahem; shape-inside: polygon(0 0, 100% 0, 100% 100%, 0 100%); shape-padding: 20px; shape-subtract: url(#hole); text-align: justify'>aa aa aaaaaaaaaaaaaaaaaa b</text>
+              <text id=c style='font: 20px/30px Ahem; shape-inside: circle(50px at 100px 100px)'>aa</text>
+            </svg>
+            """);
+        var text = Get<SvgTextContentElement>(document, "t");
+        Assert.Equal((20d, 41d), (text.GetStartPositionOfChar(0).X, text.GetStartPositionOfChar(0).Y));
+        Assert.Equal((240d, 41d), (text.GetStartPositionOfChar(3).X, text.GetStartPositionOfChar(3).Y));
+        Assert.Equal(45, Get<SvgGraphicsElement>(document, "t").GetBBox().Height + Get<SvgGraphicsElement>(document, "t").GetBBox().Y, 6);
+
+        // The circle: the first line box (40px wide, 30px tall) fits from y=54, where the chord at the middle of its top row
+        // (y=54.5) is 41.5px wide, at the left end of that chord (the arcs of the circle are flattened into line segments)
+        var circle = Get<SvgTextContentElement>(document, "c").GetStartPositionOfChar(0);
+        Assert.Equal(75, circle.Y);
+        Assert.Equal(100 - Math.Sqrt((50 * 50) - (45.5 * 45.5)), circle.X, 0.2);
+    }
+
     [Fact]
     public void Shapes_LengthAndPointInFillAndStroke()
     {

@@ -116,8 +116,10 @@ internal struct SvgTextCharacter
 /// attributes other than the first <c>x</c> and <c>y</c>, <c>textLength</c> and the text paths are ignored.
 /// </para>
 /// <para>
-/// The content areas of <c>shape-inside</c> (and <c>shape-subtract</c>) are not supported (the text is not wrapped), neither are
-/// <c>side</c>, <c>method</c> and <c>spacing</c> of <c>textPath</c>.
+/// A text element with a <c>shape-inside</c> is laid out in the wrapping areas of its shapes (see <see cref="SvgTextWrappingArea"/>,
+/// https://svgwg.org/svg2-draft/text.html#TextShapeInside): the line boxes are placed where they fit, their lines are broken
+/// into segments aligned by <c>text-align</c>, and the text that does not fit in the last shape is not rendered.
+/// <c>side</c>, <c>method</c> and <c>spacing</c> of <c>textPath</c> are not supported.
 /// </para>
 /// </remarks>
 internal sealed class SvgTextLayout
@@ -263,7 +265,7 @@ internal sealed class SvgTextLayout
         private int[]? _bidiIndexes;
         private byte[]? _levels;
 
-        /// <summary>Whether the text is auto-wrapped (it has an <c>inline-size</c>): the text paths are ignored.</summary>
+        /// <summary>Whether the text is auto-wrapped (it has an <c>inline-size</c> or a <c>shape-inside</c>): the text paths are ignored.</summary>
         private bool _isWrapped;
 
         public SvgTextLayout Build(int version)
@@ -297,7 +299,26 @@ internal sealed class SvgTextLayout
             var isRightToLeft = _bidi is { Paragraphs: [var paragraph, ..] } ? paragraph.IsRightToLeft : layout.Direction == Direction.Rtl;
             var progressionSign = lineSign * (isRightToLeft ? -1 : 1);
             Shape(characters, isVertical, lines: null);
-            var lines = GetInlineSize(rootStyle, isVertical) is { } inlineSize ? BreakLines(characters, inlineSize) : null;
+
+            // https://svgwg.org/svg2-draft/text.html#TextShapeInside: shape-inside, when it sets a shape, takes precedence over
+            // inline-size; the characters that do not fit in the shapes are not rendered
+            List<Segment>? segments = null;
+            List<Line>? lines;
+            var hiddenStart = characters.Length;
+            if (SvgTextWrappingArea.Get(root, rootStyle, viewport, mode) is { } areas)
+            {
+                segments = FlowIntoAreas(characters, areas, rootStyle, mode, isRightToLeft, out hiddenStart);
+                lines = segments.ConvertAll(segment => new Line(segment.Start, segment.End));
+                if (hiddenStart < characters.Length)
+                {
+                    lines.Add(new Line(hiddenStart, characters.Length));
+                }
+            }
+            else
+            {
+                lines = GetInlineSize(rootStyle, isVertical) is { } inlineSize ? BreakLines(characters, inlineSize) : null;
+            }
+
             _isWrapped = lines is not null;
             if (lines is { Count: > 1 })
             {
@@ -313,7 +334,18 @@ internal sealed class SvgTextLayout
                 // inline-size property)"; https://svgwg.org/svg2-draft/text.html#TextElementTextLengthAttribute: "The textLength
                 // attribute is only applied when the wrapping area is not defined by the shape-inside or the inline-size properties"
                 Array.Clear(rotations);
-                PositionLines(characters, lines, rootStyle, mode, lineSign, progressionSign, characters.Length > 0 ? absolute[0] : default);
+                if (segments is not null)
+                {
+                    PositionSegments(characters, segments, rootStyle, mode, lineSign, progressionSign);
+                    for (var i = hiddenStart; i < characters.Length; i++)
+                    {
+                        characters[i].IsHidden = true;
+                    }
+                }
+                else
+                {
+                    PositionLines(characters, lines, rootStyle, mode, lineSign, progressionSign, characters.Length > 0 ? absolute[0] : default);
+                }
             }
             else
             {
@@ -836,10 +868,76 @@ internal sealed class SvgTextLayout
         /// </summary>
         private List<Line> BreakLines(SvgTextCharacter[] characters, double available)
         {
-            var count = _items.Count;
             var lines = new List<Line>();
+            var opportunities = GetLineBreakOpportunities();
+            var start = 0;
+            while (start < _items.Count)
+            {
+                var end = BreakLine(characters, opportunities, start, available, overflow: true);
+                lines.Add(new Line(start, end));
+                start = end;
+            }
+
+            return lines;
+        }
+
+        /// <summary>
+        /// Returns the end of the line that starts at a character, in an inline size: the line ends at a forced break (a
+        /// preserved line feed), or at the last soft wrap opportunity before the character that overflows (at a grapheme cluster
+        /// boundary with <c>overflow-wrap: anywhere | break-word</c> when there is none). The spaces at the end of a line hang.
+        /// </summary>
+        /// <param name="overflow">
+        /// Whether the line overflows the inline size when nothing fits in it (it then ends at the first opportunity); when
+        /// false, the start is returned instead.
+        /// </param>
+        private int BreakLine(SvgTextCharacter[] characters, LineBreakOpportunity[] opportunities, int start, double available, bool overflow)
+        {
+            // (a little more than the inline size: the sum of the advances is not exact)
+            var limit = available + 0.001;
+            var width = 0d;
+            var lastBreak = -1;
+            var lastEmergencyBreak = -1;
+            for (var i = start; i < _items.Count; i++)
+            {
+                var item = _items[i];
+
+                // A forced line break: the line feed ends its line
+                if (item.Character == '\n')
+                    return i + 1;
+
+                if (i > start && characters[i].IsClusterStart && item.Style.Layout.TextWrapMode == TextWrapMode.Wrap)
+                {
+                    if (opportunities[i] == LineBreakOpportunity.Allowed)
+                    {
+                        lastBreak = i;
+                    }
+                    else if (opportunities[i] == LineBreakOpportunity.Emergency)
+                    {
+                        lastEmergencyBreak = i;
+                    }
+                }
+
+                width += characters[i].Advance;
+                if (width <= limit || item.Character == ' ')
+                    continue;
+
+                var breakAt = lastBreak > start ? lastBreak : lastEmergencyBreak;
+                if (breakAt > start)
+                    return breakAt;
+
+                if (!overflow)
+                    return start;
+            }
+
+            return _items.Count;
+        }
+
+        /// <summary>Returns the soft wrap opportunities of the text (https://drafts.csswg.org/css-text-4/#line-breaking), before each character.</summary>
+        private LineBreakOpportunity[] GetLineBreakOpportunities()
+        {
+            var count = _items.Count;
             if (count == 0)
-                return lines;
+                return [];
 
             var text = new char[count];
             var runs = new List<LineBreakOptionsRun>();
@@ -857,59 +955,7 @@ internal sealed class SvgTextLayout
 
             var opportunities = new LineBreakOpportunity[count];
             new LineBreaker().FindOpportunities(text, CollectionsMarshal.AsSpan(runs), opportunities);
-
-            // (a little more than the inline size: the sum of the advances is not exact)
-            var limit = available + 0.001;
-            var lineStart = 0;
-            var width = 0d;
-            var lastBreak = -1;
-            var lastEmergencyBreak = -1;
-            for (var i = 0; i < count; i++)
-            {
-                var item = _items[i];
-                if (item.Character == '\n')
-                {
-                    // A forced line break: the line feed ends its line
-                    lines.Add(new Line(lineStart, i + 1));
-                    lineStart = i + 1;
-                    width = 0;
-                    lastBreak = lastEmergencyBreak = -1;
-                    continue;
-                }
-
-                if (i > lineStart && characters[i].IsClusterStart && item.Style.Layout.TextWrapMode == TextWrapMode.Wrap)
-                {
-                    if (opportunities[i] == LineBreakOpportunity.Allowed)
-                    {
-                        lastBreak = i;
-                    }
-                    else if (opportunities[i] == LineBreakOpportunity.Emergency)
-                    {
-                        lastEmergencyBreak = i;
-                    }
-                }
-
-                width += characters[i].Advance;
-                if (width <= limit || item.Character == ' ')
-                    continue;
-
-                var breakAt = lastBreak > lineStart ? lastBreak : lastEmergencyBreak;
-                if (breakAt <= lineStart)
-                    continue;
-
-                lines.Add(new Line(lineStart, breakAt));
-                lineStart = breakAt;
-                width = 0;
-                lastBreak = lastEmergencyBreak = -1;
-                i = breakAt - 1;
-            }
-
-            if (lineStart < count || lines.Count == 0)
-            {
-                lines.Add(new Line(lineStart, count));
-            }
-
-            return lines;
+            return opportunities;
 
             // https://drafts.csswg.org/css-text-4/#line-break-property: some rules depend on the content language
             static bool IsChineseOrJapanese(ComputedStyle style)
@@ -1045,6 +1091,194 @@ internal sealed class SvgTextLayout
                 for (var i = start; i < end; i++)
                 {
                     characters[i].Position += offset;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Lays out the text in the wrapping areas of <c>shape-inside</c> (https://svgwg.org/svg2-draft/text.html#TextLayoutAutoNotes):
+        /// the line boxes are stacked from the start of the first area along the block axis; a line box is placed at the first
+        /// position where it fits, and its line is broken into the segments of the area at that position (a subtracted shape
+        /// or a concave shape breaks it), which are filled in the inline direction of the paragraph. A segment where the next
+        /// word does not fit is skipped, and when nothing fits, the line box moves one unit along the block axis. The text
+        /// that overflows an area is laid out in the next one.
+        /// </summary>
+        /// <param name="hiddenStart">The first character that does not fit in the areas (the characters after it are not rendered).</param>
+        private List<Segment> FlowIntoAreas(SvgTextCharacter[] characters, List<SvgTextWrappingArea> areas, ComputedStyle rootStyle, WritingMode mode, bool isRightToLeft, out int hiddenStart)
+        {
+            // The number of successive positions where nothing fits after which the text overflows the area (the time to lay
+            // out a word that does not fit in a very large shape is bounded)
+            const int MaxEmptyPositions = 10_000;
+
+            var isVertical = mode != WritingMode.HorizontalTb;
+            var blockSign = mode is WritingMode.VerticalLr or WritingMode.SidewaysLr ? -1 : 1;
+            var opportunities = GetLineBreakOpportunities();
+            var strut = GetLineExtent(characters, 0, 0, rootStyle, isVertical);
+            var segments = new List<Segment>();
+            var index = 0;
+            foreach (var area in areas)
+            {
+                var block = area.BlockStart;
+                var emptyPositions = 0;
+                while (index < _items.Count && block < area.BlockEnd && emptyPositions < MaxEmptyPositions)
+                {
+                    // The line box is as tall as the strut, or as its characters when they are taller: it is fitted again
+                    var extent = strut;
+                    var (fitted, next) = Fill(area, block, extent);
+                    if (fitted.Count > 0 && GetLineExtent(characters, index, next, rootStyle, isVertical) is var actual && actual.Above + actual.Below > extent.Above + extent.Below)
+                    {
+                        extent = actual;
+                        (fitted, next) = Fill(area, block, extent);
+                    }
+
+                    if (fitted.Count == 0)
+                    {
+                        block++;
+                        emptyPositions++;
+                        continue;
+                    }
+
+                    segments.AddRange(fitted);
+                    index = next;
+                    block += extent.Above + extent.Below;
+                    emptyPositions = 0;
+                }
+            }
+
+            hiddenStart = index;
+            return segments;
+
+            // Fills the segments of a line box at a position of the block axis with the characters from the current one
+            (List<Segment> Segments, int Next) Fill(SvgTextWrappingArea area, double block, (double Above, double Below) extent)
+            {
+                var result = new List<Segment>();
+                var next = index;
+                var baseline = block + (blockSign > 0 ? extent.Above : extent.Below);
+                var available = area.GetSegments(block, block + extent.Above + extent.Below);
+                if (isRightToLeft)
+                {
+                    available.Reverse();
+                }
+
+                foreach (var (start, end) in available)
+                {
+                    if (next >= _items.Count)
+                        break;
+
+                    var lineEnd = BreakLine(characters, opportunities, next, end - start, overflow: false);
+                    if (lineEnd == next)
+                        continue;
+
+                    result.Add(new Segment(next, lineEnd, start, end, baseline));
+                    next = lineEnd;
+
+                    // A forced line break ends the line box
+                    if (_items[lineEnd - 1].Character == '\n')
+                        break;
+                }
+
+                return (result, next);
+            }
+        }
+
+        /// <summary>
+        /// Positions the segments of the lines of a text laid out in the wrapping areas of <c>shape-inside</c>: each segment is
+        /// aligned in its interval by <c>text-align</c> (https://drafts.csswg.org/css-text-4/#text-align-property; the spaces of
+        /// a justified segment that does not end a paragraph are widened to fill it), on the baseline of its line box. The
+        /// <c>text-anchor</c> property and the positioning attributes do not apply.
+        /// </summary>
+        private void PositionSegments(SvgTextCharacter[] characters, List<Segment> segments, ComputedStyle rootStyle, WritingMode mode, int lineSign, int progressionSign)
+        {
+            var isVertical = mode != WritingMode.HorizontalTb;
+            var blockSign = mode is WritingMode.VerticalLr or WritingMode.SidewaysLr ? -1 : 1;
+            var text = rootStyle.Layout.Text;
+            foreach (var (start, end, inlineStart, inlineEnd, baseline) in segments)
+            {
+                // The spaces (and the line feed) that end the segment hang
+                var contentEnd = end;
+                while (contentEnd > start && _items[contentEnd - 1].Character is ' ' or '\n')
+                {
+                    contentEnd--;
+                    if (_items[contentEnd].IsCollapsibleSpace)
+                    {
+                        characters[contentEnd].Advance = 0;
+                    }
+                }
+
+                // The last line of a paragraph is aligned by text-align-last (auto: as the other lines, start when they are justified)
+                var endsParagraph = end >= _items.Count || _items[end - 1].Character == '\n';
+                var align = !endsParagraph ? text.TextAlign
+                    : text.TextAlignLast != TextAlign.Auto ? text.TextAlignLast
+                    : text.TextAlign == TextAlign.Justify ? TextAlign.Start : text.TextAlign;
+                if (align is TextAlign.Justify or TextAlign.JustifyAll)
+                {
+                    Justify(characters, start, contentEnd, inlineEnd - inlineStart);
+                }
+
+                LayoutLine(characters, start, end, isVertical, lineSign, blockSign * baseline);
+
+                var min = double.PositiveInfinity;
+                var max = double.NegativeInfinity;
+                for (var i = start; i < contentEnd; i++)
+                {
+                    ref readonly var character = ref characters[i];
+                    var inline = Inline(character.Position, isVertical);
+                    var after = inline + (character.Advance * GetCharacterSign(character, i, lineSign));
+                    min = Math.Min(min, Math.Min(inline, after));
+                    max = Math.Max(max, Math.Max(inline, after));
+                }
+
+                if (!double.IsFinite(min))
+                {
+                    min = max = 0;
+                }
+
+                // The interval of the segment along the physical inline axis (the logical inline axis goes to the bottom of
+                // vertical text, to the top of sideways-lr text)
+                var (physicalStart, physicalEnd) = lineSign > 0 ? (inlineStart, inlineEnd) : (-inlineEnd, -inlineStart);
+                var shift = align switch
+                {
+                    TextAlign.Center => ((physicalStart + physicalEnd) / 2) - ((min + max) / 2),
+                    TextAlign.End => progressionSign > 0 ? physicalEnd - max : physicalStart - min,
+                    TextAlign.Left => lineSign > 0 ? physicalStart - min : physicalEnd - max,
+                    TextAlign.Right => lineSign > 0 ? physicalEnd - max : physicalStart - min,
+                    _ => progressionSign > 0 ? physicalStart - min : physicalEnd - max,
+                };
+
+                var offset = isVertical ? new SvgPoint(0, shift) : new SvgPoint(shift, 0);
+                for (var i = start; i < end; i++)
+                {
+                    characters[i].Position += offset;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Distributes the space that remains in a justified segment to its word separators (the spaces,
+        /// https://drafts.csswg.org/css-text-4/#justify-word), by widening their advances.
+        /// </summary>
+        private void Justify(SvgTextCharacter[] characters, int start, int contentEnd, double available)
+        {
+            var width = 0d;
+            var separators = 0;
+            for (var i = start; i < contentEnd; i++)
+            {
+                width += characters[i].Advance;
+                if (_items[i].Character == ' ' && characters[i].IsClusterStart)
+                {
+                    separators++;
+                }
+            }
+
+            if (separators == 0 || width >= available)
+                return;
+
+            var extra = (available - width) / separators;
+            for (var i = start; i < contentEnd; i++)
+            {
+                if (_items[i].Character == ' ' && characters[i].IsClusterStart)
+                {
+                    characters[i].Advance += extra;
                 }
             }
         }
@@ -1618,6 +1852,13 @@ internal sealed class SvgTextLayout
     /// <summary>A line of an auto-wrapped text: a range of characters.</summary>
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct Line(int Start, int End);
+
+    /// <summary>
+    /// A segment of a line of a text laid out in the wrapping areas of <c>shape-inside</c>: a range of characters, the interval
+    /// of the logical inline axis it is aligned in, and the position of the baseline of its line along the logical block axis.
+    /// </summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct Segment(int Start, int End, double InlineStart, double InlineEnd, double Baseline);
 
     /// <summary>A character of the content of the text, after the white space processing.</summary>
     [StructLayout(LayoutKind.Auto)]

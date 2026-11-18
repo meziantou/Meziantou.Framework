@@ -60,8 +60,8 @@ The features of `REQUIRES`:
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 250
-- **TEST BUG**: 1,078
-- **NOT IMPLEMENTED**: 3,831
+- **TEST BUG**: 1,082
+- **NOT IMPLEMENTED**: 3,827
 - **REQUIRES**: 764
   - `hardware`: 579
   - `layout`: 23

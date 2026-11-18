@@ -313,6 +313,38 @@ public sealed class DocumentationImageTests
         AssertImage(Rendering, "CanvasFilters", screenshot);
     }
 
+    [Fact]
+    public void SvgTextInShapes()
+    {
+        #region WebPlatformImaging_SvgTextInShapes
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 360, Height = 200 },
+            RenderingBackend = new ImagingRenderingBackend(),
+        });
+        var document = context.Navigate("https://example.com/", _ => """
+            <style>body { margin: 0 }</style>
+            <svg width="360" height="200" style="font: 13px sans-serif">
+              <circle id="circle" cx="100" cy="100" r="90" fill="#e0f2fe" />
+              <rect id="photo" x="20" y="70" width="70" height="60" fill="#94a3b8" style="shape-margin: 6px" />
+              <rect id="box" x="200" y="10" width="150" height="180" fill="#fef3c7" />
+              <!-- The text fills the circle around the photo, then overflows into the box -->
+              <text style="shape-inside: url(#circle) url(#box); shape-subtract: url(#photo); shape-padding: 8px; text-align: center">
+                The text of an SVG text element with shape-inside is wrapped in the shapes: the lines are broken where
+                they fit, around the shapes of shape-subtract, and aligned by text-align. When the first shape is full,
+                the text flows into the next one, and the text that does not fit in the last shape is not rendered.
+              </text>
+            </svg>
+            """);
+        context.EventLoop.RunUntilIdle();
+
+        using var screenshot = context.TakeScreenshot();
+        #endregion
+
+        Assert.Equal((360, 200), (screenshot.Width, screenshot.Height));
+        AssertImage(LoadingPages, "SvgTextInShapes", screenshot);
+    }
+
     /// <summary>
     /// Compares an image with the committed PNG: same size, and each component within 8 levels (the antialiasing may differ
     /// at the rounding of the floating-point operations between the processors).

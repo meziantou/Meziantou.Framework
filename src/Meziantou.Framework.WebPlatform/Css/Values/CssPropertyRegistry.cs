@@ -243,6 +243,10 @@ internal static partial class CssPropertyRegistry
         // https://drafts.csswg.org/css-grid-3/#placement-tolerance: flow-tolerance is the former name of fit-tolerance
         // (https://github.com/w3c/csswg-drafts/issues/10884), kept as a legacy name alias as in WebKit (the WPT tests use both)
         new("flow-tolerance", "normal | <length-percentage [0,\u221E]> | infinite", "normal", false, [], "fit-tolerance"),
+
+        // https://svgwg.org/svg2-draft/text.html#TextShapeSubtract: the shapes excluded from the wrapping area of the SVG texts
+        // laid out in the shapes of shape-inside (webref does not have the properties of SVG 2 that CSS does not define)
+        new("shape-subtract", "none | [ <basic-shape> | <url> ]+", "none", false, [], null, AnimationType: CssAnimationTypeKind.Discrete),
     ];
 
     /// <summary>

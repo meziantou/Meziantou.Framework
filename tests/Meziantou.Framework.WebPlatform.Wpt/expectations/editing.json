@@ -3287,13 +3287,7 @@
     }
   },
   "editing/run/forwarddelete.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"forwarddelete\",\"\"]] \"<p>foo<table><tr><td>bar[]<br></table><p>baz\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><td>bar</table>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><tr><td>bar</table>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"foo<table><tr><td>bar[]<br></table>baz\" compare innerHTML": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/forwarddelete.html?2001-3000": {
     "total": 1000

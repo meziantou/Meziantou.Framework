@@ -860,6 +860,11 @@ if (_activeRange is null)
         if (deletion && GetEditingHostOf(caretNode) is { } host && GetOnlyEmptyLineBlock(host) is { } line)
             return (host, 0, line, NodeLength(line));
 
+        // A deletion forward at the end of the content of the editing host, or of a table cell, deletes nothing (see
+        // ForwardDeleteAction): the range is the caret
+        if (deletion && !backward && (HasOnlyInvisibleNodesAfter(caretNode, caretOffset) || (GetTableCellOf(caretNode) is { } cell && HasOnlyInvisibleNodesAfter(caretNode, caretOffset, cell))))
+            return (caretNode, caretOffset, caretNode, caretOffset);
+
         if (backward && character && caretNode is Text caretText && caretOffset > 0 && caretOffset <= NodeLength(caretText) && caretText.Data[caretOffset - 1] is not (' ' or '\t' or '\n' or '\r'))
         {
             var start = caretOffset - 1;
@@ -2176,12 +2181,12 @@ if (_activeRange is null)
     }
 
     /// <summary>
-    /// Whether the boundary point is followed by at least one node of its editing host, all of which are invisible (the
-    /// text of a Text node that contains the point is visible content after it).
+    /// Whether the boundary point is followed by at least one node of its editing host (or of <paramref name="container"/>),
+    /// all of which are invisible (the text of a Text node that contains the point is visible content after it).
     /// </summary>
-    private bool HasOnlyInvisibleNodesAfter(Node node, int offset)
+    private bool HasOnlyInvisibleNodesAfter(Node node, int offset, Node? container = null)
     {
-        if (GetEditingHostOf(node) is not { } host || (node is CharacterData && offset < NodeLength(node)))
+        if ((container ?? GetEditingHostOf(node)) is not { } host || (node is CharacterData && offset < NodeLength(node)))
             return false;
 
         var current = ChildAt(node, offset) ?? NextNodeDescendants(node);
@@ -2195,6 +2200,18 @@ if (_activeRange is null)
         }
 
         return true;
+    }
+
+    /// <summary>The editable table cell (td or th) that is an inclusive ancestor of the node in its editing host, if any.</summary>
+    private Element? GetTableCellOf(Node node)
+    {
+        for (Node? current = node; current is not null && IsEditable(current); current = current.ParentNode)
+        {
+            if (IsHtmlElement(current, TableCellNames))
+                return (Element)current;
+        }
+
+        return null;
     }
 
     /// <summary>https://w3c.github.io/editing/docs/execCommand/#the-forwarddelete-command</summary>
@@ -2215,6 +2232,11 @@ if (_activeRange is null)
         // As in the browsers, a caret at the end of the content of the editing host has nothing to delete after it: the
         // invisible nodes that follow it (e.g. the br that ends the last block, <p>abc[]<br></p>) are kept
         if (HasOnlyInvisibleNodesAfter(range.StartContainer, (int)range.StartOffset))
+            return true;
+
+        // Likewise, a caret at the end of the content of a table cell has nothing to delete after it (the cells are not
+        // joined): the invisible nodes that follow it in the cell are kept (<td>abc[]<br></td><td>def</td>)
+        if (GetTableCellOf(range.StartContainer) is { } cell && HasOnlyInvisibleNodesAfter(range.StartContainer, (int)range.StartOffset, cell))
             return true;
 
         CanonicalizeWhitespace(range.StartContainer, (int)range.StartOffset, replaceSpaces: false);

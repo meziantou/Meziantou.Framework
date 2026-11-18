@@ -1079,8 +1079,10 @@ internal static class Fetching
             if (request.Body is not null && !request.BodyHasSource)
                 return FetchResponse.NetworkError();
 
-            // The user is not prompted for the credentials: the credentials of the URL are tried once
-            if (!request.UseUrlCredentials || isAuthenticationFetch)
+            // The user is not prompted for the credentials: the credentials of the URL are tried once, also when the request does
+            // not set the use-URL-credentials flag (where the user would be prompted), as the browsers do for the subresources (e.g.
+            // an image whose URL has credentials, WPT fetch/http-cache/basic-auth-cache-test.html)
+            if (!request.CurrentUrl.IncludesCredentials || isAuthenticationFetch)
                 return response;
 
             return await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch: true, cancellationToken).ConfigureAwait(false);

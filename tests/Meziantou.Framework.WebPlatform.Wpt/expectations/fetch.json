@@ -2183,7 +2183,7 @@
     "total": 5
   },
   "fetch/http-cache/basic-auth-cache-test.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "fetch/http-cache/cache-mode.any.js": {
     "total": 5

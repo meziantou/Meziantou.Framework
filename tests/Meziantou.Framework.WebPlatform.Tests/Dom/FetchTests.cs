@@ -172,6 +172,22 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Fetch_SubresourceWithUrlCredentials_AnswersTheChallengeAndRemembersThem()
+    {
+        _loader.Handler = request => !request.Url.EndsWith("/secured.js", StringComparison.Ordinal) ? null
+            : HeaderList.Get(request.Headers, "Authorization") == "Basic dXNlcjpwYXNz"
+                ? new DocumentResource("document.title += 'ok;'") { Headers = [new("Content-Type", "text/javascript")] }
+                : new DocumentResource("") { StatusCode = 401, Headers = [new("WWW-Authenticate", "Basic")] };
+        var document = Load("""
+            <script src="https://user:pass@example.com/secured.js"></script>
+            <script src="https://example.com/secured.js"></script>
+            """);
+
+        // The credentials of the URL answer the challenge, and the authentication entry is used by the URL without credentials
+        Assert.Equal("ok;ok;", document.Title);
+    }
+
+    [Fact]
     public void Fetch_DataAndBlobUrls()
     {
         var document = Load("""

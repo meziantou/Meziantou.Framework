@@ -33,6 +33,9 @@ var document = context.Document;
 - The redirects are followed (up to 20), the `Referer` header is sent as a browser sends it, and the cookies of the
   [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar) are sent and stored.
 - Only the `http:` and `https:` URLs are requested. The `data:` and `blob:` URLs are handled by the library.
+- There is no prompt for the HTTP authentication (`401` with `WWW-Authenticate`): when the URL of the request has
+  credentials (`https://user:password@example.com/`), they answer the challenge, as in the browsers, also for the
+  subresources (images, scripts...). Once accepted, they are used for the other requests to the same origin.
 
 ## Protect your network from untrusted pages
 

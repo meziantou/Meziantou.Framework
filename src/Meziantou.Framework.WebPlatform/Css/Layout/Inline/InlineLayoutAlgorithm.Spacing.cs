@@ -453,8 +453,10 @@ internal sealed partial class InlineLayoutAlgorithm
         var items = Items;
         ref readonly var item = ref items[itemIndex];
 
-        // The text of the ruby annotations is not adjacent to the text of the line (and the reverse)
+        // The text of the ruby annotations is not adjacent to the text of the line (and the reverse), nor to the text of the
+        // other annotations (e.g. the annotation of the next level, after it in the items: WPT css/css-ruby/nested-ruby-pairing-001.html)
         var inAnnotation = item.HasFlag(InlineItemFlags.RubyAnnotation);
+        var (annotationStart, annotationEnd) = inAnnotation ? GetRubyAnnotationItems(itemIndex) : (0, items.Length);
         if (forward)
         {
             var next = position + (char.IsHighSurrogate(characters[position]) && position + 1 < item.End ? 2 : 1);
@@ -470,6 +472,9 @@ internal sealed partial class InlineLayoutAlgorithm
         for (var i = itemIndex + step; i >= 0 && i < items.Length; i += step)
         {
             ref readonly var other = ref items[i];
+            if (i < annotationStart || i >= annotationEnd)
+                return (-1, -1);
+
             if (other.HasFlag(InlineItemFlags.RubyAnnotation) != inAnnotation)
             {
                 if (inAnnotation)

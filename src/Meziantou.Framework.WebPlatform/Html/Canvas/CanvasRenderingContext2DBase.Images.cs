@@ -150,6 +150,11 @@ public abstract partial class CanvasRenderingContext2DBase
             }
 
             builder.AddList(list);
+            if (alpha < 1)
+            {
+                builder.Restore();
+            }
+
             builder.Restore();
         });
     }

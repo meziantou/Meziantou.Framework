@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.Imaging;
 
 namespace Meziantou.Framework.WebPlatform.Imaging.Tests;
@@ -465,6 +466,30 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void SvgImages_AreDrawnOverTheirShadowWithTheGlobalAlpha()
+    {
+        _pages.Resources["/a.svg"] = ("<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><rect width='10' height='10' fill='lime'/></svg>"u8.ToArray(), "image/svg+xml");
+        var browsingContext = _pages.Load("<canvas id=c width=40 height=20></canvas><img id=a src='/a.svg'>");
+        var document = browsingContext.Document!;
+        var canvas = (HtmlCanvasElement)document.GetElementById("c")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+
+        // The image is drawn with the global alpha over its shadow, and the drawings after it are not inside the shadow
+        context.GlobalAlpha = 0.5;
+        context.ShadowColor = "#00f";
+        context.ShadowOffsetX = 10;
+        context.DrawImage(document.GetElementById("a")!, 0, 0);
+        context.ShadowColor = "transparent";
+        context.GlobalAlpha = 1;
+        context.FillStyle = "#f00";
+        context.FillRect(30, 0, 10, 10);
+
+        Assert.Equal([0, 255, 0, 128], GetPixel(context, 5, 5));
+        Assert.Equal([0, 0, 255, 128], GetPixel(context, 15, 5));
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 35, 5));
+    }
+
+    [Fact]
     public void PutImageData_ConvertsTheColorSpace()
     {
         var (_, _, context) = Create(settings: new CanvasRenderingContext2DSettings { ColorSpace = PredefinedColorSpace.DisplayP3 });
@@ -821,4 +846,179 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal([0, 0, 0, 0], GetPixel(context, 5, 0));
     }
 #pragma warning restore WEBPLATEXP0017
+
+#pragma warning disable WEBPLATEXP0021 // The CanvasFilter objects are a proposal
+    [Fact]
+    public void CanvasFilter_IsTheFilterOfTheContext()
+    {
+        var (_, _, context) = Create(30, 10);
+        var filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "colorMatrix", ["type"] = "hueRotate", ["values"] = 180 });
+        context.Filter = filter;
+        Assert.Same(filter, context.Filter);
+
+        // An invalid CSS filter does not replace the CanvasFilter
+        context.Filter = "not a filter";
+        Assert.Same(filter, context.Filter);
+
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 10, 10);
+        Assert.Equal([0, 109, 109, 255], GetPixel(context, 5, 5));
+
+        context.Filter = "none";
+        Assert.Equal("none", context.Filter);
+        context.FillRect(10, 0, 10, 10);
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 15, 5));
+    }
+
+    [Fact]
+    public void CanvasFilter_AppliesThePrimitivesInOrder()
+    {
+        var (_, _, context) = Create(30, 10);
+
+        // A shadow moved 10 pixels to the right, then the red component of the shape and of the shadow is halved
+        context.Filter = new CanvasFilter(new object[]
+        {
+            new Dictionary<string, object?> { ["name"] = "dropShadow", ["dx"] = 10, ["dy"] = 0, ["stdDeviation"] = 0, ["floodColor"] = "#00f", ["floodOpacity"] = 0.5 },
+            new Dictionary<string, object?>
+            {
+                ["name"] = "componentTransfer",
+                ["funcR"] = new Dictionary<string, object?> { ["type"] = "linear", ["slope"] = 0.5, ["intercept"] = 0 },
+            },
+        });
+        context.FillStyle = "#fff";
+        context.FillRect(0, 0, 10, 10);
+
+        Assert.Equal([128, 255, 255, 255], GetPixel(context, 5, 5));
+        Assert.Equal([0, 0, 255, 128], GetPixel(context, 15, 5));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 25, 5));
+    }
+
+    [Fact]
+    public void CanvasFilter_ConvertsTheValuesAsChromium()
+    {
+        var (_, _, context) = Create(40, 10);
+
+        // A number of a pair is a number or a list of two numbers; null is 0 and the strings are converted to numbers
+        context.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "gaussianBlur", ["stdDeviation"] = new object?[] { "2", null } });
+        context.FillStyle = "#000";
+        context.FillRect(10, 0, 20, 10);
+
+        // The blur is horizontal only: the top edge of the rectangle is not blurred
+        Assert.True(GetPixel(context, 8, 0)[3] > 0);
+        Assert.Equal(255, GetPixel(context, 20, 0)[3]);
+
+        // The primitives without a name, or with an unknown name, are ignored
+        context.Reset();
+        context.Filter = new CanvasFilter(new object[] { new Dictionary<string, object?>(), new Dictionary<string, object?> { ["name"] = "unknown" } });
+        context.FillRect(0, 0, 10, 10);
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 5, 5));
+    }
+
+    [Theory]
+    [InlineData("gaussianBlur", "stdDeviation", null)]
+    [InlineData("gaussianBlur", "stdDeviation", "foo")]
+    [InlineData("gaussianBlur", "stdDeviation", double.NaN)]
+    [InlineData("dropShadow", "dx", double.PositiveInfinity)]
+    [InlineData("dropShadow", "floodColor", "not a color")]
+    [InlineData("colorMatrix", "values", "foo")]
+    [InlineData("colorMatrix", "type", "unknown")]
+    [InlineData("turbulence", "baseFrequency", -1)]
+    [InlineData("turbulence", "stitchTiles", "unknown")]
+    [InlineData("convolveMatrix", "divisor", 2)]
+    public void CanvasFilter_InvalidDescriptionsThrow(string name, string key, object? value)
+    {
+        var description = new Dictionary<string, object?> { ["name"] = name };
+        if (value is not null)
+        {
+            description[key] = value;
+        }
+
+        Assert.Throws<TypeErrorException>(() => new CanvasFilter(description));
+    }
+
+    [Fact]
+    public void CanvasFilter_IsNotADescription()
+    {
+        Assert.Throws<TypeErrorException>(() => new CanvasFilter(null));
+        Assert.Throws<TypeErrorException>(() => new CanvasFilter("blur(2px)"));
+        Assert.Throws<TypeErrorException>(() => new CanvasFilter(new Dictionary<string, object?>
+        {
+            ["name"] = "convolveMatrix",
+            ["kernelMatrix"] = new object[] { new object[] { 1, 0 }, new object[] { 0 } },
+        }));
+    }
+
+    [Fact]
+    public void CanvasFilter_ConvolutionAndTurbulence()
+    {
+        var (_, _, context) = Create(20, 10);
+
+        // An edge detection kernel: the inside of the rectangle is transparent, its edges are not
+        context.Filter = new CanvasFilter(new Dictionary<string, object?>
+        {
+            ["name"] = "convolveMatrix",
+            ["kernelMatrix"] = new object[] { new object[] { 0, -1, 0 }, new object[] { -1, 4, -1 }, new object[] { 0, -1, 0 } },
+            ["divisor"] = 1,
+        });
+        context.FillStyle = "#000";
+        context.FillRect(2, 2, 16, 6);
+        Assert.Equal(0, GetPixel(context, 10, 5)[3]);
+        Assert.True(GetPixel(context, 2, 5)[3] > 0);
+
+        // The noise replaces the drawings in the filter region
+        context.Reset();
+        context.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "turbulence", ["baseFrequency"] = 0.2, ["numOctaves"] = 2, ["seed"] = 3 });
+        context.FillRect(0, 0, 1, 1);
+        var pixels = context.GetImageData(0, 0, 20, 10).Data.ToArray();
+        Assert.Contains(pixels, value => value is > 0 and < 255);
+    }
+
+#pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
+    [Fact]
+    public void CanvasFilter_IsTheFilterOfALayer()
+    {
+        var (_, _, context) = Create(30, 10);
+        context.FillStyle = "#f00";
+
+        // The description of a CanvasFilter applies to the layer, in the coordinates of its transformation matrix
+        context.Translate(10, 0);
+        context.BeginLayer(new BeginLayerOptions { Filter = new Dictionary<string, object?> { ["name"] = "dropShadow", ["dx"] = 10, ["dy"] = 0, ["stdDeviation"] = 0, ["floodColor"] = "#00f" } });
+        context.FillRect(0, 0, 10, 10);
+        context.EndLayer();
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 15, 5));
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 25, 5));
+
+        // An invalid description throws, and does not open the layer
+        Assert.Throws<TypeErrorException>(() => context.BeginLayer(new BeginLayerOptions { Filter = new Dictionary<string, object?> { ["name"] = "gaussianBlur" } }));
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(context.EndLayer).Name);
+    }
+#pragma warning restore WEBPLATEXP0017
+
+    [Fact]
+    public void CanvasFilter_FromScripts()
+    {
+        using var engine = TestScriptEngines.CreateDisposable();
+        var page = _pages.Load("""
+            <canvas id=c width=20 height=10></canvas>
+            <script>
+            const ctx = document.getElementById('c').getContext('2d');
+            const results = [];
+            ctx.filter = new CanvasFilter([{name: 'colorMatrix', type: 'saturate', values: '0'}, {name: 'dropShadow', dx: [10], dy: null, stdDeviation: [0, false], floodColor: 'lime'}]);
+            results.push(String(ctx.filter));
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(0, 0, 10, 10);
+            for (const description of [{name: 'gaussianBlur', stdDeviation: [1, 2, 3]}, {name: 'gaussianBlur', stdDeviation: undefined}, 'foo']) {
+              try { new CanvasFilter(description); results.push('no error'); } catch (e) { results.push(e.name); }
+            }
+            document.title = results.join(',');
+            </script>
+            """, scriptEngine: engine);
+        var canvas = (HtmlCanvasElement)page.Document!.GetElementById("c")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+
+        Assert.Equal("[object CanvasFilter],TypeError,TypeError,TypeError", page.Document.Title);
+        Assert.Equal([54, 54, 54, 255], GetPixel(context, 5, 5));
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 15, 5));
+    }
+#pragma warning restore WEBPLATEXP0021
 }

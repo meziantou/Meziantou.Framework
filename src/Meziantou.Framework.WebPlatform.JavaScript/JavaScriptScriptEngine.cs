@@ -520,6 +520,8 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
 
     internal override IIndexedDBValueOperations? GetIndexedDBValueOperations(GlobalScope global) => Agent.GetRealm(global);
 
+    internal override IScriptValueOperations? GetScriptValueOperations(GlobalScope global) => Agent.GetRealm(global);
+
     internal override IServiceWorkerFetchOperations? GetServiceWorkerFetchOperations(GlobalScope global) => Agent.GetRealm(global);
 
     internal override string? SerializeJson(GlobalScope global, object? value) => Agent.GetRealm(global).SerializeJson(value);

@@ -1029,16 +1029,31 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Empty(MarkdownEmojiMapping.DefaultWithoutSmileys.Smileys);
         Assert.HasCount(MarkdownEmojiMapping.Default.Shortcodes.Count, MarkdownEmojiMapping.DefaultWithoutSmileys.Shortcodes);
 
-        var shortcodes = new Dictionary<string, string> { [":ok:"] = "✅" };
+        var shortcodes = new Dictionary<string, string> { [":ok:"] = "\u2705" };
         var smileys = new Dictionary<string, string> { ["(y)"] = ":ok:" };
         var mapping = new MarkdownEmojiMapping(shortcodes, smileys);
-        shortcodes[":ko:"] = "❌";
+        shortcodes[":ko:"] = "\u274C";
         smileys["(n)"] = ":ko:";
 
         Assert.Equal(":ok:", Assert.Single(mapping.Shortcodes).Key);
         Assert.Equal(new KeyValuePair<string, string>("(y)", ":ok:"), Assert.Single(mapping.Smileys));
         Assert.IsNotType<Dictionary<string, string>>(mapping.Shortcodes);
         Assert.IsNotType<Dictionary<string, string>>(mapping.Smileys);
+    }
+
+    [Fact]
+    public void EmojiMappingSmileysUseTheKeysOfShortcodes()
+    {
+        // The shortcodes ignore the case: the smileys are for the keys of Shortcodes, so that the mapping can be made again from them
+        var shortcodes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [":OK:"] = "\u2705", [":yes:"] = "\u2705" };
+        var mapping = new MarkdownEmojiMapping(shortcodes, new Dictionary<string, string> { ["(y)"] = ":ok:", ["(Y)"] = ":YES:" });
+
+        Assert.Equal(":OK:", mapping.Smileys["(y)"]);
+        Assert.Equal(":yes:", mapping.Smileys["(Y)"]);
+
+        var copy = new MarkdownEmojiMapping(mapping.Shortcodes, mapping.Smileys);
+        Assert.True(copy.TryGetEmoji("(y)", out var emoji));
+        Assert.Equal("\u2705", emoji);
     }
 
     [Fact]

@@ -62,7 +62,7 @@ public sealed class MarkdownEmojiMapping
                 throw new ArgumentException($"The smiley '{smiley}' is already a shortcode.", nameof(smileys));
             }
 
-            _smileys[smiley] = shortcode;
+            _smileys[smiley] = GetShortcodeKey(shortcode, emoji);
         }
 
         Shortcodes = new ReadOnlyDictionary<string, string>(_shortcodes);
@@ -70,6 +70,33 @@ public sealed class MarkdownEmojiMapping
 
         _emojisBySpan = _emojis.GetAlternateLookup<ReadOnlySpan<char>>();
         _lengthsByFirstCharacter = _emojis.Keys.GroupBy(key => key[0]).ToDictionary(group => group.Key, group => group.Select(key => key.Length).Distinct().OrderDescending().ToArray());
+    }
+
+    // The key of Shortcodes for the shortcode of a smiley: the dictionary of the shortcodes can have a comparer that is not
+    // ordinal, so that :ok: finds :OK:. The key with the same emoji that differs only by case is preferred, then any key with
+    // the same emoji, which renders the same.
+    private string GetShortcodeKey(string shortcode, string emoji)
+    {
+        if (_shortcodes.ContainsKey(shortcode))
+        {
+            return shortcode;
+        }
+
+        string? result = null;
+        foreach (var (key, value) in _shortcodes)
+        {
+            if (string.Equals(value, emoji, StringComparison.Ordinal))
+            {
+                if (string.Equals(key, shortcode, StringComparison.OrdinalIgnoreCase))
+                {
+                    return key;
+                }
+
+                result ??= key;
+            }
+        }
+
+        return result ?? shortcode;
     }
 
     /// <summary>Gets the emoji of the shortcodes, such as <c>:smile:</c>.</summary>

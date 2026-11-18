@@ -969,6 +969,53 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void CanvasFilter_CoversTheDrawingsThatTheShadowMovesOntoTheCanvas()
+    {
+        var (_, _, context) = Create(20, 10);
+        context.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "colorMatrix", ["values"] = new object[] { 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0 } });
+        context.ShadowColor = "#00f";
+        context.ShadowOffsetX = -100;
+        context.FillStyle = "#f00";
+        context.FillRect(100, 0, 10, 10);
+
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+
+        // The same with a CSS filter
+        context.Reset();
+        context.Filter = "grayscale(0)";
+        context.ShadowColor = "#00f";
+        context.ShadowOffsetX = -100;
+        context.FillRect(100, 0, 10, 10);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+    }
+
+    [Fact]
+    public void CanvasFilter_ReadsTheListsOnce()
+    {
+        var (_, _, context) = Create(30, 10);
+        context.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "dropShadow", ["dx"] = SinglePass(10), ["dy"] = 0, ["stdDeviation"] = 0, ["floodColor"] = "#00f" });
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 10, 10);
+
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 15, 5));
+
+        static IEnumerable<object?> SinglePass(object value)
+        {
+            var read = false;
+            return Enumerate();
+
+            IEnumerable<object?> Enumerate()
+            {
+                if (read)
+                    yield break;
+
+                read = true;
+                yield return value;
+            }
+        }
+    }
+
+    [Fact]
     public void CanvasFilter_IsNotADescription()
     {
         Assert.Throws<TypeErrorException>(() => new CanvasFilter(null));

@@ -54,7 +54,7 @@ public abstract partial class CanvasRenderingContext2DBase
             string value => (null, value),
             var value => CanvasFilter.FromLayerFilter(value),
         };
-        var filter = canvasFilter is not null ? canvasFilter.GetDisplayFilters(Invert(_state.Transform) is { } inverse ? MapBounds(inverse, new PhysicalRect(0, 0, Bitmap.Width, Bitmap.Height)) : default)
+        var filter = canvasFilter is not null ? canvasFilter.GetDisplayFilters(Invert(_state.Transform) is { } inverse ? MapBounds(inverse, GetFilteredArea()) : default, Bitmap.Options.ColorSpace)
             : cssFilter is not null && ParseFilter(cssFilter) is { } parsed ? GetFilters(parsed) : null;
 
         // A layer opened with a non-invertible transformation matrix is not drawn
@@ -146,6 +146,20 @@ public abstract partial class CanvasRenderingContext2DBase
             return (image, false);
 
         return (Rasterize(target, addFilteredLayer), true);
+    }
+
+    /// <summary>
+    /// Returns the area of the canvas that the filters of the drawings must cover (the region of the filter graphs of a
+    /// <see cref="CanvasFilter"/>): the canvas, and the area that the shadow of the drawing state moves onto it.
+    /// </summary>
+    private PhysicalRect GetFilteredArea()
+    {
+        var canvas = new PhysicalRect(0, 0, Bitmap.Width, Bitmap.Height);
+        if (!ShadowsAreDrawn)
+            return canvas;
+
+        var reach = Math.Ceiling(_state.ShadowBlur * 1.5) + 1;
+        return canvas.Union(canvas.Translate(new PhysicalOffset(-_state.ShadowOffsetX, -_state.ShadowOffsetY)).Expand(new Sides<double>(reach, reach, reach, reach)));
     }
 
     /// <summary>Returns an image of the drawings in an area (rounded to whole pixels), or null when it cannot be created.</summary>

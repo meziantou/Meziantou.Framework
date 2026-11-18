@@ -94,7 +94,8 @@ public sealed class CanvasFilter
     /// SVG) cover <paramref name="area"/> and the drawings that the primitives can move into it.
     /// </summary>
     /// <param name="area">The area of the result that is drawn, in the coordinates of the filter.</param>
-    internal DisplayFilter[]? GetDisplayFilters(PhysicalRect area)
+    /// <param name="colorSpace">The color space of the canvas.</param>
+    internal DisplayFilter[]? GetDisplayFilters(PhysicalRect area, RenderingColorSpace colorSpace)
     {
         if (_operations.Length == 0)
             return null;
@@ -109,7 +110,10 @@ public sealed class CanvasFilter
         var filters = new List<DisplayFilter>(_operations.Length);
         foreach (var operation in _operations)
         {
-            if (operation.CreateFilter(region) is { } filter)
+            // On an sRGB canvas, a color matrix is a filter without a region (a graph converts the colors of the other color
+            // spaces to sRGB, but its region limits the drawings that a shadow can move onto the canvas)
+            var filter = operation is ColorMatrixOperation colorMatrix && colorSpace == RenderingColorSpace.Srgb ? new ColorMatrixFilter(colorMatrix.Matrix) : operation.CreateFilter(region);
+            if (filter is not null)
             {
                 filters.Add(filter);
             }

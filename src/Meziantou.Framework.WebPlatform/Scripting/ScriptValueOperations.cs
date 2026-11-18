@@ -85,7 +85,7 @@ internal sealed class DotNetScriptValueOperations : IScriptValueOperations
         IConvertible convertible when IsNumeric(convertible) => convertible.ToDouble(CultureInfo.InvariantCulture),
 
         // An array is converted to a string (its elements joined by commas), then to a number
-        _ when TryToSequence(value) is not null => StringToNumber(ToDomString(value)),
+        _ when TryToSequence(value) is { } elements => StringToNumber(JoinElements(value, elements, new HashSet<object>(ReferenceEqualityComparer.Instance))),
         _ => double.NaN,
     };
 

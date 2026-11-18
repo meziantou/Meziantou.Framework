@@ -1131,9 +1131,23 @@ public abstract partial class CanvasRenderingContext2DBase
         // transformation matrix (the standard deviation of the Gaussian blur is half the shadow blur)
         if (ShadowsAreDrawn)
         {
+            // The filtered items are drawn in a layer of the shadow layer, rather than through one chain of filters: the
+            // backend casts a shadow alone from as far as its offset (the drawings outside of the canvas that the shadow
+            // moves onto it), where a chain is limited to a margin around the canvas
             var shadow = new DropShadowFilter(new PhysicalOffset(_state.ShadowOffsetX, _state.ShadowOffsetY), _state.ShadowBlur / 2, _state.ShadowColor) { ShadowOnly = true };
-            builder.SaveLayer(new SaveLayerItem(1, mode, filters is null || shadowItemsAreFiltered ? [shadow] : [.. filters, shadow]));
+            builder.SaveLayer(new SaveLayerItem(1, mode, [shadow]));
+            var filterShadowItems = filters is not null && !shadowItemsAreFiltered;
+            if (filterShadowItems)
+            {
+                builder.SaveLayer(new SaveLayerItem(1, BlendMode.Normal, filters));
+            }
+
             (addShadowItems ?? addItems)(builder);
+            if (filterShadowItems)
+            {
+                builder.Restore();
+            }
+
             builder.Restore();
         }
 

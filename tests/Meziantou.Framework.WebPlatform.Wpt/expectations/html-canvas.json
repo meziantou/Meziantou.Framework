@@ -342,13 +342,13 @@
     "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.filter.shadow.drawImage.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.filter.shadow.fillRect.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.filter.shadow.pattern.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.no_filter.no_shadow.drawImage.html": {
     "reftest": "PASS"
@@ -1785,10 +1785,10 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.filter.ctx-filter.no-transform.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.filter.ctx-filter.rotation.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.filter.no-cxt-filter.no-transform.tentative.html": {
     "reftest": "PASS"
@@ -6681,22 +6681,22 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.drawImage.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.drawImage.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.fillRect.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.fillRect.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.pattern.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.pattern.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.no_filter.no_shadow.drawImage.html": {
     "reftest": "PASS"
@@ -9348,16 +9348,16 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.no-transform.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.no-transform.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.rotation.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.rotation.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.no-cxt-filter.no-transform.tentative.html": {
     "reftest": "PASS"

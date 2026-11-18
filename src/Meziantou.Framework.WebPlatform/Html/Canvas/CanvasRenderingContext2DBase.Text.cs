@@ -924,7 +924,7 @@ public abstract partial class CanvasRenderingContext2DBase
     private DisplayFilter[]? GetFilters() => _state.Filter switch
     {
 #pragma warning disable WEBPLATEXP0021 // The CanvasFilter objects are a proposal
-        CanvasFilter filter => filter.GetDisplayFilters(new PhysicalRect(0, 0, Bitmap.Width, Bitmap.Height)),
+        CanvasFilter filter => filter.GetDisplayFilters(GetFilteredArea(), Bitmap.Options.ColorSpace),
 #pragma warning restore WEBPLATEXP0021
         var value => GetFilters((string)value),
     };

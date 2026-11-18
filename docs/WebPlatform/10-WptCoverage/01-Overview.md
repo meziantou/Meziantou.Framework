@@ -51,15 +51,15 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,994 | 30,126 | 1,919 | 96% |
 | [Tentative](#tentative-tests) | 1,491 | 3,225 | 662 | 58% |
-| [Reftests](#reftests) | 28,658 | 29,841 | 149 | 97% |
+| [Reftests](#reftests) | 28,673 | 29,841 | 149 | 97% |
 | [Crash tests](#crash-tests) | 2,054 | 2,128 | 62 | 99% |
-| **All** | **59,197** | **65,320** | **2,792** | **95%** |
+| **All** | **59,212** | **65,320** | **2,792** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 265
+- **BUG**: 250
 - **TEST BUG**: 1,078
 - **NOT IMPLEMENTED**: 3,831
 - **REQUIRES**: 764
@@ -694,7 +694,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gif`](gif.md#reftests) | 1 | 1 | 0 | 100% |
 | [`html-ruby-extensions`](html-ruby-extensions.md#reftests) | 84 | 84 | 0 | 100% |
 | [`html/browsers`](html/browsers.md#reftests) | 4 | 4 | 0 | 100% |
-| [`html/canvas`](html/canvas.md#reftests) | 381 | 585 | 0 | 65% |
+| [`html/canvas`](html/canvas.md#reftests) | 396 | 585 | 0 | 68% |
 | [`html/dom`](html/dom.md#reftests) | 127 | 127 | 0 | 100% |
 | [`html/editing`](html/editing.md#reftests) | 25 | 26 | 1 | 100% |
 | [`html/infrastructure`](html/infrastructure.md#reftests) | 0 | 1 | 1 | – |
@@ -728,7 +728,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 191 | 252 | 0 | 76% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (131 sections)** | **28,658** | **29,841** | **149** | **97%** |
+| **Total (131 sections)** | **28,673** | **29,841** | **149** | **97%** |
 
 ## Crash tests
 

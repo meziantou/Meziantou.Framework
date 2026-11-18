@@ -404,6 +404,8 @@ internal sealed partial class IdlModel
         AddDocumentPolicyViolationReportBody(model);
         AddCanvasLayers(model);
         AddCanvasFilterObjects(model);
+        AddCanvasTextClusters(model);
+        AddCanvasShapedText(model);
         AddCanvasGradientInterpolation(model);
         AddWebMcpPullRequests(model);
         AddHtmlInCanvas(model);
@@ -1776,6 +1778,263 @@ internal sealed partial class IdlModel
             };
         }
     }
+
+    /// <summary>
+    /// The text clusters and the selection APIs of <c>TextMetrics</c> (https://github.com/whatwg/html/pull/11000, the explainer
+    /// https://github.com/Igalia/explainers/blob/main/canvas-formatted-text/text-metrics-additions.md), which Chromium implements
+    /// behind a flag (ExtendedTextMetrics) and the tentative web-platform-tests of html/canvas/element/text test:
+    /// <code>
+    /// dictionary TextClusterOptions { CanvasTextAlign align; CanvasTextBaseline baseline; double x; double y; };
+    /// [Exposed=(Window,Worker)] interface TextCluster {
+    ///   readonly attribute double x;
+    ///   readonly attribute double y;
+    ///   readonly attribute unsigned long start;
+    ///   readonly attribute unsigned long end;
+    ///   readonly attribute CanvasTextAlign align;
+    ///   readonly attribute CanvasTextBaseline baseline;
+    /// };
+    /// partial interface TextMetrics {
+    ///   unsigned long getIndexFromOffset(double offset);
+    ///   sequence&lt;DOMRectReadOnly&gt; getSelectionRects([EnforceRange] unsigned long start, [EnforceRange] unsigned long end);
+    ///   DOMRectReadOnly getActualBoundingBox([EnforceRange] unsigned long start, [EnforceRange] unsigned long end);
+    ///   sequence&lt;TextCluster&gt; getTextClusters(optional TextClusterOptions options = {});
+    ///   sequence&lt;TextCluster&gt; getTextClusters([EnforceRange] unsigned long start, [EnforceRange] unsigned long end, optional TextClusterOptions options = {});
+    /// };
+    /// partial interface mixin CanvasText {
+    ///   undefined fillTextCluster(TextCluster textCluster, double x, double y, optional TextClusterOptions options = {});
+    ///   undefined strokeTextCluster(TextCluster textCluster, double x, double y, optional TextClusterOptions options = {});
+    /// };
+    /// </code>
+    /// Chromium declares fillTextCluster() and strokeTextCluster() as two overloads, with and without the options, which is the
+    /// same as an optional argument. As the other dictionaries of the proposals, the dictionary is not experimental.
+    /// </summary>
+    private static void AddCanvasTextClusters(IdlModel model)
+    {
+        const string Href = "https://github.com/Igalia/explainers/blob/main/canvas-formatted-text/text-metrics-additions.md#proposal";
+        const string Experimental = "CanvasTextClusters";
+        if (!model.Definitions.TryGetValue("TextMetrics", out var metrics) || model.Definitions.ContainsKey("TextCluster"))
+            return;
+
+        var source = metrics.Source;
+        model.Definitions["TextClusterOptions"] = new IdlDefinition
+        {
+            Name = "TextClusterOptions",
+            Kind = IdlDefinitionKind.Dictionary,
+            Members =
+            [
+                CanvasTextField("TextClusterOptions", "align", "CanvasTextAlign", source, Href),
+                CanvasTextField("TextClusterOptions", "baseline", "CanvasTextBaseline", source, Href),
+                CanvasTextField("TextClusterOptions", "x", "double", source, Href),
+                CanvasTextField("TextClusterOptions", "y", "double", source, Href),
+            ],
+            Source = source,
+            Href = Href,
+            SpecUrl = Href,
+        };
+
+        model.Definitions["TextCluster"] = new IdlDefinition
+        {
+            Name = "TextCluster",
+            Kind = IdlDefinitionKind.Interface,
+            Members =
+            [
+                CanvasTextAttribute("TextCluster", "x", "double", source, Href),
+                CanvasTextAttribute("TextCluster", "y", "double", source, Href),
+                CanvasTextAttribute("TextCluster", "start", "unsigned long", source, Href),
+                CanvasTextAttribute("TextCluster", "end", "unsigned long", source, Href),
+                CanvasTextAttribute("TextCluster", "align", "CanvasTextAlign", source, Href),
+                CanvasTextAttribute("TextCluster", "baseline", "CanvasTextBaseline", source, Href),
+            ],
+            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "Worker"] }],
+            Source = source,
+            Href = Href,
+            SpecUrl = Href,
+            ExperimentalApi = Experimental,
+        };
+
+        using var emptyDictionary = JsonDocument.Parse("""{"type":"dictionary"}""");
+        var options = new IdlArgument { Name = "options", Type = new IdlType { Name = "TextClusterOptions" }, Optional = true, Default = emptyDictionary.RootElement.Clone() };
+        metrics.Members.Add(CanvasTextOperation("TextMetrics", "getIndexFromOffset", new IdlType { Name = "unsigned long" }, [new IdlArgument { Name = "offset", Type = new IdlType { Name = "double" } }], source, Href, Experimental));
+        metrics.Members.Add(CanvasTextOperation("TextMetrics", "getSelectionRects", SequenceOf("DOMRectReadOnly"), [.. CanvasTextRange()], source, Href, Experimental));
+        metrics.Members.Add(CanvasTextOperation("TextMetrics", "getActualBoundingBox", new IdlType { Name = "DOMRectReadOnly" }, [.. CanvasTextRange()], source, Href, Experimental));
+        metrics.Members.Add(CanvasTextOperation("TextMetrics", "getTextClusters", SequenceOf("TextCluster"), [options], source, Href, Experimental));
+        metrics.Members.Add(CanvasTextOperation("TextMetrics", "getTextClusters", SequenceOf("TextCluster"), [.. CanvasTextRange(), options], source, Href, Experimental));
+
+        foreach (var definition in GetCanvasTextDefinitions(model))
+        {
+            foreach (var name in (string[])["fillTextCluster", "strokeTextCluster"])
+            {
+                definition.Members.Add(CanvasTextOperation("CanvasText", name, new IdlType { Name = "undefined" },
+                [
+                    new IdlArgument { Name = "textCluster", Type = new IdlType { Name = "TextCluster" } },
+                    new IdlArgument { Name = "x", Type = new IdlType { Name = "double" } },
+                    new IdlArgument { Name = "y", Type = new IdlType { Name = "double" } },
+                    options,
+                ], source, Href, Experimental));
+            }
+        }
+    }
+
+    /// <summary>
+    /// The shaped text of the 2D contexts, a proposal that replaces the text clusters of <c>TextMetrics</c> (see
+    /// <see cref="AddCanvasTextClusters"/>), which Chromium implements behind a flag (ExtendedTextMetrics) and the tentative
+    /// web-platform-tests of html/canvas/element/text test (2d.text.shape.*):
+    /// <code>
+    /// [Exposed=(Window,Worker)] interface ShapedText {
+    ///   readonly attribute double width;
+    ///   sequence&lt;GlyphRun&gt; glyphRuns();
+    ///   sequence&lt;GlyphRun&gt; glyphClusters();
+    ///   sequence&lt;GlyphRun&gt; glyphClusters([EnforceRange] unsigned long start, [EnforceRange] unsigned long end);
+    ///   sequence&lt;DOMRectReadOnly&gt; selectionRects([EnforceRange] unsigned long start, [EnforceRange] unsigned long end);
+    ///   DOMRectReadOnly actualBoundingBox([EnforceRange] unsigned long start, [EnforceRange] unsigned long end);
+    ///   unsigned long advanceToPosition(double advance);
+    ///   double positionToAdvance([EnforceRange] unsigned long position);
+    /// };
+    /// [Exposed=(Window,Worker)] interface GlyphRun {
+    ///   readonly attribute unsigned long start;
+    ///   readonly attribute unsigned long end;
+    ///   readonly attribute double x;
+    ///   readonly attribute double y;
+    ///   readonly attribute double width;
+    ///   TextMetrics textMetrics();
+    /// };
+    /// partial interface mixin CanvasText {
+    ///   ShapedText shapeText(DOMString text);
+    ///   undefined fillGlyphRun(GlyphRun glyphRun, double x, double y);
+    ///   undefined strokeGlyphRun(GlyphRun glyphRun, double x, double y);
+    ///   undefined fillGlyphRuns(sequence&lt;GlyphRun&gt; glyphRuns, double x, double y);
+    ///   undefined strokeGlyphRuns(sequence&lt;GlyphRun&gt; glyphRuns, double x, double y);
+    /// };
+    /// </code>
+    /// No explainer describes it yet: the IDL is the one of Chromium (third_party/blink/renderer/core/html/canvas/shaped_text.idl).
+    /// </summary>
+    private static void AddCanvasShapedText(IdlModel model)
+    {
+        const string Href = "https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/html/canvas/shaped_text.idl#ShapedText";
+        const string GlyphRunHref = "https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/html/canvas/glyph_run.idl#GlyphRun";
+        const string Experimental = "CanvasShapedText";
+        if (!model.Definitions.TryGetValue("TextMetrics", out var metrics) || model.Definitions.ContainsKey("ShapedText"))
+            return;
+
+        var source = metrics.Source;
+        model.Definitions["GlyphRun"] = new IdlDefinition
+        {
+            Name = "GlyphRun",
+            Kind = IdlDefinitionKind.Interface,
+            Members =
+            [
+                CanvasTextAttribute("GlyphRun", "start", "unsigned long", source, GlyphRunHref),
+                CanvasTextAttribute("GlyphRun", "end", "unsigned long", source, GlyphRunHref),
+                CanvasTextAttribute("GlyphRun", "x", "double", source, GlyphRunHref),
+                CanvasTextAttribute("GlyphRun", "y", "double", source, GlyphRunHref),
+                CanvasTextAttribute("GlyphRun", "width", "double", source, GlyphRunHref),
+                CanvasTextOperation("GlyphRun", "textMetrics", new IdlType { Name = "TextMetrics" }, [], source, GlyphRunHref, experimental: null),
+            ],
+            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "Worker"] }],
+            Source = source,
+            Href = GlyphRunHref,
+            SpecUrl = GlyphRunHref,
+            ExperimentalApi = Experimental,
+        };
+
+        model.Definitions["ShapedText"] = new IdlDefinition
+        {
+            Name = "ShapedText",
+            Kind = IdlDefinitionKind.Interface,
+            Members =
+            [
+                CanvasTextAttribute("ShapedText", "width", "double", source, Href),
+                CanvasTextOperation("ShapedText", "glyphRuns", SequenceOf("GlyphRun"), [], source, Href, experimental: null),
+                CanvasTextOperation("ShapedText", "glyphClusters", SequenceOf("GlyphRun"), [], source, Href, experimental: null),
+                CanvasTextOperation("ShapedText", "glyphClusters", SequenceOf("GlyphRun"), [.. CanvasTextRange()], source, Href, experimental: null),
+                CanvasTextOperation("ShapedText", "selectionRects", SequenceOf("DOMRectReadOnly"), [.. CanvasTextRange()], source, Href, experimental: null),
+                CanvasTextOperation("ShapedText", "actualBoundingBox", new IdlType { Name = "DOMRectReadOnly" }, [.. CanvasTextRange()], source, Href, experimental: null),
+                CanvasTextOperation("ShapedText", "advanceToPosition", new IdlType { Name = "unsigned long" }, [new IdlArgument { Name = "advance", Type = new IdlType { Name = "double" } }], source, Href, experimental: null),
+                CanvasTextOperation("ShapedText", "positionToAdvance", new IdlType { Name = "double" }, [new IdlArgument { Name = "position", Type = new IdlType { Name = "unsigned long" }, ExtAttrs = [new IdlExtendedAttribute { Name = "EnforceRange" }] }], source, Href, experimental: null),
+            ],
+            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "Worker"] }],
+            Source = source,
+            Href = Href,
+            SpecUrl = Href,
+            ExperimentalApi = Experimental,
+        };
+
+        foreach (var definition in GetCanvasTextDefinitions(model))
+        {
+            definition.Members.Add(CanvasTextOperation("CanvasText", "shapeText", new IdlType { Name = "ShapedText" }, [new IdlArgument { Name = "text", Type = new IdlType { Name = "DOMString" } }], source, Href, Experimental));
+            foreach (var name in (string[])["fillGlyphRun", "strokeGlyphRun"])
+            {
+                definition.Members.Add(CanvasTextOperation("CanvasText", name, new IdlType { Name = "undefined" },
+                [
+                    new IdlArgument { Name = "glyphRun", Type = new IdlType { Name = "GlyphRun" } },
+                    new IdlArgument { Name = "x", Type = new IdlType { Name = "double" } },
+                    new IdlArgument { Name = "y", Type = new IdlType { Name = "double" } },
+                ], source, Href, Experimental));
+            }
+
+            foreach (var name in (string[])["fillGlyphRuns", "strokeGlyphRuns"])
+            {
+                definition.Members.Add(CanvasTextOperation("CanvasText", name, new IdlType { Name = "undefined" },
+                [
+                    new IdlArgument { Name = "glyphRuns", Type = SequenceOf("GlyphRun") },
+                    new IdlArgument { Name = "x", Type = new IdlType { Name = "double" } },
+                    new IdlArgument { Name = "y", Type = new IdlType { Name = "double" } },
+                ], source, Href, Experimental));
+            }
+        }
+    }
+
+    /// <summary>Returns the mixin <c>CanvasText</c> and the interfaces that include it (the members of the mixins are copied into the interfaces).</summary>
+    private static IEnumerable<IdlDefinition> GetCanvasTextDefinitions(IdlModel model)
+    {
+        foreach (var name in (string[])["CanvasText", "CanvasRenderingContext2D", "OffscreenCanvasRenderingContext2D"])
+        {
+            if (model.Definitions.TryGetValue(name, out var definition) && definition.Members.Exists(m => m.Name == "measureText"))
+                yield return definition;
+        }
+    }
+
+    private static IdlType SequenceOf(string name) => new() { Generic = "sequence", Subtypes = [new IdlType { Name = name }] };
+
+    /// <summary>The <c>[EnforceRange] unsigned long start, [EnforceRange] unsigned long end</c> arguments of the text ranges.</summary>
+    private static IdlArgument[] CanvasTextRange() =>
+    [
+        new IdlArgument { Name = "start", Type = new IdlType { Name = "unsigned long" }, ExtAttrs = [new IdlExtendedAttribute { Name = "EnforceRange" }] },
+        new IdlArgument { Name = "end", Type = new IdlType { Name = "unsigned long" }, ExtAttrs = [new IdlExtendedAttribute { Name = "EnforceRange" }] },
+    ];
+
+    private static IdlMember CanvasTextField(string definition, string name, string type, string source, string href) => new()
+    {
+        Kind = IdlMemberKind.Field,
+        Name = name,
+        Type = new IdlType { Name = type },
+        Source = source,
+        DeclaringDefinition = definition,
+        Href = href,
+    };
+
+    private static IdlMember CanvasTextAttribute(string definition, string name, string type, string source, string href) => new()
+    {
+        Kind = IdlMemberKind.Attribute,
+        Name = name,
+        Type = new IdlType { Name = type },
+        Readonly = true,
+        Source = source,
+        DeclaringDefinition = definition,
+        Href = href,
+    };
+
+    private static IdlMember CanvasTextOperation(string definition, string name, IdlType type, List<IdlArgument> arguments, string source, string href, string? experimental) => new()
+    {
+        Kind = IdlMemberKind.Operation,
+        Name = name,
+        Type = type,
+        Arguments = arguments,
+        Source = source,
+        DeclaringDefinition = definition,
+        ExperimentalApi = experimental,
+        Href = href,
+    };
 
     /// <summary>
     /// The interpolation methods of the canvas gradients (https://github.com/whatwg/html/pull/10986), which the

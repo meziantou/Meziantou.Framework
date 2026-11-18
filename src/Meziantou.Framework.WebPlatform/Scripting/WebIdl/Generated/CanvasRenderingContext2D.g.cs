@@ -644,6 +644,83 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
         o.EndLayer(); return r.Adapter.Undefined;
     }
     #pragma warning restore WEBPLATEXP0017
+    #pragma warning disable WEBPLATEXP0024 // The binding exposes the experimental Web IDL member
+    private static TValue Op_fillTextCluster(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        if (a.Length < 3) throw r.NotEnoughArguments("fillTextCluster", 3, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.TextCluster>(a[0], "TextCluster");
+        var a1 = r.ToDouble(a[1], restricted: true);
+        var a2 = r.ToDouble(a[2], restricted: true);
+        var a3 = r.IsMissing(a, 3) ? (global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, a[3]);
+        o.FillTextCluster(a0, a1, a2, a3); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0024
+    #pragma warning disable WEBPLATEXP0024 // The binding exposes the experimental Web IDL member
+    private static TValue Op_strokeTextCluster(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        if (a.Length < 3) throw r.NotEnoughArguments("strokeTextCluster", 3, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.TextCluster>(a[0], "TextCluster");
+        var a1 = r.ToDouble(a[1], restricted: true);
+        var a2 = r.ToDouble(a[2], restricted: true);
+        var a3 = r.IsMissing(a, 3) ? (global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, a[3]);
+        o.StrokeTextCluster(a0, a1, a2, a3); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0024
+    #pragma warning disable WEBPLATEXP0025 // The binding exposes the experimental Web IDL member
+    private static TValue Op_shapeText(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("shapeText", 1, a.Length);
+        var a0 = r.ToDomString(a[0]);
+        var result = o.ShapeText(a0); return r.Wrap(result);
+    }
+    #pragma warning restore WEBPLATEXP0025
+    #pragma warning disable WEBPLATEXP0025 // The binding exposes the experimental Web IDL member
+    private static TValue Op_fillGlyphRun(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        if (a.Length < 3) throw r.NotEnoughArguments("fillGlyphRun", 3, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun>(a[0], "GlyphRun");
+        var a1 = r.ToDouble(a[1], restricted: true);
+        var a2 = r.ToDouble(a[2], restricted: true);
+        o.FillGlyphRun(a0, a1, a2); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0025
+    #pragma warning disable WEBPLATEXP0025 // The binding exposes the experimental Web IDL member
+    private static TValue Op_strokeGlyphRun(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        if (a.Length < 3) throw r.NotEnoughArguments("strokeGlyphRun", 3, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun>(a[0], "GlyphRun");
+        var a1 = r.ToDouble(a[1], restricted: true);
+        var a2 = r.ToDouble(a[2], restricted: true);
+        o.StrokeGlyphRun(a0, a1, a2); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0025
+    #pragma warning disable WEBPLATEXP0025 // The binding exposes the experimental Web IDL member
+    private static TValue Op_fillGlyphRuns(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        if (a.Length < 3) throw r.NotEnoughArguments("fillGlyphRuns", 3, a.Length);
+        var a0 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun>(a[0], static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun>(e, "GlyphRun"));
+        var a1 = r.ToDouble(a[1], restricted: true);
+        var a2 = r.ToDouble(a[2], restricted: true);
+        o.FillGlyphRuns(a0, a1, a2); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0025
+    #pragma warning disable WEBPLATEXP0025 // The binding exposes the experimental Web IDL member
+    private static TValue Op_strokeGlyphRuns(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        if (a.Length < 3) throw r.NotEnoughArguments("strokeGlyphRuns", 3, a.Length);
+        var a0 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun>(a[0], static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun>(e, "GlyphRun"));
+        var a1 = r.ToDouble(a[1], restricted: true);
+        var a2 = r.ToDouble(a[2], restricted: true);
+        o.StrokeGlyphRuns(a0, a1, a2); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0025
     private static readonly global::Meziantou.Framework.WebPlatform.Scripting.OverloadInfo[] Op_drawElementImage_Overloads = [new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) })];
     #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
     private static TValue Op_drawElementImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -781,6 +858,13 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
         r.DefineOperation(instanceTarget, "ellipse", 7, Op_ellipse);
         r.DefineOperation(instanceTarget, "beginLayer", 0, Op_beginLayer);
         r.DefineOperation(instanceTarget, "endLayer", 0, Op_endLayer);
+        r.DefineOperation(instanceTarget, "fillTextCluster", 3, Op_fillTextCluster);
+        r.DefineOperation(instanceTarget, "strokeTextCluster", 3, Op_strokeTextCluster);
+        r.DefineOperation(instanceTarget, "shapeText", 1, Op_shapeText);
+        r.DefineOperation(instanceTarget, "fillGlyphRun", 3, Op_fillGlyphRun);
+        r.DefineOperation(instanceTarget, "strokeGlyphRun", 3, Op_strokeGlyphRun);
+        r.DefineOperation(instanceTarget, "fillGlyphRuns", 3, Op_fillGlyphRuns);
+        r.DefineOperation(instanceTarget, "strokeGlyphRuns", 3, Op_strokeGlyphRuns);
         r.DefineOperation(instanceTarget, "drawElementImage", 3, Op_drawElementImage);
     }
 }

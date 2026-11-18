@@ -312,3 +312,134 @@ using var screenshot = canvas.TakeScreenshot();
   `drawElementImageToTexture()` are not available.
 - The API is experimental (`WEBPLATEXP0023`, see [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts of the page use
   it without restriction.
+
+## Text clusters
+
+[TextMetrics](cref:Meziantou.Framework.WebPlatform.Dom.TextMetrics), returned by `MeasureText()`, implements the text
+clusters and the selection APIs of the [proposal](https://github.com/whatwg/html/pull/11000) that Chromium ships behind a
+flag. The measured text keeps its glyphs, its font, its text styles, its direction, its alignment and its baseline, so an
+editor or a text animation can draw it one piece at a time, and place a caret or a selection on it:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasTextClusters;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    RenderingBackend = new ImagingRenderingBackend(),
+    ScriptingEnabled = true,
+});
+var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
+context.EventLoop.RunUntilIdle();
+
+var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
+var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+context2D.FillStyle = "#f8fafc";
+context2D.FillRect(0, 0, 240, 60);
+context2D.Font = "32px sans-serif";
+
+#pragma warning disable WEBPLATEXP0024 // The text clusters are a proposal
+// The clusters are the grapheme clusters of the text: the "e" and its combining acute accent are one cluster
+var metrics = context2D.MeasureText("Cafe\u0301s");
+var clusters = metrics.GetTextClusters();
+Assert.Equal(5, clusters.Count);
+Assert.Equal(3u, clusters[3].Start);
+Assert.Equal(5u, clusters[3].End);
+
+// Drawing all the clusters at the same point draws the text as FillText(), here each one in its own color
+string[] colors = ["#0ea5e9", "#ea580c", "#16a34a", "#9333ea", "#dc2626"];
+for (var i = 0; i < clusters.Count; i++)
+{
+    context2D.FillStyle = colors[i];
+    context2D.FillTextCluster(clusters[i], 10, 40);
+}
+
+// The caret positions and the selection, relative to the alignment point of the text
+Assert.Equal(1u, metrics.GetIndexFromOffset(clusters[1].X + 1));
+var selection = metrics.GetSelectionRects(0, 2);
+Assert.Single(selection);
+Assert.Equal(clusters[2].X, selection[0].Width, 1e-9);
+#pragma warning restore WEBPLATEXP0024
+
+using var screenshot = canvas.TakeScreenshot();
+```
+<!-- endref -->
+
+![The word "Cafés" whose five clusters are drawn in blue, orange, green, purple and red, the accented "é" in one color](images/CanvasTextClusters.png)
+
+- [GetTextClusters](cref:Meziantou.Framework.WebPlatform.Dom.TextMetrics.GetTextClusters) returns the
+  clusters of the text in logical order: its grapheme clusters (an emoji sequence, a letter and its combining marks),
+  merged when a glyph spans several of them (a ligature). The position of a cluster is its alignment point relative to
+  the alignment point and to the baseline of the text; the options give another alignment or baseline.
+- [FillTextCluster](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.FillTextCluster) and
+  [StrokeTextCluster](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.StrokeTextCluster) draw a cluster with the font
+  and the text styles of the measurement, and with the fill or stroke style, the transformation and the clip of the
+  context at that time. Drawing all the clusters at the same point draws the same pixels as `FillText()`.
+- [GetIndexFromOffset](cref:Meziantou.Framework.WebPlatform.Dom.TextMetrics.GetIndexFromOffset) returns the caret position under a
+  point, [GetSelectionRects](cref:Meziantou.Framework.WebPlatform.Dom.TextMetrics.GetSelectionRects) the rectangles of a selection (one per
+  bidi run, of the height of the font), and [GetActualBoundingBox](cref:Meziantou.Framework.WebPlatform.Dom.TextMetrics.GetActualBoundingBox)
+  the bounding box of the glyphs of a range. The indexes are in UTF-16 code units, as in JavaScript.
+- As in the browsers, each glyph of a stroked text is stroked on its own: the strokes of overlapping glyphs are
+  composited, instead of stroking their union, so stroking the clusters one by one draws the same pixels as
+  `StrokeText()`.
+- The API is experimental (`WEBPLATEXP0024`, see [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts
+  of the page use it without restriction.
+
+## Shaped text
+
+[ShapeText](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.ShapeText) implements the shaped text that Chromium ships
+behind the same flag, meant to replace the text clusters of `TextMetrics`: the text is shaped once, and its glyph runs are
+drawn later with the font, the text styles, the direction, the alignment and the baseline of the context when it was
+shaped:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasShapedText;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    RenderingBackend = new ImagingRenderingBackend(),
+    ScriptingEnabled = true,
+});
+var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
+context.EventLoop.RunUntilIdle();
+
+var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
+var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+context2D.FillStyle = "#f8fafc";
+context2D.FillRect(0, 0, 240, 60);
+context2D.FillStyle = "#0f172a";
+context2D.Font = "32px sans-serif";
+context2D.TextAlign = CanvasTextAlign.Center;
+
+#pragma warning disable WEBPLATEXP0025 // The shaped text is a proposal
+// The text is shaped once, with the font, the text styles and the alignment of the context at this time
+var shaped = context2D.ShapeText("Shaped");
+context2D.Font = "10px serif";
+
+context2D.FillGlyphRuns(shaped.GlyphRuns(), 120, 40);
+
+// The positions are relative to the alignment point: here the center of the text
+var clusters = shaped.GlyphClusters(1, 3);
+Assert.Equal(2, clusters.Count);
+Assert.Equal(-shaped.Width / 2, shaped.PositionToAdvance(0), 1e-9);
+Assert.Equal(shaped.PositionToAdvance(1), clusters[0].X, 1e-9);
+Assert.Equal(1u, shaped.AdvanceToPosition(clusters[0].X));
+#pragma warning restore WEBPLATEXP0025
+
+using var screenshot = canvas.TakeScreenshot();
+```
+<!-- endref -->
+
+![The word "Shaped" drawn in a 32px sans-serif font, centered on the canvas](images/CanvasShapedText.png)
+
+- [GlyphRuns](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.GlyphRuns) returns the runs of the text from left to right (the
+  glyphs of a bidi run with the same font), and [GlyphClusters](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.GlyphClusters) its
+  clusters, as the text clusters of `TextMetrics`. Their position is relative to the alignment point of the shaped text, and
+  [GetTextMetrics](cref:Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun.GetTextMetrics) measures one of them.
+- [FillGlyphRuns](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.FillGlyphRuns) and
+  [StrokeGlyphRuns](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.StrokeGlyphRuns) draw runs or clusters, the alignment point of
+  their shaped text at the given point.
+- [AdvanceToPosition](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.AdvanceToPosition) and
+  [PositionToAdvance](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.PositionToAdvance) convert between a caret position and a horizontal
+  offset; [SelectionRects](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.SelectionRects) and
+  [ActualBoundingBox](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.ActualBoundingBox) are the ones of `TextMetrics`.
+- No specification describes this API yet: it follows the IDL of Chromium. It is experimental (`WEBPLATEXP0025`, see
+  [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts of the page use it without restriction. The
+  JavaScript names of `CanvasShapedText` and `CanvasGlyphRun` are `ShapedText` and `GlyphRun`.

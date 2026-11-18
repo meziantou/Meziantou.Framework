@@ -358,6 +358,276 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void TextClusters_PositionsWithAlignmentAndBaseline()
+    {
+#pragma warning disable WEBPLATEXP0024
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.TextBaseline = CanvasTextBaseline.Top;
+        var metrics = context.MeasureText("ABC");
+        var clusters = metrics.GetTextClusters();
+        Assert.Equal(3, clusters.Count);
+        Assert.Equal(20, clusters[1].X);
+        Assert.Equal(0, clusters[1].Y);
+        Assert.Equal(CanvasTextAlign.Start, clusters[1].Align);
+
+        // The options give the alignment point and the baseline of the clusters
+        var centered = metrics.GetTextClusters(1, 2, new TextClusterOptions { Align = CanvasTextAlign.Center, Baseline = CanvasTextBaseline.Alphabetic });
+        Assert.Single(centered);
+        Assert.Equal(30, centered[0].X);
+        Assert.Equal(16, centered[0].Y);
+
+        // The cluster is drawn with the font of the measurement, at the point plus its position
+        context.Font = "40px serif";
+        context.FillTextCluster(clusters[1], 10, 0);
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 40, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 25, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 55, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 40, 25));
+
+        // The options replace the position, the alignment and the baseline of the cluster
+        context.FillTextCluster(clusters[0], 100, 40, new TextClusterOptions { Align = CanvasTextAlign.Right, Baseline = CanvasTextBaseline.Bottom, X = 0, Y = 0 });
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 90, 30));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 105, 30));
+#pragma warning restore WEBPLATEXP0024
+    }
+
+    [Fact]
+    public void TextClusters_SelectionCaretAndBoundingBox()
+    {
+#pragma warning disable WEBPLATEXP0024
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.TextAlign = CanvasTextAlign.Right;
+        var metrics = context.MeasureText("ABC");
+
+        Assert.Equal(0u, metrics.GetIndexFromOffset(-100));
+        Assert.Equal(1u, metrics.GetIndexFromOffset(-45));
+        Assert.Equal(1u, metrics.GetIndexFromOffset(-40));
+        Assert.Equal(3u, metrics.GetIndexFromOffset(10));
+
+        var rects = metrics.GetSelectionRects(1, 3);
+        Assert.Single(rects);
+        Assert.Equal(-40, rects[0].X);
+        Assert.Equal(40, rects[0].Width);
+        Assert.Equal(-16, rects[0].Y);
+        Assert.Equal(20, rects[0].Height);
+
+        // A collapsed range is the caret position of its end
+        var caret = metrics.GetSelectionRects(2, 1);
+        Assert.Single(caret);
+        Assert.Equal(-40, caret[0].X);
+        Assert.Equal(0, caret[0].Width);
+
+        var box = metrics.GetActualBoundingBox(0, 1);
+        Assert.Equal(-60, box.X);
+        Assert.Equal(20, box.Width);
+        Assert.Equal(-16, box.Y);
+        Assert.Equal(20, box.Height);
+
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => metrics.GetTextClusters(3, 3)).Name);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => metrics.GetActualBoundingBox(0, 4)).Name);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => metrics.GetSelectionRects(4, 0)).Name);
+        Assert.Single(metrics.GetSelectionRects(3, 3));
+#pragma warning restore WEBPLATEXP0024
+    }
+
+    [Fact]
+    public void TextClusters_RightToLeftAndLigatures()
+    {
+#pragma warning disable WEBPLATEXP0024
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.Direction = CanvasDirection.Rtl;
+        context.TextAlign = CanvasTextAlign.Left;
+        var metrics = context.MeasureText("\u202EABC");
+
+        // The first character of a right-to-left text is on the right (the override has no width)
+        var clusters = metrics.GetTextClusters();
+        Assert.Equal(4, clusters.Count);
+        Assert.Equal(1u, clusters[1].Start);
+        Assert.Equal(40, clusters[1].X);
+        Assert.Equal(0, clusters[3].X);
+        Assert.Equal(1u, metrics.GetIndexFromOffset(59));
+        Assert.Equal(2u, metrics.GetIndexFromOffset(45));
+        Assert.Equal(4u, metrics.GetIndexFromOffset(-1));
+
+        // A zero-width joiner extends the cluster of the character before it, a null character is not drawn
+        var joined = context.MeasureText("A\u200DB\0C").GetTextClusters();
+        Assert.Equal(3, joined.Count);
+        Assert.Equal(0u, joined[0].Start);
+        Assert.Equal(2u, joined[0].End);
+        Assert.Equal(4u, joined[1].End);
+#pragma warning restore WEBPLATEXP0024
+    }
+
+    [Fact]
+    public void ShapedText_GlyphRunsAndMetrics()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.TextBaseline = CanvasTextBaseline.Top;
+        var shaped = context.ShapeText("AB\u202ECD");
+        Assert.Equal(80, shaped.Width);
+
+        // The glyph runs are the bidi runs, from left to right
+        var runs = shaped.GlyphRuns();
+        Assert.Equal(2, runs.Count);
+        Assert.Equal(0u, runs[0].Start);
+        Assert.Equal(2u, runs[0].End);
+        Assert.Equal(2u, runs[1].Start);
+        Assert.Equal(5u, runs[1].End);
+        Assert.Equal(40, runs[1].X);
+        Assert.Equal(40, runs[1].Width);
+        Assert.Equal(40, runs[1].GetTextMetrics().Width);
+
+        Assert.Equal(80, shaped.PositionToAdvance(3));
+        Assert.Equal(60, shaped.PositionToAdvance(4));
+        Assert.Equal(4u, shaped.AdvanceToPosition(61));
+        Assert.Equal(2, shaped.SelectionRects(1, 4).Count);
+        Assert.Equal(20, shaped.ActualBoundingBox(1, 2).X);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => shaped.PositionToAdvance(6)).Name);
+
+        // The runs are drawn with the font of the shaping, at the alignment point of the shaped text
+        context.Font = "40px serif";
+        context.FillGlyphRun(runs[1], 10, 0);
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 55, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 45, 10));
+        context.StrokeGlyphRuns([runs[0]], 100, 0);
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 150, 10));
+        Assert.NotEqual([0, 0, 0, 0], GetPixel(context, 100, 10));
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_ClosingControlIsAtTheStartOfTheNextCharacter()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        var shaped = context.ShapeText("A\u202EB\u202CC");
+        Assert.Equal(60, shaped.Width);
+
+        // The closing control is in the run of C, at its left edge: the runs do not overlap
+        var runs = shaped.GlyphRuns();
+        Assert.Equal(60, runs.Sum(run => run.Width));
+        var last = runs[^1];
+        Assert.Equal(3u, last.Start);
+        Assert.Equal(5u, last.End);
+        Assert.Equal(40, last.X);
+        Assert.Equal(20, last.Width);
+
+        // Selecting the closing control and C does not select B
+        var rect = Assert.Single(shaped.SelectionRects(3, 5));
+        Assert.Equal(40, rect.X);
+        Assert.Equal(20, rect.Width);
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_NegativeLetterSpacing()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.LetterSpacing = "-30px";
+        var shaped = context.ShapeText("ABC");
+
+        // Each character advances by -10px: the caret positions go from right to left
+        Assert.Equal(-10, shaped.PositionToAdvance(1));
+        Assert.Equal(-20, shaped.PositionToAdvance(2));
+        Assert.Equal(1u, shaped.AdvanceToPosition(-10));
+        Assert.Equal(2u, shaped.AdvanceToPosition(-19));
+        Assert.Equal(0u, shaped.AdvanceToPosition(-4));
+        Assert.Equal(0u, shaped.AdvanceToPosition(5));
+        Assert.Equal(3u, shaped.AdvanceToPosition(-100));
+
+        // A cluster expanded into several glyphs (the synthesized small capitals of a sharp s) starts at its pen position
+        context.Font = "small-caps 20px Ahem";
+        var expanded = context.ShapeText("x\u00DF");
+        Assert.Equal(0, expanded.PositionToAdvance(0));
+        Assert.Equal(expanded.Width, expanded.PositionToAdvance(2));
+        Assert.True(expanded.PositionToAdvance(1) > expanded.PositionToAdvance(2));
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_NullCharactersHaveTheCaretOfTheNextCharacter()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        var shaped = context.ShapeText("\0AB\0C");
+        Assert.Equal(60, shaped.Width);
+        Assert.Equal(0, shaped.PositionToAdvance(0));
+        Assert.Equal(20, shaped.PositionToAdvance(2));
+        Assert.Equal(40, shaped.PositionToAdvance(4));
+        Assert.Equal(60, shaped.PositionToAdvance(5));
+        Assert.Equal(0, Assert.Single(shaped.SelectionRects(0, 0)).X);
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void StrokeText_TextOfTheGlyphsIsNotRepeated()
+    {
+        // The glyphs of a stroked text are stroked one by one: the text (e.g. of a PDF) is on the first one only
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.StrokeText("ABC", 10, 30);
+        var glyphs = context.Bitmap.TakeRecording().Items.ToArray().OfType<Meziantou.Framework.WebPlatform.Rendering.DrawGlyphsItem>().ToList();
+        Assert.Equal(3, glyphs.Count);
+        Assert.Equal("ABC", string.Concat(glyphs.Select(item => item.Run.Text)));
+    }
+
+    [Fact]
+    public void ShapedText_LigatureCarets()
+    {
+#pragma warning disable WEBPLATEXP0025
+        // ShapingTest.ttf has a ligature f_i of 13px at 20px, with a caret position at 6px (GDEF)
+        var (browsingContext, _, context) = Create(200, 50);
+        var face = new Meziantou.Framework.WebPlatform.Css.Om.FontFace("Test", System.IO.File.ReadAllBytes(Path.Combine(TestPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Tests", "Css", "Fonts", "Resources", "ShapingTest.ttf")));
+        browsingContext.Document!.Fonts.Add(face);
+        browsingContext.EventLoop.RunUntilIdle();
+        context.Font = "20px Test";
+
+        var shaped = context.ShapeText("fi");
+        Assert.Equal(13, shaped.Width, 1e-9);
+        var cluster = Assert.Single(shaped.GlyphClusters());
+        Assert.Equal(2u, cluster.End);
+
+        // The caret positions inside the ligature are the ones of the font
+        Assert.Equal(6, shaped.PositionToAdvance(1), 1e-9);
+        Assert.Equal(1u, shaped.AdvanceToPosition(6.5));
+        Assert.Equal(0u, shaped.AdvanceToPosition(2));
+        Assert.Equal(2u, shaped.AdvanceToPosition(12));
+        Assert.Equal(6, Assert.Single(shaped.SelectionRects(0, 1)).Width, 1e-9);
+        Assert.Equal(7, Assert.Single(shaped.SelectionRects(1, 2)).Width, 1e-9);
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_GlyphRunsAreOneDrawingOperation()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(100, 50);
+        context.Font = "20px Ahem";
+        context.TextBaseline = CanvasTextBaseline.Top;
+        var shaped = context.ShapeText("ABC");
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 100, 50);
+
+        // With the copy operator, the clusters drawn together do not erase each other
+        context.GlobalCompositeOperation = "copy";
+        context.FillStyle = "#0f0";
+        context.FillGlyphRuns(shaped.GlyphClusters(), 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 10, 10));
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 50, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 70, 10));
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
     public void Text_MeasureAndFill()
     {
         var (_, _, context) = Create();

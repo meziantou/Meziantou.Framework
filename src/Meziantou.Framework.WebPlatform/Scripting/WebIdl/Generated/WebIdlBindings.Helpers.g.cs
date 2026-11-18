@@ -8,6 +8,8 @@
 #pragma warning disable WEBPLATEXP0021 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0022 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0023 // The conversions use the experimental Web IDL interfaces
+#pragma warning disable WEBPLATEXP0024 // The conversions use the experimental Web IDL interfaces
+#pragma warning disable WEBPLATEXP0025 // The conversions use the experimental Web IDL interfaces
 
 namespace Meziantou.Framework.WebPlatform.Scripting.Generated;
 
@@ -209,6 +211,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ShareData Defaults_Dom_ShareData = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ShowPopoverOptions Defaults_Dom_ShowPopoverOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions Defaults_Dom_TextClusterOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.TogglePopoverOptions Defaults_Dom_TogglePopoverOptions = new();
 
@@ -3033,6 +3037,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         var result = r.CreateObject();
         if (value.Message is not null) r.SetMember(result, "message", r.FromString(value.Message));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_TextClusterOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Align is not null) r.SetMember(result, "align", (value.Align.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CanvasTextAlign(value.Align.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.Baseline is not null) r.SetMember(result, "baseline", (value.Baseline.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CanvasTextBaseline(value.Baseline.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.X is not null) r.SetMember(result, "x", (value.X.HasValue ? r.FromNumber((double)value.X.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Y is not null) r.SetMember(result, "y", (value.Y.HasValue ? r.FromNumber((double)value.Y.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -9615,6 +9629,30 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.TaskSignalAnyInit
         {
             Priority = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_TaskPriorityOrSignal(r, m0),
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions ToDictionary_Dom_TextClusterOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "TextClusterOptions");
+        var m0_value = r.GetDictionaryMember(value, "align");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (string?)r.ToEnumerationValue(m0_value, "CanvasTextAlign", WebIdlHelpers<TAdapter, TValue>.Enum_CanvasTextAlign_Values) : default;
+        var m1_value = r.GetDictionaryMember(value, "baseline");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToEnumerationValue(m1_value, "CanvasTextBaseline", WebIdlHelpers<TAdapter, TValue>.Enum_CanvasTextBaseline_Values) : default;
+        var m2_value = r.GetDictionaryMember(value, "x");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (double?)r.ToDouble(m2_value, restricted: true) : default;
+        var m3_value = r.GetDictionaryMember(value, "y");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (double?)r.ToDouble(m3_value, restricted: true) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions
+        {
+            Align = m0_present ? (m0 is { } enumValue_m0 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_CanvasTextAlign(enumValue_m0) : (global::Meziantou.Framework.WebPlatform.Dom.CanvasTextAlign?)null) : Defaults_Dom_TextClusterOptions.Align,
+            Baseline = m1_present ? (m1 is { } enumValue_m1 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_CanvasTextBaseline(enumValue_m1) : (global::Meziantou.Framework.WebPlatform.Dom.CanvasTextBaseline?)null) : Defaults_Dom_TextClusterOptions.Baseline,
+            X = m2_present ? m2 : Defaults_Dom_TextClusterOptions.X,
+            Y = m3_present ? m3 : Defaults_Dom_TextClusterOptions.Y,
         };
     }
 

@@ -30,6 +30,60 @@ internal static class Binding_TextMetrics<TAdapter, TValue> where TAdapter : str
     private static TValue Get_hangingBaseline(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextMetrics>(t, Binding); return r.FromNumber((double)o.HangingBaseline); }
     private static TValue Get_alphabeticBaseline(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextMetrics>(t, Binding); return r.FromNumber((double)o.AlphabeticBaseline); }
     private static TValue Get_ideographicBaseline(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextMetrics>(t, Binding); return r.FromNumber((double)o.IdeographicBaseline); }
+    #pragma warning disable WEBPLATEXP0024 // The binding exposes the experimental Web IDL member
+    private static TValue Op_getIndexFromOffset(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextMetrics>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("getIndexFromOffset", 1, a.Length);
+        var a0 = r.ToDouble(a[0], restricted: true);
+        var result = o.GetIndexFromOffset(a0); return r.FromNumber((double)result);
+    }
+    #pragma warning restore WEBPLATEXP0024
+    #pragma warning disable WEBPLATEXP0024 // The binding exposes the experimental Web IDL member
+    private static TValue Op_getSelectionRects(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextMetrics>(t, Binding);
+        if (a.Length < 2) throw r.NotEnoughArguments("getSelectionRects", 2, a.Length);
+        var a0 = r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var a1 = r.ToUnsignedLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var result = o.GetSelectionRects(a0, a1); return r.FromSequence(result, static (r, e) => r.Wrap(e));
+    }
+    #pragma warning restore WEBPLATEXP0024
+    #pragma warning disable WEBPLATEXP0024 // The binding exposes the experimental Web IDL member
+    private static TValue Op_getActualBoundingBox(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextMetrics>(t, Binding);
+        if (a.Length < 2) throw r.NotEnoughArguments("getActualBoundingBox", 2, a.Length);
+        var a0 = r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var a1 = r.ToUnsignedLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var result = o.GetActualBoundingBox(a0, a1); return r.Wrap(result);
+    }
+    #pragma warning restore WEBPLATEXP0024
+    private static readonly global::Meziantou.Framework.WebPlatform.Scripting.OverloadInfo[] Op_getTextClusters_Overloads = [new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("TextClusterOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("unsigned long", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unsigned long", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("TextClusterOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) })];
+    #pragma warning disable WEBPLATEXP0024 // The binding exposes the experimental Web IDL member
+    private static TValue Op_getTextClusters(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.TextMetrics>(t, Binding);
+        switch (r.SelectOverload("getTextClusters", Op_getTextClusters_Overloads, a))
+        {
+            case 0:
+            {
+                var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, a[0]);
+                var result = o.GetTextClusters(a0); return r.FromSequence(result, static (r, e) => r.Wrap(e));
+            }
+            case 1:
+            {
+                if (a.Length < 2) throw r.NotEnoughArguments("getTextClusters", 2, a.Length);
+                var a0 = r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+                var a1 = r.ToUnsignedLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+                var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_TextClusterOptions(r, a[2]);
+                var result = o.GetTextClusters(a0, a1, a2); return r.FromSequence(result, static (r, e) => r.Wrap(e));
+            }
+            default:
+                throw new global::System.InvalidOperationException("Unexpected overload");
+        }
+    }
+    #pragma warning restore WEBPLATEXP0024
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "width", Get_width, null);
@@ -44,5 +98,9 @@ internal static class Binding_TextMetrics<TAdapter, TValue> where TAdapter : str
         r.DefineAttribute(instanceTarget, "hangingBaseline", Get_hangingBaseline, null);
         r.DefineAttribute(instanceTarget, "alphabeticBaseline", Get_alphabeticBaseline, null);
         r.DefineAttribute(instanceTarget, "ideographicBaseline", Get_ideographicBaseline, null);
+        r.DefineOperation(instanceTarget, "getIndexFromOffset", 1, Op_getIndexFromOffset);
+        r.DefineOperation(instanceTarget, "getSelectionRects", 2, Op_getSelectionRects);
+        r.DefineOperation(instanceTarget, "getActualBoundingBox", 2, Op_getActualBoundingBox);
+        r.DefineOperation(instanceTarget, "getTextClusters", 0, Op_getTextClusters);
     }
 }

@@ -92,6 +92,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-event-stream", EventStream) { Seeds = GetEventStreamSeeds },
         new("webplatform-mime", data => Mime(FuzzText.Decode(data))) { Seeds = GetMimeSeeds },
         new("webplatform-canvas-state", CanvasState) { Seeds = GetCanvasSeeds, Dictionary = CanvasTokens },
+        new("webplatform-canvas-text", CanvasText) { Seeds = GetCanvasTextSeeds, Dictionary = CanvasTextTokens },
         new("webplatform-canvas-drawables", data => CanvasDrawElements(FuzzText.Decode(data.Length > CanvasDrawablesMaxLength ? data[..CanvasDrawablesMaxLength] : data))) { Seeds = () => GetSeeds("canvas-drawable"), Dictionary = CanvasDrawablesTokens },
         new("webplatform-canvas-filter", CanvasFilterDescription) { Seeds = GetCanvasFilterSeeds, Dictionary = CanvasFilterTokens },
         new("webplatform-svg-text-shapes", SvgTextShapes) { Seeds = GetSvgTextShapesSeeds, Dictionary = SvgTextShapeTokens },

@@ -262,6 +262,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["GeolocationCoordinates"] = Binding_GeolocationCoordinates<TAdapter, TValue>.Binding,
             ["GeolocationPosition"] = Binding_GeolocationPosition<TAdapter, TValue>.Binding,
             ["GeolocationPositionError"] = Binding_GeolocationPositionError<TAdapter, TValue>.Binding,
+            ["GlyphRun"] = Binding_GlyphRun<TAdapter, TValue>.Binding,
             ["GravitySensor"] = Binding_GravitySensor<TAdapter, TValue>.Binding,
             ["Gyroscope"] = Binding_Gyroscope<TAdapter, TValue>.Binding,
             ["HTMLAllCollection"] = Binding_HTMLAllCollection<TAdapter, TValue>.Binding,
@@ -598,6 +599,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ServiceWorkerGlobalScope"] = Binding_ServiceWorkerGlobalScope<TAdapter, TValue>.Binding,
             ["ServiceWorkerRegistration"] = Binding_ServiceWorkerRegistration<TAdapter, TValue>.Binding,
             ["ShadowRoot"] = Binding_ShadowRoot<TAdapter, TValue>.Binding,
+            ["ShapedText"] = Binding_ShapedText<TAdapter, TValue>.Binding,
             ["SharedWorker"] = Binding_SharedWorker<TAdapter, TValue>.Binding,
             ["SharedWorkerGlobalScope"] = Binding_SharedWorkerGlobalScope<TAdapter, TValue>.Binding,
             ["SnapEvent"] = Binding_SnapEvent<TAdapter, TValue>.Binding,
@@ -618,6 +620,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["TaskPriorityChangeEvent"] = Binding_TaskPriorityChangeEvent<TAdapter, TValue>.Binding,
             ["TaskSignal"] = Binding_TaskSignal<TAdapter, TValue>.Binding,
             ["Text"] = Binding_Text<TAdapter, TValue>.Binding,
+            ["TextCluster"] = Binding_TextCluster<TAdapter, TValue>.Binding,
             ["TextDecoder"] = Binding_TextDecoder<TAdapter, TValue>.Binding,
             ["TextEncoder"] = Binding_TextEncoder<TAdapter, TValue>.Binding,
             ["TextEvent"] = Binding_TextEvent<TAdapter, TValue>.Binding,
@@ -1534,6 +1537,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TaskSignalAnyInit dictionaryDom_TaskSignalAnyInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TaskSignalAnyInit(r, dictionaryDom_TaskSignalAnyInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions dictionaryDom_TextClusterOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TextClusterOptions(r, dictionaryDom_TextClusterOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TextDecodeOptions dictionaryDom_TextDecodeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TextDecodeOptions(r, dictionaryDom_TextDecodeOptions);

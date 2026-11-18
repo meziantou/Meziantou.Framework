@@ -77,4 +77,10 @@ internal static class ExperimentalApis
 
     /// <summary>HTML-in-canvas (https://github.com/WICG/html-in-canvas): the <c>content</c> attribute and the paint events of the canvases, <c>drawElementImage()</c> and the element images and geometries.</summary>
     public const string HtmlInCanvas = "WEBPLATEXP0023";
+
+    /// <summary>The text clusters and the selection APIs of <c>TextMetrics</c> (https://github.com/whatwg/html/pull/11000): <c>getTextClusters()</c>, <c>getSelectionRects()</c>, <c>getActualBoundingBox()</c>, <c>getIndexFromOffset()</c>, <c>fillTextCluster()</c> and <c>strokeTextCluster()</c>.</summary>
+    public const string CanvasTextClusters = "WEBPLATEXP0024";
+
+    /// <summary>The shaped text of the 2D contexts, which Chromium implements behind a flag: <c>shapeText()</c>, <c>ShapedText</c>, <c>GlyphRun</c>, <c>fillGlyphRun()</c> and <c>strokeGlyphRun()</c>.</summary>
+    public const string CanvasShapedText = "WEBPLATEXP0025";
 }

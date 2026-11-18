@@ -6,7 +6,7 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.FileConversionTool</RootNamespace>
 
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>CLI to convert files from one format to another: images, PDF, EPUB, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT) and archives (zip, 7z, RAR, tar)</Description>
     <PackageTags>image, pdf, epub, markdown, html, cbz, cbr, zip, 7z, rar, tar, converter, cli, dotnet-tool</PackageTags>
   </PropertyGroup>

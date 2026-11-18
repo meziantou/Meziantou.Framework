@@ -97,6 +97,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-canvas-filter", CanvasFilterDescription) { Seeds = GetCanvasFilterSeeds, Dictionary = CanvasFilterTokens },
         new("webplatform-svg-text-shapes", SvgTextShapes) { Seeds = GetSvgTextShapesSeeds, Dictionary = SvgTextShapeTokens },
         new("webplatform-hyphenation", Hyphenation) { Seeds = GetHyphenationSeeds, Dictionary = HyphenationTokens },
+        new("webplatform-paged-inline-size", PagedInlineSize) { Seeds = GetPagedInlineSizeSeeds, Dictionary = PagedInlineSizeTokens },
         new("webplatform-videoframe-copyto", VideoFrameCopyTo) { Seeds = GetVideoFrameCopyToSeeds },
         new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
         new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },

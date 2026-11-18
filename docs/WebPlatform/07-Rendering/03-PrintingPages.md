@@ -48,7 +48,8 @@ var pages = context.RenderPages();
   run the event loop, then print again.
 - The pages may have different sizes and margins (`@page :first`, the named pages, `:left` and `:right`): the content of a
   page whose page area has another width is laid out again in it, also when the page starts in the middle of a paragraph
-  (its lines continue in the width of the new page).
+  (its lines continue in the width of the new page), between the rows of a table, between the items of a column flex
+  container, or between the rows of a grid whose number of columns does not depend on its width.
 
 ## Print options
 

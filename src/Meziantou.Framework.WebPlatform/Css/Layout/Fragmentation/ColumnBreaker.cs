@@ -73,7 +73,12 @@ internal static partial class ColumnBreaker
         minimalShortage = double.PositiveInfinity;
         lastExtent = 0;
         map ??= new FlowMap();
-        map.Add(map.Count == 0 ? double.NegativeInfinity : start, baseIndex, start, isBreak: true);
+
+        // (the pages of another inline size, laid out again from a break: the content before it is in the previous pages, and the
+        // first page starts with the space of the break, e.g. a repeated table header)
+        var resumes = flow.IsPaged && baseIndex > 0 && start > Epsilon;
+        var startDisplayOffset = resumes ? GetDisplayOffsetAt(flow, start) : 0;
+        map.Add(map.Count == 0 ? double.NegativeInfinity : start, baseIndex, start - startDisplayOffset, isBreak: true);
         if (flow.IsPaged && baseIndex > 0 && flow.Floats is { } floats)
         {
             // (the pages of another inline size, laid out again from a break: the floats that start before the break are in the
@@ -94,6 +99,13 @@ internal static partial class ColumnBreaker
         if (cursorStart < start)
         {
             cursor.SetOrigin(start);
+        }
+
+        // (the parallel flows that start before the break are in the previous pages, or continue from it)
+        if (resumes)
+        {
+            cursor.SetOrigin(start - startDisplayOffset);
+            cursor.ResumeAt(start);
         }
         var violating = false;
         while (breaks.Count < MaxFragmentainers)
@@ -290,6 +302,78 @@ internal static partial class ColumnBreaker
 
         /// <summary>Sets the origin of the positions of the flow when it starts in the middle of a fragmentainer.</summary>
         public void SetOrigin(double origin) => _displayOffset = _position - origin;
+
+        /// <summary>
+        /// Starts the flow from a break of a strip laid out again in another inline size (the pages of another inline size, see
+        /// <c>LayoutEngine.FindBreakAnchor</c>), whose content before the break is in the previous fragmentainer (the index before
+        /// the one of the cursor): the items of the parallel flows that end before the break are placed in it, and the items that
+        /// the break crosses (the rows of a container that are stacked) continue from the break, as the flow does.
+        /// </summary>
+        public void ResumeAt(double start)
+        {
+            if (_flow.Groups is not { } groups)
+                return;
+
+            for (var i = _groupIndex; i < groups.Count && groups[i].Start < start - Epsilon; i++)
+            {
+                var group = groups[i];
+                group.Generation = _generation;
+                group.ClosedTracks = 0;
+                for (var track = 0; track < group.TrackStarts.Length && group.TrackStarts[track] < start - Epsilon; track++)
+                {
+                    foreach (var item in group.StartingItems[track])
+                    {
+                        if (item.End <= start + Epsilon)
+                        {
+                            PlaceBefore(item);
+                        }
+                        else if (item.Nested is null)
+                        {
+                            Resume(item, start);
+                        }
+                    }
+
+                    if (group.TrackEnds[track] <= start + Epsilon && group.ClosedTracks == track)
+                    {
+                        group.ClosedTracks = track + 1;
+                    }
+                }
+            }
+
+            void PlaceBefore(ParallelItem item)
+            {
+                item.Generation = _generation;
+                item.Map = new FlowMap();
+                item.Map.Add(double.NegativeInfinity, _index - 1, 0, isBreak: false);
+                item.Cursor = null;
+                item.PushShift = 0;
+                item.IsBoxDone = true;
+                item.IsFlowDone = true;
+                item.IsContentPlaced = true;
+                item.EndIndex = _index - 1;
+                item.EndOffset = item.End;
+            }
+
+            void Resume(ParallelItem item, double start)
+            {
+                item.Generation = _generation;
+                item.Group!.HasEnded = false;
+                item.PushShift = 0;
+                item.IsBoxDone = false;
+                item.IsFlowDone = false;
+                item.IsContentPlaced = false;
+                item.Map = new FlowMap();
+                item.Map.Add(double.NegativeInfinity, _index - 1, 0, isBreak: false);
+                item.Map.Add(start, _index, start, isBreak: true);
+                item.MaxStart = (_index, 0);
+                item.MaxConsumed = 0;
+                item.MaxIndex = (_index, double.NaN);
+                var cursor = new FlowCursor(item.Flow, item.Map, start, item.Flow.ContentEnd, _index, item.Flow.NextGeneration(), canBreakBefore: false);
+                cursor.ResumeAt(start);
+                item.Cursor = cursor;
+                _open.Add(item);
+            }
+        }
 
         /// <summary>Sets the block-end edge of the first content of the flow, which is placed in its first fragmentainer even when it overflows it.</summary>
         public void SetLeadingEnd(double end) => _leadingEnd = end;
@@ -1769,6 +1853,23 @@ internal static partial class ColumnBreaker
     }
 
     /// <summary>Returns the index of the first candidate after a position.</summary>
+    /// <summary>
+    /// Returns the space at the start of a fragmentainer that starts at a position of the flow (see
+    /// <see cref="FragmentainerBreak.DisplayOffset"/>): the edges repeated at the possible break there (the repeated table
+    /// headers, the edges of the boxes with <c>box-decoration-break: clone</c>), or 0.
+    /// </summary>
+    public static double GetDisplayOffsetAt(FragmentationFlow flow, double position)
+    {
+        var candidates = flow.Candidates;
+        var result = 0d;
+        for (var i = FindFirstAfter(candidates, position - (2 * Epsilon)); i < candidates.Count && candidates[i].Position <= position + Epsilon; i++)
+        {
+            result = Math.Max(result, candidates[i].CloneStartEdges);
+        }
+
+        return result;
+    }
+
     private static int FindFirstAfter(List<BreakCandidate> candidates, double position)
     {
         var low = 0;

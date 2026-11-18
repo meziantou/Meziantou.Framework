@@ -3223,10 +3223,27 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   break), or from the content box of the block container, whose line boxes start at the position of its inline content where
   the line box after the break started (`InlineResume`, recorded by `LineBoxFragment.StartPosition`, given to the inline layout
   by `LayoutContext.InlineResumes`: none of these lines is the first line, without `::first-line`, `text-indent`, outside
-  marker nor `text-box-trim`), the content before it being in a virtual first fragmentainer whose fragments are dropped. The pages of a segment followed by another one are copies of the fragments (the next layout may
+  marker nor `text-box-trim`), the content before it being in a virtual first fragmentainer whose fragments are dropped.
+  A segment also starts at a break between the rows of a container whose rows are the same in any inline size
+  (`IsRowContainer`: a table wrapper box, a table grid box and its row groups, a single-line column flex container, a grid
+  whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid), or inside the only row that the break
+  crosses when the rows are stacked (not in a grid: its items are side by side). The anchor is then the container and its
+  children after the break (`BreakAnchor.Following`): the next segment starts at the first of them, offset by the break,
+  but not before the end of the other children (which may end later in another inline size, e.g. with another alignment).
+  The rows are parallel flows that break apart from the flow of their container (a row may continue after the break of the
+  strip: a grid item that avoids breaks, the cells of a row, an item whose own break is before the one of the strip), so
+  such a page ends the segment only when its content starts with the anchor (`IsAnchorOfPage`, checked on the fragments
+  that the slicer placed in the pages: no fragment of a row before the break in it, no fragment of a row after the break
+  nor of the anchor in the previous page, and the first line box of a block container resumed at a line is that line);
+  else the page is laid out in the inline size of the strip and the next page is tried.
+  The breaker starts the parallel flows of the segment from the break (`FlowCursor.ResumeAt`): the items that end before it
+  are in the virtual fragmentainer, the item that the break crosses continues from it with its own flow, and the first page
+  starts with the space of the edges repeated at the break (`ColumnBreaker.GetDisplayOffsetAt`: a repeated table header,
+  the edges of `box-decoration-break: clone`). The pages of a segment followed by another one are copies of the fragments (the next layout may
   return and move the fragments of the boxes laid out the same way). The boxes fixed to the viewport are laid out once, in
   the initial containing block of the first page, as in Blink. A page of another inline size that starts inside a line, a
-  flex container... is laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
+  multi-column container, a table row, a flex container that wraps or a grid whose columns depend on its inline size... is
+  laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.
@@ -3288,9 +3305,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   the changes of the counters that the page does not reset are kept for the next pages, a counter reset by a page is a
   counter of that page only; a page-margin box applies its own counter properties for itself only. The counters are not
   nested (`counters()` shows one value).
-- Not done: the layout of the content of a page whose page area has another inline size than the strip when the page does
-  not start before a block box or between two line boxes of the block flow of the root element (it is laid out in the inline
-  size of the strip), the
+- Not done: the layout of the content of a page whose page area has another inline size than the strip when the page starts
+  inside a line box, a multi-column container, a table row, between the lines of a flex container that wraps, inside a row
+  flex container, inside a grid row or in a grid whose columns depend on its inline size (it is laid out in the inline size of
+  the strip), the
   nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 

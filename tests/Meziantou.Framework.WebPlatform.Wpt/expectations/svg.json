@@ -2485,7 +2485,7 @@
     "reftest": "PASS"
   },
   "svg/painting/reftests/paint-fill-attr-rec2020.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/painting/reftests/paint-fill-attr-rgb-legacy-percent.svg": {
     "reftest": "PASS"
@@ -2545,7 +2545,7 @@
     "reftest": "PASS"
   },
   "svg/painting/reftests/paint-fill-rec2020.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/painting/reftests/paint-fill-rgb-legacy-percent.svg": {
     "reftest": "PASS"

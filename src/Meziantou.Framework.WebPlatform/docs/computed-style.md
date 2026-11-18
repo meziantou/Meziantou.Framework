@@ -552,9 +552,9 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   (it is not painted). Only the RGB display profiles based on a matrix and tone curves are supported (the profiles based
   on lookup tables are not), and the `rendering-intent` and `components` descriptors and `@color-profile device-cmyk` are
   parsed but not used.
-- The color conversions follow the sample code of CSS Color 4, except the transfer function of `rec2020`: the piecewise
-  function of ITU-R BT.2020 (as in all the browsers and in the reftests), not the pure 2.4 gamma of BT.1886 of the current
-  draft (which only the newer testharness tests use). The computed and used colors are not gamut mapped (they keep the
+- The color conversions follow the sample code of CSS Color 4, including the transfer function of `rec2020`: the pure 2.4
+  gamma of the reference EOTF of ITU-R BT.1886 (not the piecewise function of ITU-R BT.2020 of the previous drafts),
+  extended to the negative values. The computed and used colors are not gamut mapped (they keep the
   components outside of their gamut); the painted colors are (see [rendering](rendering.md#display-list)).
 - HDR colors ([CSS Color HDR](https://drafts.csswg.org/css-color-hdr-1/)): `ictcp()`, `jzazbz()`, `jzczhz()` and the
   `rec2100-pq`, `rec2100-hlg` and `rec2100-linear` color spaces of `color()` are converted like the other color spaces

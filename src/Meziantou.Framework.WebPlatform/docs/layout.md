@@ -6141,7 +6141,8 @@ hyphenator of Android `hyphenator_aosp.cc`):
   separates two syllables is removed at the start of the next line (`tú|’àn` is `tú-` `àn`), and it is a hyphenation
   opportunity of `hyphens: auto` (and of a soft hyphen before it, which UAX #14 forbids before a quotation mark); in Catalan
   (`ca`), the middle dot of a geminate l is replaced by the hyphen (`col·|lecció` is `col-lecció`, `coŀ|lecció` too), and it is a
-  hyphenation opportunity of `hyphens: auto` (there is no Catalan dictionary); in the 1901 German orthography (`de-1901`,
+  hyphenation opportunity of `hyphens: auto` (there is no Catalan dictionary: `AddCatalanOpportunities` adds it to the
+  opportunities of the word in `HyphenateWord`, with the same limits and soft hyphen rule as the dictionaries); in the 1901 German orthography (`de-1901`,
   `de-CH-1901`), `ck` is `k-k` (`Zuc|ker` is `Zuk-ker`). A line broken at a hyphen between two letters (U+2010 or U+002D)
   repeats it at the start of the next line (`AddLanguageHyphenationOpportunities`: the opportunity after the hyphen becomes a
   hyphenation opportunity before it, so `hyphenate-character` ends the line and the hyphen starts the next one): between two

@@ -23,8 +23,11 @@ public static partial class WebPlatformFuzzTargets
     /// </summary>
     private const string HyphenationAlphabet = "aelLcCkKtTjJsSzZbdginoru \u00E9\u00D6-\u2010\u00AD'\u2019\u00B7\u2027\u0140\u013F\u0628\u1472";
 
-    /// <summary>The tokens of the target: the words of the spelling changes and the compound words.</summary>
-    private static string[] HyphenationTokens => ["eetj", "\u00D6ssz", "l\u00B7l", "\u0140l", "ck", "a-a", "a\u00AD-a", "a\u2019a"];
+    /// <summary>
+    /// The tokens of the target: the words of the spelling changes and the compound words, encoded as the input (the indexes of
+    /// their characters in <see cref="HyphenationAlphabet"/>, each one byte in UTF-8).
+    /// </summary>
+    private static string[] HyphenationTokens => [.. new[] { "eetj", "\u00D6ssz", "l\u00B7l", "\u0140l", "ck", "a-a", "a\u00AD-a", "a\u2019a" }.Select(EncodeHyphenationText)];
 
     /// <summary>Decodes the input to a hyphenated text, and checks its layout.</summary>
     public static void Hyphenation(ReadOnlySpan<byte> data)
@@ -94,14 +97,20 @@ public static partial class WebPlatformFuzzTargets
         for (var i = 0; i < scenarios.Length; i++)
         {
             var (language, mode, width, text) = scenarios[i];
-            var data = new List<byte> { (byte)language, (byte)mode, (byte)(width - 1) };
-            foreach (var c in text)
-            {
-                var index = HyphenationAlphabet.IndexOf(c, StringComparison.Ordinal);
-                data.Add((byte)(index >= 0 ? index : 0));
-            }
-
-            yield return new FuzzSeed("hyphenation-" + i.ToString(CultureInfo.InvariantCulture), data.ToArray());
+            byte[] data = [(byte)language, (byte)mode, (byte)(width - 1), .. EncodeHyphenationText(text).Select(c => (byte)c)];
+            yield return new FuzzSeed("hyphenation-" + i.ToString(CultureInfo.InvariantCulture), data);
         }
+    }
+
+    /// <summary>Encodes a text as the input of the target: the index of each character in <see cref="HyphenationAlphabet"/> (the first one for the characters that are not in it).</summary>
+    private static string EncodeHyphenationText(string text)
+    {
+        var result = new StringBuilder(text.Length);
+        foreach (var c in text)
+        {
+            result.Append((char)Math.Max(0, HyphenationAlphabet.IndexOf(c, StringComparison.Ordinal)));
+        }
+
+        return result.ToString();
     }
 }

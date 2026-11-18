@@ -253,6 +253,10 @@ public sealed class InlineFormattingContextTests : IDisposable
     {
         var document = Parse($"<div id=d lang={language} style='width: 30px; hyphens: {hyphens}'>ab-cd</div>");
         Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+
+        // (a compound word that spans inline boxes)
+        document = Parse($"<div id=d lang={language} style='width: 30px; hyphens: {hyphens}'>ab-<b>cd</b></div>");
+        Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
     }
 
     [Theory]
@@ -273,6 +277,29 @@ public sealed class InlineFormattingContextTests : IDisposable
     {
         var document = Parse($"<div id=d lang={language} style='width: 10px; hyphens: {hyphens}'>col&#xB7;lecci&#xF3;</div>");
         Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+
+        // (a word that spans inline boxes)
+        document = Parse($"<div id=d lang={language} style='width: 10px; hyphens: {hyphens}'>col&#xB7;<b>lecci&#xF3;</b></div>");
+        Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+    }
+
+    [Theory]
+    [InlineData("hyphenate-limit-chars: 20", "col\U000000B7lecci\U000000F3")] // the word is shorter than the limit
+    [InlineData("hyphenate-limit-chars: auto 5 2", "col\U000000B7lecci\U000000F3")] // the part before the opportunity is shorter than the limit
+    [InlineData("hyphenate-limit-chars: auto 2 7", "col\U000000B7lecci\U000000F3")] // the part after the opportunity is shorter than the limit
+    [InlineData("hyphenate-limit-chars: auto 4 6", "col-|lecci\U000000F3")]
+    public void Hyphens_CatalanGeminateL_HyphenateLimitChars(string style, string expected)
+    {
+        var document = Parse($"<div id=d lang=ca style='width: 10px; hyphens: auto; {style}'>col&#xB7;lecci&#xF3;</div>");
+        Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+    }
+
+    [Fact]
+    public void Hyphens_CatalanGeminateL_SoftHyphenSuppressesAutomaticHyphenation()
+    {
+        // "Automatic hyphenation opportunities within a word must be ignored if the word contains a conditional hyphen"
+        var document = Parse("<div id=d lang=ca style='width: 10px; hyphens: auto'>col&#xB7;lec&shy;ci&#xF3;</div>");
+        Assert.Equal(["col\u00B7lec\u00AD-", "ci\u00F3"], GetLines(document, "d"));
     }
 
     [Fact]

@@ -505,10 +505,13 @@ internal sealed partial class Painter
         // background of the canvas that has the effects of the root element is painted with it, in the scrollport)
         if (hasGutters)
         {
-            builder.Add(new ClipRectItem(painter.SnapToDevicePixels(painter._viewportRect.Translate(-origin))));
+            painter.PaintItemsClippedToScrollport(items, origin);
+        }
+        else
+        {
+            painter.PaintItems(items);
         }
 
-        painter.PaintItems(items);
         painter.PaintOutlines(painter._group);
         if (!capture && fullPageSize is null && painter._paintsScrollbars)
         {
@@ -520,6 +523,49 @@ internal sealed partial class Painter
         nextFrameDelay = painter._nextFrameDelay;
         hasAnimatedCaret = painter._hasAnimatedCaret;
         return builder.ToDisplayList(viewportSize);
+    }
+
+    /// <summary>
+    /// Paints the items of the document clipped to the scrollport of the viewport, but the stacking contexts of the fixed positioned
+    /// boxes of the top layer, whose containing block is the viewport with the scrollbar gutters of the root
+    /// (<see cref="PositionedLayout.GetTopLayerViewportRect"/>): the scrollbars are painted over them.
+    /// </summary>
+    private void PaintItemsClippedToScrollport(List<PaintItem> items, PhysicalOffset origin)
+    {
+        var unclippedSaveCount = _builder.SaveCount;
+        var clipped = false;
+        var start = 0;
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var isTopLayer = item is { Marker: PaintItemMarker.BeginStackingContext, Fragment: BoxFragment { Box.IsInTopLayer: true } };
+            if (i > 0 && !isTopLayer)
+                continue;
+
+            var clips = !isTopLayer || item.Fragment is not BoxFragment { Box: { Style.Layout.Position: PositionKind.Fixed, Parent.Kind: ContainerBoxKind.Viewport } };
+            if (i > 0 && clips == clipped)
+                continue;
+
+            PaintItems(items, start, i);
+            start = i;
+            if (clipped)
+            {
+                _builder.RestoreTo(unclippedSaveCount);
+                _group.Clips.Clear();
+                _group.SaveCount = unclippedSaveCount;
+            }
+
+            if (clips)
+            {
+                _builder.Save();
+                _builder.Add(new ClipRectItem(SnapToDevicePixels(_viewportRect.Translate(-origin))));
+                _group.SaveCount = _builder.SaveCount;
+            }
+
+            clipped = clips;
+        }
+
+        PaintItems(items, start, items.Count);
     }
 
     /// <summary>Returns the items of the stacking context of the <c>::view-transition</c> pseudo-element (the view transition layer).</summary>

@@ -55,6 +55,25 @@ public sealed class ViewportTests : IDisposable
         Assert.True(document.DefaultView!.MatchMedia("(width: 800px) and (height: 600px)").Matches);
     }
 
+    [Theory]
+    [InlineData("scrollbar-gutter: stable both-edges", 800, 600)]
+    [InlineData("overflow-y: scroll; scrollbar-gutter: stable both-edges", 785, 600)]
+    public void TopLayer_FixedPositionedBoxCoversTheScrollbarGutters(string rootStyle, double width, double height)
+    {
+        // https://drafts.csswg.org/css-position-4/#top-layer, w3c/csswg-drafts#9904: the containing block of a fixed positioned box
+        // of the top layer is the viewport, with the gutters of the root that no scrollbar occupies
+        var document = Parse("""
+            <dialog id=d style='margin: 0; padding: 0; border: 0; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none'></dialog>
+            <div id=f style='position: fixed; inset: 0'></div>
+            """, rootStyle);
+        ((HtmlDialogElement)document.GetElementById("d")!).ShowModal();
+        var dialog = document.GetElementById("d")!.GetBoundingClientRect();
+        var fixedBox = document.GetElementById("f")!.GetBoundingClientRect();
+        Assert.Equal((width, height), (dialog.Width, dialog.Height));
+        Assert.Equal(fixedBox.Left - 15, dialog.Left);
+        Assert.Equal((770d, 600d), (fixedBox.Width, fixedBox.Height));
+    }
+
     [Fact]
     public void ViewportUnits_OverflowPropagatedFromTheBody()
     {

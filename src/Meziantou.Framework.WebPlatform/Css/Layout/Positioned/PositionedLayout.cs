@@ -818,8 +818,28 @@ internal static class PositionedLayout
         if (candidate.Box.IsViewTransitionRoot)
             return (new PhysicalRect(-hostFragment.Offset.X, -hostFragment.Offset.Y, context.ViewportSize.Width, context.ViewportSize.Height), WritingDirection.HorizontalLtr);
 
+        // https://drafts.csswg.org/css-position-4/#top-layer: "If its position property computes to fixed, its containing block
+        // is the viewport": a fixed positioned box of the top layer (a fullscreen element, a ::backdrop) covers the scrollbar
+        // gutters of the root that no scrollbar occupies (w3c/csswg-drafts#9904), unlike the other fixed positioned boxes
+        if (candidate.Box.IsInTopLayer && containingBlock.Kind == ContainerBoxKind.Viewport && candidate.Box.Style.Layout.Position == PositionKind.Fixed)
+            return (GetTopLayerViewportRect(context, hostFragment), hostFragment.WritingDirection);
+
         // The viewport box is the initial containing block (and the viewport, the scroll position is not subtracted yet: #347)
         return (hostFragment.PaddingBoxRect, hostFragment.WritingDirection);
+    }
+
+    /// <summary>
+    /// Returns the viewport in the coordinates of the fragment of the viewport box (the initial containing block, placed after the
+    /// scrollbar gutters of the start edges), without the scrollbars it displays (on the right and at the bottom): the containing
+    /// block of the fixed positioned boxes of the top layer, which cover the gutters.
+    /// </summary>
+    internal static PhysicalRect GetTopLayerViewportRect(LayoutContext context, BoxFragment viewportFragment)
+    {
+        var offset = viewportFragment.Offset;
+        var scrollbars = viewportFragment.ScrollbarsDisplayed;
+        var width = scrollbars.HasFlag(Scrollbars.Vertical) ? offset.X + viewportFragment.Size.Width : Math.Max(context.ViewportSize.Width, offset.X + viewportFragment.Size.Width);
+        var height = scrollbars.HasFlag(Scrollbars.Horizontal) ? offset.Y + viewportFragment.Size.Height : Math.Max(context.ViewportSize.Height, offset.Y + viewportFragment.Size.Height);
+        return new PhysicalRect(-offset.X, -offset.Y, width, height);
     }
 
     /// <summary>

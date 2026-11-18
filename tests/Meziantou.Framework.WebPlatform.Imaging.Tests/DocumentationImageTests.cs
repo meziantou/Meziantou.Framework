@@ -261,6 +261,94 @@ public sealed class DocumentationImageTests
         AssertImage(Rendering, "CanvasLayers", screenshot);
     }
 
+    [Fact]
+    public void CanvasTextClusters()
+    {
+        #region WebPlatformImaging_CanvasTextClusters
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            RenderingBackend = new ImagingRenderingBackend(),
+            ScriptingEnabled = true,
+        });
+        var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
+        context.EventLoop.RunUntilIdle();
+
+        var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.FillStyle = "#f8fafc";
+        context2D.FillRect(0, 0, 240, 60);
+        context2D.Font = "32px sans-serif";
+
+        #pragma warning disable WEBPLATEXP0024 // The text clusters are a proposal
+        // The clusters are the grapheme clusters of the text: the "e" and its combining acute accent are one cluster
+        var metrics = context2D.MeasureText("Cafe\u0301s");
+        var clusters = metrics.GetTextClusters();
+        Assert.Equal(5, clusters.Count);
+        Assert.Equal(3u, clusters[3].Start);
+        Assert.Equal(5u, clusters[3].End);
+
+        // Drawing all the clusters at the same point draws the text as FillText(), here each one in its own color
+        string[] colors = ["#0ea5e9", "#ea580c", "#16a34a", "#9333ea", "#dc2626"];
+        for (var i = 0; i < clusters.Count; i++)
+        {
+            context2D.FillStyle = colors[i];
+            context2D.FillTextCluster(clusters[i], 10, 40);
+        }
+
+        // The caret positions and the selection, relative to the alignment point of the text
+        Assert.Equal(1u, metrics.GetIndexFromOffset(clusters[1].X + 1));
+        var selection = metrics.GetSelectionRects(0, 2);
+        Assert.Single(selection);
+        Assert.Equal(clusters[2].X, selection[0].Width, 1e-9);
+        #pragma warning restore WEBPLATEXP0024
+
+        using var screenshot = canvas.TakeScreenshot();
+        #endregion
+
+        AssertImage(Rendering, "CanvasTextClusters", screenshot);
+    }
+
+    [Fact]
+    public void CanvasShapedText()
+    {
+        #region WebPlatformImaging_CanvasShapedText
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            RenderingBackend = new ImagingRenderingBackend(),
+            ScriptingEnabled = true,
+        });
+        var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
+        context.EventLoop.RunUntilIdle();
+
+        var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.FillStyle = "#f8fafc";
+        context2D.FillRect(0, 0, 240, 60);
+        context2D.FillStyle = "#0f172a";
+        context2D.Font = "32px sans-serif";
+        context2D.TextAlign = CanvasTextAlign.Center;
+
+        #pragma warning disable WEBPLATEXP0025 // The shaped text is a proposal
+        // The text is shaped once, with the font, the text styles and the alignment of the context at this time
+        var shaped = context2D.ShapeText("Shaped");
+        context2D.Font = "10px serif";
+
+        context2D.FillGlyphRuns(shaped.GlyphRuns(), 120, 40);
+
+        // The positions are relative to the alignment point: here the center of the text
+        var clusters = shaped.GlyphClusters(1, 3);
+        Assert.Equal(2, clusters.Count);
+        Assert.Equal(-shaped.Width / 2, shaped.PositionToAdvance(0), 1e-9);
+        Assert.Equal(shaped.PositionToAdvance(1), clusters[0].X, 1e-9);
+        Assert.Equal(1u, shaped.AdvanceToPosition(clusters[0].X));
+        #pragma warning restore WEBPLATEXP0025
+
+        using var screenshot = canvas.TakeScreenshot();
+        #endregion
+
+        AssertImage(Rendering, "CanvasShapedText", screenshot);
+    }
+
     /// <summary>
     /// Compares an image with the committed PNG: same size, and each component within 8 levels (the antialiasing may differ
     /// at the rounding of the floating-point operations between the processors).

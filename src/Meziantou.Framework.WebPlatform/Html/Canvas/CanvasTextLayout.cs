@@ -36,6 +36,15 @@ internal sealed record CanvasTextLayout(
     double Hanging,
     double Ideographic)
 {
+    /// <summary>The glyphs of each cluster, from left to right (built the first time it is needed).</summary>
+    private List<CanvasTextGlyph>[]? _glyphsByCluster;
+
+    /// <summary>
+    /// The caret positions inside the ligatures (a cluster of several typographic character units): the distance of the caret
+    /// before the character at a UTF-16 index from the left of the text, at the caret values of the font, else at equal parts.
+    /// </summary>
+    public Dictionary<int, double> LigatureCarets { get; init; } = [];
+
     /// <summary>The distance of the alignment point of the text from its left.</summary>
     public double AlignmentOffset => GetAlignmentOffset(Align, Width);
 
@@ -88,11 +97,42 @@ internal sealed record CanvasTextLayout(
         return result;
     }
 
-    /// <summary>Returns the glyphs of a set of clusters, from left to right.</summary>
-    public List<CanvasTextGlyph> GetGlyphs(IReadOnlyCollection<int> clusters)
+    /// <summary>Returns the glyphs of a cluster, from left to right.</summary>
+    public List<CanvasTextGlyph> GetGlyphs(int cluster)
     {
-        var set = clusters as HashSet<int> ?? [.. clusters];
-        return Glyphs.FindAll(glyph => set.Contains(glyph.Cluster));
+        if (_glyphsByCluster is null)
+        {
+            var glyphsByCluster = new List<CanvasTextGlyph>[Clusters.Count];
+            for (var i = 0; i < glyphsByCluster.Length; i++)
+            {
+                glyphsByCluster[i] = [];
+            }
+
+            foreach (var glyph in Glyphs)
+            {
+                glyphsByCluster[glyph.Cluster].Add(glyph);
+            }
+
+            _glyphsByCluster = glyphsByCluster;
+        }
+
+        return _glyphsByCluster[cluster];
+    }
+
+    /// <summary>Returns the glyphs of a set of clusters, from left to right.</summary>
+    public List<CanvasTextGlyph> GetGlyphs(IReadOnlyList<int> clusters)
+    {
+        if (clusters.Count == 1)
+            return GetGlyphs(clusters[0]);
+
+        var result = new List<CanvasTextGlyph>();
+        foreach (var cluster in clusters)
+        {
+            result.AddRange(GetGlyphs(cluster));
+        }
+
+        result.Sort(static (a, b) => a.X.CompareTo(b.X));
+        return result;
     }
 
     /// <summary>
@@ -175,9 +215,12 @@ internal sealed record CanvasTextLayout(
             if (cluster.Start >= end || cluster.End <= start)
                 continue;
 
+            // The selected part of a ligature ends at its caret positions
+            var from = GetCaretX(cluster, Math.Max((int)start, cluster.Start), snapToEnd: false);
+            var to = GetCaretX(cluster, Math.Min((int)end, cluster.End), snapToEnd: true);
+            var (left, right) = (Math.Min(from, to), Math.Max(from, to));
             var run = GetFragmentRun(cluster);
-
-            bounds[run] = bounds.TryGetValue(run, out var value) ? (Math.Min(value.Left, cluster.Left), Math.Max(value.Right, cluster.Right)) : (cluster.Left, cluster.Right);
+            bounds[run] = bounds.TryGetValue(run, out var value) ? (Math.Min(value.Left, left), Math.Max(value.Right, right)) : (left, right);
         }
 
         foreach (var (left, right) in bounds.Values)
@@ -252,6 +295,9 @@ internal sealed record CanvasTextLayout(
         }
         else if (hit is { } value)
         {
+            if (GetLigatureIndex(value, x) is { } index)
+                return index;
+
             (target, isFirstHalf) = (value, x <= value.Left + (value.Width / 2));
         }
         else
@@ -263,9 +309,61 @@ internal sealed record CanvasTextLayout(
     }
 
     /// <summary>
+    /// Returns the caret position closest to a point in a ligature that has caret positions inside it: the position before
+    /// the part of the ligature under the point, or after it when the point is in its second half; null for another cluster.
+    /// </summary>
+    private uint? GetLigatureIndex(CanvasTextCluster cluster, double x)
+    {
+        var positions = new List<(int Index, double X)>();
+        for (var index = cluster.Start + 1; index < cluster.End; index++)
+        {
+            if (LigatureCarets.TryGetValue(index, out var caret))
+            {
+                positions.Add((index, caret));
+            }
+        }
+
+        if (positions.Count == 0)
+            return null;
+
+        positions.Add((cluster.Start, GetCaretX(cluster, cluster.Start, snapToEnd: false)));
+        positions.Add((cluster.End, GetCaretX(cluster, cluster.End, snapToEnd: true)));
+        positions.Sort(static (a, b) => a.X.CompareTo(b.X));
+        for (var i = 0; i < positions.Count - 1; i++)
+        {
+            var (left, right) = (positions[i], positions[i + 1]);
+            if (x < right.X || i == positions.Count - 2)
+                return (uint)(x <= (left.X + right.X) / 2 ? left.Index : right.Index);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Returns the distance of a caret position of a cluster from the left of the text: its start edge for its start (the left
+    /// edge in a left-to-right run, the right edge in a right-to-left run), its end edge for its end, the caret position
+    /// inside a ligature, else the start or the end edge (<paramref name="snapToEnd"/>) for an index inside the cluster.
+    /// </summary>
+    private double GetCaretX(CanvasTextCluster cluster, int position, bool snapToEnd)
+    {
+        var startEdge = cluster.IsRightToLeft ? cluster.Right : cluster.Left;
+        var endEdge = cluster.IsRightToLeft ? cluster.Left : cluster.Right;
+        if (position <= cluster.Start)
+            return startEdge;
+
+        if (position >= cluster.End)
+            return endEdge;
+
+        if (LigatureCarets.TryGetValue(position, out var caret))
+            return caret;
+
+        return snapToEnd ? endEdge : startEdge;
+    }
+
+    /// <summary>
     /// Returns the distance of the caret position before a UTF-16 index from the left of the text: the start edge of the
-    /// cluster of the character at the index (its left edge in a left-to-right run, its right edge in a right-to-left run), or
-    /// the end edge of the last cluster for the end of the text.
+    /// cluster of the character at the index (its left edge in a left-to-right run, its right edge in a right-to-left run), the
+    /// caret position inside a ligature, or the end edge of the last cluster for the end of the text.
     /// </summary>
     public double GetCaretX(int position)
     {
@@ -285,7 +383,7 @@ internal sealed record CanvasTextLayout(
         }
 
         if (containing is { } value)
-            return value.IsRightToLeft ? value.Right : value.Left;
+            return GetCaretX(value, position, snapToEnd: false);
 
         if (lastLogical is { } end)
             return end.IsRightToLeft ? end.Left : end.Right;
@@ -323,6 +421,12 @@ internal sealed record CanvasTextLayout(
             }
         }
 
-        return this with { Glyphs = sliceGlyphs, Clusters = sliceClusters, Width = width };
+        var carets = new Dictionary<int, double>();
+        foreach (var (index, caret) in LigatureCarets)
+        {
+            carets[index] = caret - left;
+        }
+
+        return this with { Glyphs = sliceGlyphs, Clusters = sliceClusters, Width = width, LigatureCarets = carets, _glyphsByCluster = null };
     }
 }

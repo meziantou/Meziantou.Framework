@@ -357,81 +357,6 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
-    public void TextClusters_DrawEachClusterOfAText()
-    {
-        #region Canvas_TextClusters
-        using var context = new BrowsingContext(new BrowsingContextOptions
-        {
-            RenderingBackend = new ImagingRenderingBackend(),
-            ScriptingEnabled = true,
-        });
-        var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
-        context.EventLoop.RunUntilIdle();
-
-        var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
-        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
-        context2D.Font = "32px sans-serif";
-
-        #pragma warning disable WEBPLATEXP0024 // The text clusters are a proposal
-        // The clusters are the grapheme clusters of the text: the emoji and its variation selector are one cluster
-        var metrics = context2D.MeasureText("Hi \u263A\uFE0F!");
-        var clusters = metrics.GetTextClusters();
-        Assert.Equal(5, clusters.Count);
-        Assert.Equal(3u, clusters[3].Start);
-        Assert.Equal(5u, clusters[3].End);
-
-        // Drawing all the clusters at the same point draws the text as FillText(), here each one in its own color
-        string[] colors = ["#0ea5e9", "#ea580c", "#16a34a", "#9333ea", "#dc2626"];
-        for (var i = 0; i < clusters.Count; i++)
-        {
-            context2D.FillStyle = colors[i];
-            context2D.FillTextCluster(clusters[i], 10, 40);
-        }
-
-        // The caret positions and the selection, relative to the alignment point of the text
-        Assert.Equal(1u, metrics.GetIndexFromOffset(clusters[1].X + 1));
-        var selection = metrics.GetSelectionRects(0, 2);
-        Assert.Single(selection);
-        Assert.Equal(clusters[2].X, selection[0].Width, 1e-9);
-        #pragma warning restore WEBPLATEXP0024
-        #endregion
-    }
-
-    [Fact]
-    public void ShapedText_DrawGlyphRuns()
-    {
-        #region Canvas_ShapedText
-        using var context = new BrowsingContext(new BrowsingContextOptions
-        {
-            RenderingBackend = new ImagingRenderingBackend(),
-            ScriptingEnabled = true,
-        });
-        var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
-        context.EventLoop.RunUntilIdle();
-
-        var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
-        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
-        context2D.Font = "32px sans-serif";
-        context2D.TextAlign = CanvasTextAlign.Center;
-
-        #pragma warning disable WEBPLATEXP0025 // The shaped text is a proposal
-        // The text is shaped once, with the font, the text styles and the alignment of the context at this time
-        var shaped = context2D.ShapeText("Shaped");
-        context2D.Font = "10px serif";
-
-        context2D.FillGlyphRuns(shaped.GlyphRuns(), 120, 40);
-
-        // The positions are relative to the alignment point: here the center of the text
-        var clusters = shaped.GlyphClusters(1, 3);
-        Assert.Equal(2, clusters.Count);
-        Assert.Equal(-shaped.Width / 2, shaped.PositionToAdvance(0), 1e-9);
-        Assert.Equal(shaped.PositionToAdvance(1), clusters[0].X, 1e-9);
-        Assert.Equal(1u, shaped.AdvanceToPosition(clusters[0].X));
-        #pragma warning restore WEBPLATEXP0025
-        #endregion
-    }
-
-    [Fact]
     public void TextClusters_PositionsWithAlignmentAndBaseline()
     {
 #pragma warning disable WEBPLATEXP0024
@@ -571,6 +496,53 @@ public sealed class CanvasTests : IDisposable
         context.StrokeGlyphRuns([runs[0]], 100, 0);
         Assert.Equal([0, 0, 0, 0], GetPixel(context, 150, 10));
         Assert.NotEqual([0, 0, 0, 0], GetPixel(context, 100, 10));
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_LigatureCarets()
+    {
+#pragma warning disable WEBPLATEXP0025
+        // ShapingTest.ttf has a ligature f_i of 13px at 20px, with a caret position at 6px (GDEF)
+        var (browsingContext, _, context) = Create(200, 50);
+        var face = new Meziantou.Framework.WebPlatform.Css.Om.FontFace("Test", System.IO.File.ReadAllBytes(Path.Combine(TestPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Tests", "Css", "Fonts", "Resources", "ShapingTest.ttf")));
+        browsingContext.Document!.Fonts.Add(face);
+        browsingContext.EventLoop.RunUntilIdle();
+        context.Font = "20px Test";
+
+        var shaped = context.ShapeText("fi");
+        Assert.Equal(13, shaped.Width, 1e-9);
+        var cluster = Assert.Single(shaped.GlyphClusters());
+        Assert.Equal(2u, cluster.End);
+
+        // The caret positions inside the ligature are the ones of the font
+        Assert.Equal(6, shaped.PositionToAdvance(1), 1e-9);
+        Assert.Equal(1u, shaped.AdvanceToPosition(6.5));
+        Assert.Equal(0u, shaped.AdvanceToPosition(2));
+        Assert.Equal(2u, shaped.AdvanceToPosition(12));
+        Assert.Equal(6, Assert.Single(shaped.SelectionRects(0, 1)).Width, 1e-9);
+        Assert.Equal(7, Assert.Single(shaped.SelectionRects(1, 2)).Width, 1e-9);
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
+    public void ShapedText_GlyphRunsAreOneDrawingOperation()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(100, 50);
+        context.Font = "20px Ahem";
+        context.TextBaseline = CanvasTextBaseline.Top;
+        var shaped = context.ShapeText("ABC");
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 100, 50);
+
+        // With the copy operator, the clusters drawn together do not erase each other
+        context.GlobalCompositeOperation = "copy";
+        context.FillStyle = "#0f0";
+        context.FillGlyphRuns(shaped.GlyphClusters(), 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 10, 10));
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 50, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 70, 10));
 #pragma warning restore WEBPLATEXP0025
     }
 

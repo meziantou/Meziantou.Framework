@@ -175,7 +175,7 @@ clusters and the selection APIs of the [proposal](https://github.com/whatwg/html
 flag. The measured text keeps its glyphs, its font, its text styles, its direction, its alignment and its baseline, so an
 editor or a text animation can draw it one piece at a time, and place a caret or a selection on it:
 
-<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/CanvasTests.cs;region=Canvas_TextClusters;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasTextClusters;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
@@ -187,11 +187,13 @@ context.EventLoop.RunUntilIdle();
 
 var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
 var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+context2D.FillStyle = "#f8fafc";
+context2D.FillRect(0, 0, 240, 60);
 context2D.Font = "32px sans-serif";
 
 #pragma warning disable WEBPLATEXP0024 // The text clusters are a proposal
-// The clusters are the grapheme clusters of the text: the emoji and its variation selector are one cluster
-var metrics = context2D.MeasureText("Hi \u263A\uFE0F!");
+// The clusters are the grapheme clusters of the text: the "e" and its combining acute accent are one cluster
+var metrics = context2D.MeasureText("Cafe\u0301s");
 var clusters = metrics.GetTextClusters();
 Assert.Equal(5, clusters.Count);
 Assert.Equal(3u, clusters[3].Start);
@@ -211,8 +213,12 @@ var selection = metrics.GetSelectionRects(0, 2);
 Assert.Single(selection);
 Assert.Equal(clusters[2].X, selection[0].Width, 1e-9);
 #pragma warning restore WEBPLATEXP0024
+
+using var screenshot = canvas.TakeScreenshot();
 ```
 <!-- endref -->
+
+![The word "Cafés" whose five clusters are drawn in blue, orange, green, purple and red, the accented "é" in one color](images/CanvasTextClusters.png)
 
 - [GetTextClusters](cref:Meziantou.Framework.WebPlatform.Dom.TextMetrics.GetTextClusters) returns the
   clusters of the text in logical order: its grapheme clusters (an emoji sequence, a letter and its combining marks),
@@ -239,7 +245,7 @@ behind the same flag, meant to replace the text clusters of `TextMetrics`: the t
 drawn later with the font, the text styles, the direction, the alignment and the baseline of the context when it was
 shaped:
 
-<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/CanvasTests.cs;region=Canvas_ShapedText;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasShapedText;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
@@ -251,6 +257,9 @@ context.EventLoop.RunUntilIdle();
 
 var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
 var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+context2D.FillStyle = "#f8fafc";
+context2D.FillRect(0, 0, 240, 60);
+context2D.FillStyle = "#0f172a";
 context2D.Font = "32px sans-serif";
 context2D.TextAlign = CanvasTextAlign.Center;
 
@@ -268,8 +277,12 @@ Assert.Equal(-shaped.Width / 2, shaped.PositionToAdvance(0), 1e-9);
 Assert.Equal(shaped.PositionToAdvance(1), clusters[0].X, 1e-9);
 Assert.Equal(1u, shaped.AdvanceToPosition(clusters[0].X));
 #pragma warning restore WEBPLATEXP0025
+
+using var screenshot = canvas.TakeScreenshot();
 ```
 <!-- endref -->
+
+![The word "Shaped" drawn in a 32px sans-serif font, centered on the canvas](images/CanvasShapedText.png)
 
 - [GlyphRuns](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.GlyphRuns) returns the runs of the text from left to right (the
   glyphs of a bidi run with the same font), and [GlyphClusters](cref:Meziantou.Framework.WebPlatform.Dom.CanvasShapedText.GlyphClusters) its

@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using Meziantou.Framework.WebPlatform.Css.Fonts;
+using Meziantou.Framework.WebPlatform.Rendering;
 
 #pragma warning disable WEBPLATEXP0024 // The members of the proposal use each other
 #pragma warning disable WEBPLATEXP0025 // The members of the proposal use each other
@@ -52,11 +54,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <seealso href="https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/html/canvas/shaped_text.idl#ShapedText"/>
     [IdlMember("shapeText", ShapedTextHref)]
     [Experimental(ExperimentalApis.CanvasShapedText, UrlFormat = ExperimentalApis.UrlFormat)]
-    public CanvasShapedText ShapeText(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
-        return new CanvasShapedText(PrepareText(text));
-    }
+    public CanvasShapedText ShapeText(string text) => new(PrepareText(text));
 
     /// <summary>Fills a glyph run of a shaped text with the fill style, the alignment point of the shaped text at (<paramref name="x"/>, <paramref name="y"/>).</summary>
     /// <param name="glyphRun">The glyph run, returned by <see cref="CanvasShapedText.GlyphRuns"/> or <see cref="CanvasShapedText.GlyphClusters()"/>.</param>
@@ -65,11 +63,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <seealso href="https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/html/canvas/shaped_text.idl#ShapedText"/>
     [IdlMember("fillGlyphRun", ShapedTextHref)]
     [Experimental(ExperimentalApis.CanvasShapedText, UrlFormat = ExperimentalApis.UrlFormat)]
-    public void FillGlyphRun(CanvasGlyphRun glyphRun, double x, double y)
-    {
-        ArgumentNullException.ThrowIfNull(glyphRun);
-        DrawGlyphRuns([glyphRun], x, y, stroke: false);
-    }
+    public void FillGlyphRun(CanvasGlyphRun glyphRun, double x, double y) => DrawGlyphRuns([glyphRun], x, y, stroke: false);
 
     /// <summary>Strokes a glyph run of a shaped text with the stroke style and the line styles, the alignment point of the shaped text at (<paramref name="x"/>, <paramref name="y"/>).</summary>
     /// <param name="glyphRun">The glyph run, returned by <see cref="CanvasShapedText.GlyphRuns"/> or <see cref="CanvasShapedText.GlyphClusters()"/>.</param>
@@ -78,11 +72,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <seealso href="https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/html/canvas/shaped_text.idl#ShapedText"/>
     [IdlMember("strokeGlyphRun", ShapedTextHref)]
     [Experimental(ExperimentalApis.CanvasShapedText, UrlFormat = ExperimentalApis.UrlFormat)]
-    public void StrokeGlyphRun(CanvasGlyphRun glyphRun, double x, double y)
-    {
-        ArgumentNullException.ThrowIfNull(glyphRun);
-        DrawGlyphRuns([glyphRun], x, y, stroke: true);
-    }
+    public void StrokeGlyphRun(CanvasGlyphRun glyphRun, double x, double y) => DrawGlyphRuns([glyphRun], x, y, stroke: true);
 
     /// <summary>Fills glyph runs of shaped texts with the fill style, the alignment point of each shaped text at (<paramref name="x"/>, <paramref name="y"/>).</summary>
     /// <param name="glyphRuns">The glyph runs, returned by <see cref="CanvasShapedText.GlyphRuns"/> or <see cref="CanvasShapedText.GlyphClusters()"/>.</param>
@@ -91,11 +81,7 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <seealso href="https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/html/canvas/shaped_text.idl#ShapedText"/>
     [IdlMember("fillGlyphRuns", ShapedTextHref)]
     [Experimental(ExperimentalApis.CanvasShapedText, UrlFormat = ExperimentalApis.UrlFormat)]
-    public void FillGlyphRuns(IReadOnlyList<CanvasGlyphRun> glyphRuns, double x, double y)
-    {
-        ArgumentNullException.ThrowIfNull(glyphRuns);
-        DrawGlyphRuns(glyphRuns, x, y, stroke: false);
-    }
+    public void FillGlyphRuns(IReadOnlyList<CanvasGlyphRun> glyphRuns, double x, double y) => DrawGlyphRuns(glyphRuns, x, y, stroke: false);
 
     /// <summary>Strokes glyph runs of shaped texts with the stroke style and the line styles, the alignment point of each shaped text at (<paramref name="x"/>, <paramref name="y"/>).</summary>
     /// <param name="glyphRuns">The glyph runs, returned by <see cref="CanvasShapedText.GlyphRuns"/> or <see cref="CanvasShapedText.GlyphClusters()"/>.</param>
@@ -104,15 +90,10 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <seealso href="https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/core/html/canvas/shaped_text.idl#ShapedText"/>
     [IdlMember("strokeGlyphRuns", ShapedTextHref)]
     [Experimental(ExperimentalApis.CanvasShapedText, UrlFormat = ExperimentalApis.UrlFormat)]
-    public void StrokeGlyphRuns(IReadOnlyList<CanvasGlyphRun> glyphRuns, double x, double y)
-    {
-        ArgumentNullException.ThrowIfNull(glyphRuns);
-        DrawGlyphRuns(glyphRuns, x, y, stroke: true);
-    }
+    public void StrokeGlyphRuns(IReadOnlyList<CanvasGlyphRun> glyphRuns, double x, double y) => DrawGlyphRuns(glyphRuns, x, y, stroke: true);
 
     private void DrawTextCluster(TextCluster textCluster, double x, double y, TextClusterOptions? options, bool stroke)
     {
-        ArgumentNullException.ThrowIfNull(textCluster);
         var layout = textCluster.Layout;
         var cluster = layout.Clusters[textCluster.Index];
         var align = options?.Align ?? textCluster.Align;
@@ -128,7 +109,7 @@ public abstract partial class CanvasRenderingContext2DBase
         // The alignment point of the cluster is at the point: the glyphs are positioned from the left of the cluster
         var originX = pointX - layout.GetAlignmentOffset(align, cluster.Width) - cluster.Left;
         var originY = pointY + layout.GetBaselineOffset(baseline);
-        DrawGlyphs(layout, layout.GetGlyphs([textCluster.Index]), originX, originY, scaleX: 1, paint, stroke);
+        DrawGlyphs(layout, layout.GetGlyphs(textCluster.Index), originX, originY, scaleX: 1, paint, stroke);
     }
 
     private void DrawGlyphRuns(IReadOnlyList<CanvasGlyphRun> glyphRuns, double x, double y, bool stroke)
@@ -139,16 +120,18 @@ public abstract partial class CanvasRenderingContext2DBase
         if (CreatePaint(stroke ? _state.StrokeStyle : _state.FillStyle, stroke) is not { } paint || Invert(_state.Transform) is null)
             return;
 
+        // The runs are one drawing operation (e.g. with the copy operator, a run does not erase the previous ones)
+        var runs = new List<(GlyphRun Run, FontPalette? Palette)>();
         foreach (var glyphRun in glyphRuns)
         {
-            ArgumentNullException.ThrowIfNull(glyphRun, nameof(glyphRuns));
-            var layout = glyphRun.Layout;
-
             // The position of a run is relative to the alignment point and to the baseline of its shaped text
+            var layout = glyphRun.Layout;
             var originX = x + glyphRun.X - glyphRun.Left;
             var originY = y + glyphRun.Y + layout.BaselineOffset;
-            DrawGlyphs(layout, layout.GetGlyphs(glyphRun.Clusters), originX, originY, scaleX: 1, paint, stroke);
+            AddGlyphRuns(runs, layout, layout.GetGlyphs(glyphRun.Clusters), originX, originY, scaleX: 1);
         }
+
+        DrawGlyphItems(runs, paint, stroke);
     }
 }
 
@@ -387,7 +370,7 @@ public sealed class CanvasShapedText
         for (var i = 0; i < _layout.Clusters.Count; i++)
         {
             var run = _layout.GetFragmentRun(_layout.Clusters[i]);
-            object? font = _layout.Glyphs.Find(glyph => glyph.Cluster == i).Font;
+            object? font = _layout.GetGlyphs(i) is [var first, ..] ? first.Font : null;
             var group = groups.FindLastIndex(g => g.Run == run);
             if (group >= 0 && (font is null || groups[group].Font is null || ReferenceEquals(font, groups[group].Font)) && group == groups.Count - 1)
             {

@@ -347,6 +347,13 @@ public abstract partial class CanvasRenderingContext2DBase
     private void DrawGlyphs(CanvasTextLayout layout, List<CanvasTextGlyph> glyphs, double originX, double originY, double scaleX, DisplayPaint paint, bool stroke)
     {
         var runs = new List<(GlyphRun Run, FontPalette? Palette)>();
+        AddGlyphRuns(runs, layout, glyphs, originX, originY, scaleX);
+        DrawGlyphItems(runs, paint, stroke);
+    }
+
+    /// <summary>Adds the glyphs of a prepared text to a list of glyph runs (one per font), positioned as in <see cref="DrawGlyphs"/>.</summary>
+    private static void AddGlyphRuns(List<(GlyphRun Run, FontPalette? Palette)> runs, CanvasTextLayout layout, List<CanvasTextGlyph> glyphs, double originX, double originY, double scaleX)
+    {
         var start = 0;
         while (start < glyphs.Count)
         {
@@ -370,7 +377,11 @@ public abstract partial class CanvasRenderingContext2DBase
             runs.Add((new GlyphRun(DisplayFont.From(font, emSize), ids, positions, layout.Text) { ScaleX = scaleX }, FontPalette.GetDefault(font)));
             start = end;
         }
+    }
 
+    /// <summary>Draws glyph runs through the drawing model, in user space, as one drawing operation.</summary>
+    private void DrawGlyphItems(List<(GlyphRun Run, FontPalette? Palette)> runs, DisplayPaint paint, bool stroke)
+    {
         if (runs.Count == 0)
             return;
 
@@ -513,6 +524,7 @@ public abstract partial class CanvasRenderingContext2DBase
         // (the text clusters of the proposals) are the grapheme clusters, merged when a glyph spans several of them (a ligature).
         var glyphs = new List<CanvasTextGlyph>(prepared.Length);
         var clusters = new List<CanvasTextCluster>();
+        var ligatureCarets = new Dictionary<int, double>();
         var x = 0d;
         if (prepared.Length > 0)
         {
@@ -581,13 +593,19 @@ public abstract partial class CanvasRenderingContext2DBase
                     edge = run.IsRightToLeft ? cluster.Left : cluster.Left + cluster.Width;
                 }
 
+                // The caret positions inside the ligatures (the caret values of the font, else equal parts), from the left of the text
+                foreach (var caret in shaped.LigatureCarets)
+                {
+                    ligatureCarets[MapIndex(run.Start + caret.Index)] = run.IsRightToLeft ? x + shaped.Width - shaped.GetOffset(caret.Index) : x + shaped.GetOffset(caret.Index);
+                }
+
                 x += shaped.Width;
             }
         }
 
         // The glyphs are drawn from left to right (the right-to-left runs were added in logical order)
         glyphs.Sort(static (a, b) => a.X.CompareTo(b.X));
-        return new CanvasTextLayout(text, glyphs, clusters, x, isRightToLeft, _state.TextAlign, _state.TextBaseline, metrics.Ascent, metrics.Descent, emAscent, emDescent, hanging, ideographic);
+        return new CanvasTextLayout(text, glyphs, clusters, x, isRightToLeft, _state.TextAlign, _state.TextBaseline, metrics.Ascent, metrics.Descent, emAscent, emDescent, hanging, ideographic) { LigatureCarets = ligatureCarets };
 
         int MapIndex(int index) => indexes is null ? index : indexes[index];
 

@@ -976,7 +976,7 @@ public sealed partial class DomEventLoop
                 }
             }
 
-            canvasDocuments.Sort(Comparer<Document>.Create(static (a, b) => CompareDocsOrder(b, a)));
+            canvasDocuments.Sort(Comparer<Document>.Create((a, b) => CompareDocsOrder(b, a)));
             foreach (var document in canvasDocuments)
             {
                 document.RunCanvasPaintSteps();

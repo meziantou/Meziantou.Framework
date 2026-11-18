@@ -51,6 +51,16 @@ public static partial class WebPlatformFuzzTargets
             hasTransformedAncestor |= IsTransformed(ancestorStyle) || ancestorStyle.GetPropertyValue("zoom") != "1";
         }
 
+        // The bitmap is drawn in the content box of the canvas, wherever the input moves or resizes it (margins, borders,
+        // paddings, sizes): one pixel of the bitmap is scaleX x scaleY CSS pixels, unless object-fit does not stretch it
+        var canvasStyle = document.DefaultView!.GetComputedStyle(canvas);
+        var canvasRect = canvas.GetBoundingClientRect();
+        var contentLeft = canvasRect.Left + canvas.ClientLeft + GetPixels(canvasStyle, "padding-left");
+        var contentTop = canvasRect.Top + canvas.ClientTop + GetPixels(canvasStyle, "padding-top");
+        var scaleX = (canvas.ClientWidth - GetPixels(canvasStyle, "padding-left") - GetPixels(canvasStyle, "padding-right")) / 64.0;
+        var scaleY = (canvas.ClientHeight - GetPixels(canvasStyle, "padding-top") - GetPixels(canvasStyle, "padding-bottom")) / 48.0;
+        var checksGeometry = !hasTransformedAncestor && canvasStyle.GetPropertyValue("object-fit") == "fill" && canvas.ClientWidth == canvasRect.Width - (2 * canvas.ClientLeft) && canvas.ClientHeight == canvasRect.Height - (2 * canvas.ClientTop);
+
         var offset = 0;
         foreach (var element in canvas.QuerySelectorAll("[drawable]").OfType<Element>().Take(CanvasDrawablesMaxElements))
         {
@@ -91,11 +101,12 @@ public static partial class WebPlatformFuzzTargets
             FuzzAssert.True(transform.Is2D && transform.B == 0 && transform.C == 0, "the canvas transform of an element drawn without rotation is a 2D scale and translation");
 
             var style = document.DefaultView!.GetComputedStyle(element);
-            if (!IsTransformed(style) && !hasTransformedAncestor)
+            if (!IsTransformed(style) && checksGeometry)
             {
                 var rect = element.GetBoundingClientRect();
-                FuzzAssert.True(Math.Abs(rect.Left - (2 * offset)) < 0.01 && Math.Abs(rect.Top - (2 * (offset + 1))) < 0.01, $"the element is at ({rect.Left}, {rect.Top}) instead of where it is drawn ({2 * offset}, {2 * (offset + 1)})");
-                FuzzAssert.True(Math.Abs(rect.Width - (2 * size.Width)) < 0.01 && Math.Abs(rect.Height - (2 * size.Height)) < 0.01, $"the element is {rect.Width}x{rect.Height} instead of the size it is drawn at ({2 * size.Width}x{2 * size.Height})");
+                var (x, y) = (contentLeft + (scaleX * offset), contentTop + (scaleY * (offset + 1)));
+                FuzzAssert.True(Math.Abs(rect.Left - x) < 0.01 && Math.Abs(rect.Top - y) < 0.01, $"the element is at ({rect.Left}, {rect.Top}) instead of where it is drawn ({x}, {y})");
+                FuzzAssert.True(Math.Abs(rect.Width - (scaleX * size.Width)) < 0.01 && Math.Abs(rect.Height - (scaleY * size.Height)) < 0.01, $"the element is {rect.Width}x{rect.Height} instead of the size it is drawn at ({scaleX * size.Width}x{scaleY * size.Height})");
             }
 
             canvas.ClearElementGeometry(element);
@@ -105,6 +116,9 @@ public static partial class WebPlatformFuzzTargets
         // The pixels are read: the display lists of the canvas are rasterized (and checked by the backend)
         _ = context2D.GetImageData(0, 0, 1, 1);
     }
+
+    private static double GetPixels(Css.Om.CssStyleDeclaration style, string property)
+        => double.Parse(style.GetPropertyValue(property).AsSpan().TrimEnd("px"), System.Globalization.CultureInfo.InvariantCulture);
 
     private static bool IsTransformed(Css.Om.CssStyleDeclaration style)
         => style.GetPropertyValue("transform") != "none" || style.GetPropertyValue("translate") != "none" || style.GetPropertyValue("rotate") != "none"

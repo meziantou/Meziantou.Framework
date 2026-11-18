@@ -113,7 +113,6 @@
   },
   "failing": {
     "html/canvas/element/manual/draw-element-image/draw-element-image-get-image-data.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: a display-p3 element drawn into a display-p3 canvas goes through sRGB (a difference of 2 per component)" }],
-    "html/canvas/element/manual/draw-element-image/hit-test/low-dpi-hit-test.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: the hit testing of the drawable elements with a device pixel ratio below 1 hits outside of the drawn element" }],
     "html/canvas/element/manual/draw-element-image/intersection-observer-visibility.tentative.html": [{ "kind": "NOT IMPLEMENTED", "description": "Intersection Observer v2 (`trackVisibility`, `isVisible`): the elements of a canvas whose content is drawable are reported as visible" }],
     "html/canvas/element/manual/draw-element-image/moved-webgl-canvas.tentative.html": [{ "kind": "NOT IMPLEMENTED", "description": "WebGL (`getContext(\"webgl\")` returns null)" }],
     "html/canvas/element/manual/draw-element-image/onpaint-fires-post-intersection-observation-steps.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: the intersection observations are delivered before the paint event of the same rendering update" }],

@@ -126,6 +126,28 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void ContentDrawable_HitTestingOfAScaledDownElementExcludesItsBottomAndRightEdges()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <body style="margin: 0">
+            <canvas id=c content=drawable style="width: 200px; height: 200px"><div drawable id=child style="width: 100px; height: 100px"></div></canvas>
+            <script>
+            c.updateElementGeometry(child, { canvasTransform: new DOMMatrix().translate(15, 35).scale(0.01) });
+            document.title = [[15, 35], [14, 35], [16, 35], [15, 34], [15, 36]].map(([x, y]) => document.elementFromPoint(x, y) === child).join();
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Empty(_errors);
+        Assert.Equal("true,false,false,false,false", document.Title);
+    }
+
+    [Fact]
     public void ContentDrawable_FiresPaintEvents()
     {
         var clock = new FakeTimeProvider();

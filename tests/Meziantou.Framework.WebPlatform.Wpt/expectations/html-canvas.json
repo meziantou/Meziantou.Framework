@@ -2346,10 +2346,7 @@
     "total": 7
   },
   "html/canvas/element/manual/draw-element-image/hit-test/low-dpi-hit-test.tentative.html": {
-    "total": 3,
-    "failures": {
-      "single target miss": "FAIL"
-    }
+    "total": 3
   },
   "html/canvas/element/manual/draw-element-image/hit-test/selection.tentative.html": {
     "total": 1

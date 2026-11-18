@@ -184,6 +184,12 @@ internal static class CanvasDrawables
         if (!TryGetCanvasTransform(fragment, out var matrix, out var contents) || !LayoutTransforms.TryInverseTransformPoint(matrix, point, out var untransformed))
             return false;
 
+        // As in Chromium, the point mapped to the element is rounded to the layout units (1/64 px): the rounding errors of the
+        // inverse of a canvas transform that scales down do not move a point of the edge of the element inside of it (e.g. the
+        // point at the bottom edge of an element of 1 px drawn with a scale of 0.01, WPT
+        // html/canvas/element/manual/draw-element-image/hit-test/low-dpi-hit-test.tentative.html)
+        untransformed = new PhysicalOffset(Math.Round(untransformed.X * 64, MidpointRounding.AwayFromZero) / 64, Math.Round(untransformed.Y * 64, MidpointRounding.AwayFromZero) / 64);
+
         if (LayoutEngine.GetTransform(fragment) is not { } transform)
         {
             local = untransformed;

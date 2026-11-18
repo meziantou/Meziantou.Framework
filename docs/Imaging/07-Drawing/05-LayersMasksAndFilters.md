@@ -200,6 +200,7 @@ public static void DrawFrostedCard(string photoPath, string outputPath)
 | [ColorMatrixFilter](cref:Meziantou.Framework.Imaging.Drawing.ColorMatrixFilter) | A color matrix: the filter functions of CSS that change colors |
 | [DropShadowFilter](cref:Meziantou.Framework.Imaging.Drawing.DropShadowFilter) | A shadow of the alpha, moved, blurred and colored, under the drawing (or alone, with [ShadowOnly](cref:Meziantou.Framework.Imaging.Drawing.DropShadowFilter.ShadowOnly)) |
 | [FilterChain](cref:Meziantou.Framework.Imaging.Drawing.FilterChain) | Several filters, applied one after the other |
+| [QuantizeFilter](cref:Meziantou.Framework.Imaging.Drawing.QuantizeFilter) | Rounds the colors multiplied by their alpha, and the alpha, to a number of bits per sample: the last filter of a chain gives the result a browser stores in an 8-bit premultiplied texture |
 
 - `canvas.Filter(filter, callback)` filters what the callback draws, including what it draws beyond the canvas within
   the reach of the filter: a shape out of view casts its shadow on the canvas.

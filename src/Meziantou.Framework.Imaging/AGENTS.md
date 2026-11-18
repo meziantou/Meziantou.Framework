@@ -1556,7 +1556,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
 - A layer opacity of `LayerOpacity.Group` is the `alphaFactor` of `Paint` (the opacity of a brush) when the layer is
   drawn, with a full coverage; with source-over it stays a coverage, so that both modes draw the same pixels.
 - The tile of a `PatternBrush` is an `Rgba32` image on every canvas with `PatternTilePrecision.EightBit`: the cached
-  tile image is replaced when its pixel format is not the one the brush needs.
+  tile image is replaced when its pixel format is not the one the brush needs. On a wider canvas, it is painted from a
+  second, `Rgba64` image of the colors of its premultiplied 8-bit samples (`_patternPremultipliedImage`), refreshed
+  each time the tile is drawn.
 - Coordinates are checked once transformed, where the canvas sees them, and a vertex beyond 16777216 in magnitude is not
   rejected: `TransformSink` starts cutting the contours of a fill by that square from it (`RangeClipSink`, streaming
   Sutherland-Hodgman, resumed on the contour in progress), and the `Stroker` cuts each piece that leaves it (for a pen

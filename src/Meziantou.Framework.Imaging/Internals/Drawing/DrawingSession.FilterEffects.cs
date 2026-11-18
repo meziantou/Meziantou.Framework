@@ -68,11 +68,13 @@ internal sealed partial class DrawingSession
         var scaleY = _hasTransform ? Math.Abs(_transform.M22) : 1;
         var reach = Math.Ceiling(Math.Max(reachX * scaleX, reachY * scaleY));
         var margin = reach + 1;
-        if (reach > 0 && filter is DropShadowFilter shadow && IsFilterMarginTruncated(margin))
+        if (reach > 0 && filter is DropShadowFilter or FilterChain { Filters: [DropShadowFilter, QuantizeFilter] } && IsFilterMarginTruncated(margin))
         {
             // The layer cannot hold everything that casts a shadow on what the clip shows: the shadow is cast from a
-            // window of its own, where the offset brings what the clip shows from
-            return PushFarShadow(shadow, scaleX, scaleY);
+            // window of its own, where the offset brings what the clip shows from (and then rounded, for a shadow followed by a quantization)
+            return filter is FilterChain { Filters: [DropShadowFilter chainedShadow, QuantizeFilter quantize] }
+                ? PushFarShadow(chainedShadow, scaleX, scaleY, (1 << quantize.BitsPerSample) - 1)
+                : PushFarShadow((DropShadowFilter)filter, scaleX, scaleY, quantization: 0);
         }
 
         LayerLevel level;
@@ -160,7 +162,7 @@ internal sealed partial class DrawingSession
     /// </summary>
     /// <returns>The session the callback draws on first.</returns>
     /// <exception cref="ImageResourceLimitException">An image of the layer exceeds the limits of the image that is drawn on.</exception>
-    private DrawingSession PushFarShadow(DropShadowFilter filter, double scaleX, double scaleY)
+    private DrawingSession PushFarShadow(DropShadowFilter filter, double scaleX, double scaleY, int quantization)
     {
         GetClipBounds(out var left, out var top, out var right, out var bottom, out _);
 
@@ -197,6 +199,7 @@ internal sealed partial class DrawingSession
         level.CasterShift = isReachable ? ((int)shiftX, (int)shiftY) : default;
         level.CasterResidual = (dx - shiftX, dy - shiftY);
         level.CasterWindow = window;
+        level.FarShadowQuantization = quantization;
         level.IsCasterPending = !filter.ShadowOnly && isReachable;
         return level.Bounded!.Session;
     }
@@ -268,6 +271,11 @@ internal sealed partial class DrawingSession
             var shadow = processor.GetShadowAlpha(casterSurface, residualX, residualY, filter.Sigma, filter.Sigma);
             var (shiftX, shiftY) = level.CasterShift;
             FilterProcessor.CompositeShadow(surface, shadow, target.Left - shiftX - caster.Left, target.Top - shiftY - caster.Top, red, green, blue, alpha, shadowOnly: false);
+        }
+
+        if (level.FarShadowQuantization > 0)
+        {
+            processor.Quantize(surface, level.FarShadowQuantization);
         }
 
         FilterProcessor.Write(surface, targetStorage, area);

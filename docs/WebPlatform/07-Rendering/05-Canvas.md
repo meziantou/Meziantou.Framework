@@ -48,6 +48,12 @@ using var screenshot = canvas.TakeScreenshot();
 - The bitmap of a canvas has 8 bits per component by default. Request [CanvasColorType.Float16](cref:Meziantou.Framework.WebPlatform.Dom.CanvasColorType.Float16)
   in [CanvasRenderingContext2DSettings.ColorType](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings.ColorType) to use half-float pixels. [ToDataUrl()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToDataUrl) and [ToBlob()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToBlob) serialize it as PNG,
   JPEG or WebP.
+- The browsers hold the 8-bit pixels of a canvas multiplied by their alpha. The page paints a canvas with those values:
+  a translucent pixel `(0, 128, 128, 254)` is painted as `(0, 127, 127)` multiplied by its alpha (127.498 rounded),
+  as in the browsers. `GetImageData()` still returns the straight colors.
+- The result of a filter that reads other pixels than the one it computes (a blur, a shadow, most SVG primitives) is rounded
+  to 8-bit components multiplied by their alpha, as the browsers draw it on an 8-bit texture: the result of the same filter
+  in a canvas and on an element of the page is the same. Color filters (`invert()`, `feColorMatrix`...) are not rounded.
 - A canvas is rendered only when scripting is enabled: as in a browser, a page without scripting shows the fallback
   content of the `canvas` element. Set [ScriptingEnabled](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ScriptingEnabled) (or give a script engine) when you draw from .NET.
 - [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) works the same way, also in the workers.

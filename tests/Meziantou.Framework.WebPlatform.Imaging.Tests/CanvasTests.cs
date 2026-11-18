@@ -994,6 +994,34 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void Layers_FilterResultsAreRoundedToPremultipliedEightBitColors()
+    {
+        var (_, _, context) = Create(200, 200);
+        context.BeginLayer(new BeginLayerOptions { Filter = "blur(10px)" });
+        context.FillStyle = "teal";
+        context.FillRect(50, 50, 100, 100);
+        context.EndLayer();
+
+        Assert.Equal([0, 128, 128, 254], GetPixel(context, 100, 72));
+        Assert.Equal([0, 129, 129, 254], GetPixel(context, 100, 73));
+    }
+
+    [Fact]
+    public void Canvas_TranslucentPixelsArePaintedAsPremultipliedEightBitColors()
+    {
+        // The browsers hold the premultiplied components of the canvas: (0, 128, 128, 254) is (0, 127, 127, 254) premultiplied,
+        // which gives 127 + 1 over white, where the straight color would give 128.498 (rounded to 129)
+        var context = _pages.Load("<body style='margin: 0'><canvas id=c width=4 height=4 style='display: block'></canvas>", scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)context.Document!.GetElementById("c")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.FillStyle = "rgba(0, 128, 128, 0.996)";
+        context2D.FillRect(0, 0, 4, 4);
+        Assert.Equal([0, 128, 128, 254], GetPixel(context2D, 1, 1));
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(new Rgba32(1, 128, 128, 255), screenshot.GetPixel(1, 1));
+    }
+
+    [Fact]
     public void Layers_ClearRectClearsTheLayer()
     {
         var (_, _, context) = Create(30, 10);

@@ -1617,7 +1617,7 @@
     "reftest": "FAIL"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.tentative.html": {
     "total": 1
@@ -1659,7 +1659,7 @@
     "reftest": "FAIL"
   },
   "html/canvas/element/filters/2d.filter.layers.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.turbulence.inputTypes.tentative.html": {
     "total": 1
@@ -1677,19 +1677,19 @@
     "total": 5
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.isotropic.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.mostly-x.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.mostly-y.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.x-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.y-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.beginLayer-options.tentative.html": {
     "total": 1
@@ -1734,13 +1734,13 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.css-filters.blur-and-shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.css-filters.blur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.css-filters.shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.ctm.ctx-filter.html": {
     "reftest": "PASS"
@@ -8490,10 +8490,10 @@
     "reftest": "FAIL"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.gaussianBlur.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.tentative.html": {
     "total": 1
@@ -8574,10 +8574,10 @@
     "reftest": "FAIL"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.gaussianBlur.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.turbulence.inputTypes.tentative.html": {
     "total": 1
@@ -8592,34 +8592,34 @@
     "total": 1
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.isotropic.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.isotropic.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-x.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-x.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-y.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-y.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.x-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.x-only.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.y-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.y-only.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.beginLayer-options.tentative.html": {
     "total": 1
@@ -8706,22 +8706,22 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur-and-shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur-and-shadow.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.shadow.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.ctm.ctx-filter.html": {
     "reftest": "PASS"

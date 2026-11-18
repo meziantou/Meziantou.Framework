@@ -3239,7 +3239,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   The breaker starts the parallel flows of the segment from the break (`FlowCursor.ResumeAt`): the items that end before it
   are in the virtual fragmentainer, the item that the break crosses continues from it with its own flow, and the first page
   starts with the space of the edges repeated at the break (`ColumnBreaker.GetDisplayOffsetAt`: a repeated table header,
-  the edges of `box-decoration-break: clone`). The pages of a segment followed by another one are copies of the fragments (the next layout may
+  the edges of `box-decoration-break: clone`). Whether a table repeats its header and footer is decided by the breaker in the
+  page where the table starts (not when they are taller than a quarter of it): the segment keeps the decisions of the tables
+  that start in a previous segment (`PageSegmentStart.RepeatedSectionsDisabled`). The pages of a segment followed by another one are copies of the fragments (the next layout may
   return and move the fragments of the boxes laid out the same way). The boxes fixed to the viewport are laid out once, in
   the initial containing block of the first page, as in Blink. A page of another inline size that starts inside a line, a
   multi-column container, a table row, a flex container that wraps or a grid whose columns depend on its inline size... is

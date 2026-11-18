@@ -1856,7 +1856,7 @@ internal static partial class ColumnBreaker
     /// <summary>
     /// Returns the space at the start of a fragmentainer that starts at a position of the flow (see
     /// <see cref="FragmentainerBreak.DisplayOffset"/>): the edges repeated at the possible break there (the repeated table
-    /// headers, the edges of the boxes with <c>box-decoration-break: clone</c>), or 0.
+    /// headers that are not disabled, the edges of the boxes with <c>box-decoration-break: clone</c>), or 0.
     /// </summary>
     public static double GetDisplayOffsetAt(FragmentationFlow flow, double position)
     {
@@ -1864,7 +1864,7 @@ internal static partial class ColumnBreaker
         var result = 0d;
         for (var i = FindFirstAfter(candidates, position - (2 * Epsilon)); i < candidates.Count && candidates[i].Position <= position + Epsilon; i++)
         {
-            result = Math.Max(result, candidates[i].CloneStartEdges);
+            result = Math.Max(result, candidates[i].ResolveRepeated().CloneStartEdges);
         }
 
         return result;

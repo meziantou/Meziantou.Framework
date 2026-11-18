@@ -259,6 +259,9 @@ internal sealed class FragmentationFlow
     /// </summary>
     public RepeatedSections? GetRepeatedSections(BoxFragment tableGrid) => _root._repeatedSections is { } sections && sections.TryGetValue(tableGrid, out var result) ? result : null;
 
+    /// <summary>The repeated header and footer of the tables of the strip and of its parallel flows, by table grid box fragment (see <see cref="GetRepeatedSections"/>), or null.</summary>
+    public Dictionary<BoxFragment, RepeatedSections>? AllRepeatedSections => _root._repeatedSections;
+
     /// <summary>The table grid boxes of this flow whose header or footer may be repeated, and their block-start edges in the strip.</summary>
     public List<(double Start, double End, RepeatedSections Sections)>? RepeatedTables => _repeatedTables;
 

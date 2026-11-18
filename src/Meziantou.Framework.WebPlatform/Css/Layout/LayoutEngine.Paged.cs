@@ -43,6 +43,13 @@ internal sealed partial class LayoutEngine
     /// </summary>
     private sealed record PageSegmentStart(BreakAnchor Anchor, PhysicalSize PageAreaSize, PageSelection Previous)
     {
+        /// <summary>
+        /// Whether the header and the footer of the tables are not repeated, by table grid box (see
+        /// <see cref="RepeatedSections.IsHeaderDisabled"/>): the breaker decides it in the page where a table starts, which is in
+        /// a previous segment for the tables broken by the start of the segment.
+        /// </summary>
+        public Dictionary<ContainerBox, (bool IsHeaderDisabled, bool IsFooterDisabled)>? RepeatedSectionsDisabled { get; init; }
+
         /// <summary>The fragments of the boxes fixed to the viewport, laid out in the initial containing block of the first segment (the page area of the first page).</summary>
         public required List<(BoxFragment Fragment, LogicalOffset Offset)>? FixedBoxes { get; init; }
     }
@@ -219,6 +226,20 @@ internal sealed partial class LayoutEngine
             var rules = new PageBreakRules { InitialContainingBlock = initialContainingBlockFragment };
             var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes: null, viewport, separatesOutOfFlow: true, floatPushes, rules, stripRelayout);
             flow.SlicesMonolithicContent = true;
+
+            // (the tables that start in a previous segment repeat their header and footer as decided there; the breaker decides it
+            // again for the tables that start in this segment)
+            if (segment?.RepeatedSectionsDisabled is { } disabledSections && flow.AllRepeatedSections is { } repeatedSections)
+            {
+                foreach (var (tableGrid, sections) in repeatedSections)
+                {
+                    if (disabledSections.TryGetValue(tableGrid.Box, out var disabled))
+                    {
+                        sections.IsHeaderDisabled = disabled.IsHeaderDisabled;
+                        sections.IsFooterDisabled = disabled.IsFooterDisabled;
+                    }
+                }
+            }
 
             // The start of the segment in this strip: the content before it is in a virtual first fragmentainer (the pages of
             // the previous segments), whose fragments are dropped
@@ -465,7 +486,7 @@ internal sealed partial class LayoutEngine
 
                     // (a blank page before the page is inserted again by the next segment)
                     segmentEnd = sequenceIndex > 0 && !sequence[sequenceIndex - 1].HasContent ? sequenceIndex - 1 : sequenceIndex;
-                    next = new PageSegmentStart(anchor, areaSize, sequence[segmentEnd - 1].Selection) { FixedBoxes = fixedPlacements };
+                    next = new PageSegmentStart(anchor, areaSize, sequence[segmentEnd - 1].Selection) { FixedBoxes = fixedPlacements, RepeatedSectionsDisabled = GetRepeatedSectionsDisabled(flow) };
                     break;
                 }
             }
@@ -534,6 +555,21 @@ internal sealed partial class LayoutEngine
 
             return next;
         }
+    }
+
+    /// <summary>Returns whether the header and the footer of the tables of a flow are not repeated (see <see cref="PageSegmentStart.RepeatedSectionsDisabled"/>), or null.</summary>
+    private static Dictionary<ContainerBox, (bool IsHeaderDisabled, bool IsFooterDisabled)>? GetRepeatedSectionsDisabled(FragmentationFlow flow)
+    {
+        if (flow.AllRepeatedSections is not { Count: > 0 } repeatedSections)
+            return null;
+
+        var result = new Dictionary<ContainerBox, (bool IsHeaderDisabled, bool IsFooterDisabled)>(repeatedSections.Count);
+        foreach (var (tableGrid, sections) in repeatedSections)
+        {
+            result[tableGrid.Box] = (sections.IsHeaderDisabled, sections.IsFooterDisabled);
+        }
+
+        return result;
     }
 
     /// <summary>Returns the first fragment of a box in the strip and its block-start border edge (in the block axis of the strip), or null.</summary>

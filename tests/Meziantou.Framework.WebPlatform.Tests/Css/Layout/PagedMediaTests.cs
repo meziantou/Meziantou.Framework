@@ -404,6 +404,29 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Fact]
+    public void Pages_TableWithOversizedHeaderContinuedOnAPageOfAnotherInlineSizeDoesNotRepeatIt()
+    {
+        // The header avoids breaks (it can be repeated) but is taller than a quarter of the page where the table starts: it is not
+        // repeated, also in the pages laid out again in another inline size
+        var document = Parse("""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } tr { break-inside: avoid }</style>
+            <table style='width: 100%; border-spacing: 0'>
+              <thead style='break-inside: avoid'><tr id=h style='height: 100px'><td></td></tr></thead>
+              <tbody><tr id=r0 style='height: 100px'><td></td></tr><tr id=r1 style='height: 100px'><td></td></tr><tr id=r2 style='height: 100px'><td></td></tr><tr id=r3 style='height: 100px'><td></td></tr><tr id=r4 style='height: 100px'><td></td></tr><tr id=r5 style='height: 100px'><td></td></tr><tr id=r6 style='height: 100px'><td></td></tr><tr id=r7 style='height: 100px'><td></td></tr></tbody>
+            </table>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(3, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 0, 200, 100))], GetPageRects(pages, document.GetElementById("h")!));
+        Assert.Equal([(0, new PhysicalRect(0, 200, 200, 100))], GetPageRects(pages, document.GetElementById("r1")!));
+        Assert.Equal([(1, new PhysicalRect(0, 0, 400, 100))], GetPageRects(pages, document.GetElementById("r2")!));
+        Assert.Equal([(1, new PhysicalRect(0, 200, 400, 100))], GetPageRects(pages, document.GetElementById("r4")!));
+        Assert.Equal([(2, new PhysicalRect(0, 0, 400, 100))], GetPageRects(pages, document.GetElementById("r5")!));
+        Assert.Equal([(2, new PhysicalRect(0, 200, 400, 100))], GetPageRects(pages, document.GetElementById("r7")!));
+    }
+
+    [Fact]
     public void Pages_FlexItemContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
     {
         // The break is inside the only item of a column flex container: its line boxes after the break are laid out again in

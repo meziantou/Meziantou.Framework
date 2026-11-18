@@ -154,7 +154,8 @@ public sealed class CanvasFilter
 
     private sealed record ColorMatrixOperation(float[] Matrix) : Operation
     {
-        public override DisplayFilter CreateFilter(PhysicalRect region) => new ColorMatrixFilter(Matrix);
+        // A primitive of a graph, which applies in sRGB on the canvases of the other color spaces (Display P3)
+        public override DisplayFilter CreateFilter(PhysicalRect region) => CreateGraph(new ColorMatrixPrimitive(Matrix), region);
     }
 
     private sealed record ComponentTransferOperation(byte[]? Red, byte[]? Green, byte[]? Blue, byte[]? Alpha) : Operation

@@ -85,12 +85,7 @@ internal sealed class DotNetScriptValueOperations : IScriptValueOperations
         IConvertible convertible when IsNumeric(convertible) => convertible.ToDouble(CultureInfo.InvariantCulture),
 
         // An array is converted to a string (its elements joined by commas), then to a number
-        _ when TryToSequence(value) is { } elements => elements switch
-        {
-            [] => 0,
-            [var element] => element is bool ? double.NaN : ToNumber(element),
-            _ => double.NaN,
-        },
+        _ when TryToSequence(value) is not null => StringToNumber(ToDomString(value)),
         _ => double.NaN,
     };
 
@@ -103,7 +98,13 @@ internal sealed class DotNetScriptValueOperations : IScriptValueOperations
         _ => true,
     };
 
-    public string ToDomString(object? value) => value switch
+    public string ToDomString(object? value) => ToDomString(value, converting: null);
+
+    /// <summary>
+    /// Converts a value to a string; a list is the strings of its elements joined by commas, and a list that contains itself
+    /// is converted once (its nested occurrences are empty strings, as <c>Array.prototype.join</c> does).
+    /// </summary>
+    private string ToDomString(object? value, HashSet<object>? converting) => value switch
     {
         null => "null",
         bool boolean => boolean ? "true" : "false",
@@ -114,9 +115,19 @@ internal sealed class DotNetScriptValueOperations : IScriptValueOperations
             double.NegativeInfinity => "-Infinity",
             var number => number.ToString("R", CultureInfo.InvariantCulture),
         },
-        _ when TryToSequence(value) is { } elements => string.Join(',', elements.Select(element => element is null ? "" : ToDomString(element))),
+        _ when TryToSequence(value) is { } elements => JoinElements(value, elements, converting ?? new HashSet<object>(ReferenceEqualityComparer.Instance)),
         _ => "[object Object]",
     };
+
+    private string JoinElements(object list, List<object?> elements, HashSet<object> converting)
+    {
+        if (!converting.Add(list))
+            return "";
+
+        var result = string.Join(',', elements.Select(element => element is null ? "" : ToDomString(element, converting)));
+        converting.Remove(list);
+        return result;
+    }
 
     private static bool IsNumeric(IConvertible value) => value.GetTypeCode() is >= TypeCode.SByte and <= TypeCode.Decimal;
 

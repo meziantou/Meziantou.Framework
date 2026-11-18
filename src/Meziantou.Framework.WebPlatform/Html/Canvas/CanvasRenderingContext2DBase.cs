@@ -1208,6 +1208,7 @@ public abstract partial class CanvasRenderingContext2DBase
         public double ShadowBlur;
         public string ShadowColorText = "rgba(0, 0, 0, 0)";
         public DisplayColor ShadowColor = DisplayColor.Transparent;
+
         /// <summary>The filter: <c>none</c>, a valid CSS filter, or a <see cref="CanvasFilter"/>.</summary>
         public object Filter = "none";
         public CanvasFont? Font;

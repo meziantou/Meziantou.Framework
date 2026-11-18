@@ -937,6 +937,38 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void CanvasFilter_ColorMatricesApplyInSrgbOnDisplayP3Canvases()
+    {
+        var (_, _, context) = Create(20, 10, new CanvasRenderingContext2DSettings { ColorSpace = PredefinedColorSpace.DisplayP3 });
+        context.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "colorMatrix", ["type"] = "saturate", ["values"] = 0 });
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 10, 10);
+
+        // The gray of the sRGB red (0.213 * 255 = 54), read in sRGB
+        var pixel = context.GetImageData(5, 5, 1, 1, new ImageDataSettings { ColorSpace = PredefinedColorSpace.Srgb }).Data.ToArray();
+        Assert.All(pixel[..3], component => Assert.InRange(component, 53, 55));
+    }
+
+    [Fact]
+    public void CanvasFilter_CyclicListsDoNotOverflowTheStack()
+    {
+        var (_, _, context) = Create(20, 10);
+        var values = new List<object?>();
+        values.Add(values);
+
+        // A list that contains itself is converted once, as Array.prototype.join does: its string is "", which is the number 0
+        context.Filter = new CanvasFilter(new object[]
+        {
+            new Dictionary<string, object?> { ["name"] = "gaussianBlur", ["stdDeviation"] = values },
+            new Dictionary<string, object?> { ["name"] = "dropShadow", ["dx"] = values, ["dy"] = 0, ["stdDeviation"] = 0, ["floodColor"] = new object?[] { "red" } },
+        });
+        context.FillStyle = "#00f";
+        context.FillRect(0, 0, 10, 10);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 15, 5));
+    }
+
+    [Fact]
     public void CanvasFilter_IsNotADescription()
     {
         Assert.Throws<TypeErrorException>(() => new CanvasFilter(null));

@@ -2509,7 +2509,7 @@
     "total": 8
   },
   "css/css-grid/grid-flex-spanning-items-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-flexible-track-fractional-flex-factor.html": {
     "reftest": "PASS"
@@ -4603,7 +4603,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/items/column-flex-spanning-items.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/items/column-flex-track-intrinsic-sizes.html": {
     "total": 102
@@ -7014,10 +7014,7 @@
     "total": 4
   },
   "css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html": {
-    "total": 35,
-    "failures": {
-      ".grid 23": "FAIL"
-    }
+    "total": 35
   },
   "css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-001.html": {
     "total": 4

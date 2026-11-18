@@ -451,4 +451,49 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal(2, pages.Count);
         Assert.Equal([(0, new PhysicalRect(0, 20, 100, 160)), (1, new PhysicalRect(0, 20, 100, 160))], GetPageRects(pages, document.GetElementById("cell")!));
     }
+
+    [Theory]
+    [InlineData(60)]
+    [InlineData(15)]
+    public void Pages_AvoidBreakRowAfterTallHeaderIsNotSliced(int headerHeight)
+    {
+        // A header that is not repeated (taller than a quarter of the page) and leaves 5px at the bottom of the page is separated
+        // from the row after it: the row, which avoids breaks and does not fit, is pushed whole to the next page, instead of placing
+        // a slice of it there that the next page repeats. A repeated header is not separated from the row: the row is broken.
+        // Either way, each word is printed once
+        var words = string.Join(' ', Enumerable.Repeat("XXXX", 28));
+        var document = Parse($$"""
+            <table style='width: 100%; border-spacing: 0'>
+              <thead style='break-inside: avoid'><tr style='height: {{headerHeight}}px'><td></td></tr></thead>
+              <tbody><tr id=r0 style='break-inside: avoid'><td>{{words}}</td></tr><tr id=r1><td>XXXX XXXX</td></tr></tbody>
+            </table>
+            """);
+        using var session = document.BeginPrint(new PrintOptions { PageWidth = 300, PageHeight = 65, MarginTop = 0, MarginRight = 0, MarginBottom = 0, MarginLeft = 0 });
+        var pages = session.GetPages();
+        if (headerHeight * 4 > 65)
+        {
+            Assert.Equal([(1, new PhysicalRect(0, 0, 300, 52))], GetPageRects(pages, document.GetElementById("r0")!));
+        }
+
+        var count = 0;
+        foreach (var page in pages)
+        {
+            Count(page.Content);
+        }
+
+        Assert.Equal(30, count);
+
+        void Count(Fragment fragment)
+        {
+            if (fragment is TextFragment text)
+            {
+                count += text.Run.Data[text.Start..text.End].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            }
+
+            foreach (var child in fragment.ChildrenSpan)
+            {
+                Count(child);
+            }
+        }
+    }
 }

@@ -1331,7 +1331,8 @@ internal sealed class FragmentationFlow
 
                 breakContext = ReferenceEquals(child, repeated.Footer) ? context with { Avoid = true } : withRepeated;
 
-                // (no break between the header and the section after it: the header would be repeated before the same content)
+                // (no break between the header and the section after it when the header is repeated: it would be repeated before
+                // the same content, see BreakCandidate.IsAfterRepeatedHeader)
                 isAfterRepeatedHeader = previous is not null && ReferenceEquals(previous, repeated.Header);
             }
 
@@ -1390,7 +1391,7 @@ internal sealed class FragmentationFlow
 
                     lineIndex++;
                 }
-                else if (!isPhantom && previous is not null && top >= previousBottom - Epsilon && top < context.ClipEnd && !isAfterRepeatedHeader)
+                else if (!isPhantom && previous is not null && top >= previousBottom - Epsilon && top < context.ClipEnd)
                 {
                     AddClearanceGap(previous, child, previousBottom, top);
                     if (breaksInGaps && top > previousBottom + Epsilon)
@@ -1399,7 +1400,7 @@ internal sealed class FragmentationFlow
                     }
                     else
                     {
-                        AddBreakBetween(previous, child, top, previousBottom, breakContext, endsWithContent: parent?.Box.Kind == ContainerBoxKind.TableWrapper);
+                        AddBreakBetween(previous, child, top, previousBottom, breakContext, endsWithContent: parent?.Box.Kind == ContainerBoxKind.TableWrapper, isAfterRepeatedHeader);
                     }
                 }
 
@@ -2517,12 +2518,16 @@ internal sealed class FragmentationFlow
 
     /// <summary>Adds the class A break opportunity between two in-flow sibling boxes (https://drafts.csswg.org/css-break-3/#possible-breaks).</summary>
     /// <param name="endsWithContent">Whether the boxes broken there end with the content before the break (see <see cref="BreakCandidate.EndsWithContent"/>).</param>
-    private void AddBreakBetween(Fragment previous, Fragment next, double nextTop, double previousBottom, VisitContext context, bool endsWithContent = false)
+    private void AddBreakBetween(Fragment previous, Fragment next, double nextTop, double previousBottom, VisitContext context, bool endsWithContent = false, bool isAfterRepeatedHeader = false)
     {
         var after = GetBreakAfter(previous);
         var before = GetBreakBefore(next);
         if (IsForcedBreak(after) || IsForcedBreak(before) || PageBreakRules.Current?.IsNameBreak(previous, next) == true)
         {
+            // (the header of a table is not separated from the section after it by a forced break)
+            if (isAfterRepeatedHeader)
+                return;
+
             // https://drafts.csswg.org/css-break-3/#break-margins: "When a forced break occurs there, adjoining margins before the break
             // are truncated, but margins after the break are preserved"
             var marginStart = next is BoxFragment nextBox ? GetCollapsedBlockStartMargin(nextBox) : 0;
@@ -2534,7 +2539,7 @@ internal sealed class FragmentationFlow
         var margins = (previous is BoxFragment previousBox ? Math.Max(0, previousBox.Margin.Get(_writingDirection.BlockEnd)) : 0)
             + (next is BoxFragment followingBox ? Math.Max(0, followingBox.Margin.Get(_writingDirection.BlockStart)) : 0);
         var avoid = context.Avoid || IsAvoidBreak(after) || IsAvoidBreak(before);
-        AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon, EndsWithContent = endsWithContent }, context);
+        AddCandidate(new BreakCandidate(nextTop, previousBottom, avoid ? BreakAppeal.Avoid : BreakAppeal.Perfect) { IsBetweenMargins = nextTop - previousBottom <= margins + Epsilon, EndsWithContent = endsWithContent, IsAfterRepeatedHeader = isAfterRepeatedHeader }, context);
     }
 
     /// <summary>

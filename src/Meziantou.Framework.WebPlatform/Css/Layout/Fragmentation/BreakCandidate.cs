@@ -126,6 +126,14 @@ internal readonly record struct BreakCandidate(double Position, double ContentEn
     public RepeatedSections? Repeated { get; init; }
 
     /// <summary>
+    /// Whether the break is between the header of a table and the section after it: it is not a possible break when the header is
+    /// repeated (the header would be repeated before the same content), only when the breaker decides that it is not (it is taller
+    /// than a quarter of the fragmentainer, see <see cref="RepeatedSections.IsHeaderDisabled"/>). <see cref="ResolveRepeated"/>
+    /// clears it in that case.
+    /// </summary>
+    public bool IsAfterRepeatedHeader { get; init; }
+
+    /// <summary>
     /// The nearest box around the break that repeats its edges until it ends (see <see cref="ParallelGroup.OwnCloneStart"/>; its
     /// edges are in <see cref="CloneStartEdges"/> and <see cref="CloneEndEdges"/>), or null.
     /// </summary>
@@ -145,6 +153,7 @@ internal readonly record struct BreakCandidate(double Position, double ContentEn
         {
             CloneStartEdges = Math.Max(0, CloneStartEdges - (Repeated is { IsHeaderDisabled: true } header ? header.HeaderSize : 0) - endedStart),
             CloneEndEdges = Math.Max(0, CloneEndEdges - (Repeated is { IsFooterDisabled: true } footer ? footer.FooterSize : 0) - endedEnd),
+            IsAfterRepeatedHeader = IsAfterRepeatedHeader && Repeated is not { IsHeaderDisabled: true },
             Repeated = null,
             CloneOwner = null,
         };

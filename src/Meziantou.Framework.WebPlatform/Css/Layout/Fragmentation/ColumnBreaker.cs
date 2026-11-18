@@ -438,7 +438,7 @@ internal static partial class ColumnBreaker
                 if (candidate.Position >= _end - Epsilon && !(candidate.Appeal == BreakAppeal.Forced && candidate.Position <= _position + Epsilon && IsTrackForcedBreak(candidate.Sequence)))
                     break;
 
-                if (candidate.IsBeforeFloat && !_flow.BreaksBeforeFloats)
+                if ((candidate.IsBeforeFloat && !_flow.BreaksBeforeFloats) || candidate.IsAfterRepeatedHeader)
                     continue;
 
                 // The content after a track that continues in the next fragmentainer
@@ -1735,7 +1735,7 @@ internal static partial class ColumnBreaker
                 break;
 
             // (as in Blink, the block-end edges of a box are placed with its last content when it overflows the fragmentainer)
-            if ((candidate.IsBeforeFloat && !flow.BreaksBeforeFloats) || candidate.IsBeforeEndEdges || candidate.IsPastEndOnly)
+            if ((candidate.IsBeforeFloat && !flow.BreaksBeforeFloats) || candidate.IsBeforeEndEdges || candidate.IsPastEndOnly || candidate.ResolveRepeated().IsAfterRepeatedHeader)
                 continue;
 
             if (candidate.Position > current + Epsilon && !(candidate.OnlyEdgesFrom <= current + Epsilon) && !(flow.SlicesMonolithicContent && candidate.EdgesOnlyFrom <= current + Epsilon) && IsValid(flow, candidate.Position, current) && !(candidate.Position > excludedStart + Epsilon && candidate.Position < excludedEnd - Epsilon))

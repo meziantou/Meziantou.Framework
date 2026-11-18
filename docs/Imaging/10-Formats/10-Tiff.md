@@ -12,7 +12,7 @@ destination**, except for a page that is not compressed.
 | | Reading | Writing |
 | --- | --- | --- |
 | Container | Classic TIFF and BigTIFF, both byte orders, strips and tiles, chunky samples and separate planes, multi-page documents | Classic TIFF (default) or BigTIFF, both byte orders, strips or tiles, chunky samples or separate planes, multi-page documents |
-| Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; 8 and 16-bit CMYK as CMYK pixels or with a color conversion; CIE L\*a\*b\* with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, CMYK at 8 or 16 bits (lossless compressions), bilevel, palette, 32-bit floating-point |
+| Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; 8 and 16-bit CMYK as CMYK pixels or with a color conversion; CIE, ICC and ITU L\*a\*b\*, or their lightness only, with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, CMYK at 8 or 16 bits (lossless compressions), bilevel, palette, 32-bit floating-point |
 | Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, old-style JPEG, JPEG 2000; the bits of each byte in either order (`FillOrder`), except in JPEG and JPEG 2000 data | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
 | Reduced size | The reduced-resolution images of the first page (pyramids) | - |
@@ -174,18 +174,24 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
   as separated pages (`PhotometricInterpretation` 5, `InkSet` 1) with `PixelLayout = Auto` and a lossless compression.
   An untyped load, and a page with alpha, need [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts the page to RGB.
   See [Color management](../09-Color/03-ColorManagement.md#keep-cmyk-images).
-- CIE L\*a\*b\* pages (`CIELab`, and 8-bit `ICCLab`) load only with
+- CIE L\*a\*b\* pages (`CIELab`, `ITULab`, and 8-bit `ICCLab`) load only with
   [ImageDecodeOptions.CieLabConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CieLabConversion), which converts their colors, relative to the
   `WhitePoint` of the page (D50 without one), to an RGB profile, sRGB by default. Colors outside its gamut are
   clipped or mapped, as [CieLabConversionOptions.Transform](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.Transform) says. Identification reports
-  [ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab). Pages that store only the lightness, `ITULab` and 16-bit `ICCLab` are rejected.
+  [ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab). A page that stores only the lightness (one sample, and an optional alpha sample) has
+  neutral colors: a\* and b\* are 0. The samples of `ITULab` (TIFF-FX, RFC 2301) cover the ranges of its `Decode` tag, by
+  default 0 to 100 for L\*, -85 to 85 for a\* and -75 to 125 for b\*; they are read uncompressed, with the lossless
+  compressions, or with JPEG compression, whose components are the samples. 16-bit `ICCLab` pages are rejected: the
+  versions of the ICC specification encode them differently.
 - Old-style JPEG pages (TIFF 6.0 compression 6) are read as libtiff reads them: with the header of
   `JPEGInterchangeFormat` or with the tables of the `JPEGQTables`, `JPEGDCTables` and `JPEGACTables` tags, each strip or
   tile is decoded as a JPEG datastream of its own. Only the baseline process is read, with 8-bit or 12-bit samples (12-bit
   samples are decoded scaled to 16 bits, as with JPEG compression); the lossless process and separate planes with an
   interchange format are rejected.
-- YCbCr data in separate planes is read when it is not subsampled (`YCbCrSubSampling` 1, 1), like libtiff;
-  subsampled or JPEG-compressed planes are rejected.
+- YCbCr data in separate planes is read uncompressed or with the lossless compressions. The blocks of the chroma planes
+  of subsampled data cover the area of the luma blocks with one sample for each `YCbCrSubSampling` group of pixels, as
+  TIFF 6.0 describes them, and their samples are replicated over the group, as for chunky data. libtiff does not read
+  subsampled planes. JPEG-compressed planes are rejected.
 - The orientation of a page is reported, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient).
 - [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) reads only the strips or the tiles that an area meets, each one
   whole: a page of one strip is still decompressed whole, so write large pages with tiles for viewports. See

@@ -640,16 +640,193 @@ public sealed class TiffCodecTests
         byte[] Page(int photometric, int samplesPerPixel, int bits, int compression = 1)
             => new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 1, Height = 1, SamplesPerPixel = samplesPerPixel, BitsPerSample = bits, Photometric = photometric, Compression = compression, EncodedBlocks = compression == 1 ? null : [[0]], Samples = new byte[((samplesPerPixel * bits) + 7) / 8] }).Build();
 
-        Assert.Equal("PhotometricInterpretation: L*a*b* lightness only", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(8, 1, 8))).Feature);
         Assert.Equal("BitsPerSample: 16", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(9, 3, 16))).Feature);
         Assert.Equal("BitsPerSample: 4", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(8, 3, 4))).Feature);
+        Assert.Equal("BitsPerSample: 4", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(10, 1, 4))).Feature);
         Assert.Equal("Compression: JPEG with this sample layout", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(8, 3, 8, compression: 7))).Feature);
-        Assert.Equal("PhotometricInterpretation: 10", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(10, 3, 8))).Feature);
+        Assert.Equal("Compression: JPEG with this sample layout", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(10, 3, 8, compression: 6))).Feature);
+        Assert.Equal("ExtraSamples: several extra channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Page(8, 5, 8))).Feature);
+        Assert.Equal("PhotometricInterpretation: 10 without color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(10, 3, 8))).Feature);
+    }
+
+    [Theory]
+    [InlineData(8, false, false)]
+    [InlineData(8, true, true)]
+    [InlineData(16, false, true)]
+    [InlineData(16, true, false)]
+    public void ItuLabSamplesEncodeTheRangesOfTheirComponents(int bits, bool alpha, bool customRanges)
+    {
+        // Each sample of ITULab is a linear encoding of a range of its component (RFC 2301, section 6.2.3): the sample 0 is
+        // the minimum, the largest sample the maximum. The default ranges are those of ITU-T T.42: L* from 0 to 100, a*
+        // from -85 to 85, b* from -75 to 125. The reference is the public CieLab conversion to sRGB
+        const int Width = 9;
+        const int Height = 4;
+        int[] ranges = customRanges ? [10, 90, 60, -60, -100, 100] : [0, 100, -85, 85, -75, 125];
+        var max = (1 << bits) - 1;
+        var samplesPerPixel = alpha ? 4 : 3;
+        var colors = new List<(CieLab Color, int Alpha)>();
+        var samples = new List<byte>();
+        for (var i = 0; i < Width * Height; i++)
+        {
+            var codes = new[] { (i * 37 * max / 35) % (max + 1), (i * 53 * max / 70) % (max + 1), (i * 29 * max / 50) % (max + 1) };
+            var opacity = (i * 71) % 256 * (bits == 8 ? 1 : 257);
+            colors.Add((new CieLab(Decode(codes[0], 0), Decode(codes[1], 2), Decode(codes[2], 4)), opacity));
+            foreach (var value in alpha ? [.. codes, opacity] : codes)
+            {
+                samples.Add((byte)value);
+                if (bits == 16)
+                {
+                    samples.Add((byte)(value >> 8));
+                }
+            }
+        }
+
+        double Decode(int code, int component) => ranges[component] + (code * (double)(ranges[component + 1] - ranges[component]) / max);
+
+        var page = new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = samplesPerPixel, BitsPerSample = bits, Photometric = 10, Compression = 8, RowsPerStrip = 3, ExtraSamples = alpha ? [2] : null, Samples = [.. samples] };
+        if (customRanges)
+        {
+            // The ranges of the alpha sample are not read; a decreasing range is valid
+            page.ExtraFields.Add(TiffFieldSpec.SignedRationals(433, alpha ? [.. ranges, 0, 1] : ranges));
+        }
+
+        var data = new TiffFileBuilder().AddPage(page).Build();
+        Assert.Equal(ImageColorModel.CieLab, Image.Identify(data).ColorModel);
+        using var image = Image.Load(data, new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default });
+        Assert.Equal(bits == 8 ? alpha ? PixelFormat.Rgba32 : PixelFormat.Rgb24 : alpha ? PixelFormat.Rgba64 : PixelFormat.Rgb48, image.PixelFormat);
+        using var converted = image.CloneAs<Rgba64>();
+        var maxError = 0;
+        for (var i = 0; i < colors.Count; i++)
+        {
+            var (color, opacity) = colors[i];
+            var pixel = converted.Frames[0][i % Width, i / Width];
+            var reference = color.ToRgba64();
+            maxError = Math.Max(maxError, Math.Max(Math.Abs(pixel.R - reference.R), Math.Max(Math.Abs(pixel.G - reference.G), Math.Abs(pixel.B - reference.B))));
+            Assert.Equal(alpha ? bits == 8 ? opacity * 257 : opacity : ushort.MaxValue, pixel.A);
+        }
+
+        // CieLab rounds the white of D50 differently from the connection space of ICC profiles (0.9642, 1, 0.8249)
+        Assert.InRange(maxError, 0, bits == 8 ? 257 : 40);
+    }
+
+    [Fact]
+    public void MalformedItuLabRangesAreReported()
+    {
+        byte[] Page(TiffFieldSpec decode)
+        {
+            var page = new TiffPageSpec { Width = 1, Height = 1, SamplesPerPixel = 3, Photometric = 10, Samples = [1, 2, 3] };
+            page.ExtraFields.Add(decode);
+            return new TiffFileBuilder().AddPage(page).Build();
+        }
+
+        // Too few values, too many, another type, a zero denominator, a value that is no component of a color
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Page(TiffFieldSpec.SignedRationals(433, [0, 100, -85, 85]))));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Page(TiffFieldSpec.SignedRationals(433, [.. Enumerable.Repeat(1, 13)]))));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Page(TiffFieldSpec.Shorts(433, [0, 100, 0, 85, 0, 125]))));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Page(new TiffFieldSpec(433, 10, [0, 1, 100, 0, 0, 1, 1, 1, 0, 1, 1, 1]))));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Page(TiffFieldSpec.SignedRationals(433, [0, 100, -85, 85, -75, 5000]))));
+
+        // A RATIONAL field is read too: its ranges are not negative
+        Image.Identify(Page(new TiffFieldSpec(433, 5, [0, 1, 100, 1, 0, 1, 85, 1, 0, 1, 125, 1])));
+    }
+
+    [Theory]
+    [InlineData(8, 8, false)]
+    [InlineData(9, 8, true)]
+    [InlineData(8, 16, true)]
+    [InlineData(10, 8, false)]
+    [InlineData(10, 16, true)]
+    public void LightnessOnlyLabPagesHaveNeutralColors(int photometric, int bits, bool alpha)
+    {
+        // A page that stores the lightness only (TIFF 6.0 section 23) has the colors of the same lightness with a* and b* 0:
+        // the page of three samples whose a* and b* are 0 (in the encoding of each photometric interpretation)
+        const int Width = 13;
+        const int Height = 3;
+        var max = (1 << bits) - 1;
+        var lightnessOnly = new List<byte>();
+        var neutral = new List<byte>();
+        for (var i = 0; i < Width * Height; i++)
+        {
+            var lightness = i * max / ((Width * Height) - 1);
+            var opacity = (i * 71) % (max + 1);
+
+            // a* and b* 0: 0 for CIELab, half of the range for ICCLab, the sample 0 for ITULab with ranges that start at 0
+            // (the default ones have no sample for 0)
+            var (a, b) = photometric == 9 ? (1 << (bits - 1), 1 << (bits - 1)) : (0, 0);
+
+            Add(lightnessOnly, alpha ? [lightness, opacity] : [lightness]);
+            Add(neutral, alpha ? [lightness, a, b, opacity] : [lightness, a, b]);
+        }
+
+        void Add(List<byte> samples, int[] values)
+        {
+            foreach (var value in values)
+            {
+                samples.Add((byte)value);
+                if (bits == 16)
+                {
+                    samples.Add((byte)(value >> 8));
+                }
+            }
+        }
+
+        byte[] Page(List<byte> samples, int samplesPerPixel)
+        {
+            var page = new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = samplesPerPixel, BitsPerSample = bits, Photometric = photometric, ExtraSamples = alpha ? [2] : null, Samples = [.. samples] };
+            if (photometric == 10)
+            {
+                page.ExtraFields.Add(TiffFieldSpec.SignedRationals(433, samplesPerPixel < 3 ? [0, 100] : [0, 100, 0, 10, 0, 10]));
+            }
+
+            return new TiffFileBuilder().AddPage(page).Build();
+        }
+
+        var data = Page(lightnessOnly, alpha ? 2 : 1);
+        var info = Image.Identify(data);
+        Assert.Equal(ImageColorModel.CieLab, info.ColorModel);
+        var options = new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default };
+        using var image = Image.Load(data, options);
+        using var reference = Image.Load(Page(neutral, alpha ? 4 : 3), options);
+        Assert.Equal(reference.PixelFormat, image.PixelFormat);
+
+        Assert.Equal(GetBytes(reference), GetBytes(image));
+
+        // The colors are neutral: the three components of each pixel are within the rounding of the conversion
+        using var converted = image.CloneAs<Rgba64>();
+        for (var i = 0; i < Width * Height; i++)
+        {
+            var pixel = converted.Frames[0][i % Width, i / Width];
+            Assert.InRange(Math.Max(Math.Abs(pixel.R - pixel.G), Math.Abs(pixel.G - pixel.B)), 0, 300);
+        }
+
+        AssertRegionsAreCropsOfTheFullDecode(data, options);
+    }
+
+    [Fact]
+    public void JpegCompressedItuLabPagesHoldTheSamplesInTheirComponents()
+    {
+        // TIFF-FX (RFC 2301) codes ITULab data with JPEG, without color transformation: a lossless datastream of RGB
+        // components holds the samples exactly, so the page decodes as the uncompressed page of the same samples
+        const int Width = 19;
+        const int Height = 11;
+        var samples = new byte[Width * Height * 3];
+        Noise(samples, seed: 42);
+        using var components = new Image<Rgb24>(Width, Height);
+        for (var i = 0; i < Width * Height; i++)
+        {
+            components.Frames[0][i % Width, i / Width] = new Rgb24(samples[i * 3], samples[(i * 3) + 1], samples[(i * 3) + 2]);
+        }
+
+        using var jpeg = new MemoryStream();
+        components.Save(jpeg, new JpegEncoder { Process = JpegEncodingProcess.Lossless });
+        var compressed = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 10, Compression = 7, EncodedBlocks = [jpeg.ToArray()], Samples = [] }).Build();
+        var uncompressed = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 10, Samples = samples }).Build();
+        var options = new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default };
+        Assert.Equal(Decode<Rgb24>(uncompressed, options), Decode<Rgb24>(compressed, options));
     }
 
     [Theory]
     [InlineData(4)]
-    [InlineData(10)]
     [InlineData(32803)]
     public void UnsupportedPhotometricInterpretationsAreRejected(int photometric)
     {
@@ -874,9 +1051,9 @@ public sealed class TiffCodecTests
     }
 
     [Fact]
-    public void SubsampledYCbCrPlanesAndUnknownPlanarConfigurationsAreRejected()
+    public void JpegCompressedYCbCrPlanesAndUnknownPlanarConfigurationsAreRejected()
     {
-        // The planes of subsampled YCbCr data would each have their own size: they are not read, by Identify either
+        // A JPEG datastream would hold each plane of YCbCr data as an image: they are not read, by Identify either
         var ycbcr = new TiffFileBuilder().AddPage(new TiffPageSpec
         {
             Width = 2,
@@ -884,8 +1061,10 @@ public sealed class TiffCodecTests
             SamplesPerPixel = 3,
             Photometric = 6,
             PlanarConfiguration = 2,
+            Compression = 7,
             ExtraFields = { TiffFieldSpec.Shorts(530, [2, 1]) },
-            Samples = new byte[12],
+            EncodedBlocks = [[0xFF, 0xD8, 0xFF, 0xD9], [0xFF, 0xD8, 0xFF, 0xD9], [0xFF, 0xD8, 0xFF, 0xD9]],
+            Samples = [],
         }).Build();
         Assert.Equal("PlanarConfiguration: 2 with YCbCr data", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(ycbcr)).Feature);
         Assert.Equal("PlanarConfiguration: 2 with YCbCr data", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(ycbcr)).Feature);
@@ -3295,6 +3474,96 @@ public sealed class TiffCodecTests
 
         page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [(ushort)horizontal, (ushort)vertical]));
         Assert.Equal(expected, Decode<Rgb24>(new TiffFileBuilder().AddPage(page).Build()));
+    }
+
+    [Theory]
+    [InlineData(2, 1, 1, false)]
+    [InlineData(2, 2, 5, false)]
+    [InlineData(4, 2, 32773, false)]
+    [InlineData(1, 2, 8, false)]
+    [InlineData(4, 4, 8, true)]
+    [InlineData(2, 2, 1, true)]
+    public void SubsampledYCbCrPlanesReplicateTheirChromaSamples(int horizontal, int vertical, int compression, bool tiled)
+    {
+        // A block of a chroma plane covers the area of the blocks of the luma plane with one sample for h x v pixels (TIFF
+        // 6.0 section 21): its rows have ceil(width / h) samples, and it has ceil(rows / v) rows. The chroma samples are
+        // replicated, as the ones of chunky data units are
+        const int Width = 21;
+        const int Height = 19;
+        var blockWidth = tiled ? 16 : Width;
+        var blockHeight = tiled ? 16 : 8;
+        var blocksAcross = (Width + blockWidth - 1) / blockWidth;
+        var planes = new List<byte[]>[] { [], [], [] };
+        var lumaSamples = new byte[Width * Height];
+        var chroma = new (byte Blue, byte Red)[Width * Height];
+        var seed = 0;
+        for (var top = 0; top < Height; top += blockHeight)
+        {
+            for (var left = 0; left < blocksAcross * blockWidth; left += blockWidth)
+            {
+                var rows = tiled ? blockHeight : Math.Min(blockHeight, Height - top);
+                var chromaAcross = (blockWidth + horizontal - 1) / horizontal;
+                var chromaDown = (rows + vertical - 1) / vertical;
+                var luma = new byte[blockWidth * rows];
+                var blue = new byte[chromaAcross * chromaDown];
+                var red = new byte[chromaAcross * chromaDown];
+                Noise(luma, seed: 200 + seed++);
+                Noise(blue, seed: 200 + seed++);
+                Noise(red, seed: 200 + seed++);
+                for (var y = 0; y < rows && top + y < Height; y++)
+                {
+                    for (var x = 0; x < blockWidth && left + x < Width; x++)
+                    {
+                        var pixel = ((top + y) * Width) + left + x;
+                        var sample = ((y / vertical) * chromaAcross) + (x / horizontal);
+                        lumaSamples[pixel] = luma[(y * blockWidth) + x];
+                        chroma[pixel] = (blue[sample], red[sample]);
+                    }
+                }
+
+                planes[0].Add(Encode(luma, blockWidth));
+                planes[1].Add(Encode(blue, chromaAcross));
+                planes[2].Add(Encode(red, chromaAcross));
+            }
+        }
+
+        byte[] Encode(byte[] samples, int rowLength) => compression switch
+        {
+            5 => TiffReferenceCodecs.EncodeLzw(samples),
+            8 => TiffFileBuilder.Deflate(samples),
+            32773 => TiffReferenceCodecs.EncodePackBits(samples, rowLength),
+            _ => samples,
+        };
+
+        var page = new TiffPageSpec
+        {
+            Width = Width,
+            Height = Height,
+            SamplesPerPixel = 3,
+            Photometric = 6,
+            Compression = compression,
+            PlanarConfiguration = 2,
+            RowsPerStrip = blockHeight,
+            TileWidth = tiled ? 16 : null,
+            TileLength = tiled ? 16 : null,
+            EncodedBlocks = [.. planes.SelectMany(static plane => plane)],
+            Samples = [],
+        };
+
+        page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [(ushort)horizontal, (ushort)vertical]));
+        var data = new TiffFileBuilder().AddPage(page).Build();
+        Assert.Equal(ImageColorModel.YCbCr, Image.Identify(data).ColorModel);
+        Assert.Equal([.. lumaSamples.Select((luma, i) => ConvertYCbCr(luma, chroma[i].Blue, chroma[i].Red))], Decode<Rgb24>(data));
+        AssertRegionsAreCropsOfTheFullDecode(data, ImageDecodeOptions.Default);
+
+        // A chroma block shorter than its geometry is reported
+        var blocks = page.EncodedBlocks;
+        if (compression == 1)
+        {
+            var truncated = new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 6, PlanarConfiguration = 2, RowsPerStrip = blockHeight, TileWidth = page.TileWidth, TileLength = page.TileLength, EncodedBlocks = [.. blocks[..^1], blocks[^1][..^1]], Samples = [] };
+            truncated.ExtraFields.Add(TiffFieldSpec.Shorts(530, [(ushort)horizontal, (ushort)vertical]));
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(new TiffFileBuilder().AddPage(truncated).Build()));
+        }
     }
 
     [Fact]

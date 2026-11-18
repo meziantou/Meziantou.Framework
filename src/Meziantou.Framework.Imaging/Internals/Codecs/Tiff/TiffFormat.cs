@@ -70,6 +70,7 @@ internal static class TiffFormat
     public const ushort ExtraSamplesTag = 338;
     public const ushort SampleFormatTag = 339;
     public const ushort JpegTablesTag = 347;
+    public const ushort DecodeTag = 433;
     public const ushort JpegProcTag = 512;
     public const ushort JpegInterchangeFormatTag = 513;
     public const ushort JpegInterchangeFormatLengthTag = 514;

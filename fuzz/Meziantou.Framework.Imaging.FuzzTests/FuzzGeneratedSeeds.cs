@@ -126,6 +126,50 @@ internal static class FuzzGeneratedSeeds
         pyramid.SubPages.Add(Level(16, 12, 1, 227));
         pyramid.SubPages.Add(Level(4, 3, 1, 223));
         seeds.Add(new FuzzSeed("tiff/builder-pyramid-subifds-bigtiff", new TiffFileBuilder { BigTiff = true }.AddPage(pyramid).Build()));
+
+        // L*a*b* pages: ITU L*a*b* with the ranges of its Decode tag, with JPEG compression, and pages of the lightness only
+        var itu = new TiffPageSpec { Width = 7, Height = 5, SamplesPerPixel = 3, Photometric = 10, Compression = 5, RowsPerStrip = 2, Samples = Samples(7 * 5 * 3, 251) };
+        itu.ExtraFields.Add(new TiffFieldSpec(433, 10, [0, 1, 100, 1, unchecked((uint)-85), 1, 85, 1, unchecked((uint)-75), 1, 125, 1]));
+        seeds.Add(new FuzzSeed("tiff/builder-itulab-lzw-decode", new TiffFileBuilder().AddPage(itu).Build()));
+        using (var components = CreateRgb24(6, 4, salt: 253))
+        using (var jpeg = new MemoryStream())
+        {
+            components.Save(jpeg, new JpegEncoder { Process = JpegEncodingProcess.Lossless });
+            seeds.Add(new FuzzSeed("tiff/builder-itulab-jpeg-lossless", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 6, Height = 4, SamplesPerPixel = 3, Photometric = 10, Compression = 7, EncodedBlocks = [jpeg.ToArray()], Samples = [] }).Build()));
+        }
+
+        seeds.Add(new FuzzSeed("tiff/builder-cielab-lightness-packbits", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 9, Height = 3, Photometric = 8, Compression = 32773, Samples = Samples(9 * 3, 256) }).Build()));
+        seeds.Add(new FuzzSeed("tiff/builder-itulab16-lightness-alpha-tiles", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 18, Height = 3, SamplesPerPixel = 2, BitsPerSample = 16, Photometric = 10, ExtraSamples = [2], TileWidth = 16, TileLength = 16, Compression = 8, Samples = Samples(18 * 3 * 2 * 2, 256) }).Build()));
+
+        // Subsampled YCbCr data in separate planes: the blocks of the chroma planes have one sample for h x v pixels
+        var planarStrips = new TiffPageSpec
+        {
+            Width = 9,
+            Height = 6,
+            SamplesPerPixel = 3,
+            Photometric = 6,
+            PlanarConfiguration = 2,
+            Compression = 5,
+            RowsPerStrip = 4,
+            EncodedBlocks = [.. new[] { Samples(9 * 4, 251), Samples(9 * 2, 241), Samples(5 * 2, 239), Samples(5, 233), Samples(5 * 2, 229), Samples(5, 227) }.Select(static block => TiffReferenceCodecs.EncodeLzw(block))],
+            Samples = [],
+        };
+        planarStrips.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
+        seeds.Add(new FuzzSeed("tiff/builder-ycbcr-planes-2x2-lzw", new TiffFileBuilder().AddPage(planarStrips).Build()));
+        var planarTiles = new TiffPageSpec
+        {
+            Width = 20,
+            Height = 18,
+            SamplesPerPixel = 3,
+            Photometric = 6,
+            PlanarConfiguration = 2,
+            TileWidth = 16,
+            TileLength = 16,
+            EncodedBlocks = [.. Enumerable.Range(0, 4).Select(static i => Samples(16 * 16, 250 - i)), .. Enumerable.Range(0, 8).Select(static i => Samples(4 * 8, 240 - i))],
+            Samples = [],
+        };
+        planarTiles.ExtraFields.Add(TiffFieldSpec.Shorts(530, [4, 2]));
+        seeds.Add(new FuzzSeed("tiff/builder-ycbcr-planes-4x2-tiles", new TiffFileBuilder().AddPage(planarTiles).Build()));
         // Old-style JPEG (compression 6), which no encoder writes: the header of the JPEG interchange format with the
         // scan in a strip, or the whole datastream at JPEGInterchangeFormat, with 8- and 12-bit samples
         using (var rgb = CreateRgb24(19, 13, salt: 6))

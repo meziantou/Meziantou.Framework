@@ -116,14 +116,25 @@ internal static class TiffPageDecoder
     /// Creates the stage that turns the normalized samples of an L*a*b* page into L* (0 to 100), a* and b*. The expander
     /// gives the signed a* and b* of <c>CIELab</c> as unsigned samples larger by half of their range, which is how
     /// <c>ICCLab</c> stores them (TIFF 6.0 section 23; Adobe Photoshop TIFF Technical Notes): 8-bit a* and b* are integers
-    /// from -128 to 127, 16-bit ones multiples of 1/256 from -128 to 128 - 1/256.
+    /// from -128 to 127, 16-bit ones multiples of 1/256 from -128 to 128 - 1/256. The samples of <c>ITULab</c> run linearly
+    /// over the ranges of the page (RFC 2301 section 6.2.3), whatever their number of bits. A page that stores the
+    /// lightness only has neutral colors: the expander gives placeholders for a* and b*, which the stage ignores.
     /// </summary>
     private static IccMatrixStage CreateCieLabDecoding(TiffPage page)
     {
+        var chroma = page.IsLightnessOnly ? 0 : 1;
+        if (page.Photometric == TiffFormat.PhotometricItuLab)
+        {
+            var ranges = page.ItuLabRanges;
+            return page.IsLightnessOnly
+                ? IccMatrixStage.CreateScale(ranges[1] - ranges[0], 0, 0, ranges[0])
+                : IccMatrixStage.CreateScale(ranges[1] - ranges[0], ranges[3] - ranges[2], ranges[5] - ranges[4], ranges[0], ranges[2], ranges[4]);
+        }
+
         var max = (double)((1 << page.BitsPerSample) - 1);
         var unit = page.BitsPerSample == 8 ? 1 : 256.0;
         var offset = (1 << (page.BitsPerSample - 1)) / unit;
-        return IccMatrixStage.CreateScale(100, max / unit, max / unit, 0, -offset, -offset);
+        return IccMatrixStage.CreateScale(100, chroma * max / unit, chroma * max / unit, 0, -chroma * offset, -chroma * offset);
     }
 
     /// <summary>

@@ -151,7 +151,7 @@ internal static class FuzzGeneratedSeeds
             PlanarConfiguration = 2,
             Compression = 5,
             RowsPerStrip = 4,
-            EncodedBlocks = [.. new[] { Samples(9 * 4, 251), Samples(9 * 2, 241), Samples(5 * 2, 239), Samples(5, 233), Samples(5 * 2, 229), Samples(5, 227) }.Select(static block => TiffReferenceCodecs.EncodeLzw(block))],
+            EncodedBlocks = [.. new[] { Samples(9 * 4, 251), Samples(9 * 2, 241), Samples(5 * 2, 239), Samples(5, 233), Samples(5 * 2, 229), Samples(5, 227) }.Select(block => TiffReferenceCodecs.EncodeLzw(block))],
             Samples = [],
         };
         planarStrips.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
@@ -165,7 +165,7 @@ internal static class FuzzGeneratedSeeds
             PlanarConfiguration = 2,
             TileWidth = 16,
             TileLength = 16,
-            EncodedBlocks = [.. Enumerable.Range(0, 4).Select(static i => Samples(16 * 16, 250 - i)), .. Enumerable.Range(0, 8).Select(static i => Samples(4 * 8, 240 - i))],
+            EncodedBlocks = [.. Enumerable.Range(0, 4).Select(i => Samples(16 * 16, 250 - i)), .. Enumerable.Range(0, 8).Select(i => Samples(4 * 8, 240 - i))],
             Samples = [],
         };
         planarTiles.ExtraFields.Add(TiffFieldSpec.Shorts(530, [4, 2]));

@@ -805,21 +805,14 @@ public sealed class TiffCodecTests
     [Fact]
     public void JpegCompressedItuLabPagesHoldTheSamplesInTheirComponents()
     {
-        // TIFF-FX (RFC 2301) codes ITULab data with JPEG, without color transformation: a lossless datastream of RGB
-        // components holds the samples exactly, so the page decodes as the uncompressed page of the same samples
+        // TIFF-FX (RFC 2301) codes ITULab data with JPEG, without color transformation: a lossless datastream (written by
+        // the test-side encoder, independent of the library) holds the samples exactly in its components, so the page
+        // decodes as the uncompressed page of the same samples
         const int Width = 19;
         const int Height = 11;
-        var samples = new byte[Width * Height * 3];
-        Noise(samples, seed: 42);
-        using var components = new Image<Rgb24>(Width, Height);
-        for (var i = 0; i < Width * Height; i++)
-        {
-            components.Frames[0][i % Width, i / Width] = new Rgb24(samples[i * 3], samples[(i * 3) + 1], samples[(i * 3) + 2]);
-        }
-
-        using var jpeg = new MemoryStream();
-        components.Save(jpeg, new JpegEncoder { Process = JpegEncodingProcess.Lossless });
-        var compressed = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 10, Compression = 7, EncodedBlocks = [jpeg.ToArray()], Samples = [] }).Build();
+        var datastream = JpegLosslessTestImage.CreateRandom(Width, Height, [(1, 1), (1, 1), (1, 1)], precision: 8, seed: 42);
+        var samples = datastream.GetStoredSamples().Select(sample => (byte)sample).ToArray();
+        var compressed = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 10, Compression = 7, EncodedBlocks = [datastream.Encode()], Samples = [] }).Build();
         var uncompressed = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 10, Samples = samples }).Build();
         var options = new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default };
         Assert.Equal(Decode<Rgb24>(uncompressed, options), Decode<Rgb24>(compressed, options));
@@ -3546,7 +3539,7 @@ public sealed class TiffCodecTests
             RowsPerStrip = blockHeight,
             TileWidth = tiled ? 16 : null,
             TileLength = tiled ? 16 : null,
-            EncodedBlocks = [.. planes.SelectMany(static plane => plane)],
+            EncodedBlocks = [.. planes.SelectMany(plane => plane)],
             Samples = [],
         };
 

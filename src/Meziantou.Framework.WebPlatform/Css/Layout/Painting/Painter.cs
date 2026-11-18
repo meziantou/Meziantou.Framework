@@ -276,6 +276,13 @@ internal sealed partial class Painter
         /// <summary>Whether a 3D transform was applied by the stacking context or one of its ancestors (the canvas uses a 3D matrix).</summary>
         public bool Has3DTransform { get; init; }
 
+        /// <summary>
+        /// The sum of the translations of the stacking contexts whose transform only translates them (painted in the coordinates of
+        /// their parent, see <see cref="BeginStackingContext"/>) since the nearest transformed group: they are in <see cref="Origin"/>,
+        /// but they are not part of the position of the boxes in the layout that is snapped to the device pixels.
+        /// </summary>
+        public PhysicalOffset Translation { get; init; }
+
         /// <summary>The fragments whose outline is painted at the end of the stacking context.</summary>
         public List<BoxFragment>? Outlines { get; set; }
 
@@ -927,6 +934,7 @@ internal sealed partial class Painter
         var box = fragment.Box;
         var has3D = _group.Has3DTransform;
         var isTransformed = false;
+        var translationOffset = _group.Translation;
 
         // https://drafts.csswg.org/css-transforms-2/#3d-rendering-contexts: a 3D rendering context established by a box whose parent
         // does not participate in it is flattened into the plane of its parent, even when that plane is itself in a 3D transform
@@ -942,6 +950,7 @@ internal sealed partial class Painter
         {
             _builder.Transform(DisplayMatrix.FromMatrix4x4(planeMatrix));
             origin = offset;
+            translationOffset = PhysicalOffset.Zero;
             has3D = true;
             isTransformed = true;
         }
@@ -956,6 +965,7 @@ internal sealed partial class Painter
                 // fractional position of the box). The root of a 3D rendering context keeps its matrix: its perspective and the
                 // depth of its plane apply to the planes of its descendants
                 origin = new PhysicalOffset(origin.X - translation.X, origin.Y - translation.Y);
+                translationOffset = new PhysicalOffset(translationOffset.X + translation.X, translationOffset.Y + translation.Y);
             }
             else
             {
@@ -968,8 +978,13 @@ internal sealed partial class Painter
                     _builder.Transform(Flattening);
                 }
 
-                // https://drafts.csswg.org/css-transforms-1/#transform-rendering: the transform is in the coordinates of the border box
+                // https://drafts.csswg.org/css-transforms-1/#transform-rendering: the transform is in the coordinates of the border box.
+                // As in the browsers, the fractional part of the position of the box in the layout is dropped (its position is
+                // snapped to the device pixels): it cannot be transformed by the transform, and the box is painted from a pixel
+                // boundary. The translations of its ancestors are kept (they are transforms of their own in the browsers)
                 var local = offset - origin;
+                local = new PhysicalOffset(SnapToDevicePixels(local.X - translationOffset.X) + translationOffset.X, SnapToDevicePixels(local.Y - translationOffset.Y) + translationOffset.Y);
+                translationOffset = PhysicalOffset.Zero;
                 _builder.Transform(DisplayMatrix.Translation(local.X, local.Y).PreConcat(DisplayMatrix.FromMatrix4x4(matrix)));
                 origin = offset;
                 has3D |= is3D;
@@ -985,7 +1000,7 @@ internal sealed partial class Painter
             isTransformed = true;
         }
 
-        var group = new Group(fragment, origin, _group, baseSaveCount, _builder.SaveCount) { IsTransformed = isTransformed, Has3DTransform = has3D, DeferredClips = deferredClips };
+        var group = new Group(fragment, origin, _group, baseSaveCount, _builder.SaveCount) { IsTransformed = isTransformed, Has3DTransform = has3D, DeferredClips = deferredClips, Translation = translationOffset };
         _group = group;
         if (transformOnly)
             return;

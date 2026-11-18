@@ -142,7 +142,8 @@ paints. The ones far from the viewport stay skipped until the page is scrolled t
 
 The painting follows the order of CSS: backgrounds, borders, shadows, text, images, SVG, transforms, filters, masks,
 clipping, blend modes, the scrollbars and the caret. The positions of the boxes and of the text are snapped to the device
-pixels as in Chromium. See [Limitations](../09-Limitations.md) for what is not painted.
+pixels as in Chromium: a box whose transform is not a translation is painted from the device pixel nearest to its
+position. See [Limitations](../09-Limitations.md) for what is not painted.
 
 The form controls look and measure as in Chromium. They use the font of the browsers (13.333px Arial, monospace in the
 `textarea` elements and the date and time fields), not the font of their parent, and they get the paddings, the borders

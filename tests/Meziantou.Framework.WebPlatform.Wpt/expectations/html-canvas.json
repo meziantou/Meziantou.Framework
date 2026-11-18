@@ -3070,7 +3070,7 @@
     "crashtest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/scale.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/scroller-crash.tentative.html": {
     "crashtest": "PASS"
@@ -9294,7 +9294,7 @@
     "total": 2
   },
   "html/canvas/offscreen/manual/draw-element-image/scale-worker.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/manual/draw-element-image/video-worker.tentative.html": {
     "harness": "TIMEOUT",

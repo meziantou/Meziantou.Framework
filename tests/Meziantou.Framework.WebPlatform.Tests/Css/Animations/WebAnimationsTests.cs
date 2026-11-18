@@ -56,6 +56,19 @@ public sealed class WebAnimationsTests : IDisposable
         Assert.Same(document.Timeline, animation.Timeline);
     }
 
+    [Theory]
+    [InlineData("margin-inline-start", "margin", "100px")]
+    [InlineData("margin-inline", "margin", "200px")]
+    [InlineData("margin-inline", "margin-left", "200px")]
+    public void Animate_LogicalAndPhysicalConflicts_LonghandsWinThenPhysicalProperties(string logical, string physical, string expected)
+    {
+        var document = Load("<div id=target></div>");
+        var target = document.GetElementById("target")!;
+        _ = target.Animate([new Keyframe { Properties = { [logical] = "100px", [physical] = "200px" } }], new KeyframeAnimationOptions { Duration = 1, Easing = "step-start" });
+
+        Assert.Equal(expected, document.DefaultView!.GetComputedStyle(target).GetPropertyValue("margin-left"));
+    }
+
     [Fact]
     public void Animate_FinishesAndFiresTheFinishEvent()
     {

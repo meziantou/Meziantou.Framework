@@ -1,18 +1,9 @@
 {
   "css/css-logical/animation-001.html": {
-    "total": 24,
-    "failures": {
-      "Logical longhands win over physical shorthands": "FAIL"
-    }
+    "total": 24
   },
   "css/css-logical/animation-002.html": {
-    "total": 15,
-    "failures": {
-      "Declaration order is respected on each keyframe individually": "FAIL",
-      "Logical properties are able to override physical properties in @keyframes declaration blocks": "FAIL",
-      "Physical properties and logical properties can be mixed": "FAIL",
-      "The number of interpolating properties can be decreased when the writing-mode is changed": "FAIL"
-    }
+    "total": 15
   },
   "css/css-logical/animation-003.tentative.html": {
     "total": 1,

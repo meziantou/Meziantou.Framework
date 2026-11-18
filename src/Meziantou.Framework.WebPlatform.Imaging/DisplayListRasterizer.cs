@@ -197,6 +197,34 @@ internal sealed partial class DisplayListRasterizer
         }
     }
 
+    /// <summary>Whether the rest of the current scope has a layer with a backdrop filter.</summary>
+    private bool ScopeHasBackdropFilter()
+    {
+        var items = _list.Items;
+        var depth = 0;
+        for (var i = _index; i < items.Length; i++)
+        {
+            switch (items[i])
+            {
+                case SaveLayerItem { BackdropFilters.Length: > 0 }:
+                    return true;
+
+                case SaveItem or SaveLayerItem:
+                    depth++;
+                    break;
+
+                case RestoreItem:
+                    if (depth == 0)
+                        return false;
+
+                    depth--;
+                    break;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>Skips the items of the current scope, up to the restore that ends it (which is consumed).</summary>
     private void SkipScope()
     {
@@ -575,7 +603,18 @@ internal sealed partial class DisplayListRasterizer
             {
                 var rasterizer = state.start.Rewind();
                 rasterizer.ClipBackdrop(c, state.clip);
-                rasterizer.RunFiltered(c, state.filter);
+                if (!rasterizer.ScopeHasBackdropFilter())
+                {
+                    rasterizer.RunFiltered(c, state.filter);
+                    return;
+                }
+
+                // https://drafts.fxtf.org/filter-effects-2/#BackdropRoot: the element is the backdrop root of the backdrop filters
+                // of its descendants, whose backdrop is its content without its filtered backdrop: the content is drawn on a
+                // transparent layer (only then: a layer rounds the colors of its translucent content once more)
+                var index = rasterizer._index;
+                c.Layer(1, (start: rasterizer.ScopeStart, state.filter), static (layer, content) => content.start.Rewind().RunFiltered(layer, content.filter), D.CompositeMode.SourceOver, D.BlendMode.Normal, D.LayerOpacity.Group);
+                rasterizer.EnsureConsumed(index);
             }, composite, blend, D.LayerOpacity.Group);
             return;
         }

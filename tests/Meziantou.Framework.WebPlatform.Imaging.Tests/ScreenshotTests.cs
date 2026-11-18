@@ -415,6 +415,20 @@ public sealed class ScreenshotTests : IDisposable
     }
 
     [Fact]
+    public void Effects_NestedBackdropFilterDoesNotFilterTheFilteredBackdropOfItsBackdropRoot()
+    {
+        var context = _pages.Load("""
+            <style>.backdrop { width: 100%; height: 100%; backdrop-filter: invert(1) }</style>
+            <div style="width: 40px; height: 40px; background: red"><div class=backdrop><div class=backdrop></div></div></div>
+            """);
+
+        using var screenshot = context.TakeScreenshot();
+
+        // The outer element is the backdrop root of the inner one: its backdrop is transparent, not the inverted red
+        Assert.Equal(Colors.Cyan, screenshot.GetPixel(20, 20));
+    }
+
+    [Fact]
     public void Svg()
     {
         // An SVG image (scaled to the size of the img element), a gradient, a pattern and a marker

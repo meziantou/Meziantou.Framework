@@ -2079,7 +2079,7 @@
     "total": 1
   },
   "html/canvas/element/manual/draw-element-image/backdrop-filter-nested.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/backdrop-filter-rounded-bounds.tentative.html": {
     "reftest": "PASS"

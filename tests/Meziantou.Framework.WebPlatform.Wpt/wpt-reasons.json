@@ -1573,7 +1573,6 @@
     "wasm/core/memory64/table_grow64.wast.js.html": [{ "kind": "TEST BUG", "description": "the `(either …)` results of the wast (`table_grow64.wast:46` and `:49`) are converted to arrays (`[-1n, 1n]`) that `assert_return` of the JS harness compares with `assert_equals`, so these two assertions fail in every engine" }]
   },
   "failingReftests": {
-    "html/canvas/element/manual/draw-element-image/backdrop-filter-nested.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: a nested `backdrop-filter` in a drawable element is drawn differently from the reference (not analyzed individually)" }],
     "html/canvas/element/manual/draw-element-image/css-backdrop-filter-and-mask.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: only the antialiased edges of the drawn element differ from the reference (not analyzed individually)" }],
     "html/canvas/element/manual/draw-element-image/css-backdrop-filter-on-div.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: only the antialiased edges of the drawn element differ from the reference (not analyzed individually)" }],
     "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-blend-mode-over-content.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: only the antialiased edges of the drawn element differ from the reference (not analyzed individually)" }],

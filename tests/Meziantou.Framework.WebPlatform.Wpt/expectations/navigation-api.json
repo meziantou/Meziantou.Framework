@@ -1248,21 +1248,13 @@
     "total": 1
   },
   "navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html": {
-    "total": 3,
-    "failures": {
-      "event and promise ordering when navigate() is to a 204s and then to a same-document navigation": "FAIL",
-      "event and promise ordering when navigate() is to a 205s and then to a same-document navigation": "FAIL",
-      "event and promise ordering when navigate() is to a Content-Disposition: attachment responses and then to a same-document navigation": "FAIL"
-    }
+    "total": 3
   },
   "navigation-api/ordering-and-transition/navigate-canceled.html": {
     "total": 1
   },
   "navigation-api/ordering-and-transition/navigate-cross-document-double.html": {
-    "total": 1,
-    "failures": {
-      "event and promise ordering when navigate() is called to a cross-document destination, interrupting another navigate() to a cross-document destination": "FAIL"
-    }
+    "total": 1
   },
   "navigation-api/ordering-and-transition/navigate-cross-document-event-order-with-pagehide.html": {
     "total": 1

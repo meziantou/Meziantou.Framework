@@ -1088,7 +1088,7 @@ public sealed class Navigation : EventTarget
 
         if (@event.PrecommitHandlers.Count == 0)
         {
-            CommitNavigateEvent(@event);
+            CommitNavigateEvent(@event, apiMethodTracker);
         }
         else
         {
@@ -1099,14 +1099,14 @@ public sealed class Navigation : EventTarget
                 promises.Add(InvokePromiseCallback(() => handler(precommitController)));
             }
 
-            WaitForAll(promises, () => CommitNavigateEvent(@event), reason => ProcessNavigateEventHandlerFailure(@event, reason));
+            WaitForAll(promises, () => CommitNavigateEvent(@event, apiMethodTracker), reason => ProcessNavigateEventHandlerFailure(@event, reason));
         }
 
         return @event.InterceptionState == NavigateEventInterceptionState.None;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#commit-a-navigate-event</summary>
-    private void CommitNavigateEvent(NavigateEvent @event)
+    private void CommitNavigateEvent(NavigateEvent @event, NavigationApiMethodTracker? apiMethodTracker)
     {
         var document = Window.Document;
         if (!document.IsFullyActive || document.BrowsingContext is not { } navigable || @event.Signal.Aborted)
@@ -1143,9 +1143,15 @@ public sealed class Navigation : EventTarget
                 }
             }
 
-            // The tracker of a cross-document navigation stays the ongoing one until the document changes (as the browsers do,
-            // the specification cleans it up here): its promises are rejected when the navigation is aborted
             Transition?.CommittedPromise.TrySetResult();
+
+            // The tracker of a navigation to another document is no longer the ongoing one: aborting the navigation (e.g. when
+            // another navigation starts) does not reject its promises, which stay pending
+            var endResultIsSameDocument = @event.InterceptionState != NavigateEventInterceptionState.None || @event.Destination.IsSameDocument;
+            if (!endResultIsSameDocument && apiMethodTracker is not null)
+            {
+                CleanUp(apiMethodTracker);
+            }
         }
     }
 

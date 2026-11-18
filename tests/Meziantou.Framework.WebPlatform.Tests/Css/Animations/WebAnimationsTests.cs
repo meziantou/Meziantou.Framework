@@ -70,6 +70,22 @@ public sealed class WebAnimationsTests : IDisposable
     }
 
     [Fact]
+    public void Animate_TargetOfADocumentWithoutBrowsingContext_StaysPendingAndAppliesOnceAdopted()
+    {
+        var document = Load("<div id=host></div>");
+        var other = document.Implementation.CreateHtmlDocument("");
+        var target = other.CreateElement("div");
+        other.Body!.AppendChild(target);
+        var animation = target.Animate(OpacityKeyframes(), 1000);
+        animation.Timeline = document.Timeline;
+        Advance(100);
+        Assert.True(animation.Pending);
+
+        document.GetElementById("host")!.AppendChild(target);
+        Assert.Equal("0", document.DefaultView!.GetComputedStyle(target).GetPropertyValue("opacity"));
+    }
+
+    [Fact]
     public void Animate_FinishesAndFiresTheFinishEvent()
     {
         var document = Load("<div id=target></div>");

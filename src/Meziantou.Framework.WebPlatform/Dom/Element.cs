@@ -1337,6 +1337,15 @@ public partial class Element : Node
                 attr.NodeDocument = NodeDocument;
             }
         }
+
+        // The effects that target the element move to the effect stacks of its new document, so they apply to its style there
+        if (oldDocument.AnimationsOrNull?.GetElementAnimations(this) is { } elementAnimations)
+        {
+            foreach (var effect in elementAnimations.EnumerateEffectLists().SelectMany(effects => effects).ToList())
+            {
+                effect.UpdateRegistration();
+            }
+        }
     }
 }
 

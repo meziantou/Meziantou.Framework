@@ -250,28 +250,39 @@ internal static partial class CssPropertyRules
 
     /// <summary>
     /// The specified value of border-shape: its shapes are serialized as the basic shapes of the other properties
-    /// (https://drafts.csswg.org/css-shapes/#basic-shape-serialization), the reference boxes are kept as specified. Returns
-    /// null when the value has no shape (none).
+    /// (https://drafts.csswg.org/css-shapes/#basic-shape-serialization), and the default reference boxes are omitted (the
+    /// shortest serialization, https://drafts.csswg.org/cssom/#serializing-css-values): half-border-box for a single shape,
+    /// border-box for the outer shape and padding-box for the inner shape (https://drafts.csswg.org/css-borders-4/#border-shape).
+    /// Unlike the computed value, two identical shapes stay two shapes. Returns null when the value has no shape (none).
     /// </summary>
     private static string? SerializeBorderShape(List<CssComponentValue> values)
     {
         var property = CssPropertyRegistry.Get("border-shape");
-        var parts = new List<string>(values.Count);
-        var hasShape = false;
+        var shapes = new List<(string Shape, string? Box)>(2);
         foreach (var value in values)
         {
             if (value is CssFunction function && SerializeShape(property, function, computed: false) is { } shape)
             {
-                parts.Add(shape);
-                hasShape = true;
+                shapes.Add((shape, null));
+            }
+            else if (value is CssPreservedToken { Type: CssTokenType.Ident } ident && shapes.Count > 0 && shapes[^1].Box is null)
+            {
+                shapes[^1] = (shapes[^1].Shape, InfraAscii.ToAsciiLowercase(ident.Value));
             }
             else
             {
-                parts.Add(CssSerializer.SerializeValue([value], property));
+                return null;
             }
         }
 
-        return hasShape ? string.Join(' ', parts) : null;
+        return shapes switch
+        {
+            [var single] => Serialize(single.Shape, single.Box, "half-border-box"),
+            [var outer, var inner] => Serialize(outer.Shape, outer.Box, "border-box") + " " + Serialize(inner.Shape, inner.Box, "padding-box"),
+            _ => null,
+        };
+
+        static string Serialize(string shape, string? box, string defaultBox) => box is null || box == defaultBox ? shape : shape + " " + box;
     }
 
     /// <summary>

@@ -15,11 +15,7 @@
     "total": 1
   },
   "css/css-variables/empty-custom-property-serialization.html": {
-    "total": 4,
-    "failures": {
-      "An empty string passed to setProperty still removes a custom property": "FAIL",
-      "Round-tripping an empty custom property through setProperty preserves its declaration": "FAIL"
-    }
+    "total": 4
   },
   "css/css-variables/long-variable-reference-crash.html": {
     "crashtest": "PASS"

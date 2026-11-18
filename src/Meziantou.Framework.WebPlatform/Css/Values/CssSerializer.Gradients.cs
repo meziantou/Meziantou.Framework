@@ -69,25 +69,20 @@ internal static partial class CssSerializer
                 }
             }
 
-            // ellipse is the default shape when there are two sizes
-            if (kind == "radial-gradient" && other.Count == 3 && other.FindIndex(v => GetIdent(v) == "ellipse") is var ellipse and >= 0 && other.Count(v => v is CssPreservedToken { Type: CssTokenType.Dimension or CssTokenType.Percentage or CssTokenType.Number } or CssFunction) == 2)
-            {
-                other.RemoveAt(ellipse);
-            }
-
-            // The default gradient line, shape, size and position are omitted (as in the browsers): to bottom, ellipse
-            // farthest-corner (a circle keeps its shape) and at center
+            // The default gradient line, size and position are omitted (as in the browsers): to bottom, farthest-corner and at
+            // center; the horizontal side of a corner comes first (to top left is to left top)
             if (kind == "linear-gradient" && other.Count == 2 && GetIdent(other[0]) == "to" && GetIdent(other[1]) == "bottom")
             {
                 other.Clear();
             }
-            else if (kind == "radial-gradient" && other.TrueForAll(static v => GetIdent(v) is not null))
+            else if (kind == "linear-gradient" && other is [var to, var side1, var side2] && GetIdent(to) == "to" && GetIdent(side1) is "top" or "bottom")
             {
-                other.RemoveAll(static v => GetIdent(v) == "farthest-corner");
-                if (other is [var shape] && GetIdent(shape) == "ellipse")
-                {
-                    other.Clear();
-                }
+                other[1] = side2;
+                other[2] = side1;
+            }
+            else if (kind == "radial-gradient")
+            {
+                CanonicalizeRadialShape(other);
             }
 
             if (position is not null && position.TrueForAll(static v => GetIdent(v) == "center"))
@@ -124,11 +119,37 @@ internal static partial class CssSerializer
                 builder.Append(", ");
             }
 
-            builder.Append(SerializeSequence(segments[i], keywords));
+            // The color stop positions and the color hints of linear-gradient() and radial-gradient() are lengths: a unitless
+            // zero is 0px (those of conic-gradient() are angles)
+            builder.Append(SerializeSequence(segments[i], keywords, zeroIsLength: kind != "conic-gradient"));
         }
 
         builder.Append(')');
         return true;
+    }
+
+    /// <summary>
+    /// Omits the default shape and size of a radial gradient (https://drafts.csswg.org/css-images-3/#radial-gradient-syntax):
+    /// the size farthest-corner, and the shape that the size implies when the shape is omitted: a circle for one length, an
+    /// ellipse otherwise (radial-gradient(ellipse closest-side) is radial-gradient(closest-side), radial-gradient(circle 10px) is
+    /// radial-gradient(10px), radial-gradient(circle farthest-corner) is radial-gradient(circle)).
+    /// </summary>
+    private static void CanonicalizeRadialShape(List<CssComponentValue> other)
+    {
+        other.RemoveAll(static v => GetIdent(v) == "farthest-corner");
+        var shapeIndex = other.FindIndex(static v => GetIdent(v) is "circle" or "ellipse");
+        if (shapeIndex < 0)
+            return;
+
+        var shape = GetIdent(other[shapeIndex]);
+        var sizes = other.Count - 1;
+        var isDefaultShape = shape == "circle"
+            ? sizes == 1 && GetIdent(other[shapeIndex == 0 ? 1 : 0]) is null
+            : sizes != 1 || GetIdent(other[shapeIndex == 0 ? 1 : 0]) is not null;
+        if (isDefaultShape)
+        {
+            other.RemoveAt(shapeIndex);
+        }
     }
 
     /// <summary>
@@ -238,7 +259,7 @@ internal static partial class CssSerializer
     private static string? GetIdent(CssComponentValue value) => value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
 
     /// <summary>Serializes component values (whitespace excluded) separated by a space.</summary>
-    private static string SerializeSequence(List<CssComponentValue> values, HashSet<string>? keywords)
+    private static string SerializeSequence(List<CssComponentValue> values, HashSet<string>? keywords, bool zeroIsLength = false)
     {
         var builder = new StringBuilder();
         foreach (var value in values)
@@ -248,7 +269,7 @@ internal static partial class CssSerializer
                 builder.Append(' ');
             }
 
-            SerializeComponentValue(builder, value, keywords, zeroIsLength: false);
+            SerializeComponentValue(builder, value, keywords, zeroIsLength);
         }
 
         return builder.ToString();

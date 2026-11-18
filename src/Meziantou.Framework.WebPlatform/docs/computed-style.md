@@ -572,7 +572,15 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   is `center top`, `y-start` is `center y-start`; the computed logical keywords `x-start`, `x-end`, `y-start` and `y-end`
   are the sides of the writing mode and the direction of the element, e.g. `x-start` is `100%` in `direction: rtl`), and
   the `mask` shorthand omits the initial values of a layer (one box sets `mask-origin` and
-  `mask-clip`, and `mask` resets `mask-border`). In a declaration block, the longhands
+  `mask-clip`, and `mask` resets `mask-border`). The gradients are serialized in their canonical form: a unitless zero
+  color stop position or color hint of `linear-gradient()` and `radial-gradient()` is `0px`, the horizontal side of a
+  corner comes first (`to top left` is `to left top`), and the shape of `radial-gradient()` is omitted when it is the one
+  its size implies (`circle 10px` is `10px`, `ellipse closest-side` is `closest-side`; a circle takes one length and an
+  ellipse two, `circle 10px 10px` and `ellipse 10px` are invalid). The specified `border-shape` omits its default
+  reference boxes, as its computed value. `image-resolution` is serialized in the canonical order of its grammar
+  (`snap 2dpi from-image` is `from-image 2dpi snap`). A custom property set with `setProperty()` to white space only (e.g.
+  `" "`, the serialization of an empty custom property) is an empty value serialized as a space, as in a declaration
+  block (`--x:;`). In a declaration block, the longhands
   are not serialized as a shorthand when a declaration of their logical property group with a flow-relative mapping is
   between them, and `setProperty()` moves a declaration after the declarations of its logical property group that have
   another mapping logic (https://drafts.csswg.org/cssom/#set-a-css-declaration).

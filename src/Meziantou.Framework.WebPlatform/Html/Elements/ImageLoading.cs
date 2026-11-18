@@ -1668,7 +1668,11 @@ internal static class ImageHeaders
         return new ImageNaturalSize(width, height, ratio);
     }
 
-    /// <summary>Parses an absolute length of the width or height of an SVG root element, in CSS pixels; null for a percentage, a relative length, a negative or an invalid value.</summary>
+    /// <summary>
+    /// Parses an absolute length of the width or height of an SVG root element, in CSS pixels; null for a percentage, a relative
+    /// length (em and ex included), a negative or an invalid value: "width and height only affect natural size if they're
+    /// literal number-tokens, or dimension-tokens for an absolute length unit" (https://github.com/w3c/csswg-drafts/issues/14117).
+    /// </summary>
     private static double? ParseSvgLength(string? value)
     {
         if (value is null)
@@ -1691,8 +1695,6 @@ internal static class ImageHeaders
             "q" => 96.0 / 101.6,
             "pt" => 96.0 / 72,
             "pc" => 16.0,
-            "em" => 16.0,
-            "ex" => 16.0 * Css.Fonts.BundledFonts.DefaultRatios.XHeight,
             _ => double.NaN,
         };
 

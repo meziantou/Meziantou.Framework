@@ -422,14 +422,16 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// <summary>
     /// Parses the value of a property set by <see cref="SetProperty"/> (https://drafts.csswg.org/cssom/#parse-a-css-value). As in
     /// a style sheet, the original text spans from the first token to the last one: the whitespace and the comments around them
-    /// are not part of it (https://drafts.csswg.org/css-syntax-3/#consume-declaration).
+    /// are not part of it (https://drafts.csswg.org/css-syntax-3/#consume-declaration). A custom property whose value is only
+    /// whitespace (e.g. " ", the serialization of an empty custom property) is empty, serialized as a space as in a style sheet
+    /// (https://drafts.csswg.org/css-variables-1/#serializing-custom-props, https://github.com/w3c/csswg-drafts/issues/9847).
     /// </summary>
     private static List<CssLonghandValue>? ParsePropertyValue(string? atRule, string property, string value, bool quirks = false)
     {
         var values = CssParser.ParseListOfComponentValues(value, out var preprocessed);
         var first = values.FindIndex(v => v is not CssPreservedToken { Type: CssTokenType.Whitespace });
         var last = values.FindLastIndex(v => v is not CssPreservedToken { Type: CssTokenType.Whitespace });
-        var originalText = first < 0 ? "" : preprocessed[values[first].Start..Math.Min(values[last].End, preprocessed.Length)];
+        var originalText = first >= 0 ? preprocessed[values[first].Start..Math.Min(values[last].End, preprocessed.Length)] : CssPropertyRegistry.IsCustomProperty(property) ? " " : "";
 
         return ParseValue(atRule, property, values, originalText, preprocessed) ?? (quirks ? ParseQuirkyValue(atRule, NormalizePropertyName(property), values) : null);
     }

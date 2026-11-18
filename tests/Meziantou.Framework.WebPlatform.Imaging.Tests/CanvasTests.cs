@@ -999,20 +999,24 @@ public sealed class CanvasTests : IDisposable
 
         Assert.Equal([0, 0, 255, 255], GetPixel(context, 15, 5));
 
-        static IEnumerable<object?> SinglePass(object value)
+        static IEnumerable<object?> SinglePass(object value) => new SinglePassEnumerable(value);
+    }
+
+    /// <summary>A sequence that can be enumerated once: the next enumerations are empty.</summary>
+    private sealed class SinglePassEnumerable(object value) : IEnumerable<object?>
+    {
+        private bool _enumerated;
+
+        public IEnumerator<object?> GetEnumerator()
         {
-            var read = false;
-            return Enumerate();
+            if (_enumerated)
+                return Enumerable.Empty<object?>().GetEnumerator();
 
-            IEnumerable<object?> Enumerate()
-            {
-                if (read)
-                    yield break;
-
-                read = true;
-                yield return value;
-            }
+            _enumerated = true;
+            return ((IEnumerable<object?>)[value]).GetEnumerator();
         }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     [Fact]

@@ -6,6 +6,7 @@
 
 #pragma warning disable WEBPLATEXP0004 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0021 // The conversions use the experimental Web IDL interfaces
+#pragma warning disable WEBPLATEXP0023 // The conversions use the experimental Web IDL interfaces
 
 namespace Meziantou.Framework.WebPlatform.Scripting.Generated;
 
@@ -215,6 +216,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.TrustedTypePolicyOptions Defaults_Dom_TrustedTypePolicyOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.UIEventInit Defaults_Dom_UIEventInit = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions Defaults_Dom_UpdateElementGeometryOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.UrlPatternInit Defaults_Dom_UrlPatternInit = new();
 
@@ -998,6 +1001,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_CanvasPaintEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.CanvasPaintEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "changedElements", r.FromSequence(value.ChangedElements, static (r, e) => r.Wrap(e)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_CanvasRenderingContext2DSettings(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings value)
     {
         var result = r.CreateObject();
@@ -1427,6 +1440,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_DrawElementImageOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "preserveElementGeometry", r.FromBoolean(value.PreserveElementGeometry));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_ElementCreationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ElementCreationOptions value)
     {
         var result = r.CreateObject();
@@ -1439,6 +1459,24 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         var result = r.CreateObject();
         if (value.Extends is not null) r.SetMember(result, "extends", r.FromString(value.Extends));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ElementGeometryUpdateEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ElementGeometryUpdateEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "elements", r.FromSequence(value.Elements, static (r, e) => r.Wrap(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ElementImageDefaultSize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ElementImageDefaultSize value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "height", r.FromNumber((double)value.Height));
+        r.SetMember(result, "width", r.FromNumber((double)value.Width));
         return result;
     }
 
@@ -3192,6 +3230,15 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         r.SetMember(result, "credentialId", r.FromString(value.CredentialId));
         r.SetMember(result, "rpId", r.FromString(value.RpId));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_UpdateElementGeometryOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.CanvasClip is not null) r.SetMember(result, "canvasClip", (value.CanvasClip is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomRectInit(r, dictionaryValue) : r.Adapter.Null));
+        if (value.CanvasTransform is not null) r.SetMember(result, "canvasTransform", (value.CanvasTransform is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomMatrixInit(r, dictionaryValue2) : r.Adapter.Null));
+        r.SetMember(result, "preserveHitTestOrder", r.FromBoolean(value.PreserveHitTestOrder));
         return result;
     }
 
@@ -5593,6 +5640,26 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.CanvasPaintEventInit ToDictionary_Dom_CanvasPaintEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "CanvasPaintEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "changedElements");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.Element>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.Element>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.Element>(m3_value, static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(e, "Element"));
+        return new global::Meziantou.Framework.WebPlatform.Dom.CanvasPaintEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            ChangedElements = m3,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings ToDictionary_Dom_CanvasRenderingContext2DSettings(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "CanvasRenderingContext2DSettings");
@@ -6460,6 +6527,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions ToDictionary_Dom_DrawElementImageOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "DrawElementImageOptions");
+        var m0_value = r.GetDictionaryMember(value, "preserveElementGeometry");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions
+        {
+            PreserveElementGeometry = m0,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.ElementCreationOptions ToDictionary_Dom_ElementCreationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "ElementCreationOptions");
@@ -6493,6 +6571,26 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.ElementDefinitionOptions
         {
             Extends = m0_present ? m0 : Defaults_Dom_ElementDefinitionOptions.Extends,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ElementGeometryUpdateEventInit ToDictionary_Dom_ElementGeometryUpdateEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ElementGeometryUpdateEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "elements");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.Element>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.Element>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.Element>(m3_value, static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(e, "Element"));
+        return new global::Meziantou.Framework.WebPlatform.Dom.ElementGeometryUpdateEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Elements = m3,
         };
     }
 
@@ -9872,6 +9970,25 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions ToDictionary_Dom_UpdateElementGeometryOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "UpdateElementGeometryOptions");
+        var m0_value = r.GetDictionaryMember(value, "canvasClip");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.DomRectInit?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomRectInit(r, m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "canvasTransform");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Dom.DomMatrixInit?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomMatrixInit(r, m1_value) : default;
+        var m2_value = r.GetDictionaryMember(value, "preserveHitTestOrder");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions
+        {
+            CanvasClip = m0_present ? m0 : Defaults_Dom_UpdateElementGeometryOptions.CanvasClip,
+            CanvasTransform = m1_present ? m1 : Defaults_Dom_UpdateElementGeometryOptions.CanvasTransform,
+            PreserveHitTestOrder = m2,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.UrlPatternInit ToDictionary_Dom_UrlPatternInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "URLPatternInit");
@@ -12091,6 +12208,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         }
         if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
         return r.ToDouble(value, restricted: true);
+    }
+
+    /// <summary>(Element or ElementImage)</summary>
+    internal static object? ToUnion_19c91632(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.Element) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ElementImage) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (Element or ElementImage)");
     }
 
     /// <summary>(AudioContextRenderSizeCategory or unsigned long)</summary>

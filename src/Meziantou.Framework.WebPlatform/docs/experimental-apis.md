@@ -226,3 +226,16 @@ of the SVG scripts are processed as the ones of the HTML scripts). Its API and b
 `colorMatrix`, `componentTransfer`, `convolveMatrix` and `turbulence`), which is the `filter` of a 2D context or of a
 canvas layer. Chromium implements them behind a flag. Their API and behavior may change while the proposal is under
 discussion.
+
+<a id="WEBPLATEXP0023"></a>
+
+## WEBPLATEXP0023: HTML-in-canvas
+
+`HtmlCanvasElement.Content`, `HtmlCanvasElement.RequestPaint()`, the `paint` events (`CanvasPaintEvent`),
+`CanvasRenderingContext2DBase.DrawElementImage()`, `HtmlCanvasElement.CaptureElementImage()` (`ElementImage`) and the
+element geometries (`UpdateElementGeometry()`, `ClearElementGeometry()`, `GetElementTransform()`,
+`GetElementImageDefaultSize()`, also on `OffscreenCanvas`) implement the [HTML-in-canvas
+proposal](https://github.com/WICG/html-in-canvas), as tested by the tentative web-platform-tests of
+`html/canvas/element/manual/draw-element-image`: the children of a canvas whose `content` attribute is `drawable` are laid
+out but not painted, and its `drawable` descendants are drawn into the canvas. Chromium implements it behind a flag. Its
+API and behavior may change while the proposal is under discussion.

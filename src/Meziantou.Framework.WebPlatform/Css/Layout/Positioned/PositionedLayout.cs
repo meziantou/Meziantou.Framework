@@ -89,6 +89,10 @@ internal static class PositionedLayout
         if (SvgForeignObjectLayout.IsForeignObject(box))
             return true;
 
+        // https://github.com/WICG/html-in-canvas: a drawable element is "a containing block for all descendants"
+        if (box.IsCanvasDrawable)
+            return true;
+
         var layout = box.Style.Layout;
 
         // The transforms, the containment... do not apply to the non-atomic inline boxes; the filters do

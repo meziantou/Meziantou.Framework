@@ -712,10 +712,30 @@ internal sealed partial class BoxTreeBuilder
             return;
 
         BuildElementBoxes(element, parent);
+
+        // https://github.com/WICG/html-in-canvas: a drawable element in the contents of a canvas whose content is drawable
+        // (the parent box is in the contents box of the canvas, also when a patch of the tree builds the element again)
+        if (element.HasAttribute("drawable") && IsInCanvasContents(parent) && _boxes.TryGetValue((element, null), out var drawable) && drawable is ContainerBox drawableBox)
+        {
+            drawableBox.IsCanvasDrawable = true;
+        }
+
         if (!ReferenceEquals(element, _root))
         {
             BuildScrollControls(element, parent);
         }
+    }
+
+    /// <summary>
+    /// Whether a box is in the contents of a canvas whose content is drawable (see <see cref="CanvasDrawables.IsInCanvasContents"/>):
+    /// the boxes built by a patch of the tree are in a temporary parent, which stands for the parent of the boxes they replace.
+    /// </summary>
+    private bool IsInCanvasContents(ContainerBox parent)
+    {
+        if (_patch?.Parent is { } patchParent && CanvasDrawables.IsInCanvasContents(parent, stopAt: patchParent.Temporary) is null)
+            return CanvasDrawables.IsInCanvasContents(patchParent.Actual) == true;
+
+        return CanvasDrawables.IsInCanvasContents(parent) == true;
     }
 
     private void BuildElementBoxes(Element element, ContainerBox parent)

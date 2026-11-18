@@ -388,10 +388,15 @@ internal sealed partial class Painter
     /// <param name="fragment">The first fragment of the element.</param>
     /// <param name="origin">The position of the fragment in the display list (an inline box is painted from the union of its fragments).</param>
     /// <param name="size">The size of the display list.</param>
+    /// <param name="order">
+    /// The painting order of the contents of the canvas with the markers of the stacking contexts (see
+    /// <see cref="CanvasDrawables.GetPaintOrder"/>), which contains the positioned descendants of the element whose containing
+    /// block is not their parent (e.g. a fixed positioned descendant of an inline drawable element), or null.
+    /// </param>
     /// <param name="nextFrameDelay">The time in milliseconds after which the snapshot changes (the next frame of an animated image), or null.</param>
     /// <param name="canvases">The canvases whose bitmap is drawn when the snapshot is drawn, or null.</param>
-    public static DisplayList PaintCanvasDrawable(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset origin, PhysicalSize size, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases)
-        => PaintCapture(engine, document, fragment, origin, order: null, canvasDrawable: true, out nextFrameDelay, out canvases, size);
+    public static DisplayList PaintCanvasDrawable(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset origin, PhysicalSize size, List<PaintItem>? order, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases)
+        => PaintCapture(engine, document, fragment, origin, order, canvasDrawable: true, out nextFrameDelay, out canvases, size);
 
     private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, PhysicalSize? size = null)
         => PaintCapture(engine, document, fragment, snapOrigin, order, canvasDrawable, out _, out _, size);
@@ -423,7 +428,8 @@ internal sealed partial class Painter
 
         // The stacking context of the element in the painting order of the document: it contains the positioned descendants whose
         // containing block is outside of the element (e.g. a fixed positioned descendant)
-        // (the drawable elements of a canvas are not in the painting order of the document: the contents of the canvas are hidden)
+        // (the drawable elements of a canvas are not in the painting order of the document: the contents of the canvas are hidden,
+        // the order of the contents of the canvas is given)
         var items = new List<PaintItem>();
         if (order is null && !canvasDrawable)
         {
@@ -608,13 +614,28 @@ internal sealed partial class Painter
     {
         var box = fragment.Box;
         if (_skipsCanvasDrawables)
-            return box.IsCanvasDrawable && !ReferenceEquals(fragment, _captureRoot);
+            return box.IsCanvasDrawable && !IsCanvasDrawableRoot(box);
 
         if (box.IsViewTransitionRoot)
             return _isViewTransitionCapture;
 
         return _skipsCapturedElements && box is { Element: { } element, IsAnonymous: false } && box.Kind != ContainerBoxKind.Viewport
             && !(ReferenceEquals(element, _captureElement) && box.PseudoElement == _capturePseudoElement) && _document.IsCapturedInViewTransition(element, box.PseudoElement);
+    }
+
+    /// <summary>
+    /// Whether a box is the one of the drawable element whose snapshot is painted (<see cref="_captureRoot"/>), or a part of it:
+    /// all the fragments of an inline drawable element on several lines are painted.
+    /// </summary>
+    private bool IsCanvasDrawableRoot(LayoutBox box)
+    {
+        for (var part = _captureRoot?.Box as ContainerBox; part is not null; part = part.Continuation)
+        {
+            if (ReferenceEquals(part, box))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -890,7 +911,7 @@ internal sealed partial class Painter
     {
         // The image of an element captured by a view transition: "if the referenced element has a transform applied to it (or its
         // ancestors), then the transform is ignored", "effects applied to the element from its ancestors are ignored"
-        var isCaptureRoot = ReferenceEquals(fragment, _captureRoot);
+        var isCaptureRoot = ReferenceEquals(fragment, _captureRoot) || (_skipsCanvasDrawables && IsCanvasDrawableRoot(fragment.Box));
         var ignoresTransform = isCaptureRoot && !_skipsCanvasDrawables;
         List<ClipEntry>? deferredClips = null;
         if (!isCaptureRoot)

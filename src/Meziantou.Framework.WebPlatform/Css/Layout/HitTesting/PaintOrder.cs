@@ -223,7 +223,7 @@ internal static class PaintOrder
 
                         list.Add(box);
                         childContext = owner;
-                        MarkHiddenContexts(owner, context);
+                        MarkHiddenContexts(owner, root, context);
                     }
 
                     if (box.EstablishesStackingContext)
@@ -247,10 +247,11 @@ internal static class PaintOrder
     /// whose containing block is not hidden is visible, and the effects of its hidden ancestors (e.g. the opacity of an inline box)
     /// still apply to it (WPT css/css-overflow/line-clamp/line-clamp-with-abspos-024.html).
     /// </summary>
-    private static void MarkHiddenContexts(BoxFragment owner, TreeOrder context)
+    private static void MarkHiddenContexts(BoxFragment owner, BoxFragment root, TreeOrder context)
     {
+        // (the ancestors of the root are not painted: the root of the contents of a canvas is hidden in the document)
         var isHidden = false;
-        for (Fragment? current = owner; current is not null; current = current.Parent)
+        for (Fragment? current = owner; current is not null && !ReferenceEquals(current, root); current = current.Parent)
         {
             if (current.IsHiddenForPaint)
             {
@@ -307,7 +308,7 @@ internal static class PaintOrder
     }
 
     /// <summary>
-    /// Returns the last fragment of the box of a fragment that is in the fragment tree of <paramref name="root"/>, or null when
+    /// Returns the last fragment of the box of a fragment that is in the fragment tree of <paramref name="root"/> (a descendant of it), or null when
     /// there is none: the pages of a paginated document are separate trees, whose fragments of a box split by the pages are
     /// each painted with their page.
     /// </summary>
@@ -327,15 +328,16 @@ internal static class PaintOrder
 
         return result;
 
+        // (the root can be a fragment of a larger tree: the contents of a canvas, whose drawable elements are painted on their own)
         static bool IsInTree(Fragment fragment, BoxFragment root)
         {
-            var current = fragment;
-            while (current.Parent is { } parent)
+            for (Fragment? current = fragment; current is not null; current = current.Parent)
             {
-                current = parent;
+                if (ReferenceEquals(current, root))
+                    return true;
             }
 
-            return ReferenceEquals(current, root);
+            return false;
         }
     }
 

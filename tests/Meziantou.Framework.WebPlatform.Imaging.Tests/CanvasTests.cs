@@ -1476,5 +1476,26 @@ public sealed class CanvasTests : IDisposable
         context.DrawElementImage(element, 0, 0);
         Assert.Equal([0, 255, 0, 255], GetPixel(context, 5, 5));
     }
+
+    [Fact]
+    public void DrawElementImage_InlineDrawableElement()
+    {
+        var page = _pages.Load("""
+            <canvas id=c width=50 height=50 content=drawable>
+              <div style="width: 20px"><span drawable id=d style="color: lime">X XX<span style="position: fixed; left: 5px; top: 30px; width: 5px; height: 5px; background: blue"></span></span></div>
+            </canvas>
+            """, scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)page.Document!.GetElementById("c")!;
+        var element = page.Document.GetElementById("d")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(20));
+        page.EventLoop.RunUntilIdle();
+
+        // The fragments of the element on its two lines, and its fixed positioned descendant, which it contains
+        context.DrawElementImage(element, 0, 0, 40, 40, 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 5, 5));
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 15, 15));
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 7, 32));
+    }
 #pragma warning restore WEBPLATEXP0023
 }

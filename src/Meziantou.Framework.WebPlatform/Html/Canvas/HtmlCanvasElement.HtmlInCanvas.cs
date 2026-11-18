@@ -545,10 +545,12 @@ public partial class HtmlCanvasElement
         Dictionary<Element, ElementSnapshot>? snapshots = null;
         if (engine is not null && IsContentDrawable && engine.BoxTree?.GetPrincipalBox(this) is { Kind: ContainerBoxKind.Replaced } canvasBox)
         {
-            foreach (var box in CanvasDrawables.GetDrawableBoxes(canvasBox))
+            var boxes = CanvasDrawables.GetDrawableBoxes(canvasBox);
+            var order = boxes.Count > 0 ? CanvasDrawables.GetPaintOrder(canvasBox) : null;
+            foreach (var box in boxes)
             {
                 var element = box.Element!;
-                if (CanvasDrawables.PaintSnapshot(engine, NodeDocument, box, out var size, out var zoomRatio, out var delay, out var canvases) is not { } content)
+                if (CanvasDrawables.PaintSnapshot(engine, NodeDocument, box, order, out var size, out var zoomRatio, out var delay, out var canvases) is not { } content)
                     continue;
 
                 if (delay is { } frameDelay && (nextFrameDelay is null || frameDelay < nextFrameDelay))

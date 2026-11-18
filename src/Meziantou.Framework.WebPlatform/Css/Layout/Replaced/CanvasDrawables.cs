@@ -88,7 +88,7 @@ internal static class CanvasDrawables
     /// The snapshot is in the CSS pixels of the canvas (the zoom of the element relative to the one of the canvas scales it, as
     /// the element is displayed); <paramref name="zoomRatio"/> is the zoom of the canvas divided by the one of the element.
     /// </remarks>
-    public static DisplayList? PaintSnapshot(LayoutEngine engine, Document document, ContainerBox box, out PhysicalSize size, out double zoomRatio, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases)
+    public static DisplayList? PaintSnapshot(LayoutEngine engine, Document document, ContainerBox box, List<PaintItem>? order, out PhysicalSize size, out double zoomRatio, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases)
     {
         size = default;
         zoomRatio = 1;
@@ -99,11 +99,27 @@ internal static class CanvasDrawables
 
         // (an inline box is painted from the origin of the union of its fragments)
         var bounds = GetBounds(box);
-        var list = Painter.PaintCanvasDrawable(engine, document, fragment, fragment.GetOffsetInRoot() - bounds.Offset, bounds.Size, out nextFrameDelay, out canvases);
+        var list = Painter.PaintCanvasDrawable(engine, document, fragment, fragment.GetOffsetInRoot() - bounds.Offset, bounds.Size, order, out nextFrameDelay, out canvases);
         var zoom = GetCanvasZoom(box);
         zoomRatio = GetZoomRatio(box);
         size = new PhysicalSize(bounds.Width / zoom, bounds.Height / zoom);
         return zoom == 1 ? list : new DisplayList(list.WithTransform(DisplayMatrix.Scale(1 / zoom, 1 / zoom)).Items.ToArray(), size);
+    }
+
+    /// <summary>
+    /// Returns the painting order of the contents of the replaced box of a canvas with the markers of the stacking contexts (see
+    /// <see cref="PaintOrder.Collect"/>), or null when it has no contents: the stacking context of a drawable element contains
+    /// its positioned descendants whose containing block is not their parent (e.g. a fixed positioned descendant of an inline
+    /// drawable element, which is not a descendant of its fragment).
+    /// </summary>
+    public static List<PaintItem>? GetPaintOrder(ContainerBox canvasBox)
+    {
+        if (FormControlContents.GetContentsBox(canvasBox)?.FirstFragment is not BoxFragment contents)
+            return null;
+
+        var order = new List<PaintItem>();
+        PaintOrder.Collect(contents, order, markers: true);
+        return order;
     }
 
     /// <summary>Returns the zoom of the canvas of a drawable box divided by the zoom of the box.</summary>

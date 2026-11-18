@@ -2373,10 +2373,10 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/inline-fixed-containment.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/inline-fragments-drawable.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/inline-size-change.tentative.html": {
     "reftest": "PASS"

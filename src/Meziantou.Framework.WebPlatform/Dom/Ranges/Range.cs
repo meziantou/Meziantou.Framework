@@ -550,8 +550,7 @@ public sealed partial class Range : NodeRange
         var originalEndOffset = EndOffsetInternal;
         if (ReferenceEquals(originalStartNode, originalEndNode) && originalStartNode is CharacterData characterData)
         {
-            var clone = (CharacterData)characterData.Clone(document: null, subtree: false, parent: null, fallbackRegistry: null);
-            clone.SetDataCore(characterData.SubstringData(originalStartOffset, originalEndOffset - originalStartOffset));
+            var clone = ClonePartOfCharacterData(characterData, originalStartOffset, originalEndOffset - originalStartOffset);
             fragment.AppendChildCore(clone);
             characterData.ReplaceData(originalStartOffset, originalEndOffset - originalStartOffset, "");
             return fragment;
@@ -565,8 +564,7 @@ public sealed partial class Range : NodeRange
 
         if (firstPartiallyContainedChild is CharacterData firstData)
         {
-            var clone = (CharacterData)firstData.Clone(document: null, subtree: false, parent: null, fallbackRegistry: null);
-            clone.SetDataCore(firstData.SubstringData(originalStartOffset, firstData.Length - originalStartOffset));
+            var clone = ClonePartOfCharacterData(firstData, originalStartOffset, firstData.Length - originalStartOffset);
             fragment.AppendChildCore(clone);
             firstData.ReplaceData(originalStartOffset, firstData.Length - originalStartOffset, "");
         }
@@ -586,8 +584,7 @@ public sealed partial class Range : NodeRange
 
         if (lastPartiallyContainedChild is CharacterData lastData)
         {
-            var clone = (CharacterData)lastData.Clone(document: null, subtree: false, parent: null, fallbackRegistry: null);
-            clone.SetDataCore(lastData.SubstringData(0, originalEndOffset));
+            var clone = ClonePartOfCharacterData(lastData, 0, originalEndOffset);
             fragment.AppendChildCore(clone);
             lastData.ReplaceData(0, originalEndOffset, "");
         }
@@ -659,6 +656,19 @@ public sealed partial class Range : NodeRange
         return CloneTheContents();
     }
 
+    /// <summary>https://dom.spec.whatwg.org/#clone-part-of-a-characterdata-node</summary>
+    private static CharacterData ClonePartOfCharacterData(CharacterData node, uint offset, uint count)
+    {
+        var clone = (CharacterData)node.Clone(document: null, subtree: false, parent: null, fallbackRegistry: null);
+        clone.SetDataCore(node.SubstringData(offset, count));
+        if (clone is ProcessingInstruction processingInstruction)
+        {
+            processingInstruction.UpdateAttributesFromData();
+        }
+
+        return clone;
+    }
+
     /// <summary>https://dom.spec.whatwg.org/#concept-range-clone</summary>
     private DocumentFragment CloneTheContents()
     {
@@ -672,8 +682,7 @@ public sealed partial class Range : NodeRange
         var originalEndOffset = EndOffsetInternal;
         if (ReferenceEquals(originalStartNode, originalEndNode) && originalStartNode is CharacterData characterData)
         {
-            var clone = (CharacterData)characterData.Clone(document: null, subtree: false, parent: null, fallbackRegistry: null);
-            clone.SetDataCore(characterData.SubstringData(originalStartOffset, originalEndOffset - originalStartOffset));
+            var clone = ClonePartOfCharacterData(characterData, originalStartOffset, originalEndOffset - originalStartOffset);
             fragment.AppendChildCore(clone);
             return fragment;
         }
@@ -681,8 +690,7 @@ public sealed partial class Range : NodeRange
         var (_, firstPartiallyContainedChild, lastPartiallyContainedChild, containedChildren) = ComputeContainment(originalStartNode, originalEndNode);
         if (firstPartiallyContainedChild is CharacterData firstData)
         {
-            var clone = (CharacterData)firstData.Clone(document: null, subtree: false, parent: null, fallbackRegistry: null);
-            clone.SetDataCore(firstData.SubstringData(originalStartOffset, firstData.Length - originalStartOffset));
+            var clone = ClonePartOfCharacterData(firstData, originalStartOffset, firstData.Length - originalStartOffset);
             fragment.AppendChildCore(clone);
         }
         else if (firstPartiallyContainedChild is not null)
@@ -701,8 +709,7 @@ public sealed partial class Range : NodeRange
 
         if (lastPartiallyContainedChild is CharacterData lastData)
         {
-            var clone = (CharacterData)lastData.Clone(document: null, subtree: false, parent: null, fallbackRegistry: null);
-            clone.SetDataCore(lastData.SubstringData(0, originalEndOffset));
+            var clone = ClonePartOfCharacterData(lastData, 0, originalEndOffset);
             fragment.AppendChildCore(clone);
         }
         else if (lastPartiallyContainedChild is not null)

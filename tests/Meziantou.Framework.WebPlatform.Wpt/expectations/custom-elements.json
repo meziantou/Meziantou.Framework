@@ -539,12 +539,7 @@
     "total": 4
   },
   "custom-elements/registries/adoption-before-upgrade.window.js": {
-    "total": 5,
-    "failures": {
-      "Upgrade after adoption with global registry (null registry target)": "FAIL",
-      "Upgrade after adoption with global registry (scoped registry target)": "FAIL",
-      "Upgrade after adoption with global registry (template contents target)": "FAIL"
-    }
+    "total": 5
   },
   "custom-elements/registries/adoption-global-registry.window.js": {
     "total": 16

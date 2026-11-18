@@ -87,9 +87,8 @@ internal sealed partial class LayoutEngine
                     return;
                 }
 
-                TrackUserScroll(state, scrollSource, position - state.Offset);
-
-                _ = PerformScroll(state, position, SmoothUserScrolling ? ScrollBehavior.Smooth : ScrollBehavior.Instant, associatedElement: null);
+                TrackUserScroll(state, scrollSource, delta);
+                PerformUserScroll(state, position);
                 if (state.SmoothScroll is { } userScroll)
                 {
                     userScroll.IsUserScroll = true;
@@ -106,7 +105,7 @@ internal sealed partial class LayoutEngine
                 var start = state.UserGestureStart ?? state.Offset;
                 BeginUserGesture(state, start);
                 var position = state.Clamp(state.Offset + delta);
-                TrackUserScroll(state, scrollSource, position - state.Offset);
+                TrackUserScroll(state, scrollSource, delta);
                 RecordRelativeScroll(state, position - state.Offset);
                 UpdateUserGestureSnapTargets(state, start, position);
                 SetScrollPosition(state, position);
@@ -139,7 +138,7 @@ internal sealed partial class LayoutEngine
                 state.UserGestureHeld = true;
                 state.UserGestureVersion++;
                 var position = state.Clamp(state.Offset + delta);
-                TrackUserScroll(state, scrollSource, position - state.Offset);
+                TrackUserScroll(state, scrollSource, delta);
                 if (kind == UserScrollKind.DirectManipulation)
                 {
                     RecordRelativeScroll(state, position - state.Offset);
@@ -211,7 +210,7 @@ internal sealed partial class LayoutEngine
         var position = GetSnapPosition(state, SnapSelectionStrategy.ForEndAndDirection(start, state.Offset));
         if (position != state.Offset)
         {
-            _ = PerformScroll(state, position, SmoothUserScrolling ? ScrollBehavior.Smooth : ScrollBehavior.Instant, associatedElement: null);
+            PerformUserScroll(state, position);
             return;
         }
 
@@ -226,4 +225,18 @@ internal sealed partial class LayoutEngine
     /// </summary>
     private void UpdateUserGestureSnapTargets(ScrollState state, PhysicalOffset start, PhysicalOffset position)
         => _ = GetSnapPosition(state, SnapSelectionStrategy.ForEndAndDirection(start, position));
+
+    /// <summary>Performs the scroll of a scroll of the user (smooth when the scrolls of the user are animated): it continues the measure of the scroll timing.</summary>
+    private void PerformUserScroll(ScrollState state, PhysicalOffset position)
+    {
+        _performingUserScroll = true;
+        try
+        {
+            _ = PerformScroll(state, position, SmoothUserScrolling ? ScrollBehavior.Smooth : ScrollBehavior.Instant, associatedElement: null);
+        }
+        finally
+        {
+            _performingUserScroll = false;
+        }
+    }
 }

@@ -677,6 +677,77 @@ public sealed class UserScrollingTests : IDisposable
     }
 
     [Fact]
+    public void ScrollTiming_ProgrammaticScroll_EndsTheUserScroll()
+    {
+        var document = Load("<div id=scroller><div id=content></div></div>", smooth: true);
+        var scroller = document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        Assert.True(document.BrowsingContext!.Input.Wheel(50, 50, 0, 40));
+        RunFrames();
+        scroller.ScrollTop = 500;
+        RunFrames(10);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal("wheel", entry.ScrollSource);
+        Assert.Equal(40, entry.DeltaY);
+    }
+
+    private static void PressKey(Element target, string key)
+        => EventDispatcher.Dispatch(new KeyboardEvent("keydown", new KeyboardEventInit { Key = key, Bubbles = true, Cancelable = true, Composed = true }) { IsTrusted = true }, target);
+
+    [Fact]
+    public void ScrollTiming_Keys_RepeatedBeforeTheFirstFrame_KeepTheStartTime()
+    {
+        var document = Load("<div id=scroller tabindex=0><div id=content></div></div>", smooth: true);
+        var scroller = (HtmlElement)document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        scroller.Focus();
+        var start = document.DefaultView!.Performance.Now();
+        PressKey(scroller, "ArrowDown");
+        _clock.Advance(TimeSpan.FromMilliseconds(5));
+        PressKey(scroller, "ArrowDown");
+        RunFrames(30);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal(80, entry.DeltaY);
+        Assert.Equal(start, entry.StartTime);
+    }
+
+    [Fact]
+    public void ScrollTiming_Keys_OppositeDirectionDuringTheAnimation_StartsANewEntry()
+    {
+        var document = Load("<div id=scroller tabindex=0><div id=content></div></div>", smooth: true);
+        var scroller = (HtmlElement)document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        scroller.Focus();
+        PressKey(scroller, "ArrowDown");
+        PressKey(scroller, "ArrowDown");
+        RunFrames(2);
+        PressKey(scroller, "ArrowUp");
+        RunFrames(30);
+
+        // (the animation goes on to the new destination, below the position of the key)
+        Assert.Equal(2, entries.Count);
+        Assert.All(entries, entry => Assert.Equal("keyboard", entry.ScrollSource));
+        Assert.Equal(40, entries.Sum(entry => entry.DeltaY));
+    }
+
+    [Fact]
+    public void ScrollTiming_SnapBackToTheStart_IsReported()
+    {
+        var document = Load("<style>#scroller { scroll-snap-type: y mandatory } #scroller > div { height: 100px; scroll-snap-align: start }</style><div id=scroller><div></div><div></div><div></div></div>", smooth: true);
+        var scroller = document.GetElementById("scroller")!;
+        var entries = ObserveScrolls(document);
+        Assert.True(document.BrowsingContext!.Input.Wheel(50, 50, 0, 10));
+        RunFrames(30);
+        Assert.Equal(0, scroller.ScrollTop);
+
+        var entry = Assert.Single(entries);
+        Assert.Equal((0, 0), (entry.DeltaX, entry.DeltaY));
+        Assert.True(entry.FramesProduced > 0);
+    }
+
+    [Fact]
     public void ScrollTiming_Viewport_TargetIsTheDocument()
     {
         var document = Load("<div style='height: 5000px'></div>");

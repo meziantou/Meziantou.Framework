@@ -273,8 +273,11 @@ public sealed class DelegatedInkTrailPresenter
             path.LineTo(trail.Points[i].X, trail.Points[i].Y);
         }
 
-        // The diameter is an unrestricted double: a trail wider than the clip (e.g. Infinity) covers it
-        var width = Math.Min(trail.Style.Diameter, (Math.Max(clip.Width, clip.Height) * 2) + 1);
+        // The diameter is an unrestricted double: a trail whose radius reaches the farthest corner of the clip from its start
+        // point covers the clip (e.g. Infinity). The sum of the distances in each axis is at least the distance to that corner.
+        var (startX, startY) = trail.Points[0];
+        var reach = Math.Max(Math.Abs(clip.Left - startX), Math.Abs(clip.Right - startX)) + Math.Max(Math.Abs(clip.Top - startY), Math.Abs(clip.Bottom - startY));
+        var width = Math.Min(trail.Style.Diameter, (reach * 2) + 1);
         var paint = DisplayPaint.ForStroke(trail.Color, new StrokeStyle(width, LineCap.Round, LineJoin.Round));
         return (path, paint, clip);
     }

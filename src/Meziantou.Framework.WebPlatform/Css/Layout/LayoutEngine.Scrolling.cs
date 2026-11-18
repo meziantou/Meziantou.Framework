@@ -147,6 +147,7 @@ internal sealed partial class LayoutEngine
                     state.SmoothScroll = null;
                     state.UserGestureStart = null;
                     state.UserGestureHeld = false;
+                    DiscardScrollTiming(state);
                     ResolvePendingPromises(state);
                     (removedPseudoElements ??= []).Add(key);
                 }
@@ -173,6 +174,7 @@ internal sealed partial class LayoutEngine
                 state.SmoothScroll = null;
                 state.UserGestureStart = null;
                 state.UserGestureHeld = false;
+                DiscardScrollTiming(state);
                 ResolvePendingPromises(state);
                 (removed ??= []).Add(element);
                 if (state.Offset != PhysicalOffset.Zero && _boxTree?.GetPrincipalBox(element) is not null)
@@ -217,6 +219,12 @@ internal sealed partial class LayoutEngine
     private Task PerformScrollCore(ScrollState state, PhysicalOffset position, ScrollBehavior behavior, Element? associatedElement)
     {
         position = state.Clamp(position);
+
+        // A scroll that is not a scroll of the user (e.g. scrollTo()) ends the measure of the scroll of the user in progress
+        if (!_performingUserScroll)
+        {
+            ReportScrollTiming(state);
+        }
 
         // The scroll ends the scroll gesture of the user whose pointer is not pressed (the wheel) without snapping it
         if (!state.UserGestureHeld)

@@ -5530,28 +5530,22 @@
     "total": 1
   },
   "html/canvas/element/text/2d.text.measure.fillTextCluster-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.fillTextCluster-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.fillTextCluster-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.fillTextCluster-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.fillTextCluster-options.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that fillTextCluster() correctly applies the options passed as a dictionary.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.fillTextCluster-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() and fillTextCluster() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.fontBoundingBox-reduced-ascent.html": {
     "total": 1
@@ -5566,93 +5560,31 @@
     "total": 1
   },
   "html/canvas/element/text/2d.text.measure.getActualBoundingBox-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getActualBoundingBox() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.getActualBoundingBox-full-text.tentative.html": {
-    "total": 4,
-    "failures": {
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/element/text/2d.text.measure.getActualBoundingBox.tentative.html": {
-    "total": 6,
-    "failures": {
-      "Test TextMetrics::getActualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
-    }
+    "total": 6
   },
   "html/canvas/element/text/2d.text.measure.index-from-offset-edge-cases.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the edge cases for getIndexFromOffset, where the point is at the edge of glyph and at the midpoint.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.index-from-offset-edges.tentative.html": {
-    "total": 10,
-    "failures": {
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
-    }
+    "total": 10
   },
   "html/canvas/element/text/2d.text.measure.index-from-offset.tentative.html": {
     "total": 40,
     "failures": {
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and no-directional-override.": "FAIL"
     }
@@ -5664,87 +5596,54 @@
     "total": 1
   },
   "html/canvas/element/text/2d.text.measure.selection-rects-baselines.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getSelectionRects() works correctly with textBaseline.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.selection-rects-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getSelectionRects() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.selection-rects.tentative.html": {
     "total": 24,
     "failures": {
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and no-directional-override.": "FAIL"
     }
   },
   "html/canvas/element/text/2d.text.measure.strokeTextCluster-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.strokeTextCluster-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.strokeTextCluster-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.strokeTextCluster-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.measure.strokeTextCluster-options.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that strokeTextCluster() correctly applies the options passed as a dictionary.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.strokeTextCluster-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() and strokeTextCluster() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.text-clusters-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getTextClusters() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.text-clusters-position.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that TextMetrics::getTextClusters() returns clusters that are positioned according to the target align and baseline passed as options.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.text-clusters-split.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.width.basic.html": {
     "total": 1
@@ -5762,206 +5661,108 @@
     "total": 1
   },
   "html/canvas/element/text/2d.text.shape.actualBoundingBox-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::actualBoundingBox() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.actualBoundingBox-full-text.tentative.html": {
-    "total": 4,
-    "failures": {
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/element/text/2d.text.shape.actualBoundingBox.tentative.html": {
-    "total": 6,
-    "failures": {
-      "Test ShapedText::actualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
-    }
+    "total": 6
   },
   "html/canvas/element/text/2d.text.shape.advance-to-position-edge-cases.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the edge cases for advanceToPosition, where the point is at the edge of glyph and at the midpoint.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.advance-to-position-edges.tentative.html": {
-    "total": 10,
-    "failures": {
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
-    }
+    "total": 10
   },
   "html/canvas/element/text/2d.text.shape.advance-to-position.tentative.html": {
     "total": 40,
     "failures": {
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and no-directional-override.": "FAIL"
     }
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-direction-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters(start, end) and fillGlyphRuns() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.glyph-clusters-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::glyphClusters() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.glyph-clusters-position.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that ShapedText::glyphClusters() and ShapedText::glyphRuns() return GlyphRun objects positioned according to the context textAlign and textBaseline at shapeText() time, and expose per-run TextMetrics.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.glyph-clusters-split.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.position-to-advance.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test ShapedText::positionToAdvance() and its symmetry with advanceToPosition() and glyphClusters().": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.selection-rects-baselines.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::selectionRects() works correctly with textBaseline.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.selection-rects-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::selectionRects() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.shape.selection-rects.tentative.html": {
     "total": 24,
     "failures": {
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and no-directional-override.": "FAIL"
     }
   },
   "html/canvas/element/text/2d.text.shape.strokeGlyphRun-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.strokeGlyphRun-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.strokeGlyphRun-direction-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.strokeGlyphRun-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.strokeGlyphRun-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.strokeGlyphRun-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters(start, end) and strokeGlyphRuns() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.variationSelectors.html": {
     "total": 1,
@@ -12859,52 +12660,40 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-align.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-baseline.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-drawing-styles-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-font-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-options.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that fillTextCluster() correctly applies the options passed as a dictionary.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-options.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that fillTextCluster() correctly applies the options passed as a dictionary.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() and fillTextCluster() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.fillTextCluster-range.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() and fillTextCluster() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.fontBoundingBox-reduced-ascent.html": {
     "total": 1
@@ -12931,140 +12720,46 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.getActualBoundingBox-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getActualBoundingBox() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.getActualBoundingBox-exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getActualBoundingBox() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.getActualBoundingBox-full-text.tentative.html": {
-    "total": 4,
-    "failures": {
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/offscreen/text/2d.text.measure.getActualBoundingBox-full-text.tentative.worker.js": {
-    "total": 4,
-    "failures": {
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
-      "Test TextMetrics::getActualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/offscreen/text/2d.text.measure.getActualBoundingBox.tentative.html": {
-    "total": 6,
-    "failures": {
-      "Test TextMetrics::getActualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
-    }
+    "total": 6
   },
   "html/canvas/offscreen/text/2d.text.measure.getActualBoundingBox.tentative.worker.js": {
-    "total": 6,
-    "failures": {
-      "Test TextMetrics::getActualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
-      "Test TextMetrics::getActualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
-    }
+    "total": 6
   },
   "html/canvas/offscreen/text/2d.text.measure.index-from-offset-edge-cases.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the edge cases for getIndexFromOffset, where the point is at the edge of glyph and at the midpoint.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.index-from-offset-edge-cases.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test the edge cases for getIndexFromOffset, where the point is at the edge of glyph and at the midpoint.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.index-from-offset-edges.tentative.html": {
-    "total": 10,
-    "failures": {
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
-    }
+    "total": 10
   },
   "html/canvas/offscreen/text/2d.text.measure.index-from-offset-edges.tentative.worker.js": {
-    "total": 10,
-    "failures": {
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
-    }
+    "total": 10
   },
   "html/canvas/offscreen/text/2d.text.measure.index-from-offset.tentative.html": {
     "total": 40,
     "failures": {
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and directional-override.": "FAIL",
       "Check that TextMetrics::getIndexFromOffset() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and no-directional-override.": "FAIL"
     }
@@ -13079,141 +12774,87 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.selection-rects-baselines.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getSelectionRects() works correctly with textBaseline.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.selection-rects-baselines.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getSelectionRects() works correctly with textBaseline.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.selection-rects-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getSelectionRects() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.selection-rects-exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getSelectionRects() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.selection-rects.tentative.html": {
     "total": 24,
     "failures": {
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that TextMetrics::getSelectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and no-directional-override.": "FAIL"
     }
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-align.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-baseline.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-drawing-styles-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-font-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-options.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that strokeTextCluster() correctly applies the options passed as a dictionary.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-options.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that strokeTextCluster() correctly applies the options passed as a dictionary.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() and strokeTextCluster() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.strokeTextCluster-range.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() and strokeTextCluster() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.text-clusters-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getTextClusters() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.text-clusters-exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that TextMetrics::getTextClusters() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.text-clusters-position.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that TextMetrics::getTextClusters() returns clusters that are positioned according to the target align and baseline passed as options.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.text-clusters-position.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that TextMetrics::getTextClusters() returns clusters that are positioned according to the target align and baseline passed as options.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.text-clusters-split.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.text-clusters-split.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that getTextClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.width.basic.html": {
     "total": 1
@@ -13246,334 +12887,180 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::actualBoundingBox() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::actualBoundingBox() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-full-text.tentative.html": {
-    "total": 4,
-    "failures": {
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-full-text.tentative.worker.js": {
-    "total": 4,
-    "failures": {
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
-      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox.tentative.html": {
-    "total": 6,
-    "failures": {
-      "Test ShapedText::actualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
-    }
+    "total": 6
   },
   "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox.tentative.worker.js": {
-    "total": 6,
-    "failures": {
-      "Test ShapedText::actualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
-      "Test ShapedText::actualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
-    }
+    "total": 6
   },
   "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edge-cases.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the edge cases for advanceToPosition, where the point is at the edge of glyph and at the midpoint.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edge-cases.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test the edge cases for advanceToPosition, where the point is at the edge of glyph and at the midpoint.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edges.tentative.html": {
-    "total": 10,
-    "failures": {
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
-    }
+    "total": 10
   },
   "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edges.tentative.worker.js": {
-    "total": 10,
-    "failures": {
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
-      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
-    }
+    "total": 10
   },
   "html/canvas/offscreen/text/2d.text.shape.advance-to-position.tentative.html": {
     "total": 40,
     "failures": {
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and no-directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and directional-override.": "FAIL",
-      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and no-directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and directional-override.": "FAIL",
       "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and no-directional-override.": "FAIL"
     }
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-align.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-baseline.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-direction-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-direction-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-drawing-styles-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-font-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters(start, end) and fillGlyphRuns() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-range.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters(start, end) and fillGlyphRuns() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::glyphClusters() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::glyphClusters() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-position.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that ShapedText::glyphClusters() and ShapedText::glyphRuns() return GlyphRun objects positioned according to the context textAlign and textBaseline at shapeText() time, and expose per-run TextMetrics.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-position.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that ShapedText::glyphClusters() and ShapedText::glyphRuns() return GlyphRun objects positioned according to the context textAlign and textBaseline at shapeText() time, and expose per-run TextMetrics.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-split.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-split.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.position-to-advance.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test ShapedText::positionToAdvance() and its symmetry with advanceToPosition() and glyphClusters().": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.position-to-advance.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test ShapedText::positionToAdvance() and its symmetry with advanceToPosition() and glyphClusters().": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.selection-rects-baselines.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::selectionRects() works correctly with textBaseline.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.selection-rects-baselines.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::selectionRects() works correctly with textBaseline.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.selection-rects-exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::selectionRects() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.selection-rects-exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Check that ShapedText::selectionRects() throws when using invalid indexes.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.selection-rects.tentative.html": {
     "total": 24,
     "failures": {
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and directional-override.": "FAIL",
-      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and directional-override.": "FAIL",
       "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and no-directional-override.": "FAIL"
     }
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-align.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-align.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-baseline.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-baseline.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-direction-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-direction-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-drawing-styles-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-drawing-styles-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-font-change.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-font-change.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-range.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters(start, end) and strokeGlyphRuns() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-range.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test that glyphClusters(start, end) and strokeGlyphRuns() correctly render different ranges of the input text.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/canvas.2d.fontStretch.condensed.html": {
     "reftest": "PASS"

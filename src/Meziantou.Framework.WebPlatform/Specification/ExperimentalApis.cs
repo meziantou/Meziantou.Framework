@@ -68,4 +68,10 @@ internal static class ExperimentalApis
 
     /// <summary>The <c>async</c> IDL attribute of the SVG <c>script</c> elements, which SVG 2 does not define (the web-platform-tests of <c>svg/interact/scripted</c> test it).</summary>
     public const string SvgScriptAsync = "WEBPLATEXP0020";
+
+    /// <summary>The text clusters and the selection APIs of <c>TextMetrics</c> (https://github.com/whatwg/html/pull/11000): <c>getTextClusters()</c>, <c>getSelectionRects()</c>, <c>getActualBoundingBox()</c>, <c>getIndexFromOffset()</c>, <c>fillTextCluster()</c> and <c>strokeTextCluster()</c>.</summary>
+    public const string CanvasTextClusters = "WEBPLATEXP0024";
+
+    /// <summary>The shaped text of the 2D contexts, which Chromium implements behind a flag: <c>shapeText()</c>, <c>ShapedText</c>, <c>GlyphRun</c>, <c>fillGlyphRun()</c> and <c>strokeGlyphRun()</c>.</summary>
+    public const string CanvasShapedText = "WEBPLATEXP0025";
 }

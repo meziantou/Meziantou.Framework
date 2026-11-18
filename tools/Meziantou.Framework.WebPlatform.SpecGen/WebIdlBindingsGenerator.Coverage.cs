@@ -112,7 +112,7 @@ internal sealed partial class WebIdlBindingsGenerator
                         continue;
                     }
 
-                    var idlMember = definition.Members.Find(m => m.Name == attribute.Name && m.ExperimentalApi is not null) ?? definition.Members.Find(m => m.Name == attribute.Name);
+                    var idlMember = FindIdlMember(definition, attribute.Name);
                     Check($"The member {type.FullName}.{member.Name} ({definition.Name}.{attribute.Name})", GetDiagnosticId(idlMember?.ExperimentalApi) ?? definitionId, memberId);
                 }
             }
@@ -164,6 +164,23 @@ internal sealed partial class WebIdlBindingsGenerator
     /// mixin can also implement the members of the other mixins of the interfaces that include it (e.g. the .NET type of
     /// CanvasState implements all the mixins of CanvasRenderingContext2D).
     /// </summary>
+    /// <summary>
+    /// Returns the IDL member of a name of a definition (the one of a proposal first, when an operation has overloads), or for a
+    /// mixin whose .NET type maps several mixins (e.g. CanvasState), the member of an interface that includes the mixin.
+    /// </summary>
+    private IdlMember? FindIdlMember(IdlDefinition definition, string name)
+    {
+        var member = definition.Members.Find(m => m.Name == name && m.ExperimentalApi is not null) ?? definition.Members.Find(m => m.Name == name);
+        if (member is not null || definition.Kind != IdlDefinitionKind.InterfaceMixin)
+            return member;
+
+        var members = _idl.Definitions.Values
+            .Where(d => d.Kind == IdlDefinitionKind.Interface && d.Members.Exists(m => m.DeclaringDefinition == definition.Name))
+            .SelectMany(d => d.Members.Where(m => m.Name == name))
+            .ToList();
+        return members.Find(m => m.ExperimentalApi is not null) ?? members.FirstOrDefault();
+    }
+
     private bool DefinesIdlName(IdlDefinition definition, string name)
     {
         if (DefinesOwnIdlName(definition, name))

@@ -215,3 +215,27 @@ behavior may change while the proposal is under discussion.
 elements, as tested by the web-platform-tests of `svg/interact/scripted`: it reflects the `async` content attribute, and is
 true for a script created by a script until it is set. SVG 2 does not define it (the `async` and `defer` content attributes
 of the SVG scripts are processed as the ones of the HTML scripts). Its API and behavior may change.
+
+<a id="WEBPLATEXP0024"></a>
+
+## WEBPLATEXP0024: canvas text clusters
+
+`TextMetrics.GetTextClusters()`, `TextMetrics.GetSelectionRects()`, `TextMetrics.GetActualBoundingBox()`,
+`TextMetrics.GetIndexFromOffset()`, `TextCluster`, `FillTextCluster()` and `StrokeTextCluster()` of the 2D contexts implement
+the text clusters and the selection APIs of the [proposal](https://github.com/whatwg/html/pull/11000) (see the
+[explainer](https://github.com/Igalia/explainers/blob/main/canvas-formatted-text/text-metrics-additions.md)), as tested by
+the tentative web-platform-tests of `html/canvas/element/text`: the grapheme clusters of a measured text with their
+positions, drawn one by one with the font and the text styles of the measurement, the rectangles of a selection, the
+bounding box of a range of characters and the character at an offset. Chromium implements them behind a flag. Their API and
+behavior may change while the proposal is under discussion.
+
+<a id="WEBPLATEXP0025"></a>
+
+## WEBPLATEXP0025: canvas shaped text
+
+`ShapeText()`, `CanvasShapedText`, `CanvasGlyphRun`, `FillGlyphRun()`, `FillGlyphRuns()`, `StrokeGlyphRun()` and
+`StrokeGlyphRuns()` of the 2D contexts implement the shaped text API that Chromium implements behind a flag, as tested by the
+tentative web-platform-tests of `html/canvas/element/text` (`2d.text.shape.*`): a text shaped once with the font and the
+text styles of the context, whose glyph runs and clusters are drawn later, with the positions and selection APIs of the text
+clusters of `TextMetrics`, which it is meant to replace. No specification or explainer describes it yet. Its API and behavior
+may change.

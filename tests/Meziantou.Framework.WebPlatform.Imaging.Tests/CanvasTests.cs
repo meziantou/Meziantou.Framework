@@ -357,6 +357,224 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void TextClusters_DrawEachClusterOfAText()
+    {
+        #region Canvas_TextClusters
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            RenderingBackend = new ImagingRenderingBackend(),
+            ScriptingEnabled = true,
+        });
+        var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
+        context.EventLoop.RunUntilIdle();
+
+        var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.Font = "32px sans-serif";
+
+        #pragma warning disable WEBPLATEXP0024 // The text clusters are a proposal
+        // The clusters are the grapheme clusters of the text: the emoji and its variation selector are one cluster
+        var metrics = context2D.MeasureText("Hi \u263A\uFE0F!");
+        var clusters = metrics.GetTextClusters();
+        Assert.Equal(5, clusters.Count);
+        Assert.Equal(3u, clusters[3].Start);
+        Assert.Equal(5u, clusters[3].End);
+
+        // Drawing all the clusters at the same point draws the text as FillText(), here each one in its own color
+        string[] colors = ["#0ea5e9", "#ea580c", "#16a34a", "#9333ea", "#dc2626"];
+        for (var i = 0; i < clusters.Count; i++)
+        {
+            context2D.FillStyle = colors[i];
+            context2D.FillTextCluster(clusters[i], 10, 40);
+        }
+
+        // The caret positions and the selection, relative to the alignment point of the text
+        Assert.Equal(1u, metrics.GetIndexFromOffset(clusters[1].X + 1));
+        var selection = metrics.GetSelectionRects(0, 2);
+        Assert.Single(selection);
+        Assert.Equal(clusters[2].X, selection[0].Width, 1e-9);
+        #pragma warning restore WEBPLATEXP0024
+        #endregion
+    }
+
+    [Fact]
+    public void ShapedText_DrawGlyphRuns()
+    {
+        #region Canvas_ShapedText
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            RenderingBackend = new ImagingRenderingBackend(),
+            ScriptingEnabled = true,
+        });
+        var document = context.Navigate("https://example.com/", _ => """<canvas id="text" width="240" height="60"></canvas>""");
+        context.EventLoop.RunUntilIdle();
+
+        var canvas = (HtmlCanvasElement)document.GetElementById("text")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.Font = "32px sans-serif";
+        context2D.TextAlign = CanvasTextAlign.Center;
+
+        #pragma warning disable WEBPLATEXP0025 // The shaped text is a proposal
+        // The text is shaped once, with the font, the text styles and the alignment of the context at this time
+        var shaped = context2D.ShapeText("Shaped");
+        context2D.Font = "10px serif";
+
+        context2D.FillGlyphRuns(shaped.GlyphRuns(), 120, 40);
+
+        // The positions are relative to the alignment point: here the center of the text
+        var clusters = shaped.GlyphClusters(1, 3);
+        Assert.Equal(2, clusters.Count);
+        Assert.Equal(-shaped.Width / 2, shaped.PositionToAdvance(0), 1e-9);
+        Assert.Equal(shaped.PositionToAdvance(1), clusters[0].X, 1e-9);
+        Assert.Equal(1u, shaped.AdvanceToPosition(clusters[0].X));
+        #pragma warning restore WEBPLATEXP0025
+        #endregion
+    }
+
+    [Fact]
+    public void TextClusters_PositionsWithAlignmentAndBaseline()
+    {
+#pragma warning disable WEBPLATEXP0024
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.TextBaseline = CanvasTextBaseline.Top;
+        var metrics = context.MeasureText("ABC");
+        var clusters = metrics.GetTextClusters();
+        Assert.Equal(3, clusters.Count);
+        Assert.Equal(20, clusters[1].X);
+        Assert.Equal(0, clusters[1].Y);
+        Assert.Equal(CanvasTextAlign.Start, clusters[1].Align);
+
+        // The options give the alignment point and the baseline of the clusters
+        var centered = metrics.GetTextClusters(1, 2, new TextClusterOptions { Align = CanvasTextAlign.Center, Baseline = CanvasTextBaseline.Alphabetic });
+        Assert.Single(centered);
+        Assert.Equal(30, centered[0].X);
+        Assert.Equal(16, centered[0].Y);
+
+        // The cluster is drawn with the font of the measurement, at the point plus its position
+        context.Font = "40px serif";
+        context.FillTextCluster(clusters[1], 10, 0);
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 40, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 25, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 55, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 40, 25));
+
+        // The options replace the position, the alignment and the baseline of the cluster
+        context.FillTextCluster(clusters[0], 100, 40, new TextClusterOptions { Align = CanvasTextAlign.Right, Baseline = CanvasTextBaseline.Bottom, X = 0, Y = 0 });
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 90, 30));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 105, 30));
+#pragma warning restore WEBPLATEXP0024
+    }
+
+    [Fact]
+    public void TextClusters_SelectionCaretAndBoundingBox()
+    {
+#pragma warning disable WEBPLATEXP0024
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.TextAlign = CanvasTextAlign.Right;
+        var metrics = context.MeasureText("ABC");
+
+        Assert.Equal(0u, metrics.GetIndexFromOffset(-100));
+        Assert.Equal(1u, metrics.GetIndexFromOffset(-45));
+        Assert.Equal(1u, metrics.GetIndexFromOffset(-40));
+        Assert.Equal(3u, metrics.GetIndexFromOffset(10));
+
+        var rects = metrics.GetSelectionRects(1, 3);
+        Assert.Single(rects);
+        Assert.Equal(-40, rects[0].X);
+        Assert.Equal(40, rects[0].Width);
+        Assert.Equal(-16, rects[0].Y);
+        Assert.Equal(20, rects[0].Height);
+
+        // A collapsed range is the caret position of its end
+        var caret = metrics.GetSelectionRects(2, 1);
+        Assert.Single(caret);
+        Assert.Equal(-40, caret[0].X);
+        Assert.Equal(0, caret[0].Width);
+
+        var box = metrics.GetActualBoundingBox(0, 1);
+        Assert.Equal(-60, box.X);
+        Assert.Equal(20, box.Width);
+        Assert.Equal(-16, box.Y);
+        Assert.Equal(20, box.Height);
+
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => metrics.GetTextClusters(3, 3)).Name);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => metrics.GetActualBoundingBox(0, 4)).Name);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => metrics.GetSelectionRects(4, 0)).Name);
+        Assert.Single(metrics.GetSelectionRects(3, 3));
+#pragma warning restore WEBPLATEXP0024
+    }
+
+    [Fact]
+    public void TextClusters_RightToLeftAndLigatures()
+    {
+#pragma warning disable WEBPLATEXP0024
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.Direction = CanvasDirection.Rtl;
+        context.TextAlign = CanvasTextAlign.Left;
+        var metrics = context.MeasureText("\u202EABC");
+
+        // The first character of a right-to-left text is on the right (the override has no width)
+        var clusters = metrics.GetTextClusters();
+        Assert.Equal(4, clusters.Count);
+        Assert.Equal(1u, clusters[1].Start);
+        Assert.Equal(40, clusters[1].X);
+        Assert.Equal(0, clusters[3].X);
+        Assert.Equal(1u, metrics.GetIndexFromOffset(59));
+        Assert.Equal(2u, metrics.GetIndexFromOffset(45));
+        Assert.Equal(4u, metrics.GetIndexFromOffset(-1));
+
+        // A zero-width joiner extends the cluster of the character before it, a null character is not drawn
+        var joined = context.MeasureText("A\u200DB\0C").GetTextClusters();
+        Assert.Equal(3, joined.Count);
+        Assert.Equal(0u, joined[0].Start);
+        Assert.Equal(2u, joined[0].End);
+        Assert.Equal(4u, joined[1].End);
+#pragma warning restore WEBPLATEXP0024
+    }
+
+    [Fact]
+    public void ShapedText_GlyphRunsAndMetrics()
+    {
+#pragma warning disable WEBPLATEXP0025
+        var (_, _, context) = Create(200, 50);
+        context.Font = "20px Ahem";
+        context.TextBaseline = CanvasTextBaseline.Top;
+        var shaped = context.ShapeText("AB\u202ECD");
+        Assert.Equal(80, shaped.Width);
+
+        // The glyph runs are the bidi runs, from left to right
+        var runs = shaped.GlyphRuns();
+        Assert.Equal(2, runs.Count);
+        Assert.Equal(0u, runs[0].Start);
+        Assert.Equal(2u, runs[0].End);
+        Assert.Equal(2u, runs[1].Start);
+        Assert.Equal(5u, runs[1].End);
+        Assert.Equal(40, runs[1].X);
+        Assert.Equal(40, runs[1].Width);
+        Assert.Equal(40, runs[1].GetTextMetrics().Width);
+
+        Assert.Equal(80, shaped.PositionToAdvance(3));
+        Assert.Equal(60, shaped.PositionToAdvance(4));
+        Assert.Equal(4u, shaped.AdvanceToPosition(61));
+        Assert.Equal(2, shaped.SelectionRects(1, 4).Count);
+        Assert.Equal(20, shaped.ActualBoundingBox(1, 2).X);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => shaped.PositionToAdvance(6)).Name);
+
+        // The runs are drawn with the font of the shaping, at the alignment point of the shaped text
+        context.Font = "40px serif";
+        context.FillGlyphRun(runs[1], 10, 0);
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 55, 10));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 45, 10));
+        context.StrokeGlyphRuns([runs[0]], 100, 0);
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 150, 10));
+        Assert.NotEqual([0, 0, 0, 0], GetPixel(context, 100, 10));
+#pragma warning restore WEBPLATEXP0025
+    }
+
+    [Fact]
     public void Text_MeasureAndFill()
     {
         var (_, _, context) = Create();

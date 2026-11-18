@@ -3694,6 +3694,17 @@ namespace Meziantou.Framework.WebPlatform.Dom
         TitlingCaps = 6,
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0025", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class CanvasGlyphRun
+    {
+        public uint End { get => throw null; }
+        public uint Start { get => throw null; }
+        public double Width { get => throw null; }
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.TextMetrics GetTextMetrics() => throw null;
+    }
+
     public sealed class CanvasGradient
     {
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0019", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
@@ -3784,8 +3795,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void EndLayer() { }
         public void Fill(Meziantou.Framework.WebPlatform.Dom.CanvasFillRule fillRule = Meziantou.Framework.WebPlatform.Dom.CanvasFillRule.NonZero) { }
         public void Fill(Meziantou.Framework.WebPlatform.Dom.Path2D path, Meziantou.Framework.WebPlatform.Dom.CanvasFillRule fillRule = Meziantou.Framework.WebPlatform.Dom.CanvasFillRule.NonZero) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0025", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void FillGlyphRun(Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun glyphRun, double x, double y) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0025", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void FillGlyphRuns(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun> glyphRuns, double x, double y) { }
         public void FillRect(double x, double y, double w, double h) { }
         public void FillText(string text, double x, double y, double? maxWidth = null) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void FillTextCluster(Meziantou.Framework.WebPlatform.Dom.TextCluster textCluster, double x, double y, Meziantou.Framework.WebPlatform.Dom.TextClusterOptions? options = null) { }
         public Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings GetContextAttributes() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ImageData GetImageData(int sx, int sy, int sw, int sh, Meziantou.Framework.WebPlatform.Dom.ImageDataSettings? settings = null) => throw null;
         public System.Collections.Generic.IReadOnlyList<double> GetLineDash() => throw null;
@@ -3812,10 +3829,18 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void SetLineDash(System.Collections.Generic.IReadOnlyList<double> segments) { }
         public void SetTransform(Meziantou.Framework.WebPlatform.Dom.DomMatrix2DInit? transform = null) { }
         public void SetTransform(double a, double b, double c, double d, double e, double f) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0025", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.CanvasShapedText ShapeText(string text) => throw null;
         public void Stroke() { }
         public void Stroke(Meziantou.Framework.WebPlatform.Dom.Path2D path) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0025", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void StrokeGlyphRun(Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun glyphRun, double x, double y) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0025", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void StrokeGlyphRuns(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun> glyphRuns, double x, double y) { }
         public void StrokeRect(double x, double y, double w, double h) { }
         public void StrokeText(string text, double x, double y, double? maxWidth = null) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void StrokeTextCluster(Meziantou.Framework.WebPlatform.Dom.TextCluster textCluster, double x, double y, Meziantou.Framework.WebPlatform.Dom.TextClusterOptions? options = null) { }
         public void Transform(double a, double b, double c, double d, double e, double f) { }
         public void Translate(double x, double y) { }
     }
@@ -3827,6 +3852,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.CanvasColorType ColorType { get => throw null; init { } }
         public bool Desynchronized { get => throw null; init { } }
         public bool WillReadFrequently { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0025", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class CanvasShapedText
+    {
+        public double Width { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly ActualBoundingBox(uint start, uint end) => throw null;
+        public uint AdvanceToPosition(double advance) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun> GlyphClusters() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun> GlyphClusters(uint start, uint end) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.CanvasGlyphRun> GlyphRuns() => throw null;
+        public double PositionToAdvance(uint position) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly> SelectionRects(uint start, uint end) => throw null;
     }
 
     public enum CanvasTextAlign
@@ -13030,6 +13068,25 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Text SplitText(uint offset) => throw null;
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class TextCluster
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CanvasTextAlign Align { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.CanvasTextBaseline Baseline { get => throw null; }
+        public uint End { get => throw null; }
+        public uint Start { get => throw null; }
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+    }
+
+    public sealed class TextClusterOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CanvasTextAlign? Align { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.CanvasTextBaseline? Baseline { get => throw null; init { } }
+        public double? X { get => throw null; init { } }
+        public double? Y { get => throw null; init { } }
+    }
+
     public sealed class TextDecodeOptions
     {
         public bool Stream { get => throw null; init { } }
@@ -13083,6 +13140,16 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double HangingBaseline { get => throw null; }
         public double IdeographicBaseline { get => throw null; }
         public double Width { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly GetActualBoundingBox(uint start, uint end) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public uint GetIndexFromOffset(double offset) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly> GetSelectionRects(uint start, uint end) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.TextCluster> GetTextClusters(Meziantou.Framework.WebPlatform.Dom.TextClusterOptions? options = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0024", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.TextCluster> GetTextClusters(uint start, uint end, Meziantou.Framework.WebPlatform.Dom.TextClusterOptions? options = null) => throw null;
     }
 
     public sealed class TextTrack : Meziantou.Framework.WebPlatform.Dom.EventTarget

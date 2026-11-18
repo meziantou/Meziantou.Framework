@@ -52,7 +52,7 @@ internal sealed class CanvasFont(string serialization, ComputedStyle style)
 /// </summary>
 /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#textmetrics"/>
 [IdlInterface("TextMetrics", "https://html.spec.whatwg.org/multipage/canvas.html#textmetrics")]
-public sealed class TextMetrics
+public sealed partial class TextMetrics
 {
     internal TextMetrics()
     {
@@ -310,53 +310,7 @@ public abstract partial class CanvasRenderingContext2DBase
     public TextMetrics MeasureText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var layout = PrepareText(text);
-        var alignment = GetAlignmentOffset(layout);
-        var baseline = GetBaselineOffset(layout);
-
-        // The bounding box of the glyphs (the union of the outlines of the visible glyphs), relative to the alignment point
-        double left = 0, right = 0, top = 0, bottom = 0;
-        var hasInk = false;
-        foreach (var glyph in layout.Glyphs)
-        {
-            if (!glyph.Font.Font.TryGetGlyphBounds(glyph.GlyphId, out var bounds) || (bounds.XMin == bounds.XMax && bounds.YMin == bounds.YMax))
-                continue;
-
-            var scale = glyph.EmSize / glyph.Font.Font.UnitsPerEm;
-            var glyphLeft = glyph.X + (bounds.XMin * scale);
-            var glyphRight = glyph.X + (bounds.XMax * scale);
-            var glyphTop = (bounds.YMax * scale) - glyph.OffsetY;
-            var glyphBottom = (bounds.YMin * scale) - glyph.OffsetY;
-            if (!hasInk)
-            {
-                (left, right, top, bottom) = (glyphLeft, glyphRight, glyphTop, glyphBottom);
-                hasInk = true;
-            }
-            else
-            {
-                left = Math.Min(left, glyphLeft);
-                right = Math.Max(right, glyphRight);
-                top = Math.Max(top, glyphTop);
-                bottom = Math.Min(bottom, glyphBottom);
-            }
-        }
-
-        var metrics = layout.Metrics;
-        return new TextMetrics
-        {
-            Width = layout.Width,
-            ActualBoundingBoxLeft = hasInk ? alignment - left : 0,
-            ActualBoundingBoxRight = hasInk ? right - alignment : 0,
-            ActualBoundingBoxAscent = hasInk ? top - baseline : -baseline,
-            ActualBoundingBoxDescent = hasInk ? baseline - bottom : baseline,
-            FontBoundingBoxAscent = metrics.Ascent - baseline,
-            FontBoundingBoxDescent = metrics.Descent + baseline,
-            EmHeightAscent = layout.EmAscent - baseline,
-            EmHeightDescent = layout.EmDescent + baseline,
-            HangingBaseline = layout.Hanging - baseline,
-            AlphabeticBaseline = -baseline,
-            IdeographicBaseline = layout.Ideographic - baseline,
-        };
+        return TextMetrics.Create(PrepareText(text));
     }
 
     /// <summary>The drawing of fillText() and strokeText(): the glyphs of the text are drawn through the drawing model, in user space.</summary>
@@ -382,16 +336,24 @@ public abstract partial class CanvasRenderingContext2DBase
 
         // 2-3. The anchor point (the alignment point on the baseline); a text wider than the maximum width is compressed horizontally
         var scaleX = maxWidth is { } limit && layout.Width > limit ? limit / layout.Width : 1;
-        var originX = x - (GetAlignmentOffset(layout) * scaleX);
-        var originY = y + GetBaselineOffset(layout);
+        DrawGlyphs(layout, layout.Glyphs, x - (GetAlignmentOffset(layout) * scaleX), y + GetBaselineOffset(layout), scaleX, paint, stroke);
+    }
+
+    /// <summary>
+    /// Draws glyphs of a prepared text through the drawing model, in user space: the glyphs are positioned from
+    /// (<paramref name="originX"/>, <paramref name="originY"/>), the left of the text on its alphabetic baseline, and are
+    /// scaled horizontally by <paramref name="scaleX"/> (the compression of the maximum width).
+    /// </summary>
+    private void DrawGlyphs(CanvasTextLayout layout, List<CanvasTextGlyph> glyphs, double originX, double originY, double scaleX, DisplayPaint paint, bool stroke)
+    {
         var runs = new List<(GlyphRun Run, FontPalette? Palette)>();
         var start = 0;
-        while (start < layout.Glyphs.Count)
+        while (start < glyphs.Count)
         {
-            var font = layout.Glyphs[start].Font;
-            var emSize = layout.Glyphs[start].EmSize;
+            var font = glyphs[start].Font;
+            var emSize = glyphs[start].EmSize;
             var end = start + 1;
-            while (end < layout.Glyphs.Count && ReferenceEquals(layout.Glyphs[end].Font, font) && layout.Glyphs[end].EmSize == emSize)
+            while (end < glyphs.Count && ReferenceEquals(glyphs[end].Font, font) && glyphs[end].EmSize == emSize)
             {
                 end++;
             }
@@ -400,14 +362,17 @@ public abstract partial class CanvasRenderingContext2DBase
             var positions = new PhysicalOffset[end - start];
             for (var i = start; i < end; i++)
             {
-                var glyph = layout.Glyphs[i];
+                var glyph = glyphs[i];
                 ids[i - start] = glyph.GlyphId;
                 positions[i - start] = new PhysicalOffset(originX + (glyph.X * scaleX), originY + glyph.OffsetY);
             }
 
-            runs.Add((new GlyphRun(DisplayFont.From(font, emSize), ids, positions, text) { ScaleX = scaleX }, FontPalette.GetDefault(font)));
+            runs.Add((new GlyphRun(DisplayFont.From(font, emSize), ids, positions, layout.Text) { ScaleX = scaleX }, FontPalette.GetDefault(font)));
             start = end;
         }
+
+        if (runs.Count == 0)
+            return;
 
         DrawShape(builder =>
         {
@@ -417,59 +382,52 @@ public abstract partial class CanvasRenderingContext2DBase
             {
                 if (palette is null || !palette.HasColorGlyph(run))
                 {
-                    builder.Add(new DrawGlyphsItem(run, paint));
+                    AddGlyphs(builder, run, paint, stroke);
                     continue;
                 }
 
                 // The color glyphs are filled with the colors of the default palette of their font, and are not stroked
                 foreach (var (layerRun, layerPaint) in palette.SplitColorGlyphs(run, paint, colorize: !stroke))
                 {
-                    builder.Add(new DrawGlyphsItem(layerRun, layerPaint));
+                    AddGlyphs(builder, layerRun, layerPaint, stroke);
                 }
             }
 
             builder.Restore();
         });
+
+        // As in the browsers, the outline of each glyph is stroked on its own: the strokes of overlapping glyphs are
+        // composited (instead of stroking their union), so that drawing the clusters of a text one by one draws the same pixels
+        static void AddGlyphs(DisplayListBuilder builder, GlyphRun run, DisplayPaint paint, bool stroke)
+        {
+            if (!stroke || run.Glyphs.Length <= 1)
+            {
+                builder.Add(new DrawGlyphsItem(run, paint));
+                return;
+            }
+
+            for (var i = 0; i < run.Glyphs.Length; i++)
+            {
+                builder.Add(new DrawGlyphsItem(run with { Glyphs = [run.Glyphs[i]], Positions = [run.Positions[i]] }, paint));
+            }
+        }
     }
 
     /// <summary>The distance of the alignment point from the left of the text (https://html.spec.whatwg.org/multipage/canvas.html#text-preparation-algorithm, step 9).</summary>
-    private static double GetAlignmentOffset(TextLayout layout)
-    {
-        var align = layout.Align switch
-        {
-            CanvasTextAlign.Start => layout.IsRightToLeft ? CanvasTextAlign.Right : CanvasTextAlign.Left,
-            CanvasTextAlign.End => layout.IsRightToLeft ? CanvasTextAlign.Left : CanvasTextAlign.Right,
-            var value => value,
-        };
-
-        return align switch
-        {
-            CanvasTextAlign.Right => layout.Width,
-            CanvasTextAlign.Center => layout.Width / 2,
-            _ => 0,
-        };
-    }
+    private static double GetAlignmentOffset(CanvasTextLayout layout) => layout.GetAlignmentOffset(layout.Align, layout.Width);
 
     /// <summary>
     /// The distance of the baseline of <c>textBaseline</c> above the alphabetic baseline (https://html.spec.whatwg.org/multipage/canvas.html#text-preparation-algorithm,
     /// step 10): the text is drawn this distance below the given y coordinate.
     /// </summary>
-    private static double GetBaselineOffset(TextLayout layout) => layout.Baseline switch
-    {
-        CanvasTextBaseline.Top => layout.EmAscent,
-        CanvasTextBaseline.Hanging => layout.Hanging,
-        CanvasTextBaseline.Middle => (layout.EmAscent - layout.EmDescent) / 2,
-        CanvasTextBaseline.Ideographic => layout.Ideographic,
-        CanvasTextBaseline.Bottom => -layout.EmDescent,
-        _ => 0,
-    };
+    private static double GetBaselineOffset(CanvasTextLayout layout) => layout.GetBaselineOffset(layout.Baseline);
 
     /// <summary>
     /// The text preparation algorithm (https://html.spec.whatwg.org/multipage/canvas.html#text-preparation-algorithm): the white
     /// space is replaced with spaces, the text is shaped with the font and the text styles in the visual order of the bidi
     /// algorithm. The glyphs are positioned from the left of the text, on the alphabetic baseline.
     /// </summary>
-    private TextLayout PrepareText(string text)
+    private CanvasTextLayout PrepareText(string text)
     {
         // 1. The ASCII white space characters are spaces (and, as in the browsers, the null characters have no width)
         var prepared = string.Create(text.Length, text, static (span, source) =>
@@ -481,9 +439,22 @@ public abstract partial class CanvasRenderingContext2DBase
             }
         });
 
+        // The index in the text of each character of the prepared text, and of its end
+        int[]? indexes = null;
         if (prepared.Contains('\0', StringComparison.Ordinal))
         {
             prepared = prepared.Replace("\0", "", StringComparison.Ordinal);
+            indexes = new int[prepared.Length + 1];
+            var index = 0;
+            for (var i = 0; i < text.Length; i++)
+            {
+                if (text[i] != '\0')
+                {
+                    indexes[index++] = i;
+                }
+            }
+
+            indexes[prepared.Length] = text.Length;
         }
 
         // 2-4. The font, the direction and the spacing
@@ -538,16 +509,19 @@ public abstract partial class CanvasRenderingContext2DBase
         var hanging = baselines.Hanging is { } hang ? hang * metrics.Scale : metrics.Ascent * 0.8;
         var ideographic = baselines.Ideographic is { } ideo ? ideo * metrics.Scale : -metrics.Descent;
 
-        // 5. The bidi algorithm: the runs of the text are shaped in their direction and placed in visual order
-        var glyphs = new List<PositionedGlyph>(prepared.Length);
+        // 5. The bidi algorithm: the runs of the text are shaped in their direction and placed in visual order. The clusters
+        // (the text clusters of the proposals) are the grapheme clusters, merged when a glyph spans several of them (a ligature).
+        var glyphs = new List<CanvasTextGlyph>(prepared.Length);
+        var clusters = new List<CanvasTextCluster>();
         var x = 0d;
         if (prepared.Length > 0)
         {
             var levels = BidiResolver.GetLevels(prepared, isRightToLeft ? BidiParagraphDirection.RightToLeft : BidiParagraphDirection.LeftToRight);
             var runs = new List<BidiRun>();
             BidiResolver.GetVisualRuns(levels, runs);
-            foreach (var run in runs)
+            for (var runIndex = 0; runIndex < runs.Count; runIndex++)
             {
+                var run = runs[runIndex];
                 var runText = prepared.AsSpan(run.Start, run.End - run.Start);
                 if (run.IsRightToLeft)
                 {
@@ -555,6 +529,20 @@ public abstract partial class CanvasRenderingContext2DBase
                 }
 
                 var shaped = TextShaper.Shape(runText, fonts, options with { IsRightToLeft = run.IsRightToLeft });
+                var units = GetClusterUnits(runText, shaped.Glyphs);
+                var firstCluster = clusters.Count;
+                for (var i = 0; i < units.Count - 1; i++)
+                {
+                    clusters.Add(new CanvasTextCluster(MapIndex(run.Start + units[i]), MapIndex(run.Start + units[i + 1]), double.NaN, 0, run.IsRightToLeft, runIndex));
+                }
+
+                // The unit of each character of the run
+                var unitOfCharacter = new int[runText.Length];
+                for (var i = 0; i < units.Count - 1; i++)
+                {
+                    unitOfCharacter.AsSpan(units[i], units[i + 1] - units[i]).Fill(firstCluster + i);
+                }
+
                 var pens = shaped.Glyphs;
                 var pen = 0d;
                 foreach (var fontRun in shaped.Runs)
@@ -564,11 +552,33 @@ public abstract partial class CanvasRenderingContext2DBase
                         var glyph = pens[i];
                         var glyphX = run.IsRightToLeft ? x + shaped.Width - pen - glyph.Advance : x + pen;
                         pen += glyph.Advance;
+                        var clusterIndex = unitOfCharacter[Math.Clamp(glyph.Cluster, 0, runText.Length - 1)];
+                        var cluster = clusters[clusterIndex];
+                        clusters[clusterIndex] = cluster with
+                        {
+                            Left = double.IsNaN(cluster.Left) ? glyphX : Math.Min(cluster.Left, glyphX),
+                            Width = cluster.Width + glyph.Advance,
+                        };
+
                         if (!glyph.IsInvisible)
                         {
-                            glyphs.Add(new PositionedGlyph(fontRun.Font, fontRun.EmSize, glyph.GlyphId, glyphX + glyph.OffsetX, glyph.OffsetY));
+                            glyphs.Add(new CanvasTextGlyph(fontRun.Font, fontRun.EmSize, glyph.GlyphId, glyphX + glyph.OffsetX, glyph.OffsetY, clusterIndex));
                         }
                     }
+                }
+
+                // A cluster without glyphs is at the end of the previous cluster (in the direction of the run)
+                var edge = run.IsRightToLeft ? x + shaped.Width : x;
+                for (var i = firstCluster; i < clusters.Count; i++)
+                {
+                    var cluster = clusters[i];
+                    if (double.IsNaN(cluster.Left))
+                    {
+                        clusters[i] = cluster with { Left = edge };
+                        continue;
+                    }
+
+                    edge = run.IsRightToLeft ? cluster.Left : cluster.Left + cluster.Width;
                 }
 
                 x += shaped.Width;
@@ -577,7 +587,9 @@ public abstract partial class CanvasRenderingContext2DBase
 
         // The glyphs are drawn from left to right (the right-to-left runs were added in logical order)
         glyphs.Sort(static (a, b) => a.X.CompareTo(b.X));
-        return new TextLayout(glyphs, x, isRightToLeft, _state.TextAlign, _state.TextBaseline, metrics, emAscent, emDescent, hanging, ideographic);
+        return new CanvasTextLayout(text, glyphs, clusters, x, isRightToLeft, _state.TextAlign, _state.TextBaseline, metrics.Ascent, metrics.Descent, emAscent, emDescent, hanging, ideographic);
+
+        int MapIndex(int index) => indexes is null ? index : indexes[index];
 
         static ReadOnlySpan<char> Mirror(ReadOnlySpan<char> text)
         {
@@ -645,11 +657,46 @@ public abstract partial class CanvasRenderingContext2DBase
     internal static bool GetElementDirection(Element element)
         => element.IsConnected ? element.NodeDocument.GetStyleEngine().GetStyle(element).GetComputedValue("direction") == "rtl" : !Css.Selectors.HtmlElementStates.IsLeftToRight(element);
 
-    /// <summary>A glyph of a prepared text: its font, its id, and its position from the left of the text and below the alphabetic baseline.</summary>
-    private readonly record struct PositionedGlyph(MatchedFont Font, double EmSize, ushort GlyphId, double X, double OffsetY);
+    /// <summary>
+    /// Returns the boundaries of the clusters of a shaped run (the start of each cluster, and the end of the run): the grapheme
+    /// cluster boundaries that are not inside a cluster of the shaping (a ligature, a character decomposed into several glyphs).
+    /// </summary>
+    private static List<int> GetClusterUnits(ReadOnlySpan<char> text, ReadOnlySpan<ShapedGlyph> glyphs)
+    {
+        var units = new List<int>();
+        if (text.IsEmpty)
+        {
+            units.Add(0);
+            return units;
+        }
 
-    /// <summary>A prepared text: the glyphs, the width, the direction and the metrics (above the alphabetic baseline, in CSS px).</summary>
-    private sealed record TextLayout(List<PositionedGlyph> Glyphs, double Width, bool IsRightToLeft, CanvasTextAlign Align, CanvasTextBaseline Baseline, UsedFontMetrics Metrics, double EmAscent, double EmDescent, double Hanging, double Ideographic);
+        Span<bool> boundaries = text.Length <= 256 ? stackalloc bool[text.Length] : new bool[text.Length];
+        GraphemeClusters.GetBoundaries(text, boundaries);
+
+        // A character that no glyph starts the cluster of is in the cluster of the previous character: the cluster of the
+        // shaping covers the characters from its index up to the index of the next cluster
+        Span<bool> shapingStarts = text.Length <= 256 ? stackalloc bool[text.Length] : new bool[text.Length];
+        shapingStarts.Clear();
+        shapingStarts[0] = true;
+        foreach (var glyph in glyphs)
+        {
+            if (glyph.Cluster >= 0 && glyph.Cluster < text.Length)
+            {
+                shapingStarts[glyph.Cluster] = true;
+            }
+        }
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (i == 0 || (boundaries[i] && shapingStarts[i]))
+            {
+                units.Add(i);
+            }
+        }
+
+        units.Add(text.Length);
+        return units;
+    }
 
     /// <summary>Returns the font of the drawing state, resolving the default font the first time.</summary>
     private CanvasFont GetFont()

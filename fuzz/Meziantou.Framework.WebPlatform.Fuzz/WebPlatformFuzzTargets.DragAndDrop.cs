@@ -33,7 +33,7 @@ public static partial class WebPlatformFuzzTargets
 
     private static string[] DragTokens => ["\u0000  ", "\u0000\u00A0\u00A0", "\u0001", "\u0002", "\u0003", "\u0004\u0000", "\u0004\u0003", "\u0005\u00A0 \u0001"];
 
-    private static string[] EntriesPathTokens => ["/", "//", ".", "..", "../", "./", "a", "sub", "\0", "\n"];
+    private static string[] EntriesPathTokens => ["/", "//", ".", "..", "../", "./", "a", "sub", "\0", "\n", "\\"];
 
     /// <summary>
     /// Resolves a path of the Entries API (the text after the first line feed) against the full path of a directory (the
@@ -257,10 +257,10 @@ public static partial class WebPlatformFuzzTargets
 
     private static IEnumerable<FuzzSeed> GetEntriesPathSeeds()
     {
-        string[] seeds = ["/folder\nsub/../sub/b.txt", "/folder\nmissing.txt", "/folder\n/", "/folder\n", "/\n..", "/a/b\n../../c/./d", "/a\n//b", "/a\nb/", "/\n/a/../../b"];
+        string[] seeds = ["/folder\nsub/../sub/b.txt", "/folder\nmissing.txt", "/folder\n/", "/folder\n", "/\n..", "/a/b\n../../c/./d", "/a\n//b", "/a\nb/", "/\n/a/../../b", "/folder\nsub\\b"];
         foreach (var seed in seeds)
         {
-            yield return new FuzzSeed(seed.Replace('\n', '_').Replace('/', '-'), Encoding.UTF8.GetBytes(seed));
+            yield return new FuzzSeed(seed.Replace('\n', '_').Replace('/', '-').Replace('\\', '~'), Encoding.UTF8.GetBytes(seed));
         }
     }
 

@@ -357,6 +357,7 @@ public sealed class DragAndDropTests : IDisposable
                         entry.getFile('missing.txt', {}, undefined, err => log.push('missing:' + err.name));
                         entry.getFile('sub', {}, undefined, err => log.push('directory:' + err.name));
                         entry.getFile('a.txt', { create: true }, undefined, err => log.push('create:' + err.name));
+                        entry.getDirectory('sub\\b', {}, undefined, err => log.push('backslash:' + err.name));
                         entry.getDirectory('/', {}, root => root.createReader().readEntries(entries => log.push('root:' + entries.map(e => e.name).join())));
                     }
                 }
@@ -391,6 +392,7 @@ public sealed class DragAndDropTests : IDisposable
             [
                 "FileSystemDirectoryEntry:folder:/folder:true",
                 "FileSystemFileEntry:c.png:/c.png:false",
+                "backslash:TypeMismatchError",
                 "create:SecurityError",
                 "directory:TypeMismatchError",
                 "end:/folder/sub:0",

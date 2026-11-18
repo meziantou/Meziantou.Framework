@@ -6,7 +6,7 @@ internal static class EntriesPath
     /// <summary>
     /// Whether <paramref name="path"/> is a valid path (https://wicg.github.io/entries-api/#valid-path): the empty string,
     /// or names, <c>.</c> and <c>..</c> separated by <c>/</c>, optionally preceded by <c>/</c> (an absolute path). A name is
-    /// not empty and does not contain NUL. As in the browsers, <c>/</c> alone is the root directory.
+    /// not empty and does not contain NUL or <c>\</c>. As in the browsers, <c>/</c> alone is the root directory.
     /// </summary>
     public static bool IsValid(string path)
     {
@@ -16,7 +16,7 @@ internal static class EntriesPath
         var start = path[0] == '/' ? 1 : 0;
         foreach (var segment in path[start..].Split('/'))
         {
-            if (segment.Length == 0 || segment.Contains('\0', StringComparison.Ordinal))
+            if (segment.Length == 0 || segment.AsSpan().IndexOfAny('\0', '\\') >= 0)
                 return false;
         }
 

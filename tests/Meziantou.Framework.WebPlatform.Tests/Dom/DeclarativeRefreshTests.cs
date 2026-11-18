@@ -161,6 +161,30 @@ public sealed class DeclarativeRefreshTests : IDisposable
         Assert.Equal("https://example.com/other.html", context.Document.Url);
     }
 
+    [Fact]
+    public void DocumentOpen_CancelsARefreshWithATimeoutOfZero()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, DocumentLoader = new Loader(_requests), DeclarativeRefreshEnabled = true });
+        var document = context.Navigate(PageUrl, _ => new DocumentResource("<p>") { Headers = [new("Refresh", "0; url=next.html")] });
+        document.Open();
+        document.Close();
+        Advance(2);
+
+        Assert.Empty(_requests);
+        Assert.Same(document, context.Document);
+    }
+
+    [Fact]
+    public void DocumentOpen_DoesNotCancelARefreshWithATimeout()
+    {
+        var context = Load("<p>", [new("Refresh", "1; url=next.html")]);
+        context.Document.Open();
+        context.Document.Close();
+        Advance(2);
+
+        Assert.Equal(["https://example.com/dir/next.html"], _requests);
+    }
+
     private sealed class Loader(List<string> requests) : DocumentLoader
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)

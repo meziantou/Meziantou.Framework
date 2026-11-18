@@ -12,6 +12,26 @@ public partial class Document
     /// <summary>https://html.spec.whatwg.org/multipage/semantics.html#will-declaratively-refresh</summary>
     internal bool WillDeclarativelyRefresh { get; private set; }
 
+    // Whether a refresh with a timeout of 0 is scheduled and has not navigated yet, and whether document.open() canceled it
+    private bool _immediateRefreshPending;
+    private bool _refreshCanceled;
+
+    /// <summary>
+    /// Cancels the refresh with a timeout of 0 that is scheduled and has not navigated yet, and returns whether there was one:
+    /// <c>document.open()</c> aborts a document that is queued for navigation by such a refresh, as in the browsers
+    /// (https://github.com/whatwg/html/issues/4003; WPT html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js).
+    /// The refreshes with a longer timeout are not canceled.
+    /// </summary>
+    internal bool CancelImmediateRefresh()
+    {
+        if (!_immediateRefreshPending)
+            return false;
+
+        _immediateRefreshPending = false;
+        _refreshCanceled = true;
+        return true;
+    }
+
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/semantics.html#shared-declarative-refresh-steps: once the refresh comes due,
     /// the browsing context navigates to the URL (when <see cref="BrowsingContextOptions.DeclarativeRefreshEnabled"/>).
@@ -94,9 +114,11 @@ public partial class Document
         // The refresh comes due "time" seconds after the later of the completely loaded time and the insertion of the meta element
         var delay = TimeSpan.FromSeconds(Math.Min(time, int.MaxValue));
         var eventLoop = browsingContext.EventLoop;
+        _immediateRefreshPending = time == 0;
         void StartTimer() => eventLoop.QueueTimer(delay, () =>
         {
-            if (BrowsingContext is { } navigable && ReferenceEquals(navigable.Document, this) && (!isMeta || (ActiveSandboxingFlags & SandboxingFlags.AutomaticFeatures) == SandboxingFlags.None))
+            _immediateRefreshPending = false;
+            if (!_refreshCanceled && BrowsingContext is { } navigable && ReferenceEquals(navigable.Document, this) && (!isMeta || (ActiveSandboxingFlags & SandboxingFlags.AutomaticFeatures) == SandboxingFlags.None))
             {
                 // All the browsers reload the document when the URL of the refresh is the URL of the document (the navigation
                 // type of its navigate event is "reload"); the specification navigates with "replace"

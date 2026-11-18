@@ -794,10 +794,23 @@ public partial class HtmlImageElement
         var fetchRequest = SubresourceFetching.CreateRequest(document, url, RequestDestination.Image, cors: HasAttribute("crossorigin"), ReferrerPolicy, this, imageSet: UsesSrcsetOrPicture(), useCredentials: SubresourceFetching.UsesCredentials(this));
         fetchRequest.ScriptLocation = _updateScriptLocation;
         var timing = ResourceTiming.Start(document, fetchRequest, LocalName);
+
+        // The fetch is in the fetch group of the document: aborting the document (window.stop(), document.open() during a
+        // navigation) cancels it (https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document), and the
+        // image is not loaded (as in Firefox, no event is fired)
+        var fetchGroupRecord = document.FetchGroup.Add(() =>
+        {
+            if (!request.Aborted)
+            {
+                AbortRequest(request);
+                SetDelayingTheLoadEvent(false);
+            }
+        });
         Fetching.Fetch(fetchRequest, ProcessFetchResponse, task => QueueImageTask(document, task));
 
         void ProcessFetchResponse(FetchResponse response)
         {
+            fetchGroupRecord.Dispose();
             if (fetchRequest.IsSentToLoader)
             {
                 timing?.Report(response);

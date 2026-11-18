@@ -2241,10 +2241,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/display-contents.tentative.html": {
-    "total": 2,
-    "failures": {
-      "Dynamic display changes between flex and contents update child styles and draw correctly": "FAIL"
-    }
+    "total": 2
   },
   "html/canvas/element/manual/draw-element-image/draw-element-different-canvas.tentative.html": {
     "total": 1

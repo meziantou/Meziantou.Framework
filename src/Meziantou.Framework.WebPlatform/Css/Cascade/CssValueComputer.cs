@@ -241,6 +241,10 @@ internal static partial class CssValueComputer
                 // https://drafts.csswg.org/css-position-4/#top-styling: "If its specified position property is not absolute or
                 // fixed, it computes to absolute"
                 return "absolute";
+            case "position" when value != "static" && IsChildOfDrawableCanvas(style):
+                // https://github.com/WICG/html-in-canvas: the children of a canvas whose content is drawable "are laid out with
+                // static positioning", also the ones whose parent is display: contents (the children of its box)
+                return "static";
             case "border-top-width" or "border-right-width" or "border-bottom-width" or "border-left-width" or "outline-width":
                 // https://drafts.csswg.org/css-backgrounds/#border-width: the width is 0 when the style is none or hidden, but
                 // this is the used value (see ComputedStyle.GetUsedBorderWidth), not the computed value; the width of outline
@@ -1427,6 +1431,24 @@ internal static partial class CssValueComputer
 
         style ??= document.GetStyleEngine().GetStyle(element);
         return document.IsRenderedInTopLayer(element, style.GetComputedValue("overlay"));
+    }
+
+    /// <summary>
+    /// Whether the parent box of an element is a canvas whose content is drawable (https://github.com/WICG/html-in-canvas): its
+    /// parent, or its nearest ancestor that is not <c>display: contents</c>.
+    /// </summary>
+    private static bool IsChildOfDrawableCanvas(ComputedStyle style)
+    {
+        if (style.PseudoElement is not null)
+            return false;
+
+        var parent = style.Parent;
+        while (parent is not null && parent.PseudoElement is null && parent.Element is not HtmlCanvasElement && parent.GetComputedValue("display") == "contents")
+        {
+            parent = parent.Parent;
+        }
+
+        return parent is { PseudoElement: null, Element: HtmlCanvasElement { IsContentDrawable: true } };
     }
 
     /// <summary>

@@ -295,6 +295,8 @@ using var screenshot = canvas.TakeScreenshot();
 
 ![A blue label with white text, drawn rotated in the middle of a canvas](images/CanvasDrawElementImage.png)
 
+- The children of the box of a canvas whose `content` is `drawable` (also the children of a child that is `display: contents`)
+  are blockified and statically positioned.
 - A canvas whose `content` is `drawable` is a stacking context, as each of its drawable elements, which is also the
   containing block of all its descendants and establishes an independent formatting context (the margins of its children
   do not collapse through it). The snapshot of an inline drawable element on several lines draws all its fragments, from

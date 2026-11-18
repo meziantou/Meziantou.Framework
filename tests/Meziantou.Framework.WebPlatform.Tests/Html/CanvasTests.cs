@@ -103,6 +103,29 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void ContentDrawable_ChildrenOfDisplayContentsChildAreStaticallyPositioned()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <canvas id=c content=drawable><div id=contents style="display: contents"><span id=child drawable style="position: absolute"></span></div></canvas>
+            <script>
+            const positions = [getComputedStyle(child).position];
+            contents.style.display = 'flex';
+            positions.push(getComputedStyle(child).position);
+            document.title = positions.join();
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Empty(_errors);
+        Assert.Equal("static,absolute", document.Title);
+    }
+
+    [Fact]
     public void ContentDrawable_FiresPaintEvents()
     {
         var clock = new FakeTimeProvider();

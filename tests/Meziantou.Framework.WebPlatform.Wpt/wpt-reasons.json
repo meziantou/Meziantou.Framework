@@ -112,7 +112,6 @@
     "xml/*": [{ "kind": "NOT IMPLEMENTED", "description": "XSLT and the rendering of the XML parser errors in documents loaded in iframes" }]
   },
   "failing": {
-    "html/canvas/element/manual/draw-element-image/display-contents.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: the children of a child of the canvas that is `display: contents` are not statically positioned (only the children of the canvas are)" }],
     "html/canvas/element/manual/draw-element-image/draw-element-image-get-image-data.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: a display-p3 element drawn into a display-p3 canvas goes through sRGB (a difference of 2 per component)" }],
     "html/canvas/element/manual/draw-element-image/hit-test/low-dpi-hit-test.tentative.html": [{ "kind": "BUG", "description": "HTML-in-canvas: the hit testing of the drawable elements with a device pixel ratio below 1 hits outside of the drawn element" }],
     "html/canvas/element/manual/draw-element-image/intersection-observer-visibility.tentative.html": [{ "kind": "NOT IMPLEMENTED", "description": "Intersection Observer v2 (`trackVisibility`, `isVisible`): the elements of a canvas whose content is drawable are reported as visible" }],

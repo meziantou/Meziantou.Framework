@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of compat, and why the tests
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
 - **OUT OF SCOPE**: 1
 
@@ -55,7 +55,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webkit-box-horizontal-reverse-variants.html`](https://wpt.fyi/results/compat/webkit-box-horizontal-reverse-variants.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-horizontal-rtl-variants.html`](https://wpt.fyi/results/compat/webkit-box-horizontal-rtl-variants.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-ignores-flex-wrap.tentative.html`](https://wpt.fyi/results/compat/webkit-box-ignores-flex-wrap.tentative.html) | Pass | 1 / 1 |  |  |
-| [`webkit-box-rtl-flex.html`](https://wpt.fyi/results/compat/webkit-box-rtl-flex.html) | Fail | 0 / 1 | BUG | the antialiased glyphs of the test and of the reference differ on their edges: they are not painted the same way (another color, a group, a shadow or a compression; on macOS the coverage of the glyphs depends on the luminance of their color; not analyzed individually) |
+| [`webkit-box-rtl-flex.html`](https://wpt.fyi/results/compat/webkit-box-rtl-flex.html) | Fail | 0 / 1 | TEST BUG | the reference is not equivalent: `-webkit-box-flex: 1` distributes the free space from the content widths of the boxes (their flex basis is `auto`, as in Blink), where the `flex: 1` of the reference has a flex basis of 0: the green box is 249.56px wide (250px in the reference) and its `B`, aligned to the right (`direction: rtl`), is drawn 0.44px to the left (x=246.89 instead of 247.33), so 72 antialiased pixels of the glyph differ by up to 47. The backgrounds of the boxes are snapped to the same pixels, and the browsers that place the glyphs on whole pixels hide the offset |
 | [`webkit-box-z-index-002.html`](https://wpt.fyi/results/compat/webkit-box-z-index-002.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-z-index.html`](https://wpt.fyi/results/compat/webkit-box-z-index.html) | Pass | 1 / 1 |  |  |
 | [`webkit-input-placeholder.html`](https://wpt.fyi/results/compat/webkit-input-placeholder.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the legacy `::-webkit-input-placeholder` alias of `::placeholder` (https://github.com/whatwg/compat/issues/65): the selector parses, like every `-webkit-` pseudo-element, but matches nothing |

@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 42 | 45 | 0 | 93% |
+| [Stable](#stable-tests) | 43 | 45 | 0 | 96% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 475 | 487 | 0 | 98% |
 | [Crash tests](#crash-tests) | 6 | 6 | 0 | 100% |
-| **All** | **523** | **538** | **0** | **97%** |
+| **All** | **524** | **538** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
-- **TEST BUG**: 6
+- **BUG**: 1
+- **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 6
 
 ## Stable tests
@@ -57,7 +57,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/gradient-position-valid.html`](https://wpt.fyi/results/css/css-images/parsing/gradient-position-valid.html) | Pass | 22 / 22 |  |  |
 | [`parsing/image-function-computed.html`](https://wpt.fyi/results/css/css-images/parsing/image-function-computed.html) | Pass | 3 / 3 |  |  |
 | [`parsing/image-function-invalid.html`](https://wpt.fyi/results/css/css-images/parsing/image-function-invalid.html) | Pass | 5 / 5 |  |  |
-| [`parsing/image-function-valid.html`](https://wpt.fyi/results/css/css-images/parsing/image-function-valid.html) | Fail | 13 / 14 | BUG | 1 of 14 subtests: the grammar of `image()` only accepts a `<string>` source (`CssPropertyRegistry`, after a former version of css/css-images/parsing/image-function-invalid.html that rejected `image(url(foo.png))`), while `<image-src>` is `[ <url> \| <string> ]` (https://drafts.csswg.org/css-images-5/#image-notation): `image(url(foo.png))` is rejected |
+| [`parsing/image-function-valid.html`](https://wpt.fyi/results/css/css-images/parsing/image-function-valid.html) | Pass | 14 / 14 |  |  |
 | [`parsing/image-orientation-computed.html`](https://wpt.fyi/results/css/css-images/parsing/image-orientation-computed.html) | Pass | 2 / 2 |  |  |
 | [`parsing/image-orientation-invalid.html`](https://wpt.fyi/results/css/css-images/parsing/image-orientation-invalid.html) | Pass | 12 / 12 |  |  |
 | [`parsing/image-orientation-valid.html`](https://wpt.fyi/results/css/css-images/parsing/image-orientation-valid.html) | Pass | 2 / 2 |  |  |
@@ -65,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/image-rendering-invalid.html`](https://wpt.fyi/results/css/css-images/parsing/image-rendering-invalid.html) | Pass | 2 / 2 |  |  |
 | [`parsing/image-rendering-valid.html`](https://wpt.fyi/results/css/css-images/parsing/image-rendering-valid.html) | Pass | 5 / 5 |  |  |
 | [`parsing/image-resolution-invalid.html`](https://wpt.fyi/results/css/css-images/parsing/image-resolution-invalid.html) | Pass | 5 / 5 |  |  |
-| [`parsing/image-resolution-valid.html`](https://wpt.fyi/results/css/css-images/parsing/image-resolution-valid.html) | Fail | 7 / 12 | BUG | 5 of 12 subtests: `image-resolution` keeps the specified order of its components (it is in the properties of `CssCanonicalOrder.SpecifiedOrderProperties`, as the implementations did), where the test now expects the canonical order of the grammar `[ from-image \|\| <resolution> ] && snap?` (https://drafts.csswg.org/cssom/#serializing-css-values): `2dpcm from-image` is serialized as specified instead of `from-image 2dpcm`. The test is not consistent: it still expects `snap -8dpcm from-image` to serialize as specified |
+| [`parsing/image-resolution-valid.html`](https://wpt.fyi/results/css/css-images/parsing/image-resolution-valid.html) | Fail | 11 / 12 | TEST BUG | 1 of 12 subtests: the test is not consistent: its other subtests expect the canonical order of the grammar `[ from-image \|\| <resolution> ] && snap?` (https://drafts.csswg.org/cssom/#serializing-css-values: `2dpcm from-image` is `from-image 2dpcm`, `snap from-image 0dppx` is `from-image 0dppx snap`), which the specified value follows, but it expects `snap -8dpcm from-image` to keep its specified order instead of `from-image -8dpcm snap` |
 | [`parsing/object-fit-computed.html`](https://wpt.fyi/results/css/css-images/parsing/object-fit-computed.html) | Pass | 6 / 6 |  |  |
 | [`parsing/object-fit-invalid.html`](https://wpt.fyi/results/css/css-images/parsing/object-fit-invalid.html) | Pass | 5 / 5 |  |  |
 | [`parsing/object-fit-valid.html`](https://wpt.fyi/results/css/css-images/parsing/object-fit-valid.html) | Pass | 9 / 9 |  |  |

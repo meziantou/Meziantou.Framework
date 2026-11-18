@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of css/cssom, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 258 | 264 | 0 | 98% |
+| [Stable](#stable-tests) | 259 | 264 | 0 | 98% |
 | [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | [Reftests](#reftests) | 9 | 12 | 0 | 75% |
 | [Crash tests](#crash-tests) | 19 | 19 | 0 | 100% |
-| **All** | **292** | **304** | **0** | **96%** |
+| **All** | **293** | **304** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 7
 
@@ -276,7 +275,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`style-set-cssText.html`](https://wpt.fyi/results/css/cssom/style-set-cssText.html) | Pass | 3 / 3 |  |  |
 | [`style-set-custom-property-priority.html`](https://wpt.fyi/results/css/cssom/style-set-custom-property-priority.html) | Pass | 3 / 3 |  |  |
 | [`style-set-custom-property.html`](https://wpt.fyi/results/css/cssom/style-set-custom-property.html) | Pass | 1 / 1 |  |  |
-| [`style-set-property.html`](https://wpt.fyi/results/css/cssom/style-set-property.html) | Fail | 20 / 21 | BUG | 1 of 21 subtests: `setProperty()` with a value made of white space (`" "`, the serialization of an empty custom property) stores an empty value, serialized as the empty string instead of `" "` (https://drafts.csswg.org/css-variables-1/#serializing-custom-props, w3c/csswg-drafts#9847): only the declarations parsed from a declaration block (`--empty:;`) get the space |
+| [`style-set-property.html`](https://wpt.fyi/results/css/cssom/style-set-property.html) | Pass | 21 / 21 |  |  |
 | [`style-sheet-interfaces-001.html`](https://wpt.fyi/results/css/cssom/style-sheet-interfaces-001.html) | Pass | 7 / 7 |  |  |
 | [`style-sheet-interfaces-002.html`](https://wpt.fyi/results/css/cssom/style-sheet-interfaces-002.html) | Pass | 2 / 2 |  |  |
 | [`style-width-calc-vh-vw.html`](https://wpt.fyi/results/css/cssom/style-width-calc-vh-vw.html) | Pass | 1 / 1 |  |  |

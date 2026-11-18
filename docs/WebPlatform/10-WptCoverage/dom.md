@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 672 | 690 | 6 | 98% |
+| [Stable](#stable-tests) | 673 | 690 | 6 | 98% |
 | [Tentative](#tentative-tests) | 32 | 55 | 0 | 58% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
 | [Crash tests](#crash-tests) | 45 | 46 | 0 | 98% |
-| **All** | **753** | **795** | **6** | **95%** |
+| **All** | **754** | **795** | **6** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 25
 - **OUT OF SCOPE**: 1
@@ -642,7 +642,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/node-realm-preserved-across-frameless-adoption.html`](https://wpt.fyi/results/dom/nodes/node-realm-preserved-across-frameless-adoption.html) | Pass | 4 / 4 |  |  |
 | [`nodes/post-connection-steps-shadow-tree.html`](https://wpt.fyi/results/dom/nodes/post-connection-steps-shadow-tree.html) | Pass | 1 / 1 |  |  |
 | [`nodes/prepend-on-Document.html`](https://wpt.fyi/results/dom/nodes/prepend-on-Document.html) | Pass | 5 / 5 |  |  |
-| [`nodes/processing-instruction-attributes-clone-and-range.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes-clone-and-range.html) | Fail | 88 / 136 | BUG | 48 of 136 subtests (12 per source): `cloneContents()` and `extractContents()` of a range that starts or ends in a processing instruction set the data of the clone to a substring with `SetDataCore` (`Range.cs`), which does not update the attributes of the processing instruction from its data (https://dom.spec.whatwg.org/#update-attributes-from-data): the clone keeps the attributes of the original (`["a", "x"]`); the subtests of a live range collapsed by `setAttribute()`, `removeAttribute()` or `toggleAttribute()` fail the same way when they clone the range |
+| [`nodes/processing-instruction-attributes-clone-and-range.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes-clone-and-range.html) | Pass | 136 / 136 |  |  |
 | [`nodes/processing-instruction-attributes.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes.html) | Fail | 169 / 199 | NOT IMPLEMENTED | the attributes of the processing instructions created by the XML parser (`<?target attr="value"?>` in XML documents) |
 | [`nodes/query-target-in-load-event.html`](https://wpt.fyi/results/dom/nodes/query-target-in-load-event.html) | Pass | 1 / 1 |  |  |
 | [`nodes/querySelector-empty-id.html`](https://wpt.fyi/results/dom/nodes/querySelector-empty-id.html) | Pass | 1 / 1 |  |  |
@@ -813,7 +813,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/crashtests/document-replaceChild-input-documentElement.html`](https://wpt.fyi/results/dom/nodes/crashtests/document-replaceChild-input-documentElement.html) | Pass | 1 / 1 |  |  |
 | [`nodes/crashtests/documentElement-remove-descendant-query.html`](https://wpt.fyi/results/dom/nodes/crashtests/documentElement-remove-descendant-query.html) | Pass | 1 / 1 |  |  |
 | [`nodes/crashtests/multiple-append-mutated-in-unload-document.https.html`](https://wpt.fyi/results/dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html) | Pass | 1 / 1 |  |  |
-| [`nodes/crashtests/multiple-append-mutated-in-unload.https.html`](https://wpt.fyi/results/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html) | Timeout | 0 / 1 | BUG | the page navigates in a loop (the runner stops it after 2,000 documents) |
+| [`nodes/crashtests/multiple-append-mutated-in-unload.https.html`](https://wpt.fyi/results/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html) | Timeout | 0 / 1 | BUG | the page navigates in a loop (the runner stops it after 2,000 documents): each `append(node1, node2)` of `runTest()` removes `#node2` (to put it in the fragment of the converted nodes) and inserts it again, so the iframe it contains loses its navigable (its unload handler moves `node1`) and gets a new one that loads the `srcdoc` again, whose load handler calls `runTest()` again, and the load event of the top-level document, which the crash test waits for, is delayed by each new iframe load. The test completes in Edge (the only browser of wpt.fyi with results) |
 | [`nodes/crashtests/replaceChild-host-including-ancestor-crash.html`](https://wpt.fyi/results/dom/nodes/crashtests/replaceChild-host-including-ancestor-crash.html) | Pass | 1 / 1 |  |  |
 | [`nodes/insertBefore-iframe-crash.html`](https://wpt.fyi/results/dom/nodes/insertBefore-iframe-crash.html) | Pass | 1 / 1 |  |  |
 | [`nodes/moveBefore/chrome-338071841-crash.html`](https://wpt.fyi/results/dom/nodes/moveBefore/chrome-338071841-crash.html) | Pass | 1 / 1 |  |  |

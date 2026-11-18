@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 361 | 409 | 1 | 88% |
+| [Stable](#stable-tests) | 362 | 409 | 1 | 89% |
 | [Tentative](#tentative-tests) | 45 | 78 | 1 | 58% |
-| [Reftests](#reftests) | 9 | 11 | 0 | 82% |
+| [Reftests](#reftests) | 10 | 11 | 0 | 91% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **419** | **502** | **2** | **84%** |
+| **All** | **421** | **502** | **2** | **84%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 29
 - **NOT IMPLEMENTED**: 52
 - **REQUIRES**: 3
@@ -310,7 +309,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fetch-later/send-on-discard/send-multiple.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/send-multiple.https.window.js) | Pass | 1 / 1 |  |  |
 | [`h1-parsing/lone-cr.window.js`](https://wpt.fyi/results/fetch/h1-parsing/lone-cr.window.js) | Fail | 9 / 10 | TEST BUG | the case `HTTP/1.1 200 OK\nHeader: Value\r\n\nBody` has no lone CR (each CR is followed by a LF, and a single LF ends a line, https://www.rfc-editor.org/rfc/rfc9112.html#section-2.2): the response is valid |
 | [`h1-parsing/resources-with-0x00-in-header.window.js`](https://wpt.fyi/results/fetch/h1-parsing/resources-with-0x00-in-header.window.js) | Pass | 4 / 4 |  |  |
-| [`h1-parsing/status-code.window.js`](https://wpt.fyi/results/fetch/h1-parsing/status-code.window.js) | Fail | 13 / 16 | BUG | a response whose status is below 100 (`0`, `1`, `99`) is a network error for the library, while the status of a response is any number from 0 to 999 (https://fetch.spec.whatwg.org/#concept-status) |
+| [`h1-parsing/status-code.window.js`](https://wpt.fyi/results/fetch/h1-parsing/status-code.window.js) | Pass | 16 / 16 |  |  |
 | [`http-cache/304-update.any.js`](https://wpt.fyi/results/fetch/http-cache/304-update.any.js) | Pass | 15 / 15 |  |  |
 | [`http-cache/cache-mode.any.js`](https://wpt.fyi/results/fetch/http-cache/cache-mode.any.js) | Pass | 15 / 15 |  |  |
 | [`http-cache/cc-request.any.js`](https://wpt.fyi/results/fetch/http-cache/cc-request.any.js) | Pass | 36 / 36 |  |  |
@@ -537,7 +536,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corb/img-svg-labeled-as-dash.sub.html`](https://wpt.fyi/results/fetch/corb/img-svg-labeled-as-dash.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/img-svg-labeled-as-svg-xml.sub.html`](https://wpt.fyi/results/fetch/corb/img-svg-labeled-as-svg-xml.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/img-svg-xml-decl.sub.html`](https://wpt.fyi/results/fetch/corb/img-svg-xml-decl.sub.html) | Pass | 1 / 1 |  |  |
-| [`http-cache/basic-auth-cache-test.html`](https://wpt.fyi/results/fetch/http-cache/basic-auth-cache-test.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element: the `load` event of one of the images (requested with the credentials of the URL, then without credentials, which must reuse the authentication entry) is not fired; not analyzed further (`securedimage.py` is emulated by the test server) |
+| [`http-cache/basic-auth-cache-test.html`](https://wpt.fyi/results/fetch/http-cache/basic-auth-cache-test.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/img-png-mislabeled-as-html.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/img-png-mislabeled-as-html.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/img-png-unlabeled.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/img-png-unlabeled.sub.html) | Pass | 1 / 1 |  |  |
 

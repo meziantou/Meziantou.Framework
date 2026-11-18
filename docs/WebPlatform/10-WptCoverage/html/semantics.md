@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,119 | 2,214 | 31 | 97% |
+| [Stable](#stable-tests) | 2,121 | 2,214 | 31 | 97% |
 | [Tentative](#tentative-tests) | 65 | 226 | 32 | 34% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,655** | **3,017** | **132** | **92%** |
+| **All** | **2,657** | **3,017** | **132** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 1
 - **TEST BUG**: 57
 - **NOT IMPLEMENTED**: 294
 - **REQUIRES**: 2
@@ -1128,7 +1128,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/the-input-element/radio-focus-navigation-group-first-focus.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-focus-navigation-group-first-focus.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-input-element/radio-focus-navigation-group-focusable-focus.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-focus-navigation-group-focusable-focus.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-input-element/radio-focused-and-scrolled-into-view.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-focused-and-scrolled-into-view.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-input-element/radio-form-owner-reset.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-form-owner-reset.html) | Fail | 5 / 7 | BUG | 2 of 7 subtests: the other radio buttons of the new radio button group are not unchecked when the form owner of a checked radio button changes because the element with the ID of its `form` attribute changes (`form.id = ...`) or because it is removed with a subtree and falls back to its ancestor form: the library unchecks them on insertion and on changes of the `name` and `form` attributes only ("The element's form owner changes", https://html.spec.whatwg.org/multipage/input.html#radio-button-state-(type=radio)) |
+| [`forms/the-input-element/radio-form-owner-reset.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-form-owner-reset.html) | Pass | 7 / 7 |  |  |
 | [`forms/the-input-element/radio-form-owner.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-form-owner.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-input-element/radio-groupname-case.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-groupname-case.html) | Pass | 7 / 7 |  |  |
 | [`forms/the-input-element/radio-input-cancel.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/radio-input-cancel.html) | Pass | 2 / 2 |  |  |
@@ -1290,7 +1290,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the removal of the `script`, SVG `script`, `frame`, `iframe`, `embed` and `object` elements of the clone of an option (https://html.spec.whatwg.org/multipage/form-elements.html#clone-an-option-into-a-selectedcontent): every child of the option is cloned into the `selectedcontent` |
-| [`forms/the-select-element/customizable-select/selectedcontent-queued-update.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html) | Fail | 9 / 10 | BUG | 1 of 10 subtests: the post-connection steps of an inserted `selectedcontent` element do not perform the pending update of its select (queued by the removal of an option): they leave it to the queued microtask, so the existing `selectedcontent` is not updated synchronously; the post-connection steps update the select's descendant `selectedcontent` elements when its pending selectedcontent update is true (https://html.spec.whatwg.org/multipage/form-elements.html#the-selectedcontent-element) |
+| [`forms/the-select-element/customizable-select/selectedcontent-queued-update.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html) | Pass | 10 / 10 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-restore.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html) | Pass | 3 / 3 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent.html) | Fail | 10 / 11 | TEST BUG | the updated subtest expects `option.selected = true` on the selected option to leave the `selectedcontent` unchanged; the setter of the HTML Standard asks for a reset, which updates the descendant `selectedcontent` elements of the select whether or not the selectedness changed (https://html.spec.whatwg.org/multipage/form-elements.html#ask-for-a-reset) |

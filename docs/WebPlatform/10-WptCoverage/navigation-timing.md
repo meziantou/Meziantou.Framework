@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of navigation-timing, and wh
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 4
 
 ## Stable tests
@@ -58,7 +58,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`prefetch-transfer-size-executor.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-executor.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the navigation timing entry ignores the cache state of the response: the `transferSize` of a document served by the HTTP cache (the prefetched document) is the size of its body plus 300, not 0 |
 | [`prefetch-transfer-size-iframe.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-iframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the navigation timing entry ignores the cache state of the response: the `transferSize` of a document served by the HTTP cache (the prefetched document) is the size of its body plus 300, not 0 |
 | [`redirect-tao.html`](https://wpt.fyi/results/navigation-timing/redirect-tao.html) | Pass | 8 / 8 |  |  |
-| [`response-start-after-coop-bcg-switch.https.html`](https://wpt.fyi/results/navigation-timing/response-start-after-coop-bcg-switch.https.html) | Fail | 0 / 1 | BUG | the test expects a `redirectCount` of 0 for a popup navigated through two redirects of the origin of its opener that have `Timing-Allow-Origin: *`, to a document of another origin whose opener policy switches the browsing context group; the library exposes the redirects as the navigation TAO check passes (the other assertions pass) |
+| [`response-start-after-coop-bcg-switch.https.html`](https://wpt.fyi/results/navigation-timing/response-start-after-coop-bcg-switch.https.html) | Fail | 0 / 1 | TEST BUG | the test expects a `redirectCount` of 0 for a popup navigated through two redirects of the origin of its opener that have `Timing-Allow-Origin: *`, to a document of another origin whose opener policy switches the browsing context group; the redirect count of a navigation is exposed when the navigation TAO check passes (https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: "If navigationParams's response's redirect taint is same-origin, or [...] navigation TAO check given navigationParams's response and navigationParams's origin returns success, then set redirectCount to navigationParams's request's redirect count"), which it does since every redirect allows `*` (https://fetch.spec.whatwg.org/#navigation-tao-check), and the browsing context group switch does not change it: the library reports 2. Upstream, the counterpart `response-start-after-coop-bcg-switch-no-tao.tentative.https.html` says that this test exposes the redirect data because the chain opts into TAO. The other assertions pass |
 | [`secure-connection-start-non-zero.https.html`](https://wpt.fyi/results/navigation-timing/secure-connection-start-non-zero.https.html) | Pass | 1 / 1 |  |  |
 | [`secure-connection-start-reuse.https.html`](https://wpt.fyi/results/navigation-timing/secure-connection-start-reuse.https.html) | Pass | 1 / 1 |  |  |
 | [`supported-navigation-type.window.js`](https://wpt.fyi/results/navigation-timing/supported-navigation-type.window.js) | Pass | 2 / 2 |  |  |

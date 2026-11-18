@@ -9,24 +9,18 @@ description: "The results of the web-platform-tests of entries-api, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 4 | 6 | 0 | 67% |
+| [Stable](#stable-tests) | 6 | 6 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **4** | **6** | **0** | **67%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 2
+| **All** | **6** | **6** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`filesystemdirectoryentry-getDirectory.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getDirectory.html) | Fail | 9 / 10 | BUG | 1 of 10 subtests: `getDirectory("\\")` rejects with a `NotFoundError` instead of a `TypeMismatchError`: `EntriesPath.IsValid` only rejects the empty names and NUL, while a name must not contain `\` either (https://wicg.github.io/entries-api/#names-paths) |
-| [`filesystemdirectoryentry-getFile.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getFile.html) | Fail | 11 / 12 | BUG | 1 of 12 subtests: `getFile("\\")` rejects with a `NotFoundError` instead of a `TypeMismatchError`: `EntriesPath.IsValid` only rejects the empty names and NUL, while a name must not contain `\` either (https://wicg.github.io/entries-api/#names-paths) |
+| [`filesystemdirectoryentry-getDirectory.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getDirectory.html) | Pass | 10 / 10 |  |  |
+| [`filesystemdirectoryentry-getFile.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryentry-getFile.html) | Pass | 12 / 12 |  |  |
 | [`filesystemdirectoryreader.html`](https://wpt.fyi/results/entries-api/filesystemdirectoryreader.html) | Pass | 4 / 4 |  |  |
 | [`filesystementry-getParent.html`](https://wpt.fyi/results/entries-api/filesystementry-getParent.html) | Pass | 2 / 2 |  |  |
 | [`idlharness.window.js`](https://wpt.fyi/results/entries-api/idlharness.window.js) | Pass | 68 / 68 |  |  |

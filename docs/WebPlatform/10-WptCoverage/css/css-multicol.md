@@ -19,7 +19,8 @@ description: "The results of the web-platform-tests of css/css-multicol, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 3
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
 
 ## Stable tests
@@ -66,7 +67,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`multicol-fill-balance-015.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-015.html) | Pass | 1 / 1 |  |  |
 | [`multicol-fill-balance-016.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-016.html) | Pass | 1 / 1 |  |  |
 | [`multicol-fill-balance-019.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-019.html) | Pass | 1 / 1 |  |  |
-| [`multicol-fill-balance-020.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-020.html) | Fail | 0 / 1 | BUG | the test relies on the saturation of the layout units of Blink: the content of the nested multi-column container is 1,234,567,990px tall, more than the largest length of Blink (2^25 px), and is expected to fit in the two outer columns of 20,000,000px; the outer container gets 62 columns (the lengths are not limited) |
+| [`multicol-fill-balance-020.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-020.html) | Fail | 0 / 1 | TEST BUG | a crash test of Blink (crbug.com/1289800) turned into a testharness test that relies on the saturation of the layout units of Blink: the content of the nested multi-column container is 1,234,567,990px tall, more than the largest length of Blink (2^25px), and is expected to fit in the two outer columns of 20,000,000px (`scrollWidth` 100); https://drafts.csswg.org/css-multicol-1/#overflow-columns creates additional columns in the inline direction for the content that does not fit in the columns of the container (`column-fill: auto` with a definite height), and CSS sets no limit to the lengths, so the outer container gets 62 columns (as the library lays it out) |
 | [`multicol-fill-balance-021.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-021.html) | Pass | 1 / 1 |  |  |
 | [`multicol-fill-balance-022.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-022.html) | Pass | 2 / 2 |  |  |
 | [`multicol-fill-balance-023.html`](https://wpt.fyi/results/css/css-multicol/multicol-fill-balance-023.html) | Pass | 1 / 1 |  |  |
@@ -366,7 +367,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`multicol-nested-013.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-013.html) | Pass | 1 / 1 |  |  |
 | [`multicol-nested-014.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-014.html) | Fail | 0 / 1 | BUG | a float in a multi-column container that is nested in another one and fragmented by the outer columns: the floats are only pushed alone to the next column (by a new layout of the strip) in the containers that are not nested, so the float and the monolithic content after it, which are at the same position of the inner strip, are both moved to the next outer column, where the float is expected to stay in the next two columns of the first row |
 | [`multicol-nested-015.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-015.html) | Pass | 1 / 1 |  |  |
-| [`multicol-nested-016.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-016.html) | Fail | 0 / 1 | BUG | a row of a nested multi-column container whose third column would break between line boxes with a violation of `orphans`/`widows`: the row ends after its second column and the lines are in the next outer column, as the comments of the test describe, but the 30x30px of the three columns that remain in the first outer column are expected to be painted by the content (the lines are 500% wide: Blink probably places them differently) |
+| [`multicol-nested-016.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-016.html) | Fail | 0 / 1 | BUG | a nested multi-column container (5 inner columns of 10px) that starts 70px down the first outer column (30px left): the 60px block fills the inner columns 1 and 2, and the three lines (inline-blocks 30px tall and 500% wide) cannot start the third inner column without violating `orphans: 2`/`widows: 2`, so the row ends after the second inner column and the lines and the last block are in the first inner column of the second outer column, as the comment of the test describes (the second outer column is all green). The inner columns 3 to 5 of the first outer column (30x30px) then show the red background of the outer container, where the reference is a filled green square: placing the lines in these columns (which would cover them) leaves the second outer column red instead, so the layout of the browsers that pass (Blink) is not reproduced by any analyzed placement |
 | [`multicol-nested-017.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-017.html) | Pass | 1 / 1 |  |  |
 | [`multicol-nested-018.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-018.html) | Pass | 1 / 1 |  |  |
 | [`multicol-nested-019.html`](https://wpt.fyi/results/css/css-multicol/multicol-nested-019.html) | Pass | 1 / 1 |  |  |

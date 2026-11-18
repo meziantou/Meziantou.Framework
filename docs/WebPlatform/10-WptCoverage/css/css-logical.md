@@ -9,25 +9,24 @@ description: "The results of the web-platform-tests of css/css-logical, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 82 | 84 | 0 | 98% |
+| [Stable](#stable-tests) | 84 | 84 | 0 | 100% |
 | [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **88** | **92** | **0** | **96%** |
+| **All** | **90** | **92** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`animation-001.html`](https://wpt.fyi/results/css/css-logical/animation-001.html) | Fail | 23 / 24 | BUG | a physical shorthand and a logical longhand of the same keyframe of `animate()` are not resolved by the specificity of the properties (a longhand wins over a shorthand): the physical value wins |
-| [`animation-002.html`](https://wpt.fyi/results/css/css-logical/animation-002.html) | Fail | 11 / 15 | BUG | the logical and the physical properties of an `@keyframes` block are not resolved in declaration order (the later one wins) once mapped to the physical side: the physical value wins |
+| [`animation-001.html`](https://wpt.fyi/results/css/css-logical/animation-001.html) | Pass | 24 / 24 |  |  |
+| [`animation-002.html`](https://wpt.fyi/results/css/css-logical/animation-002.html) | Pass | 15 / 15 |  |  |
 | [`animation-004.html`](https://wpt.fyi/results/css/css-logical/animation-004.html) | Pass | 16 / 16 |  |  |
 | [`animations/caption-side-no-interpolation.html`](https://wpt.fyi/results/css/css-logical/animations/caption-side-no-interpolation.html) | Pass | 42 / 42 |  |  |
 | [`animations/float-interpolation.html`](https://wpt.fyi/results/css/css-logical/animations/float-interpolation.html) | Pass | 42 / 42 |  |  |

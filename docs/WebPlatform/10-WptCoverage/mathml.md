@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of mathml, and why the tests
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **TEST BUG**: 14
+- **TEST BUG**: 15
 - **NOT IMPLEMENTED**: 5
 - **TEST RUNNER**: 1
 - **FLAKY**: 1
@@ -482,7 +481,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`relations/css-styling/mathvariant-auto.html`](https://wpt.fyi/results/mathml/relations/css-styling/mathvariant-auto.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/mathvariant-font-style-font-weight.html`](https://wpt.fyi/results/mathml/relations/css-styling/mathvariant-font-style-font-weight.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/mi-fontstyle-fontweight.html`](https://wpt.fyi/results/mathml/relations/css-styling/mi-fontstyle-fontweight.html) | Pass | 1 / 1 |  |  |
-| [`relations/css-styling/mozilla-393760-1.xml`](https://wpt.fyi/results/mathml/relations/css-styling/mozilla-393760-1.xml) | Fail | 0 / 1 | BUG | only the antialiased edges of what is painted differ, or a box is painted 1px away (not analyzed individually; the causes fixed with #461 are not involved: the Ahem glyphs are not antialiased, the joins of the sides of the borders, the glyphs of the highlights painted once, the slices of the border images, the transformed rectangles that are almost on the pixels) |
+| [`relations/css-styling/mozilla-393760-1.xml`](https://wpt.fyi/results/mathml/relations/css-styling/mozilla-393760-1.xml) | Fail | 0 / 1 | TEST BUG | the italic `Y` of the `mi` (STIX Two Math) has an italic correction of 1.76px, which https://w3c.github.io/mathml-core/#layout-of-mrow adds to the inline size of the `mstyle` laid out as an mrow (11.47px) but not to the one of the `mi` (9.71px): the `mathbackground` and the CSS background of the `mi` of the test end at x=18, the `mathbackground` of the `mstyle` of the reference at x=19 (22 pixels of the column x=18, by up to 111). The test assumes that the background of an `mi` covers the same area as the one of an `mstyle` around it |
 | [`relations/css-styling/mozilla-393760-2.xml`](https://wpt.fyi/results/mathml/relations/css-styling/mozilla-393760-2.xml) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
 | [`relations/css-styling/non-mathml-namespace-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/non-mathml-namespace-001.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/out-of-flow/absolutely-positioned-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/out-of-flow/absolutely-positioned-001.html) | Pass | 1 / 1 |  |  |

@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of custom-elements, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 197 | 202 | 0 | 98% |
+| [Stable](#stable-tests) | 200 | 202 | 0 | 99% |
 | [Tentative](#tentative-tests) | 2 | 7 | 0 | 29% |
 | [Reftests](#reftests) | 2 | 4 | 0 | 50% |
 | [Crash tests](#crash-tests) | 7 | 8 | 0 | 88% |
-| **All** | **208** | **221** | **0** | **94%** |
+| **All** | **211** | **221** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 1
@@ -47,7 +46,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`append-children-to-new-parent-cycle.html`](https://wpt.fyi/results/custom-elements/append-children-to-new-parent-cycle.html) | Pass | 1 / 1 |  |  |
 | [`attribute-changed-callback.html`](https://wpt.fyi/results/custom-elements/attribute-changed-callback.html) | Pass | 13 / 13 |  |  |
 | [`builtin-coverage.html`](https://wpt.fyi/results/custom-elements/builtin-coverage.html) | Pass | 444 / 444 |  |  |
-| [`connected-callback-before-insertion-steps.html`](https://wpt.fyi/results/custom-elements/connected-callback-before-insertion-steps.html) | Fail | 0 / 1 | BUG | the insert and remove algorithms of the DOM enqueue the `connectedCallback` (and `disconnectedCallback`) reaction of a custom element before running its insertion (removing) steps (https://dom.spec.whatwg.org/#concept-node-insert, https://dom.spec.whatwg.org/#concept-node-remove); the library runs the insertion steps first (`Node.RunInsertionStepsForSubtree`) and the removing steps before enqueuing `disconnectedCallback` (`Node.Mutations.cs`), so the reactions that these steps enqueue come first: the insertion steps of the `<details>` element remove its `open` attribute (another `<details>` of its group is open), so `attributeChangedCallback` comes before `connectedCallback` |
+| [`connected-callback-before-insertion-steps.html`](https://wpt.fyi/results/custom-elements/connected-callback-before-insertion-steps.html) | Pass | 1 / 1 |  |  |
 | [`connected-callbacks-html-fragment-parsing.html`](https://wpt.fyi/results/custom-elements/connected-callbacks-html-fragment-parsing.html) | Pass | 8 / 8 |  |  |
 | [`connected-callbacks-template.html`](https://wpt.fyi/results/custom-elements/connected-callbacks-template.html) | Pass | 1 / 1 |  |  |
 | [`connected-callbacks.html`](https://wpt.fyi/results/custom-elements/connected-callbacks.html) | Pass | 40 / 40 |  |  |
@@ -73,7 +72,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`form-associated/fieldset-elements.html`](https://wpt.fyi/results/custom-elements/form-associated/fieldset-elements.html) | Pass | 1 / 1 |  |  |
 | [`form-associated/focusability.html`](https://wpt.fyi/results/custom-elements/form-associated/focusability.html) | Pass | 1 / 1 |  |  |
 | [`form-associated/form-associated-callback-form-attribute-removal.html`](https://wpt.fyi/results/custom-elements/form-associated/form-associated-callback-form-attribute-removal.html) | Pass | 3 / 3 |  |  |
-| [`form-associated/form-associated-callback-order.html`](https://wpt.fyi/results/custom-elements/form-associated/form-associated-callback-order.html) | Fail | 0 / 6 | BUG | the insert and remove algorithms of the DOM enqueue the `connectedCallback` (and `disconnectedCallback`) reaction of a custom element before running its insertion (removing) steps (https://dom.spec.whatwg.org/#concept-node-insert, https://dom.spec.whatwg.org/#concept-node-remove); the library runs the insertion steps first (`Node.RunInsertionStepsForSubtree`) and the removing steps before enqueuing `disconnectedCallback` (`Node.Mutations.cs`), so the reactions that these steps enqueue come first: "reset the form owner" of the insertion and removing steps enqueues `formAssociatedCallback`, which comes before `connectedCallback` and `disconnectedCallback` |
+| [`form-associated/form-associated-callback-order.html`](https://wpt.fyi/results/custom-elements/form-associated/form-associated-callback-order.html) | Pass | 6 / 6 |  |  |
 | [`form-associated/form-associated-callback.html`](https://wpt.fyi/results/custom-elements/form-associated/form-associated-callback.html) | Pass | 5 / 5 |  |  |
 | [`form-associated/form-disabled-callback.html`](https://wpt.fyi/results/custom-elements/form-associated/form-disabled-callback.html) | Pass | 10 / 10 |  |  |
 | [`form-associated/form-disabled-legend.html`](https://wpt.fyi/results/custom-elements/form-associated/form-disabled-legend.html) | Pass | 6 / 6 |  |  |
@@ -181,7 +180,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`registries/ShadowRoot-init-customElementRegistry.html`](https://wpt.fyi/results/custom-elements/registries/ShadowRoot-init-customElementRegistry.html) | Pass | 13 / 13 |  |  |
 | [`registries/ShadowRoot-init-declarative.html`](https://wpt.fyi/results/custom-elements/registries/ShadowRoot-init-declarative.html) | Pass | 3 / 3 |  |  |
 | [`registries/ShadowRoot-innerHTML.html`](https://wpt.fyi/results/custom-elements/registries/ShadowRoot-innerHTML.html) | Pass | 4 / 4 |  |  |
-| [`registries/adoption-before-upgrade.window.js`](https://wpt.fyi/results/custom-elements/registries/adoption-before-upgrade.window.js) | Fail | 2 / 5 | BUG | 3 of 5 subtests: when the custom element registry of the element is null (it was adopted by a document whose registry is null or scoped), "upgrade an element" removes the constructor from the active custom element constructor map, so that the HTML element constructor looks the definition up in the registry of the current global object (https://html.spec.whatwg.org/multipage/custom-elements.html#concept-upgrade-an-element); `CustomElementReactions` sets the entry to null instead, so the constructor finds no definition in a null registry and throws a `TypeError` ("the constructor is not a custom element constructor of the registry"), which is reported |
+| [`registries/adoption-before-upgrade.window.js`](https://wpt.fyi/results/custom-elements/registries/adoption-before-upgrade.window.js) | Pass | 5 / 5 |  |  |
 | [`registries/adoption-global-registry.window.js`](https://wpt.fyi/results/custom-elements/registries/adoption-global-registry.window.js) | Pass | 16 / 16 |  |  |
 | [`registries/adoption-null-registry-element.window.js`](https://wpt.fyi/results/custom-elements/registries/adoption-null-registry-element.window.js) | Pass | 3 / 3 |  |  |
 | [`registries/adoption-null-registry-shadow-root.window.js`](https://wpt.fyi/results/custom-elements/registries/adoption-null-registry-shadow-root.window.js) | Pass | 7 / 7 |  |  |

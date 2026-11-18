@@ -10,16 +10,15 @@ description: "The results of the web-platform-tests of container-timing, and why
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 39 | 49 | 0 | 80% |
+| [Tentative](#tentative-tests) | 40 | 49 | 0 | 82% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **39** | **49** | **0** | **80%** |
+| **All** | **40** | **49** | **0** | **82%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 7
 
@@ -52,13 +51,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/containertiming-root-removed-element-null.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-removed-element-null.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-stop-after-click.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-stop-after-click.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-stop-after-keydown.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-stop-after-keydown.html) | Pass | 1 / 1 |  |  |
-| [`tentative/containertiming-stop-after-scroll.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-stop-after-scroll.html) | Fail | 0 / 1 | BUG | the paints after a user scroll are still reported: as for the largest contentful paint, the container timing only stops after an input event (`HasDispatchedInputEvent`: `keydown`, `mousedown`, `pointerdown`, `click`), while the specification also stops once the window has dispatched a trusted `scroll` event ("has dispatched scroll event", https://w3c.github.io/container-timing/#window-has-dispatched-scroll-event) |
+| [`tentative/containertiming-stop-after-scroll.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-stop-after-scroll.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-svg-and-mathml-not-root.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-svg-and-mathml-not-root.html) | Pass | 2 / 2 |  |  |
 | [`tentative/containertiming-text-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-text-itself.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-two-overlapping-imgs.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-two-overlapping-imgs.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-with-child-ignore-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-ignore-and-child-img.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-with-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-img.html) | Pass | 1 / 1 |  |  |
-| [`tentative/containertiming-with-child-svg-ignore.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-svg-ignore.html) | Fail | 0 / 1 | BUG, TEST BUG | the `containertimingignore` attribute of an SVG element (`<g>`) stops the propagation of the paints of its subtree to the container root (`Document.ContainerTiming.cs` checks the attribute on every element); it is an attribute of the HTML elements only (an ignored subtree is rooted at an `HTMLElement` with `containerTimingIgnore`, https://w3c.github.io/container-timing/#ignored-subtree), so no entry is reported; the test expects `lastPaintedElement` to be the SVG `<image>`, but the attribute is an `HTMLElement?` (https://w3c.github.io/container-timing/#dom-performancecontainertiming-lastpaintedelement) and the processing model only handles the paints of HTML elements, so it is null and the test reads the `id` of null |
+| [`tentative/containertiming-with-child-svg-ignore.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-svg-ignore.html) | Fail | 0 / 1 | TEST BUG | the test expects `lastPaintedElement` to be the SVG `<image>` (`svg_img_id`), but the attribute is an `HTMLElement?` (https://w3c.github.io/container-timing/#dom-performancecontainertiming-lastpaintedelement), so it is null and the test reads the `id` of null. The `containertimingignore` attribute of the SVG `<g>` is ignored as specified (an ignored subtree is rooted at an `HTMLElement`, https://w3c.github.io/container-timing/#ignored-subtree): the entry of the container root is reported. Same issue as `containertiming-with-child-svg-image.html` |
 | [`tentative/containertiming-with-child-svg-image.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-svg-image.html) | Fail | 0 / 1 | TEST BUG | the test expects `lastPaintedElement` to be the SVG `<image>`, but the attribute is an `HTMLElement?` (https://w3c.github.io/container-timing/#dom-performancecontainertiming-lastpaintedelement) and the processing model only handles the paints of HTML elements, so it is null and the test reads the `id` of null |
 | [`tentative/containertiming-with-child-text.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-child-text.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-with-ignore-and-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-with-ignore-and-child-img.html) | Pass | 1 / 1 |  |  |

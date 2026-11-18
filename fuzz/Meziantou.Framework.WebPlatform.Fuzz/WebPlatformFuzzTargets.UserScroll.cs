@@ -1,5 +1,7 @@
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Rendering;
 
 #pragma warning disable WEBPLATEXP0022 // The scroll performance timing is a proposal
 
@@ -14,11 +16,12 @@ public static partial class WebPlatformFuzzTargets
     private const byte UserScrollTouchDown = 2; // x, y
     private const byte UserScrollTouchMove = 3; // x, y
     private const byte UserScrollTouchUp = 4;
-    private const byte UserScrollPenMove = 5; // x, y
-    private const byte UserScrollInkStyle = 6; // color, diameter
+    private const byte UserScrollPenMove = 5; // x, y: the first move after the start (or an ink style) starts a trail, the next ones extend it
+    private const byte UserScrollInkStyle = 6; // color, diameter: the style of the next trail
     private const byte UserScrollFrame = 7; // frames
     private const byte UserScrollFocus = 8;
-    private const int UserScrollOperationCount = 9;
+    private const byte UserScrollPaint = 9; // full page
+    private const int UserScrollOperationCount = 10;
 
     /// <summary>The maximum number of operations of an input of the user scroll target.</summary>
     private const int UserScrollMaxOperations = 64;
@@ -46,14 +49,15 @@ public static partial class WebPlatformFuzzTargets
     private static readonly double[] UserScrollInkDiameters = [6, 0.5, 0, -0d, -1, double.NaN, double.PositiveInfinity, double.NegativeInfinity, 1e300, double.Epsilon];
 
     // (a property: the targets of the other part of the class read it when they are initialized, before the fields of this part)
-    private static string[] UserScrollTokens => ["\u0000\u0010\u0010\u0000\u0008", "\u0001\u0000", "\u0001\u0004", "\u0002\u0010\u0010", "\u0003\u0010 ", "\u0004", "\u0005\u0010\u0010", "\u0006\u0000\u0000", "\u0007\u0008", "\u0008"];
+    private static string[] UserScrollTokens => ["\u0000\u0010\u0010\u0000\u0008", "\u0001\u0000", "\u0001\u0004", "\u0002\u0010\u0010", "\u0003\u0010 ", "\u0004", "\u0005\u0010\u0010", "\u0006\u0000\u0000", "\u0007\u0008", "\u0008", "\u0009\u0000", "\u0009\u0001"];
 
     /// <summary>
     /// Plays a sequence of wheel rotations, keys, touches and moves of a pen that start delegated ink trails (see the
     /// operations above), and checks the scroll performance timing: the entries have valid attributes and, once the scrolls
     /// ended, the deltas of the entries of a scrolling box add up to its scroll position. The ink presenter throws only the
     /// errors of its arguments: <c>NotSupportedError</c> for a diameter that is not greater than 0, a <c>TypeError</c> for an
-    /// invalid color.
+    /// invalid color. The screenshots draw the trail that did not expire, clipped to the presentation area in the viewport,
+    /// with a finite stroke width that is not greater than its diameter.
     /// </summary>
     public static void UserScroll(ReadOnlySpan<byte> data)
     {
@@ -70,15 +74,19 @@ public static partial class WebPlatformFuzzTargets
         var presenter = window.Navigator.Ink.RequestPresenter(new InkPresenterParam { PresentationArea = document.GetElementById("area") }).Result;
         var (color, colorIsValid) = UserScrollInkColors[0];
         var diameter = UserScrollInkDiameters[0];
+        var trailDiameter = double.NaN; // the diameter of the last trail started
+        var startTrail = true; // the next move of the pen starts a trail (with the style of the last style operation); the later ones extend it
         document.AddEventListener("pointermove", e =>
         {
-            if (e is not PointerEvent { PointerType: "pen" } pointerEvent)
+            if (!startTrail || e is not PointerEvent { PointerType: "pen" } pointerEvent)
                 return;
 
+            startTrail = false;
             var style = new InkTrailStyle { Color = color, Diameter = diameter };
             try
             {
                 presenter.UpdateInkTrailStartPoint(pointerEvent, style);
+                trailDiameter = diameter;
                 FuzzAssert.True(colorIsValid && diameter > 0, $"The style {FuzzAssert.Format(color)} {diameter} is accepted");
             }
             catch (TypeErrorException)
@@ -126,10 +134,15 @@ public static partial class WebPlatformFuzzTargets
                 case UserScrollInkStyle:
                     (color, colorIsValid) = UserScrollInkColors[FuzzInput.ReadByte(ref data) % UserScrollInkColors.Length];
                     diameter = UserScrollInkDiameters[FuzzInput.ReadByte(ref data) % UserScrollInkDiameters.Length];
+                    startTrail = true;
                     break;
 
                 case UserScrollFocus:
                     scroller.Focus(new FocusOptions { PreventScroll = true });
+                    break;
+
+                case UserScrollPaint:
+                    CheckInkTrail((FuzzInput.ReadByte(ref data) & 1) != 0);
                     break;
 
                 default:
@@ -168,6 +181,34 @@ public static partial class WebPlatformFuzzTargets
             }
         }
 
+        void CheckInkTrail(bool fullPage)
+        {
+            var viewport = new PhysicalRect(0, 0, 400, 300);
+            var trail = presenter.GetTrailPaint(viewport);
+            if (trail is { } paint)
+            {
+                var clip = paint.Clip;
+                FuzzAssert.True(!clip.IsEmpty && clip.Left >= viewport.Left && clip.Top >= viewport.Top && clip.Right <= viewport.Right && clip.Bottom <= viewport.Bottom, $"The clip {DisplayList.FormatRect(clip)} is not in the viewport");
+                var width = paint.Paint.Stroke?.Width ?? double.NaN;
+                FuzzAssert.True(double.IsFinite(width) && width > 0 && width <= trailDiameter, $"The width {width} of the trail is not valid for the diameter {trailDiameter}");
+            }
+
+            var displayList = document.PaintScreenshot(transparentCanvas: false, fullPage);
+            if (trail is not { } expected)
+                return;
+
+            FuzzAssert.True(displayList is not null, "The document with an ink trail is not painted");
+            var drawn = false;
+            var clipped = false;
+            foreach (var item in displayList!.Items)
+            {
+                drawn |= item is DrawPathItem draw && draw.Paint == expected.Paint;
+                clipped |= item is ClipRectItem clipItem && clipItem.Rect == expected.Clip;
+            }
+
+            FuzzAssert.True(drawn && clipped, $"The ink trail is not drawn (path: {drawn}, clip: {clipped})");
+        }
+
         void CheckDeltas(Node target, double scrollX, double scrollY)
         {
             var targetEntries = entries.Where(entry => ReferenceEquals(entry.Target, target)).ToList();
@@ -204,6 +245,9 @@ public static partial class WebPlatformFuzzTargets
 
             // A pen draws ink trails with valid and invalid styles
             [0, UserScrollPenMove, 10, 10, UserScrollPenMove, 40, 10, UserScrollFrame, 1, UserScrollInkStyle, 6, 0, UserScrollPenMove, 50, 20, UserScrollInkStyle, 0, 3, UserScrollPenMove, 60, 20, UserScrollInkStyle, 0, 6, UserScrollPenMove, 70, 20, UserScrollPenMove, 80, 30],
+
+            // A pen draws an ink trail in the screenshots of the viewport and of the full page, with a finite and an infinite diameter, until it expires
+            [0, UserScrollPenMove, 10, 10, UserScrollPenMove, 40, 10, UserScrollPenMove, 60, 30, UserScrollPaint, 0, UserScrollPaint, 1, UserScrollInkStyle, 0, 6, UserScrollPenMove, 50, 40, UserScrollPenMove, 70, 20, UserScrollPaint, 0, UserScrollWheel, 25, 160, 0, 25, UserScrollPaint, 1, UserScrollFrame, 2, UserScrollPaint, 0],
         ];
 
         for (var i = 0; i < scenarios.Length; i++)

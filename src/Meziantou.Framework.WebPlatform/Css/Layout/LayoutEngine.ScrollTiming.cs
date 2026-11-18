@@ -131,18 +131,24 @@ internal sealed partial class LayoutEngine
         state.ScrollTiming = null;
         _scrollTimingCount--;
 
-        // A scroll that came back to its start (e.g. the snap of a gesture to its start position) is reported when frames displayed it
-        if (record.LastChangeTimestamp == 0 || (state.Offset == record.StartOffset && record.FramesProduced == 0) || _document.RelevantWindow is not { } window || !_document.IsFullyActive)
+        if (record.LastChangeTimestamp == 0 || _document.RelevantWindow is not { } window || !_document.IsFullyActive)
+            return;
+
+        // A scroll that no frame displayed and that moved less than half a pixel (e.g. a scroll that came back to its start, or a
+        // move of a fraction of a pixel stopped by another input) is not reported. A scroll that came back to its start after
+        // frames displayed it (e.g. the snap of a gesture to its start position) is.
+        var delta = state.Offset - record.StartOffset;
+        var deltaX = (int)Math.Round(delta.X, MidpointRounding.AwayFromZero);
+        var deltaY = (int)Math.Round(delta.Y, MidpointRounding.AwayFromZero);
+        if (record.FramesProduced == 0 && deltaX == 0 && deltaY == 0)
             return;
 
         var startTime = window.ToRelativeHighResolutionTime(record.StartTimestamp);
         var duration = Math.Max(0, window.ToRelativeHighResolutionTime(record.LastChangeTimestamp) - startTime);
         var firstFrameTime = record.FirstFrameTimestamp is { } firstFrame ? window.ToRelativeHighResolutionTime(firstFrame) : 0;
         var framesExpected = Math.Max(record.FramesProduced, (uint)Math.Ceiling(duration / DomEventLoop.FrameDuration.TotalMilliseconds));
-        var delta = state.Offset - record.StartOffset;
         var target = state.Element ?? (Node)_document;
-        window.Performance.QueueScrollEntry(new PerformanceScrollTiming(window, startTime, duration, firstFrameTime, framesExpected, record.FramesProduced,
-            (int)Math.Round(delta.X, MidpointRounding.AwayFromZero), (int)Math.Round(delta.Y, MidpointRounding.AwayFromZero), record.Source, target));
+        window.Performance.QueueScrollEntry(new PerformanceScrollTiming(window, startTime, duration, firstFrameTime, framesExpected, record.FramesProduced, deltaX, deltaY, record.Source, target));
     }
 
     /// <summary>Discards the measure of the scroll of a scrolling box that is not a scroll container anymore, without reporting it.</summary>

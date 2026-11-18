@@ -270,6 +270,21 @@ public sealed class FontTests
         Assert.Equal(new FontLineMetrics(1000, -400, 0), FontTestSupport.Load(windowsOnly).Face.GetLineMetrics());
     }
 
+    [Theory]
+    [InlineData(0, false, 400)]
+    [InlineData(1001, false, 400)]
+    [InlineData(13621, true, 700)]
+    [InlineData(1, false, 1)]
+    [InlineData(1000, false, 1000)]
+    public void AWeightClassThatIsNotAWeightComesFromTheFontHeader(int weightClass, bool isBold, int expected)
+    {
+        var builder = FontSamples.Boxes();
+        builder.WeightClass = weightClass;
+        builder.IsBold = isBold;
+
+        Assert.Equal(expected, FontTestSupport.Load(builder).Weight);
+    }
+
     [Fact]
     public void AFontWithoutOs2OrPostTableHasDefaultLines()
     {

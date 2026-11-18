@@ -47,15 +47,17 @@ internal readonly struct FaceStyle
     /// <param name="name">The <c>name</c> table.</param>
     public static FaceStyle Read(int macStyle, ReadOnlySpan<byte> os2, ReadOnlySpan<byte> post, ReadOnlySpan<byte> name)
     {
-        // OS/2: optional in old fonts. Without it, the weight and the slope come from head.macStyle.
+        // OS/2: optional in old fonts. Without it, the weight and the slope come from head.macStyle, and so does the
+        // weight when OS/2.usWeightClass is not a weight (0, or more than 1000)
         var hasOs2 = os2.Length >= MinOs2Length;
+        var weightClass = hasOs2 ? FontBinary.UInt16(os2, 4) : 0;
         var selection = hasOs2 ? FontBinary.UInt16(os2, 62) : 0;
         var hasPost = post.Length >= MinPostLength;
         var hasName = name.Length >= MinNameLength;
         return new FaceStyle
         {
             HasOs2 = hasOs2,
-            Weight = hasOs2 ? FontBinary.UInt16(os2, 4) : (macStyle & 0x0001) != 0 ? 700 : 400,
+            Weight = weightClass is >= 1 and <= 1000 ? weightClass : (macStyle & 0x0001) != 0 ? 700 : 400,
             WidthClass = hasOs2 ? FontBinary.UInt16(os2, 6) : 5,
             Selection = selection,
             IsItalic = hasOs2 ? (selection & 0x0001) != 0 : (macStyle & 0x0002) != 0,

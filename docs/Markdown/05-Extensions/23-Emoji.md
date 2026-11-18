@@ -15,6 +15,11 @@ Assert.Equal("<p>Ship it \U0001F680 :)</p>\n", MarkdownHtmlRenderer.ToHtml(Markd
 // A mapping of its own: shortcodes, and smileys for them
 var mapping = new MarkdownEmojiMapping(new Dictionary<string, string> { [":ok:"] = "\u2705" }, new Dictionary<string, string> { ["(y)"] = ":ok:" });
 Assert.Equal("<p>\u2705 \u2705 :rocket:</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(":ok: (y) :rocket:\n", options with { EmojiMapping = mapping })));
+
+// The default shortcodes, with a few of the default smileys: -> stays as it is
+var smileys = new[] { ":)", ";)" }.ToDictionary(smiley => smiley, smiley => MarkdownEmojiMapping.Default.Smileys[smiley], StringComparer.Ordinal);
+var fewSmileys = new MarkdownEmojiMapping(MarkdownEmojiMapping.Default.Shortcodes, smileys);
+Assert.Equal("<p>\U0001F680 \U0001F603 -&gt; b</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(":rocket: :) -> b\n", options with { EmojiMapping = fewSmileys })));
 ```
 <!-- endref -->
 
@@ -25,3 +30,7 @@ smileys: [MarkdownEmojiMapping.Default](cref:Meziantou.Framework.Markdown.Markdo
 shortcodes of GitHub, such as `:+1:` and its alias `:thumbsup:`, and the common smileys,
 [DefaultWithoutSmileys](cref:Meziantou.Framework.Markdown.MarkdownEmojiMapping.DefaultWithoutSmileys) only its
 shortcodes, so that `:)` stays as it is, and a mapping can be made from dictionaries.
+[Shortcodes](cref:Meziantou.Framework.Markdown.MarkdownEmojiMapping.Shortcodes) and
+[Smileys](cref:Meziantou.Framework.Markdown.MarkdownEmojiMapping.Smileys) give the dictionaries of a mapping, to make
+another one from it: the default shortcodes with a few of its smileys, so that arrows such as `->` stay as they are in
+text about code.

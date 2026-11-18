@@ -1704,6 +1704,22 @@ public sealed class BrowsingContextTests
         Assert.Equal(1, calls);
     }
 
+    [Fact]
+    public void MutationObserver_OfTemplateContents_IsNotifiedByTheEventLoopOfTheDocument()
+    {
+        using var context = new BrowsingContext();
+        var document = Load(context, "<template></template>");
+        var content = ((HtmlTemplateElement)document.QuerySelector("template")!).Content;
+        var calls = 0;
+        var observer = new MutationObserver((records, _) => calls += records.Count);
+        observer.Observe(content, new MutationObserverInit { ChildList = true });
+
+        content.AppendChild(content.OwnerDocument!.CreateElement("p"));
+        Assert.Equal(0, calls);
+        context.EventLoop.PerformMicrotaskCheckpoint();
+        Assert.Equal(1, calls);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -583,10 +583,7 @@
     "total": 2
   },
   "html/webappapis/scripting/event-loops/document-without-browsing-context.window.js": {
-    "total": 7,
-    "failures": {
-      "Mutation observer watching template contents": "FAIL"
-    }
+    "total": 7
   },
   "html/webappapis/scripting/event-loops/microtask_after_raf.html": {
     "total": 1

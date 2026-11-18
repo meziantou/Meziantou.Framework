@@ -24,10 +24,11 @@ public partial class Document
 
     /// <summary>
     /// The event loop of the relevant agent of the document: the event loop of the browsing context group of its window, or
-    /// of the window that created it (e.g. a document created by <c>DOMParser</c> or <c>createHTMLDocument()</c>). It is null
-    /// for the documents created outside a browsing context: their tasks and microtasks are not queued.
+    /// of the window that created it (e.g. a document created by <c>DOMParser</c> or <c>createHTMLDocument()</c>, or the
+    /// template contents owner document of a document). It is null for the documents created outside a browsing context:
+    /// their tasks and microtasks are not queued.
     /// </summary>
-    internal DomEventLoop? EventLoop => WorkerGlobal?.EventLoop ?? (RelevantWindow ?? OriginDocument?.RelevantWindow)?.EventLoop;
+    internal DomEventLoop? EventLoop => WorkerGlobal?.EventLoop ?? (RelevantWindow ?? OriginDocument?.RelevantWindow ?? RealmDocument?.RealmWindow)?.EventLoop;
 
     /// <summary>
     /// The document whose relevant realm is the relevant realm of this document, for a document created without a browsing

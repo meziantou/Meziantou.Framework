@@ -48,7 +48,7 @@ internal static class ElementInterfacesGenerator
     };
 
     /// <summary>The reflected IDL attributes whose setter has additional steps (Trusted Types): they are hand-written.</summary>
-    private static readonly HashSet<string> HandWrittenReflectedAttributes = new(StringComparer.Ordinal) { "HTMLScriptElement.src" };
+    private static readonly HashSet<string> HandWrittenReflectedAttributes = new(StringComparer.Ordinal) { "HTMLScriptElement.src", "HTMLCanvasElement.content" };
 
     // The supported tokens of the DOMTokenList attributes that define them (the members of Html.SupportedTokens): supports()
     // throws a TypeError for the other ones
@@ -71,8 +71,8 @@ internal static class ElementInterfacesGenerator
     private static readonly string[] EventWords =
     [
         "abort", "activate", "after", "animation", "auto", "aux", "before", "blur", "cancel", "can", "capture", "change", "click", "close", "command",
-        "content", "context", "copy", "cue", "cut", "data", "dbl", "down", "drag", "drop", "duration", "emptied", "end", "ended", "enter", "error",
-        "focus", "form", "fullscreen", "got", "hash", "input", "invalid", "iteration", "key", "language", "leave", "load", "loaded", "lock",
+        "content", "context", "copy", "cue", "cut", "data", "dbl", "down", "drag", "drop", "duration", "element", "emptied", "end", "ended", "enter", "error",
+        "focus", "form", "fullscreen", "geometry", "got", "hash", "input", "invalid", "iteration", "key", "language", "leave", "load", "loaded", "lock",
         "lost", "match", "menu", "message", "metadata", "mouse", "move", "offline", "online", "out", "over", "page", "paste", "pause", "play",
         "playing", "pointer", "policy", "pop", "press", "print", "progress", "rate", "ready", "rejection", "handled", "reset", "resize", "restored",
         "reveal", "run", "scroll", "security", "seeked", "seeking", "select", "selection", "show", "hide", "slot", "stalled", "start", "state",

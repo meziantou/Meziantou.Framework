@@ -50,6 +50,10 @@ internal static class StackingContexts
         if (SvgForeignObjectLayout.IsForeignObject(box))
             return true;
 
+        // https://github.com/WICG/html-in-canvas: the drawable attribute "implies isolation: isolate"
+        if (box.IsCanvasDrawable)
+            return true;
+
         // https://drafts.csswg.org/css-transforms-2/#transform-rendering, https://drafts.fxtf.org/filter-effects/#FilterProperty,
         // https://drafts.csswg.org/css-contain-2/#containment-layout: the properties that establish a containing block for the
         // fixed positioned boxes establish a stacking context too

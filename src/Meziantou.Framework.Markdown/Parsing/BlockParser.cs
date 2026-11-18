@@ -1289,6 +1289,7 @@ internal sealed class BlockParser
         // The terms are the lines of the paragraph: Markdig does not read the link reference definitions of a paragraph that
         // is still open, which are terms then
         Block? paragraph = null;
+        var lazy = false;
         if (container.Kind == SyntaxKind.Paragraph)
         {
             // As in Markdig, a paragraph that has link reference definitions has no terms, such as the ones read for a setext
@@ -1309,7 +1310,7 @@ internal sealed class BlockParser
             // A lazy line: Markdig reads the marker after the paragraph of the containers that the line does not continue, which
             // stay open
             paragraph = _tip;
-            _allClosed = true;
+            lazy = true;
         }
         else if (container.LastChild is { Kind: SyntaxKind.Paragraph, Open: false, IsEmpty: false, DefinitionsOrNull: null, ExtensionSegments: null } closed && container.Kind is not (SyntaxKind.ListItem or SyntaxKind.DefinitionItem or SyntaxKind.FootnoteDefinition))
         {
@@ -1318,6 +1319,18 @@ internal sealed class BlockParser
         else
         {
             return false;
+        }
+
+        // The list goes in the block of the paragraph, which is deeper than the container for a lazy line: a block nested in more
+        // blocks than the limit is text
+        if (paragraph is not null && paragraph.Parent!.Depth + _baseDepth > _maximumNestingDepth)
+        {
+            return false;
+        }
+
+        if (lazy)
+        {
+            _allClosed = true;
         }
 
         var termLineStart = 0;

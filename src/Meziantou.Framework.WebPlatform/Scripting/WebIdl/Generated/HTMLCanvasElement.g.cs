@@ -23,6 +23,14 @@ internal static class Binding_HTMLCanvasElement<TAdapter, TValue> where TAdapter
     private static void Set_width(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding); var x = r.ToUnsignedLong(v, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None); o.Width = x; }
     private static TValue Get_height(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding); return r.FromNumber((double)o.Height); }
     private static void Set_height(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding); var x = r.ToUnsignedLong(v, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None); o.Height = x; }
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Get_content(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding); return r.FromString(o.Content); }
+    private static void Set_content(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding); var x = r.ToDomString(v); o.Content = x; }
+    #pragma warning restore WEBPLATEXP0023
+    private static TValue Get_onpaint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "paint");
+    private static void Set_onpaint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "paint", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_onelementgeometryupdate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "elementgeometryupdate");
+    private static void Set_onelementgeometryupdate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "elementgeometryupdate", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Op_getContext(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
@@ -52,13 +60,75 @@ internal static class Binding_HTMLCanvasElement<TAdapter, TValue> where TAdapter
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
         var result = o.TransferControlToOffscreen(); return r.Wrap(result);
     }
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Op_requestPaint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
+        o.RequestPaint(); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0023
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Op_captureElementImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("captureElementImage", 1, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(a[0], "Element");
+        var result = o.CaptureElementImage(a0); return r.Wrap(result);
+    }
+    #pragma warning restore WEBPLATEXP0023
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Op_updateElementGeometry(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("updateElementGeometry", 1, a.Length);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_19c91632(r, a[0]);
+        var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UpdateElementGeometryOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UpdateElementGeometryOptions(r, a[1]);
+        o.UpdateElementGeometry(a0, a1); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0023
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Op_clearElementGeometry(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("clearElementGeometry", 1, a.Length);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_19c91632(r, a[0]);
+        o.ClearElementGeometry(a0); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0023
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Op_getElementImageDefaultSize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("getElementImageDefaultSize", 1, a.Length);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_19c91632(r, a[0]);
+        var result = o.GetElementImageDefaultSize(a0); return (result is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ElementImageDefaultSize(r, dictionaryValue) : r.Adapter.Null);
+    }
+    #pragma warning restore WEBPLATEXP0023
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Op_getElementTransform(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("getElementTransform", 1, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(a[0], "Element");
+        var result = o.GetElementTransform(a0); return r.Wrap(result);
+    }
+    #pragma warning restore WEBPLATEXP0023
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "width", Get_width, Set_width);
         r.DefineAttribute(instanceTarget, "height", Get_height, Set_height);
+        r.DefineAttribute(instanceTarget, "content", Get_content, Set_content);
+        r.DefineAttribute(instanceTarget, "onpaint", Get_onpaint, Set_onpaint);
+        r.DefineAttribute(instanceTarget, "onelementgeometryupdate", Get_onelementgeometryupdate, Set_onelementgeometryupdate);
         r.DefineOperation(instanceTarget, "getContext", 1, Op_getContext);
         r.DefineOperation(instanceTarget, "toDataURL", 0, Op_toDataURL);
         r.DefineOperation(instanceTarget, "toBlob", 1, Op_toBlob);
         r.DefineOperation(instanceTarget, "transferControlToOffscreen", 0, Op_transferControlToOffscreen);
+        r.DefineOperation(instanceTarget, "requestPaint", 0, Op_requestPaint);
+        r.DefineOperation(instanceTarget, "captureElementImage", 1, Op_captureElementImage);
+        r.DefineOperation(instanceTarget, "updateElementGeometry", 1, Op_updateElementGeometry);
+        r.DefineOperation(instanceTarget, "clearElementGeometry", 1, Op_clearElementGeometry);
+        r.DefineOperation(instanceTarget, "getElementImageDefaultSize", 1, Op_getElementImageDefaultSize);
+        r.DefineOperation(instanceTarget, "getElementTransform", 1, Op_getElementTransform);
     }
 }

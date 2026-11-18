@@ -698,6 +698,66 @@ internal static class Binding_OffscreenCanvasRenderingContext2D<TAdapter, TValue
         o.StrokeGlyphRuns(a0, a1, a2); return r.Adapter.Undefined;
     }
     #pragma warning restore WEBPLATEXP0025
+    private static readonly global::Meziantou.Framework.WebPlatform.Scripting.OverloadInfo[] Op_drawElementImage_Overloads = [new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(Element or ElementImage)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.Element), typeof(global::Meziantou.Framework.WebPlatform.Dom.ElementImage) }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("unrestricted double", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Numeric, new global::System.Type[] {  }, false, false), new("DrawElementImageOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) })];
+    #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
+    private static TValue Op_drawElementImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.OffscreenCanvasRenderingContext2D>(t, Binding);
+        switch (r.SelectOverload("drawElementImage", Op_drawElementImage_Overloads, a))
+        {
+            case 0:
+            {
+                if (a.Length < 3) throw r.NotEnoughArguments("drawElementImage", 3, a.Length);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_19c91632(r, a[0]);
+                var a1 = r.ToDouble(a[1], restricted: false);
+                var a2 = r.ToDouble(a[2], restricted: false);
+                var a3 = r.IsMissing(a, 3) ? (global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, a[3]);
+                o.DrawElementImage(a0, a1, a2, a3); return r.Adapter.Undefined;
+            }
+            case 1:
+            {
+                if (a.Length < 5) throw r.NotEnoughArguments("drawElementImage", 5, a.Length);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_19c91632(r, a[0]);
+                var a1 = r.ToDouble(a[1], restricted: false);
+                var a2 = r.ToDouble(a[2], restricted: false);
+                var a3 = r.ToDouble(a[3], restricted: false);
+                var a4 = r.ToDouble(a[4], restricted: false);
+                var a5 = r.IsMissing(a, 5) ? (global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, a[5]);
+                o.DrawElementImage(a0, a1, a2, a3, a4, a5); return r.Adapter.Undefined;
+            }
+            case 2:
+            {
+                if (a.Length < 7) throw r.NotEnoughArguments("drawElementImage", 7, a.Length);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_19c91632(r, a[0]);
+                var a1 = r.ToDouble(a[1], restricted: false);
+                var a2 = r.ToDouble(a[2], restricted: false);
+                var a3 = r.ToDouble(a[3], restricted: false);
+                var a4 = r.ToDouble(a[4], restricted: false);
+                var a5 = r.ToDouble(a[5], restricted: false);
+                var a6 = r.ToDouble(a[6], restricted: false);
+                var a7 = r.IsMissing(a, 7) ? (global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, a[7]);
+                o.DrawElementImage(a0, a1, a2, a3, a4, a5, a6, a7); return r.Adapter.Undefined;
+            }
+            case 3:
+            {
+                if (a.Length < 9) throw r.NotEnoughArguments("drawElementImage", 9, a.Length);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_19c91632(r, a[0]);
+                var a1 = r.ToDouble(a[1], restricted: false);
+                var a2 = r.ToDouble(a[2], restricted: false);
+                var a3 = r.ToDouble(a[3], restricted: false);
+                var a4 = r.ToDouble(a[4], restricted: false);
+                var a5 = r.ToDouble(a[5], restricted: false);
+                var a6 = r.ToDouble(a[6], restricted: false);
+                var a7 = r.ToDouble(a[7], restricted: false);
+                var a8 = r.ToDouble(a[8], restricted: false);
+                var a9 = r.IsMissing(a, 9) ? (global::Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DrawElementImageOptions(r, a[9]);
+                o.DrawElementImage(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9); return r.Adapter.Undefined;
+            }
+            default:
+                throw new global::System.InvalidOperationException("Unexpected overload");
+        }
+    }
+    #pragma warning restore WEBPLATEXP0023
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "canvas", Get_canvas, null);
@@ -781,5 +841,6 @@ internal static class Binding_OffscreenCanvasRenderingContext2D<TAdapter, TValue
         r.DefineOperation(instanceTarget, "strokeGlyphRun", 3, Op_strokeGlyphRun);
         r.DefineOperation(instanceTarget, "fillGlyphRuns", 3, Op_fillGlyphRuns);
         r.DefineOperation(instanceTarget, "strokeGlyphRuns", 3, Op_strokeGlyphRuns);
+        r.DefineOperation(instanceTarget, "drawElementImage", 3, Op_drawElementImage);
     }
 }

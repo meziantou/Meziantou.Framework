@@ -11,7 +11,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// </summary>
 /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas"/>
 [IdlInterface("OffscreenCanvas", "https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas")]
-public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICanvasHost
+public sealed partial class OffscreenCanvas : EventTarget, IStructuredTransferable, ICanvasHost
 {
     private ulong _width;
     private ulong _height;

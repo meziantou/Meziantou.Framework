@@ -306,6 +306,13 @@ internal sealed class ContainerBox : LayoutBox
     public bool IsFormControlContents { get; internal set; }
 
     /// <summary>
+    /// Whether the box is the principal box of a <c>drawable</c> element of a canvas whose <c>content</c> is <c>drawable</c>
+    /// (https://github.com/WICG/html-in-canvas, see <see cref="CanvasDrawables"/>): it establishes a stacking context
+    /// (<c>isolation: isolate</c>) and the containing block of all its positioned descendants.
+    /// </summary>
+    public bool IsCanvasDrawable { get; internal set; }
+
+    /// <summary>
     /// The element whose scrolling box the box is when it is a scroll container: its element; the fieldset of an anonymous
     /// fieldset content box (the <c>overflow</c> of a fieldset applies to its content box); the text field of an inner editor
     /// (its value scrolls in its inner editor). Null for the other anonymous boxes and for the boxes of the pseudo-elements.

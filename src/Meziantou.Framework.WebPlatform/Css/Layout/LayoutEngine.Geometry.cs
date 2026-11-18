@@ -209,6 +209,32 @@ internal sealed partial class LayoutEngine
                 }
             }
 
+            // https://github.com/WICG/html-in-canvas: a drawable element of a canvas is placed by its canvas transform in the contents
+            // box of the canvas (after its CSS transforms, flattened), whatever its position in the layout of the contents
+            if (CanvasDrawables.TryGetCanvasTransform(current, out var canvasTransform, out var contents))
+            {
+                transformed = true;
+                in3D = false;
+                var contentsOffset = GetScrolledOffset(contents);
+                for (var i = 0; i < points.Length; i += 4)
+                {
+                    var w = points[i + 3];
+                    var point = w > 0 && w != 1 ? new PhysicalOffset(points[i] / w, points[i + 1] / w) : new PhysicalOffset(points[i], points[i + 1]);
+                    if (LayoutTransforms.TryTransformPoint(canvasTransform, point, out var result))
+                    {
+                        point = result;
+                    }
+
+                    points[i] = point.X + contentsOffset.X;
+                    points[i + 1] = point.Y + contentsOffset.Y;
+                    points[i + 2] = 0;
+                    points[i + 3] = 1;
+                }
+
+                current = contents;
+                continue;
+            }
+
             var offset = GetScrolledOffset(current);
 
             // The plane of a 3D rendering context is flattened in the plane of the parent of its root

@@ -72,6 +72,9 @@ internal static class ExperimentalApis
     /// <summary>The <c>CanvasFilter</c> objects (https://github.com/whatwg/html/issues/5621): the filters of the 2D contexts and of the canvas layers described by filter primitives.</summary>
     public const string CanvasFilterObjects = "WEBPLATEXP0021";
 
+    /// <summary>HTML-in-canvas (https://github.com/WICG/html-in-canvas): the <c>content</c> attribute and the paint events of the canvases, <c>drawElementImage()</c> and the element images and geometries.</summary>
+    public const string HtmlInCanvas = "WEBPLATEXP0023";
+
     /// <summary>The text clusters and the selection APIs of <c>TextMetrics</c> (https://github.com/whatwg/html/pull/11000): <c>getTextClusters()</c>, <c>getSelectionRects()</c>, <c>getActualBoundingBox()</c>, <c>getIndexFromOffset()</c>, <c>fillTextCluster()</c> and <c>strokeTextCluster()</c>.</summary>
     public const string CanvasTextClusters = "WEBPLATEXP0024";
 

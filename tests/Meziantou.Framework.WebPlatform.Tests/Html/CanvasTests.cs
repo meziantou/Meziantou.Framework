@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Rendering;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
@@ -49,6 +50,81 @@ public sealed class CanvasTests : IDisposable
             """);
 
         Assert.Equal(",,function,data:image/png;base64,,data:image/png;base64,", result);
+    }
+
+    [Fact]
+    public void ContentDrawable_LaysOutTheChildren()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <body style="margin: 0">
+            <canvas id=c content=drawable style="position: absolute; left: 10px; top: 20px; width: 200px; height: 100px">
+              <span drawable id=child style="width: 50px; height: 40px; position: absolute"></span>
+            </canvas>
+            <script>
+            const child = document.getElementById('child');
+            const before = [child.clientWidth, getComputedStyle(child).display, getComputedStyle(child).position, getComputedStyle(child).isolation, child.getBoundingClientRect().left];
+            c.updateElementGeometry(child, { canvasTransform: new DOMMatrix().translate(30, 40).scale(2) });
+            const rect = child.getBoundingClientRect();
+            c.content = 'fallback';
+            document.title = [...before, rect.left, rect.top, rect.width, rect.height, child.clientWidth, c.content].join();
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Empty(_errors);
+        Assert.Equal("50,block,static,isolate,10,40,60,100,80,0,fallback", document.Title);
+    }
+
+    [Fact]
+    public void ContentDrawable_FiresPaintEvents()
+    {
+        var clock = new FakeTimeProvider();
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            TimeProvider = clock,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <style>#child { width: 10px; height: 10px; background: blue } #child.changed { background: green }</style>
+            <canvas id=c content=drawable><div drawable id=child></div></canvas>
+            <script>
+            const events = [];
+            c.onpaint = e => events.push(e.changedElements.map(element => element.id).join('+') || '-');
+            const frame = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+            (async () => {
+              await frame();
+              events.push('|');
+              await frame();
+              child.classList.add('changed');
+              await frame();
+              child.style.backgroundImage = 'linear-gradient(red, blue)';
+              await frame();
+              child.style.backgroundImage = 'linear-gradient(green, blue)';
+              await frame();
+              c.requestPaint();
+              await frame();
+              child.remove();
+              await frame();
+              await frame();
+              document.title = events.join(',');
+            })();
+            </script>
+            """);
+        for (var i = 0; i < 20; i++)
+        {
+            _contexts.EventLoop.RunUntilIdle();
+            clock.Advance(TimeSpan.FromMilliseconds(20));
+        }
+
+        Assert.Empty(_errors);
+        Assert.Equal("child,|,child,child,child,-,-", document.Title);
     }
 
     [Fact]

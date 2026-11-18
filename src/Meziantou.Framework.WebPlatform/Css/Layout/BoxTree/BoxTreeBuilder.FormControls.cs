@@ -33,6 +33,15 @@ internal sealed partial class BoxTreeBuilder
 
             FixupContainer(contents);
         }
+        else if (element is HtmlCanvasElement { IsContentDrawable: true } canvas)
+        {
+            // https://github.com/WICG/html-in-canvas: the children of a canvas whose content is drawable are laid out in its content
+            // box (the contents box has its size, and is the containing block of their positioned descendants), but are not painted
+            // in place: the drawable elements are painted into the canvas by drawElementImage (see CanvasDrawables)
+            var contents = CreateFormControlContents(control, SliderContentsStyle);
+            BuildChildNodes(canvas, style, contents);
+            FixupContainer(contents);
+        }
         else if (FormControlContents.HasSliderParts(element, style))
         {
             // The contents box is the containing block of the thumb, which is absolutely positioned

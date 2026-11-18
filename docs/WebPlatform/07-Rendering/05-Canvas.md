@@ -234,6 +234,85 @@ using var screenshot = canvas.TakeScreenshot();
 - The API is experimental (`WEBPLATEXP0021`, see [Experimental APIs](../09-Limitations.md#experimental-apis)): it
   implements a [proposal](https://github.com/whatwg/html/issues/5621) that Chromium ships behind a flag.
 
+## Drawing HTML elements
+
+[HtmlCanvasElement.Content](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.Content) and
+[DrawElementImage](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.DrawElementImage) implement the
+[HTML-in-canvas proposal](https://github.com/WICG/html-in-canvas) that Chromium ships behind a flag: the children of a canvas
+whose `content` attribute is `drawable` are laid out but not painted, and its descendants that have a `drawable` attribute
+are drawn into the canvas, with their styles, their effects and their text:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasDrawElementImage;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    RenderingBackend = new ImagingRenderingBackend(),
+    ScriptingEnabled = true,
+});
+var document = context.Navigate("https://example.com/", _ => """
+    <canvas id="card" width="240" height="120" content="drawable">
+      <div drawable id="label" style="width: 136px; padding: 8px 12px; border-radius: 8px; background: #0ea5e9; color: white; font: bold 16px sans-serif">
+        HTML drawn in a canvas
+      </div>
+    </canvas>
+    """);
+
+var canvas = (HtmlCanvasElement)document.GetElementById("card")!;
+var label = document.GetElementById("label")!;
+var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+#pragma warning disable WEBPLATEXP0023 // HTML-in-canvas is a proposal
+
+// The paint event fires once a rendering update recorded the snapshot of the drawable element
+canvas.OnPaint = _ =>
+{
+    context2D.Reset();
+    context2D.FillStyle = "#f8fafc";
+    context2D.FillRect(0, 0, 240, 120);
+    context2D.Translate(120, 60);
+    context2D.Rotate(-Math.PI / 12);
+    context2D.DrawElementImage(label, -80, -26);
+};
+canvas.RequestPaint();
+#pragma warning restore WEBPLATEXP0023
+
+// Run the rendering update (a timer of the event loop)
+do
+{
+    await context.EventLoop.RunUntilIdleAsync(CancellationToken.None);
+}
+while (await context.EventLoop.WaitForNextTimerAsync(CancellationToken.None));
+
+using var screenshot = canvas.TakeScreenshot();
+```
+<!-- endref -->
+
+![A blue label with white text, drawn rotated in the middle of a canvas](images/CanvasDrawElementImage.png)
+
+- Each rendering update records a snapshot of each drawable element (its stacking context, without its CSS transform and
+  without its drawable descendants), then fires the `paint` event ([CanvasPaintEvent](cref:Meziantou.Framework.WebPlatform.Dom.CanvasPaintEvent))
+  at the canvases whose drawable elements changed, in reverse tree order. [RequestPaint](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.RequestPaint)
+  fires it at the next rendering update even when nothing changed. `DrawElementImage()` draws the last snapshot, and throws
+  an `InvalidStateError` before the first one.
+- The default size of an element image is the size of its border box scaled by the ratio of the size of the bitmap to the
+  size of the canvas ([GetElementImageDefaultSize](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.GetElementImageDefaultSize)).
+  The source rectangle of `DrawElementImage()` can extend beyond the border box to include the ink overflow.
+- `DrawElementImage()` sets the canvas transform of the element to where it is drawn, unless
+  [DrawElementImageOptions.PreserveElementGeometry](cref:Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions.PreserveElementGeometry) is true:
+  the geometry of the element (`GetBoundingClientRect()`...) and its hit testing (`ElementFromPoint()`, the pointer events) follow
+  the drawing. [UpdateElementGeometry](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.UpdateElementGeometry),
+  [ClearElementGeometry](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ClearElementGeometry) and
+  [GetElementTransform](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.GetElementTransform) set and read it. The
+  elements whose geometry was never set are not hit tested.
+- [CaptureElementImage](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.CaptureElementImage) returns the last
+  snapshot as an [ElementImage](cref:Meziantou.Framework.WebPlatform.Dom.ElementImage), which can be drawn later, also by the
+  [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) of the canvas in a worker (it is transferable): the
+  geometry updates of an `OffscreenCanvas` are applied in the event loop of the canvas, which fires an `elementgeometryupdate` event.
+- The snapshots paint the cross-origin images and iframes and the colors of the visited links: the proposal excludes them
+  (read-back-allowed rendering), the library does not yet. WebGL and WebGPU are not supported, so `texElementSubImage2D()` and
+  `drawElementImageToTexture()` are not available.
+- The API is experimental (`WEBPLATEXP0023`, see [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts of the page use
+  it without restriction.
+
 ## Text clusters
 
 [TextMetrics](cref:Meziantou.Framework.WebPlatform.Dom.TextMetrics), returned by `MeasureText()`, implements the text

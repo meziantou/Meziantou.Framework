@@ -301,8 +301,15 @@ internal static class FormControlContents
         if (!IsNativeListBox(control))
         {
             // The contents box of a slider-like control has the size of its content box (the percentages of its parts resolve)
+            // (so has the contents box of a canvas whose content is drawable: it is laid out, but not painted nor hit tested, see CanvasDrawables)
             var fixedSpace = ConstraintSpace.ForContentBox(content.WritingDirection, content.InlineSize, content.BlockSize) with { FixedInlineSize = content.InlineSize, FixedBlockSize = content.BlockSize };
-            builder.AddChild(context.LayoutBox(contents, fixedSpace), content.Offset);
+            var contentsFragment = context.LayoutBox(contents, fixedSpace);
+            if (control.Element is HtmlCanvasElement)
+            {
+                contentsFragment.IsHiddenForPaint = true;
+            }
+
+            builder.AddChild(contentsFragment, content.Offset);
             return new ContentLayoutResult(0) { InFlowBlockSize = content.BlockSize ?? 0 };
         }
 

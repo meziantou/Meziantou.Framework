@@ -2991,10 +2991,14 @@ internal sealed partial class StyleEngine
     /// in its user agent shadow tree (see <see cref="HtmlDetailsElement.ImplicitSummary"/>), has the style of the summary of a
     /// details element ("details &gt; summary:first-of-type"). The inert elements and the modal dialogs have the
     /// <c>interactivity</c> of CSS UI (https://drafts.csswg.org/css-ui-4/#inertness: "[inert] { interactivity: inert !important }"
-    /// and "dialog:modal { interactivity: auto }"), which the pinned HTML Standard does not have.
+    /// and "dialog:modal { interactivity: auto }"), which the pinned HTML Standard does not have. The children of a canvas whose
+    /// content is drawable "are laid out with static positioning", and its drawable descendants are isolated
+    /// (https://github.com/WICG/html-in-canvas: the drawable attribute "implies isolation: isolate").
     /// </summary>
     private const string SupplementalStyleSheet = """
         textarea { display: inline-block; overflow-wrap: break-word; }
+        canvas[content=drawable i] > * { position: static !important; }
+        canvas[content=drawable i] [drawable] { isolation: isolate !important; }
         details::details-content { display: block; }
         details:not([open])::details-content { content-visibility: hidden; }
         :host(details) > summary { display: list-item; counter-increment: list-item 0; list-style: disclosure-closed inside; }

@@ -248,6 +248,17 @@ public partial class HtmlCanvasElement : ICanvasHost
             context.Bitmap.Resize((int)Math.Min(Width, int.MaxValue), (int)Math.Min(Height, int.MaxValue));
             OnBitmapChanged();
         }
+
+        // https://github.com/WICG/html-in-canvas: the children of the canvas are laid out (and blockified) when its content is drawable
+        if (@namespace is null && localName == "content")
+        {
+            NodeDocument.StyleInvalidations.SetFull();
+            NodeDocument.InvalidateLayout(rebuildBoxTree: true);
+            if (IsContentDrawable)
+            {
+                RegisterForRendering();
+            }
+        }
     }
 }
 

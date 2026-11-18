@@ -262,6 +262,58 @@ public sealed class DocumentationImageTests
     }
 
     [Fact]
+    public async Task CanvasDrawElementImage()
+    {
+        #region WebPlatformImaging_CanvasDrawElementImage
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            RenderingBackend = new ImagingRenderingBackend(),
+            ScriptingEnabled = true,
+        });
+        var document = context.Navigate("https://example.com/", _ => """
+            <canvas id="card" width="240" height="120" content="drawable">
+              <div drawable id="label" style="width: 136px; padding: 8px 12px; border-radius: 8px; background: #0ea5e9; color: white; font: bold 16px sans-serif">
+                HTML drawn in a canvas
+              </div>
+            </canvas>
+            """);
+
+        var canvas = (HtmlCanvasElement)document.GetElementById("card")!;
+        var label = document.GetElementById("label")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        #pragma warning disable WEBPLATEXP0023 // HTML-in-canvas is a proposal
+
+        // The paint event fires once a rendering update recorded the snapshot of the drawable element
+        canvas.OnPaint = _ =>
+        {
+            context2D.Reset();
+            context2D.FillStyle = "#f8fafc";
+            context2D.FillRect(0, 0, 240, 120);
+            context2D.Translate(120, 60);
+            context2D.Rotate(-Math.PI / 12);
+            context2D.DrawElementImage(label, -80, -26);
+        };
+        canvas.RequestPaint();
+        #pragma warning restore WEBPLATEXP0023
+
+        // Run the rendering update (a timer of the event loop)
+        do
+        {
+            await context.EventLoop.RunUntilIdleAsync(CancellationToken.None);
+        }
+        while (await context.EventLoop.WaitForNextTimerAsync(CancellationToken.None));
+
+        using var screenshot = canvas.TakeScreenshot();
+        #endregion
+
+        // The label is drawn rotated around the center of the canvas, and its geometry follows it
+        Assert.NotEqual(screenshot.GetPixel(0, 0), screenshot.GetPixel(120, 60));
+        var rect = label.GetBoundingClientRect();
+        Assert.True(rect.Left > 0 && rect.Top > 0, $"{rect.Left}, {rect.Top}");
+        AssertImage(Rendering, "CanvasDrawElementImage", screenshot);
+    }
+
+    [Fact]
     public void CanvasFilters()
     {
         #region WebPlatformImaging_CanvasFilters

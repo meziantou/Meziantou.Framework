@@ -73,22 +73,20 @@ public static partial class WebPlatformFuzzTargets
             if (size.Width == 0 || size.Height == 0)
                 continue;
 
-            // drawElementImage() sets the canvas transform to where the element is drawn, in the CSS pixels of the canvas
+            // drawElementImage() sets the canvas transform to where the element is drawn (in the CSS pixels of the element: a zoomed
+            // element has a scaled transform), so its geometry is where it is drawn
             offset = (offset + 7) % 32;
             context2D.ResetTransform();
             context2D.DrawElementImage(element, offset, offset + 1);
             var transform = canvas.GetElementTransform(element);
-            FuzzAssert.Equal(2.0 * offset, transform.E, "the x translation of the canvas transform is the destination in CSS pixels");
-            FuzzAssert.Equal(2.0 * (offset + 1), transform.F, "the y translation of the canvas transform is the destination in CSS pixels");
-            FuzzAssert.Equal(1.0, transform.A, "the element is drawn at its default size");
+            FuzzAssert.True(transform.Is2D && transform.B == 0 && transform.C == 0, "the canvas transform of an element drawn without rotation is a 2D scale and translation");
 
-            // The geometry of the element (without CSS transform nor zoom) is where it is drawn
             var style = document.DefaultView!.GetComputedStyle(element);
-            if (style.GetPropertyValue("transform") == "none" && style.GetPropertyValue("translate") == "none"
-                && style.GetPropertyValue("rotate") == "none" && style.GetPropertyValue("scale") == "none" && style.GetPropertyValue("zoom") == "1")
+            if (style.GetPropertyValue("transform") == "none" && style.GetPropertyValue("translate") == "none" && style.GetPropertyValue("rotate") == "none" && style.GetPropertyValue("scale") == "none")
             {
                 var rect = element.GetBoundingClientRect();
                 FuzzAssert.True(Math.Abs(rect.Left - (2 * offset)) < 0.01 && Math.Abs(rect.Top - (2 * (offset + 1))) < 0.01, $"the element is at ({rect.Left}, {rect.Top}) instead of where it is drawn ({2 * offset}, {2 * (offset + 1)})");
+                FuzzAssert.True(Math.Abs(rect.Width - (2 * size.Width)) < 0.01 && Math.Abs(rect.Height - (2 * size.Height)) < 0.01, $"the element is {rect.Width}x{rect.Height} instead of the size it is drawn at ({2 * size.Width}x{2 * size.Height})");
             }
 
             canvas.ClearElementGeometry(element);

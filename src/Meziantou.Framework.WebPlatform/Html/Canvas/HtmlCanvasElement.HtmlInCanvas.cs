@@ -10,11 +10,16 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The snapshot of the rendering of a drawable element (https://github.com/WICG/html-in-canvas), recorded by a rendering update:
 /// its display list in the coordinates of its border box, in CSS pixels (unzoomed), and the size of its border box.
 /// </summary>
-internal sealed class ElementSnapshot(DisplayList content, PhysicalSize size, string key)
+internal sealed class ElementSnapshot(DisplayList content, PhysicalSize size, double zoomRatio, string key)
 {
+    /// <summary>The display list, in the CSS pixels of the canvas.</summary>
     public DisplayList Content { get; } = content;
 
+    /// <summary>The size of the border box, in the CSS pixels of the canvas.</summary>
     public PhysicalSize Size { get; } = size;
+
+    /// <summary>The zoom of the canvas divided by the zoom of the element: the canvas transform is in the CSS pixels of the element.</summary>
+    public double ZoomRatio { get; } = zoomRatio;
 
     /// <summary>The text of the display list and the size, to know whether the rendering changed.</summary>
     public string Key { get; } = key;
@@ -186,6 +191,25 @@ public partial class HtmlCanvasElement
         }
 
         OnGeometryChanged();
+    }
+
+    /// <summary>Forgets the geometries of the elements that left the canvas (they would be kept alive and hit tested in vain).</summary>
+    private void PruneGeometries()
+    {
+        if (_hitTestOrder is not { Count: > 0 } && _canvasTransforms is not { Count: > 0 } && _canvasClips is not { Count: > 0 })
+            return;
+
+        bool IsStale(Element element) => !element.IsConnected || !ReferenceEquals(GetDrawableCanvas(element), this);
+        _hitTestOrder?.RemoveAll(IsStale);
+        foreach (var element in _canvasTransforms?.Keys.Where(IsStale).ToList() ?? [])
+        {
+            _canvasTransforms!.Remove(element);
+        }
+
+        foreach (var element in _canvasClips?.Keys.Where(IsStale).ToList() ?? [])
+        {
+            _canvasClips!.Remove(element);
+        }
     }
 
     /// <summary>The elements whose geometry was updated, in the hit testing order (the last one is the topmost), or null.</summary>
@@ -427,7 +451,7 @@ public partial class HtmlCanvasElement
             foreach (var box in CanvasDrawables.GetDrawableBoxes(canvasBox))
             {
                 var element = box.Element!;
-                if (CanvasDrawables.PaintSnapshot(engine, NodeDocument, box, out var size, out var delay) is not { } content)
+                if (CanvasDrawables.PaintSnapshot(engine, NodeDocument, box, out var size, out var zoomRatio, out var delay) is not { } content)
                     continue;
 
                 if (delay is { } frameDelay && (nextFrameDelay is null || frameDelay < nextFrameDelay))
@@ -437,14 +461,14 @@ public partial class HtmlCanvasElement
 
                 // (the CSS transform of the element is not painted, but its change is a change of the rendering, as in Chromium)
                 var transform = box.FirstFragment is BoxFragment fragment && LayoutTransforms.GetMatrix(fragment) is { } matrix ? string.Join(',', matrix.Select(value => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) : "";
-                var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{size.Width}x{size.Height} {transform} {GetImagesKey(content)}\n{content.Dump()}");
+                var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{size.Width}x{size.Height} {zoomRatio} {transform} {GetPaintsKey(content)}\n{content.Dump()}");
                 if (previous is not null && previous.TryGetValue(element, out var old) && old.Key == key)
                 {
                     (snapshots ??= new(ReferenceEqualityComparer.Instance))[element] = old;
                     continue;
                 }
 
-                (snapshots ??= new(ReferenceEqualityComparer.Instance))[element] = new ElementSnapshot(content, size, key);
+                (snapshots ??= new(ReferenceEqualityComparer.Instance))[element] = new ElementSnapshot(content, size, zoomRatio, key);
                 changed.Add(element);
             }
         }
@@ -474,24 +498,101 @@ public partial class HtmlCanvasElement
             });
         }
 
+        // The geometries of the elements that are no longer drawable elements of the canvas are forgotten
+        PruneGeometries();
+
         _snapshots = snapshots;
         var fires = (IsContentDrawable && (changed.Count > 0 || removed)) || _paintRequested;
         _paintRequested = false;
         return fires || IsContentDrawable ? (changed, fires) : null;
     }
 
-    /// <summary>The identities of the images of a display list: the frames of an animated image are different images.</summary>
-    private static string GetImagesKey(DisplayList content)
+    /// <summary>
+    /// The data of a display list that its dump does not show (see <see cref="DisplayList.Dump"/>): the identities of the images
+    /// (the frames of an animated image are different images) and the geometries and the stops of the gradients.
+    /// </summary>
+    private static string GetPaintsKey(DisplayList content)
     {
         var builder = new System.Text.StringBuilder();
         foreach (var item in content.Items)
         {
-            if (item is DrawImageItem image)
+            switch (item)
             {
-                builder.Append(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(image.Image)).Append(',');
+                case DrawImageItem image:
+                    builder.Append(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(image.Image)).Append(';');
+                    AppendShader(builder, image.Paint?.Shader);
+                    break;
+                case DrawPaintItem paint:
+                    AppendShader(builder, paint.Paint.Shader);
+                    break;
+                case DrawRectItem rect:
+                    AppendShader(builder, rect.Paint.Shader);
+                    break;
+                case DrawRoundedRectItem roundedRect:
+                    AppendShader(builder, roundedRect.Paint.Shader);
+                    break;
+                case DrawRingItem ring:
+                    AppendShader(builder, ring.Paint.Shader);
+                    break;
+                case DrawPathItem path:
+                    AppendShader(builder, path.Paint.Shader);
+                    break;
+                case DrawLineItem line:
+                    AppendShader(builder, line.Paint.Shader);
+                    break;
+                case DrawGlyphsItem glyphs:
+                    AppendShader(builder, glyphs.Paint.Shader);
+                    break;
             }
         }
 
         return builder.ToString();
+
+        static void AppendShader(System.Text.StringBuilder builder, DisplayShader? shader)
+        {
+            var culture = System.Globalization.CultureInfo.InvariantCulture;
+            switch (shader)
+            {
+                case null:
+                    return;
+                case LinearGradientShader linear:
+                    builder.Append(culture, $"linear {linear.Start.X},{linear.Start.Y},{linear.End.X},{linear.End.Y}");
+                    break;
+                case RadialGradientShader radial:
+                    builder.Append(culture, $"radial {radial.StartCenter.X},{radial.StartCenter.Y},{radial.StartRadius},{radial.EndCenter.X},{radial.EndCenter.Y},{radial.EndRadius}");
+                    break;
+                case ConicGradientShader conic:
+                    builder.Append(culture, $"conic {conic.Center.X},{conic.Center.Y},{conic.StartAngle}");
+                    break;
+                case ImageShader imageShader:
+                    builder.Append(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(imageShader.Image));
+                    break;
+                case FilteredShader filtered:
+                    AppendShader(builder, filtered.Content);
+                    break;
+                case TiledShader tiled:
+                    AppendShader(builder, tiled.Content);
+                    break;
+                case DisplayListShader list:
+                    builder.Append(list.Content.Dump()).Append(GetPaintsKey(list.Content));
+                    break;
+            }
+
+            if (shader is GradientShader gradient)
+            {
+                builder.Append(culture, $" {gradient.Spread} {gradient.InterpolatesPremultiplied}");
+                foreach (var stop in gradient.Stops)
+                {
+                    builder.Append(culture, $" {stop.Offset}:{stop.Color.R},{stop.Color.G},{stop.Color.B},{stop.Color.A}");
+                }
+            }
+
+            if (shader.LocalTransform is { } transform)
+            {
+                builder.Append(culture, $" @{transform.A},{transform.B},{transform.C},{transform.D},{transform.E},{transform.F}");
+            }
+
+            builder.Append(';');
+        }
     }
 }

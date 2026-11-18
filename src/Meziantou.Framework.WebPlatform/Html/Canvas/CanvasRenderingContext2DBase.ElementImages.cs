@@ -123,6 +123,11 @@ public abstract partial class CanvasRenderingContext2DBase
                 }
 
                 builder.AddList(content);
+                if (alpha < 1)
+                {
+                    builder.Restore();
+                }
+
                 builder.Restore();
             });
         }
@@ -130,12 +135,14 @@ public abstract partial class CanvasRenderingContext2DBase
         if (options?.PreserveElementGeometry == true)
             return;
 
-        // The canvas transform maps the element to the content box of the canvas: the pixels of the bitmap are scaled back to CSS pixels
-        var transform = DisplayMatrix.Scale(1 / scaleX, 1 / scaleY).PreConcat(_state.Transform).PreConcat(imageMatrix);
+        // The canvas transform maps the element to the content box of the canvas: the pixels of the bitmap are scaled back to CSS
+        // pixels of the canvas. It is in the CSS pixels of the element (its zoom scales it): the snapshot is in the ones of the canvas
+        var ratio = snapshot.ZoomRatio;
+        var transform = DisplayMatrix.Scale(ratio / scaleX, ratio / scaleY).PreConcat(_state.Transform).PreConcat(imageMatrix).PreConcat(DisplayMatrix.Scale(1 / ratio, 1 / ratio));
         // The hit testing is clipped to the source rectangle, in the CSS pixels of the element
         var matrix = transform.ToMatrix4x4();
         var is2D = transform.Matrix3d is null;
-        var clip = new PhysicalRect(sourceRect.X / scaleX, sourceRect.Y / scaleY, sourceRect.Width / scaleX, sourceRect.Height / scaleY);
+        var clip = new PhysicalRect(sourceRect.X * ratio / scaleX, sourceRect.Y * ratio / scaleY, sourceRect.Width * ratio / scaleX, sourceRect.Height * ratio / scaleY);
         if (offscreen is null)
         {
             canvas!.UpdateGeometry(target, matrix, is2D, clip, preserveHitTestOrder: false);

@@ -104,6 +104,10 @@ public sealed class CanvasTests : IDisposable
               await frame();
               child.classList.add('changed');
               await frame();
+              child.style.backgroundImage = 'linear-gradient(red, blue)';
+              await frame();
+              child.style.backgroundImage = 'linear-gradient(green, blue)';
+              await frame();
               c.requestPaint();
               await frame();
               child.remove();
@@ -120,7 +124,7 @@ public sealed class CanvasTests : IDisposable
         }
 
         Assert.Empty(_errors);
-        Assert.Equal("child,|,child,-,-", document.Title);
+        Assert.Equal("child,|,child,child,child,-,-", document.Title);
     }
 
     [Fact]

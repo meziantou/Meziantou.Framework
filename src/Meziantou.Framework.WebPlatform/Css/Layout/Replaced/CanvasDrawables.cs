@@ -84,9 +84,14 @@ internal static class CanvasDrawables
     /// Paints the snapshot of a drawable element (see <see cref="Painter.PaintCanvasDrawable"/>) in unzoomed CSS pixels, or returns
     /// null when it has no fragment.
     /// </summary>
-    public static DisplayList? PaintSnapshot(LayoutEngine engine, Document document, ContainerBox box, out PhysicalSize size, out double? nextFrameDelay)
+    /// <remarks>
+    /// The snapshot is in the CSS pixels of the canvas (the zoom of the element relative to the one of the canvas scales it, as
+    /// the element is displayed); <paramref name="zoomRatio"/> is the zoom of the canvas divided by the one of the element.
+    /// </remarks>
+    public static DisplayList? PaintSnapshot(LayoutEngine engine, Document document, ContainerBox box, out PhysicalSize size, out double zoomRatio, out double? nextFrameDelay)
     {
         size = default;
+        zoomRatio = 1;
         nextFrameDelay = null;
         if (box.FirstFragment is not BoxFragment fragment)
             return null;
@@ -94,9 +99,22 @@ internal static class CanvasDrawables
         // (an inline box is painted from the origin of the union of its fragments)
         var bounds = GetBounds(box);
         var list = Painter.PaintCanvasDrawable(engine, document, fragment, fragment.GetOffsetInRoot() - bounds.Offset, bounds.Size, out nextFrameDelay);
-        var zoom = box.Style.Layout.EffectiveZoom;
+        var zoom = GetCanvasZoom(box);
+        zoomRatio = zoom / box.Style.Layout.EffectiveZoom;
         size = new PhysicalSize(bounds.Width / zoom, bounds.Height / zoom);
         return zoom == 1 ? list : new DisplayList(list.WithTransform(DisplayMatrix.Scale(1 / zoom, 1 / zoom)).Items.ToArray(), size);
+    }
+
+    /// <summary>Returns the zoom of the canvas of a drawable box (the one of the contents box of the canvas).</summary>
+    private static double GetCanvasZoom(ContainerBox box)
+    {
+        for (var current = box.Parent; current is not null; current = current.Parent)
+        {
+            if (current.IsFormControlContents)
+                return current.Style.Layout.EffectiveZoom;
+        }
+
+        return box.Style.Layout.EffectiveZoom;
     }
 
     /// <summary>

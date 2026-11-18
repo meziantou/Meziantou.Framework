@@ -12,7 +12,9 @@ fails.
 - **No window.** The pages are rendered into images: your application takes the screenshots and plays the user with
   [BrowsingContext.Input](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Input) (see [User input](05-LoadingPages/06-UserInput.md)). The pinch zoom cannot zoom out below the initial
   scale of the page, and the scroll methods of the window (`scrollTo()`...) do not scroll the zoomed visual viewport. The
-  delegated ink trails (`navigator.ink`) are not drawn, and there is no scroll performance timing (`PerformanceScrollTiming`).
+  delegated ink trails (`navigator.ink`) of the documents of the `iframe` elements are not drawn in the screenshots of the
+  top-level document, and the scroll performance timing (`PerformanceScrollTiming`) does not report the scrolls of the
+  scripts nor the scrolls of the zoomed visual viewport.
 - **CSS values.** A value with more than 1,000 repetitions of a component of its grammar (e.g. more than 1,000 tracks
   listed in `grid-template-columns`, or 1,000 families in `font-family`) is invalid: the parser backtracks through the
   repetitions, and a fixed limit keeps the time it takes small and the same on every platform.

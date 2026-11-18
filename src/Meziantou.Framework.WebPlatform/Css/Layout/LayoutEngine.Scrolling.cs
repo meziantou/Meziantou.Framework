@@ -147,6 +147,7 @@ internal sealed partial class LayoutEngine
                     state.SmoothScroll = null;
                     state.UserGestureStart = null;
                     state.UserGestureHeld = false;
+                    DiscardScrollTiming(state);
                     ResolvePendingPromises(state);
                     (removedPseudoElements ??= []).Add(key);
                 }
@@ -173,6 +174,7 @@ internal sealed partial class LayoutEngine
                 state.SmoothScroll = null;
                 state.UserGestureStart = null;
                 state.UserGestureHeld = false;
+                DiscardScrollTiming(state);
                 ResolvePendingPromises(state);
                 (removed ??= []).Add(element);
                 if (state.Offset != PhysicalOffset.Zero && _boxTree?.GetPrincipalBox(element) is not null)
@@ -217,6 +219,12 @@ internal sealed partial class LayoutEngine
     private Task PerformScrollCore(ScrollState state, PhysicalOffset position, ScrollBehavior behavior, Element? associatedElement)
     {
         position = state.Clamp(position);
+
+        // A scroll that is not a scroll of the user (e.g. scrollTo()) ends the measure of the scroll of the user in progress
+        if (!_performingUserScroll)
+        {
+            ReportScrollTiming(state);
+        }
 
         // The scroll ends the scroll gesture of the user whose pointer is not pressed (the wheel) without snapping it
         if (!state.UserGestureHeld)
@@ -328,6 +336,11 @@ internal sealed partial class LayoutEngine
 
         state.Offset = position;
         ScrollVersion++;
+        if (state.ScrollTiming is { } scrollTiming)
+        {
+            scrollTiming.LastChangeTimestamp = _document.EventLoop?.TimeProvider.GetTimestamp() ?? 0;
+        }
+
         InvalidatePaint();
         _document.AnimationsOrNull?.OnScrollOrLayoutChanged();
 
@@ -471,6 +484,18 @@ internal sealed partial class LayoutEngine
     /// </summary>
     internal bool RunScrollSteps(long frameTimestamp, long timestampFrequency)
     {
+        var animating = AdvanceSmoothScrolls(frameTimestamp, timestampFrequency);
+
+        // The frame displays the scroll positions: the scrolls of the user that ended are reported
+        UpdateScrollTimings(frameTimestamp);
+
+        FirePendingScrollEvents();
+        return animating;
+    }
+
+    /// <summary>Advances the smooth scrolls to the time of a frame (see <see cref="RunScrollSteps"/>). Returns whether a smooth scroll is still in progress.</summary>
+    private bool AdvanceSmoothScrolls(long frameTimestamp, long timestampFrequency)
+    {
         var animating = false;
         foreach (var state in EnumerateScrollStates())
         {
@@ -499,6 +524,12 @@ internal sealed partial class LayoutEngine
             animating = true;
         }
 
+        return animating;
+    }
+
+    /// <summary>Fires the pending scroll events of the document (see <see cref="RunScrollSteps"/>).</summary>
+    private void FirePendingScrollEvents()
+    {
         if (_pendingScrollEvents.Count > 0)
         {
             var events = _pendingScrollEvents.ToArray();
@@ -521,8 +552,6 @@ internal sealed partial class LayoutEngine
                 }
             }
         }
-
-        return animating;
     }
 
     private IEnumerable<ScrollState> EnumerateScrollStates()

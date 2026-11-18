@@ -72,6 +72,9 @@ internal static class ExperimentalApis
     /// <summary>The <c>CanvasFilter</c> objects (https://github.com/whatwg/html/issues/5621): the filters of the 2D contexts and of the canvas layers described by filter primitives.</summary>
     public const string CanvasFilterObjects = "WEBPLATEXP0021";
 
+    /// <summary>The scroll performance timing (https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/PerformanceScrollTiming/explainer.md): <c>PerformanceScrollTiming</c> and the <c>scroll</c> entry type.</summary>
+    public const string ScrollTiming = "WEBPLATEXP0022";
+
     /// <summary>HTML-in-canvas (https://github.com/WICG/html-in-canvas): the <c>content</c> attribute and the paint events of the canvases, <c>drawElementImage()</c> and the element images and geometries.</summary>
     public const string HtmlInCanvas = "WEBPLATEXP0023";
 }

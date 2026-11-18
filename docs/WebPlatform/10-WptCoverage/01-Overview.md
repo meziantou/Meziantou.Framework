@@ -50,10 +50,10 @@ The features of `REQUIRES`:
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,994 | 30,126 | 1,919 | 96% |
-| [Tentative](#tentative-tests) | 1,567 | 3,223 | 662 | 61% |
+| [Tentative](#tentative-tests) | 1,568 | 3,223 | 662 | 61% |
 | [Reftests](#reftests) | 28,734 | 29,841 | 149 | 97% |
 | [Crash tests](#crash-tests) | 2,054 | 2,128 | 62 | 99% |
-| **All** | **59,349** | **65,318** | **2,792** | **95%** |
+| **All** | **59,350** | **65,318** | **2,792** | **95%** |
 
 ## Failure reasons
 
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 281
 - **TEST BUG**: 1,082
-- **NOT IMPLEMENTED**: 3,657
+- **NOT IMPLEMENTED**: 3,656
 - **REQUIRES**: 764
   - `hardware`: 579
   - `layout`: 23
@@ -550,7 +550,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`screen-capture`](screen-capture.md#tentative-tests) | 0 | 2 | 2 | – |
 | [`screen-details`](screen-details.md#tentative-tests) | 0 | 2 | 2 | – |
 | [`scroll-animations`](scroll-animations.md#tentative-tests) | 41 | 79 | 0 | 52% |
-| [`scroll-performance-timing`](scroll-performance-timing.md#tentative-tests) | 0 | 1 | 0 | 0% |
+| [`scroll-performance-timing`](scroll-performance-timing.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`secure-contexts`](secure-contexts.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`selection`](selection.md#tentative-tests) | 26 | 34 | 0 | 76% |
 | [`service-workers`](service-workers.md#tentative-tests) | 7 | 11 | 0 | 64% |
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (165 sections)** | **1,567** | **3,223** | **662** | **61%** |
+| **Total (165 sections)** | **1,568** | **3,223** | **662** | **61%** |
 
 ## Reftests
 

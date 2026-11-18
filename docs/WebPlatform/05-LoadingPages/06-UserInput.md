@@ -52,8 +52,10 @@ the hit testing of the layout) gets the events, also in the document of an `ifra
 
 The pen and touch events can be given to `navigator.ink` (the [Delegated Ink Trail API](https://wicg.github.io/ink-enhancement/)):
 `requestPresenter()` and `updateInkTrailStartPoint()` validate their arguments as in Chromium (a trusted pointer event, a
-valid CSS color, a diameter greater than 0), but the engine does not draw the predicted trail: the page draws its own
-trail in its next frame.
+valid CSS color, a diameter greater than 0). The screenshots draw the trail as the compositor of a browser does: a line
+of the color and the diameter of the style, with round ends, from the start point through the positions of the later
+`pointermove` events of the same pointer, clipped to the presentation area (or to the viewport). The trail is removed by
+the second rendering update after `updateInkTrailStartPoint()`: the page draws its own trail in its next frame.
 
 A press of the primary button puts the caret at the pointer, and a drag selects the text from the press to the pointer
 (with Shift, a press extends the selection). A double click selects a word and a triple click a paragraph. The same

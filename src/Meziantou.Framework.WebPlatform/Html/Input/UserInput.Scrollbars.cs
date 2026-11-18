@@ -103,7 +103,7 @@ public sealed partial class UserInput
 
         var direction = press.Part == ScrollbarPart.TrackBefore ? -1d : 1d;
         var (deltaX, deltaY) = press.IsVertical ? (0d, direction) : (direction, 0d);
-        ScrollBox(press.Document, press.State, ref deltaX, ref deltaY, UserScrollUnit.Page, UserScrollKind.Directional);
+        ScrollBox(press.Document, press.State, ref deltaX, ref deltaY, UserScrollUnit.Page, UserScrollKind.Directional, scrollSource: "other");
     }
 
     /// <summary>The release of the press on a scrollbar: the drag of its thumb ends (it snaps, then fires <c>scrollend</c>).</summary>

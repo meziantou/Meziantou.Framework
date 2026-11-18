@@ -461,6 +461,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PerformancePaintTiming"] = Binding_PerformancePaintTiming<TAdapter, TValue>.Binding,
             ["PerformanceResourceTiming"] = Binding_PerformanceResourceTiming<TAdapter, TValue>.Binding,
             ["PerformanceScriptTiming"] = Binding_PerformanceScriptTiming<TAdapter, TValue>.Binding,
+            ["PerformanceScrollTiming"] = Binding_PerformanceScrollTiming<TAdapter, TValue>.Binding,
             ["PerformanceServerTiming"] = Binding_PerformanceServerTiming<TAdapter, TValue>.Binding,
             ["PerformanceSoftNavigation"] = Binding_PerformanceSoftNavigation<TAdapter, TValue>.Binding,
             ["PerformanceTiming"] = Binding_PerformanceTiming<TAdapter, TValue>.Binding,

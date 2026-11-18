@@ -10233,6 +10233,23 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution WindowAttribution { get => throw null; }
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0022", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class PerformanceScrollTiming : Meziantou.Framework.WebPlatform.Dom.PerformanceEntry
+    {
+        public double CheckerboardTime { get => throw null; }
+        public int DeltaX { get => throw null; }
+        public int DeltaY { get => throw null; }
+        public new double Duration { get => throw null; }
+        public new string EntryType { get => throw null; }
+        public double FirstFrameTime { get => throw null; }
+        public uint FramesExpected { get => throw null; }
+        public uint FramesProduced { get => throw null; }
+        public new string Name { get => throw null; }
+        public string ScrollSource { get => throw null; }
+        public new double StartTime { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Node? Target { get => throw null; }
+    }
+
     public sealed class PerformanceServerTiming
     {
         public string Description { get => throw null; }
@@ -14192,6 +14209,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ResizeObserverEnabled { get => throw null; init { } }
         public bool ScreenOrientationEnabled { get => throw null; init { } }
         public bool ScrollDrivenAnimationsEnabled { get => throw null; init { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0022", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public bool ScrollTimingEnabled { get => throw null; init { } }
         public bool SensorsEnabled { get => throw null; init { } }
         public bool ServiceWorkersEnabled { get => throw null; init { } }
         public bool SharedWorkersEnabled { get => throw null; init { } }

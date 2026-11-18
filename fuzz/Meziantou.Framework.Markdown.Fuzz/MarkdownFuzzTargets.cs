@@ -398,7 +398,129 @@ public static class MarkdownFuzzTargets
             _ = tree.RemoveBlock(block);
             _ = tree.InsertBlocksBefore(block, "- a\n\n> b");
             _ = tree.InsertBlocksAfter(block, "\nc\n");
+            _ = tree.ReplaceBlock(block, "- d\n\n> e\n");
         }
+
+        if (text.Length < 4096)
+        {
+            CheckEdits(tree, text);
+        }
+    }
+
+    // The nodes that the With methods return are read back with the values they were given. A node is read alone, when it is read
+    // alone as it is in the tree: in the tree, the new text can change how the text around it is read, as any Markdown text, such as
+    // a title removed from a definition that lets the next line be its title. The tree with the node replaced is parsed again.
+    private static void CheckEdits(MarkdownSyntaxTree tree, string text)
+    {
+        const string Destination = "a b|(\\c<";
+        const string Title = "t\"'|)\\\n2";
+        const string Info = "x`y \\& z";
+
+        var options = tree.Options;
+        var root = tree.GetRoot();
+        foreach (var heading in root.DescendantNodes().OfType<MarkdownHeadingSyntax>().Take(3))
+        {
+            var level = heading.IsSetext ? 3 - heading.Level : (heading.Level % 6) + 1;
+            var leveled = heading.WithLevel(level);
+            Replace(tree, heading, leveled);
+            if (ParseAlone<MarkdownHeadingSyntax>(heading, options) is { } alone && alone.Level == heading.Level && alone.IsSetext == heading.IsSetext)
+            {
+                FuzzAssert.True(ParseAlone<MarkdownHeadingSyntax>(leveled, options)?.Level == level, $"The heading at {heading.Span} is not of level {level} once changed: {FuzzAssert.Format(text)}");
+            }
+        }
+
+        // The tree checks that the block gets the attributes it is given, and refuses the ones it cannot write: the block of the same
+        // kind has them in the new tree
+        if (options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
+        {
+            foreach (var block in root.DescendantNodes().OfType<MarkdownBlockSyntax>().Take(4))
+            {
+                foreach (var attributes in (MarkdownGenericAttributes?[])[FuzzAttributes, null])
+                {
+                    MarkdownSyntaxTree updated;
+                    try
+                    {
+                        updated = tree.WithGenericAttributes(block, attributes);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        continue;
+                    }
+
+                    var expected = attributes ?? MarkdownGenericAttributes.Empty;
+                    FuzzAssert.True(updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Any(node => node.RawKind == block.RawKind && node.GetGenericAttributes().Equals(expected)), $"The block at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
+                }
+            }
+        }
+
+        foreach (var link in root.DescendantNodes().OfType<MarkdownLinkSyntax>().Where(link => link.LinkKind == MarkdownLinkKind.Inline).Take(3))
+        {
+            var changed = link.WithDestination(Destination).WithTitle(Title);
+            var untitled = link.WithTitle(null);
+            Replace(tree, link, changed);
+            Replace(tree, link, untitled);
+            // A < in the text can start raw HTML that the > of the destination in angle brackets would end
+            if (!link.Text.Any(child => child.ToString().Contains('<', StringComparison.Ordinal)) && StartsOnTheFirstLine(link, link.DestinationToken) && ParseAlone<MarkdownLinkSyntax>(link, options) is { LinkKind: MarkdownLinkKind.Inline } alone && alone.Destination == link.Destination && alone.Title == link.Title)
+            {
+                FuzzAssert.True(ParseAlone<MarkdownLinkSyntax>(changed, options) is { } read && read.Destination == Destination && read.Title == Title, $"The link at {link.Span} does not have the destination and the title it was given: {FuzzAssert.Format(text)}");
+                FuzzAssert.True(ParseAlone<MarkdownLinkSyntax>(untitled, options) is { Title: null } removed && removed.Destination == link.Destination, $"The link at {link.Span} keeps a title once removed: {FuzzAssert.Format(text)}");
+            }
+        }
+
+        foreach (var definition in root.DescendantNodes().OfType<MarkdownLinkReferenceDefinitionSyntax>().Take(3))
+        {
+            var changed = definition.WithDestination(Destination).WithTitle(Title);
+            var untitled = definition.WithTitle(null);
+            Replace(tree, definition, changed);
+            Replace(tree, definition, untitled);
+            if (StartsOnTheFirstLine(definition, definition.DestinationToken) && ParseAlone<MarkdownLinkReferenceDefinitionSyntax>(definition, options) is { } alone && alone.Destination == definition.Destination && alone.Title == definition.Title)
+            {
+                FuzzAssert.True(ParseAlone<MarkdownLinkReferenceDefinitionSyntax>(changed, options) is { } read && read.Destination == Destination && read.Title == Title, $"The definition at {definition.Span} does not have the destination and the title it was given: {FuzzAssert.Format(text)}");
+                FuzzAssert.True(ParseAlone<MarkdownLinkReferenceDefinitionSyntax>(untitled, options) is { Title: null } removed && removed.Destination == definition.Destination, $"The definition at {definition.Span} keeps a title once removed: {FuzzAssert.Format(text)}");
+            }
+        }
+
+        foreach (var codeBlock in root.DescendantNodes().OfType<MarkdownCodeBlockSyntax>().Where(block => block.IsFenced).Take(3))
+        {
+            var changed = codeBlock.WithInfo(Info);
+            var removed = codeBlock.WithInfo(null);
+            Replace(tree, codeBlock, changed);
+            Replace(tree, codeBlock, removed);
+            if (ParseAlone<MarkdownCodeBlockSyntax>(codeBlock, options) is { IsFenced: true } alone && alone.Info == codeBlock.Info && alone.Code == codeBlock.Code)
+            {
+                FuzzAssert.True(ParseAlone<MarkdownCodeBlockSyntax>(changed, options) is { } read && read.Info == Info && read.Code == codeBlock.Code, $"The code block at {codeBlock.Span} does not have the info string it was given: {FuzzAssert.Format(text)}");
+                FuzzAssert.True(ParseAlone<MarkdownCodeBlockSyntax>(removed, options) is { Info: null } read2 && read2.Code == codeBlock.Code, $"The code block at {codeBlock.Span} keeps an info string once removed: {FuzzAssert.Format(text)}");
+            }
+        }
+    }
+
+    // Whether the token is on the first line of the node: a new token at the end of a line can change how the start of the line is
+    // read, such as a line of a label that starts with ``` and becomes a fence once the backticks after it are gone
+    private static bool StartsOnTheFirstLine(MarkdownSyntaxNode node, SyntaxToken token)
+    {
+        var end = token.RawKind == 0 ? node.Span.End : token.SpanStart;
+        return !node.SyntaxTree!.GetText().ToString().AsSpan(node.SpanStart, end - node.SpanStart).ContainsAny('\r', '\n');
+    }
+
+    private static readonly MarkdownGenericAttributes FuzzAttributes = new("fz-id", ["fz"], [new("data-fz", "a b'"), new("fz", null)]);
+
+    // The text of the tree with the node replaced reproduces the text around the node, and is parsed again
+    private static void Replace(MarkdownSyntaxTree tree, MarkdownSyntaxNode node, MarkdownSyntaxNode replacement)
+    {
+        var text = tree.GetRoot().ToFullString();
+        var updated = tree.GetRoot().ReplaceNode(node, replacement).ToFullString();
+        var expected = string.Concat(text.AsSpan(0, node.FullSpan.Start), replacement.ToFullString(), text.AsSpan(node.FullSpan.End));
+        FuzzAssert.True(updated == expected, $"Replacing the node at {node.Span} changes the text around it: {FuzzAssert.Format(text)}");
+        _ = MarkdownSyntaxTree.ParseText(updated, tree.Options).GetRoot().DescendantNodes().Count();
+    }
+
+    // Parses the text of the node, without the trivia around it, and finds the node of the same type that it is read as, whole: the
+    // whitespace that starts it can be trivia, such as a heading whose text is a form feed, before the attributes it is given
+    private static TNode? ParseAlone<TNode>(TNode node, MarkdownParseOptions options)
+        where TNode : MarkdownSyntaxNode
+    {
+        var text = node.ToString();
+        return MarkdownSyntaxTree.ParseText(text, options).GetRoot().DescendantNodes().OfType<TNode>().FirstOrDefault(other => other.Span.End == text.Length && text.AsSpan(0, other.SpanStart).IsWhiteSpace());
     }
 
     private sealed class CountingWalker : MarkdownSyntaxWalker

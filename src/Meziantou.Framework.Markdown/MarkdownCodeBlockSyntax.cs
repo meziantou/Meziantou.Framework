@@ -130,6 +130,45 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
         }
     }
 
+    /// <summary>Returns this fenced code block with the info string <paramref name="info"/>, or itself when it has this info string.</summary>
+    /// <param name="info">
+    /// The info string, which is escaped: it is the <see cref="Info"/> of the block, without the whitespace around it.
+    /// <see langword="null"/> or a blank text removes the info string.
+    /// </param>
+    /// <remarks>The block is in no tree: replace this one with it, with <see cref="SyntaxNodeExtensions.ReplaceNode{TRoot}(TRoot, SyntaxNode, SyntaxNode)"/>.</remarks>
+    /// <exception cref="ArgumentException"><paramref name="info"/> contains a line ending.</exception>
+    /// <exception cref="InvalidOperationException">The block is an indented code block, which has no info string.</exception>
+    public MarkdownCodeBlockSyntax WithInfo(string? info)
+    {
+        if (!IsFenced)
+            throw new InvalidOperationException("An indented code block has no info string.");
+
+        if (info is not null && info.AsSpan().ContainsAny('\r', '\n'))
+            throw new ArgumentException("The info string cannot contain a line ending.", nameof(info));
+
+        info = string.IsNullOrWhiteSpace(info) ? null : info.Trim();
+        if (Info == info)
+            return this;
+
+        var children = MarkdownNodeEditor.GetChildren(this);
+        var fence = MarkdownNodeEditor.IndexOfToken(children, SyntaxKind.CodeFenceToken);
+        var index = InfoToken.RawKind == 0 ? -1 : MarkdownNodeEditor.IndexOfToken(children, SyntaxKind.InfoStringToken);
+        if (info is null)
+        {
+            MarkdownNodeEditor.RemoveOnLine(children, index, index);
+        }
+        else if (index >= 0)
+        {
+            children[index] = MarkdownNodeEditor.WithText(children[index]!, MarkdownEscaper.EscapeInfoString(info));
+        }
+        else
+        {
+            MarkdownNodeEditor.InsertOnLineAfter(children, fence, MarkdownNodeEditor.Token(SyntaxKind.InfoStringToken, MarkdownEscaper.EscapeInfoString(info), leadingTrivia: null, trailingTrivia: null), space: false);
+        }
+
+        return MarkdownNodeEditor.WithChildren(this, children);
+    }
+
     public override string GetPlainText() => Code;
 
     public override void Accept(MarkdownSyntaxVisitor visitor)

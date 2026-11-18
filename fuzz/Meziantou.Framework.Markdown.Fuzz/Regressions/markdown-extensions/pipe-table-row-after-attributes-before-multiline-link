@@ -1,0 +1,6 @@
+a  | b
+-- | --
+[This is a
+a link with a | inside the la[](**text**.
+| .```/target.md)
+bel](http://google.com) | 1

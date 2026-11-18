@@ -1135,12 +1135,20 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a | b\n-|-{.x}\nc|d\n", "<table class=\"x\">\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n")]
     [InlineData("| a |{.c}\n|---|\n| b |\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>b</td>\n</tr>\n</tbody>\n</table>\n")]
     [InlineData("|{.center}\nA paragraph\n", "<p>|\nA paragraph</p>\n")]
+    [InlineData("a | b\n-- | {e=\"f\n\"}--!\n", "<p>a | b\n-- | --!</p>\n")]
+    [InlineData("a | b\n-- | {e=\"f\n\"} --\nc | d\n", "<table>\n<thead>\n<tr>\n<th>a</th>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n<td>d</td>\n</tr>\n</tbody>\n</table>\n")]
     public void RendersTheGenericAttributesOfPipeTables(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.GenericAttributes });
 
         Assert.Equal(text, tree.GetRoot().ToFullString());
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+
+        // The delimiter row of a table, whose attributes can span lines, has a column for each delimiter
+        foreach (var table in tree.GetRoot().Blocks.OfType<MarkdownTableSyntax>())
+        {
+            Assert.HasCount(table.DelimiterRow!.DelimiterTokens.Count, table.Alignments);
+        }
     }
 
     [Fact]
@@ -1201,6 +1209,19 @@ public sealed class MarkdownSyntaxTreeTests
         var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables, PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false } };
 
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options)));
+    }
+
+    [Fact]
+    public void PipeTableRowAfterAttributesBeforeALinkThatSpansLines()
+    {
+        // The link spans the two lines: the attributes of the first line are not in the second row
+        const string Text = "{}[|\n]()|";
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.GenericAttributes, PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false } };
+
+        var tree = MarkdownSyntaxTree.ParseText(Text, options);
+
+        Assert.Equal(Text, tree.GetRoot().ToFullString());
+        Assert.NotEmpty(MarkdownHtmlRenderer.ToHtml(tree));
     }
 
     // As Markdig, the empty cells that complete the short rows are limited in a document: the rows of a table that would exceed
@@ -2188,6 +2209,29 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Theory]
+    [InlineData("*a **b@c.de** a*", MarkdownExtensions.Autolinks, "<p><em>a <strong>b@c.de</strong> a</em></p>\n")]
+    [InlineData("*[HTML]: Hyper\n\n*a **HTML** a*", MarkdownExtensions.Abbreviations, "<p><em>a <strong>HTML</strong> a</em></p>\n")]
+    public void EmailAddressesAndAbbreviationsNestedInMoreInlinesThanTheLimitAreText(string text, MarkdownExtensions extensions, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = extensions, MaximumNestingDepth = 1 });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+        Assert.DoesNotContain(tree.GetRoot().DescendantNodes(), node => node is MarkdownAutolinkSyntax or MarkdownAbbreviationSyntax);
+    }
+
+    [Theory]
+    [InlineData(1, "<blockquote>\n<ul>\n<li>a\n:   b</li>\n</ul>\n</blockquote>\n")]
+    [InlineData(3, "<blockquote>\n<ul>\n<li>\n<dl>\n<dt>a</dt>\n<dd>b</dd>\n</dl>\n</li>\n</ul>\n</blockquote>\n")]
+    public void DefinitionOnALazyLineNestedInMoreBlocksThanTheLimitIsText(int limit, string expected)
+    {
+        // The definition marker is on a line that the list item does not continue: the definition list would go in the item
+        var tree = MarkdownSyntaxTree.ParseText("> - a\n:   b\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.DefinitionLists, MaximumNestingDepth = limit });
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
     [InlineData(">", " a")]
     [InlineData("- ", "a")]
     [InlineData("> - ", "a")]
@@ -3162,6 +3206,336 @@ public sealed class MarkdownSyntaxTreeTests
         var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Where(node => node is not (MarkdownBlockQuoteSyntax or MarkdownListSyntax)).ToList()[blockIndex];
 
         Assert.Equal(expected, tree.RemoveBlock(block).GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void ReadmeExample_ReplaceBlock()
+    {
+        #region MarkdownSyntaxTree_ReplaceBlock
+        var tree = MarkdownSyntaxTree.ParseText("> - first\n> - second\n");
+        var paragraph = tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().First();
+
+        // The markers of the block quote and the indentation of the list item are added to the new lines
+        var updated = tree.ReplaceBlock(paragraph, "Paragraph\n\n```\ncode\n```");
+
+        Assert.Equal("> - Paragraph\n>\n>   ```\n>   code\n>   ```\n> - second\n", updated.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("a\n\nb\n", 0, "c", "c\n\nb\n")]
+    [InlineData("a\n\nb\n", 1, "c\n", "a\n\nc\n")]
+    [InlineData("a\r\nb\r\n\r\nc", 0, "x\ny", "x\r\ny\r\n\r\nc")]
+    [InlineData("```\ncode\n```\nafter\n", 0, "# t", "# t\nafter\n")]
+    [InlineData("- a\n- b\n", 0, "x\n\ny", "- x\n\n  y\n- b\n")]
+    public void ReplacesBlocks(string text, int blockIndex, string markdown, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text);
+        var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Where(node => node is MarkdownParagraphSyntax or MarkdownCodeBlockSyntax).ToList()[blockIndex];
+
+        Assert.Equal(expected, tree.ReplaceBlock(block, markdown).GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void ReadmeExample_WithGenericAttributes()
+    {
+        #region MarkdownSyntaxTree_WithGenericAttributes
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
+        var tree = MarkdownSyntaxTree.ParseText("# Steps {.lead}\n\n> - Install\n> - Run\n", options);
+
+        // Add a property to the attributes of the heading, which keeps its class, and give the list an id
+        var heading = tree.GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();
+        var attributes = heading.GetGenericAttributes();
+        tree = tree.WithGenericAttributes(heading, attributes with { Properties = [.. attributes.Properties, new("data-level", "1")] });
+
+        var list = tree.GetRoot().DescendantNodes().OfType<MarkdownListSyntax>().Single();
+        tree = tree.WithGenericAttributes(list, new MarkdownGenericAttributes("steps", ["compact"], []));
+
+        // The attributes of a list are on the line before it, with the markers of the block quote
+        Assert.Equal("# Steps {.lead data-level=1}\n\n> {#steps .compact}\n> - Install\n> - Run\n", tree.GetRoot().ToFullString());
+        Assert.Equal("steps", tree.GetRoot().DescendantNodes().OfType<MarkdownListSyntax>().Single().GetGenericAttributes().Id);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_HeadingIdentifiers()
+    {
+        #region MarkdownSyntaxTree_HeadingIdentifiers
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
+        var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n", options);
+
+        // Write the identifier of every heading as its id, so that the links to it keep working when its text changes. Each edit
+        // parses the text again: the headings are found again in the new tree.
+        var count = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Count();
+        for (var i = 0; i < count; i++)
+        {
+            var heading = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().ElementAt(i);
+            tree = tree.WithGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
+        }
+
+        Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n", tree.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("# Title\n", "# Title {#x .c data-a=1 title=\"a b\" hidden}\n")]
+    [InlineData("## Title {#old .k} ##\n", "## Title {#x .c data-a=1 title=\"a b\" hidden}\n")]
+    [InlineData("## Title ##\n", "## Title ## {#x .c data-a=1 title=\"a b\" hidden}\n")]
+    [InlineData("Title {.k}\n===\n", "Title {#x .c data-a=1 title=\"a b\" hidden}\n===\n")]
+    [InlineData("```cs\ncode\n```\n", "```cs {#x .c data-a=1 title=\"a b\" hidden}\ncode\n```\n")]
+    [InlineData("$$\nx\n$$\n", "$$ {#x .c data-a=1 title=\"a b\" hidden}\nx\n$$\n")]
+    [InlineData("::: note\nx\n:::\n", "::: note {#x .c data-a=1 title=\"a b\" hidden}\nx\n:::\n")]
+    [InlineData("text\r\nmore\r\n", "text\r\nmore {#x .c data-a=1 title=\"a b\" hidden}\r\n")]
+    [InlineData("- a\n- b\n", "{#x .c data-a=1 title=\"a b\" hidden}\n- a\n- b\n")]
+    [InlineData("{.old}\n- a\n", "{#x .c data-a=1 title=\"a b\" hidden}\n- a\n")]
+    [InlineData("> quote\n", "{#x .c data-a=1 title=\"a b\" hidden}\n> quote\n")]
+    [InlineData("    code\n", "{#x .c data-a=1 title=\"a b\" hidden}\n\n    code\n")]
+    [InlineData("| a |\n|---|\n", "{#x .c data-a=1 title=\"a b\" hidden}\n\n| a |\n|---|\n")]
+    [InlineData("+---+\n| a |\n+---+\n", "{#x .c data-a=1 title=\"a b\" hidden}\n+---+\n| a |\n+---+\n")]
+    public void WithGenericAttributes(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
+        var block = tree.GetRoot().Blocks.Single(block => block is not MarkdownParagraphSyntax || tree.GetRoot().Blocks.Count == 1);
+        var attributes = new MarkdownGenericAttributes("x", ["c"], [new("data-a", "1"), new("title", "a b"), new("hidden", null)]);
+
+        var updated = tree.WithGenericAttributes(block, attributes);
+
+        Assert.Equal(expected, updated.GetRoot().ToFullString());
+        Assert.Equal(attributes, updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Single(node => node.RawKind == block.RawKind).GetGenericAttributes());
+    }
+
+    [Theory]
+    [InlineData("para\n- a\n", "para\n\n{#x}\n- a\n")]
+    [InlineData("para\n\n---\n", "para\n\n{#x}\n\n---\n")]
+    [InlineData("> - a\n>   b\n", "> {#x}\n> - a\n>   b\n")]
+    [InlineData("- a\n\n  > q\n", "- a\n\n  {#x}\n  > q\n")]
+    public void WithGenericAttributesSeparatesTheLineOfTheAttributes(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
+        var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Last(node => node is MarkdownListSyntax or MarkdownThematicBreakSyntax or MarkdownBlockQuoteSyntax);
+
+        Assert.Equal(expected, tree.WithGenericAttributes(block, new MarkdownGenericAttributes("x", [], [])).GetRoot().ToFullString());
+    }
+
+    [Theory]
+    [InlineData("# a {#x .c}\n", "# a\n")]
+    [InlineData("Title {#x}\n===\n", "Title\n===\n")]
+    [InlineData("{.c}\n- a\n", "- a\n")]
+    [InlineData("> {.c}\n> - a\n", "> - a\n")]
+    [InlineData("```cs {.c}\nx\n```\n", "```cs\nx\n```\n")]
+    [InlineData("text {.c}\n", "text\n")]
+    [InlineData("# a\n", "# a\n")]
+    public void WithGenericAttributesRemovesTheAttributes(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
+        var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().FirstOrDefault(node => !node.GetGenericAttributes().IsEmpty) ?? tree.GetRoot().Blocks[0];
+
+        var updated = tree.WithGenericAttributes(block, null);
+
+        Assert.Equal(expected, updated.GetRoot().ToFullString());
+        Assert.DoesNotContain(updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>(), node => !node.GetGenericAttributes().IsEmpty);
+    }
+
+    [Fact]
+    public void GetGenericAttributesMergesTheAttributesOfTheBlock()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("{#a .b k=1}\n``` cs {#c .d k=2 j}\nx\n```\n", AttributeOptions);
+
+        var attributes = tree.GetRoot().Blocks.OfType<MarkdownCodeBlockSyntax>().Single().GetGenericAttributes();
+
+        // The id of the last attributes wins, the classes of the first line come first, and the first value of a property is kept
+        Assert.Equal(new MarkdownGenericAttributes("a", ["d", "b"], [new("k", "2"), new("j", null)]), attributes);
+        Assert.Same(MarkdownGenericAttributes.Empty, MarkdownSyntaxTree.ParseText("# a {#x}\n").GetRoot().Blocks[0].GetGenericAttributes());
+    }
+
+    [Theory]
+    [InlineData("a b", null, null)]
+    [InlineData(null, "", null)]
+    [InlineData(null, "a}", null)]
+    [InlineData(null, null, "1a")]
+    [InlineData(null, null, "a b")]
+    public void WithInvalidGenericAttributesThrows(string? id, string? cssClass, string? propertyName)
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n", AttributeOptions);
+        var attributes = new MarkdownGenericAttributes(id, cssClass is null ? [] : [cssClass], propertyName is null ? [] : [new(propertyName, "v")]);
+
+        Assert.Throws<ArgumentException>(nameof(attributes), () => tree.WithGenericAttributes(tree.GetRoot().Blocks[0], attributes));
+    }
+
+    [Fact]
+    public void WithGenericAttributesQuotesTheValues()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n", AttributeOptions);
+        var attributes = new MarkdownGenericAttributes(null, [], [new("a", "x\"y"), new("b", ""), new("c", "}")]);
+
+        var updated = tree.WithGenericAttributes(tree.GetRoot().Blocks[0], attributes);
+
+        Assert.Equal("# a {a='x\"y' b=\"\" c=\"}\"}\n", updated.GetRoot().ToFullString());
+        Assert.Equal(attributes, updated.GetRoot().Blocks[0].GetGenericAttributes());
+        Assert.Throws<ArgumentException>("attributes", () => tree.WithGenericAttributes(tree.GetRoot().Blocks[0], new MarkdownGenericAttributes(null, [], [new("a", "'\"")])));
+    }
+
+    [Fact]
+    public void WithGenericAttributesOnABlockWithoutAttributesThrows()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("- a\n", AttributeOptions);
+        var withoutExtension = MarkdownSyntaxTree.ParseText("# a\n");
+
+        // Markdig gives no attributes to a list item
+        Assert.Throws<InvalidOperationException>(() => tree.WithGenericAttributes(tree.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().Single(), new MarkdownGenericAttributes("x", [], [])));
+        Assert.Throws<InvalidOperationException>(() => withoutExtension.WithGenericAttributes(withoutExtension.GetRoot().Blocks[0], attributes: null));
+    }
+
+    private static readonly MarkdownParseOptions AttributeOptions = new() { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.Mathematics | MarkdownExtensions.CustomContainers | MarkdownExtensions.PipeTables | MarkdownExtensions.GridTables | MarkdownExtensions.Footnotes };
+
+    [Theory]
+    [InlineData("# a #\n", 3, "### a #\n")]
+    [InlineData("> ###### a\n", 1, "> # a\n")]
+    [InlineData("a\n===\n", 2, "a\n---\n")]
+    [InlineData("> a\n> -\n", 1, "> a\n> =\n")]
+    public void HeadingWithLevel(string text, int level, string expected)
+    {
+        var root = MarkdownSyntaxTree.ParseText(text).GetRoot();
+        var heading = root.DescendantNodes().OfType<MarkdownHeadingSyntax>().Single();
+
+        var updated = root.ReplaceNode(heading, heading.WithLevel(level)).ToFullString();
+
+        Assert.Equal(expected, updated);
+        Assert.Equal(level, MarkdownSyntaxTree.ParseText(updated).GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Single().Level);
+    }
+
+    [Theory]
+    [InlineData("# a\n", 0)]
+    [InlineData("# a\n", 7)]
+    [InlineData("a\n===\n", 3)]
+    public void HeadingWithInvalidLevelThrows(string text, int level)
+    {
+        var heading = MarkdownSyntaxTree.ParseText(text).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();
+
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(level), () => heading.WithLevel(level));
+    }
+
+    [Fact]
+    public void ReadmeExample_LinkWithDestination()
+    {
+        #region MarkdownLinkSyntax_WithDestination
+        var tree = MarkdownSyntaxTree.ParseText("See [the docs](http://example.com/docs \"Docs\") and ![logo](logo.png).\n");
+
+        // The destinations are escaped: a space needs angle brackets
+        var links = tree.GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>();
+        var root = tree.GetRoot().ReplaceNodes(links, (link, rewritten) => link.IsImage
+            ? rewritten.WithDestination("images/my logo.png").WithTitle("Logo")
+            : rewritten.WithDestination(link.Destination.Replace("http://", "https://", StringComparison.Ordinal)).WithTitle(null));
+
+        Assert.Equal("See [the docs](https://example.com/docs) and ![logo](<images/my logo.png> \"Logo\").\n", root.ToFullString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("[a](b)", "c d", "[a](<c d>)")]
+    [InlineData("[a]()", "/u", "[a](/u)")]
+    [InlineData("[a](b \"t\")", "(x", "[a](\\(x \"t\")")]
+    [InlineData("[a](b)", "p|q", "[a](p\\|q)")]
+    [InlineData("> [a](\n> b)", "c", "> [a](\n> c)")]
+    public void LinkWithDestination(string text, string destination, string expected)
+    {
+        var root = MarkdownSyntaxTree.ParseText(text).GetRoot();
+        var link = root.DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+
+        var updated = root.ReplaceNode(link, link.WithDestination(destination)).ToFullString();
+
+        Assert.Equal(expected, updated);
+        Assert.Equal(destination, MarkdownSyntaxTree.ParseText(updated).GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>().Single().Destination);
+    }
+
+    [Theory]
+    [InlineData("[a](b)", "new \"t\"", "[a](b \"new \\\"t\\\"\")")]
+    [InlineData("[a]( b  \"t\" )", null, "[a]( b )")]
+    [InlineData("[a]()", "t", "[a](<> \"t\")")]
+    [InlineData("[a](b \"x\ny\")", "z", "[a](b \"z\")")]
+    [InlineData("> [a](b \"x\n> y\") c", null, "> [a](b) c")]
+    [InlineData("[a](b\\ \"t\")", null, "[a](b\\\\)")]
+    [InlineData("| a |\n|---|\n| [x](y) |\n", "t|u", "| a |\n|---|\n| [x](y \"t\\|u\") |\n")]
+    public void LinkWithTitle(string text, string? title, string expected)
+    {
+        var root = MarkdownSyntaxTree.ParseText(text, MarkdownParseOptions.GitHubFlavored).GetRoot();
+        var link = root.DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+
+        var updated = root.ReplaceNode(link, link.WithTitle(title)).ToFullString();
+
+        Assert.Equal(expected, updated);
+        Assert.Equal(title, MarkdownSyntaxTree.ParseText(updated, MarkdownParseOptions.GitHubFlavored).GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>().Single().Title);
+    }
+
+    [Fact]
+    public void ReferenceLinkWithDestinationThrows()
+    {
+        var link = MarkdownSyntaxTree.ParseText("[a][r]\n\n[r]: /u\n").GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+
+        Assert.Throws<InvalidOperationException>(() => link.WithDestination("x"));
+        Assert.Throws<InvalidOperationException>(() => link.WithTitle("x"));
+    }
+
+    [Theory]
+    [InlineData("[l]: /u \"t\"\n", "/v", "t", "[l]: /v \"t\"\n")]
+    [InlineData("[l]:\n  /u\n  \"t\"\n", "/u", null, "[l]:\n  /u\n")]
+    [InlineData("[l]: /u\n", "/u", "t", "[l]: /u \"t\"\n")]
+    [InlineData("> [l]: /u\n> \"t\"\n>\n> x", "<v>", "nt", "> [l]: \\<v>\n> \"nt\"\n>\n> x")]
+    public void LinkReferenceDefinitionWithDestinationAndTitle(string text, string destination, string? title, string expected)
+    {
+        var root = MarkdownSyntaxTree.ParseText(text).GetRoot();
+        var definition = root.DescendantNodes().OfType<MarkdownLinkReferenceDefinitionSyntax>().Single();
+
+        var updated = root.ReplaceNode(definition, definition.WithDestination(destination).WithTitle(title)).ToFullString();
+
+        Assert.Equal(expected, updated);
+        var reparsed = MarkdownSyntaxTree.ParseText(updated).GetRoot().DescendantNodes().OfType<MarkdownLinkReferenceDefinitionSyntax>().Single();
+        Assert.Equal(destination, reparsed.Destination);
+        Assert.Equal(title, reparsed.Title);
+    }
+
+    [Theory]
+    [InlineData("```\ncode\n```\n", "cs", "```cs\ncode\n```\n")]
+    [InlineData("``` cs\ncode\n```\n", null, "```\ncode\n```\n")]
+    [InlineData("```cs title\ncode\n```\n", "a`b", "```a&#96;b\ncode\n```\n")]
+    [InlineData("> ~~~\n> x\n> ~~~\n", " py ", "> ~~~py\n> x\n> ~~~\n")]
+    [InlineData("```cs\ncode\n```\n", "  ", "```\ncode\n```\n")]
+    public void CodeBlockWithInfo(string text, string? info, string expected)
+    {
+        var root = MarkdownSyntaxTree.ParseText(text).GetRoot();
+        var codeBlock = root.DescendantNodes().OfType<MarkdownCodeBlockSyntax>().Single();
+
+        var updated = root.ReplaceNode(codeBlock, codeBlock.WithInfo(info)).ToFullString();
+
+        Assert.Equal(expected, updated);
+        var reparsed = MarkdownSyntaxTree.ParseText(updated).GetRoot().DescendantNodes().OfType<MarkdownCodeBlockSyntax>().Single();
+        Assert.Equal(string.IsNullOrWhiteSpace(info) ? null : info.Trim(), reparsed.Info);
+        Assert.Equal(codeBlock.Code, reparsed.Code);
+    }
+
+    [Fact]
+    public void CodeBlockWithInvalidInfoThrows()
+    {
+        var blocks = MarkdownSyntaxTree.ParseText("```\ncode\n```\n\n    indented\n").GetRoot().Blocks.OfType<MarkdownCodeBlockSyntax>().ToList();
+
+        Assert.Throws<ArgumentException>("info", () => blocks[0].WithInfo("a\nb"));
+        Assert.Throws<InvalidOperationException>(() => blocks[1].WithInfo("cs"));
+    }
+
+    [Fact]
+    public void WithMethodsKeepAnnotations()
+    {
+        var annotation = new SyntaxAnnotation("test");
+        var root = MarkdownSyntaxTree.ParseText("# a\n\n[b](c)\n").GetRoot();
+        var heading = root.DescendantNodes().OfType<MarkdownHeadingSyntax>().Single();
+        var link = root.DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+        root = root.ReplaceNodes(new MarkdownSyntaxNode[] { heading, link }, (_, rewritten) => rewritten.WithAdditionalAnnotations(annotation));
+
+        heading = root.DescendantNodes().OfType<MarkdownHeadingSyntax>().Single();
+        link = root.DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+
+        Assert.True(heading.WithLevel(2).HasAnnotation(annotation));
+        Assert.True(link.WithDestination("d").HasAnnotation(annotation));
     }
 
     [Fact]

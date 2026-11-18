@@ -87,6 +87,7 @@ namespace Meziantou.Framework.Markdown
 
     public abstract class MarkdownBlockSyntax : Meziantou.Framework.Markdown.MarkdownSyntaxNode
     {
+        public Meziantou.Framework.Markdown.MarkdownGenericAttributes GetGenericAttributes() => throw null;
     }
 
     public sealed class MarkdownCodeBlockSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
@@ -102,6 +103,7 @@ namespace Meziantou.Framework.Markdown
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public override string GetPlainText() => throw null;
+        public Meziantou.Framework.Markdown.MarkdownCodeBlockSyntax WithInfo(string? info) => throw null;
     }
 
     public sealed class MarkdownCodeSpanSyntax : Meziantou.Framework.Markdown.MarkdownInlineSyntax
@@ -403,6 +405,23 @@ namespace Meziantou.Framework.Markdown
         public override string GetPlainText() => throw null;
     }
 
+    public sealed class MarkdownGenericAttributes : System.IEquatable<Meziantou.Framework.Markdown.MarkdownGenericAttributes>
+    {
+        public System.Collections.Generic.IReadOnlyList<string> Classes { get => throw null; init { } }
+        public static Meziantou.Framework.Markdown.MarkdownGenericAttributes Empty { get => throw null; }
+        public string? Id { get => throw null; init { } }
+        public bool IsEmpty { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string?>> Properties { get => throw null; init { } }
+        public MarkdownGenericAttributes(string? Id, System.Collections.Generic.IReadOnlyList<string> Classes, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string?>> Properties) { }
+        public void Deconstruct(out string? Id, out System.Collections.Generic.IReadOnlyList<string> Classes, out System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string?>> Properties) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Markdown.MarkdownGenericAttributes? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Markdown.MarkdownGenericAttributes? left, Meziantou.Framework.Markdown.MarkdownGenericAttributes? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Markdown.MarkdownGenericAttributes? left, Meziantou.Framework.Markdown.MarkdownGenericAttributes? right) => throw null;
+    }
+
     public sealed class MarkdownGenericAttributesSyntax : Meziantou.Framework.Markdown.MarkdownInlineSyntax
     {
         public System.Collections.Generic.IReadOnlyList<string> Classes { get => throw null; }
@@ -455,6 +474,7 @@ namespace Meziantou.Framework.Markdown
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public override string GetPlainText() => throw null;
+        public Meziantou.Framework.Markdown.MarkdownHeadingSyntax WithLevel(int level) => throw null;
     }
 
     public sealed class MarkdownHtmlBlockSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
@@ -581,6 +601,8 @@ namespace Meziantou.Framework.Markdown
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public override string GetPlainText() => throw null;
+        public Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax WithDestination(string destination) => throw null;
+        public Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax WithTitle(string? title) => throw null;
     }
 
     public sealed class MarkdownLinkSyntax : Meziantou.Framework.Markdown.MarkdownInlineSyntax
@@ -596,6 +618,8 @@ namespace Meziantou.Framework.Markdown
         public string? Title { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
+        public Meziantou.Framework.Markdown.MarkdownLinkSyntax WithDestination(string destination) => throw null;
+        public Meziantou.Framework.Markdown.MarkdownLinkSyntax WithTitle(string? title) => throw null;
     }
 
     public sealed class MarkdownListItemSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
@@ -809,7 +833,9 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.MarkdownSyntaxTree ParseText(Meziantou.Framework.Language.SourceText text, Meziantou.Framework.Markdown.MarkdownParseOptions? options, string? path = null) => throw null;
         public static Meziantou.Framework.Markdown.MarkdownSyntaxTree ParseText(string text, Meziantou.Framework.Markdown.MarkdownParseOptions? options, string? path = null) => throw null;
         public Meziantou.Framework.Markdown.MarkdownSyntaxTree RemoveBlock(Meziantou.Framework.Markdown.MarkdownBlockSyntax block) => throw null;
+        public Meziantou.Framework.Markdown.MarkdownSyntaxTree ReplaceBlock(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, string markdown) => throw null;
         protected override Meziantou.Framework.Language.SyntaxTree WithChangedTextCore(Meziantou.Framework.Language.SourceText newText) => throw null;
+        public Meziantou.Framework.Markdown.MarkdownSyntaxTree WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, Meziantou.Framework.Markdown.MarkdownGenericAttributes? attributes) => throw null;
         protected override Meziantou.Framework.Language.SyntaxTree WithRootCore(Meziantou.Framework.Language.SyntaxNode root) => throw null;
     }
 

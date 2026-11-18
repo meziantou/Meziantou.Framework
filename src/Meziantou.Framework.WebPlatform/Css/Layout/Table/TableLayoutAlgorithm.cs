@@ -613,10 +613,13 @@ internal sealed partial class TableLayoutAlgorithm
         IntrinsicSizes content;
         if (WritingDirection.FromStyle(layout).IsOrthogonalTo(_writingDirection))
         {
-            // An orthogonal cell contributes its block size (the margins of the cells are ignored)
+            // An orthogonal cell contributes its block size (the margins of the cells are ignored), with the borders of the cell in
+            // the table (the halves of the collapsed borders in the collapsing border model, WPT
+            // css/css-writing-modes/orthogonal-cell-rowspan-003.html) instead of the borders of its style
             var contribution = IntrinsicSizing.GetContribution(_context, cell.Box, _writingDirection, containingBlockBlockSize: null);
             var margins = _writingDirection.ToLogical(FormattingContext.ResolveMargins(boxModel, 0)).InlineSum();
-            content = contribution.Add(-margins);
+            var styleBorders = _writingDirection.ToLogical(boxModel.BorderWidth).InlineSum();
+            content = contribution.Add(cell.Border.InlineSum() - styleBorders - margins);
         }
         else
         {

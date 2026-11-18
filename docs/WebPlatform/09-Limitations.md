@@ -25,14 +25,14 @@ fails.
   - the spelling changes at a hyphenation break, except in Dutch, Hungarian and Pinyin;
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);
   - the scrolling of a `::scroll-marker-group` that is a scroll container;
+  - the values of `shape-inside` of CSS Shapes 2 (`display`, `outside-shape`, an image, a shape box): only the shapes of
+    SVG 2 (basic shapes and references to SVG shape elements) wrap the SVG texts;
   - in the shaping of the complex scripts, the Myanmar Zawgyi encoding and the Arabic fallback shaping of the
     Windows-1256 fonts.
 - **Painting.** The core library paints the documents into a display list; a [rendering backend](07-Rendering/01-Overview.md)
   produces the pixels. Without a backend, nothing is painted, the images are not decoded and `canvas.getContext("2d")`
   returns `null`. The Imaging backend draws the color glyphs (`COLR` versions 0 and 1, `SVG `, `sbix` and `CBDT`) with
-  their colors, but does not paint:
-  - the wrapping of the SVG texts in the shapes of `shape-inside`;
-  - the `CanvasFilter` objects, also as the filter of a canvas layer (`beginLayer()`).
+  their colors, the canvas layers (`beginLayer()`) and the `CanvasFilter` objects.
 
   Float16 canvas storage and transfers are supported, but gradients and intermediate effects use normalized 16-bit colors
   (see [Canvas](07-Rendering/05-Canvas.md)). As in Blink, the painted boxes and the baselines are snapped to the device

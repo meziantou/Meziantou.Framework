@@ -14,10 +14,13 @@ namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 /// </summary>
 internal sealed class ComputedStyleDeclarations
 {
-    /// <summary>The supported longhands: the standard properties in lexicographical order, then the vendor-prefixed properties.</summary>
+    /// <summary>
+    /// The supported longhands (except the ones that are not enumerated, see <see cref="CssPropertyDefinition.IsEnumerated"/>):
+    /// the standard properties in lexicographical order, then the vendor-prefixed properties.
+    /// </summary>
     private static readonly Lazy<string[]> LonghandNames = new(() =>
         [.. CssPropertyRegistry.Properties
-            .Where(p => p.AliasOf is null && !p.IsShorthand)
+            .Where(p => p.AliasOf is null && !p.IsShorthand && p.IsEnumerated)
             .Select(p => p.Name)
             .OrderBy(name => name.StartsWith('-', StringComparison.Ordinal) ? 1 : 0)
             .ThenBy(name => name, StringComparer.Ordinal)]);

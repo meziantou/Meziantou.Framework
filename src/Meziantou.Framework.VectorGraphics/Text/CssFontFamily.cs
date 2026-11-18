@@ -7,18 +7,29 @@ internal static class CssFontFamily
 {
     private static readonly string[] Keywords = ["serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "math", "emoji", "fangsong", "inherit", "initial", "unset", "default", "revert", "revert-layer"];
 
-    /// <summary>Gets the family names of a list, unquoted, in order. The empty names are skipped.</summary>
+    /// <summary>
+    /// Gets the family names of a list, unquoted, in order. The empty names are skipped, and so are the invalid ones: a name
+    /// is a string or a sequence of identifiers, so a name that mixes them (<c>Liberation Mon'o'</c>) or has two strings
+    /// names no family.
+    /// </summary>
     public static List<string> Parse(string value)
     {
         var names = new List<string>();
         var name = new StringBuilder();
         var quote = '\0';
         var quoted = false;
+        var hasIdentifier = false;
+        var invalid = false;
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
             if (c == '\\')
             {
+                if (quote == '\0')
+                {
+                    AddIdentifierPart();
+                }
+
                 i = Unescape(value, i, name);
             }
             else if (quote != '\0')
@@ -34,6 +45,7 @@ internal static class CssFontFamily
             }
             else if (c is '"' or '\'')
             {
+                invalid |= quoted || hasIdentifier;
                 quote = c;
                 quoted = true;
             }
@@ -43,6 +55,11 @@ internal static class CssFontFamily
             }
             else
             {
+                if (!IsWhiteSpace(c))
+                {
+                    AddIdentifierPart();
+                }
+
                 name.Append(c);
             }
         }
@@ -54,15 +71,25 @@ internal static class CssFontFamily
         {
             // Unquoted names are identifiers separated by white space: the spaces between them collapse to one
             var text = quoted ? name.ToString().Trim() : string.Join(' ', name.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-            if (text.Length > 0)
+            if (text.Length > 0 && !invalid)
             {
                 names.Add(text);
             }
 
             name.Clear();
             quoted = false;
+            hasIdentifier = false;
+            invalid = false;
+        }
+
+        void AddIdentifierPart()
+        {
+            invalid |= quoted;
+            hasIdentifier = true;
         }
     }
+
+    private static bool IsWhiteSpace(char c) => c is ' ' or '\t' or '\n' or '\r' or '\f';
 
     // CSS Syntax Module Level 3, 4.3.7 "Consume an escaped code point": up to 6 hexadecimal digits and one optional white
     // space, or the next character. A code point of 0, a surrogate or beyond U+10FFFF is U+FFFD; a backslash at the end
@@ -95,7 +122,7 @@ internal static class CssFontFamily
 
         var codePoint = int.Parse(value.AsSpan(start, end - start), System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture);
         name.Append(codePoint is 0 or > 0x10FFFF or (>= 0xD800 and <= 0xDFFF) ? "\uFFFD" : char.ConvertFromUtf32(codePoint));
-        if (end < value.Length && value[end] is ' ' or '\t' or '\n' or '\r' or '\f')
+        if (end < value.Length && IsWhiteSpace(value[end]))
             return end;
 
         return end - 1;

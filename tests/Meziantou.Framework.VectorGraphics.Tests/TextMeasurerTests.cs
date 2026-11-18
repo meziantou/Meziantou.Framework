@@ -292,6 +292,13 @@ public sealed class TextMeasurerTests
         Assert.Same(mono, fonts.GetFace(new SceneFont(10), defaultFamily: "Liberation   Mono"));
         Assert.Same(sans, fonts.GetFace(new SceneFont(10, Family: "Liberation Sans"), defaultFamily: "Liberation Mono"));
 
+        // A name is a string or identifiers: a name that mixes them, or has two strings, names no family
+        Assert.Same(sans, fonts.GetFace(new SceneFont(10, Family: "Liberation Mon'o'")));
+        Assert.Same(sans, fonts.GetFace(new SceneFont(10, Family: "Lib'eration Mono")));
+        Assert.Same(sans, fonts.GetFace(new SceneFont(10, Family: "\"Liberation\" Mono")));
+        Assert.Same(sans, fonts.GetFace(new SceneFont(10, Family: "'Liberation' 'Mono'")));
+        Assert.Same(mono, fonts.GetFace(new SceneFont(10, Family: "Liberation Mon'o', 'Liberation Mono' ")));
+
         // The closest style: the slant first, then the weight
         Assert.Same(sansBold, fonts.GetFace(new SceneFont(10, Weight: SceneFont.BoldWeight)));
         Assert.Same(sansItalic, fonts.GetFace(new SceneFont(10, Italic: true)));

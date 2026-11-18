@@ -855,6 +855,18 @@ public sealed class SvgSceneRendererTests
         inner.Filter = new SceneFilterGraph([new SceneImagePrimitive(loop)]);
         var loopSvg = SvgSceneRenderer.Render(Single(loop));
         Assert.Equal(1, CountOccurrences(loopSvg, "<rect "));
+
+        // The root of the scene is the svg element, which has the identifier the image primitives refer to
+        var rootScene = new Scene(10, 10, "sans-serif");
+        rootScene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Filter = new SceneFilterGraph([new SceneImagePrimitive(rootScene.Root)]) });
+        var rootSvg = SvgSceneRenderer.Render(rootScene);
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"scene-element0\" width=\"10\"", rootSvg, StringComparison.Ordinal);
+        Assert.Contains("<feImage href=\"#scene-element0\"/>", rootSvg, StringComparison.Ordinal);
+
+        rootScene.Root.Id = "root";
+        rootSvg = SvgSceneRenderer.Render(rootScene);
+        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"root\" width=\"10\"", rootSvg, StringComparison.Ordinal);
+        Assert.Contains("<feImage href=\"#root\"/>", rootSvg, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -68,7 +68,7 @@ public sealed class SystemFontDescriptor
     /// <summary>Gets whether the face has an <c>OS/2</c> table.</summary>
     public bool HasOs2 { get; }
 
-    /// <summary>Gets the weight class: <c>OS/2.usWeightClass</c>, else 700 or 400 from <c>head.macStyle</c>.</summary>
+    /// <summary>Gets the weight class, from 1 to 1000: <c>OS/2.usWeightClass</c> when it is in this range, else 700 or 400 from <c>head.macStyle</c>.</summary>
     public int Weight { get; }
 
     /// <summary>Gets the width class, <c>OS/2.usWidthClass</c>: from 1 (ultra-condensed) to 9 (ultra-expanded), 5 without an <c>OS/2</c> table.</summary>

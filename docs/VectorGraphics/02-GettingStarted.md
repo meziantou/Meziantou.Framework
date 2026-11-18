@@ -535,7 +535,8 @@ var svg = SvgSceneRenderer.Render(scene);
 
 An [image primitive](cref:Meziantou.Framework.VectorGraphics.SceneImagePrimitive) draws an element, which does not need
 to be in the scene otherwise: an image without effects whose primitive has the rectangle of the image as its
-subregion is written in the SVG filter itself, another element in the definitions of the SVG, by its identifier.
+subregion is written in the SVG filter itself, another element in the definitions of the SVG, by its identifier. The
+primitive can draw the root group of the scene: the root is the `svg` element, which then has an identifier.
 
 PDF has no filters, not even the color matrices: the PDF renderer throws for a scene that has one. See the
 [limitations](07-Limitations.md).

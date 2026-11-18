@@ -25,7 +25,9 @@ if (fonts.Match("Arial", weight: 700, isItalic: false) is { } face)
   read, not the glyphs. A font installed later is not seen.
 - [Match](cref:Meziantou.Framework.Fonts.SystemFontCollection.Match) uses the font matching of CSS: the normal width first, then the style, then the weight. The weight is from 1
   to 1000 (400 is normal, 700 bold); an italic face is preferred when `isItalic` is set, then an oblique face, then an
-  upright one. It returns `null` when no font has the family: another family is never used instead.
+  upright one. It returns `null` when no font has the family: another family is never used instead. The weight of a face
+  is its `OS/2.usWeightClass`; when the font has no `OS/2` table, or a weight class that is not a weight (0, or more
+  than 1000), it is 700 or 400, from the bold flag of `head.macStyle`.
 - A variable font matches the weights and the widths of its axes; choosing the instance is up to you (see
   [Variable fonts](05-VariableFonts.md)).
 - [GetFamily](cref:Meziantou.Framework.Fonts.SystemFontCollection.GetFamily) gives every face of a family, and [FindByName](cref:Meziantou.Framework.Fonts.SystemFontCollection.FindByName) finds a face by its full name or its PostScript name, as

@@ -54,7 +54,8 @@ or set the `TextMeasurer` of the plot or the diagram.
 `font-family` value; `null` uses the family of the scene ([Scene.FontFamily](cref:Meziantou.Framework.VectorGraphics.Scene.FontFamily)).
 The first family of the list the collection has draws the text, and the default family when it has none of them:
 `"Fira Code", monospace` falls back to the default family when the collection has no Fira Code. The names ignore the
-case of ASCII letters.
+case of ASCII letters. As in CSS, a name is a string or a sequence of identifiers: a name that mixes them
+(`Liberation Mon'o'`) or has two strings is invalid and names no family, and the next names of the list are tried.
 
 Within the family, the face closest to the style of the text draws it: the same slant first, then the nearest weight
 ([SceneFont.Weight](cref:Meziantou.Framework.VectorGraphics.SceneFont.Weight)). A collection without a bold face draws the bold texts with its regular face.

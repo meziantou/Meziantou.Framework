@@ -106,6 +106,12 @@ public static class SvgSceneRenderer
                 output.Write(" xmlns=\"http://www.w3.org/2000/svg\"");
             }
 
+            // The root group is the svg element, which has its identifier: an image primitive of a filter can draw it
+            if ((scene.Root.Id ?? _contentIds.GetValueOrDefault(scene.Root)) is { } rootId)
+            {
+                Attribute("id", rootId);
+            }
+
             Attribute("width", scene.Width);
             Attribute("height", scene.Height);
             Attribute("viewBox", "0 0 " + Number(scene.Width) + " " + Number(scene.Height));

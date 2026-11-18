@@ -86,8 +86,7 @@ internal static class SystemFontMatcher
         if (face.TryGetAxis(FontTags.WeightAxis, out var axis))
             return (axis.Minimum / 65536.0, axis.Maximum / 65536.0);
 
-        var weight = face.Weight is >= 1 and <= 1000 ? face.Weight : 400;
-        return (weight, weight);
+        return (face.Weight, face.Weight);
     }
 
     private static (double Min, double Max) GetWidthRange(SystemFontDescriptor face)

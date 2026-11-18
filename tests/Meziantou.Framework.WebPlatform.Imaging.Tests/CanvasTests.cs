@@ -980,6 +980,18 @@ public sealed class CanvasTests : IDisposable
 
         Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
 
+        // The same with a primitive of a filter graph
+        context.Reset();
+        context.Filter = new CanvasFilter(new Dictionary<string, object?>
+        {
+            ["name"] = "componentTransfer",
+            ["funcR"] = new Dictionary<string, object?> { ["type"] = "linear", ["slope"] = 0.5, ["intercept"] = 0 },
+        });
+        context.ShadowColor = "#00f";
+        context.ShadowOffsetX = -100;
+        context.FillRect(100, 0, 10, 10);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+
         // The same with a CSS filter
         context.Reset();
         context.Filter = "grayscale(0)";

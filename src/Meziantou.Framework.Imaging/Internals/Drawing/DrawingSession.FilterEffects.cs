@@ -364,6 +364,14 @@ internal sealed partial class DrawingSession
         var m22 = _hasTransform ? _transform.M22 : 1;
         var (offsetX, offsetY) = GetTranslation();
         processor.Configure(_canvasBounds, edgeOverride: null, scaleX, scaleY, m11, 0, 0, m22, offsetX, offsetY, _cancellationToken);
+
+        // The image of a layer frame (e.g. the window a far shadow is cast from) holds what is drawn beyond the canvas:
+        // the filter reads it, and its region is not limited to the canvas
+        if (_isLayerFrame)
+        {
+            processor.Extent = Rectangle.FromLTRB(Math.Min(_canvasBounds.Left, 0), Math.Min(_canvasBounds.Top, 0), Math.Max(_canvasBounds.Right, Width), Math.Max(_canvasBounds.Bottom, Height));
+        }
+
         filter.ApplyToLayer(processor, level.Frames![0], level.Storages![0], bounds, unsafe(MemoryMarshal.Cast<byte, Rgba64>(_filterRow!.Span)));
 
         // A filter can give a color to pixels that were transparent (a flood, an image, an offset)

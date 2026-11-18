@@ -4,6 +4,8 @@
 // </auto-generated>
 #nullable enable
 
+#pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL interface
+
 namespace Meziantou.Framework.WebPlatform.Scripting.Generated;
 
 internal static class Binding_CanvasPaintEvent<TAdapter, TValue> where TAdapter : struct, global::Meziantou.Framework.WebPlatform.Scripting.IJsAdapter<TValue> where TValue : class

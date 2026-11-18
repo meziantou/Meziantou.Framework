@@ -10,6 +10,13 @@ namespace Meziantou.Framework.WebPlatform.Css.Values;
 internal sealed record CssPropertyDefinition(string Name, string Grammar, string? Initial, bool Inherited, string[] Longhands, string? AliasOf, string? LogicalGroup = null, CssAnimationTypeKind AnimationType = CssAnimationTypeKind.Unspecified)
 {
     public bool IsShorthand => Longhands.Length > 0;
+
+    /// <summary>
+    /// Gets whether the property is one of the properties of the computed styles (<c>getComputedStyle()</c>): false for a
+    /// property that no browser implements, which has no attribute in CSSStyleProperties (the scripts that enumerate the
+    /// computed styles read the attribute of each property).
+    /// </summary>
+    public bool IsEnumerated { get; init; } = true;
 }
 
 /// <summary>A descriptor of an at-rule (https://drafts.csswg.org/css-syntax-3/#descriptor), e.g. font-family in @font-face or a media feature.</summary>
@@ -243,6 +250,11 @@ internal static partial class CssPropertyRegistry
         // https://drafts.csswg.org/css-grid-3/#placement-tolerance: flow-tolerance is the former name of fit-tolerance
         // (https://github.com/w3c/csswg-drafts/issues/10884), kept as a legacy name alias as in WebKit (the WPT tests use both)
         new("flow-tolerance", "normal | <length-percentage [0,\u221E]> | infinite", "normal", false, [], "fit-tolerance"),
+
+        // https://svgwg.org/svg2-draft/text.html#TextShapeSubtract: the shapes excluded from the wrapping area of the SVG texts
+        // laid out in the shapes of shape-inside (webref does not have the properties of SVG 2 that CSS does not define); no
+        // browser implements it, so it is not a property of the computed styles
+        new("shape-subtract", "none | [ <basic-shape> | <url> ]+", "none", false, [], null, AnimationType: CssAnimationTypeKind.Discrete) { IsEnumerated = false },
     ];
 
     /// <summary>

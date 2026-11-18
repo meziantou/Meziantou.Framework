@@ -402,6 +402,7 @@ internal sealed partial class IdlModel
         AddSvgScriptElementAsync(model);
         AddDocumentPolicyViolationReportBody(model);
         AddCanvasLayers(model);
+        AddCanvasFilterObjects(model);
         AddCanvasGradientInterpolation(model);
         AddWebMcpPullRequests(model);
         AddHtmlInCanvas(model);
@@ -1578,9 +1579,10 @@ internal sealed partial class IdlModel
     /// };
     /// dictionary BeginLayerOptions { any filter = null; };
     /// </code>
-    /// The <c>filter</c> member is a CSS filter or a <c>CanvasFilterInput</c> in the proposal; the library does not implement
-    /// the <c>CanvasFilter</c> objects, so it is <c>any</c>. As the other dictionaries of the proposals, the dictionary is not
-    /// experimental (the bindings do not support experimental dictionaries): the operations that take it are.
+    /// The <c>filter</c> member is a CSS filter, a <c>CanvasFilter</c> or the description of one (a <c>CanvasFilterInput</c>
+    /// or a sequence of them) in the proposal: it is <c>any</c>, and the .NET member converts the value (see
+    /// <see cref="AddCanvasFilterObjects"/>). As the other dictionaries of the proposals, the dictionary is not experimental
+    /// (the bindings do not support experimental dictionaries): the operations that take it are.
     /// </summary>
     private static void AddCanvasLayers(IdlModel model)
     {
@@ -1636,6 +1638,74 @@ internal sealed partial class IdlModel
                 ExperimentalApi = "CanvasLayers",
                 Href = Href,
             });
+        }
+    }
+
+    /// <summary>
+    /// The <c>CanvasFilter</c> objects (https://github.com/whatwg/html/issues/5621, the explainer
+    /// https://github.com/fserb/canvas2D/blob/master/spec/filters.md), which Chromium implements behind a flag and the tentative
+    /// web-platform-tests of html/canvas/element/filters test:
+    /// <code>
+    /// typedef record&lt;DOMString, any&gt; CanvasFilterInput;
+    /// [Exposed=(Window,Worker,PaintWorklet)]
+    /// interface CanvasFilter {
+    ///   constructor((CanvasFilterInput or sequence&lt;CanvasFilterInput&gt;) init);
+    /// };
+    /// partial interface mixin CanvasFilters {
+    ///   attribute (DOMString or CanvasFilter) filter;
+    /// };
+    /// </code>
+    /// The values of a <c>CanvasFilterInput</c> are converted as Chromium converts them (e.g. a number or a pair of numbers),
+    /// not as Web IDL types: the argument of the constructor is <c>any</c>, and the .NET constructor converts it.
+    /// </summary>
+    private static void AddCanvasFilterObjects(IdlModel model)
+    {
+        const string Href = "https://github.com/fserb/canvas2D/blob/master/spec/filters.md#proposal";
+        if (!model.Definitions.TryGetValue("CanvasFilters", out var mixin) || model.Definitions.ContainsKey("CanvasFilter"))
+            return;
+
+        model.Definitions["CanvasFilter"] = new IdlDefinition
+        {
+            Name = "CanvasFilter",
+            Kind = IdlDefinitionKind.Interface,
+            Members =
+            [
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Constructor,
+                    Arguments = [new IdlArgument { Name = "init", Type = new IdlType { Name = "any" } }],
+                    Source = mixin.Source,
+                    DeclaringDefinition = "CanvasFilter",
+                    Href = Href,
+                },
+            ],
+            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "Worker", "PaintWorklet"] }],
+            Source = mixin.Source,
+            Href = Href,
+            SpecUrl = Href,
+            ExperimentalApi = "CanvasFilterObjects",
+        };
+
+        foreach (var name in (string[])["CanvasFilters", "CanvasRenderingContext2D", "OffscreenCanvasRenderingContext2D", "PaintRenderingContext2D"])
+        {
+            if (!model.Definitions.TryGetValue(name, out var definition))
+                continue;
+
+            var index = definition.Members.FindIndex(m => m.Kind == IdlMemberKind.Attribute && m.Name == "filter");
+            if (index < 0)
+                continue;
+
+            var filter = definition.Members[index];
+            definition.Members[index] = new IdlMember
+            {
+                Kind = filter.Kind,
+                Name = filter.Name,
+                Type = new IdlType { Union = true, Subtypes = [new IdlType { Name = "DOMString" }, new IdlType { Name = "CanvasFilter" }] },
+                ExtAttrs = filter.ExtAttrs,
+                Href = filter.Href,
+                Source = filter.Source,
+                DeclaringDefinition = filter.DeclaringDefinition,
+            };
         }
     }
 

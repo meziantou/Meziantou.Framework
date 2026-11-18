@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using Meziantou.Framework.WebPlatform;
@@ -137,6 +138,24 @@ internal sealed partial class WebIdlBindingsGenerator
     private string GenerateHelpers()
     {
         var writer = new CodeWriter("the webref IDL and the .NET types annotated with [IdlInterface]");
+
+        // The conversions of the unions use the experimental types (e.g. CanvasFilter) without reporting their diagnostics
+        var experimentalIds = _model.Interfaces.Values
+            .Select(model => model.ClrType?.GetCustomAttribute<ExperimentalAttribute>(inherit: false)?.DiagnosticId)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        foreach (var experimentalId in experimentalIds)
+        {
+            writer.Line($"#pragma warning disable {experimentalId} // The conversions use the experimental Web IDL interfaces");
+        }
+
+        if (experimentalIds.Count > 0)
+        {
+            writer.Line();
+        }
+
         writer.Line("namespace Meziantou.Framework.WebPlatform.Scripting.Generated;");
         writer.Line();
         writer.Line("/// <summary>The conversions of the dictionaries, enumerations, callback functions and unions.</summary>");

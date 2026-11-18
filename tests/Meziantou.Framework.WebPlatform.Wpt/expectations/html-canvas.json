@@ -342,13 +342,13 @@
     "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.filter.shadow.drawImage.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.filter.shadow.fillRect.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.filter.shadow.pattern.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/compositing/2d.composite.grid.no_filter.no_shadow.drawImage.html": {
     "reftest": "PASS"
@@ -1587,43 +1587,31 @@
     "total": 1
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.blur.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on gaussianBlur filter": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.colorMatrix.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the functionality of ColorMatrix filters": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.componentTransfer.discrete.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.componentTransfer.gamma.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.componentTransfer.identity.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.componentTransfer.linear.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.componentTransfer.table.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.convolveMatrix.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() convolveMatrix": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.dropShadow.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() dropShadow object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.dropShadow.tentative.html": {
     "reftest": "FAIL"
@@ -1632,58 +1620,40 @@
     "reftest": "FAIL"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test CanvasFilter() object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.turbulence.inputTypes.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() turbulence object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.drop-shadow-globalAlpha.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.blur.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on gaussianBlur filter": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.layers.colorMatrix.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the functionality of ColorMatrix filters": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.layers.componentTransfer.discrete.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.componentTransfer.gamma.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.componentTransfer.identity.tentative.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.componentTransfer.linear.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.componentTransfer.table.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.convolveMatrix.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() convolveMatrix": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.layers.dropShadow.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() dropShadow object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.layers.dropShadow.tentative.html": {
     "reftest": "FAIL"
@@ -1692,10 +1662,7 @@
     "reftest": "FAIL"
   },
   "html/canvas/element/filters/2d.filter.layers.turbulence.inputTypes.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() turbulence object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/filters/2d.filter.value.html": {
     "total": 1
@@ -1731,13 +1698,13 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.blur-from-outside-canvas.no-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.blur-from-outside-canvas.with-clipping.ctx-filter.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.blur-from-outside-canvas.with-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.clearRect.full.html": {
     "reftest": "PASS"
@@ -1749,19 +1716,19 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.clip-inside-and-outside.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.clip-inside.ctx-filter.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.clip-inside.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.clip-outside.ctx-filter.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.clip-outside.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.cross-layer-paths.html": {
     "reftest": "PASS"
@@ -1794,19 +1761,16 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.draw-in-filter.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.drawImage.ctx-filter.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.drawImage.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.exceptions-are-no-op.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Checks that the context state is left unchanged if beginLayer throws.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/layers/2d.layer.flush-on-frame-presentation.filtered_layer.tentative.html": {
     "reftest": "PASS"
@@ -1821,16 +1785,16 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.filter.ctx-filter.no-transform.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.filter.ctx-filter.rotation.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.filter.no-cxt-filter.no-transform.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.filter.no-cxt-filter.rotation.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.global-states.no-cxt-filter.no-transform.html": {
     "reftest": "PASS"
@@ -1872,7 +1836,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.nested-filters.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.nested.html": {
     "reftest": "PASS"
@@ -1902,7 +1866,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.resize-canvas-in-filter.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.restore-style.html": {
     "reftest": "PASS"
@@ -1914,25 +1878,25 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.shadow-from-outside-canvas.long-distance-with-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.shadow-from-outside-canvas.long-distance.ctx-filter.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.shadow-from-outside-canvas.long-distance.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.shadow-from-outside-canvas.short-distance-with-clipping.ctx-filter.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.shadow-from-outside-canvas.short-distance-with-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.shadow-from-outside-canvas.short-distance.ctx-filter.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.shadow-from-outside-canvas.short-distance.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.valid-calls.beginLayer-endLayer.html": {
     "total": 1
@@ -3354,13 +3318,13 @@
     }
   },
   "html/canvas/element/manual/filters/tentative/canvas-filter-object-blur.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/filters/tentative/canvas-filter-object-component-transfer.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/filters/tentative/canvas-filter-object-convolve-matrix.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/filters/tentative/canvas-filter-object-turbulence.html": {
     "reftest": "FAIL"
@@ -3372,10 +3336,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/filters/tentative/idl-conversions/canvas-filter-sequence-conversion.html": {
-    "total": 1,
-    "failures": {
-      "Test pixels on CanvasFilter() various inputs to tableValues (which is a sequence)": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/manual/image-smoothing/imagesmoothing.html": {
     "total": 9
@@ -6367,22 +6328,22 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.drawImage.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.drawImage.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.fillRect.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.fillRect.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.pattern.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.filter.shadow.pattern.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/compositing/2d.composite.grid.no_filter.no_shadow.drawImage.html": {
     "reftest": "PASS"
@@ -8668,82 +8629,58 @@
     "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.blur.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on gaussianBlur filter": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.blur.exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on gaussianBlur filter": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.colorMatrix.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the functionality of ColorMatrix filters": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.colorMatrix.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test the functionality of ColorMatrix filters": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.discrete.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.discrete.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.gamma.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.gamma.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.identity.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.identity.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.linear.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.linear.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.table.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.componentTransfer.table.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.convolveMatrix.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() convolveMatrix": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.convolveMatrix.exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() convolveMatrix": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.dropShadow.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() dropShadow object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.dropShadow.exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() dropShadow object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.dropShadow.tentative.html": {
     "reftest": "FAIL"
@@ -8758,28 +8695,16 @@
     "reftest": "FAIL"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test CanvasFilter() object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test CanvasFilter() object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.turbulence.inputTypes.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() turbulence object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.turbulence.inputTypes.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() turbulence object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.drop-shadow-globalAlpha.html": {
     "reftest": "PASS"
@@ -8788,40 +8713,28 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.blur.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on gaussianBlur filter": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.blur.exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on gaussianBlur filter": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.colorMatrix.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test the functionality of ColorMatrix filters": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.colorMatrix.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test the functionality of ColorMatrix filters": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.discrete.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.discrete.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.gamma.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.gamma.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.identity.tentative.html": {
     "reftest": "PASS"
@@ -8830,40 +8743,28 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.linear.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.linear.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.table.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.componentTransfer.table.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.convolveMatrix.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() convolveMatrix": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.convolveMatrix.exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() convolveMatrix": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.dropShadow.exceptions.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() dropShadow object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.dropShadow.exceptions.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() dropShadow object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.dropShadow.tentative.html": {
     "reftest": "FAIL"
@@ -8878,16 +8779,10 @@
     "reftest": "FAIL"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.turbulence.inputTypes.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() turbulence object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.layers.turbulence.inputTypes.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Test exceptions on CanvasFilter() turbulence object": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/filters/2d.filter.value.html": {
     "total": 1
@@ -8938,10 +8833,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.blur-from-outside-canvas.no-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.blur-from-outside-canvas.no-clipping.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.blur-from-outside-canvas.with-clipping.ctx-filter.html": {
     "reftest": "PASS"
@@ -8950,10 +8845,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.blur-from-outside-canvas.with-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.blur-from-outside-canvas.with-clipping.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clearRect.full.html": {
     "reftest": "PASS"
@@ -8974,10 +8869,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-inside-and-outside.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-inside-and-outside.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-inside.ctx-filter.html": {
     "reftest": "PASS"
@@ -8986,10 +8881,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-inside.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-inside.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-outside.ctx-filter.html": {
     "reftest": "PASS"
@@ -8998,10 +8893,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-outside.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.clip-outside.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.cross-layer-paths.html": {
     "reftest": "PASS"
@@ -9064,10 +8959,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.draw-in-filter.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.draw-in-filter.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.drawImage.ctx-filter.html": {
     "reftest": "PASS"
@@ -9076,22 +8971,16 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.drawImage.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.drawImage.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.exceptions-are-no-op.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Checks that the context state is left unchanged if beginLayer throws.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/layers/2d.layer.exceptions-are-no-op.tentative.worker.js": {
-    "total": 1,
-    "failures": {
-      "Checks that the context state is left unchanged if beginLayer throws.": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.ctx-filter.no-transform.html": {
     "reftest": "PASS"
@@ -9106,28 +8995,28 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.no-transform.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.no-transform.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.rotation.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.ctx-filter.rotation.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.no-cxt-filter.no-transform.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.no-cxt-filter.no-transform.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.no-cxt-filter.rotation.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.filter.no-cxt-filter.rotation.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.global-states.no-cxt-filter.no-transform.html": {
     "reftest": "PASS"
@@ -9208,10 +9097,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.nested-filters.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.nested-filters.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.nested.html": {
     "reftest": "PASS"
@@ -9268,10 +9157,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.resize-canvas-in-filter.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.resize-canvas-in-filter.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.restore-style.html": {
     "reftest": "PASS"
@@ -9292,10 +9181,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.long-distance-with-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.long-distance-with-clipping.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.long-distance.ctx-filter.html": {
     "reftest": "PASS"
@@ -9304,10 +9193,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.long-distance.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.long-distance.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.short-distance-with-clipping.ctx-filter.html": {
     "reftest": "PASS"
@@ -9316,10 +9205,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.short-distance-with-clipping.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.short-distance-with-clipping.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.short-distance.ctx-filter.html": {
     "reftest": "PASS"
@@ -9328,10 +9217,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.short-distance.layer-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.shadow-from-outside-canvas.short-distance.layer-filter.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.valid-calls.beginLayer-endLayer.html": {
     "total": 1

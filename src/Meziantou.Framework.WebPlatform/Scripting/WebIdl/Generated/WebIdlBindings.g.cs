@@ -152,6 +152,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["CSSUnparsedValue"] = Binding_CSSUnparsedValue<TAdapter, TValue>.Binding,
             ["CSSVariableReferenceValue"] = Binding_CSSVariableReferenceValue<TAdapter, TValue>.Binding,
             ["CSSViewTransitionRule"] = Binding_CSSViewTransitionRule<TAdapter, TValue>.Binding,
+            ["CanvasFilter"] = Binding_CanvasFilter<TAdapter, TValue>.Binding,
             ["CanvasGradient"] = Binding_CanvasGradient<TAdapter, TValue>.Binding,
             ["CanvasPaintEvent"] = Binding_CanvasPaintEvent<TAdapter, TValue>.Binding,
             ["CanvasPattern"] = Binding_CanvasPattern<TAdapter, TValue>.Binding,

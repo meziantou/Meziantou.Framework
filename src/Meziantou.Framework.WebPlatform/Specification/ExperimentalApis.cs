@@ -69,6 +69,9 @@ internal static class ExperimentalApis
     /// <summary>The <c>async</c> IDL attribute of the SVG <c>script</c> elements, which SVG 2 does not define (the web-platform-tests of <c>svg/interact/scripted</c> test it).</summary>
     public const string SvgScriptAsync = "WEBPLATEXP0020";
 
+    /// <summary>The <c>CanvasFilter</c> objects (https://github.com/whatwg/html/issues/5621): the filters of the 2D contexts and of the canvas layers described by filter primitives.</summary>
+    public const string CanvasFilterObjects = "WEBPLATEXP0021";
+
     /// <summary>HTML-in-canvas (https://github.com/WICG/html-in-canvas): the <c>content</c> attribute and the paint events of the canvases, <c>drawElementImage()</c> and the element images and geometries.</summary>
     public const string HtmlInCanvas = "WEBPLATEXP0023";
 }

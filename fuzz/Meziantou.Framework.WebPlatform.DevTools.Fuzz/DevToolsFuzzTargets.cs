@@ -96,6 +96,11 @@ public static class DevToolsFuzzTargets
     /// </summary>
     private static void DragDataParameter(ReadOnlySpan<byte> data)
     {
+        // The parameter is part of a message, and the server rejects a message that is not valid UTF-8 before reading it
+        // (the JSON reader only validates the strings it decodes)
+        if (!System.Text.Unicode.Utf8.IsValid(data))
+            return;
+
         JsonDocument document;
         try
         {

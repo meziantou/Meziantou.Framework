@@ -34,7 +34,8 @@ A Blazor WebAssembly application (standalone, or the Interactive WebAssembly com
 .NET runtime in WebAssembly, in the page:
 
 - Set [WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.WebAssemblyRuntime) to the
-  `WasmtimeRuntime` of the [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+  [WasmtimeRuntime](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntime) of the
+  [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
   package.
 - The application must serve the files of the runtime (`_framework/`): for a standalone application, serve the
   `wwwroot` folder of its published output (`dotnet publish`).

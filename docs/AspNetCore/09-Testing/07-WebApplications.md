@@ -109,9 +109,10 @@ Assert.Single(reports);
 The pages run no WebAssembly by default: the `WebAssembly` namespace of their scripts is not defined, so a page that
 instantiates a module fails, and a Blazor WebAssembly application does not start. Set
 [WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.WebAssemblyRuntime) to a runtime: the
-`WasmtimeRuntime` of the [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
-package runs the modules with Wasmtime. The pages share the runtime and the browser does not dispose it: dispose it
-after the browser.
+[WasmtimeRuntime](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntime) of the
+[Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+package runs the modules with Wasmtime (see [WebAssembly](../../WebPlatform/06-Scripting/05-WebAssembly.md) for its
+options). The pages share the runtime and the browser does not dispose it: dispose it after the browser.
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_WebAssemblyRuntime;format=md-fenced-code-block;dedent=true -->
 ```csharp

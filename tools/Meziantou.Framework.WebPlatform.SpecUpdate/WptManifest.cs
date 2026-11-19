@@ -38,6 +38,18 @@ internal static class WptManifest
         }
     }
 
+    /// <summary>Returns the files of all the items of the manifest (the tests of every type and the support files).</summary>
+    public static HashSet<string> ReadAllFiles(JsonDocument manifest)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var type in manifest.RootElement.GetProperty("items").EnumerateObject())
+        {
+            result.UnionWith(ReadItems(manifest, type.Name).Keys);
+        }
+
+        return result;
+    }
+
     public static JsonDocument Open(string manifestPath)
     {
         using var stream = new GZipStream(File.OpenRead(manifestPath), CompressionMode.Decompress);

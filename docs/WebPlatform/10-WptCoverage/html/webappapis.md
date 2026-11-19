@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 327 | 340 | 1 | 96% |
+| [Stable](#stable-tests) | 333 | 340 | 1 | 98% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **332** | **349** | **1** | **95%** |
+| **All** | **338** | **349** | **1** | **97%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 7
-- **TEST RUNNER**: 7
+- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -190,7 +190,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dynamic-markup-insertion/opening-the-input-stream/origin-check-in-document-open-same-origin-domain.sub.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/origin-check-in-document-open-same-origin-domain.sub.html) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/quirks.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/quirks.window.js) | Pass | 4 / 4 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/readiness.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/readiness.window.js) | Pass | 1 / 1 |  |  |
-| [`dynamic-markup-insertion/opening-the-input-stream/reload.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/reload.window.js) | Timeout | 0 / 1 | TEST RUNNER | reloading the generated `reload.window.html` page fails (the generated wrapper of `.window.js` tests is not served as a document) |
+| [`dynamic-markup-insertion/opening-the-input-stream/reload.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/reload.window.js) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/remove-initial-about-blankness.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/remove-initial-about-blankness.window.js) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/tasks.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/tasks.window.js) | Pass | 10 / 10 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/type-argument-plaintext.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/type-argument-plaintext.window.js) | Pass | 8 / 8 |  |  |
@@ -338,11 +338,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`system-state-and-capabilities/the-navigator-object/navigatorlanguage.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/navigatorlanguage.html) | Pass | 1 / 1 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/per-global.window.js`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/per-global.window.js) | Pass | 8 / 8 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/plugins-and-mimetypes.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/plugins-and-mimetypes.html) | Pass | 3 / 3 |  |  |
-| [`system-state-and-capabilities/the-navigator-object/protocol-handler-fragment-nosw.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-fragment-nosw.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
-| [`system-state-and-capabilities/the-navigator-object/protocol-handler-fragment.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-fragment.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
-| [`system-state-and-capabilities/the-navigator-object/protocol-handler-path.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-path.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
-| [`system-state-and-capabilities/the-navigator-object/protocol-handler-query-nosw.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query-nosw.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
-| [`system-state-and-capabilities/the-navigator-object/protocol-handler-query.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query.https.html) | Error | 0 / 0 | TEST RUNNER | `test_driver.set_rph_registration_mode()` is not supported (the handler is never invoked through a navigation) |
+| [`system-state-and-capabilities/the-navigator-object/protocol-handler-fragment-nosw.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-fragment-nosw.https.html) | Pass | 1 / 1 |  |  |
+| [`system-state-and-capabilities/the-navigator-object/protocol-handler-fragment.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-fragment.https.html) | Pass | 1 / 1 |  |  |
+| [`system-state-and-capabilities/the-navigator-object/protocol-handler-path.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-path.https.html) | Pass | 1 / 1 |  |  |
+| [`system-state-and-capabilities/the-navigator-object/protocol-handler-query-nosw.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query-nosw.https.html) | Pass | 1 / 1 |  |  |
+| [`system-state-and-capabilities/the-navigator-object/protocol-handler-query.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol-handler-query.https.html) | Pass | 1 / 1 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/protocol.https.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/protocol.https.html) | Pass | 244 / 244 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/secure_context.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/secure_context.html) | Pass | 2 / 2 |  |  |
 | [`the-windoworworkerglobalscope-mixin/Worker_Self_Origin.html`](https://wpt.fyi/results/html/webappapis/the-windoworworkerglobalscope-mixin/Worker_Self_Origin.html) | Pass | 6 / 6 |  |  |

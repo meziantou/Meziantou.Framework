@@ -12,8 +12,8 @@ description: "The results of the web-platform-tests of custom-elements, and why 
 | [Stable](#stable-tests) | 200 | 202 | 0 | 99% |
 | [Tentative](#tentative-tests) | 2 | 7 | 0 | 29% |
 | [Reftests](#reftests) | 2 | 4 | 0 | 50% |
-| [Crash tests](#crash-tests) | 7 | 8 | 0 | 88% |
-| **All** | **211** | **221** | **0** | **95%** |
+| [Crash tests](#crash-tests) | 8 | 8 | 0 | 100% |
+| **All** | **212** | **221** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 7
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -262,4 +261,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`many-slots-crash.html`](https://wpt.fyi/results/custom-elements/many-slots-crash.html) | Pass | 1 / 1 |  |  |
 | [`prevent-extensions-crash.html`](https://wpt.fyi/results/custom-elements/prevent-extensions-crash.html) | Pass | 1 / 1 |  |  |
 | [`when-defined-reentry-crash.html`](https://wpt.fyi/results/custom-elements/when-defined-reentry-crash.html) | Pass | 1 / 1 |  |  |
-| [`xhtml-crash.xhtml`](https://wpt.fyi/results/custom-elements/xhtml-crash.xhtml) | Error | 0 / 1 | TEST RUNNER | the page is not well-formed XML (on purpose): the runner fails to load it instead of displaying the XML parsing error document of a browser |
+| [`xhtml-crash.xhtml`](https://wpt.fyi/results/custom-elements/xhtml-crash.xhtml) | Pass | 1 / 1 |  |  |

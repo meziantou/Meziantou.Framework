@@ -144,12 +144,7 @@
     "total": 4
   },
   "IndexedDB/file_support.sub.html": {
-    "total": 3,
-    "failures": {
-      "Composed slices of a file can be stored and retrieved from IndexedDB": "FAIL",
-      "Saves and loads back File objects from IndexedDB": "FAIL",
-      "Sliced file can be stored and retrieved from IndexedDB": "FAIL"
-    }
+    "total": 3
   },
   "IndexedDB/fire-error-event-exception.any.js": {
     "total": 17

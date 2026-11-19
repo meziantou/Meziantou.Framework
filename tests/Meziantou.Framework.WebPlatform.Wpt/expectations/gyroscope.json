@@ -21,10 +21,7 @@
     "total": 1
   },
   "gyroscope/Gyroscope.https.html": {
-    "total": 20,
-    "failures": {
-      "Gyroscope: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
-    }
+    "total": 20
   },
   "gyroscope/Gyroscope_insecure_context.html": {
     "total": 1

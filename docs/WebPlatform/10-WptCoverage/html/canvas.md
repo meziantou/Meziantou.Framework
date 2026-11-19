@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,138 | 3,170 | 0 | 99% |
+| [Stable](#stable-tests) | 3,139 | 3,170 | 0 | 99% |
 | [Tentative](#tentative-tests) | 206 | 301 | 0 | 68% |
-| [Reftests](#reftests) | 555 | 585 | 0 | 95% |
+| [Reftests](#reftests) | 554 | 584 | 0 | 95% |
 | [Crash tests](#crash-tests) | 18 | 18 | 0 | 100% |
-| **All** | **3,917** | **4,074** | **0** | **96%** |
+| **All** | **3,917** | **4,073** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -24,7 +24,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **NOT IMPLEMENTED**: 111
 - **REQUIRES**: 7
   - `media`: 7
-- **TEST RUNNER**: 2
+- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -1100,7 +1100,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/text/2d.text.fontVariantCaps2.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.fontVariantCaps2.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.lang.default.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.lang.default.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.lang.valid.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.lang.valid.html) | Pass | 1 / 1 |  |  |
-| [`element/text/2d.text.measure.actualBoundingBox.combining-mark-offset.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.measure.actualBoundingBox.combining-mark-offset.html) | Fail | 0 / 1 | TEST RUNNER | `/fonts/mark-origin-y-test.ttf` is not in the sparse checkout of WPT (`tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`), so the font face fails to load (`NetworkError`) |
+| [`element/text/2d.text.measure.actualBoundingBox.combining-mark-offset.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.measure.actualBoundingBox.combining-mark-offset.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.measure.actualBoundingBox.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.measure.actualBoundingBox.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.measure.actualBoundingBox.small-font.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.measure.actualBoundingBox.small-font.html) | Pass | 1 / 1 |  |  |
 | [`element/text/2d.text.measure.actualBoundingBox.whitespace.html`](https://wpt.fyi/results/html/canvas/element/text/2d.text.measure.actualBoundingBox.whitespace.html) | Pass | 1 / 1 |  |  |
@@ -3631,7 +3631,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/manual/draw-element-image/changes-in-paint-event.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/changes-in-paint-event.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/changing-size-in-paint-event.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/changing-size-in-paint-event.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/child-overflow.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/child-overflow.tentative.html) | Pass | 1 / 1 |  |  |
-| [`element/manual/draw-element-image/compositing-descendant-filter.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/compositing-descendant-filter.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/compositing-op-basic.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/compositing-op-basic.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/compositing-op-non-opaque-element.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/compositing-op-non-opaque-element.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/content-not-culled.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/content-not-culled.tentative.html) | Pass | 1 / 1 |  |  |

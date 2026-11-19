@@ -1,0 +1,8 @@
+{
+  "cssom/crashtests/csstext-with-all.html": {
+    "crashtest": "PASS"
+  },
+  "cssom/crashtests/delete-rule.html": {
+    "crashtest": "PASS"
+  }
+}

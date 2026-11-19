@@ -10,17 +10,17 @@ description: "The results of the web-platform-tests of domparsing, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 87 | 94 | 0 | 93% |
-| [Tentative](#tentative-tests) | 38 | 41 | 0 | 93% |
+| [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **128** | **138** | **0** | **93%** |
+| **All** | **92** | **99** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 7
+- **TEST BUG**: 2
+- **NOT IMPLEMENTED**: 5
 
 ## Stable tests
 
@@ -127,45 +127,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`stream-html-with-trusted-types-adopt.tentative.html`](https://wpt.fyi/results/domparsing/stream-html-with-trusted-types-adopt.tentative.html) | Pass | 24 / 24 |  |  |
 | [`stream-html-with-trusted-types-from-non-tt.tentative.html`](https://wpt.fyi/results/domparsing/stream-html-with-trusted-types-from-non-tt.tentative.html) | Pass | 12 / 12 |  |  |
-| [`tentative/all-stream-methods-with-trusted-types-no-policy.html`](https://wpt.fyi/results/domparsing/tentative/all-stream-methods-with-trusted-types-no-policy.html) | Pass | 12 / 12 |  |  |
-| [`tentative/positional-methods-with-parser-options.html`](https://wpt.fyi/results/domparsing/tentative/positional-methods-with-parser-options.html) | Fail | 150 / 160 | TEST BUG | the `(runScripts=false => true)` subtests expect the scripts to stay disabled when the `createParserOptions` callback of the default policy enables them: the options it returns determine `runScripts`, whatever the options of the caller (https://w3c.github.io/trusted-types/dist/spec/#get-trusted-type-compliant-parser-options); fixed upstream (web-platform-tests/wpt@b5daf96de8, "Apply latest spec changes for createParserOptions") |
-| [`tentative/positional-methods-with-trusted-types.html`](https://wpt.fyi/results/domparsing/tentative/positional-methods-with-trusted-types.html) | Pass | 91 / 91 |  |  |
-| [`tentative/positional-methods.html`](https://wpt.fyi/results/domparsing/tentative/positional-methods.html) | Pass | 378 / 378 |  |  |
-| [`tentative/positional-template-child.html`](https://wpt.fyi/results/domparsing/tentative/positional-template-child.html) | Pass | 12 / 12 |  |  |
-| [`tentative/stream-append-html-unsafe.html`](https://wpt.fyi/results/domparsing/tentative/stream-append-html-unsafe.html) | Pass | 14 / 14 |  |  |
-| [`tentative/stream-append-html.html`](https://wpt.fyi/results/domparsing/tentative/stream-append-html.html) | Pass | 17 / 17 |  |  |
-| [`tentative/stream-fragment-context.html`](https://wpt.fyi/results/domparsing/tentative/stream-fragment-context.html) | Pass | 54 / 54 |  |  |
-| [`tentative/stream-html-abort-unblocks-rendering.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-abort-unblocks-rendering.html) | Pass | 1 / 1 |  |  |
-| [`tentative/stream-html-custom-element-sanitizer.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-custom-element-sanitizer.html) | Pass | 80 / 80 |  |  |
-| [`tentative/stream-html-custom-element.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-custom-element.html) | Pass | 40 / 40 |  |  |
-| [`tentative/stream-html-defer-async-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-defer-async-script.html) | Fail | 8 / 12 | NOT IMPLEMENTED | the `defer` and `async` scripts of the streaming HTML methods: with `runScripts`, a streamed script runs when its end tag is parsed, as a script inserted by a script |
-| [`tentative/stream-html-element.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-element.html) | Pass | 28 / 28 |  |  |
-| [`tentative/stream-html-parser-blocking-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-parser-blocking-script.html) | Error | 8 / 26 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`) |
-| [`tentative/stream-html-run-scripts-option.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-run-scripts-option.html) | Pass | 14 / 14 |  |  |
-| [`tentative/stream-html-sanitizer-safe.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-sanitizer-safe.html) | Pass | 30 / 30 |  |  |
-| [`tentative/stream-html-sanitizer.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-sanitizer.html) | Pass | 276 / 276 |  |  |
-| [`tentative/stream-html-script-safe.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-script-safe.html) | Pass | 36 / 36 |  |  |
-| [`tentative/stream-html-unsafe.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-unsafe.html) | Pass | 17 / 17 |  |  |
-| [`tentative/stream-html-with-declarative-shadow-root.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-declarative-shadow-root.html) | Pass | 37 / 37 |  |  |
-| [`tentative/stream-html-with-trusted-types-adopt.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-adopt.html) | Pass | 24 / 24 |  |  |
-| [`tentative/stream-html-with-trusted-types-createParserOptions-order.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-createParserOptions-order.html) | Pass | 5 / 5 |  |  |
-| [`tentative/stream-html-with-trusted-types-error-in-policy.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-error-in-policy.html) | Pass | 6 / 6 |  |  |
-| [`tentative/stream-html-with-trusted-types-from-non-tt.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-from-non-tt.html) | Pass | 12 / 12 |  |  |
-| [`tentative/stream-html-with-trusted-types-no-createParserOptions.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-no-createParserOptions.html) | Pass | 10 / 10 |  |  |
-| [`tentative/stream-html-with-trusted-types-no-policy.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-no-policy.html) | Pass | 10 / 10 |  |  |
-| [`tentative/stream-html-with-trusted-types-pass-trusted.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-pass-trusted.html) | Pass | 10 / 10 |  |  |
-| [`tentative/stream-html-with-trusted-types-runScripts-cannot-be-turned-on.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-runScripts-cannot-be-turned-on.html) | Pass | 10 / 10 |  |  |
-| [`tentative/stream-html-with-trusted-types-runScripts-off.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-runScripts-off.html) | Pass | 10 / 10 |  |  |
-| [`tentative/stream-html-with-trusted-types-sanitizer.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-with-trusted-types-sanitizer.html) | Pass | 20 / 20 |  |  |
-| [`tentative/stream-html.html`](https://wpt.fyi/results/domparsing/tentative/stream-html.html) | Pass | 16 / 16 |  |  |
-| [`tentative/stream-insertion-logic.html`](https://wpt.fyi/results/domparsing/tentative/stream-insertion-logic.html) | Pass | 70 / 70 |  |  |
-| [`tentative/stream-positional-template-child.html`](https://wpt.fyi/results/domparsing/tentative/stream-positional-template-child.html) | Pass | 12 / 12 |  |  |
-| [`tentative/stream-positional.html`](https://wpt.fyi/results/domparsing/tentative/stream-positional.html) | Pass | 88 / 88 |  |  |
-| [`tentative/stream-sanitizer-customized-builtins.html`](https://wpt.fyi/results/domparsing/tentative/stream-sanitizer-customized-builtins.html) | Pass | 30 / 30 |  |  |
-| [`tentative/stream-sanitizer-img-ctor.html`](https://wpt.fyi/results/domparsing/tentative/stream-sanitizer-img-ctor.html) | Pass | 65 / 65 |  |  |
-| [`tentative/stream-sanitizer-resource-fetch.html`](https://wpt.fyi/results/domparsing/tentative/stream-sanitizer-resource-fetch.html) | Pass | 18 / 18 |  |  |
-| [`tentative/stream-tokenizer-context.html`](https://wpt.fyi/results/domparsing/tentative/stream-tokenizer-context.html) | Pass | 45 / 45 |  |  |
-| [`tentative/unclosed-script-already-started.html`](https://wpt.fyi/results/domparsing/tentative/unclosed-script-already-started.html) | Pass | 4 / 4 |  |  |
 
 ## Crash tests
 

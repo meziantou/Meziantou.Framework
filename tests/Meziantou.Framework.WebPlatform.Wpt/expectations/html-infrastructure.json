@@ -20,6 +20,9 @@
   "html/infrastructure/common-dom-interfaces/collections/radionodelist.html": {
     "total": 5
   },
+  "html/infrastructure/common-microsyntaxes/colours/parsing-legacy-colour-value-ascii-case-insensitive.html": {
+    "reftest": "PASS"
+  },
   "html/infrastructure/conformance-requirements/extensibility/foreign.html": {
     "total": 1
   },

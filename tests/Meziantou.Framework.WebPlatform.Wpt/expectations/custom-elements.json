@@ -692,6 +692,6 @@
     "crashtest": "PASS"
   },
   "custom-elements/xhtml-crash.xhtml": {
-    "crashtest": "ERROR"
+    "crashtest": "PASS"
   }
 }

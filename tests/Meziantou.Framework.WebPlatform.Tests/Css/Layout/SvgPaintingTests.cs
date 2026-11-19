@@ -90,6 +90,22 @@ public sealed class SvgPaintingTests : IDisposable
     }
 
     [Fact]
+    public void Pattern_ReferenceFormingACycleUsesTheFallback()
+    {
+        var document = Parse("""
+            <svg width=100 height=100 style='display: block'>
+              <pattern id=p2 width=1 height=1><line y2=1 x2=2 stroke='url(#p1) rgb(0, 128, 0)'/></pattern>
+              <pattern id=p1 href='#p2' width=1 height=1></pattern>
+              <rect width=100 height=100 fill='url(#p1) rgb(255, 0, 0)'/>
+            </svg>
+            """);
+        var tiled = Assert.IsType<TiledShader>(Items(document).OfType<DrawPathItem>().Single().Paint.Shader);
+        var content = Assert.IsType<DisplayListShader>(tiled.Content);
+        Assert.All(content.Content.Items.ToArray().OfType<DrawPathItem>(), item => Assert.Null(item.Paint.Shader));
+        Assert.Contains("stroke #008000", content.Content.Dump(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Stroke_PathLengthScalesTheDashes()
     {
         var document = Parse("<svg width=100 height=100 style='display: block'><path d='M0 10H100' pathLength=10 stroke='rgb(0, 0, 0)' stroke-dasharray='1 1'/></svg>");

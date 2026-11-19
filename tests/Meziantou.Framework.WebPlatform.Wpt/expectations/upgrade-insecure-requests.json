@@ -9,17 +9,6 @@
       "Upgrade-Insecure-Requests: Expects blocked for iframe-tag to same-https origin and downgrade redirection from https context.": "TIMEOUT"
     }
   },
-  "upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/img-tag.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
-  },
   "upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/sharedworker-classic.https.html": {
     "total": 3
   },
@@ -219,17 +208,6 @@
       "Upgrade-Insecure-Requests: Expects blocked for iframe-tag to same-https origin and downgrade redirection from https context.": "TIMEOUT"
     }
   },
-  "upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/img-tag.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
-  },
   "upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/sharedworker-classic.https.html": {
     "total": 3
   },
@@ -423,17 +401,6 @@
       "Upgrade-Insecure-Requests: Expects blocked for iframe-tag to same-http-downgrade origin and downgrade redirection from https context.": "NOTRUN",
       "Upgrade-Insecure-Requests: Expects blocked for iframe-tag to same-http-downgrade origin and no-redirect redirection from https context.": "NOTRUN",
       "Upgrade-Insecure-Requests: Expects blocked for iframe-tag to same-https origin and downgrade redirection from https context.": "NOTRUN"
-    }
-  },
-  "upgrade-insecure-requests/gen/top.meta/unset/img-tag.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects blocked for img-tag to same-https origin and downgrade redirection from https context.": "FAIL"
     }
   },
   "upgrade-insecure-requests/gen/top.meta/unset/sharedworker-classic.https.html": {

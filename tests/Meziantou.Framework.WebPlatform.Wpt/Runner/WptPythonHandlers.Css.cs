@@ -12,6 +12,22 @@ internal static partial class WptPythonHandlers
         ["/css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets/stash.py"] = (request, response, stash) => ScrollSnapStash(request, response, stash, "/css/css-scroll-snap/snap-after-relayout/multiple-aligned-targets"),
         ["/css/css-scroll-snap/scroll-initial-target/stash.py"] = (request, response, stash) => ScrollSnapStash(request, response, stash, "/css/css-scroll-snap/scroll-initial-target/"),
 
+        // optional-font-stylesheet-change.py: the Ahem font, sent once a POST request with the same key releases it
+        ["/css/css-fonts/font-display/support/optional-font-stylesheet-change.py"] = (request, response, stash) =>
+        {
+            var key = request.Get("key") ?? "";
+            if (request.Method == "POST")
+            {
+                stash.Put(key, true);
+                return;
+            }
+
+            response.HeadersCondition = () => stash.TakeValue(key) is not null;
+            response.Set("Content-Type", "font/ttf");
+            response.Set("Cache-Control", "max-age=3600");
+            response.Body = ReadWptFile("fonts/Ahem.ttf");
+        },
+
         // echo-css.py: a style sheet whose content is the content parameter
         ["/css/fetching/support/echo-css.py"] = (request, response, _) =>
         {

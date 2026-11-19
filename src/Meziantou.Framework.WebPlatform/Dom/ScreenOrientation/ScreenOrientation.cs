@@ -99,8 +99,10 @@ public class ScreenOrientationProvider
 {
     private readonly Lock _lock = new();
     private readonly List<WeakReference<BrowsingContext>> _browsingContexts = [];
+    private readonly OrientationType _naturalOrientation;
     private OrientationType _deviceOrientation;
     private OrientationLockType? _activeLock;
+    private (OrientationType Natural, OrientationType Type)? _override;
 
     /// <summary>Initializes a new instance of the <see cref="ScreenOrientationProvider"/> class, for a screen whose natural orientation is <see cref="OrientationType.LandscapePrimary"/>.</summary>
     public ScreenOrientationProvider()
@@ -120,15 +122,27 @@ public class ScreenOrientationProvider
         if (naturalOrientation is not (OrientationType.PortraitPrimary or OrientationType.LandscapePrimary))
             throw new ArgumentOutOfRangeException(nameof(naturalOrientation), naturalOrientation, "The natural orientation must be a primary orientation");
 
-        NaturalOrientation = naturalOrientation;
+        _naturalOrientation = naturalOrientation;
         _deviceOrientation = naturalOrientation;
     }
 
     /// <summary>Raised when the orientation of the screen changes (<see cref="OnOrientationChanged"/>).</summary>
     public event EventHandler? OrientationChanged;
 
-    /// <summary>Gets the natural orientation of the screen (https://w3c.github.io/screen-orientation/#dfn-natural).</summary>
-    public OrientationType NaturalOrientation { get; }
+    /// <summary>
+    /// Gets the natural orientation of the screen (https://w3c.github.io/screen-orientation/#dfn-natural): the one of the
+    /// orientation override when there is one (<see cref="SetOrientationOverride"/>).
+    /// </summary>
+    public OrientationType NaturalOrientation
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _override?.Natural ?? _naturalOrientation;
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets the orientation of the device, as the user holds it: the orientation of the screen when it is not locked
@@ -170,20 +184,65 @@ public class ScreenOrientationProvider
         }
     }
 
-    /// <summary>Gets the current orientation type of the screen (https://w3c.github.io/screen-orientation/#dfn-current-orientation-type).</summary>
+    /// <summary>
+    /// Gets the current orientation type of the screen (https://w3c.github.io/screen-orientation/#dfn-current-orientation-type):
+    /// the type of the orientation override when there is one (<see cref="SetOrientationOverride"/>).
+    /// </summary>
     public OrientationType CurrentType
     {
         get
         {
             lock (_lock)
             {
-                return GetLockedOrientation(_activeLock, _deviceOrientation, NaturalOrientation);
+                return _override?.Type ?? GetLockedOrientation(_activeLock, _deviceOrientation, _naturalOrientation);
             }
         }
     }
 
     /// <summary>Gets the current orientation angle of the screen in degrees (https://w3c.github.io/screen-orientation/#dfn-current-orientation-angle), from the screen orientation values lists.</summary>
-    public ushort CurrentAngle => GetAngle(CurrentType, NaturalOrientation);
+    public ushort CurrentAngle
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _override is { } emulated ? GetAngle(emulated.Type, emulated.Natural) : GetAngle(GetLockedOrientation(_activeLock, _deviceOrientation, _naturalOrientation), _naturalOrientation);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Emulates the orientation of the screen, as the <c>emulation.setScreenOrientationOverride</c> command of WebDriver BiDi
+    /// (https://w3c.github.io/webdriver-bidi/#command-emulation-setScreenOrientationOverride): the screen has the natural
+    /// orientation and the current orientation type of the override, whatever the orientation of the device and the active
+    /// orientation lock, until <see cref="ClearOrientationOverride"/>. The documents fire their <c>change</c> events.
+    /// </summary>
+    /// <param name="naturalOrientation">The natural orientation of the emulated screen: <see cref="OrientationType.PortraitPrimary"/> or <see cref="OrientationType.LandscapePrimary"/>.</param>
+    /// <param name="type">The current orientation type of the emulated screen.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="naturalOrientation"/> is not a primary orientation.</exception>
+    public void SetOrientationOverride(OrientationType naturalOrientation, OrientationType type)
+    {
+        if (naturalOrientation is not (OrientationType.PortraitPrimary or OrientationType.LandscapePrimary))
+            throw new ArgumentOutOfRangeException(nameof(naturalOrientation), naturalOrientation, "The natural orientation must be a primary orientation");
+
+        SetOverride((naturalOrientation, type));
+    }
+
+    /// <summary>Removes the orientation override of <see cref="SetOrientationOverride"/>: the screen gets its own orientation back.</summary>
+    public void ClearOrientationOverride() => SetOverride(null);
+
+    private void SetOverride((OrientationType Natural, OrientationType Type)? value)
+    {
+        lock (_lock)
+        {
+            if (_override == value)
+                return;
+
+            _override = value;
+        }
+
+        OnOrientationChanged();
+    }
 
     /// <summary>
     /// Returns whether the screen can be locked to an orientation (the lock request is rejected with a <c>NotSupportedError</c>

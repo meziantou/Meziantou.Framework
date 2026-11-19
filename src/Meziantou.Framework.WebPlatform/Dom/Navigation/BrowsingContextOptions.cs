@@ -697,6 +697,14 @@ public sealed partial record BrowsingContextOptions
     /// </summary>
     public PendingInputOptions? PendingInput { get; init; }
 
+    /// <summary>
+    /// Gets or sets the host hooks of the protocol handlers (https://html.spec.whatwg.org/multipage/system-state.html#custom-handlers,
+    /// <c>navigator.registerProtocolHandler()</c>): <see cref="ProtocolHandlerOptions.Registry"/> holds the registered
+    /// handlers, which handle the navigations to the URLs of their scheme. The default is null: the handlers are not
+    /// registered, and the URLs whose scheme is not a fetch scheme are handed off to external software.
+    /// </summary>
+    public ProtocolHandlerOptions? ProtocolHandlers { get; init; }
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<NotificationRecord> ShownNotifications { get; } = [];
 }

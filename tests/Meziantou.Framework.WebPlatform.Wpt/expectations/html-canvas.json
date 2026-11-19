@@ -2126,9 +2126,6 @@
   "html/canvas/element/manual/draw-element-image/child-overflow.tentative.html": {
     "reftest": "PASS"
   },
-  "html/canvas/element/manual/draw-element-image/compositing-descendant-filter.tentative.html": {
-    "reftest": "PASS"
-  },
   "html/canvas/element/manual/draw-element-image/compositing-op-basic.tentative.html": {
     "reftest": "PASS"
   },
@@ -5096,10 +5093,7 @@
     "total": 1
   },
   "html/canvas/element/text/2d.text.measure.actualBoundingBox.combining-mark-offset.html": {
-    "total": 1,
-    "failures": {
-      "measureText() bounding box ascent and descent include the offset of combining marks": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/text/2d.text.measure.actualBoundingBox.html": {
     "total": 1

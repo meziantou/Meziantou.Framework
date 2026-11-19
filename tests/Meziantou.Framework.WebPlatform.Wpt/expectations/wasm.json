@@ -1661,14 +1661,6 @@
   "wasm/serialization/module/broadcastchannel-success.html": {
     "total": 1
   },
-  "wasm/serialization/module/cross-origin-module-sharing-fails.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "postMessaging a wasm module to a cross-origin iframe in the same agent cluster fails": "NOTRUN",
-      "postMessaging a wasm module to an iframe in a different agent cluster fails": "TIMEOUT"
-    }
-  },
   "wasm/serialization/module/identity-not-preserved.html": {
     "total": 3
   },
@@ -1695,13 +1687,6 @@
   },
   "wasm/serialization/module/serialization-via-notifications-api.any.js#dedicatedworker": {
     "total": 2
-  },
-  "wasm/serialization/module/share-module-cross-origin-fails.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "postMessaging a wasm module to a cross-origin iframe fails": "TIMEOUT"
-    }
   },
   "wasm/serialization/module/window-cross-origin-isolated.https.sub.html": {
     "total": 3

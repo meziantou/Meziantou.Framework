@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control and sensor APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -34,6 +34,7 @@ the device in a test, or to connect the API to your application.
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
 | [Sensors](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Sensors) | `Accelerometer`, `Gyroscope`, `AmbientLightSensor` and the other sensors, the `deviceorientation` and `devicemotion` events | The device has no sensor: the sensors fail to start, and the events report null values |
+| [ProtocolHandlers](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ProtocolHandlers) | `navigator.registerProtocolHandler()`, `navigator.unregisterProtocolHandler()` | The handlers are not registered |
 
 To remove an API completely, so that the pages see it as unsupported, disable it with
 [Features](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Features): for instance
@@ -419,6 +420,11 @@ the user rotating the device. To lock the screen of the operating system, derive
 override [TryLock](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider.TryLock), and call
 [OnOrientationChanged](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider.OnOrientationChanged) when
 the orientation changes. The size of the viewport does not change with the orientation.
+[SetOrientationOverride](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider.SetOrientationOverride) emulates
+a screen with another natural orientation and orientation type (as the `emulation.setScreenOrientationOverride` command of
+WebDriver BiDi), whatever the orientation of the device and the lock, until
+[ClearOrientationOverride](cref:Meziantou.Framework.WebPlatform.Dom.ScreenOrientationProvider.ClearOrientationOverride):
+the angle of the screen and the `referenceFrame: 'screen'` readings of the motion sensors follow it.
 
 ## Virtual keyboard
 
@@ -743,3 +749,29 @@ degree, the accelerations to 0.1 m/s² and the rotation rates to 0.1 deg/s. With
 `accelerometer` and `gyroscope` permissions, the first event is fired with null values. A hidden page gets no event.
 `DeviceOrientationEvent.requestPermission()` and `DeviceMotionEvent.requestPermission()` resolve with the state of the
 permissions, and need a user activation when a permission would prompt the user.
+
+## Protocol handlers
+
+`navigator.registerProtocolHandler()` asks the user to register a page as the handler of a scheme (e.g. `mailto` or
+`web+soup`). [RequestRegistration](cref:Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerOptions.RequestRegistration)
+answers for the user, and the accepted handlers are stored in
+[Registry](cref:Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerOptions.Registry), which the browsing contexts that
+share the options share:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_ProtocolHandlers;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The handlers registered by navigator.registerProtocolHandler() when the user accepts them
+var protocolHandlers = new ProtocolHandlerOptions
+{
+    RequestRegistration = registration => registration.Scheme == "web+soup",
+};
+var options = new BrowsingContextOptions { ProtocolHandlers = protocolHandlers };
+```
+<!-- endref -->
+
+A navigation to a URL of a registered scheme navigates to the URL of the last registered handler, in which the first
+`%s` is replaced with the percent-encoded URL (`web+soup:chicken` navigates to `soup?url=web%2Bsoup%3Achicken`), and
+`navigator.unregisterProtocolHandler()` removes the handler. As the `Set RPH Registration Mode` WebDriver command,
+[ProtocolHandlerAutomationMode](cref:Meziantou.Framework.WebPlatform.Dom.Document.ProtocolHandlerAutomationMode) makes a
+document accept or reject its registrations without asking. Without the option, the handlers are not registered, and the
+URLs whose scheme is not a fetch scheme are handed off to external software: the navigation does nothing.

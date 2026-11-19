@@ -9,25 +9,24 @@ description: "The results of the web-platform-tests of sanitizer-api, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 48 | 50 | 0 | 96% |
-| [Tentative](#tentative-tests) | 8 | 14 | 0 | 57% |
+| [Stable](#stable-tests) | 45 | 47 | 0 | 96% |
+| [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **56** | **64** | **0** | **88%** |
+| **All** | **46** | **48** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 6
-- **NOT IMPLEMENTED**: 2
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`html5lib-basics.html`](https://wpt.fyi/results/sanitizer-api/html5lib-basics.html) | Pass | 18 / 18 |  |  |
-| [`parsehtml-noscript.html`](https://wpt.fyi/results/sanitizer-api/parsehtml-noscript.html) | Pass | 6 / 6 |  |  |
 | [`parsehtmlunsafe-with-trustedtypes.html`](https://wpt.fyi/results/sanitizer-api/parsehtmlunsafe-with-trustedtypes.html) | Pass | 7 / 7 |  |  |
 | [`sanitizer-a-navigation.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-a-navigation.html) | Pass | 225 / 225 |  |  |
 | [`sanitizer-base-immutable.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-base-immutable.html) | Pass | 27 / 27 |  |  |
@@ -45,13 +44,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`sanitizer-javascript-url.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-javascript-url.html) | Pass | 1,334 / 1,334 |  |  |
 | [`sanitizer-mathml-elements.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-mathml-elements.html) | Pass | 84 / 84 |  |  |
 | [`sanitizer-modifiers.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-modifiers.html) | Pass | 22 / 22 |  |  |
-| [`sanitizer-names.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-names.html) | Pass | 27 / 27 |  |  |
 | [`sanitizer-parseHTML.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-parseHTML.html) | Pass | 49 / 49 |  |  |
 | [`sanitizer-processing-instructions.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-processing-instructions.html) | Pass | 63 / 63 |  |  |
 | [`sanitizer-removeUnsafe.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-removeUnsafe.html) | Pass | 8 / 8 |  |  |
 | [`sanitizer-script-tokenizer.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-script-tokenizer.html) | Pass | 10 / 10 |  |  |
 | [`sanitizer-svg-animate.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-svg-animate.html) | Pass | 22 / 22 |  |  |
-| [`sanitizer-unknown.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-unknown.html) | Pass | 4 / 4 |  |  |
 | [`sethtml-custom-element-reactions.html`](https://wpt.fyi/results/sanitizer-api/sethtml-custom-element-reactions.html) | Pass | 8 / 8 |  |  |
 | [`sethtml-form-owner.html`](https://wpt.fyi/results/sanitizer-api/sethtml-form-owner.html) | Pass | 4 / 4 |  |  |
 | [`sethtml-noscript.html`](https://wpt.fyi/results/sanitizer-api/sethtml-noscript.html) | Pass | 6 / 6 |  |  |
@@ -81,17 +78,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`parsehtmlunsafe-with-trustedtypes.tentative.html`](https://wpt.fyi/results/sanitizer-api/parsehtmlunsafe-with-trustedtypes.tentative.html) | Fail | 5 / 7 | TEST BUG | a `createParserOptions` callback of the default policy that returns null or undefined is expected to accept the string without sanitizing it: the string is rejected with a TypeError (https://w3c.github.io/trusted-types/dist/spec/#get-trusted-type-compliant-parser-options); fixed upstream (web-platform-tests/wpt@b5daf96de8, "Apply latest spec changes for createParserOptions") |
-| [`sanitizer-custom-elements-is.tentative.html`](https://wpt.fyi/results/sanitizer-api/sanitizer-custom-elements-is.tentative.html) | Pass | 8 / 8 |  |  |
 | [`sethtml-context.tentative.html`](https://wpt.fyi/results/sanitizer-api/sethtml-context.tentative.html) | Pass | 10 / 10 |  |  |
-| [`sethtml-with-declarative-shadow-root.tentative.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-declarative-shadow-root.tentative.html) | Fail | 9 / 10 | NOT IMPLEMENTED | `ShadowRoot.referenceTarget` (the `shadowrootreferencetarget` attribute) |
-| [`sethtml-with-trustedtypes-createParserOptions-null.tentative.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-trustedtypes-createParserOptions-null.tentative.html) | Fail | 0 / 2 | TEST BUG | the `createParserOptions` callback of a named policy returns null, which is expected to create `TrustedHTMLParserOptions` without a sanitizer: `createParserOptions()` throws a TypeError (https://w3c.github.io/trusted-types/dist/spec/#create-a-trusted-type-algorithm); fixed upstream (web-platform-tests/wpt@2e954fa1b2, `sethtml-with-trustedtypes-createParserOptions-null.html` expects the TypeError) |
-| [`sethtml-with-trustedtypes-createParserOptions.tentative.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-trustedtypes-createParserOptions.tentative.html) | Fail | 9 / 11 | TEST BUG | the `TrustedHTMLParserOptions without sanitizer still requires createHTML` subtests create their options with a named policy whose callback returns null, which throws a TypeError (https://w3c.github.io/trusted-types/dist/spec/#create-a-trusted-type-algorithm), and expect options without a sanitizer not to satisfy the sink: any `TrustedHTMLParserOptions` does (https://w3c.github.io/trusted-types/dist/spec/#get-trusted-type-compliant-input); fixed upstream (web-platform-tests/wpt@b5daf96de8, "Apply latest spec changes for createParserOptions") |
-| [`sethtml-with-trustedtypes-immutable.tentative.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-trustedtypes-immutable.tentative.html) | Pass | 6 / 6 |  |  |
-| [`sethtml-with-trustedtypes.tentative.html`](https://wpt.fyi/results/sanitizer-api/sethtml-with-trustedtypes.tentative.html) | Fail | 111 / 151 | TEST BUG | the subtests expect a `createParserOptions` callback of the default policy that returns null or undefined to accept the string without sanitizing it (and then `createHTML` to be called), and the callback not to enable the scripts: the string is rejected with a TypeError, and the options it returns determine `runScripts` (https://w3c.github.io/trusted-types/dist/spec/#get-trusted-type-compliant-parser-options); fixed upstream (web-platform-tests/wpt@b5daf96de8, "Apply latest spec changes for createParserOptions") |
-| [`sethtml-xml-document-sanitizer.tentative.html`](https://wpt.fyi/results/sanitizer-api/sethtml-xml-document-sanitizer.tentative.html) | Fail | 1 / 7 | TEST BUG | `innerHTML`, `outerHTML`, `insertAdjacentHTML()` and `createContextualFragment()` are expected to throw in an XML document when the default policy gives a sanitizer: the parser options are not used in XML documents, where the string is converted by `createHTML` (https://w3c.github.io/trusted-types/dist/spec/#get-trusted-type-compliant-input); fixed upstream (web-platform-tests/wpt@b5daf96de8, "Apply latest spec changes for createParserOptions") |
-| [`trustedhtml-unvetted-parser-options-default-createHTML.tentative.html`](https://wpt.fyi/results/sanitizer-api/trustedhtml-unvetted-parser-options-default-createHTML.tentative.html) | Pass | 54 / 54 |  |  |
-| [`trustedhtml-unvetted-parser-options-default-createParserOptions.tentative.html`](https://wpt.fyi/results/sanitizer-api/trustedhtml-unvetted-parser-options-default-createParserOptions.tentative.html) | Pass | 5 / 5 |  |  |
-| [`trustedhtml-unvetted-parser-options-no-enforcement.tentative.html`](https://wpt.fyi/results/sanitizer-api/trustedhtml-unvetted-parser-options-no-enforcement.tentative.html) | Pass | 8 / 8 |  |  |
-| [`trustedhtml-unvetted-parser-options-report-only.tentative.html`](https://wpt.fyi/results/sanitizer-api/trustedhtml-unvetted-parser-options-report-only.tentative.html) | Pass | 8 / 8 |  |  |
-| [`trustedhtml-unvetted-parser-options.tentative.html`](https://wpt.fyi/results/sanitizer-api/trustedhtml-unvetted-parser-options.tentative.html) | Pass | 43 / 43 |  |  |

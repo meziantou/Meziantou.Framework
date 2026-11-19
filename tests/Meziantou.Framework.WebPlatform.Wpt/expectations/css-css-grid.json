@@ -3789,9 +3789,6 @@
   "css/css-grid/grid-lanes/animation/fit-tolerance-interpolation.html": {
     "total": 240
   },
-  "css/css-grid/grid-lanes/animation/flow-tolerance-interpolation.html": {
-    "total": 240
-  },
   "css/css-grid/grid-lanes/animation/grid-template-columns-001.html": {
     "reftest": "PASS"
   },
@@ -4299,15 +4296,6 @@
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-003.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-002.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-003.html": {
-    "reftest": "PASS"
-  },
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-001.html": {
     "reftest": "PASS"
   },
@@ -4350,9 +4338,6 @@
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-fit-tolerance-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-flow-tolerance-001.html": {
-    "reftest": "PASS"
-  },
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-indefinite-size-001.html": {
     "reftest": "PASS"
   },
@@ -4360,12 +4345,6 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-002.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-flow-tolerance-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-flow-tolerance-002.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-001.html": {
@@ -4387,15 +4366,6 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-003.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-002.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-003.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-001.html": {
@@ -4426,12 +4396,6 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-002.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/fit-tolerance/column-fit-tolerance-infinite.html": {
@@ -4486,57 +4450,6 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/column-initial-flow-tolerance.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-002.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-003.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-004.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-dynamic-update.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-column-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-intrinsic-column-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-intrinsic-row-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-row-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-002.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-003.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-004.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/row-flow-tolerance-infinite.html": {
-    "reftest": "PASS"
-  },
-  "css/css-grid/grid-lanes/item-placement/flow-tolerance/row-initial-flow-tolerance.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/grid-lanes-item-placement-001.html": {
@@ -5855,15 +5768,6 @@
     "total": 12
   },
   "css/css-grid/grid-lanes/tentative/parsing/fit-tolerance-valid.html": {
-    "total": 8
-  },
-  "css/css-grid/grid-lanes/tentative/parsing/flow-tolerance-computed.html": {
-    "total": 7
-  },
-  "css/css-grid/grid-lanes/tentative/parsing/flow-tolerance-invalid.html": {
-    "total": 12
-  },
-  "css/css-grid/grid-lanes/tentative/parsing/flow-tolerance-valid.html": {
     "total": 8
   },
   "css/css-grid/grid-lanes/tentative/parsing/grid-lanes-direction-computed.html": {

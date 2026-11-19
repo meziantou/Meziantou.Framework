@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of css/css-overflow, and why
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 217 | 219 | 0 | 99% |
 | [Tentative](#tentative-tests) | 8 | 10 | 0 | 80% |
-| [Reftests](#reftests) | 725 | 746 | 0 | 97% |
+| [Reftests](#reftests) | 705 | 726 | 0 | 97% |
 | [Crash tests](#crash-tests) | 52 | 52 | 0 | 100% |
-| **All** | **1,002** | **1,027** | **0** | **98%** |
+| **All** | **982** | **1,007** | **0** | **98%** |
 
 ## Failure reasons
 
@@ -373,9 +373,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`line-clamp/line-clamp-010.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-010.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-011.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-011.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-012.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-012.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-012.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-012.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-013.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-013.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-013.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-013.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-014.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-014.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-015.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-015.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-016.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-016.html) | Pass | 1 / 1 |  |  |
@@ -385,13 +383,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`line-clamp/line-clamp-020.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-020.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-021.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-021.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-022.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-022.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-022.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-022.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-023.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-023.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-023.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-023.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-024.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-024.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-024.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-024.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-025.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-025.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-025.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-025.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-026.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-026.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-027.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-027.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-028.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-028.html) | Pass | 1 / 1 |  |  |
@@ -424,36 +418,22 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`line-clamp/line-clamp-auto-013.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-013.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-014.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-014.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-015.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-015.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-015.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-015.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-016.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-016.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-017.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-017.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-018.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-018.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-018.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-018.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-019.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-019.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-019.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-019.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-020.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-020.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-020.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-020.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-021.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-021.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-021.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-021.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-022.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-022.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-022.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-022.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-023.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-023.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-023.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-023.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-024.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-024.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-024.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-024.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-025.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-025.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-027.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-027.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-027.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-027.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-028.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-028.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-028.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-028.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-029.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-029.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-029.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-029.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-030.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-030.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-030.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-030.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-031.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-031.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-031.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-031.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-032.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-032.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-auto-032.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-032.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-033.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-033.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-034.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-034.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-auto-035.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-auto-035.html) | Pass | 1 / 1 |  |  |

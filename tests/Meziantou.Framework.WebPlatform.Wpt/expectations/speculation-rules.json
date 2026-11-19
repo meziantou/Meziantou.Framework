@@ -1307,17 +1307,16 @@
     "total": 1
   },
   "speculation-rules/prerender/protocol-handler-register.https.html": {
-    "harness": "ERROR",
     "total": 1,
     "failures": {
-      "prerendering page registerProtocolHandler call defers registration until activation.": "NOTRUN"
+      "prerendering page registerProtocolHandler call defers registration until activation.": "FAIL"
     }
   },
   "speculation-rules/prerender/protocol-handler-unregister.https.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "prerendering page unregisterProtocolHandler call defers registration until activation.": "NOTRUN"
+      "prerendering page unregisterProtocolHandler call defers registration until activation.": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/protocol-handler-validation.https.html": {

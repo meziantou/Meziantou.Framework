@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of xhr, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 328 | 331 | 0 | 99% |
+| [Stable](#stable-tests) | 327 | 330 | 0 | 99% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **330** | **333** | **0** | **99%** |
+| **All** | **329** | **332** | **0** | **99%** |
 
 ## Failure reasons
 
@@ -211,7 +211,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`preserve-ua-header-on-redirect.htm`](https://wpt.fyi/results/xhr/preserve-ua-header-on-redirect.htm) | Pass | 2 / 2 |  |  |
 | [`progress-events-response-data-gzip.htm`](https://wpt.fyi/results/xhr/progress-events-response-data-gzip.htm) | Pass | 1 / 1 |  |  |
 | [`progressevent-constructor.any.js`](https://wpt.fyi/results/xhr/progressevent-constructor.any.js) | Pass | 30 / 30 |  |  |
-| [`progressevent-constructor.html`](https://wpt.fyi/results/xhr/progressevent-constructor.html) | Pass | 10 / 10 |  |  |
 | [`progressevent-interface.html`](https://wpt.fyi/results/xhr/progressevent-interface.html) | Pass | 7 / 7 |  |  |
 | [`request-content-length.any.js`](https://wpt.fyi/results/xhr/request-content-length.any.js) | Pass | 4 / 4 |  |  |
 | [`response-body-errors.any.js`](https://wpt.fyi/results/xhr/response-body-errors.any.js) | Pass | 4 / 4 |  |  |

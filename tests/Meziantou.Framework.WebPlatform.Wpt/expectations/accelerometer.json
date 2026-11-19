@@ -21,25 +21,16 @@
     "total": 1
   },
   "accelerometer/Accelerometer.https.html": {
-    "total": 20,
-    "failures": {
-      "Accelerometer: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
-    }
+    "total": 20
   },
   "accelerometer/Accelerometer_insecure_context.html": {
     "total": 3
   },
   "accelerometer/GravitySensor.https.html": {
-    "total": 20,
-    "failures": {
-      "GravitySensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
-    }
+    "total": 20
   },
   "accelerometer/LinearAccelerationSensor.https.html": {
-    "total": 20,
-    "failures": {
-      "LinearAccelerationSensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
-    }
+    "total": 20
   },
   "accelerometer/idlharness.https.window.js": {
     "total": 38

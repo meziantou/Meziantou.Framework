@@ -3533,6 +3533,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformationOptions? NetworkInformation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PendingInputOptions? PendingInput { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerOptions? ProtocolHandlers { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Rendering.RenderingBackend? RenderingBackend { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, string, Meziantou.Framework.WebPlatform.Dom.PermissionState>? RequestPermission { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.PointerLockOptions, bool>? RequestPointerLock { get => throw null; init { } }
@@ -4933,6 +4934,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.HtmlCollection Plugins { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? PointerLockElement { get => throw null; }
         public bool Prerendering { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerAutomationMode ProtocolHandlerAutomationMode { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentReadyState ReadyState { get => throw null; }
         public string Referrer { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SvgSvgElement? RootElement { get => throw null; }
@@ -10697,6 +10699,42 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public object? Reason { get => throw null; init { } }
     }
 
+    public enum ProtocolHandlerAutomationMode
+    {
+        None = 0,
+        AutoAccept = 1,
+        AutoReject = 2,
+    }
+
+    public sealed class ProtocolHandlerOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistry Registry { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistration, bool>? RequestRegistration { get => throw null; init { } }
+    }
+
+    public sealed class ProtocolHandlerRegistration : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistration>
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; init { } }
+        public string Scheme { get => throw null; init { } }
+        public string Url { get => throw null; init { } }
+        public ProtocolHandlerRegistration(Meziantou.Framework.WebPlatform.Dom.Document Document, string Scheme, string Url) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.Dom.Document Document, out string Scheme, out string Url) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistration? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistration? left, Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistration? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistration? left, Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerRegistration? right) => throw null;
+    }
+
+    public sealed class ProtocolHandlerRegistry
+    {
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Handlers { get => throw null; }
+        public string? GetHandler(string scheme) => throw null;
+        public void Register(string scheme, string url) { }
+        public bool Unregister(string scheme, string url) => throw null;
+    }
+
     public sealed class ProximitySensor : Meziantou.Framework.WebPlatform.Dom.Sensor
     {
         public double? Distance { get => throw null; }
@@ -11307,8 +11345,10 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.OrientationType NaturalOrientation { get => throw null; }
         public event System.EventHandler? OrientationChanged;
         public ScreenOrientationProvider(Meziantou.Framework.WebPlatform.Dom.OrientationType naturalOrientation) { }
+        public void ClearOrientationOverride() { }
         public virtual bool IsSupported(Meziantou.Framework.WebPlatform.Dom.OrientationLockType orientation) => throw null;
         protected void OnOrientationChanged() { }
+        public void SetOrientationOverride(Meziantou.Framework.WebPlatform.Dom.OrientationType naturalOrientation, Meziantou.Framework.WebPlatform.Dom.OrientationType type) { }
         protected virtual bool TryLock(Meziantou.Framework.WebPlatform.Dom.OrientationLockType? orientation) => throw null;
     }
 

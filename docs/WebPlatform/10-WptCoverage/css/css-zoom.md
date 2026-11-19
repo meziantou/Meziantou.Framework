@@ -12,17 +12,11 @@ description: "The results of the web-platform-tests of css/css-zoom, and why the
 | Stable | 0 | 0 | 0 | – |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| [Crash tests](#crash-tests) | 0 | 1 | 1 | – |
-| **All** | **0** | **1** | **1** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **TEST RUNNER**: 1
+| [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`crashtests/zoom-deeply-nested.html`](https://wpt.fyi/results/css/css-zoom/crashtests/zoom-deeply-nested.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`css/css-zoom`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
+| [`crashtests/zoom-deeply-nested.html`](https://wpt.fyi/results/css/css-zoom/crashtests/zoom-deeply-nested.html) | Pass | 1 / 1 |  |  |

@@ -31,7 +31,6 @@
     "harness": "TIMEOUT",
     "total": 40,
     "failures": {
-      "Magnetometer: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL",
       "UncalibratedMagnetometer: Readings are not delivered when the page has no visibility": "FAIL",
       "UncalibratedMagnetometer: Readings delivered by shared platform sensor are immediately accessible to all sensors.": "NOTRUN",
       "UncalibratedMagnetometer: Test that 'onreading' is called and sensor reading is valid.": "FAIL",

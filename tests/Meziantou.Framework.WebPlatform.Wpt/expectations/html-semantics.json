@@ -2905,9 +2905,6 @@
   "html/semantics/embedded-content/the-iframe-element/sandbox-top-close.sub.window.js": {
     "total": 3
   },
-  "html/semantics/embedded-content/the-iframe-element/sandbox-top-close.tentative.sub.window.js": {
-    "total": 3
-  },
   "html/semantics/embedded-content/the-iframe-element/sandbox-top-navigation-child-cross-origin-frame.tentative.sub.window.js": {
     "total": 1
   },
@@ -5886,13 +5883,7 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.html": {
     "total": 1
   },
-  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.tentative.html": {
-    "total": 1
-  },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.html": {
-    "total": 1
-  },
-  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.tentative.html": {
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html": {
@@ -9661,16 +9652,10 @@
     "total": 5
   },
   "html/semantics/scripting-1/the-script-element/script-text-modifications-csp.html": {
-    "total": 1,
-    "failures": {
-      "Modify inline script element's text after prepare-a-script before evaluation (CSP)": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/scripting-1/the-script-element/script-text-modifications.html": {
-    "total": 1,
-    "failures": {
-      "Modify inline script element's text after prepare-a-script before evaluation": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/scripting-1/the-script-element/script-text-xhtml.xhtml": {
     "total": 1

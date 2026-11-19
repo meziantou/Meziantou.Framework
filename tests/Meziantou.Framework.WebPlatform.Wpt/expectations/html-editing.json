@@ -603,22 +603,13 @@
     "total": 1
   },
   "html/editing/dnd/reload/001.html": {
-    "total": 1,
-    "failures": {
-      "Reload during canvas drag and drop roundtrip": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/reload/002.html": {
-    "total": 1,
-    "failures": {
-      "Reload during PNG image drag and drop roundtrip": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/reload/003.html": {
-    "total": 1,
-    "failures": {
-      "Reload during SVG image drag and drop roundtrip": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/reload/004.html": {
     "harness": "TIMEOUT",
@@ -628,28 +619,16 @@
     }
   },
   "html/editing/dnd/reload/005.html": {
-    "total": 1,
-    "failures": {
-      "Reload during selection drag and drop roundtrip": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/reload/006.html": {
-    "total": 1,
-    "failures": {
-      "Reload during link drag and drop roundtrip": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/reload/007.html": {
-    "total": 1,
-    "failures": {
-      "Reload during drag and drop roundtrip with text/plain data": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/reload/008.html": {
-    "total": 1,
-    "failures": {
-      "Reload during drag and drop roundtrip with text/uri-list data": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/remove/001.html": {
     "total": 1

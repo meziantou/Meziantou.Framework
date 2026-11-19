@@ -290,11 +290,52 @@ internal static class WptTestDriver
     }
 
     /// <summary>
+    /// The element send keys of WebDriver for a file input (https://w3c.github.io/webdriver/#element-send-keys): the files of
+    /// the paths (one per line) are selected (added to the selected files of an input with the <c>multiple</c> attribute), and
+    /// the input and change events are fired.
+    /// </summary>
+    private static void SelectFiles(HtmlInputElement input, string keys)
+    {
+        var paths = keys.Split('\n');
+        if (keys.Length == 0 || (!input.Multiple && paths.Length > 1))
+            throw new InvalidOperationException("invalid argument: the keys are not the path of a file");
+
+        var files = new List<Dom.FileApi.File>(input.Multiple ? input.SelectedFiles : []);
+        foreach (var path in paths)
+        {
+            if (!System.IO.File.Exists(path))
+                throw new InvalidOperationException("invalid argument: the file does not exist: " + path);
+
+            var lastModified = new DateTimeOffset(System.IO.File.GetLastWriteTimeUtc(path)).ToUnixTimeMilliseconds();
+            var type = Path.GetExtension(path) switch
+            {
+                ".txt" => "text/plain",
+                ".html" => "text/html",
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".json" => "application/json",
+                _ => "",
+            };
+            files.Add(new Dom.FileApi.File([System.IO.File.ReadAllBytes(path)], Path.GetFileName(path), new Dom.FileApi.FilePropertyBag { Type = type, LastModified = lastModified }));
+        }
+
+        input.SelectFilesFromUser(files, []);
+    }
+
+    /// <summary>
     /// The element send keys of WebDriver (https://w3c.github.io/webdriver/#element-send-keys): the keyboard events of each
     /// key, and the insertion of the characters in a text control (input, textarea).
     /// </summary>
     public static void SendKeys(Element element, string keys)
     {
+        // The keys sent to a file input are the paths of the files to select, one per line
+        if (element is HtmlInputElement { Type: "file" } fileInput)
+        {
+            SelectFiles(fileInput, keys);
+            return;
+        }
+
         // The element is focused (unless it is the focused element), then the keys are dispatched to the focused element (or
         // to the element when it cannot be focused)
         if (!ReferenceEquals(FocusModel.GetFocusedElement(element.NodeDocument), element))
@@ -853,8 +894,11 @@ internal sealed class WptActionSequence(Window context, bool releaseActions = fa
 {
     private readonly List<(List<Action> Actions, double Duration)> _ticks = [];
 
-    /// <summary>The window of the browsing context of the actions.</summary>
-    public Window Context { get; } = context;
+    /// <summary>The browsing context of the actions (https://w3c.github.io/webdriver/#dfn-current-browsing-context), not its window: a navigation (e.g. <c>location.reload()</c>) does not end the actions.</summary>
+    private readonly BrowsingContext? _browsingContext = context.BrowsingContext;
+
+    /// <summary>The window of the active document of the browsing context of the actions, when the action is performed.</summary>
+    public Window Context => _browsingContext is { IsDestroyed: false, Document.DefaultView: Window window } ? window : context;
 
     /// <summary>The time between the steps of a pointer move that has a duration (a frame).</summary>
     private const double MoveStepDuration = 16;

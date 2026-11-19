@@ -267,11 +267,7 @@
     "total": 2
   },
   "html/browsers/browsing-the-web/history-traversal/unset_context_name.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Window.name is reset after navigating to a different origin": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/window-name-after-cross-origin-aux-frame-navigation.sub.html": {
     "total": 1
@@ -391,7 +387,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/grandparent_location_aboutsrcdoc.sub.window.js": {
-    "harness": "TIMEOUT",
+    "harness": "ERROR",
     "total": 6,
     "failures": {
       "cross-origin grandparent sets location in same-doc navigation": "NOTRUN",

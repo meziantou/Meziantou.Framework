@@ -329,7 +329,7 @@ internal static class NetworkErrorLogging
     /// <c>NEL</c> header of its response. Runs on the thread of the event loop of
     /// the client of the request.
     /// </summary>
-    public static void OnNetworkResponse(FetchRequest request, UrlRecord url, IReadOnlyList<KeyValuePair<string, string>> sentHeaders, DocumentResource? resource, Exception? loaderException, DateTimeOffset start, DateTimeOffset end)
+    public static void OnNetworkResponse(FetchRequest request, UrlRecord url, IReadOnlyList<KeyValuePair<string, string>> sentHeaders, DocumentResource? resource, Exception? loaderException, TimeSpan elapsedTime, DateTimeOffset end)
     {
         // The requests that deliver the reports do not generate reports
         var options = request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? request.KeepaliveBrowsingContext?.Options;
@@ -369,7 +369,7 @@ internal static class NetworkErrorLogging
             RequestHeaders = isSubdomainPolicy ? [] : FilterHeaders(sentHeaders, policy.Header.RequestHeaders),
             ResponseHeaders = isSubdomainPolicy || resource is null ? [] : FilterHeaders(resource.Headers, policy.Header.ResponseHeaders),
             StatusCode = resource?.StatusCode ?? 0,
-            ElapsedTime = Math.Max(0, (long)(end - start).TotalMilliseconds),
+            ElapsedTime = Math.Max(0, (long)elapsedTime.TotalMilliseconds),
             Phase = phase,
             Type = type,
         };

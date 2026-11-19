@@ -1361,22 +1361,25 @@ internal static class Fetching
         }
 
         var isWebSocket = request.Mode == RequestMode.WebSocket;
-        var startTime = eventLoop.TimeProvider.GetUtcNow();
         var resource = await LoadAsync(eventLoop, isWebSocket ? loader.ConnectWebSocketAsync : loader.LoadAsync, documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
 
         // https://w3c.github.io/network-error-logging/: the response (or the failure) of the request generates a network-error
         // report when its origin has a NEL policy, from a task of the event loop of the request (only when a policy exists or
-        // the response sets one: the other requests queue no task)
+        // the response sets one: the other requests queue no task, and do not read the clock). The elapsed time is the one of the
+        // timing info of the request, when it is recorded.
         if ((request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? browsingContext?.Options)?.NetworkErrorLogging is { } networkErrorLogging
             && (!networkErrorLogging.IsEmpty || (resource is not null && HeaderList.Get(resource.Headers, "NEL") is not null))
             && !cancellationToken.IsCancellationRequested)
         {
             var endTime = eventLoop.TimeProvider.GetUtcNow();
+            var elapsedTime = request.Timing.IsRecorded && request.Timing.FinalNetworkRequestStart != 0 && request.Timing.FinalNetworkResponseStart != 0
+                ? TimeSpan.FromSeconds((double)(request.Timing.FinalNetworkResponseStart - request.Timing.FinalNetworkRequestStart) / eventLoop.TimeProvider.TimestampFrequency)
+                : TimeSpan.Zero;
             var reportedResource = resource;
             var loaderException = documentRequest.LoaderException;
             var reportedUrl = request.CurrentUrl;
             var sentHeaders = headers;
-            eventLoop.QueueTask(() => NetworkErrorLogging.OnNetworkResponse(request, reportedUrl, sentHeaders, reportedResource, loaderException, startTime, endTime));
+            eventLoop.QueueTask(() => NetworkErrorLogging.OnNetworkResponse(request, reportedUrl, sentHeaders, reportedResource, loaderException, elapsedTime, endTime));
         }
 
         // https://fetch.spec.whatwg.org/#fetch-timing-info-final-network-response-start-time: the headers of the final response

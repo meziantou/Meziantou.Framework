@@ -79,6 +79,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-style", data => Style(FuzzText.Decode(data.Length > StyleMaxLength ? data[..StyleMaxLength] : data))) { Seeds = () => GetSeeds("style"), Dictionary = StyleTokens },
         new("webplatform-link-parameters", data => LinkParameters(FuzzText.Decode(data.Length > LinkParametersMaxLength ? data[..LinkParametersMaxLength] : data))) { Seeds = () => GetSeeds("link-parameters"), Dictionary = LinkParametersTokens },
         new("webplatform-xpath", data => XPath(FuzzText.Decode(data.Length > XPathMaxLength ? data[..XPathMaxLength] : data))) { Seeds = () => GetSeeds("xpath") },
+        new("webplatform-xslt", Xslt) { Seeds = GetXsltSeeds, Dictionary = XsltTokens },
         new("webplatform-url", data => Url(FuzzText.Decode(data))) { Seeds = () => GetSeeds("url") },
         new("webplatform-urlpattern", data => UrlPattern(FuzzText.Decode(data))) { Seeds = () => GetSeeds("url") },
         new("webplatform-font", data => Font(data.ToArray())) { Seeds = () => GetSeeds("font") },

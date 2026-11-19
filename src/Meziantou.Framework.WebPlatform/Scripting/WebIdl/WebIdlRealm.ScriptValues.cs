@@ -9,6 +9,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IScriptValueOperatio
 
     bool IScriptValueOperations.IsObject(object? value) => TryGetScriptValue(value, out var jsValue) ? Adapter.IsObject(jsValue) : DotNetScriptValueOperations.Instance.IsObject(value);
 
+    object? IScriptValueOperations.UnwrapPlatformObject(object? value) => value is TValue jsValue && Adapter.IsValue(jsValue) && Adapter.TryGetPlatformObject(jsValue, out var target) ? target : value;
+
+    bool IScriptValueOperations.IsBoolean(object? value) => TryGetScriptValue(value, out var jsValue) ? Adapter.IsBoolean(jsValue) : DotNetScriptValueOperations.Instance.IsBoolean(value);
+
+    bool IScriptValueOperations.IsNumber(object? value) => TryGetScriptValue(value, out var jsValue) ? Adapter.IsNumber(jsValue) : DotNetScriptValueOperations.Instance.IsNumber(value);
+
     List<object?>? IScriptValueOperations.TryToSequence(object? value)
     {
         if (!TryGetScriptValue(value, out var jsValue))

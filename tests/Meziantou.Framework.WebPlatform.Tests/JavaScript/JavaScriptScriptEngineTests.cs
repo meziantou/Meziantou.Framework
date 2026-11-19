@@ -37,6 +37,33 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void XsltProcessor_ParametersAndIncludes()
+    {
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/included.xsl"] = new DocumentResource("""<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:template match="item"><li><xsl:value-of select="."/></li></xsl:template></xsl:stylesheet>""") { Headers = [new("Content-Type", "text/xsl")] };
+        var document = Load("""
+            <body><script>
+              const parser = new DOMParser();
+              const stylesheet = parser.parseFromString(`<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                <xsl:include href="included.xsl"/>
+                <xsl:param name="n"/><xsl:param name="b"/><xsl:param name="nodes"/>
+                <xsl:template match="/"><ul data-n="{$n + 1}" data-b="{$b}" data-count="{count($nodes)}"><xsl:apply-templates select="//item"/></ul></xsl:template>
+              </xsl:stylesheet>`, 'application/xml');
+              const source = parser.parseFromString('<list><item>a</item><item>b</item></list>', 'application/xml');
+              const processor = new XSLTProcessor();
+              processor.importStylesheet(stylesheet);
+              processor.setParameter(null, 'n', 41);
+              processor.setParameter('', 'b', false);
+              processor.setParameter('', 'nodes', [...source.querySelectorAll('item')]);
+              document.body.append(processor.transformToFragment(source, document));
+              document.title = [processor.getParameter('', 'n'), typeof processor.getParameter('', 'b'), document.body.lastChild.outerHTML].join('|');
+            </script>
+            """, loader: loader);
+        Assert.Empty(_errors);
+        Assert.Equal("""41|boolean|<ul data-n="42" data-b="false" data-count="2"><li>a</li><li>b</li></ul>""", document.Title);
+    }
+
+    [Fact]
     public async Task ReadmeExample_ExecuteScripts()
     {
         #region WebPlatformJavaScript_ExecuteScripts

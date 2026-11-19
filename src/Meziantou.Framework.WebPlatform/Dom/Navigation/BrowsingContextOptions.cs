@@ -1192,6 +1192,12 @@ public enum RequestDestination
     /// https://webaudio.github.io/web-audio-api/#AudioWorklet), and the modules it imports.
     /// </summary>
     AudioWorklet,
+
+    /// <summary>
+    /// An XSLT stylesheet: the one of an <c>&lt;?xml-stylesheet type="text/xsl"?&gt;</c> processing instruction of an XML
+    /// document, or of an <c>xsl:include</c> or <c>xsl:import</c> element (see <see cref="XsltProcessor"/>).
+    /// </summary>
+    Xslt,
 }
 
 /// <summary>The mode of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-mode).</summary>

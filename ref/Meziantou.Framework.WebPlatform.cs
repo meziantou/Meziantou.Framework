@@ -11014,6 +11014,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         PaintWorklet = 20,
         SpeculationRules = 21,
         AudioWorklet = 22,
+        Xslt = 23,
     }
 
     public enum RequestMode
@@ -14831,6 +14832,18 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class XmlSerializer
     {
         public string SerializeToString(Meziantou.Framework.WebPlatform.Dom.Node root) => throw null;
+    }
+
+    public sealed class XsltProcessor
+    {
+        public void ClearParameters() { }
+        public object? GetParameter(string namespaceUri, string localName) => throw null;
+        public void ImportStylesheet(Meziantou.Framework.WebPlatform.Dom.Node style) { }
+        public void RemoveParameter(string namespaceUri, string localName) { }
+        public void Reset() { }
+        public void SetParameter(string namespaceUri, string localName, object? value) { }
+        public Meziantou.Framework.WebPlatform.Dom.Document TransformToDocument(Meziantou.Framework.WebPlatform.Dom.Node source) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.DocumentFragment TransformToFragment(Meziantou.Framework.WebPlatform.Dom.Node source, Meziantou.Framework.WebPlatform.Dom.Document output) => throw null;
     }
 }
 namespace Meziantou.Framework.WebPlatform.Dom.FileApi

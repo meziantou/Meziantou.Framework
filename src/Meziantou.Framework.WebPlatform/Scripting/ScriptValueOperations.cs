@@ -18,6 +18,15 @@ internal interface IScriptValueOperations
     /// <summary>Whether the value is an object (not a primitive value).</summary>
     bool IsObject(object? value);
 
+    /// <summary>Whether the value is a boolean.</summary>
+    bool IsBoolean(object? value);
+
+    /// <summary>Whether the value is a number.</summary>
+    bool IsNumber(object? value);
+
+    /// <summary>Returns the platform object (e.g. a <see cref="Node"/>) of a value of the engine that wraps one, else the value.</summary>
+    object? UnwrapPlatformObject(object? value);
+
     /// <summary>
     /// Returns the elements of an iterable object (https://webidl.spec.whatwg.org/#js-sequence), or null when the value is not
     /// an object or has no iterator (as the conversion to a union that has a sequence type checks it).
@@ -57,6 +66,12 @@ internal sealed class DotNetScriptValueOperations : IScriptValueOperations
     public bool IsNullOrUndefined(object? value) => value is null;
 
     public bool IsObject(object? value) => value is not (null or string or bool) && !(value is IConvertible convertible && IsNumeric(convertible));
+
+    public bool IsBoolean(object? value) => value is bool;
+
+    public object? UnwrapPlatformObject(object? value) => value;
+
+    public bool IsNumber(object? value) => value is IConvertible convertible and not (string or bool) && IsNumeric(convertible);
 
     public List<object?>? TryToSequence(object? value) => value switch
     {

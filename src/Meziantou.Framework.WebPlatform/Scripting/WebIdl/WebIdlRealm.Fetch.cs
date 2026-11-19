@@ -586,6 +586,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         "track" => RequestDestination.Track,
         "paintworklet" => RequestDestination.PaintWorklet,
         "audioworklet" => RequestDestination.AudioWorklet,
+        "xslt" => RequestDestination.Xslt,
         _ => RequestDestination.Empty,
     } : RequestDestination.Empty;
 

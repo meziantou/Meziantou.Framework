@@ -26,8 +26,18 @@ internal sealed class DomXPathNavigator : XPathNavigator
     // without checking the result (the following axis loops on an attribute that has no parent)
     private bool _detachedAttributeRoot;
 
+    // The whitespace text nodes removed from the tree by the xsl:strip-space declarations of an XSLT stylesheet, if any
+    private readonly IXPathWhitespaceStripper? _stripper;
+
     public DomXPathNavigator(Node node)
+        : this(node, stripper: null)
     {
+    }
+
+    /// <summary>Creates a navigator over a tree whose whitespace text nodes are stripped by <paramref name="stripper"/> (https://www.w3.org/TR/xslt-10/#strip).</summary>
+    public DomXPathNavigator(Node node, IXPathWhitespaceStripper? stripper)
+    {
+        _stripper = stripper;
         if (node is Attr { OwnerElement: { } owner } attr)
         {
             _node = owner;
@@ -50,6 +60,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         _namespaces = other._namespaces;
         _namespaceIndex = other._namespaceIndex;
         _detachedAttributeRoot = other._detachedAttributeRoot;
+        _stripper = other._stripper;
     }
 
     /// <summary>The DOM node of the current position (the Attr node for attributes, the first Text node of a text run), or null for namespace nodes.</summary>
@@ -74,11 +85,11 @@ internal sealed class DomXPathNavigator : XPathNavigator
     public override XPathNavigator Clone() => new DomXPathNavigator(this);
 
     public override bool IsSamePosition(XPathNavigator other) =>
-        other is DomXPathNavigator navigator && ReferenceEquals(navigator._node, _node) && navigator._attributeIndex == _attributeIndex && navigator._namespaceIndex == _namespaceIndex && navigator._detachedAttributeRoot == _detachedAttributeRoot;
+        other is DomXPathNavigator navigator && ReferenceEquals(navigator._stripper, _stripper) && ReferenceEquals(navigator._node, _node) && navigator._attributeIndex == _attributeIndex && navigator._namespaceIndex == _namespaceIndex && navigator._detachedAttributeRoot == _detachedAttributeRoot;
 
     public override bool MoveTo(XPathNavigator other)
     {
-        if (other is not DomXPathNavigator navigator)
+        if (other is not DomXPathNavigator navigator || !ReferenceEquals(navigator._stripper, _stripper))
             return false;
 
         _node = navigator._node;
@@ -248,7 +259,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
                     var builder = new System.Text.StringBuilder();
                     for (var node = _node.FirstChild; node is not null; node = node.GetNextInTreeOrder(_node))
                     {
-                        if (node is Text current)
+                        if (node is Text current && (_stripper is null || !_stripper.IsStripped((Text)GetFirstOfTextRun(current))))
                         {
                             builder.Append(current.Data);
                         }
@@ -265,7 +276,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Returns whether the node is represented in the XPath data model (doctypes and empty text runs are not).</summary>
-    private static bool IsVisible(Node node) => node is Element or Comment or ProcessingInstruction || (node is Text && !IsEmptyTextRun((Text)node));
+    private bool IsVisible(Node node) => node is Element or Comment or ProcessingInstruction || (node is Text text && !IsEmptyTextRun(text) && (_stripper is null || !_stripper.IsStripped((Text)GetFirstOfTextRun(text))));
 
     private static bool IsEmptyTextRun(Text text)
     {
@@ -289,7 +300,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         return node;
     }
 
-    private static Node? NextVisibleSibling(Node node)
+    private Node? NextVisibleSibling(Node node)
     {
         var sibling = node.NextSibling;
         if (node is Text)
@@ -309,7 +320,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         return sibling;
     }
 
-    private static Node? PreviousVisibleSibling(Node node)
+    private Node? PreviousVisibleSibling(Node node)
     {
         var sibling = node.PreviousSibling;
         while (sibling is not null)
@@ -317,7 +328,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
             if (sibling is Text text)
             {
                 var first = (Text)GetFirstOfTextRun(text);
-                if (!IsEmptyTextRun(first))
+                if (IsVisible(first))
                     return first;
 
                 sibling = first.PreviousSibling;
@@ -333,7 +344,7 @@ internal sealed class DomXPathNavigator : XPathNavigator
         return null;
     }
 
-    private static Node? FirstVisibleChild(Node node)
+    private Node? FirstVisibleChild(Node node)
     {
         var child = node.FirstChild;
         while (child is not null && !IsVisible(child))
@@ -589,4 +600,11 @@ internal sealed class DomXPathNavigator : XPathNavigator
         static int Rank(DomXPathNavigator navigator) => navigator._detachedAttributeRoot ? -1 : navigator.IsOnNamespace ? 1 + navigator._namespaceIndex : navigator.IsOnAttribute ? 100000 + navigator._attributeIndex : 0;
         return Rank(this) < Rank(other) ? XmlNodeOrder.Before : XmlNodeOrder.After;
     }
+}
+
+/// <summary>Removes whitespace text nodes from the tree of a <see cref="DomXPathNavigator"/> (https://www.w3.org/TR/xslt-10/#strip).</summary>
+internal interface IXPathWhitespaceStripper
+{
+    /// <summary>Whether the run of adjacent text nodes that starts with <paramref name="firstOfRun"/> is removed from the tree.</summary>
+    bool IsStripped(Text firstOfRun);
 }

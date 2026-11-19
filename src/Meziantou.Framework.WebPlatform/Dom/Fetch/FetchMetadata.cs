@@ -75,6 +75,7 @@ internal static class FetchMetadata
         RequestDestination.Track => "track",
         RequestDestination.PaintWorklet => "paintworklet",
         RequestDestination.AudioWorklet => "audioworklet",
+        RequestDestination.Xslt => "xslt",
         RequestDestination.SpeculationRules => "speculationrules",
         _ => "empty",
     };

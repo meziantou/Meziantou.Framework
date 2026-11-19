@@ -28,6 +28,9 @@ internal sealed class ModuleNamespaceObject : JsObject
         Flags &= ~ObjectFlags.Extensible;
     }
 
+    /// <summary>Gets the module of the namespace ([[Module]]).</summary>
+    public JsModule Module => _module;
+
     /// <summary>IsSymbolLikeNamespaceKey(P, O): a symbol, or "then" for a deferred namespace (so that it is not a thenable).</summary>
     private bool IsSymbolLikeKey(in PropertyKey key) => key.IsSymbol || (_deferred && key.AsString() == "then");
 

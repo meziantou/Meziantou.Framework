@@ -136,6 +136,11 @@ internal static class CssShorthands
             if (property.Name == "d" && CssPath.IsEmpty(significant))
                 return [new CssLonghandValue(property.Name, "none")];
 
+            // https://drafts.csswg.org/css-link-params-1/#link-param-prop: the <declaration-value> and the <css-type> of param()
+            // are not matched by the grammar
+            if (property.Name == "link-parameters")
+                return CssLinkParameters.Canonicalize(significant) is { } linkParameters ? [new CssLonghandValue(property.Name, linkParameters)] : null;
+
             var grammar = CssPropertyRegistry.GetGrammar(property);
             if (grammar is not null && (!ValueMatcher.Matches(grammar, significant) || !CssPropertyRules.IsValid(property, significant)))
                 return null;

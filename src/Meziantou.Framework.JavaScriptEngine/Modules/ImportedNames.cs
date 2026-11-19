@@ -60,15 +60,15 @@ internal sealed class ImportedNames(List<string>? direct, List<string>? @namespa
 /// </summary>
 internal sealed class PreviouslyImportedNames
 {
-    private readonly Dictionary<JsSourceTextModule, ImportedNames> _names = [];
-    private readonly List<JsSourceTextModule> _order = [];
+    private readonly Dictionary<JsCyclicModule, ImportedNames> _names = [];
+    private readonly List<JsCyclicModule> _order = [];
 
-    public IReadOnlyList<JsSourceTextModule> Modules => _order;
+    public IReadOnlyList<JsCyclicModule> Modules => _order;
 
-    public bool Contains(JsSourceTextModule module) => _names.ContainsKey(module);
+    public bool Contains(JsCyclicModule module) => _names.ContainsKey(module);
 
     /// <summary>Adds the module with no names, if it is not already in the list.</summary>
-    public bool TryAdd(JsSourceTextModule module)
+    public bool TryAdd(JsCyclicModule module)
     {
         if (!_names.TryAdd(module, ImportedNames.Empty()))
             return false;
@@ -77,7 +77,7 @@ internal sealed class PreviouslyImportedNames
         return true;
     }
 
-    public ImportedNames Get(JsSourceTextModule module) => _names[module];
+    public ImportedNames Get(JsCyclicModule module) => _names[module];
 
     /// <summary>CopyPreviouslyImportedNames(previouslyImportedNames)</summary>
     public PreviouslyImportedNames Copy()

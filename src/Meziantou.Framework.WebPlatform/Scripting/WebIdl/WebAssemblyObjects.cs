@@ -153,6 +153,20 @@ internal sealed class WebAssemblyAgentState<TValue>(WasmStore store)
 
     /// <summary>The host value cache (for the objects): the same host reference for the same object.</summary>
     public ConditionalWeakTable<TValue, WasmHostReference> HostReferences { get; } = [];
+
+    /// <summary>The WebAssembly Module Records of the module scripts, keyed by the module record of the script engine.</summary>
+    public ConditionalWeakTable<object, WebAssemblyModuleRecord> ModuleRecords { get; } = [];
+}
+
+/// <summary>
+/// The internal slots of a WebAssembly Module Record (https://webassembly.github.io/esm-integration/js-api/index.html#integration-with-ecmascript-modules):
+/// its [[ModuleSource]], and its [[Instance]] once it is evaluated.
+/// </summary>
+internal sealed class WebAssemblyModuleRecord
+{
+    public WebAssemblyModuleObject? ModuleObject { get; init; }
+
+    public WebAssemblyInstanceObject? Instance { get; set; }
 }
 
 /// <summary>The services of the store of an agent: the interruptions of the script engine, and the bytes of the shared memories.</summary>

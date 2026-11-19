@@ -760,11 +760,6 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public override ushort Type { get => throw null; }
     }
 
-    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0004", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
-    public sealed class CssMixinResultRule : Meziantou.Framework.WebPlatform.Css.Om.CssGroupingRule
-    {
-    }
-
     public sealed class CssMixinRule : Meziantou.Framework.WebPlatform.Css.Om.CssGroupingRule
     {
         public bool Contents { get => throw null; }
@@ -3562,6 +3557,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.WakeLockOptions? WakeLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WebAuthenticationOptions? WebAuthentication { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.XsltOptions Xslt { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -11019,6 +11015,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         PaintWorklet = 20,
         SpeculationRules = 21,
         AudioWorklet = 22,
+        Xslt = 23,
     }
 
     public enum RequestMode
@@ -14837,6 +14834,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public string SerializeToString(Meziantou.Framework.WebPlatform.Dom.Node root) => throw null;
     }
+
+    public sealed class XsltOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.XsltOptions>
+    {
+        public static Meziantou.Framework.WebPlatform.Dom.XsltOptions Default { get => throw null; }
+        public long MaxOutputNodes { get => throw null; init { } }
+        public long MaxSteps { get => throw null; init { } }
+        public System.TimeSpan? Timeout { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.XsltOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.XsltOptions? left, Meziantou.Framework.WebPlatform.Dom.XsltOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.XsltOptions? left, Meziantou.Framework.WebPlatform.Dom.XsltOptions? right) => throw null;
+    }
+
+    public sealed class XsltProcessor
+    {
+        public void ClearParameters() { }
+        public object? GetParameter(string namespaceUri, string localName) => throw null;
+        public void ImportStylesheet(Meziantou.Framework.WebPlatform.Dom.Node style) { }
+        public void RemoveParameter(string namespaceUri, string localName) { }
+        public void Reset() { }
+        public void SetParameter(string namespaceUri, string localName, object? value) { }
+        public Meziantou.Framework.WebPlatform.Dom.Document TransformToDocument(Meziantou.Framework.WebPlatform.Dom.Node source) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.DocumentFragment TransformToFragment(Meziantou.Framework.WebPlatform.Dom.Node source, Meziantou.Framework.WebPlatform.Dom.Document output) => throw null;
+    }
 }
 namespace Meziantou.Framework.WebPlatform.Dom.FileApi
 {
@@ -15436,6 +15459,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue? GetAbstractModuleSource() => throw null;
         Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation GetErrorInformation(TValue error);
         TValue GetGlobalObject(object realm);
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0014", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public object? GetModuleOfNamespace(TValue value) => throw null;
         bool GetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
         public int GetPropertyCount(TValue obj) => throw null;
         TValue GetPrototypeOf(TValue obj);
@@ -15704,6 +15729,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
     {
         protected internal abstract bool IsScriptRunning { get; }
         protected internal virtual bool SupportsModuleScripts { get => throw null; }
+        protected internal virtual void CheckInterrupt() { }
         protected internal abstract Meziantou.Framework.WebPlatform.Scripting.EventHandlerCallback CompileEventHandler(Meziantou.Framework.WebPlatform.Scripting.EventHandlerSource source);
         protected internal abstract void CreateRealm(Meziantou.Framework.WebPlatform.Dom.GlobalScope global);
         protected internal virtual Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? CreateWorkerScriptEngine(System.Threading.CancellationToken terminationToken) => throw null;

@@ -589,9 +589,10 @@ public sealed class CssomTests
 
     [Theory]
     [InlineData("@mixin --m { }", "@mixin --m {\n}")]
-    [InlineData("@mixin --m() { --a: 1; @result { color: green; & { --b: 2; } } }", "@mixin --m {\n  --a: 1;\n  @result {\n  color: green;\n  & { --b: 2; }\n}\n}")]
-    [InlineData("@mixin --m(--x type(<length>): 1em, --y) { @result { @contents } }", "@mixin --m(--x <length>: 1em, --y) {\n  @result {\n  @contents;\n}\n}")]
-    [InlineData("@mixin --m { color: red !important; @layer a; .a { } @result { @layer a; @contents { color: red; } } }", "@mixin --m {\n  @result {\n  @contents { color: red; }\n}\n}")]
+    [InlineData("@mixin --m() { color: green; & { --b: 2; } }", "@mixin --m {\n  color: green;\n  & { --b: 2; }\n}")]
+    [InlineData("@mixin --m(--x type(<length>): 1em, --y) { @contents }", "@mixin --m(--x <length>: 1em, --y) {\n  @contents;\n}")]
+    [InlineData("@mixin --m { color: red !important; @layer a; .a { @layer b; } @result { color: blue; } result: red; @contents { color: red; } }", "@mixin --m {\n  color: red !important;\n  & .a { }\n  @contents { color: red; }\n}")]
+    [InlineData("@mixin --m { @private { --a: 1; } @media (width) { > div { @apply --n; } } }", "@mixin --m {\n  @private { --a: 1; }\n  @media (width) {\n  & > div {\n  @apply --n;\n}\n}\n}")]
     [InlineData("#a { color: red; @apply --m; @apply --n(1, { 2, 3 }) { color: green; } }", "#a {\n  color: red;\n  @apply --m;\n  @apply --n(1, { 2, 3 }) { color: green; }\n}")]
     [InlineData("#a { @apply --m { } }", "#a {\n  @apply --m { }\n}")]
     [InlineData("#a { @private { --a: 1px; --b <color>: red; --c type(<length>): 2px; --d; color: red; --e: 1 !important; } }", "#a {\n  @private { --a: 1px; --b <color>: red; --c <length>: 2px; }\n}")]
@@ -624,7 +625,7 @@ public sealed class CssomTests
     public void MixinRules_ObjectModel()
     {
         var sheet = new CssStyleSheet();
-        sheet.ReplaceSync("@mixin --m(--x <length>: 1px, --y) { @result { @contents; } } #a { @apply --m(1px, { a, b }) { color: red; } @apply --m; }");
+        sheet.ReplaceSync("@mixin --m(--x <length>: 1px, --y) { color: red; & { @contents; } } #a { @apply --m(1px, { a, b }) { color: red; } @apply --m; }");
         var mixin = Assert.IsType<CssMixinRule>(sheet.CssRules[0]);
         Assert.Equal("--m", mixin.Name);
         Assert.True(mixin.Contents);
@@ -637,11 +638,14 @@ public sealed class CssomTests
         var statement = Assert.IsType<CssApplyStatementRule>(rule.CssRules[1]);
         Assert.Empty(statement.GetArguments());
         Assert.Throws<DomException>(() => sheet.InsertRule("@apply --m;"));
-        Assert.Throws<DomException>(() => mixin.InsertRule("#a { }"));
+        Assert.Throws<DomException>(() => mixin.InsertRule("@layer a;"));
+        mixin.InsertRule("#a { }");
+        Assert.IsType<CssStyleRule>(mixin.CssRules[0]);
         mixin.InsertRule("--z: 1");
         Assert.IsType<CssNestedDeclarations>(mixin.CssRules[0]);
-        ((CssMixinResultRule)mixin.CssRules[1]!).InsertRule("@contents { color: red; }", 1);
-        Assert.IsType<CssContentsBlockRule>(((CssMixinResultRule)mixin.CssRules[1]!).CssRules[1]);
+        Assert.Equal(4u, mixin.CssRules.Length);
+        ((CssStyleRule)mixin.CssRules[3]!).InsertRule("@contents { color: red; }", 1);
+        Assert.IsType<CssContentsBlockRule>(((CssStyleRule)mixin.CssRules[3]!).CssRules[1]);
         rule.InsertRule("@private { --p: 1; }");
         Assert.IsType<CssPrivateRule>(rule.CssRules[0]);
     }

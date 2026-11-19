@@ -3610,55 +3610,55 @@
     "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/css-linked-parameters-precedence-1.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/css-linked-parameters-precedence-2.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-custom-property-dynamic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-linked-parameters-1.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-linked-parameters-2.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-linked-parameters-cleared-dynamic.html": {
     "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-url-fragment-identifiers-1.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-url-fragment-identifiers-2.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-url-function-1.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-url-function-2.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-background-image.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-basic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-currentcolor-typed.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-currentcolor-untyped.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-duplicate-name.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-dynamic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-fallback.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-feimage-dynamic.html": {
     "reftest": "FAIL"
@@ -3685,13 +3685,13 @@
     "reftest": "FAIL"
   },
   "svg/styling/css-linked-parameters/link-parameters-invalid-typed-value.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-none.html": {
     "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/link-parameters-per-container.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/styling/css-selectors-case-sensitivity.html": {
     "total": 8

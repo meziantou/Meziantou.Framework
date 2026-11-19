@@ -6,3 +6,4 @@ e { background-image: image(url(foo.png)); background-image: image(url(foo.png),
 f { image-resolution: 2dpcm from-image; image-resolution: snap from-image 0dppx; image-resolution: snap -8dpcm from-image; image-resolution: snap 7.5dpi; }
 g { cursor: image-set(linear-gradient(red) 1x), pointer; cursor: image-set("a.png" 1x, url(b.png) 2x) 5 6, grab; cursor: -webkit-image-set(url(a.png) 1x), auto; }
 h { filter: drop-shadow(10px 10px -1px red); filter: drop-shadow(red 10px 10px 0); backdrop-filter: drop-shadow(10px 10px calc(-1px) red); --empty:; --space: ; }
+i { width: stretch(10px); max-height: stretch(calc(10% - 0.5em)); flex: 1 stretch(10%); min-inline-size: stretch(50%); height: stretch(-1px); block-size: stretch(); }

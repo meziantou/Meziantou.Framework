@@ -90,304 +90,106 @@
     "total": 4
   },
   "css/css-mixins/mixins/apply-nested-declarations.html": {
-    "total": 2,
-    "failures": {
-      "Can mix declarations into pseudo-elements": "FAIL"
-    }
+    "total": 2
   },
   "css/css-mixins/mixins/apply-top-level.html": {
     "total": 1
   },
   "css/css-mixins/mixins/apply-within-mixin.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Mixins depending on other mixins": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/contents-nested-declarations-fallback.html": {
-    "total": 2,
-    "failures": {
-      "Can mix declarations into pseudo-elements via @contents": "FAIL"
-    }
+    "total": 2
   },
   "css/css-mixins/mixins/contents-nested-declarations.html": {
-    "total": 2,
-    "failures": {
-      "Can mix declarations into pseudo-elements via @contents": "FAIL"
-    }
+    "total": 2
   },
   "css/css-mixins/mixins/contents-rule.html": {
-    "total": 8,
-    "failures": {
-      "@apply with no block uses the @contents fallback": "FAIL",
-      "Block in @apply overrides fallback": "FAIL",
-      "Empty @contents block is allowed, but does nothing": "FAIL",
-      "Empty @contents parameter does not crash": "FAIL",
-      "Fallback is used if @apply has no block": "FAIL",
-      "Implicit semicolon after @contents, at end of block": "FAIL",
-      "Simple @contents with no fallback": "FAIL"
-    }
+    "total": 8
   },
   "css/css-mixins/mixins/important.html": {
-    "total": 4,
-    "failures": {
-      "!important is valid in mixin result declarations": "FAIL"
-    }
+    "total": 4
   },
   "css/css-mixins/mixins/mixin-basic.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Basic test": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-conditionals.html": {
-    "total": 7,
-    "failures": {
-      "@container wrapping @private variables": "FAIL",
-      "@container wrapping mixin declarations": "FAIL",
-      "@media and @supports wrapping @private variables": "FAIL",
-      "@media and @supports wrapping mixin declarations": "FAIL",
-      "@private variables in nested @media and @container rules": "FAIL",
-      "@private variables with different containers are not incorrectly cached": "FAIL",
-      "Unconditional @private declarations override earlier conditional ones": "FAIL"
-    }
+    "total": 7
   },
   "css/css-mixins/mixins/mixin-cross-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Mixin from another stylesheet": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-cssom.tentative.html": {
-    "total": 8,
-    "failures": {
-      "serialization of @mixin": "FAIL",
-      "serialization of @mixin with @contents": "FAIL"
-    }
+    "total": 8
   },
   "css/css-mixins/mixins/mixin-cycle.tentative.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Cycles": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-declarations.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Declarations directly in mixin": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-from-import-with-media-queries.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: @import with media queries": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-from-import.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Mixin from an imported stylesheet": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-invalidation.tentative.html": {
-    "total": 3,
-    "failures": {
-      "invalidation of @mixin from different stylesheet": "FAIL",
-      "invalidation of @mixin from same stylesheet": "FAIL",
-      "invalidation on adding @apply rule": "FAIL"
-    }
+    "total": 3
   },
   "css/css-mixins/mixins/mixin-layers.html": {
-    "total": 4,
-    "failures": {
-      "Mixins in stronger layer wins": "FAIL",
-      "Mixins in stronger layer wins (source order matching layer order)": "FAIL",
-      "Mixins work inside layers": "FAIL",
-      "Mixins work inside layers (anonymous)": "FAIL"
-    }
+    "total": 4
   },
   "css/css-mixins/mixins/mixin-locals.html": {
-    "total": 9,
-    "failures": {
-      "!important invalidates a mixin local declaration": "FAIL",
-      "An invalid !important local does not define the variable": "FAIL",
-      "Arguments and defaults use the applying rule private scope": "FAIL",
-      "Mixin is not cached if private variables are different": "FAIL",
-      "Parameters do not resolve against the mixin body private variables": "FAIL",
-      "Private declarations after their references are seen": "FAIL",
-      "Private variables and ordinary declarations in a mixin body": "FAIL",
-      "Private variables resolve against each other": "FAIL",
-      "Private variables resolve against parameters": "FAIL"
-    }
+    "total": 9
   },
   "css/css-mixins/mixins/mixin-media-query-invalidation-2.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Invalidates on negative media query becoming positive": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-media-query-invalidation.html": {
-    "total": 1,
-    "failures": {
-      "CSS Mixins: Media Queries and invalidation": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-parameters.html": {
-    "total": 24,
-    "failures": {
-      "Basic mixin parameter passing": "FAIL",
-      "Defaults in mixin parameters": "FAIL",
-      "Fallback is ignored if argument is given": "FAIL",
-      "Fallback is used with no parameter and no default": "FAIL",
-      "Mixin argument parsing with arguments wrapped in {}": "FAIL",
-      "Mixin arguments are resolved at call site, not at use": "FAIL",
-      "Mixins can be called multiple times with different parameters": "FAIL",
-      "Mixins with invalid parameter lists are ignored": "FAIL",
-      "Too few parameters and no default ignores mixin": "FAIL",
-      "var() can access parameters from outer mixins": "FAIL",
-      "var() can be accessed from attributes": "FAIL",
-      "var() refuses illegal syntax parameters, but does not fail entire mixin": "FAIL",
-      "var() resolves typed parameters": "FAIL",
-      "var() supports default parameters": "FAIL",
-      "var() typed default parameters are resolved against the element": "FAIL",
-      "var() works inside if, in condition and false branch": "FAIL",
-      "var() works inside if, in condition and true branch": "FAIL"
-    }
+    "total": 24
   },
   "css/css-mixins/mixins/mixin-parsing.html": {
     "total": 27,
     "failures": {
-      "@layer is dropped within @container": "FAIL",
-      "@layer is dropped within @media": "FAIL",
-      "@layer is dropped within @scope": "FAIL",
-      "@layer is dropped within @supports": "FAIL",
-      "@layer is dropped within a nested style rule": "FAIL",
-      "@layer is dropped within the mixin body (block)": "FAIL",
-      "@layer is dropped within the mixin body (statement)": "FAIL",
-      "@mixin and @keyframes are valid within @navigation": "FAIL",
-      "@result is invalid in @mixin": "FAIL",
-      "@scope (implicit) is valid in @mixin": "FAIL",
-      "@scope is valid in @mixin": "FAIL",
-      "@starting-style is valid in @mixin": "FAIL",
-      "style rule (relative) is valid in @mixin": "FAIL",
-      "style rule is valid in @mixin": "FAIL"
+      "@mixin and @keyframes are valid within @navigation": "FAIL"
     }
   },
   "css/css-mixins/mixins/mixin-shadow-dom.html": {
-    "total": 15,
-    "failures": {
-      "A local mixin overrides a document mixin with the same name": "FAIL",
-      "A shared adopted mixin invalidates all dependent shadow branches": "FAIL",
-      "An @apply of a defined mixin does not leak into a scope without it": "FAIL",
-      "An @apply of an undefined mixin does not affect a scope that defines it": "FAIL",
-      "Changing a document mixin invalidates dependent shadow styles": "FAIL",
-      "Changing a document mixin invalidates through a local mixin scope": "FAIL",
-      "Nested shadows use the nearest mixin along each tree branch": "FAIL",
-      "Shared constructed @apply sheet does not depend on scope creation order": "FAIL",
-      "Shared constructed @apply sheet uses the correct mixin in each scope": "FAIL",
-      "Shared inline @apply contents do not depend on scope creation order": "FAIL",
-      "Shared inline @apply contents use the correct mixin in each scope": "FAIL",
-      "Style in shadow DOM should have access to inside mixins": "FAIL",
-      "Style in shadow DOM should have access to mixins from adopted stylesheets": "FAIL",
-      "Style in shadow DOM should have access to outside non-adopted mixins": "FAIL"
-    }
+    "total": 15
   },
   "css/css-mixins/mixins/mixin-shared-across-documents.html": {
-    "total": 1,
-    "failures": {
-      "A shared stylesheet's @apply resolves to each document's own mixin": "FAIL"
-    }
+    "total": 1
   },
   "css/css-mixins/mixins/mixin-shared-sheet-no-mixins-in-scope.html": {
-    "total": 2,
-    "failures": {
-      "A scope with no mixins does not affect @apply in a scope that declares the mixin": "FAIL",
-      "An applied mixin does not affect @apply in a scope that has no mixins": "FAIL"
-    }
+    "total": 2
   },
   "css/css-mixins/private/css-private-invalidation.tentative.html": {
     "total": 8,
     "failures": {
-      "An eclipsing @private variable isolates descendants from outer value changes": "FAIL",
-      "Changing an element-scoped @private variable invalidates descendants": "FAIL",
-      "Private CSSOM mutations invalidate the containing style rule": "FAIL",
-      "Private blocks participate in declaration source order": "FAIL",
-      "Private declarations in separate blocks share the enclosing scope": "FAIL",
-      "Private declarations respect media conditions and cascade layers": "FAIL",
-      "Private declarations retain their container-query conditions": "FAIL",
-      "Private variables propagate through elements without variable references": "FAIL"
+      "Private CSSOM mutations invalidate the containing style rule": "FAIL"
     }
   },
   "css/css-mixins/private/css-private-lexical-scope.tentative.html": {
-    "total": 10,
-    "failures": {
-      "A nested @private rule eclipses the outer binding": "FAIL",
-      "A nested private initializer does not capture an enclosing private name": "FAIL",
-      "A private variable resolves on its declaring element": "FAIL",
-      "Ordinary assignments to private properties can reference enclosing private names": "FAIL",
-      "Private initializers can reference names from another block in the same scope": "FAIL",
-      "Resolved private variables inherit but remain lexically private": "FAIL"
-    }
+    "total": 10
   },
   "css/css-mixins/private/css-private-mixins-cssom.tentative.html": {
-    "total": 4,
-    "failures": {
-      "A mixin's private variables are not exposed in computed style": "FAIL",
-      "A rule applying a mixin with @private can be inserted": "FAIL",
-      "Elements sharing a rule with a mixin resolve its private variables separately": "FAIL",
-      "Replacing a mixin updates the private variables of its users": "FAIL"
-    }
+    "total": 4
   },
   "css/css-mixins/private/css-private-mixins-nesting.tentative.html": {
-    "total": 6,
-    "failures": {
-      "@private in a matching conditional rule in a mixin": "FAIL",
-      "@private in a non-matching conditional rule in a mixin is not set": "FAIL",
-      "A mixin from another style sheet keeps its own private variables": "FAIL",
-      "Nested mixins with the same private name do not share it": "FAIL",
-      "The @apply's @contents block replaces the fallback and cannot see the mixin's private variables": "FAIL",
-      "The fallback @contents block sees the mixin's private variables": "FAIL"
-    }
+    "total": 6
   },
   "css/css-mixins/private/css-private-mixins.tentative.html": {
-    "total": 14,
-    "failures": {
-      "@private in an @apply's @contents block inside a mixin": "FAIL",
-      "@private works in a rule nested in a mixin": "FAIL",
-      "@private works in an @apply's @contents block and is separate from the mixin's private variable with the same name": "FAIL",
-      "A @private variable shadows a mixin parameter with the same name": "FAIL",
-      "A mixin parameter shadows a private variable of the applying rule": "FAIL",
-      "A mixin's private variable is separate from one with the same name on the applying rule": "FAIL",
-      "A rule nested in a mixin sees the mixin's private variables": "FAIL",
-      "Each @apply of the same mixin has its own private variable": "FAIL",
-      "Each @apply resolves its private variables on the applying element": "FAIL",
-      "Mixin declarations can override a private variable": "FAIL",
-      "Mixin private variables are not visible to siblings": "FAIL",
-      "Mixin private variables inherit to descendants": "FAIL",
-      "Rules passed through @contents cannot see the mixin's private variables": "FAIL",
-      "The applying rule cannot see the mixin's private variables": "FAIL"
-    }
+    "total": 14
   },
   "css/css-mixins/private/css-private-per-source-block.tentative.html": {
-    "total": 2,
-    "failures": {
-      "Same-named @private variables in different source blocks are distinct": "FAIL"
-    }
+    "total": 2
   },
   "css/css-mixins/private/css-private-rule-types.tentative.html": {
-    "total": 10,
-    "failures": {
-      "@private in a later layer wins": "FAIL",
-      "@private in a layer loses to an unlayered @private": "FAIL",
-      "@private in a matching @container rule applies": "FAIL",
-      "@private in a matching @media rule applies": "FAIL",
-      "@private in a matching @supports rule applies": "FAIL",
-      "@private in a non-matching @container rule still shadows an inherited name": "FAIL",
-      "@private in a non-matching @media rule still shadows an inherited name": "FAIL",
-      "@private in a non-matching @supports rule still shadows an inherited name": "FAIL",
-      "@private in a style rule inside a matching @scope rule applies": "FAIL",
-      "@private inside @media screen uses the containing style rule selectors": "FAIL"
-    }
+    "total": 10
   },
   "css/css-mixins/private/private-cssom-insert-rule.tentative.html": {
     "total": 4

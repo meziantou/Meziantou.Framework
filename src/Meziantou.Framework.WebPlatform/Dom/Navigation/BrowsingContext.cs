@@ -2758,6 +2758,9 @@ public sealed partial class BrowsingContext : IDisposable
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml</summary>
     private void LoadXmlDocument(UrlRecord url, string content, string contentType, WebEncodingId encoding)
     {
+        if (TryLoadXsltDocument(url, content, contentType, encoding))
+            return;
+
         var document = XmlDocumentParser.CreateDocument(new XmlParserOptions { Url = url.Serialize(), ContentType = contentType, BrowsingContext = this });
         document.Encoding = encoding;
         new Html.Parsing.XmlScriptingParser(document, content, runTheEnd: ReferenceEquals(document.BrowsingContext, this)).Start();
@@ -3018,9 +3021,14 @@ public sealed partial class BrowsingContext : IDisposable
         document.EnvironmentHasStorageAccess = parameters.HasStorageAccess;
 
         // The window of an initial about:blank document is reused by a same origin-domain document, unless the credentialless
-        // attribute of the iframe changed since the initial document was created (https://wicg.github.io/anonymous-iframe/#spec-window-reuse)
+        // attribute of the iframe changed since the initial document was created (https://wicg.github.io/anonymous-iframe/#spec-window-reuse).
+        // The result of the XSLT transformation of a document replaces it in its window.
         Window window;
-        if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document) && activeDocument.IsCredentialless == document.IsCredentialless)
+        if (parameters.XsltSourceDocument is { RelevantWindow: { } sourceWindow } && ReferenceEquals(parameters.XsltSourceDocument, activeDocument))
+        {
+            window = sourceWindow;
+        }
+        else if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document) && activeDocument.IsCredentialless == document.IsCredentialless)
         {
             window = activeDocument.RelevantWindow!;
         }
@@ -3039,7 +3047,7 @@ public sealed partial class BrowsingContext : IDisposable
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the reporting endpoints of the response
         window.InitializeReportingEndpoints(parameters.Headers, document.UrlRecord);
 
-        Activate(document, window, parameters.HistoryHandling, parameters.Srcdoc, parameters.TraversalEntry, parameters.RequestReferrerPolicy, parameters);
+        Activate(document, window, parameters.XsltSourceDocument is not null ? NavigationHistoryBehavior.Replace : parameters.HistoryHandling, parameters.Srcdoc, parameters.TraversalEntry, parameters.RequestReferrerPolicy, parameters);
 
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the Refresh header
         if (HeaderList.Get(parameters.Headers, "Refresh") is { } refresh)
@@ -4218,6 +4226,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The content type of a document that the HTML parser creates for another type (a text document or a media document), or null.</summary>
         public string? ContentType { get; set; }
+
+        /// <summary>The XML document whose XSLT transformation creates the document: the document replaces it in its window, or null.</summary>
+        public Document? XsltSourceDocument { get; set; }
 
         /// <summary>The fragment directive removed from the URL of the navigation (or of its last redirect), or null (https://wicg.github.io/scroll-to-text-fragment/#fragment-directive).</summary>
         public string? FragmentDirective { get; set; }

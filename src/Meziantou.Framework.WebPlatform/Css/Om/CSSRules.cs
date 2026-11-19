@@ -162,34 +162,19 @@ public abstract partial class CssRule
     {
         for (var rule = this; rule is not null; rule = rule.ParentRule)
         {
-            if (rule is CssStyleRule or CssScopeRule or CssMixinResultRule or CssApplyBlockRule or CssContentsBlockRule)
+            if (rule is CssStyleRule or CssScopeRule or CssMixinRule or CssApplyBlockRule or CssContentsBlockRule)
                 return true;
         }
 
         return false;
     }
 
-    /// <summary>Returns whether the rule is a @mixin rule or is in the body of one, outside of a @result rule (https://drafts.csswg.org/css-mixins-1/#mixin-body).</summary>
+    /// <summary>Returns whether the rule is a @mixin rule or is in the body of one (https://drafts.csswg.org/css-mixins-1/#mixin-body).</summary>
     internal bool IsInMixinBody()
     {
         for (var rule = this; rule is not null; rule = rule.ParentRule)
         {
-            if (rule is CssMixinResultRule)
-                return false;
-
             if (rule is CssMixinRule)
-                return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>Returns whether the rule is a @result rule of a mixin or is in one.</summary>
-    internal bool IsInMixinResult()
-    {
-        for (var rule = this; rule is not null; rule = rule.ParentRule)
-        {
-            if (rule is CssMixinResultRule)
                 return true;
         }
 
@@ -305,9 +290,9 @@ public abstract class CssGroupingRule : CssRule
     public uint InsertRule(string rule, uint index = 0)
     {
         ArgumentNullException.ThrowIfNull(rule);
-        var parser = new CssRuleParser(ParentStyleSheet) { InScopeRule = IsInScopeRule(), InMixinResult = IsInMixinResult() };
+        var parser = new CssRuleParser(ParentStyleSheet) { InScopeRule = IsInScopeRule(), InMixinBody = IsInMixinBody() };
         var nested = IsNestedInStyleRule();
-        var context = nested ? CssRuleContext.Nested : this is CssPageRule ? CssRuleContext.Page : IsInFunctionRule() ? CssRuleContext.Function : IsInMixinBody() ? CssRuleContext.Mixin : CssRuleContext.Grouping;
+        var context = nested ? CssRuleContext.Nested : this is CssPageRule ? CssRuleContext.Page : IsInFunctionRule() ? CssRuleContext.Function : CssRuleContext.Grouping;
         return parser.InsertRule(_rules, rule, index, context, parentRule: this, ParentStyleSheet);
     }
 

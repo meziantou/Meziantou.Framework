@@ -1140,9 +1140,6 @@
     "total": 6
   },
   "service-workers/service-worker/xsl-base-url.https.html": {
-    "total": 1,
-    "failures": {
-      "base URL when service worker does respondWith(fetch(responseUrl))": "FAIL"
-    }
+    "total": 1
   }
 }

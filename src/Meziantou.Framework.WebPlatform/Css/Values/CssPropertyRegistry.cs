@@ -523,7 +523,7 @@ internal static partial class CssPropertyRegistry
         // https://drafts.csswg.org/css-sizing-4/#sizing-values, with the legacy names of stretch that the browsers accept in the
         // sizing properties (-webkit-fill-available in Blink, WebKit and Gecko, -moz-available in Gecko: WPT
         // css/css-sizing/stretch/stretch-alias-*.tentative.html); they behave as stretch (see Layout.Size.Parse)
-        ["<box-size>"] = "<length-percentage [0,\u221E]> | stretch | contain | min-content | max-content | fit-content | fit-content(<length-percentage [0,\u221E]>) | <calc-size()> | -webkit-fill-available | -moz-available",
+        ["<box-size>"] = "<length-percentage [0,\u221E]> | stretch | contain | min-content | max-content | fit-content | stretch(<length-percentage [0,\u221E]>) | fit-content(<length-percentage [0,\u221E]>) | <calc-size()> | -webkit-fill-available | -moz-available",
 
         // https://drafts.csswg.org/css-align-3/#typedef-baseline-position: first or last precedes baseline (the browsers reject
         // baseline first), and the flow-relative positions (https://drafts.csswg.org/css-align-3/#valdef-self-position-flow-start)

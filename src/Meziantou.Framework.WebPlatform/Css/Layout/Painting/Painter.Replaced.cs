@@ -389,7 +389,10 @@ internal sealed partial class Painter
                 _builder.Add(new ClipRectItem(SnapToDevicePixels(fragment.ContentBoxRect.Translate(offset))));
             }
 
-            new PaintedImage.SvgPaintedImage(svgImage, fragment.Box.Style.Layout.EffectiveZoom, CssValueComputer.GetUsedColorScheme(fragment.Box.Style)).Draw(_builder, destination, fragment.Box.Element, unsnappedDestination.Size);
+            // https://drafts.csswg.org/css-link-params-1/#link-param-prop: the link parameters of the element and of the URL of the image
+            var style = fragment.Box.Style;
+            var linkParameters = CssLinkParameters.Resolve(style, image.Url, urlModifiers: null, _document);
+            new PaintedImage.SvgPaintedImage(svgImage, style.Layout.EffectiveZoom, CssValueComputer.GetUsedColorScheme(style), linkParameters: linkParameters).Draw(_builder, destination, fragment.Box.Element, unsnappedDestination.Size);
             _builder.Restore();
             return;
         }

@@ -38,11 +38,14 @@ internal sealed class CascadeRuleCollector
     /// <summary>The maximum depth of the nested applications of mixins.</summary>
     private const int MaxMixinDepth = 32;
 
-    /// <summary>The mixins being applied (a mixin applied by its own result is a cycle: the @apply rule is ignored).</summary>
+    /// <summary>The mixins being applied (a mixin applied by its own body is a cycle: the @apply rule is ignored).</summary>
     private readonly List<CssMixinRule> _appliedMixins = [];
 
-    /// <summary>The application of the mixin whose @result rules are being added, or null.</summary>
+    /// <summary>The application of the mixin whose body is being added, or null.</summary>
     private CssMixinApplication? _currentMixin;
+
+    /// <summary>The private properties visible in the rules being added (https://drafts.csswg.org/css-mixins-1/#private), or null.</summary>
+    private CssPrivateScope? _privateScope;
 
     /// <summary>The namespace prefixes declared by the style sheet whose rules are added, or null.</summary>
     private IReadOnlyDictionary<string, string>? _namespacePrefixes;
@@ -103,7 +106,7 @@ internal sealed class CascadeRuleCollector
 
     /// <summary>
     /// Returns the mixin with the name, dereferenced as a tree-scoped reference from a tree (the tree of the @apply rule, or the
-    /// tree of the mixin whose @result rule contains it), and the root of its tree. The @apply rules are ignored when it is null.
+    /// tree of the mixin whose body contains it), and the root of its tree. The @apply rules are ignored when it is null.
     /// </summary>
     public Func<string, Node?, (CssMixinRule Rule, Node Scope)?>? MixinResolver { get; init; }
 
@@ -267,9 +270,17 @@ internal sealed class CascadeRuleCollector
                         BindNestingSelectors(selector, parentSelectors);
                     }
 
+                    // A style rule is a lexical scope of private properties
+                    var enclosingPrivateScope = _privateScope;
+                    if (styleRule.ChildRules.Count > 0)
+                    {
+                        _privateScope = CssPrivateScope.Create(styleRule.ChildRules, enclosingPrivateScope);
+                    }
+
                     var declarations = styleRule.Style.Declarations;
                     if (declarations.Count > 0)
                     {
+                        declarations = _privateScope?.Rewrite(declarations) ?? declarations;
                         foreach (var selector in selectors.Selectors)
                         {
                             AddRule(selector, declarations, layer, scope, containers, baseUrl);
@@ -281,33 +292,18 @@ internal sealed class CascadeRuleCollector
                         AddRules(styleRule.ChildRules, layer, scope, containers, selectors, ownerParent, baseUrl);
                     }
 
+                    _privateScope = enclosingPrivateScope;
                     break;
                 }
 
                 case CssNestedDeclarations nested:
-                {
-                    // The declarations of a style rule that follow its nested rules (https://drafts.csswg.org/css-nesting/#nested-declarations-rule):
-                    // they match like the parent style rule, with the specificity of its matching selectors (not the
-                    // :is() specificity of &), including its pseudo-elements; :where(:scope) in a @scope rule
-                    var declarations = nested.Style.Declarations;
-                    if (declarations.Count > 0)
-                    {
-                        if (parentSelectors is not null)
-                        {
-                            foreach (var selector in parentSelectors.Selectors)
-                            {
-                                AddRule(selector, declarations, layer, scope, containers, baseUrl);
-                            }
-                        }
-                        else
-                        {
-                            var nesting = new ComplexSelector([new CompoundSelector([new NestingSelector { Parent = parentSelectors }])], [], relativeCombinator: null);
-                            AddRule(nesting, declarations, layer, scope, containers, baseUrl);
-                        }
-                    }
-
+                    AddNestedDeclarations(_privateScope?.Rewrite(nested.Style.Declarations) ?? nested.Style.Declarations, layer, scope, containers, parentSelectors, baseUrl);
                     break;
-                }
+
+                // The private properties are custom properties with hidden names, declared like nested declarations
+                case CssPrivateRule privateRule when _privateScope is not null:
+                    AddNestedDeclarations(_privateScope.GetPrivateDeclarations(privateRule), layer, scope, containers, parentSelectors, baseUrl);
+                    break;
 
                 case CssMediaRule mediaRule:
                     if (MediaQueryEvaluator.Matches(mediaRule.Media, _environment))
@@ -357,8 +353,11 @@ internal sealed class CascadeRuleCollector
                     var implicitRoot = scopeRule.StartSelectors is null ? (Node?)ownerParent ?? (_treeRoot is ShadowRoot shadowRoot ? shadowRoot.Host : _treeRoot) : null;
                     var childScope = new CascadeScope { Start = scopeRule.StartSelectors, End = scopeRule.EndSelectors, ImplicitRoot = implicitRoot, Parent = scope };
 
-                    // In the scoped rules, & represents the scoping root
+                    // In the scoped rules, & represents the scoping root. A @scope rule is a lexical scope of private properties.
+                    var enclosingPrivateScope = _privateScope;
+                    _privateScope = CssPrivateScope.Create(scopeRule.ChildRules, enclosingPrivateScope);
                     AddRules(scopeRule.ChildRules, layer, childScope, containers, parentSelectors: null, ownerParent, baseUrl);
+                    _privateScope = enclosingPrivateScope;
                     break;
                 }
 
@@ -425,12 +424,16 @@ internal sealed class CascadeRuleCollector
                     break;
 
                 // https://drafts.csswg.org/css-mixins-1/#contents-rule: the contents block of the @apply rule (in the calling
-                // context), or else the fallback block of the @contents rule
+                // context), or else the fallback block of the @contents rule. A contents block is a lexical scope of private
+                // properties: the contents block of the @apply rule sees the ones of the @apply rule, not the ones of the mixin.
                 case CssContentsStatementRule or CssContentsBlockRule when _currentMixin is { } application:
+                {
+                    var bodyPrivateScope = _privateScope;
                     if (application.Contents is { } contents)
                     {
-                        var contentsRules = new CssRuleParser(application.ContentsSheet).ParseNestedRules(SerializeRules(contents), inMixinResult: true);
+                        var contentsRules = new CssRuleParser(application.ContentsSheet).ParseNestedRules(SerializeRules(contents), inMixinBody: true);
                         _currentMixin = application.Parent;
+                        _privateScope = CssPrivateScope.Create(contentsRules, application.CallerPrivateScope);
                         try
                         {
                             AddRules(contentsRules, layer, scope, containers, parentSelectors, ownerParent, baseUrl);
@@ -438,14 +441,18 @@ internal sealed class CascadeRuleCollector
                         finally
                         {
                             _currentMixin = application;
+                            _privateScope = bodyPrivateScope;
                         }
                     }
                     else if (rule is CssContentsBlockRule fallback)
                     {
+                        _privateScope = CssPrivateScope.Create(fallback.ChildRules, bodyPrivateScope);
                         AddRules(fallback.ChildRules, layer, scope, containers, parentSelectors, ownerParent, baseUrl);
+                        _privateScope = bodyPrivateScope;
                     }
 
                     break;
+                }
 
                 case CssFontFaceRule fontFaceRule:
                     _fontFaceRules.Add((fontFaceRule, layer));
@@ -509,8 +516,8 @@ internal sealed class CascadeRuleCollector
     }
 
     /// <summary>
-    /// Applies a mixin (https://drafts.csswg.org/css-mixins-1/#apply-rule): the rules of its @result rules replace the @apply
-    /// rule, in the rule that contains it. The @apply rule does nothing when there is no such mixin, when it has more arguments
+    /// Applies a mixin (https://drafts.csswg.org/css-mixins-1/#apply-rule): the declarations and the rules of its body replace
+    /// the @apply rule, in the rule that contains it (the body is a nested declarations rule). The @apply rule does nothing when there is no such mixin, when it has more arguments
     /// than the mixin has parameters, or when the mixin is already being applied (a cycle).
     /// </summary>
     private void Apply(CssApplyPrelude prelude, List<CssRule>? contents, CssStyleSheet? sheet, CascadeLayer layer, CascadeScope? scope, CascadeContainerQuery? containers, SelectorList? parentSelectors, Element? ownerParent, string? baseUrl)
@@ -523,61 +530,60 @@ internal sealed class CascadeRuleCollector
         if (prelude.Arguments.Count > mixin.Parameters.Count || _appliedMixins.Contains(mixin) || _appliedMixins.Count >= MaxMixinDepth)
             return;
 
+        // The arguments (and the default values of the parameters) see the private properties of the @apply rule
         var application = new CssMixinApplication
         {
             Mixin = mixin,
             DefinitionScope = definitionScope,
-            Arguments = prelude.Arguments,
+            Arguments = _privateScope is { } callerPrivateScope ? [.. prelude.Arguments.Select(callerPrivateScope.RewriteReferences)] : prelude.Arguments,
             TreeScope = _treeRoot,
             Parent = _currentMixin,
             Contents = contents,
             ContentsSheet = sheet,
+            CallerPrivateScope = _privateScope,
         };
 
         var previous = _currentMixin;
+        var previousPrivateScope = _privateScope;
         _currentMixin = application;
         _appliedMixins.Add(mixin);
         try
         {
-            AddMixinResults(mixin.ChildRules, layer, scope, containers, parentSelectors, ownerParent, mixin.ParentStyleSheet?.BaseUrl ?? baseUrl);
+            // The rules are parsed again for each application, as their nesting selectors refer to the rule the mixin is applied in
+            // The body of a mixin is a lexical scope of private properties, which does not see the ones of the @apply rule
+            var bodyRules = new CssRuleParser(mixin.ParentStyleSheet).ParseNestedRules(SerializeRules(mixin.ChildRules), inMixinBody: true);
+            _privateScope = CssPrivateScope.Create(bodyRules, enclosing: null);
+            AddRules(bodyRules, layer, scope, containers, parentSelectors, ownerParent, mixin.ParentStyleSheet?.BaseUrl ?? baseUrl);
         }
         finally
         {
             _appliedMixins.RemoveAt(_appliedMixins.Count - 1);
             _currentMixin = previous;
+            _privateScope = previousPrivateScope;
         }
     }
 
     /// <summary>
-    /// Adds the rules of the @result rules of a mixin body, whose conditional group rules apply when their condition is true
-    /// (the container queries are evaluated for each element). The rules are parsed again for each application, as their
-    /// nesting selectors refer to the rule the mixin is applied in.
+    /// Adds the declarations of a style rule that follow its nested rules (https://drafts.csswg.org/css-nesting/#nested-declarations-rule):
+    /// they match like the parent style rule, with the specificity of its matching selectors (not the :is() specificity of
+    /// &amp;), including its pseudo-elements; :where(:scope) in a @scope rule.
     /// </summary>
-    private void AddMixinResults(List<CssRule> rules, CascadeLayer layer, CascadeScope? scope, CascadeContainerQuery? containers, SelectorList? parentSelectors, Element? ownerParent, string? baseUrl)
+    private void AddNestedDeclarations(List<CssDeclarationEntry> declarations, CascadeLayer layer, CascadeScope? scope, CascadeContainerQuery? containers, SelectorList? parentSelectors, string? baseUrl)
     {
-        foreach (var rule in rules)
+        if (declarations.Count == 0)
+            return;
+
+        if (parentSelectors is not null)
         {
-            switch (rule)
+            foreach (var selector in parentSelectors.Selectors)
             {
-                case CssMixinResultRule result:
-                {
-                    var resultRules = new CssRuleParser(result.ParentStyleSheet).ParseNestedRules(SerializeRules(result.ChildRules), inMixinResult: true);
-                    AddRules(resultRules, layer, scope, containers, parentSelectors, ownerParent, baseUrl);
-                    break;
-                }
-
-                case CssMediaRule mediaRule when MediaQueryEvaluator.Matches(mediaRule.Media, _environment):
-                    AddMixinResults(mediaRule.ChildRules, layer, scope, containers, parentSelectors, ownerParent, baseUrl);
-                    break;
-
-                case CssSupportsRule { Matches: true } supportsRule:
-                    AddMixinResults(supportsRule.ChildRules, layer, scope, containers, parentSelectors, ownerParent, baseUrl);
-                    break;
-
-                case CssContainerRule containerRule:
-                    AddMixinResults(containerRule.ChildRules, layer, scope, new CascadeContainerQuery { Conditions = containerRule.ParsedConditions, Parent = containers }, parentSelectors, ownerParent, baseUrl);
-                    break;
+                AddRule(selector, declarations, layer, scope, containers, baseUrl);
             }
+        }
+        else
+        {
+            var nesting = new ComplexSelector([new CompoundSelector([new NestingSelector { Parent = parentSelectors }])], [], relativeCombinator: null);
+            AddRule(nesting, declarations, layer, scope, containers, baseUrl);
         }
     }
 

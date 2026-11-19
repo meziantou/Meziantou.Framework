@@ -692,6 +692,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["XPathEvaluator"] = Binding_XPathEvaluator<TAdapter, TValue>.Binding,
             ["XPathExpression"] = Binding_XPathExpression<TAdapter, TValue>.Binding,
             ["XPathResult"] = Binding_XPathResult<TAdapter, TValue>.Binding,
+            ["XSLTProcessor"] = Binding_XSLTProcessor<TAdapter, TValue>.Binding,
         };
         LinkParents(result);
         return result;

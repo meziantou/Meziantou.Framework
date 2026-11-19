@@ -73,6 +73,14 @@ public sealed class IntrinsicSizingTests : IDisposable
     [InlineData("width: 500px; max-width: min-content", 70)]
     [InlineData("width: stretch", 800)]
     [InlineData("width: -webkit-fill-available; margin: 0 10px", 780)]
+    [InlineData("width: stretch(100px)", 100)]
+    [InlineData("width: stretch(100px); margin-right: 10px", 90)]
+    [InlineData("width: stretch(100px); margin-right: auto", 100)]
+    [InlineData("width: stretch(100px); margin-right: -10px", 110)]
+    [InlineData("width: stretch(50%); margin: 0 10px", 380)]
+    [InlineData("width: stretch(5px)", 10)] // The border box is not smaller than the paddings
+    [InlineData("width: 500px; max-width: stretch(100px); margin-right: 10px", 90)]
+    [InlineData("width: 0; min-width: stretch(100px); margin-right: 10px", 90)]
     [InlineData("width: calc-size(max-content, size + 10px)", 160)]
     [InlineData("width: calc-size(min-content, size * 2)", 130)]
     [InlineData("width: calc-size(auto, size / 2)", 405)]
@@ -107,6 +115,8 @@ public sealed class IntrinsicSizingTests : IDisposable
     [InlineData("min-width: 50%; width: 0", 10)]
     [InlineData("min-width: fit-content(50%); width: 0", 70)] // fit-content(0): the min-content size
     [InlineData("width: fit-content(100px); margin-right: 10px", 110)] // The argument is the size of the margin box
+    [InlineData("width: stretch(80px); margin-right: 10px", 90)] // The argument is the size of the margin box
+    [InlineData("width: stretch(50%)", 90)] // A cyclic percentage behaves as auto
     [InlineData("max-width: fit-content(50%); width: 500px", 150)] // The maximum behaves as none: the max-content size
     public void Contributions_OfKeywordSizedChild(string style, double width)
     {
@@ -169,6 +179,10 @@ public sealed class IntrinsicSizingTests : IDisposable
     [InlineData("height: 0; min-height: fit-content", 20)]
     [InlineData("height: calc-size(auto, size * 2 + 5px)", 45)]
     [InlineData("height: calc-size(stretch, size / 2)", 50)]
+    [InlineData("height: stretch(80px); margin-bottom: 30px", 50)]
+    [InlineData("height: stretch(50%); margin-bottom: 10px", 40)]
+    [InlineData("height: 0; min-height: stretch(80px); margin-bottom: 30px", 50)]
+    [InlineData("height: 300px; max-height: stretch(80px); margin-bottom: 30px", 50)]
     public void BlockSizeKeywords(string style, double height)
     {
         // The parent participates in the block formatting context of the body and has no border: the margins of the child are
@@ -189,6 +203,34 @@ public sealed class IntrinsicSizingTests : IDisposable
     {
         var document = Parse("<div><div id=t style='height: stretch'><div style='height: 20px'></div></div></div>");
         Assert.Equal(20, GetSize(document, "t").Height);
+    }
+
+    [Fact]
+    public void BlockSizeStretchFunction_IndefinitePercentageBehavesAsAuto()
+    {
+        var document = Parse("<div><div id=t style='height: stretch(50%); margin-bottom: 10px'><div style='height: 20px'></div></div></div>");
+        Assert.Equal(20, GetSize(document, "t").Height);
+    }
+
+    [Theory]
+    [InlineData("width: max-content")]
+    [InlineData("float: left")]
+    [InlineData("display: inline-grid")]
+    [InlineData("display: inline-grid; grid-template-rows: 200px")]
+    public void BlockSizeStretchFunction_TransferredThroughAspectRatio(string containerStyle)
+    {
+        // The block size given by stretch() excludes the block margins before it is transferred to the inline axis through the
+        // aspect ratio of the child: stretch(100px) with a 50px margin is a 50px block size, so a 50px inline contribution
+        var document = Parse($"<div id=t style='{containerStyle}'><div style='height: stretch(100px); margin-bottom: 50px; aspect-ratio: 1'></div></div>");
+        Assert.Equal(50, GetSize(document, "t").Width);
+    }
+
+    [Fact]
+    public void BlockSizeStretchFunction_PercentageChildren()
+    {
+        // The content box of a box sized with stretch() is definite: the percentage block sizes of its children resolve against it
+        var document = Parse("<div style='height: 200px'><div style='height: stretch(150px); margin-bottom: 50px; padding-top: 10px'><div id=t style='height: 100%'></div></div></div>");
+        Assert.Equal(90, GetSize(document, "t").Height);
     }
 
     [Theory]

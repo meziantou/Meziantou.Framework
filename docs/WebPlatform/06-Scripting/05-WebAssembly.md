@@ -45,6 +45,11 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
 - The JS String Builtins are supported: the `builtins: ["js-string"]` compile option provides the functions of the
   `wasm:js-string` module (`length`, `concat`, `charCodeAt`, `fromCharCodeArray`...), and `importedStringConstants`
   turns the globals imported from a module into string constants (the name of the import is the string).
+- The type reflection is supported: `type()` of the `Memory`, `Table`, `Global`, `Tag` and exported functions describes
+  their type (`{ minimum, maximum, shared }`, `{ element, minimum, maximum }`, `{ mutable, value }`, `{ parameters }`,
+  `{ parameters, results }`), the descriptors accept `minimum` instead of `initial`, and
+  `new WebAssembly.Function({ parameters, results }, fn)` creates a WebAssembly function from a JavaScript function: it
+  can be stored in a table. The exported functions are `WebAssembly.Function` objects.
 - `memory.toResizableBuffer()` gives a resizable `ArrayBuffer` of the bytes of a memory: `resize()` grows the memory by
   whole pages, and the buffer follows the size of the memory.
 - The running code is interrupted by the limits of the script engine, such as [Timeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.Timeout).
@@ -54,6 +59,59 @@ deeper recursion throws a `RangeError`), the largest size of a memory ([MaxMemor
 shared with the `ArrayBuffer` objects of the scripts), and how often the running code checks whether it must stop
 ([InterruptionCheckInterval](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.InterruptionCheckInterval), 10 ms by default).
 A table has at most 10,000,000 elements, the limit of the JavaScript API of browsers: `table.grow` returns -1 beyond it.
+
+## Module scripts
+
+A module script can import a WebAssembly module, as a JavaScript module ([ESM integration](https://github.com/WebAssembly/esm-integration)):
+a response whose MIME type is `application/wasm` is a WebAssembly module.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasmtime_ModuleScripts;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var runtime = new WasmtimeRuntime();
+using var engine = new JavaScriptScriptEngine();
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    ScriptEngine = engine,
+    WebAssemblyRuntime = runtime,
+});
+
+var document = await context.NavigateAsync("https://example.com/", _ => """
+    <output></output>
+    <script type="module">
+      // A response whose MIME type is application/wasm (a data: URL here) is a WebAssembly module:
+      // (module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))
+      import { add } from "data:application/wasm;base64,AGFzbQEAAAABBwFgAn9/AX8DAgEABwcBA2FkZAAACgkBBwAgACABags=";
+
+      // A source phase import gives the compiled WebAssembly.Module, without instantiating it
+      import source addModule from "data:application/wasm;base64,AGFzbQEAAAABBwFgAn9/AX8DAgEABwcBA2FkZAAACgkBBwAgACABags=";
+
+      const { exports } = new WebAssembly.Instance(addModule);
+      document.querySelector('output').textContent = add(2, 3) + ' ' + exports.add(4, 5);
+    </script>
+    """);
+await context.EventLoop.RunUntilIdleAsync();
+
+Assert.Equal("5 9", document.QuerySelector("output")!.TextContent);
+```
+<!-- endref -->
+
+- `<script type="module" src="app.wasm">`, `import`, `import()`, `<link rel="modulepreload">` and the script of a
+  module worker (`new Worker("app.wasm", { type: "module" })`) load WebAssembly modules.
+- The imports of the module are the exports of other modules: `(import "./lib.js" "log" (func))` imports the `log`
+  export of `./lib.js`, and an import of a WebAssembly module gets the export of its instance. The names are checked when
+  the module graph is linked: an import that the module does not export is a `SyntaxError`, and no module of the graph
+  runs. The modules it imports run before it; a module that is not evaluated yet (a cycle) gives a `LinkError`, as does
+  a value whose type does not match the import.
+- Its exports are the bindings of the module: the functions, memories and tables are the objects of the exports of the
+  instance, the globals are their values. The binding of a mutable global follows its value; the one of a `v128` global
+  throws a `ReferenceError`. `WebAssembly.namespaceInstance(ns)` returns the `WebAssembly.Instance`.
+- `import source mod from "./app.wasm"` and `import.source()` give the compiled `WebAssembly.Module` without instantiating
+  it.
+- The modules are compiled with the JS String Builtins (`wasm:js-string`) and the imported string constants of
+  `wasm:js/string-constants`. A module that does not compile is a `CompileError`, a module whose imports or exports use
+  the reserved names (`wasm:`, `wasm-js:`) a `LinkError`, reported as the error of the script.
+- A WebAssembly module is a script: the `script-src` directive of the Content Security Policy applies, not
+  `'wasm-unsafe-eval'`.
 
 ## Threads
 

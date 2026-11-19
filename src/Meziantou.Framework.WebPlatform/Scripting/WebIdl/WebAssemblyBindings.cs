@@ -142,14 +142,13 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
             var descriptor = a[0];
             r.CheckDictionary(descriptor, "MemoryDescriptor");
             var is64 = ReadAddressType(r, descriptor);
-            // The AddressValue members are converted when they are read (as the engines do)
+            // The AddressValue members are converted when they are read (as the engines do). The type reflection
+            // (https://webassembly.github.io/js-types/js-api/#dom-memory-memory) accepts minimum instead of initial
             var initialValue = r.GetDictionaryMember(descriptor, "initial");
-            if (r.Adapter.IsUndefined(initialValue))
-                throw r.MissingRequiredDictionaryMember("MemoryDescriptor", "initial");
-
-            var initial = r.ToWasmAddress(initialValue, is64);
+            ulong? initial = r.Adapter.IsUndefined(initialValue) ? null : r.ToWasmAddress(initialValue, is64);
             var maximumValue = r.GetDictionaryMember(descriptor, "maximum");
             ulong? maximum = r.Adapter.IsUndefined(maximumValue) ? null : r.ToWasmAddress(maximumValue, is64);
+            initial = ReadMinimum(r, descriptor, "MemoryDescriptor", initial, is64);
             var sharedValue = r.GetDictionaryMember(descriptor, "shared");
             var shared = !r.Adapter.IsUndefined(sharedValue) && r.Adapter.ToBoolean(sharedValue);
 
@@ -167,7 +166,7 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                     throw r.CreateRangeError("The shared memory cannot be allocated");
             }
 
-            var memory = r.WasmCall(() => r.WebAssemblyState.Store.CreateMemory(new WasmMemoryType(initial, maximum, is64, shared)));
+            var memory = r.WasmCall(() => r.WebAssemblyState.Store.CreateMemory(new WasmMemoryType(initial.Value, maximum, is64, shared)));
             var memoryObject = new WebAssemblyMemoryObject(memory);
             r.RegisterWasmObject(memoryObject);
             return memoryObject;
@@ -186,8 +185,26 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
             r.DefineOperation(instanceTarget, "toFixedLengthBuffer", 0, static (r, t, _) => r.ToWasmFixedLengthMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)));
             r.DefineOperation(instanceTarget, "toResizableBuffer", 0, static (r, t, _) => r.ToWasmResizableMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)));
             r.DefineAttribute(instanceTarget, "buffer", static (r, t) => r.GetWasmMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)), setter: null);
+            r.DefineOperation(instanceTarget, "type", 0, static (r, t, _) => r.GetWasmMemoryType(r.This<WebAssemblyMemoryObject>(t, Memory!).Memory));
         },
     };
+
+    /// <summary>
+    /// The minimum member of a descriptor, read after the other members (https://webassembly.github.io/js-types/js-api/):
+    /// the initial size when <paramref name="initial"/> is null; both members is a TypeError, and so is neither.
+    /// </summary>
+    private static ulong ReadMinimum(WebIdlRealm<TAdapter, TValue> r, TValue descriptor, string dictionaryName, ulong? initial, bool is64)
+    {
+        var minimumValue = r.GetDictionaryMember(descriptor, "minimum");
+        ulong? minimum = r.Adapter.IsUndefined(minimumValue) ? null : r.ToWasmAddress(minimumValue, is64);
+        return (initial, minimum) switch
+        {
+            ({ } value, null) => value,
+            (null, { } value) => value,
+            (null, null) => throw r.MissingRequiredDictionaryMember(dictionaryName, "initial"),
+            _ => throw r.CreateTypeError($"The {dictionaryName} cannot have both an initial and a minimum member"),
+        };
+    }
 
     /// <summary>The AddressType member of a descriptor: whether the address type is i64.</summary>
     private static bool ReadAddressType(WebIdlRealm<TAdapter, TValue> r, TValue descriptor)
@@ -220,14 +237,12 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
             if (r.Adapter.IsUndefined(elementValue))
                 throw r.MissingRequiredDictionaryMember("TableDescriptor", "element");
 
-            var element = r.ToEnumerationValue(elementValue, "TableKind", ["externref", "anyfunc"]);
+            var element = r.ToEnumerationValue(elementValue, "TableKind", ["externref", "funcref", "anyfunc"]);
             var initialValue = r.GetDictionaryMember(descriptor, "initial");
-            if (r.Adapter.IsUndefined(initialValue))
-                throw r.MissingRequiredDictionaryMember("TableDescriptor", "initial");
-
-            var initial = r.ToWasmAddress(initialValue, is64);
+            ulong? initialMember = r.Adapter.IsUndefined(initialValue) ? null : r.ToWasmAddress(initialValue, is64);
             var maximumValue = r.GetDictionaryMember(descriptor, "maximum");
             ulong? maximum = r.Adapter.IsUndefined(maximumValue) ? null : r.ToWasmAddress(maximumValue, is64);
+            var initial = ReadMinimum(r, descriptor, "TableDescriptor", initialMember, is64);
             var elementType = element == "externref" ? WasmValueType.ExternRef : WasmValueType.FuncRef;
             if (initial > maximum || initial > MaxTableSize)
                 throw r.CreateRangeError("The table descriptor is not valid");
@@ -296,6 +311,7 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                 var table = r.This<WebAssemblyTableObject>(t, Table!).Table;
                 return r.FromWasmAddress(table.Size, table.Type.Is64);
             }, setter: null);
+            r.DefineOperation(instanceTarget, "type", 0, static (r, t, _) => r.GetWasmTableType(r.This<WebAssemblyTableObject>(t, Table!).Table));
         },
     };
 
@@ -349,6 +365,7 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
         DefineMembers = static (r, interfaceObject, prototype, instanceTarget) =>
         {
             r.DefineOperation(instanceTarget, "valueOf", 0, static (r, t, _) => GetGlobalValue(r, r.This<WebAssemblyGlobalObject>(t, Global!).Global));
+            r.DefineOperation(instanceTarget, "type", 0, static (r, t, _) => r.GetWasmGlobalType(r.This<WebAssemblyGlobalObject>(t, Global!).Global));
             r.DefineAttribute(instanceTarget, "value", static (r, t) => GetGlobalValue(r, r.This<WebAssemblyGlobalObject>(t, Global!).Global), static (r, t, v) =>
             {
                 var global = r.This<WebAssemblyGlobalObject>(t, Global!).Global;
@@ -409,6 +426,54 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
         },
         DefineMembers = static (r, interfaceObject, prototype, instanceTarget) =>
         {
+            r.DefineOperation(instanceTarget, "type", 0, static (r, t, _) => r.GetWasmTagType(r.This<WebAssemblyTagObject>(t, Tag!).Tag));
+        },
+    };
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Function (https://webassembly.github.io/js-types/js-api/#exported-functions)
+    // ----------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// <c>WebAssembly.Function</c> of the type reflection: the Exported Functions are its instances. The constructor returns
+    /// the Exported Function of a new host function, which is the wrapper of the returned <see cref="WasmFunction"/>.
+    /// </summary>
+    internal static InterfaceBinding<TAdapter, TValue> FunctionInterface { get; } = new()
+    {
+        Name = "Function",
+        ClassString = "WebAssembly.Function",
+        ClrType = typeof(WasmFunction),
+        Flags = InterfaceBindingFlags.Function,
+        Exposure = ExposureSet.All,
+        ConstructorLength = 2,
+        Constructor = static (r, a) =>
+        {
+            if (a.Length < 2)
+                throw r.NotEnoughArguments("Function", 2, a.Length);
+
+            // FunctionType: parameters, results
+            var descriptor = a[0];
+            r.CheckDictionary(descriptor, "FunctionType");
+            var parametersValue = r.GetDictionaryMember(descriptor, "parameters");
+            if (r.Adapter.IsUndefined(parametersValue))
+                throw r.MissingRequiredDictionaryMember("FunctionType", "parameters");
+
+            var parameters = r.ToSequence(parametersValue, static (r, v) => r.ToWasmValueType(v)).ToArray();
+            var resultsValue = r.GetDictionaryMember(descriptor, "results");
+            if (r.Adapter.IsUndefined(resultsValue))
+                throw r.MissingRequiredDictionaryMember("FunctionType", "results");
+
+            var results = r.ToSequence(resultsValue, static (r, v) => r.ToWasmValueType(v)).ToArray();
+
+            // JSFunction callable
+            if (!r.Adapter.IsCallable(a[1]))
+                throw r.CreateTypeError("The callable of the function is not a function");
+
+            return r.CreateWasmFunction(new WasmFunctionType(parameters, results), a[1]);
+        },
+        DefineMembers = static (r, interfaceObject, prototype, instanceTarget) =>
+        {
+            r.DefineOperation(instanceTarget, "type", 0, static (r, t, _) => r.GetWasmFunctionType(t));
         },
     };
 
@@ -501,5 +566,5 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
     };
 
     /// <summary>The interfaces, in the order of the namespace object. It is declared after the interfaces (the static fields are initialized in order).</summary>
-    public static InterfaceBinding<TAdapter, TValue>[] Interfaces { get; } = [Module, Instance, Memory, Table, Global, Tag, Exception];
+    public static InterfaceBinding<TAdapter, TValue>[] Interfaces { get; } = [Module, Instance, Memory, Table, Global, Tag, FunctionInterface, Exception];
 }

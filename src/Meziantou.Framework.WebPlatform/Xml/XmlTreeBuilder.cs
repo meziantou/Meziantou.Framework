@@ -45,7 +45,7 @@ internal sealed class XmlTreeBuilder
         var builder = new XmlTreeBuilder(document, root, fragment);
         try
         {
-            using var reader = CreateReader(input);
+            using var reader = CreateReader(input, fragment);
             builder.Run(reader);
             return null;
         }
@@ -55,11 +55,89 @@ internal sealed class XmlTreeBuilder
         }
     }
 
-    /// <summary>Creates the reader of an XML document. Lone surrogates cannot be encoded: they are replaced with U+FFFD, as when the string is converted to bytes.</summary>
-    private static XmlReader CreateReader(string input)
+    /// <summary>
+    /// Creates the reader of an XML document. Lone surrogates cannot be encoded: they are replaced with U+FFFD, as when the
+    /// string is converted to bytes. A byte order mark at the start of the text is ignored, and the XML declaration accepts
+    /// the versions 1.x (https://www.w3.org/TR/xml/#sec-prolog-dtd: an XML 1.0 processor processes them as XML 1.0
+    /// documents), as in the browsers. A fragment (the markup of <c>innerHTML</c>) is not converted: a lone surrogate is a
+    /// character that XML does not allow (https://www.w3.org/TR/xml/#NT-Char), so the markup is not well-formed.
+    /// </summary>
+    private static XmlReader CreateReader(string input, bool fragment = false)
     {
-        input = Infra.InfraString.ToScalarValueString(input);
+        if (!fragment)
+        {
+            input = Infra.InfraString.ToScalarValueString(input);
+            if (input.Length > 0 && input[0] == '\uFEFF')
+            {
+                input = input[1..];
+            }
+
+            input = NormalizeXmlDeclarationVersion(input);
+        }
+
         return XmlReader.Create(new StringReader(input), CreateSettings(input));
+    }
+
+    /// <summary>Replaces the version 1.x of the XML declaration at the start of a document with 1.0, the version <see cref="XmlReader"/> accepts.</summary>
+    private static string NormalizeXmlDeclarationVersion(string input)
+    {
+        if (!input.StartsWith("<?xml", StringComparison.Ordinal) || input.Length < 6 || !IsXmlWhitespace(input[5]))
+            return input;
+
+        var index = 5;
+        while (index < input.Length && IsXmlWhitespace(input[index]))
+        {
+            index++;
+        }
+
+        if (!input.AsSpan(index).StartsWith("version", StringComparison.Ordinal))
+            return input;
+
+        index += "version".Length;
+        while (index < input.Length && IsXmlWhitespace(input[index]))
+        {
+            index++;
+        }
+
+        if (index >= input.Length || input[index] != '=')
+            return input;
+
+        index++;
+        while (index < input.Length && IsXmlWhitespace(input[index]))
+        {
+            index++;
+        }
+
+        if (index >= input.Length || input[index] is not ('"' or '\''))
+            return input;
+
+        var quote = input[index];
+        var start = index + 1;
+        var end = input.AsSpan(start).IndexOf(quote);
+        if (end < 0)
+            return input;
+
+        end += start;
+
+        // VersionNum ::= '1.' [0-9]+
+        var version = input.AsSpan(start, end - start);
+        if (version.Length < 3 || !version.StartsWith("1.", StringComparison.Ordinal) || version is "1.0" || !IsAsciiDigits(version[2..]))
+            return input;
+
+        return string.Concat(input.AsSpan(0, start), "1.0", input.AsSpan(end));
+
+        static bool IsXmlWhitespace(char c) => c is ' ' or '\t' or '\n' or '\r';
+
+        static bool IsAsciiDigits(ReadOnlySpan<char> value)
+        {
+            foreach (var c in value)
+            {
+                if (!char.IsAsciiDigit(c))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     /// <summary>Creates a tree builder whose parsing can pause at a parser-blocking script (see <see cref="Html.Parsing.XmlScriptingParser"/>).</summary>

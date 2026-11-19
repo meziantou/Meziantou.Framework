@@ -854,45 +854,72 @@ div { margin-left: --negative(1em); }
 ## Mixins
 
 The `@mixin` rules of [CSS Mixins](https://drafts.csswg.org/css-mixins-1/#defining-mixins) define mixins, applied in a
-style rule by an `@apply` rule. Mixins are experimental: the library implements the model of the browsers and of the
-web-platform-tests, where the declarations and the rules that are applied are in an `@result` rule of the mixin body
-(the specification no longer defines it):
+style rule by an `@apply` rule. The body of a mixin ([mixin body](https://drafts.csswg.org/css-mixins-1/#mixin-body)) is
+parsed as the block of a nested declarations rule: its declarations and its rules replace the `@apply` rule.
 
 ```css
 @mixin --bordered(--color <color>: black) {
-  --width: 2px;                   /* a local variable */
-  @result {
-    border: var(--width) solid var(--color);
-    &:hover { @contents; }        /* the contents block of the @apply rule */
-  }
+  @private { --width: 2px; }      /* a private property of the mixin */
+  border: var(--width) solid var(--color);
+  &:hover { @contents; }          /* the contents block of the @apply rule */
 }
 button { @apply --bordered(red) { color: red; } }
 ```
 
-- **Rules**: the mixin body contains the local variables (the custom properties; the other declarations, `!important`
-  and the style rules are invalid), the `@result` rules and the conditional rules (`@media`, `@supports`, `@container`)
-  that contain them. An `@result` rule accepts the contents of a style rule (but not `@layer`), and the `@contents` rules.
-  `@apply --name;`, `@apply --name(arguments)` and `@apply --name(arguments) { contents }` are only valid in a style rule
-  (or a nested group rule); an argument containing a top-level `!` (e.g. `!important`) makes it invalid. The parameters
-  are the ones of `@function` (the parentheses are optional when there is none). The CSSOM rules are `CSSMixinRule`
-  (`name`, `getParameters()`, `contents`), `CSSApplyStatementRule` and `CSSApplyBlockRule` (`name`, `getArguments()`),
-  `CSSContentsStatementRule` and `CSSContentsBlockRule`, and the `@result` rule is a `CSSGroupingRule`; the runs of
+- **Rules**: the mixin body accepts the contents of a style rule: declarations (`!important` included), nested style
+  rules, conditional rules (`@media`, `@supports`, `@container`), `@scope`, `@starting-style`, `@apply`, `@private` and
+  `@contents` rules. `@layer` rules are invalid in a mixin body, at any depth, and so is the `@result` rule of the former
+  draft. `@apply --name;`, `@apply --name(arguments)` and `@apply --name(arguments) { contents }` are only valid in a
+  style rule (or a nested group rule); an argument containing a top-level `!` (e.g. `!important`) makes it invalid. The
+  parameters are the ones of `@function` (the parentheses are optional when there is none). The CSSOM rules are
+  `CSSMixinRule` (`name`, `getParameters()`, `contents`, and the `cssRules` of the body), `CSSApplyStatementRule` and
+  `CSSApplyBlockRule` (`name`, `getArguments()`), `CSSContentsStatementRule` and `CSSContentsBlockRule`; the runs of
   declarations of the mixin body and of the blocks are `CSSNestedDeclarations` rules.
-- **Application**: the rules of the `@result` rules of the mixin (whose `@media` and `@supports` conditions are true;
-  the `@container` conditions are evaluated for each element) replace the `@apply` rule, in its style rule and cascade
-  layer: the nested rules are relative to the style rule, and the declarations have its specificity. A `@contents` rule
-  is replaced by the contents block of the `@apply` rule, or else by its own fallback block. The `@mixin` rule of the
-  strongest cascade layer wins, then the last one; the name is a tree-scoped name (like `@function`). An `@apply` rule
-  does nothing when the mixin is unknown, when it has more arguments than the mixin has parameters, or when it applies a
-  mixin that is already being applied (a cycle).
+- **Application**: the declarations and the rules of the mixin body replace the `@apply` rule, in its style rule and
+  cascade layer: the nested rules are relative to the style rule (`.a` matches the descendants, `&.a` the element), and
+  the declarations have the specificity of the matching selector of the style rule, its pseudo-element included. The
+  conditional rules apply when their condition is true (the `@container` conditions are evaluated for each element). A
+  `@contents` rule is replaced by the contents block of the `@apply` rule (an empty block included), or else by its own
+  fallback block. A mixin body can apply other mixins. The `@mixin` rule of the strongest cascade layer wins, then the
+  last one; the name is a tree-scoped name (like `@function`). An `@apply` rule does nothing when the mixin is unknown,
+  when it has more arguments than the mixin has parameters, or when it applies a mixin that is already being applied (a
+  cycle).
 - **Evaluation**: the values of the declarations of the mixin are substituted for each element in a frame like the one
-  of a custom function: `var()` refers to the local variables, then to the parameters, then to the variables of the
-  mixin whose `@result` rule applies it, then to the custom properties of the element. The arguments are substituted in
-  the calling context, and a missing argument without default value is the guaranteed-invalid value. The custom functions
-  called by the values do not see the variables of the mixin, and the variables are not custom properties of the element.
+  of a custom function: `var()` refers to the parameters, then to the parameters of the mixin whose body applies it, then
+  to the custom properties of the element. The arguments are substituted in the calling context, and a missing argument
+  without default value is the guaranteed-invalid value. The custom functions called by the values do not see the
+  parameters of the mixin. The custom properties declared by the mixin body are custom properties of the element.
 
-The `@private` rule (`CSSPrivateRule`, in a style rule) is parsed and serialized (its declarations are
-`--name <type>?: value`), but its private properties are not applied.
+## Private properties
+
+The `@private` rule of [CSS Mixins](https://drafts.csswg.org/css-mixins-1/#private) (`CSSPrivateRule`, experimental)
+declares private properties: custom properties that only the rule that declares them can reference.
+
+```css
+.card {
+  @private { --gap: 8px; }
+  padding: var(--gap);
+  & > .title { margin-bottom: var(--gap); }   /* the nested rules see --gap */
+}
+.title { margin-top: var(--gap, 0px); }        /* another rule does not: 0px */
+```
+
+- **Scope**: a style rule, a `@scope` rule, the body of an applied mixin and a contents block are lexical scopes. The
+  `@private` rules of a scope (in it or in its conditional rules and cascade layers, whatever their conditions) make the
+  names they declare private in the scope and in its nested rules: the declarations of the scope that assign these names
+  and the `var()` references to them use the private property. A nested scope that declares the same name eclipses the
+  outer one. The initial values of a `@private` rule only see the private properties of their own scope.
+- **Cascade**: a `@private` rule applies its declarations like nested declarations, at its position, in its conditional
+  rules and cascade layers. The value of a private property is resolved on the element that declares it and inherits to
+  its descendants, but only the rules of its scope can reference it: the other rules, the custom functions and the
+  computed styles (`getPropertyValue()`, the enumeration of the properties) do not see it.
+- **Mixins**: a mixin body has its own private properties, separate from the ones of the `@apply` rule and of the other
+  applications of the mixin. The arguments, the default values of the parameters and the contents block of the `@apply`
+  rule see the private properties of the `@apply` rule; the fallback block of a `@contents` rule sees the ones of the
+  mixin.
+- **Not implemented**: the types of the declarations (`--name <length>: 10px`) are parsed and serialized, but the values
+  are not computed with them; `CSSPrivateRule` is a plain `CSSRule`, without the `CSSStyleRule` members (`style`,
+  `styleMap`, `cssRules`) proposed by [w3c/csswg-drafts#14427](https://github.com/w3c/csswg-drafts/issues/14427).
 
 ## Registered custom properties
 

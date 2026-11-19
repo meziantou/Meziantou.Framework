@@ -1,6 +1,9 @@
+using System.Globalization;
+using System.Text;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Xslt;
 
 namespace Meziantou.Framework.WebPlatform.Tests.XPath;
 
@@ -1027,5 +1030,411 @@ public sealed class XPathTests
         var total = document.Evaluate("sum(//li/@data-price)", document, type: XPathResult.NumberType).NumberValue;
         Assert.Equal(87, total);
         #endregion
+    }
+
+    private const string XslNamespace = "http://www.w3.org/1999/XSL/Transform";
+
+    private static XsltProcessor CreateProcessor(string stylesheet)
+    {
+        var processor = new XsltProcessor();
+        processor.ImportStylesheet(XmlDocumentParser.ParseDocument(stylesheet));
+        return processor;
+    }
+
+    private static string Stylesheet(string content, string attributes = "") => $"""<xsl:stylesheet version="1.0" xmlns:xsl="{XslNamespace}"{attributes}>{content}</xsl:stylesheet>""";
+
+    /// <summary>Transforms a source document and returns the XML serialization of the result document.</summary>
+    private static string TransformToXml(string stylesheet, string source)
+    {
+        var result = CreateProcessor(stylesheet).TransformToDocument(XmlDocumentParser.ParseDocument(source));
+        return new XmlSerializer().SerializeToString(result.DocumentElement!);
+    }
+
+    /// <summary>Transforms a source document with the text output method and returns the text.</summary>
+    private static string TransformToText(string templates, string source)
+    {
+        var page = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
+        var fragment = CreateProcessor(Stylesheet("""<xsl:output method="text"/>""" + templates)).TransformToFragment(XmlDocumentParser.ParseDocument(source), page);
+        return fragment.TextContent ?? "";
+    }
+
+    [Fact]
+    public void Documentation_XsltTransformToFragment()
+    {
+        #region WebPlatform_XsltTransformToFragment
+        var stylesheet = XmlDocumentParser.ParseDocument("""
+            <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+              <xsl:template match="/">
+                <ul>
+                  <xsl:for-each select="catalog/book">
+                    <xsl:sort select="@year" data-type="number"/>
+                    <li><xsl:value-of select="title"/></li>
+                  </xsl:for-each>
+                </ul>
+              </xsl:template>
+            </xsl:stylesheet>
+            """);
+        var source = XmlDocumentParser.ParseDocument("""
+            <catalog>
+              <book year="2004"><title>Second</title></book>
+              <book year="1999"><title>First</title></book>
+            </catalog>
+            """);
+        var page = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><body></body>");
+
+        var processor = new XsltProcessor();
+        processor.ImportStylesheet(stylesheet);
+
+        // The elements in no namespace are HTML elements of the output document
+        var fragment = processor.TransformToFragment(source, page);
+        page.Body!.AppendChild(fragment);
+        Assert.Equal("<ul><li>First</li><li>Second</li></ul>", page.Body.InnerHtml);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_XsltParameters()
+    {
+        #region WebPlatform_XsltParameters
+        var processor = new XsltProcessor();
+        processor.ImportStylesheet(XmlDocumentParser.ParseDocument("""
+            <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+              <xsl:output method="xml"/>
+              <xsl:param name="greeting" select="'Hello'"/>
+              <xsl:template match="/">
+                <message><xsl:value-of select="concat($greeting, ', ', name)"/></message>
+              </xsl:template>
+            </xsl:stylesheet>
+            """));
+        processor.SetParameter("", "greeting", "Bonjour");
+
+        // The result is a new XML document: its scripts never run
+        var result = processor.TransformToDocument(XmlDocumentParser.ParseDocument("<name>Alice</name>"));
+        Assert.Equal("application/xml", result.ContentType);
+        Assert.Equal("Bonjour, Alice", result.DocumentElement!.TextContent);
+        #endregion
+    }
+
+    [Fact]
+    public void Xslt_OutputMethods()
+    {
+        var source = XmlDocumentParser.ParseDocument("<root/>");
+
+        // The html method is detected from the html element in no namespace
+        var html = CreateProcessor(Stylesheet("""<xsl:template match="/"><HTML><body><p>a</p></body></HTML></xsl:template>""")).TransformToDocument(source);
+        Assert.Equal("text/html", html.ContentType);
+        Assert.Equal("BackCompat", html.CompatMode);
+        Assert.Equal("a", html.QuerySelector("p")!.TextContent);
+
+        var htmlWithDoctype = CreateProcessor(Stylesheet("""<xsl:output method="html" doctype-system="about:legacy-compat"/><xsl:template match="/"><p>a</p></xsl:template>""")).TransformToDocument(source);
+        Assert.Equal("CSS1Compat", htmlWithDoctype.CompatMode);
+        Assert.Equal("a", htmlWithDoctype.Body!.TextContent);
+
+        var xml = CreateProcessor(Stylesheet("""<xsl:template match="/"><r xmlns="urn:r"><p/></r></xsl:template>""")).TransformToDocument(source);
+        Assert.Equal("application/xml", xml.ContentType);
+        Assert.Equal("urn:r", xml.DocumentElement!.NamespaceUri);
+
+        // A result that is not a well-formed document is wrapped, as in Firefox
+        var wrapped = CreateProcessor(Stylesheet("""<xsl:template match="/"><a/><b/></xsl:template>""")).TransformToDocument(source);
+        Assert.Equal("result", wrapped.DocumentElement!.LocalName);
+        Assert.Equal(2u, wrapped.DocumentElement.ChildElementCount);
+
+        var text = CreateProcessor(Stylesheet("""<xsl:output method="text"/><xsl:template match="/">a &lt; b</xsl:template>""")).TransformToDocument(source);
+        Assert.Equal("a < b", text.QuerySelector("pre")!.TextContent);
+
+        // A fragment of an XML document keeps the elements in no namespace
+        var fragment = CreateProcessor(Stylesheet("""<xsl:template match="/"><p>a</p></xsl:template>""")).TransformToFragment(source, XmlDocumentParser.ParseDocument("<x/>"));
+        Assert.Null(((Element)fragment.FirstChild!).NamespaceUri);
+    }
+
+    [Fact]
+    public void Xslt_TemplateRules_Priorities()
+    {
+        const string Templates = """
+            <xsl:template match="/"><xsl:apply-templates select="//b"/></xsl:template>
+            <xsl:template match="*">*</xsl:template>
+            <xsl:template match="b">b</xsl:template>
+            <xsl:template match="a/b">a/b</xsl:template>
+            <xsl:template match="b[@k]" priority="-1">low</xsl:template>
+            """;
+        Assert.Equal("a/bbb", TransformToText(Templates, "<root><a><b/></a><b/><b k='1'/></root>"));
+    }
+
+    [Fact]
+    public void Xslt_ModesParametersAndBuiltInRules()
+    {
+        const string Templates = """
+            <xsl:template match="/">
+              <xsl:apply-templates/>
+              <xsl:text>|</xsl:text>
+              <xsl:apply-templates select="//b" mode="m"><xsl:with-param name="suffix" select="'!'"/></xsl:apply-templates>
+            </xsl:template>
+            <xsl:template match="b" mode="m"><xsl:param name="suffix"/><xsl:param name="default" select="'?'"/><xsl:value-of select="concat(., $suffix, $default)"/></xsl:template>
+            <xsl:template match="c"/>
+            """;
+        Assert.Equal("xy|x!?y!?", TransformToText(Templates, "<root><a><b>x</b></a><b>y</b><c>skipped</c></root>"));
+    }
+
+    [Fact]
+    public void Xslt_NamedTemplatesVariablesAndRecursion()
+    {
+        const string Templates = """
+            <xsl:variable name="separator" select="','"/>
+            <xsl:template match="/"><xsl:call-template name="count"><xsl:with-param name="n" select="3"/></xsl:call-template></xsl:template>
+            <xsl:template name="count">
+              <xsl:param name="n"/>
+              <xsl:if test="$n &gt; 0">
+                <xsl:variable name="next" select="$n - 1"/>
+                <xsl:value-of select="$n"/>
+                <xsl:if test="$next &gt; 0"><xsl:value-of select="$separator"/></xsl:if>
+                <xsl:call-template name="count"><xsl:with-param name="n" select="$next"/></xsl:call-template>
+              </xsl:if>
+            </xsl:template>
+            """;
+        Assert.Equal("3,2,1", TransformToText(Templates, "<root/>"));
+    }
+
+    [Fact]
+    public void Xslt_TemplateAndForEach_WithOnlyParametersOrSorts()
+    {
+        // A template whose children are all xsl:param elements, and a for-each whose children are all xsl:sort elements, have
+        // an empty body
+        const string Templates = """
+            <xsl:template match="/">[<xsl:apply-templates select="root/item"/>][<xsl:for-each select="root/item"> <xsl:sort select="."/> </xsl:for-each>][<xsl:apply-templates select="root/item" mode="content"/>]</xsl:template>
+            <xsl:template match="item"> <xsl:param name="p"/> <xsl:param name="q" select="1"/> </xsl:template>
+            <xsl:template match="item" mode="content"><xsl:param name="p" select="'-'"/><xsl:for-each select="."><xsl:sort select="."/><xsl:value-of select="concat(., $p)"/></xsl:for-each></xsl:template>
+            """;
+        Assert.Equal("[][][b-a-]", TransformToText(Templates, "<root><item>b</item><item>a</item></root>"));
+    }
+
+    [Fact]
+    public void Xslt_AttributeSets_UsedSetsAndCycles()
+    {
+        // The attributes of the used sets, in order, then the attributes of the set; a set may be used twice, but not by itself
+        const string Sets = """
+            <xsl:attribute-set name="x" use-attribute-sets="y z"><xsl:attribute name="v">x</xsl:attribute></xsl:attribute-set>
+            <xsl:attribute-set name="y"><xsl:attribute name="v">y</xsl:attribute><xsl:attribute name="y">1</xsl:attribute></xsl:attribute-set>
+            <xsl:attribute-set name="z" use-attribute-sets="y"><xsl:attribute name="z"><xsl:value-of select="count(/root/*)"/></xsl:attribute></xsl:attribute-set>
+            """;
+        Assert.Equal("""<r v="x" y="1" z="2" w="r"/>""", TransformToXml(Stylesheet(Sets + """<xsl:template match="/"><r xsl:use-attribute-sets="x" w="r"/></xsl:template>"""), "<root><a/><b/></root>"));
+
+        foreach (var cycle in new[]
+        {
+            """<xsl:attribute-set name="a" use-attribute-sets="a"/>""",
+            """<xsl:attribute-set name="a" use-attribute-sets="b"/><xsl:attribute-set name="b" use-attribute-sets="c"/><xsl:attribute-set name="c" use-attribute-sets="a"/>""",
+            """<xsl:attribute-set name="a"><xsl:attribute name="v"><e xsl:use-attribute-sets="a"/></xsl:attribute></xsl:attribute-set>""",
+            """<xsl:attribute-set name="a" use-attribute-sets="undeclared"/>""",
+        })
+        {
+            var processor = CreateProcessor(Stylesheet(cycle + """<xsl:template match="/"><r xsl:use-attribute-sets="a"/></xsl:template>"""));
+            Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
+        }
+    }
+
+    [Fact]
+    public void Xslt_AttributeSets_LongChain_DoesNotOverflowTheStack()
+    {
+        // Each set uses the next one: the sets are walked without recursion
+        const int Count = 100_000;
+        var sets = new StringBuilder();
+        for (var i = 0; i < Count; i++)
+        {
+            sets.Append(CultureInfo.InvariantCulture, $"""<xsl:attribute-set name="s{i}" use-attribute-sets="s{i + 1}"><xsl:attribute name="a">{i}</xsl:attribute></xsl:attribute-set>""");
+        }
+
+        sets.Append(CultureInfo.InvariantCulture, $"""<xsl:attribute-set name="s{Count}"><xsl:attribute name="a">last</xsl:attribute><xsl:attribute name="b">last</xsl:attribute></xsl:attribute-set>""");
+        var template = """<xsl:template match="/"><r xsl:use-attribute-sets="s0"/></xsl:template>""";
+        Assert.Equal("""<r a="0" b="last"/>""", TransformToXml(Stylesheet(sets + template), "<root/>"));
+
+        // The same chain closed into a cycle is an error
+        var cycle = sets.ToString().Replace($"""name="s{Count}">""", $"""name="s{Count}" use-attribute-sets="s0">""", StringComparison.Ordinal);
+        Assert.Equal("OperationError", Assert.Throws<DomException>(() => CreateProcessor(Stylesheet(cycle + template)).TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
+
+        // Each use of a set is a step of the transformation: the sets used an exponential number of times stop at the limit
+        var exponential = new StringBuilder();
+        for (var i = 0; i < 64; i++)
+        {
+            exponential.Append(CultureInfo.InvariantCulture, $"""<xsl:attribute-set name="s{i}" use-attribute-sets="s{i + 1} s{i + 1}"/>""");
+        }
+
+        exponential.Append("""<xsl:attribute-set name="s64"><xsl:attribute name="a">1</xsl:attribute></xsl:attribute-set>""");
+        var processor = new XsltProcessor { Limits = new XsltLimits { MaxSteps = 100_000 } };
+        processor.ImportStylesheet(XmlDocumentParser.ParseDocument(Stylesheet(exponential + template)));
+        Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
+    }
+
+    // Two recursive calls with a counter of 40: about 10^12 calls
+    private const string ExponentialTemplates = """
+        <xsl:template match="/"><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></xsl:template>
+        <xsl:template name="t">
+          <xsl:param name="n"/>
+          <xsl:if test="$n &gt; 0">
+            <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+            <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+          </xsl:if>
+        </xsl:template>
+        """;
+
+    [Fact]
+    public void Xslt_Limits_StopTheTransformations()
+    {
+        static void AssertOperationError(string stylesheet, XsltLimits limits)
+        {
+            var processor = new XsltProcessor { Limits = limits };
+            processor.ImportStylesheet(XmlDocumentParser.ParseDocument(stylesheet));
+            var source = XmlDocumentParser.ParseDocument("<root><a/><b/></root>");
+            Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToDocument(source)).Name);
+            Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToFragment(source, HtmlDocumentParser.ParseDocument("<!DOCTYPE html>"))).Name);
+        }
+
+        // The number of steps, and the duration
+        AssertOperationError(Stylesheet(ExponentialTemplates), new XsltLimits { MaxSteps = 100_000, Timeout = null });
+        AssertOperationError(Stylesheet(ExponentialTemplates), new XsltLimits { MaxSteps = long.MaxValue, Timeout = TimeSpan.Zero });
+
+        // The number of nodes: a fragment copied over and over
+        const string Copies = """
+            <xsl:variable name="f"><e><xsl:copy-of select="/root/*"/></e></xsl:variable>
+            <xsl:template match="/"><r><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></r></xsl:template>
+            <xsl:template name="t">
+              <xsl:param name="n"/>
+              <xsl:if test="$n &gt; 0"><xsl:copy-of select="$f"/><xsl:copy-of select="$f"/><xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template><xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template></xsl:if>
+            </xsl:template>
+            """;
+        AssertOperationError(Stylesheet(Copies), new XsltLimits { MaxSteps = long.MaxValue, MaxOutputNodes = 10_000, Timeout = null });
+
+        // The defaults are finite, and the options are validated
+        Assert.True(XsltOptions.Default.MaxSteps < long.MaxValue);
+        Assert.True(XsltOptions.Default.MaxOutputNodes < long.MaxValue);
+        Assert.NotNull(XsltOptions.Default.Timeout);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new XsltOptions { MaxSteps = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new XsltOptions { Timeout = TimeSpan.FromSeconds(-1) });
+    }
+
+    [Fact]
+    public void Xslt_InfiniteRecursion_IsAnError()
+    {
+        var processor = CreateProcessor(Stylesheet("""<xsl:template match="/"><xsl:apply-templates select="."/></xsl:template>"""));
+        var exception = Assert.Throws<DomException>(() => processor.TransformToDocument(XmlDocumentParser.ParseDocument("<root/>")));
+        Assert.Equal("OperationError", exception.Name);
+    }
+
+    [Fact]
+    public void Xslt_Errors()
+    {
+        var processor = new XsltProcessor();
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => processor.TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
+        Assert.Equal("NotSupportedError", Assert.Throws<DomException>(() => processor.ImportStylesheet(XmlDocumentParser.ParseDocument("<root/>").CreateComment("c"))).Name);
+
+        // A static error, an undeclared variable, an unknown function and xsl:message terminate="yes"
+        foreach (var content in new[]
+        {
+            """<xsl:template match="/"><xsl:template match="x"/></xsl:template>""",
+            """<xsl:template match="/"><xsl:value-of select="$undeclared"/></xsl:template>""",
+            """<xsl:template match="/"><xsl:value-of select="unknown()"/></xsl:template>""",
+            """<xsl:template match="/"><xsl:message terminate="yes">stop</xsl:message></xsl:template>""",
+            """<xsl:template match="child::*/parent::*"/>""",
+            """<xsl:import/>""",
+        })
+        {
+            var exception = Assert.Throws<DomException>(() => CreateProcessor(Stylesheet(content)).TransformToDocument(XmlDocumentParser.ParseDocument("<root/>")));
+            Assert.Equal("OperationError", exception.Name);
+        }
+
+        Assert.Equal("OperationError", Assert.Throws<DomException>(() => CreateProcessor("<root/>").TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
+    }
+
+    [Fact]
+    public void Xslt_CreatingNodes()
+    {
+        const string Stylesheet1 = """
+            <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:p="urn:p" exclude-result-prefixes="p">
+              <xsl:attribute-set name="base"><xsl:attribute name="class">c</xsl:attribute></xsl:attribute-set>
+              <xsl:template match="/">
+                <r xsl:use-attribute-sets="base" id="{root/@id}-{{x}}">
+                  <xsl:element name="p:e" namespace="urn:e"><xsl:attribute name="a">1</xsl:attribute></xsl:element>
+                  <xsl:copy-of select="root/item"/>
+                  <xsl:for-each select="root/item"><xsl:copy><xsl:value-of select="@n"/></xsl:copy></xsl:for-each>
+                  <xsl:comment>c</xsl:comment>
+                  <xsl:processing-instruction name="pi">d</xsl:processing-instruction>
+                </r>
+              </xsl:template>
+            </xsl:stylesheet>
+            """;
+        Assert.Equal("""<r class="c" id="a-{x}"><p:e xmlns:p="urn:e" a="1"/><item n="1">x</item><item>1</item><!--c--><?pi d?></r>""", TransformToXml(Stylesheet1, "<root id='a'><item n='1'>x</item></root>"));
+    }
+
+    [Fact]
+    public void Xslt_FunctionsAndNumbering()
+    {
+        const string Templates = """
+            <xsl:key name="k" match="item" use="@type"/>
+            <xsl:decimal-format name="fr" decimal-separator="," grouping-separator=" "/>
+            <xsl:template match="/">
+              <xsl:value-of select="count(key('k', 'a'))"/>|<xsl:value-of select="key('k', 'b')"/>|<xsl:value-of select="format-number(1234.5, '#,##0.00')"/>|<xsl:value-of select="format-number(1234.5, '# ##0,0', 'fr')"/>|<xsl:value-of select="format-number(0.25, '0%')"/>|<xsl:value-of select="generate-id(root) = generate-id(root)"/>|<xsl:value-of select="system-property('xsl:version')"/>|<xsl:value-of select="function-available('document')"/><xsl:value-of select="function-available('abs')"/>|<xsl:value-of select="count(document('other.xml'))"/>|<xsl:for-each select="root/item"><xsl:number format="i. "/></xsl:for-each>|<xsl:number value="28" format="A"/>|<xsl:number value="1234567" grouping-separator="," grouping-size="3"/>
+            </xsl:template>
+            """;
+        Assert.Equal("2|y|1,234.50|1 234,5|25%|true|1|truefalse|0|i. ii. iii. |AB|1,234,567", TransformToText(Templates, "<root><item type='a'>x</item><item type='b'>y</item><item type='a'>z</item></root>"));
+    }
+
+    [Fact]
+    public void Xslt_SortAndNodeSetExtension()
+    {
+        const string Templates = """
+            <xsl:template match="/">
+              <xsl:for-each select="root/i"><xsl:sort select="." order="descending"/><xsl:value-of select="."/></xsl:for-each>|<xsl:for-each select="root/i"><xsl:sort select="." data-type="number"/><xsl:value-of select="."/></xsl:for-each>
+              <xsl:variable name="fragment"><a>1</a><a>2</a></xsl:variable>|<xsl:value-of select="count(exsl:node-set($fragment)/a)"/>|<xsl:value-of select="exsl:object-type($fragment)"/>
+            </xsl:template>
+            """;
+        var processor = CreateProcessor(Stylesheet("""<xsl:output method="text"/>""" + Templates, """ xmlns:exsl="http://exslt.org/common" """));
+        var page = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
+        Assert.Equal("93101|13910|2|RTF", processor.TransformToFragment(XmlDocumentParser.ParseDocument("<root><i>10</i><i>9</i><i>3</i><i>1</i></root>"), page).TextContent);
+    }
+
+    [Fact]
+    public void Xslt_StripSpace()
+    {
+        const string Templates = """
+            <xsl:strip-space elements="*"/>
+            <xsl:preserve-space elements="keep"/>
+            <xsl:template match="/"><xsl:value-of select="count(//text())"/></xsl:template>
+            """;
+        Assert.Equal("2", TransformToText(Templates, "<root> <a> </a> <keep> </keep> <b>x</b></root>"));
+    }
+
+    [Fact]
+    public void Xslt_Parameters()
+    {
+        var processor = CreateProcessor(Stylesheet("""
+            <xsl:output method="text"/>
+            <xsl:param name="text"/><xsl:param name="number"/><xsl:param name="boolean"/><xsl:param name="nodes" select="/.."/><xsl:param name="p:n" xmlns:p="urn:p"/>
+            <xsl:template match="/"><xsl:value-of select="concat($text, '|', $number + 1, '|', $boolean, '|', count($nodes), '|', $p:n)" xmlns:p="urn:p"/></xsl:template>
+            """));
+        var source = XmlDocumentParser.ParseDocument("<root><a/><b/></root>");
+        processor.SetParameter("", "text", "t");
+        processor.SetParameter("", "number", 41d);
+        processor.SetParameter("", "boolean", true);
+        processor.SetParameter("", "nodes", source.DocumentElement!.ChildNodes.ToList());
+        processor.SetParameter("urn:p", "n", "ns");
+        Assert.Equal("t", processor.GetParameter("", "text"));
+        var page = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
+        Assert.Equal("t|42|true|2|ns", processor.TransformToFragment(source, page).TextContent);
+
+        processor.RemoveParameter("", "text");
+        Assert.Null(processor.GetParameter("", "text"));
+        processor.ClearParameters();
+        Assert.Equal("|NaN||0|", processor.TransformToFragment(source, page).TextContent);
+
+        processor.Reset();
+        Assert.Throws<DomException>(() => processor.TransformToFragment(source, page));
+    }
+
+    [Fact]
+    public void Xslt_TransformToDocument_ScriptsAreAlreadyStarted()
+    {
+        var processor = CreateProcessor(Stylesheet("""<xsl:template match="/"><xsl:copy-of select="*"/></xsl:template>"""));
+        var result = processor.TransformToDocument(XmlDocumentParser.ParseDocument("<html xmlns='http://www.w3.org/1999/xhtml'><script>run()</script></html>"));
+        var script = Assert.IsType<HtmlScriptElement>(result.QuerySelector("script"));
+        Assert.True(script.AlreadyStarted);
+        Assert.True(((HtmlScriptElement)script.CloneNode()).AlreadyStarted);
     }
 }

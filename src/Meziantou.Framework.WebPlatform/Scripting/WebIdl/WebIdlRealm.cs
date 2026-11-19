@@ -477,6 +477,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             parentInterfaceObject = abstractModuleSource;
             parentPrototype = Adapter.Get(abstractModuleSource, Key("prototype"));
         }
+        else if ((binding.Flags & InterfaceBindingFlags.Function) != InterfaceBindingFlags.None)
+        {
+            // https://webassembly.github.io/js-types/js-api/#exported-functions: WebAssembly.Function extends Function
+            parentInterfaceObject = EvaluateBuiltIn("Function");
+            parentPrototype = EvaluateBuiltIn("Function.prototype");
+        }
         else
         {
             parentPrototype = ObjectPrototype;

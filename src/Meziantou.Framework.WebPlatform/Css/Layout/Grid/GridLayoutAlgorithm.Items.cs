@@ -99,6 +99,7 @@ internal sealed partial class GridLayoutAlgorithm
             // its intrinsic inline sizes
             var otherAxis = axis == GridAxis.Columns ? GridAxis.Rows : GridAxis.Columns;
             var otherPaddingAndBorder = horizontal ? paddingAndBorder.VerticalSum() : paddingAndBorder.HorizontalSum();
+            var otherMargins = otherAxis == GridAxis.Columns ? margins.InlineSum() : margins.BlockSum();
             var otherSizing = new AxisSizing(_context, item.Box)
             {
                 Horizontal = !horizontal,
@@ -106,12 +107,13 @@ internal sealed partial class GridLayoutAlgorithm
                 PercentageBasis = otherAreaSize,
                 PaddingAndBorder = otherPaddingAndBorder,
                 Edges = otherPaddingAndBorder + gutters.BlockSum(),
+                Margins = otherMargins,
             };
 
             var blockSize = otherSizing.Resolve(item.Style.Box.GetSize(!horizontal), SizingProperty.Preferred);
             if (blockSize is null && otherAreaSize is { } other && item.Stretches(otherAxis))
             {
-                blockSize = other - (otherAxis == GridAxis.Columns ? margins.InlineSum() : margins.BlockSum());
+                blockSize = other - otherMargins;
             }
 
             contentBlockSize = blockSize is { } size ? Math.Max(0, otherSizing.Clamp(size) - otherSizing.Edges) : null;
@@ -437,11 +439,13 @@ internal sealed partial class GridLayoutAlgorithm
 
         // The other axis of the grid is the block axis of the item when the axis is its inline axis
         var otherIsItemInline = sizing.IsInlineAxis == false;
+        var margins = GetMargins(item, 0);
         var otherSizing = new AxisSizing(_context, item.Box)
         {
             Horizontal = !horizontal,
             IsInlineAxis = otherIsItemInline,
             PaddingAndBorder = otherIsItemInline ? paddingAndBorder.InlineSum() : paddingAndBorder.BlockSum(),
+            Margins = axis == GridAxis.Columns ? margins.BlockSum() : margins.InlineSum(),
         };
 
         if (otherSizing.Resolve(boxModel.GetSize(!horizontal), SizingProperty.Preferred) is not { } other)

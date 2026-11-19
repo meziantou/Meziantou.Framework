@@ -40,3 +40,4 @@ layout only exist in the documents of a [browsing context](../05-LoadingPages/01
 - [Style sheets](03-StyleSheets.md): read, edit and create style sheets and rules; inspect their selectors.
 - [Typed values](04-TypedValues.md): read and write CSS values as numbers with units, keywords and transforms.
 - [Formatting CSS](05-FormattingCss.md): write style sheets minified or indented.
+- [Parameters of SVG images](06-LinkParameters.md): pass colors and other values to the SVG images of a page.

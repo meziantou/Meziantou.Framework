@@ -59,6 +59,21 @@ content-height` (or another `content-*` value), and the embedded document has
 embed it). The `iframe` then takes the size of the contents of its document once the document is loaded, and again
 when its scripts call `window.requestResize()`.
 
+## Sizing values
+
+The sizing properties (`width`, `height`, their `min-*` and `max-*` limits, the logical `inline-size` and `block-size`
+properties, and `flex-basis`) accept the values of [CSS Sizing 4](https://drafts.csswg.org/css-sizing-4/#sizing-values):
+lengths and percentages, `auto`, `min-content`, `max-content`, `fit-content`, `fit-content(<length-percentage>)`,
+`stretch` (and its prefixed names `-webkit-fill-available` and `-moz-available`), `stretch(<length-percentage>)`,
+`contain` and `calc-size()`.
+
+`stretch(<length-percentage>)` sizes the margin box: the margins (`auto` margins count as zero) are taken off the
+argument, whatever the `box-sizing`, and the border box is never smaller than the borders and the paddings. With
+`width: stretch(200px); margin-right: 20px`, the border box is 180px wide. A percentage argument resolves against the
+containing block; when that size is not known, the value behaves as `auto` (as `none` for a maximum size). The margins do not apply to the table cells: the
+border box of a cell is the argument. `stretch()` values are interpolated by their argument in the animations and the
+transitions, and are not interpolated with the other sizing values.
+
 ## Scrolling
 
 [Window.ScrollTo](cref:Meziantou.Framework.WebPlatform.Dom.Window.ScrollTo), [Element.ScrollTo](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollTo), [Element.ScrollIntoView](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollIntoView), [ScrollTop](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollTop) and [ScrollLeft](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollLeft) scroll the viewport and the

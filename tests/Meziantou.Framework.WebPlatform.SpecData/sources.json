@@ -210,6 +210,7 @@
       "dom",
       "domparsing",
       "domxpath",
+      "xml",
       "shadow-dom",
       "html/resources",
       "html/canvas",

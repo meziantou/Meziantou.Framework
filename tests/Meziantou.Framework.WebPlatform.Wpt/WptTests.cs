@@ -15,6 +15,8 @@ public sealed class WptTests
 
     public static TheoryData<string> DomXPathTests => GetTests("domxpath");
 
+    public static TheoryData<string> XmlTests => GetTests("xml");
+
     public static TheoryData<string> HtmlDomTests => GetTests("html/dom");
 
     public static TheoryData<string> SvgTypesTests => GetTests("svg/types");
@@ -768,6 +770,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DomXPathTests))]
     public void DomXPath(string test) => Run("domxpath", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(XmlTests))]
+    public void Xml(string test) => Run("xml", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(HtmlDomTests))]

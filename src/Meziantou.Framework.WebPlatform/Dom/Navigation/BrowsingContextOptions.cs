@@ -227,6 +227,13 @@ public sealed partial record BrowsingContextOptions
     /// </summary>
     public SpeculativeLoadingOptions SpeculativeLoading { get; init; } = SpeculativeLoadingOptions.Default;
 
+    /// <summary>
+    /// Gets or sets the limits of the XSLT transformations: the transformations of <see cref="XsltProcessor"/> created by the
+    /// scripts of the windows, and of the XML documents whose <c>xml-stylesheet</c> processing instruction references an XSLT
+    /// stylesheet. The default is <see cref="XsltOptions.Default"/>.
+    /// </summary>
+    public XsltOptions Xslt { get; init; } = XsltOptions.Default;
+
     /// <summary>The features of the browsing contexts: <see cref="Features"/>, or the default features.</summary>
     internal WebPlatformFeatures EffectiveFeatures => Features ?? WebPlatformFeatures.Default;
 
@@ -1192,6 +1199,12 @@ public enum RequestDestination
     /// https://webaudio.github.io/web-audio-api/#AudioWorklet), and the modules it imports.
     /// </summary>
     AudioWorklet,
+
+    /// <summary>
+    /// An XSLT stylesheet: the one of an <c>&lt;?xml-stylesheet type="text/xsl"?&gt;</c> processing instruction of an XML
+    /// document, or of an <c>xsl:include</c> or <c>xsl:import</c> element (see <see cref="XsltProcessor"/>).
+    /// </summary>
+    Xslt,
 }
 
 /// <summary>The mode of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-mode).</summary>

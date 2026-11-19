@@ -1330,7 +1330,7 @@ internal sealed partial class IdlModel
             Members = [],
             Source = "css-mixins-1",
             SpecUrl = "https://drafts.csswg.org/css-mixins-1/",
-            ExperimentalApi = "CssMixinResultAndPrivateRules",
+            ExperimentalApi = "CssPrivateRule",
         };
     }
 

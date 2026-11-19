@@ -602,7 +602,9 @@ internal sealed partial class ComputedStyle
         if (physical is "min-width" or "min-height" && value == "auto" && (!GeneratesBox() || (GetComputedValue("aspect-ratio") == "auto" && !IsFlexOrGridItem())))
             return "0px";
 
-        if (physical == "caret-color" || value.Contains("currentcolor", StringComparison.Ordinal))
+        // The values of the link parameters are not colors: they are resolved when they are passed to a resource
+        // (https://drafts.csswg.org/css-link-params-1/#param)
+        if (physical == "caret-color" || (value.Contains("currentcolor", StringComparison.Ordinal) && physical != "link-parameters"))
             return ResolveColorKeywords(physical, value);
 
         if (physical is "transform-origin" or "perspective-origin")
@@ -1717,7 +1719,8 @@ internal sealed partial class ComputedStyle
         {
             foreach (var name in style._cascaded.Keys)
             {
-                if (CssPropertyRegistry.IsCustomProperty(name))
+                // The private properties are not exposed (https://drafts.csswg.org/css-mixins-1/#private)
+                if (CssPropertyRegistry.IsCustomProperty(name) && !CssPrivateScope.IsHiddenName(name))
                 {
                     names.Add(name);
                 }

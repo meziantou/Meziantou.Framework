@@ -306,6 +306,7 @@ internal sealed class HttpDocumentLoader(HttpClient httpClient) : DocumentLoader
         RequestDestination.Text => "text/plain,*/*;q=0.5",
         RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.AudioWorklet or RequestDestination.Font or RequestDestination.Ping or RequestDestination.Report or RequestDestination.Audio or RequestDestination.Video or RequestDestination.Track => "*/*",
         RequestDestination.Image => "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        RequestDestination.Xslt => "text/xml,application/xml,application/xhtml+xml,text/xsl,*/*;q=0.1",
         _ => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     };
 }

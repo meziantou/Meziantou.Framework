@@ -15,6 +15,7 @@ public sealed class DocumentationImageTests
     private const string UpdateVariable = "MEZIANTOU_WEBPLATFORM_UPDATE_DOCS_IMAGES";
     private const string Rendering = "07-Rendering";
     private const string LoadingPages = "05-LoadingPages";
+    private const string Css = "04-Css";
 
     private static readonly string DocumentationRoot = Path.Combine(TestPaths.Root, "docs", "WebPlatform");
 
@@ -483,6 +484,40 @@ public sealed class DocumentationImageTests
         #endregion
 
         AssertImage(Rendering, "CanvasShapedText", screenshot);
+    }
+
+    [Fact]
+    public void LinkParameters()
+    {
+        #region WebPlatformImaging_LinkParameters
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 180, Height = 60 },
+            RenderingBackend = new ImagingRenderingBackend(),
+        });
+
+        // The icon reads its color with env(), black when no parameter is passed
+        const string Icon = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><circle cx='20' cy='20' r='18' fill='env(--color, black)'/></svg>";
+        context.Navigate("https://example.com/", _ => $$"""
+            <!DOCTYPE html>
+            <style>
+              body { margin: 10px; display: flex; gap: 20px }
+              .blue { link-parameters: param(--color: royalblue) }
+              .text { color: seagreen; link-parameters: param(--color <color>: currentcolor) }
+            </style>
+            <img src="{{Icon}}">
+            <img class="blue" src="{{Icon}}">
+            <img class="text" src="{{Icon}}">
+            """);
+        context.EventLoop.RunUntilIdle();
+
+        using var screenshot = context.TakeScreenshot();
+        #endregion
+
+        Assert.Equal(new Rgba32(0, 0, 0), screenshot.GetPixel(30, 30));
+        Assert.Equal(new Rgba32(65, 105, 225), screenshot.GetPixel(90, 30));
+        Assert.Equal(new Rgba32(46, 139, 87), screenshot.GetPixel(150, 30));
+        AssertImage(Css, "LinkParameters", screenshot);
     }
 
     /// <summary>

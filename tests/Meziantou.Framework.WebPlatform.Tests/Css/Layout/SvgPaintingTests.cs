@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Css.Layout;
+using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Rendering;
 using Meziantou.Framework.WebPlatform.Svg;
@@ -309,6 +310,50 @@ public sealed class SvgPaintingTests : IDisposable
         image = new PaintImage("https://example.com/a.svg#svgView(viewBox(100,0,100,100))&xywh=0,0,10,10", 200, 200, bytes, "image/svg+xml");
         list = SvgImage.Get(image, host)!.GetDisplayList(new PhysicalSize(100, 100));
         Assert.Contains("transform matrix(0.5, 0, 0, 0.5, 0, 0)", list!.Dump(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SvgImage_LinkParametersAreEnvironmentVariablesOfTheImage()
+    {
+        var host = Parse("""
+            <div id=a style='color: rgb(0, 128, 0); link-parameters: param(--bg <color>: currentcolor)'></div>
+            <div id=b style='--bg: rgb(0, 0, 255); link-parameters: param(--bg: red), param(--bg <color>: notacolor), param(--bg)'></div>
+            <div id=c></div>
+            """);
+        var bytes = System.Text.Encoding.UTF8.GetBytes("<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><rect width='10' height='10' fill='env(--bg, rgb(255, 0, 255))'/></svg>");
+        var image = new PaintImage("https://example.com/a.svg", 10, 10, bytes, "image/svg+xml");
+        var svgImage = SvgImage.Get(image, host)!;
+        string Paint(string id, string url)
+        {
+            var style = host.GetStyleEngine().GetStyle(host.GetElementById(id)!);
+            return svgImage.GetDisplayList(new PhysicalSize(10, 10), linkParameters: CssLinkParameters.Resolve(style, url, urlModifiers: null, host))!.Dump();
+        }
+
+        // A typed value is resolved against the element (currentcolor is its color)
+        Assert.Contains("fill #008000", Paint("a", image.Url), StringComparison.Ordinal);
+
+        // The last valid parameter of a name wins: a typed value that does not match its type is ignored, a parameter without
+        // value takes the value of the custom property of the element
+        Assert.Contains("fill #0000ff", Paint("b", image.Url), StringComparison.Ordinal);
+
+        // Without parameters, env() uses its fallback; the link parameter directives of the fragment are parameters too
+        Assert.Contains("fill #ff00ff", Paint("c", image.Url), StringComparison.Ordinal);
+        Assert.Contains("fill #ffff00", Paint("c", image.Url + "#:~:param(--bg:%20rgb(255,%20255,%200))"), StringComparison.Ordinal);
+
+        // The fragment directive comes after the link-parameters property
+        Assert.Contains("fill #ffff00", Paint("a", image.Url + "#:~:text=x&param(--bg:%20rgb(255,%20255,%200))"), StringComparison.Ordinal);
+        Assert.Contains("fill #008000", Paint("a", image.Url), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SvgImage_FragmentDirectiveIsNotPartOfTheFragmentOfTheDocument()
+    {
+        var host = HtmlDocumentParser.ParseDocument("<p>x</p>");
+        var bytes = System.Text.Encoding.UTF8.GetBytes("<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><style>#box:target { fill: rgb(0, 128, 0) }</style><rect id='box' width='10' height='10' fill='red'/></svg>");
+        var image = new PaintImage("https://example.com/a.svg#box:~:param(--bg:green)", 10, 10, bytes, "image/svg+xml");
+        var svgImage = SvgImage.Get(image, host)!;
+        Assert.Equal("#box", svgImage.Document.UrlRecord.Fragment is { } fragment ? "#" + fragment : null);
+        Assert.Contains("fill #008000", svgImage.GetDisplayList(new PhysicalSize(10, 10))!.Dump(), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -1907,6 +1907,33 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task PaymentRequest_Show_DetailsTaskCompletedOnAnotherThread_IsAppliedOnTheEventLoop()
+    {
+        var backend = new AcceptingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        var request = new PaymentRequest(
+            document.DefaultView!,
+            [new PaymentMethodData { SupportedMethods = "https://pay.example/pay" }],
+            new PaymentDetailsInit { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "EUR", Value = "10.00" } } });
+        Activate(document);
+        var details = new TaskCompletionSource<PaymentDetailsUpdate>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var response = request.Show(details.Task);
+        Run(document);
+        Assert.True(request.IsUpdating);
+
+        // The task is completed on a thread of the thread pool: the details are not updated there, but by the event loop
+        await Task.Run(() => details.SetResult(new PaymentDetailsUpdate { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "EUR", Value = "12.00" } } }));
+        await Task.Delay(50);
+        Assert.True(request.IsUpdating);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await _contexts.EventLoop.RunUntilAsync(() => response.IsCompleted, timeout.Token);
+        Assert.False(request.IsUpdating);
+        Assert.Equal("https://pay.example/pay", (await response).MethodName);
+        Assert.Equal("12.00", backend.LastPrompt!.Details.Total.Amount.Value);
+    }
+
+    [Fact]
     public void PaymentRequest_Show_InvalidUpdate_AbortsTheRequest()
     {
         var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = new PendingPaymentSheet() });

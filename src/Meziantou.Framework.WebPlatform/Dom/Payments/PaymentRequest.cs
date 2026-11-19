@@ -831,8 +831,10 @@ public sealed partial class PaymentRequest : EventTarget
             prompt.IsUpdating = true;
         }
 
+        // The promise of a script is settled on the event loop, but a .NET task can complete on any thread: the details are
+        // updated from a task of the event loop of the window
         _ = detailsPromise.ContinueWith(
-            settled => OnDetailsSettled(settled, pmi),
+            settled => _window.QueueGlobalTask(() => OnDetailsSettled(settled, pmi)),
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);

@@ -583,7 +583,10 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
         var engineRealm = (JsRealm)realm.EngineRealm;
         try
         {
-            var moduleObject = realm.ParseWasmModuleScript(bytes, out var requestedModules, out var exportNames);
+            var moduleObject = realm.ParseWasmModuleScript(bytes, out var requestedModules, out var importedNames, out var exportNames);
+
+            // The names of the imports are resolved when the module graph is linked (a SyntaxError when one is missing, before
+            // any module runs); their values are read when the module is evaluated, after the modules it imports (or not, in a cycle)
             var module = engineRealm.CreateHostDefinedModule(requestedModules, exportNames, record => realm.ExecuteWasmModuleScript(record, import => ResolveWasmImport(record, import), (name, value, getter) =>
             {
                 if (getter is not null)
@@ -594,7 +597,7 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
                 {
                     record.SetExport(name, ToJs(value));
                 }
-            }), url, hostDefined);
+            }), url, hostDefined, importedNames);
             realm.RegisterWasmModuleRecord(module, moduleObject);
             module.ModuleSource = (JsObject)realm.GetWrapper(moduleObject);
             return module;

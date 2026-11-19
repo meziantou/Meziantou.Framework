@@ -14,9 +14,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>
     /// https://webassembly.github.io/esm-integration/js-api/index.html#parse-a-webassembly-module: compiles the module with
     /// the builtin set "js-string" and the imported string constants, and checks the reserved names. Throws a CompileError
-    /// or a LinkError. <paramref name="requestedModules"/> are the modules of its external imports, in order.
+    /// or a LinkError. <paramref name="requestedModules"/> are the modules of its external imports, in order, and
+    /// <paramref name="importedNames"/> the module and the name of each of these imports.
     /// </summary>
-    internal WebAssemblyModuleObject ParseWasmModuleScript(byte[] bytes, out List<string> requestedModules, out List<string> exportNames)
+    internal WebAssemblyModuleObject ParseWasmModuleScript(byte[] bytes, out List<string> requestedModules, out List<KeyValuePair<string, string>> importedNames, out List<string> exportNames)
     {
         WasmModule module;
         try
@@ -34,6 +35,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         var moduleObject = new WebAssemblyModuleObject(module, builtinSets, WasmModuleScriptImportedStringModule);
         requestedModules = [];
+        importedNames = [];
         foreach (var import in module.Imports)
         {
             if (IsReflectedAsWasmBuiltinOrStringImport(import, builtinSets, WasmModuleScriptImportedStringModule))
@@ -49,6 +51,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             {
                 requestedModules.Add(import.Module);
             }
+
+            importedNames.Add(new(import.Module, import.Name));
         }
 
         exportNames = [];

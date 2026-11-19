@@ -98,8 +98,10 @@ Assert.Equal("5 9", document.QuerySelector("output")!.TextContent);
 - `<script type="module" src="app.wasm">`, `import`, `import()`, `<link rel="modulepreload">` and the script of a
   module worker (`new Worker("app.wasm", { type: "module" })`) load WebAssembly modules.
 - The imports of the module are the exports of other modules: `(import "./lib.js" "log" (func))` imports the `log`
-  export of `./lib.js`, and an import of a WebAssembly module gets the export of its instance. The modules it imports run
-  before it; a module that is not evaluated yet (a cycle) gives a `LinkError`.
+  export of `./lib.js`, and an import of a WebAssembly module gets the export of its instance. The names are checked when
+  the module graph is linked: an import that the module does not export is a `SyntaxError`, and no module of the graph
+  runs. The modules it imports run before it; a module that is not evaluated yet (a cycle) gives a `LinkError`, as does
+  a value whose type does not match the import.
 - Its exports are the bindings of the module: the functions, memories and tables are the objects of the exports of the
   instance, the globals are their values. The binding of a mutable global follows its value; the one of a `v128` global
   throws a `ReferenceError`. `WebAssembly.namespaceInstance(ns)` returns the `WebAssembly.Instance`.

@@ -675,6 +675,32 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task ModuleScripts_WebAssemblyModuleWithAMissingImportIsASyntaxErrorBeforeAnyModuleRuns()
+    {
+        var result = await LoadModulesAsync(
+            """
+            <script>window.addEventListener('error', e => document.title = e.error.name + ' ' + (window.sideEffect === undefined) + ' ' + (window.libEvaluated === undefined));</script>
+            <script type=module>
+              import './side-effect.js';
+              import './bad.wasm';
+              window.rootEvaluated = true;
+            </script>
+            """,
+            new()
+            {
+                ["side-effect.js"] = "window.sideEffect = true;",
+                ["lib.js"] = "window.libEvaluated = true; export function f() {}",
+            },
+            new() { ["bad.wasm"] = """(module (import "./lib.js" "f" (func)) (import "./lib.js" "missing" (func)))""" });
+
+        Assert.Equal("SyntaxError true true", result);
+        lock (_errors)
+        {
+            _errors.Clear();
+        }
+    }
+
+    [Fact]
     public async Task ModuleScripts_WebAssemblyModuleNeedsARuntime()
     {
         var result = await LoadModulesAsync(

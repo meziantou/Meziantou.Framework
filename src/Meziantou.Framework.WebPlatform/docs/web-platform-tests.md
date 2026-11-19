@@ -395,7 +395,9 @@ in the file name or a `tentative` directory: experimental features that no speci
 separately from the stable tests. The pages are generated from the
 [WPT manifest](https://github.com/web-platform-tests/wpt/releases) of the pinned revision, the expectations and the
 reasons (see [Reasons](#reasons)): regenerate them after updating the expectations (CI fails when they are out of date or
-when a test that does not pass has no reason).
+when a test that does not pass has no reason). The generation also deletes the expectations of the test files that are not
+in the manifest (tests moved or removed upstream since the expectations were recorded, which the runner no longer runs):
+the check fails while there are some.
 
 ```bash
 dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-coverage

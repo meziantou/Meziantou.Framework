@@ -327,9 +327,18 @@ async Task<bool> GenerateWptCoverageAsync(bool check)
         Console.WriteLine($"warning: the reason of '{pattern}' (wpt-reasons.json) matches no test that does not pass");
     }
 
-    foreach (var path in result.StaleExpectations)
+    // The expectations of the tests that are not in the manifest (moved or removed upstream since they were recorded) are
+    // deleted by the generation (e.g. after an update of the pinned revision), and are an error for the check
+    if (check)
     {
-        Console.Error.WriteLine($"error: the expectations of '{path}' (tests/Meziantou.Framework.WebPlatform.Wpt/expectations) name a file that is not in the WPT manifest of the revision (moved or removed upstream): remove them");
+        foreach (var path in result.StaleExpectations)
+        {
+            Console.Error.WriteLine($"error: the expectations of '{path}' (tests/Meziantou.Framework.WebPlatform.Wpt/expectations) name a file that is not in the WPT manifest of the revision (moved or removed upstream): run 'dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-coverage' to remove them");
+        }
+    }
+    else
+    {
+        RemoveStaleExpectations(Path.Combine(wptProjectDirectory, "expectations"), result.StaleExpectations);
     }
 
     foreach (var path in result.MissingReasons)
@@ -378,6 +387,42 @@ async Task<bool> GenerateWptCoverageAsync(bool check)
 
     Console.WriteLine($"Wrote {WptCoverage.OutputDirectory}/{WptCoverage.IndexPath} and {result.Pages.Count(p => p.Key.EndsWith(".md", StringComparison.Ordinal)) - 1} section pages ({result.MissingReasons.Count} tests without reason)");
     return result.InvalidReasons.Count == 0;
+}
+
+// Removes the entries of the expectation files (all their variants) of the test files that are not in the manifest, with the
+// format of the files written by the WPT runner (WPT_UPDATE_EXPECTATIONS=1). A file without entries is deleted.
+static void RemoveStaleExpectations(string expectationsDirectory, IReadOnlyList<string> stalePaths)
+{
+    if (stalePaths.Count == 0)
+        return;
+
+    var stale = stalePaths.ToHashSet(StringComparer.Ordinal);
+    var options = new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true };
+    var removed = 0;
+    foreach (var file in Directory.EnumerateFiles(expectationsDirectory, "*.json").Order(StringComparer.Ordinal))
+    {
+        var expectations = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+        var keys = expectations.Select(p => p.Key).Where(key => stale.Contains(key.Split('?', '#')[0])).ToList();
+        if (keys.Count == 0)
+            continue;
+
+        foreach (var key in keys)
+        {
+            expectations.Remove(key);
+        }
+
+        removed += keys.Count;
+        if (expectations.Count == 0)
+        {
+            File.Delete(file);
+        }
+        else
+        {
+            File.WriteAllText(file, expectations.ToJsonString(options) + "\n");
+        }
+    }
+
+    Console.WriteLine($"Removed the expectations of {stalePaths.Count} test files that are not in the WPT manifest of the revision ({removed} entries)");
 }
 
 bool Verify()

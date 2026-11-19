@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 163 | 172 | 0 | 95% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 364 | 389 | 1 | 94% |
+| [Reftests](#reftests) | 363 | 388 | 1 | 94% |
 | [Crash tests](#crash-tests) | 10 | 10 | 0 | 100% |
-| **All** | **543** | **577** | **1** | **94%** |
+| **All** | **542** | **576** | **1** | **94%** |
 
 ## Failure reasons
 
@@ -505,7 +505,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`lang-attribute-affects-rendering-002.html`](https://wpt.fyi/results/css/css-fonts/lang-attribute-affects-rendering-002.html) | Pass | 1 / 1 |  |  |
 | [`lang-attribute-affects-rendering-003.html`](https://wpt.fyi/results/css/css-fonts/lang-attribute-affects-rendering-003.html) | Pass | 1 / 1 |  |  |
 | [`lang-attribute-affects-rendering-of-second-text-run.html`](https://wpt.fyi/results/css/css-fonts/lang-attribute-affects-rendering-of-second-text-run.html) | Pass | 1 / 1 |  |  |
-| [`lang-attribute-affects-rendering.html`](https://wpt.fyi/results/css/css-fonts/lang-attribute-affects-rendering.html) | Pass | 1 / 1 |  |  |
 | [`line-gap-override.html`](https://wpt.fyi/results/css/css-fonts/line-gap-override.html) | Pass | 1 / 1 |  |  |
 | [`matching/fixed-stretch-style-over-weight.html`](https://wpt.fyi/results/css/css-fonts/matching/fixed-stretch-style-over-weight.html) | Fail | 0 / 1 | TEST BUG | the test relies on rasterizer precision that OpenType leaves to the implementation: the instances the matching selects (`wght` 700 of variabletest_matching.ttf) are not exactly the glyphs of the reference: the gvar deltas of `wght` 600, 700 and 800 give bars 1200.02, 1400.04 or 1599.99 units long (HarfBuzz hb-vector gives the same outline) where the default glyphs of the reference are 1200, 1400 and 1600 units long, so the antialiased edge pixel differs by 1; the browsers pass because their rasterizers round outlines to 1/64 pixel, which the OpenType specification does not require (Font Variations overview, "Variation data precision": "this specification has no other requirements for instance coordinates, scaled deltas or derived instance values to be rounded") |
 | [`matching/font-unicode-PUA-primary-font.html`](https://wpt.fyi/results/css/css-fonts/matching/font-unicode-PUA-primary-font.html) | Fail | 0 / 1 | TEST RUNNER | the `Arial` and `Times` fonts are not installed (the installed fonts are the bundled Tinos, Arimo and Cousine, without aliases): both pages render the Private Use Area characters with the missing glyph of the same default font (whose `.notdef` draws nothing) |

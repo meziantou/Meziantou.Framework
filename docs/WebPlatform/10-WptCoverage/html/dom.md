@@ -10,16 +10,16 @@ description: "The results of the web-platform-tests of html/dom, and why the tes
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 213 | 217 | 0 | 98% |
-| [Tentative](#tentative-tests) | 25 | 39 | 0 | 64% |
+| [Tentative](#tentative-tests) | 12 | 25 | 0 | 48% |
 | [Reftests](#reftests) | 127 | 127 | 0 | 100% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **369** | **387** | **0** | **95%** |
+| **All** | **356** | **373** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 7
+- **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 11
 - **REQUIRES**: 1
   - `layout`: 1
@@ -258,21 +258,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`documents/resource-metadata-management/document-promises-with-document-open-inside-domcontentloaded.tentative.html`](https://wpt.fyi/results/html/dom/documents/resource-metadata-management/document-promises-with-document-open-inside-domcontentloaded.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `document.parsed`, `document.contentLoaded` and `document.loaded` promises (https://github.com/whatwg/html/pull/1936, tentative): they are `undefined` |
 | [`documents/resource-metadata-management/document-promises-with-document-open.tentative.html`](https://wpt.fyi/results/html/dom/documents/resource-metadata-management/document-promises-with-document-open.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `document.parsed`, `document.contentLoaded` and `document.loaded` promises (https://github.com/whatwg/html/pull/1936, tentative): they are `undefined` |
 | [`documents/resource-metadata-management/document-promises.tentative.html`](https://wpt.fyi/results/html/dom/documents/resource-metadata-management/document-promises.tentative.html) | Fail | 2 / 8 | NOT IMPLEMENTED | the `document.parsed`, `document.contentLoaded` and `document.loaded` promises (https://github.com/whatwg/html/pull/1936, tentative): they are `undefined` |
-| [`partial-updates/tentative/chained-streaming-templates-with-custom-element.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/chained-streaming-templates-with-custom-element.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/fragment/buffer-immutability.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/buffer-immutability.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/fragment/buffer-in-place.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/buffer-in-place.html) | Fail | 0 / 1 | TEST BUG | the in-place `<template for="">` of the declarative partial updates (an empty `for` inserts the content before the template, then removes it) is not implemented: it contradicts the prepare content patching steps of the HTML Standard (an empty marker name patches nothing, https://html.spec.whatwg.org/multipage/scripting.html#prepare-content-patching) and the tests of the empty `for` attribute (`template-for-empty.html`, the "Empty marker name" subtests of `html/semantics/scripting-1/the-template-element/template-for/template-for-multiple-cases.html`), which every browser passes; fails in every browser |
-| [`partial-updates/tentative/fragment/buffer-mutation-observer.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/buffer-mutation-observer.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/fragment/buffer-reflection.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/buffer-reflection.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/fragment/buffer-streaming-reflection.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/buffer-streaming-reflection.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/fragment/buffer-targeted.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/buffer-targeted.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/fragment/empty-for-streaming.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/empty-for-streaming.html) | Fail | 0 / 2 | TEST BUG | the in-place `<template for="">` of the declarative partial updates (an empty `for` inserts the content before the template, then removes it) is not implemented: it contradicts the prepare content patching steps of the HTML Standard (an empty marker name patches nothing, https://html.spec.whatwg.org/multipage/scripting.html#prepare-content-patching) and the tests of the empty `for` attribute (`template-for-empty.html`, the "Empty marker name" subtests of `html/semantics/scripting-1/the-template-element/template-for/template-for-multiple-cases.html`), which every browser passes; fails in every browser |
-| [`partial-updates/tentative/fragment/sanitize-boolean.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/sanitize-boolean.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/fragment/sanitize-default.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/sanitize-default.html) | Timeout | 0 / 1 | TEST BUG | the targeted templates are sanitized, but the single subtest also checks an in-place `<template for sanitize>`: the in-place `<template for="">` of the declarative partial updates (an empty `for` inserts the content before the template, then removes it) is not implemented: it contradicts the prepare content patching steps of the HTML Standard (an empty marker name patches nothing, https://html.spec.whatwg.org/multipage/scripting.html#prepare-content-patching) and the tests of the empty `for` attribute (`template-for-empty.html`, the "Empty marker name" subtests of `html/semantics/scripting-1/the-template-element/template-for/template-for-multiple-cases.html`), which every browser passes; fails in every browser |
 | [`partial-updates/tentative/fragment/sanitize-nested.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/sanitize-nested.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the inheritance of the sanitizer of the enclosing parse by `<template for src>` (declarative partial updates, https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md): the sanitization of the fetched content only depends on the `sanitize` attribute of the template, so `sanitize="unsafe"` runs the scripts inside `streamHTML()` or inside the content of a safe outer `template src`, and a default `template src` inside `streamHTMLUnsafe({sanitizer})` does not apply the bespoke sanitizer (with `removeUnsafe()`) |
 | [`partial-updates/tentative/fragment/sanitize-regular.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/sanitize-regular.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `sanitize` IDL attribute of `HTMLTemplateElement` (declarative partial updates, https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md): `template.sanitize` is `undefined` (only the content attribute is read by the parser) |
-| [`partial-updates/tentative/fragment/sanitize-template-element.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/sanitize-template-element.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/fragment/sanitize-unsafe.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/sanitize-unsafe.html) | Fail | 2 / 3 | TEST BUG | the targeted templates are not sanitized, but the single subtest also checks an in-place `<template for sanitize="random">`: the in-place `<template for="">` of the declarative partial updates (an empty `for` inserts the content before the template, then removes it) is not implemented: it contradicts the prepare content patching steps of the HTML Standard (an empty marker name patches nothing, https://html.spec.whatwg.org/multipage/scripting.html#prepare-content-patching) and the tests of the empty `for` attribute (`template-for-empty.html`, the "Empty marker name" subtests of `html/semantics/scripting-1/the-template-element/template-for/template-for-multiple-cases.html`), which every browser passes; fails in every browser |
-| [`partial-updates/tentative/fragment/src-buffered.sub.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/src-buffered.sub.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/fragment/src-cancel.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/src-cancel.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/fragment/src-csp-cors.sub.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/src-csp-cors.sub.html) | Pass | 2 / 2 |  |  |
 | [`partial-updates/tentative/fragment/src-csp.sub.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/src-csp.sub.html) | Pass | 1 / 1 |  |  |
@@ -283,12 +273,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`partial-updates/tentative/fragment/src-sri.sub.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/src-sri.sub.html) | Pass | 2 / 2 |  |  |
 | [`partial-updates/tentative/fragment/src-streaming.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/src-streaming.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/fragment/streaming-target-marker-removed.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/fragment/streaming-target-marker-removed.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/stream-append-has-invalidation.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/stream-append-has-invalidation.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/stream-append-positional-pseudo-class-invalidation.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/stream-append-positional-pseudo-class-invalidation.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/stream-append-with-template-for.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/stream-append-with-template-for.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/template-for-case-sensitive-dom-inserted.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/template-for-case-sensitive-dom-inserted.html) | Pass | 1 / 1 |  |  |
 | [`partial-updates/tentative/template-for-case-sensitive.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/template-for-case-sensitive.html) | Pass | 1 / 1 |  |  |
-| [`partial-updates/tentative/template-for-empty.html`](https://wpt.fyi/results/html/dom/partial-updates/tentative/template-for-empty.html) | Pass | 1 / 1 |  |  |
 
 ## Reftests
 

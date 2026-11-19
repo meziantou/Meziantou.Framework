@@ -29,8 +29,10 @@ internal static partial class WptCoverage
         HashSet<string> wptTests;
         HashSet<string> reftests;
         HashSet<string> crashtests;
+        HashSet<string> manifestFiles;
         using (var manifest = WptManifest.Open(manifestPath))
         {
+            manifestFiles = WptManifest.ReadAllFiles(manifest);
             wptTests = ReadTestharnessTests(manifest);
             // (the print reftests compare the pages of the printed documents)
             reftests = [.. WptManifest.ReadItems(manifest, "reftest").Keys, .. WptManifest.ReadItems(manifest, "print-reftest").Keys];
@@ -38,6 +40,16 @@ internal static partial class WptCoverage
         }
 
         var (runTests, runReftests, runCrashtests) = ReadExpectations(Path.Combine(wptProjectDirectory, "expectations"));
+
+        // The expectations of the files that are not in the manifest of the revision (tests moved or removed upstream since
+        // they were recorded) are stale: the runner does not run them, so they are not counted
+        var staleExpectations = runTests.Keys.Concat(runReftests.Keys).Concat(runCrashtests.Keys).Where(path => !manifestFiles.Contains(path)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        foreach (var path in staleExpectations)
+        {
+            runTests.Remove(path);
+            runReftests.Remove(path);
+            runCrashtests.Remove(path);
+        }
 
         // A few tests are not testharness.js tests for the manifest (e.g. the harness is inserted by document.write())
         wptTests.UnionWith(runTests.Keys);
@@ -72,7 +84,8 @@ internal static partial class WptCoverage
             pages,
             [.. tests.Where(t => !t.IsPassing && t.Reasons is null).Select(t => t.Path)],
             [.. notRunReasons.UnusedPatterns.Select(p => "notRun: " + p), .. failingReasons.UnusedPatterns.Select(p => "failing: " + p), .. failingReftestReasons.UnusedPatterns.Select(p => "failingReftests: " + p), .. failingCrashtestReasons.UnusedPatterns.Select(p => "failingCrashtests: " + p)],
-            invalidReasons);
+            invalidReasons,
+            staleExpectations);
 
         void AddTests(HashSet<string> paths, Dictionary<string, TestResult> results, ReasonPatterns failing, TestKind kind)
         {
@@ -239,7 +252,7 @@ internal static partial class WptCoverage
     private static partial Regex ShadowRealmUrl();
 
     /// <summary>The generated files (by path relative to <see cref="OutputDirectory"/>), the non-passing tests that have no reason, the reason patterns that match no test, and the errors of the invalid reasons.</summary>
-    internal sealed record CoverageResult(IReadOnlyDictionary<string, string> Pages, IReadOnlyList<string> MissingReasons, IReadOnlyList<string> UnusedReasons, IReadOnlyList<string> InvalidReasons);
+    internal sealed record CoverageResult(IReadOnlyDictionary<string, string> Pages, IReadOnlyList<string> MissingReasons, IReadOnlyList<string> UnusedReasons, IReadOnlyList<string> InvalidReasons, IReadOnlyList<string> StaleExpectations);
 
     private const string RequiresKind = "REQUIRES";
 

@@ -1587,9 +1587,6 @@
   "content-security-policy/meta/sandbox-iframe.html": {
     "total": 1
   },
-  "content-security-policy/navigation/javascript-url-navigation-evaluated-to-string-inherits-csp.html": {
-    "total": 1
-  },
   "content-security-policy/navigation/javascript-url-navigation-to-other-win-evaluated-to-string-inherits-csp.html": {
     "total": 1
   },

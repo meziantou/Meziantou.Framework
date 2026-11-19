@@ -762,9 +762,6 @@
   "xhr/progressevent-constructor.any.js#sharedworker": {
     "total": 10
   },
-  "xhr/progressevent-constructor.html": {
-    "total": 10
-  },
   "xhr/progressevent-interface.html": {
     "total": 7
   },

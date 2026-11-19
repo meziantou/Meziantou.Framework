@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 364 | 409 | 1 | 89% |
+| [Stable](#stable-tests) | 363 | 408 | 1 | 89% |
 | [Tentative](#tentative-tests) | 47 | 78 | 1 | 61% |
 | [Reftests](#reftests) | 10 | 11 | 0 | 91% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **425** | **502** | **2** | **85%** |
+| **All** | **424** | **501** | **2** | **85%** |
 
 ## Failure reasons
 
@@ -404,7 +404,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`metadata/unload.https.sub.html`](https://wpt.fyi/results/fetch/metadata/unload.https.sub.html) | Pass | 5 / 5 |  |  |
 | [`metadata/window-open.https.sub.html`](https://wpt.fyi/results/fetch/metadata/window-open.https.sub.html) | Pass | 45 / 45 |  |  |
 | [`metadata/worker.https.sub.html`](https://wpt.fyi/results/fetch/metadata/worker.https.sub.html) | Pass | 5 / 5 |  |  |
-| [`metadata/zz-debug.https.sub.html`](https://wpt.fyi/results/fetch/metadata/zz-debug.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`nosniff/image.html`](https://wpt.fyi/results/fetch/nosniff/image.html) | Pass | 11 / 11 |  |  |
 | [`nosniff/importscripts.html`](https://wpt.fyi/results/fetch/nosniff/importscripts.html) | Pass | 1 / 1 |  |  |
 | [`nosniff/parsing-nosniff.window.js`](https://wpt.fyi/results/fetch/nosniff/parsing-nosniff.window.js) | Pass | 16 / 16 |  |  |

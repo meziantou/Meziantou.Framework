@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of secure-contexts, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 12 | 12 | 0 | 100% |
+| [Stable](#stable-tests) | 10 | 10 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **14** | **14** | **0** | **100%** |
+| **All** | **12** | **12** | **0** | **100%** |
 
 ## Stable tests
 
@@ -29,8 +29,6 @@ description: "The results of the web-platform-tests of secure-contexts, and why 
 | [`nested-data-url-iframe.html`](https://wpt.fyi/results/secure-contexts/nested-data-url-iframe.html) | Pass | 6 / 6 |  |  |
 | [`nested-data-url-iframe.https.html`](https://wpt.fyi/results/secure-contexts/nested-data-url-iframe.https.html) | Pass | 6 / 6 |  |  |
 | [`sandboxed-iframe-child.https.html`](https://wpt.fyi/results/secure-contexts/sandboxed-iframe-child.https.html) | Pass | 1 / 1 |  |  |
-| [`shared-worker-insecure-first.https.html`](https://wpt.fyi/results/secure-contexts/shared-worker-insecure-first.https.html) | Pass | 4 / 4 |  |  |
-| [`shared-worker-secure-first.https.html`](https://wpt.fyi/results/secure-contexts/shared-worker-secure-first.https.html) | Pass | 4 / 4 |  |  |
 
 ## Tentative tests
 

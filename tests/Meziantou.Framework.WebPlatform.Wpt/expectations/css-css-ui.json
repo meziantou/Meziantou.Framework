@@ -264,9 +264,6 @@
   "css/css-ui/caret-color-block-shape-text-color-003.html": {
     "reftest": "PASS"
   },
-  "css/css-ui/caret-color-block-shape-text-color-004.html": {
-    "reftest": "FAIL"
-  },
   "css/css-ui/caret-color-block-shape-text-color-005.html": {
     "reftest": "PASS"
   },
@@ -2783,12 +2780,6 @@
   },
   "css/css-ui/inheritance.html": {
     "total": 28
-  },
-  "css/css-ui/input-security-computed.html": {
-    "total": 4
-  },
-  "css/css-ui/input-security-parsing.html": {
-    "total": 10
   },
   "css/css-ui/interactivity-inert-all.html": {
     "total": 1

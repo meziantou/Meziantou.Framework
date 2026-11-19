@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of css/css-display, and why 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 38 | 38 | 0 | 100% |
-| [Tentative](#tentative-tests) | 10 | 10 | 0 | 100% |
+| [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | [Reftests](#reftests) | 170 | 223 | 0 | 76% |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **221** | **274** | **0** | **81%** |
+| **All** | **215** | **268** | **0** | **80%** |
 
 ## Failure reasons
 
@@ -72,12 +72,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/tentative/display-valid.html`](https://wpt.fyi/results/css/css-display/parsing/tentative/display-valid.html) | Pass | 6 / 6 |  |  |
 | [`reading-flow/reading-flow-grid-lanes-computed.tentative.html`](https://wpt.fyi/results/css/css-display/reading-flow/reading-flow-grid-lanes-computed.tentative.html) | Pass | 3 / 3 |  |  |
 | [`reading-flow/reading-flow-grid-lanes-valid.tentative.html`](https://wpt.fyi/results/css/css-display/reading-flow/reading-flow-grid-lanes-valid.tentative.html) | Pass | 3 / 3 |  |  |
-| [`reading-flow/tentative/reading-flow-computed.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-flow-computed.html) | Pass | 7 / 7 |  |  |
-| [`reading-flow/tentative/reading-flow-invalid.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-flow-invalid.html) | Pass | 9 / 9 |  |  |
-| [`reading-flow/tentative/reading-flow-valid.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-flow-valid.html) | Pass | 7 / 7 |  |  |
-| [`reading-flow/tentative/reading-order-computed.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-order-computed.html) | Pass | 4 / 4 |  |  |
-| [`reading-flow/tentative/reading-order-invalid.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-order-invalid.html) | Pass | 9 / 9 |  |  |
-| [`reading-flow/tentative/reading-order-valid.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-order-valid.html) | Pass | 4 / 4 |  |  |
 
 ## Reftests
 

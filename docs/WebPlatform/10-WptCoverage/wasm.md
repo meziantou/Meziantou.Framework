@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of wasm, and why the tests t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 334 | 342 | 0 | 98% |
+| [Stable](#stable-tests) | 334 | 340 | 0 | 98% |
 | [Tentative](#tentative-tests) | 20 | 70 | 0 | 29% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **354** | **412** | **0** | **86%** |
+| **All** | **354** | **410** | **0** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 54
+- **NOT IMPLEMENTED**: 52
 
 ## Stable tests
 
@@ -335,14 +335,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`serialization/arraybuffer/transfer.window.js`](https://wpt.fyi/results/wasm/serialization/arraybuffer/transfer.window.js) | Pass | 2 / 2 |  |  |
 | [`serialization/module/broadcastchannel-success-and-failure.html`](https://wpt.fyi/results/wasm/serialization/module/broadcastchannel-success-and-failure.html) | Pass | 1 / 1 |  |  |
 | [`serialization/module/broadcastchannel-success.html`](https://wpt.fyi/results/wasm/serialization/module/broadcastchannel-success.html) | Pass | 1 / 1 |  |  |
-| [`serialization/module/cross-origin-module-sharing-fails.html`](https://wpt.fyi/results/wasm/serialization/module/cross-origin-module-sharing-fails.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | origin-keyed agent clusters by default: the same-site cross-origin iframe is in the agent cluster of the page (the agent clusters are keyed by site), so it receives the module |
 | [`serialization/module/identity-not-preserved.html`](https://wpt.fyi/results/wasm/serialization/module/identity-not-preserved.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/nested-worker-success.any.js`](https://wpt.fyi/results/wasm/serialization/module/nested-worker-success.any.js) | Pass | 2 / 2 |  |  |
 | [`serialization/module/no-transferring.html`](https://wpt.fyi/results/wasm/serialization/module/no-transferring.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/serialization-via-history.html`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-history.html) | Pass | 4 / 4 |  |  |
 | [`serialization/module/serialization-via-idb.any.js`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-idb.any.js) | Pass | 4 / 4 |  |  |
 | [`serialization/module/serialization-via-notifications-api.any.js`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-notifications-api.any.js) | Pass | 4 / 4 |  |  |
-| [`serialization/module/share-module-cross-origin-fails.sub.html`](https://wpt.fyi/results/wasm/serialization/module/share-module-cross-origin-fails.sub.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | origin-keyed agent clusters by default: the same-site cross-origin iframe is in the agent cluster of the page (the agent clusters are keyed by site), so it receives the module |
 | [`serialization/module/window-cross-origin-isolated.https.sub.html`](https://wpt.fyi/results/wasm/serialization/module/window-cross-origin-isolated.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/window-cross-site-failure.html`](https://wpt.fyi/results/wasm/serialization/module/window-cross-site-failure.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/window-domain-success.sub.html`](https://wpt.fyi/results/wasm/serialization/module/window-domain-success.sub.html) | Pass | 1 / 1 |  |  |

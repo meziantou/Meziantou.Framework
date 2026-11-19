@@ -327,6 +327,11 @@ async Task<bool> GenerateWptCoverageAsync(bool check)
         Console.WriteLine($"warning: the reason of '{pattern}' (wpt-reasons.json) matches no test that does not pass");
     }
 
+    foreach (var path in result.StaleExpectations)
+    {
+        Console.Error.WriteLine($"error: the expectations of '{path}' (tests/Meziantou.Framework.WebPlatform.Wpt/expectations) name a file that is not in the WPT manifest of the revision (moved or removed upstream): remove them");
+    }
+
     foreach (var path in result.MissingReasons)
     {
         Console.Error.WriteLine($"error: '{path}' does not pass and has no reason in wpt-reasons.json");
@@ -356,7 +361,7 @@ async Task<bool> GenerateWptCoverageAsync(bool check)
         }
 
         Console.WriteLine($"{WptCoverage.OutputDirectory} is up to date");
-        return result.MissingReasons.Count == 0 && result.InvalidReasons.Count == 0;
+        return result.MissingReasons.Count == 0 && result.InvalidReasons.Count == 0 && result.StaleExpectations.Count == 0;
     }
 
     foreach (var page in existingPages.Where(p => !result.Pages.ContainsKey(p)))

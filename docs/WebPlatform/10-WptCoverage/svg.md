@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 734 | 752 | 0 | 98% |
-| [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
+| [Stable](#stable-tests) | 733 | 751 | 0 | 98% |
+| [Tentative](#tentative-tests) | 43 | 44 | 0 | 98% |
 | [Reftests](#reftests) | 625 | 693 | 2 | 90% |
 | [Crash tests](#crash-tests) | 55 | 55 | 0 | 100% |
-| **All** | **1,460** | **1,547** | **2** | **94%** |
+| **All** | **1,456** | **1,543** | **2** | **94%** |
 
 ## Failure reasons
 
@@ -616,7 +616,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`struct/scripted/use-composedpath-closed-shadow-tree.html`](https://wpt.fyi/results/svg/struct/scripted/use-composedpath-closed-shadow-tree.html) | Pass | 2 / 2 |  |  |
 | [`struct/scripted/use-external-reload-in-iframe.html`](https://wpt.fyi/results/svg/struct/scripted/use-external-reload-in-iframe.html) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/use-iframe-onload.html`](https://wpt.fyi/results/svg/struct/scripted/use-iframe-onload.html) | Pass | 1 / 1 |  |  |
-| [`struct/scripted/use-inline-event-handlers.html`](https://wpt.fyi/results/svg/struct/scripted/use-inline-event-handlers.html) | Pass | 2 / 2 |  |  |
 | [`struct/scripted/use-script-not-executed.html`](https://wpt.fyi/results/svg/struct/scripted/use-script-not-executed.html) | Pass | 6 / 6 |  |  |
 | [`struct/systemLanguage-matching.html`](https://wpt.fyi/results/svg/struct/systemLanguage-matching.html) | Pass | 14 / 14 |  |  |
 | [`struct/systemLanguage-parsing.html`](https://wpt.fyi/results/svg/struct/systemLanguage-parsing.html) | Pass | 13 / 13 |  |  |
@@ -830,9 +829,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text/scripted/getcharnumatposition-slr.tentative.html`](https://wpt.fyi/results/svg/text/scripted/getcharnumatposition-slr.tentative.html) | Pass | 1 / 1 |  |  |
 | [`text/scripted/textpath-path-attr-smil.tentative.html`](https://wpt.fyi/results/svg/text/scripted/textpath-path-attr-smil.tentative.html) | Pass | 4 / 4 |  |  |
 | [`text/scripted/textpath-textlength-text-anchor-001.tentative.svg`](https://wpt.fyi/results/svg/text/scripted/textpath-textlength-text-anchor-001.tentative.svg) | Pass | 1 / 1 |  |  |
-| [`types/scripted/SVGList-getItem-identity.tentative.html`](https://wpt.fyi/results/svg/types/scripted/SVGList-getItem-identity.tentative.html) | Pass | 18 / 18 |  |  |
-| [`types/scripted/SVGList-identity-across-attribute-change.tentative.html`](https://wpt.fyi/results/svg/types/scripted/SVGList-identity-across-attribute-change.tentative.html) | Pass | 17 / 17 |  |  |
-| [`types/scripted/SVGList-mutator-return-identity.tentative.html`](https://wpt.fyi/results/svg/types/scripted/SVGList-mutator-return-identity.tentative.html) | Pass | 18 / 18 |  |  |
 
 ## Reftests
 

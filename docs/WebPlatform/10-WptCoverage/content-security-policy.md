@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 869 | 901 | 0 | 96% |
+| [Stable](#stable-tests) | 868 | 900 | 0 | 96% |
 | [Tentative](#tentative-tests) | 8 | 15 | 0 | 53% |
 | [Reftests](#reftests) | 8 | 8 | 0 | 100% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **885** | **924** | **0** | **96%** |
+| **All** | **884** | **923** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -522,7 +522,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`meta/meta-modified.html`](https://wpt.fyi/results/content-security-policy/meta/meta-modified.html) | Pass | 1 / 1 |  |  |
 | [`meta/meta-outside-head.sub.html`](https://wpt.fyi/results/content-security-policy/meta/meta-outside-head.sub.html) | Pass | 1 / 1 |  |  |
 | [`meta/sandbox-iframe.html`](https://wpt.fyi/results/content-security-policy/meta/sandbox-iframe.html) | Pass | 1 / 1 |  |  |
-| [`navigation/javascript-url-navigation-evaluated-to-string-inherits-csp.html`](https://wpt.fyi/results/content-security-policy/navigation/javascript-url-navigation-evaluated-to-string-inherits-csp.html) | Pass | 1 / 1 |  |  |
 | [`navigation/javascript-url-navigation-to-other-win-evaluated-to-string-inherits-csp.html`](https://wpt.fyi/results/content-security-policy/navigation/javascript-url-navigation-to-other-win-evaluated-to-string-inherits-csp.html) | Pass | 1 / 1 |  |  |
 | [`navigation/javascript-url-navigation-to-popup-evaluated-to-string-inherits-csp.html`](https://wpt.fyi/results/content-security-policy/navigation/javascript-url-navigation-to-popup-evaluated-to-string-inherits-csp.html) | Pass | 1 / 1 |  |  |
 | [`navigation/javascript-url-navigation-to-self-evaluated-to-string-inherits-csp.html`](https://wpt.fyi/results/content-security-policy/navigation/javascript-url-navigation-to-self-evaluated-to-string-inherits-csp.html) | Pass | 1 / 1 |  |  |

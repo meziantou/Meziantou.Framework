@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 94 | 101 | 0 | 93% |
+| [Stable](#stable-tests) | 92 | 99 | 0 | 93% |
 | [Tentative](#tentative-tests) | 12 | 16 | 0 | 75% |
-| [Reftests](#reftests) | 960 | 964 | 0 | 99.5% |
+| [Reftests](#reftests) | 960 | 963 | 0 | 99.6% |
 | [Crash tests](#crash-tests) | 6 | 6 | 0 | 100% |
-| **All** | **1,072** | **1,087** | **0** | **99%** |
+| **All** | **1,070** | **1,084** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 4
+- **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 7
   - `layout`: 7
@@ -65,8 +65,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cursor-calc-hotspot.html`](https://wpt.fyi/results/css/css-ui/cursor-calc-hotspot.html) | Pass | 4 / 4 |  |  |
 | [`inert-attribute-overriding.html`](https://wpt.fyi/results/css/css-ui/inert-attribute-overriding.html) | Pass | 4 / 4 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-ui/inheritance.html) | Pass | 28 / 28 |  |  |
-| [`input-security-computed.html`](https://wpt.fyi/results/css/css-ui/input-security-computed.html) | Pass | 4 / 4 |  |  |
-| [`input-security-parsing.html`](https://wpt.fyi/results/css/css-ui/input-security-parsing.html) | Pass | 10 / 10 |  |  |
 | [`interactivity-inert-all.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-all.html) | Pass | 1 / 1 |  |  |
 | [`interactivity-inert-animated.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-animated.html) | Pass | 1 / 1 |  |  |
 | [`interactivity-inert-click.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-click.html) | Pass | 2 / 2 |  |  |
@@ -208,7 +206,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`caret-color-block-shape-text-color-001.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-001.html) | Pass | 1 / 1 |  |  |
 | [`caret-color-block-shape-text-color-002.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-002.html) | Pass | 1 / 1 |  |  |
 | [`caret-color-block-shape-text-color-003.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-003.html) | Pass | 1 / 1 |  |  |
-| [`caret-color-block-shape-text-color-004.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-004.html) | Fail | 0 / 1 | TEST BUG | the test sets `caret-color: auto white`, which is invalid: the grammar is `auto \| <color> [auto \| <color>]?` (https://drafts.csswg.org/css-ui-4/#caret-color, css/css-ui/parsing/caret-color-invalid.html), so the first value of a pair cannot be `auto` |
 | [`caret-color-block-shape-text-color-005.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-005.html) | Pass | 1 / 1 |  |  |
 | [`caret-color-underscore-shape-text-color.html`](https://wpt.fyi/results/css/css-ui/caret-color-underscore-shape-text-color.html) | Pass | 1 / 1 |  |  |
 | [`caret-eol-001.html`](https://wpt.fyi/results/css/css-ui/caret-eol-001.html) | Pass | 1 / 1 |  |  |

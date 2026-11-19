@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 2,123 | 2,214 | 31 | 97% |
-| [Tentative](#tentative-tests) | 65 | 226 | 32 | 34% |
+| [Tentative](#tentative-tests) | 62 | 223 | 32 | 32% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,659** | **3,017** | **132** | **92%** |
+| **All** | **2,656** | **3,014** | **132** | **92%** |
 
 ## Failure reasons
 
@@ -2304,7 +2304,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`embedded-content/the-iframe-element/iframe_sandbox_navigation_download_block_downloads.sub.tentative.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-iframe-element/iframe_sandbox_navigation_download_block_downloads.sub.tentative.html) | Pass | 2 / 2 |  |  |
 | [`embedded-content/the-iframe-element/iframe_sandbox_window_open_download_allow_downloads.tentative.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-iframe-element/iframe_sandbox_window_open_download_allow_downloads.tentative.html) | Pass | 3 / 3 |  |  |
 | [`embedded-content/the-iframe-element/iframe_sandbox_window_open_download_block_downloads.tentative.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-iframe-element/iframe_sandbox_window_open_download_block_downloads.tentative.html) | Pass | 3 / 3 |  |  |
-| [`embedded-content/the-iframe-element/sandbox-top-close.tentative.sub.window.js`](https://wpt.fyi/results/html/semantics/embedded-content/the-iframe-element/sandbox-top-close.tentative.sub.window.js) | Pass | 3 / 3 |  |  |
 | [`embedded-content/the-iframe-element/sandbox-top-navigation-child-cross-origin-frame.tentative.sub.window.js`](https://wpt.fyi/results/html/semantics/embedded-content/the-iframe-element/sandbox-top-navigation-child-cross-origin-frame.tentative.sub.window.js) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-iframe-element/sandbox-top-navigation-child-delivered-both.tentative.sub.window.js`](https://wpt.fyi/results/html/semantics/embedded-content/the-iframe-element/sandbox-top-navigation-child-delivered-both.tentative.sub.window.js) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-iframe-element/sandbox-top-navigation-child-delivered.tentative.sub.window.js`](https://wpt.fyi/results/html/semantics/embedded-content/the-iframe-element/sandbox-top-navigation-child-delivered.tentative.sub.window.js) | Pass | 1 / 1 |  |  |
@@ -2344,8 +2343,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/the-select-element/customizable-select/select-picker-popover-open-invalid.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-picker-popover-open-invalid.tentative.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/select-type-to-search.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-type-to-search.tentative.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-cloned-option-is-not-an-option.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-cloned-option-is-not-an-option.tentative.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.tentative.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.tentative.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontentelement-attr.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontentelement-attr.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `selectedcontentelement` attribute of `<select>` |
 | [`forms/the-select-element/customizable-select/switch-picker-appearance-timing.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/switch-picker-appearance-timing.tentative.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/filterable-select/filterable-select-filtered-pseudo.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/filterable-select/filterable-select-filtered-pseudo.tentative.html) | Fail | 4 / 7 | NOT IMPLEMENTED | the filterable select (a text `<input>` that filters the options of a `<select>`): the `:filtered` and `:active-option` pseudo-classes (SyntaxError) and the `beforefilter` event |

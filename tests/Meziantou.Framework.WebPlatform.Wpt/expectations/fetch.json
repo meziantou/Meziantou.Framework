@@ -2907,9 +2907,6 @@
   "fetch/metadata/worker.https.sub.html": {
     "total": 5
   },
-  "fetch/metadata/zz-debug.https.sub.html": {
-    "total": 1
-  },
   "fetch/nosniff/image.html": {
     "total": 11
   },

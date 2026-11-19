@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 3,139 | 3,170 | 0 | 99% |
 | [Tentative](#tentative-tests) | 206 | 301 | 0 | 68% |
-| [Reftests](#reftests) | 555 | 585 | 0 | 95% |
+| [Reftests](#reftests) | 554 | 584 | 0 | 95% |
 | [Crash tests](#crash-tests) | 18 | 18 | 0 | 100% |
-| **All** | **3,918** | **4,074** | **0** | **96%** |
+| **All** | **3,917** | **4,073** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -3631,7 +3631,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/manual/draw-element-image/changes-in-paint-event.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/changes-in-paint-event.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/changing-size-in-paint-event.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/changing-size-in-paint-event.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/child-overflow.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/child-overflow.tentative.html) | Pass | 1 / 1 |  |  |
-| [`element/manual/draw-element-image/compositing-descendant-filter.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/compositing-descendant-filter.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/compositing-op-basic.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/compositing-op-basic.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/compositing-op-non-opaque-element.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/compositing-op-non-opaque-element.tentative.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/draw-element-image/content-not-culled.tentative.html`](https://wpt.fyi/results/html/canvas/element/manual/draw-element-image/content-not-culled.tentative.html) | Pass | 1 / 1 |  |  |

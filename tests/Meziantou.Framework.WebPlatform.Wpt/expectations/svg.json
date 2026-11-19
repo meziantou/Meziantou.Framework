@@ -3562,9 +3562,6 @@
   "svg/struct/scripted/use-iframe-onload.html": {
     "total": 1
   },
-  "svg/struct/scripted/use-inline-event-handlers.html": {
-    "total": 2
-  },
   "svg/struct/scripted/use-inline-event-handlers.tentative.html": {
     "total": 2
   },
@@ -4678,19 +4675,10 @@
   "svg/types/scripted/SVGList-getItem-identity.html": {
     "total": 18
   },
-  "svg/types/scripted/SVGList-getItem-identity.tentative.html": {
-    "total": 18
-  },
   "svg/types/scripted/SVGList-identity-across-attribute-change.html": {
     "total": 17
   },
-  "svg/types/scripted/SVGList-identity-across-attribute-change.tentative.html": {
-    "total": 17
-  },
   "svg/types/scripted/SVGList-mutator-return-identity.html": {
-    "total": 18
-  },
-  "svg/types/scripted/SVGList-mutator-return-identity.tentative.html": {
     "total": 18
   },
   "svg/types/scripted/SVGList-parse-invalid-clears-items.html": {

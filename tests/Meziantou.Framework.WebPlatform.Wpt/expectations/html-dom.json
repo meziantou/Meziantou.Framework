@@ -2076,39 +2076,12 @@
   "html/dom/idlharness.https.html?include=HTML.+": {
     "total": 3955
   },
-  "html/dom/partial-updates/tentative/chained-streaming-templates-with-custom-element.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/fragment/buffer-immutability.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/fragment/buffer-in-place.html": {
-    "total": 1,
-    "failures": {
-      "In-place template with buffer attribute buffers children and inserts them atomically at finalization": "FAIL"
-    }
-  },
-  "html/dom/partial-updates/tentative/fragment/buffer-mutation-observer.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/fragment/buffer-reflection.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/fragment/buffer-streaming-reflection.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/fragment/buffer-targeted.html": {
-    "total": 1
-  },
   "html/dom/partial-updates/tentative/fragment/empty-for-streaming.html": {
     "total": 2,
     "failures": {
       "In-place template moving and removal during streaming": "FAIL",
       "In-place template with empty for attribute is removed and its children are inserted before it": "FAIL"
     }
-  },
-  "html/dom/partial-updates/tentative/fragment/sanitize-boolean.html": {
-    "total": 1
   },
   "html/dom/partial-updates/tentative/fragment/sanitize-default.html": {
     "harness": "TIMEOUT",
@@ -2131,17 +2104,11 @@
       "The sanitize attribute only applies when src is present": "FAIL"
     }
   },
-  "html/dom/partial-updates/tentative/fragment/sanitize-template-element.html": {
-    "total": 1
-  },
   "html/dom/partial-updates/tentative/fragment/sanitize-unsafe.html": {
     "total": 3,
     "failures": {
       "template src with sanitize=\"unsafe\" inside streamHTMLUnsafe() keeps but does not run scripts": "FAIL"
     }
-  },
-  "html/dom/partial-updates/tentative/fragment/src-buffered.sub.html": {
-    "total": 1
   },
   "html/dom/partial-updates/tentative/fragment/src-cancel.html": {
     "total": 1
@@ -2176,22 +2143,10 @@
   "html/dom/partial-updates/tentative/fragment/streaming-target-marker-removed.html": {
     "total": 1
   },
-  "html/dom/partial-updates/tentative/stream-append-has-invalidation.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/stream-append-positional-pseudo-class-invalidation.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/stream-append-with-template-for.html": {
-    "total": 1
-  },
   "html/dom/partial-updates/tentative/template-for-case-sensitive-dom-inserted.html": {
     "total": 1
   },
   "html/dom/partial-updates/tentative/template-for-case-sensitive.html": {
-    "total": 1
-  },
-  "html/dom/partial-updates/tentative/template-for-empty.html": {
     "total": 1
   },
   "html/dom/reflection-embedded.html": {

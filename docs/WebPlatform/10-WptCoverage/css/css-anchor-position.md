@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of css/css-anchor-position, 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 258 | 265 | 0 | 97% |
 | [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
-| [Reftests](#reftests) | 258 | 263 | 0 | 98% |
+| [Reftests](#reftests) | 235 | 240 | 0 | 98% |
 | [Crash tests](#crash-tests) | 42 | 42 | 0 | 100% |
-| **All** | **561** | **574** | **0** | **98%** |
+| **All** | **538** | **551** | **0** | **98%** |
 
 ## Failure reasons
 
@@ -458,10 +458,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`position-area-overflow-icb-002.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-002.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-003-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-003-ltr.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-003-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-003-rtl.html) | Pass | 1 / 1 |  |  |
-| [`position-area-overflow-icb-003.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-003.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-004-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-004-ltr.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-004-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-004-rtl.html) | Pass | 1 / 1 |  |  |
-| [`position-area-overflow-icb-004.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-004.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-005-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-005-ltr.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-005-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-005-rtl.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-006-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-006-ltr.html) | Pass | 1 / 1 |  |  |
@@ -512,26 +510,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`position-visibility-anchor-visible-stacked-child.tentative.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchor-visible-stacked-child.tentative.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-anchor-visible-with-position.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchor-visible-with-position.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-anchor-visible.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchor-visible.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-after-scroll-in-document.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-after-scroll-in-document.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-after-scroll-in.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-after-scroll-in.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-after-scroll-out.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-after-scroll-out.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-both-position-fixed.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-both-position-fixed.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-chained-001.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-chained-001.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-chained-002.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-chained-002.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-chained-003.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-chained-003.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-chained-004.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-chained-004.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-change-anchor.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-change-anchor.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-change-css-visibility.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-change-css-visibility.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-clip.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-clip.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-css-visibility.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-css-visibility.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-dynamic-anchor-toggle.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-dynamic-anchor-toggle.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-in-overflow.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-in-overflow.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-inline-cb.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-inline-cb.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-non-intervening-container.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-non-intervening-container.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-position-fixed.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-position-fixed.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-stacked-child.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-stacked-child.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-stacked-child.tentative.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-stacked-child.tentative.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-anchors-visible-with-position.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-anchors-visible-with-position.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-initial.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-initial.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-no-overflow-nested.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-no-overflow-nested.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-no-overflow-scroll-002.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-no-overflow-scroll-002.html) | Pass | 1 / 1 |  |  |
@@ -540,7 +518,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`position-visibility-no-overflow-without-anchor.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-no-overflow-without-anchor.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-no-overflow.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-no-overflow.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-remove-anchor-visible.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-remove-anchor-visible.html) | Pass | 1 / 1 |  |  |
-| [`position-visibility-remove-anchors-visible.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-remove-anchors-visible.html) | Pass | 1 / 1 |  |  |
 | [`position-visibility-remove-no-overflow.html`](https://wpt.fyi/results/css/css-anchor-position/position-visibility-remove-no-overflow.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-implicit-anchor-center.html`](https://wpt.fyi/results/css/css-anchor-position/pseudo-element-implicit-anchor-center.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-implicit-anchor.html`](https://wpt.fyi/results/css/css-anchor-position/pseudo-element-implicit-anchor.html) | Pass | 1 / 1 |  |  |

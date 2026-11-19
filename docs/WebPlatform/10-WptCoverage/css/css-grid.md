@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of css/css-grid, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 734 | 739 | 0 | 99% |
-| [Tentative](#tentative-tests) | 32 | 36 | 0 | 89% |
-| [Reftests](#reftests) | 1,757 | 1,789 | 0 | 98% |
+| [Stable](#stable-tests) | 733 | 738 | 0 | 99% |
+| [Tentative](#tentative-tests) | 29 | 33 | 0 | 88% |
+| [Reftests](#reftests) | 1,729 | 1,761 | 0 | 98% |
 | [Crash tests](#crash-tests) | 43 | 43 | 0 | 100% |
-| **All** | **2,566** | **2,607** | **0** | **98%** |
+| **All** | **2,534** | **2,575** | **0** | **98%** |
 
 ## Failure reasons
 
@@ -488,7 +488,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-items/grid-minimum-size-grid-items-024.html`](https://wpt.fyi/results/css/css-grid/grid-items/grid-minimum-size-grid-items-024.html) | Pass | 45 / 45 |  |  |
 | [`grid-items/grid-minimum-size-grid-items-025.html`](https://wpt.fyi/results/css/css-grid/grid-items/grid-minimum-size-grid-items-025.html) | Pass | 60 / 60 |  |  |
 | [`grid-lanes/animation/fit-tolerance-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/fit-tolerance-interpolation.html) | Pass | 240 / 240 |  |  |
-| [`grid-lanes/animation/flow-tolerance-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/flow-tolerance-interpolation.html) | Pass | 240 / 240 |  |  |
 | [`grid-lanes/animation/grid-template-columns-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/grid-template-columns-interpolation.html) | Pass | 726 / 726 |  |  |
 | [`grid-lanes/animation/grid-template-rows-interpolation.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/animation/grid-template-rows-interpolation.html) | Pass | 726 / 726 |  |  |
 | [`grid-lanes/grid-lanes-container-minimum-size-single-axis-scroll-container.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/grid-lanes-container-minimum-size-single-axis-scroll-container.html) | Pass | 6 / 6 |  |  |
@@ -783,9 +782,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/tentative/parsing/fit-tolerance-computed.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/fit-tolerance-computed.html) | Pass | 7 / 7 |  |  |
 | [`grid-lanes/tentative/parsing/fit-tolerance-invalid.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/fit-tolerance-invalid.html) | Pass | 12 / 12 |  |  |
 | [`grid-lanes/tentative/parsing/fit-tolerance-valid.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/fit-tolerance-valid.html) | Pass | 8 / 8 |  |  |
-| [`grid-lanes/tentative/parsing/flow-tolerance-computed.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/flow-tolerance-computed.html) | Pass | 7 / 7 |  |  |
-| [`grid-lanes/tentative/parsing/flow-tolerance-invalid.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/flow-tolerance-invalid.html) | Pass | 12 / 12 |  |  |
-| [`grid-lanes/tentative/parsing/flow-tolerance-valid.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/flow-tolerance-valid.html) | Pass | 8 / 8 |  |  |
 | [`grid-lanes/tentative/parsing/grid-lanes-direction-computed.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/grid-lanes-direction-computed.html) | Pass | 11 / 11 |  |  |
 | [`grid-lanes/tentative/parsing/grid-lanes-direction-invalid.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/grid-lanes-direction-invalid.html) | Pass | 13 / 13 |  |  |
 | [`grid-lanes/tentative/parsing/grid-lanes-direction-valid.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/tentative/parsing/grid-lanes-direction-valid.html) | Pass | 11 / 11 |  |  |
@@ -1722,9 +1718,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-003.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-003.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-003.html) | Pass | 1 / 1 |  |  |
@@ -1739,12 +1732,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-013.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-013.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-definite-size-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-definite-size-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-fit-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-fit-tolerance-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-flow-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-flow-tolerance-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-indefinite-size-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-indefinite-size-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-flow-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-flow-tolerance-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-flow-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-flow-tolerance-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-003.html) | Pass | 1 / 1 |  |  |
@@ -1752,9 +1742,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-003.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-003.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-003.html) | Pass | 1 / 1 |  |  |
@@ -1765,8 +1752,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/fit-tolerance/column-fit-tolerance-infinite.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/fit-tolerance/column-fit-tolerance-infinite.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/fit-tolerance/column-initial-fit-tolerance.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/fit-tolerance/column-initial-fit-tolerance.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/fit-tolerance/fit-tolerance-column-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-column-001.html) | Pass | 1 / 1 |  |  |
@@ -1785,23 +1770,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/item-placement/fit-tolerance/row-fit-tolerance-infinite.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/fit-tolerance/row-fit-tolerance-infinite.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/fit-tolerance/row-initial-fit-tolerance.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/fit-tolerance/row-initial-fit-tolerance.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-flow-tolerance-infinite.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/column-initial-flow-tolerance.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/column-initial-flow-tolerance.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-003.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-004.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-column-004.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-dynamic-update.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-dynamic-update.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-column-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-column-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-intrinsic-column-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-intrinsic-column-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-intrinsic-row-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-intrinsic-row-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-row-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-percentage-row-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-002.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-003.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-004.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/flow-tolerance-row-004.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/row-flow-tolerance-infinite.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/row-flow-tolerance-infinite.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/item-placement/flow-tolerance/row-initial-flow-tolerance.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/flow-tolerance/row-initial-flow-tolerance.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/grid-lanes-item-placement-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/grid-lanes-item-placement-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/grid-lanes-item-placement-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/grid-lanes-item-placement-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/grid-lanes-item-placement-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/grid-lanes-item-placement-003.html) | Pass | 1 / 1 |  |  |

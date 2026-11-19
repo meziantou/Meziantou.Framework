@@ -2218,6 +2218,40 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task SecurePaymentConfirmation_Show_DetailsTaskCompletedLater()
+    {
+        // The event loop is not idle while the details of show() are awaited: RunUntilIdleAsync() returns once the payment is done
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = transactionDialog,
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        var window = document.DefaultView!;
+        var data = ((Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngine)_engine).Evaluate(window, "data([credential.rawId])");
+        var request = new PaymentRequest(
+            window,
+            [new PaymentMethodData { SupportedMethods = "secure-payment-confirmation", Data = data.AsObject() }],
+            new PaymentDetailsInit { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "USD", Value = "1.00" } } });
+        Activate(document);
+        var details = new TaskCompletionSource<PaymentDetailsUpdate>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var response = request.Show(details.Task);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(100);
+            details.SetResult(new PaymentDetailsUpdate { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "USD", Value = "2.50" } } });
+        });
+
+        await RunAsync(document);
+        Assert.True(response.IsCompletedSuccessfully);
+        Assert.Equal("secure-payment-confirmation", (await response).MethodName);
+        Assert.Equal("2.50", transactionDialog.LastPrompt!.Total.Value);
+    }
+
+    [Fact]
     public async Task SecurePaymentConfirmation_Retry_IsNotSupported()
     {
         // The transaction dialog cannot be shown again: retry() is rejected without changing the state of the request, so the

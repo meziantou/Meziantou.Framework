@@ -298,6 +298,10 @@ public sealed partial class PaymentRequest : EventTarget
                             return;
                         }
 
+                        // The event loop is not idle while the details are awaited (the promise can be a .NET task completed
+                        // outside of the event loop): the operation ends once the dialog is shown or the request is closed
+                        var eventLoop = _window.EventLoop;
+                        eventLoop.BeginOperation();
                         var updated = new TaskCompletionSource<PaymentSheetDetails>();
                         (_updateWaiters ??= []).Add(updated);
                         UpdateDetails(detailsPromise, pmi: null);
@@ -308,6 +312,8 @@ public sealed partial class PaymentRequest : EventTarget
                                 {
                                     ShowTransactionDialog(token);
                                 }
+
+                                eventLoop.EndOperation();
                             },
                             CancellationToken.None,
                             TaskContinuationOptions.ExecuteSynchronously,

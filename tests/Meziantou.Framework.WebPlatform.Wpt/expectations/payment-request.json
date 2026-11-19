@@ -1,0 +1,377 @@
+{
+  "payment-request/PaymentMethodChangeEvent/methodDetails-attribute.https.html": {
+    "total": 2,
+    "failures": {
+      "Must have a methodDetails IDL attribute, which is initialized with to the methodName dictionary value": "FAIL",
+      "The methodDetails member defaults to null": "FAIL"
+    }
+  },
+  "payment-request/PaymentMethodChangeEvent/methodName-attribute.https.html": {
+    "total": 2,
+    "failures": {
+      "Must have a methodName IDL attribute, which is initialized with to the methodName dictionary value": "FAIL",
+      "When no dictionary is passed, the methodName member defaults to the empty string": "FAIL"
+    }
+  },
+  "payment-request/PaymentRequestUpdateEvent/constructor.http.html": {
+    "total": 1
+  },
+  "payment-request/PaymentRequestUpdateEvent/constructor.https.html": {
+    "total": 3,
+    "failures": {
+      "PaymentRequestUpdateEvent can be constructed in secure-context": "FAIL",
+      "PaymentRequestUpdateEvent can be constructed with an EventInitDict, even if not trusted": "FAIL",
+      "PaymentRequestUpdateEvent can be dispatched, even if not trusted": "FAIL"
+    }
+  },
+  "payment-request/PaymentRequestUpdateEvent/updatewith-method.https.html": {
+    "total": 3,
+    "failures": {
+      "Calling .updateWith() with a dispatched, untrusted event, throws \"InvalidStateError\"": "FAIL",
+      "Calling .updateWith() with an undispatched untrusted event throws \"InvalidStateError\"": "FAIL",
+      "Let target be the request which is dispatching the event.": "FAIL"
+    }
+  },
+  "payment-request/constructor_convert_method_data.https.html": {
+    "total": 3,
+    "failures": {
+      "Converts PaymentMethodData's data to mandated IDL type during PaymentRequest construction.": "FAIL",
+      "Smoke test.": "FAIL",
+      "Tries to convert data member during Payment Request construction, irrespective of PMI.": "FAIL"
+    }
+  },
+  "payment-request/delegate-request.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Payment-request from a subframe fails with delegation when the top frame has no user activation": "NOTRUN",
+      "Payment-request from a subframe fails without delegation when the top frame has no user activation": "TIMEOUT",
+      "Payment-request from a subframe fails without delegation when the top frame has user activation": "NOTRUN",
+      "Payment-request from a subframe succeeds with delegation when the top frame has user activation": "NOTRUN"
+    }
+  },
+  "payment-request/historical.https.html": {
+    "total": 9,
+    "failures": {
+      "careOf in ContactAddress": "FAIL",
+      "languageCode in ContactAddress": "FAIL",
+      "paymentRequestID in PaymentRequest": "FAIL",
+      "paymentRequestID in PaymentResponse": "FAIL",
+      "paymentRequestId in PaymentRequest": "FAIL",
+      "paymentRequestId in PaymentResponse": "FAIL",
+      "supportedMethods must not support sequence<DOMString>": "FAIL",
+      "totalAmount in PaymentResponse": "FAIL"
+    }
+  },
+  "payment-request/idlharness.https.window.js": {
+    "total": 74,
+    "failures": {
+      "PaymentMethodChangeEvent interface object length": "FAIL",
+      "PaymentMethodChangeEvent interface object name": "FAIL",
+      "PaymentMethodChangeEvent interface: attribute methodDetails": "FAIL",
+      "PaymentMethodChangeEvent interface: attribute methodName": "FAIL",
+      "PaymentMethodChangeEvent interface: existence and properties of interface object": "FAIL",
+      "PaymentMethodChangeEvent interface: existence and properties of interface prototype object": "FAIL",
+      "PaymentMethodChangeEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PaymentMethodChangeEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PaymentMethodChangeEvent interface: new PaymentMethodChangeEvent(\"paymentmethodchange\") must inherit property \"methodDetails\" with the proper type": "FAIL",
+      "PaymentMethodChangeEvent interface: new PaymentMethodChangeEvent(\"paymentmethodchange\") must inherit property \"methodName\" with the proper type": "FAIL",
+      "PaymentMethodChangeEvent must be primary interface of new PaymentMethodChangeEvent(\"paymentmethodchange\")": "FAIL",
+      "PaymentRequest interface object length": "FAIL",
+      "PaymentRequest interface object name": "FAIL",
+      "PaymentRequest interface: attribute id": "FAIL",
+      "PaymentRequest interface: attribute onpaymentmethodchange": "FAIL",
+      "PaymentRequest interface: attribute onshippingaddresschange": "FAIL",
+      "PaymentRequest interface: attribute onshippingoptionchange": "FAIL",
+      "PaymentRequest interface: attribute shippingAddress": "FAIL",
+      "PaymentRequest interface: attribute shippingOption": "FAIL",
+      "PaymentRequest interface: attribute shippingType": "FAIL",
+      "PaymentRequest interface: calling show(optional Promise<PaymentDetailsUpdate>) on paymentRequest with too few arguments must throw TypeError": "FAIL",
+      "PaymentRequest interface: existence and properties of interface object": "FAIL",
+      "PaymentRequest interface: existence and properties of interface prototype object": "FAIL",
+      "PaymentRequest interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PaymentRequest interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PaymentRequest interface: operation abort()": "FAIL",
+      "PaymentRequest interface: operation canMakePayment()": "FAIL",
+      "PaymentRequest interface: operation show(optional Promise<PaymentDetailsUpdate>)": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"abort()\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"canMakePayment()\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"id\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"onpaymentmethodchange\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"onshippingaddresschange\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"onshippingoptionchange\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"shippingAddress\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"shippingOption\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"shippingType\" with the proper type": "FAIL",
+      "PaymentRequest interface: paymentRequest must inherit property \"show(optional Promise<PaymentDetailsUpdate>)\" with the proper type": "FAIL",
+      "PaymentRequest must be primary interface of paymentRequest": "FAIL",
+      "PaymentRequestUpdateEvent interface object length": "FAIL",
+      "PaymentRequestUpdateEvent interface object name": "FAIL",
+      "PaymentRequestUpdateEvent interface: calling updateWith(Promise<PaymentDetailsUpdate>) on new PaymentMethodChangeEvent(\"paymentmethodchange\") with too few arguments must throw TypeError": "FAIL",
+      "PaymentRequestUpdateEvent interface: calling updateWith(Promise<PaymentDetailsUpdate>) on new PaymentRequestUpdateEvent(\"paymentrequestupdate\") with too few arguments must throw TypeError": "FAIL",
+      "PaymentRequestUpdateEvent interface: existence and properties of interface object": "FAIL",
+      "PaymentRequestUpdateEvent interface: existence and properties of interface prototype object": "FAIL",
+      "PaymentRequestUpdateEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PaymentRequestUpdateEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PaymentRequestUpdateEvent interface: new PaymentMethodChangeEvent(\"paymentmethodchange\") must inherit property \"updateWith(Promise<PaymentDetailsUpdate>)\" with the proper type": "FAIL",
+      "PaymentRequestUpdateEvent interface: new PaymentRequestUpdateEvent(\"paymentrequestupdate\") must inherit property \"updateWith(Promise<PaymentDetailsUpdate>)\" with the proper type": "FAIL",
+      "PaymentRequestUpdateEvent interface: operation updateWith(Promise<PaymentDetailsUpdate>)": "FAIL",
+      "PaymentRequestUpdateEvent must be primary interface of new PaymentRequestUpdateEvent(\"paymentrequestupdate\")": "FAIL",
+      "PaymentResponse interface object length": "FAIL",
+      "PaymentResponse interface object name": "FAIL",
+      "PaymentResponse interface: attribute details": "FAIL",
+      "PaymentResponse interface: attribute methodName": "FAIL",
+      "PaymentResponse interface: attribute onpayerdetailchange": "FAIL",
+      "PaymentResponse interface: attribute payerEmail": "FAIL",
+      "PaymentResponse interface: attribute payerName": "FAIL",
+      "PaymentResponse interface: attribute payerPhone": "FAIL",
+      "PaymentResponse interface: attribute requestId": "FAIL",
+      "PaymentResponse interface: attribute shippingAddress": "FAIL",
+      "PaymentResponse interface: attribute shippingOption": "FAIL",
+      "PaymentResponse interface: existence and properties of interface object": "FAIL",
+      "PaymentResponse interface: existence and properties of interface prototype object": "FAIL",
+      "PaymentResponse interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PaymentResponse interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PaymentResponse interface: operation complete(optional PaymentComplete, optional PaymentCompleteDetails)": "FAIL",
+      "PaymentResponse interface: operation retry(optional PaymentValidationErrors)": "FAIL",
+      "PaymentResponse interface: operation toJSON()": "FAIL",
+      "Stringification of new PaymentMethodChangeEvent(\"paymentmethodchange\")": "FAIL",
+      "Stringification of new PaymentRequestUpdateEvent(\"paymentrequestupdate\")": "FAIL",
+      "Stringification of paymentRequest": "FAIL"
+    }
+  },
+  "payment-request/onpaymentmethodchange-attribute.https.html": {
+    "total": 4,
+    "failures": {
+      "Must have a onpaymentmethodchange IDL attribute": "FAIL",
+      "onpaymentmethodchange attribute and listeners both work": "FAIL",
+      "onpaymentmethodchange attribute is a generic handler for \"paymentmethodchange\"": "FAIL",
+      "onpaymentmethodchange attribute is a handler for PaymentMethodChangeEvent": "FAIL"
+    }
+  },
+  "payment-request/payment-is-showing.https.html": {
+    "total": 3,
+    "failures": {
+      "If an iframe shows a payment request, the top-level browsing context can't also show one.": "FAIL",
+      "Navigating an iframe as a nested browsing context sets 'payment request is showing boolean' to false.": "FAIL",
+      "The top browsing context can only show one payment sheet at a time.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-abort-method.https.html": {
+    "total": 4,
+    "failures": {
+      "Aborting a request before it is shown doesn't prevent it from being shown later.": "FAIL",
+      "Calling abort() multiple times is always a new object.": "FAIL",
+      "The same request cannot be shown multiple times.": "FAIL",
+      "Throws if the promise [[state]] is not \"interactive\"": "FAIL"
+    }
+  },
+  "payment-request/payment-request-canmakepayment-method.https.html": {
+    "total": 6,
+    "failures": {
+      "All methods are unsupported": "FAIL",
+      "If payment method identifier are supported, resolve promise with true.": "FAIL",
+      "If request.[[state]] is \"closed\", then return a promise rejected with an \"InvalidStateError\" DOMException.": "FAIL",
+      "If request.[[state]] is \"created\", then return a promise that resolves to true for known method.": "FAIL",
+      "If request.[[state]] is \"interactive\", then return a promise rejected with an \"InvalidStateError\" DOMException.": "FAIL",
+      "Mix of supported and unsupported methods, at least one method is supported.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-constructor-thcrash.https.html": {
+    "total": 10,
+    "failures": {
+      "Don't crash if PaymentDetailsInit.total.label is an abusive length": "FAIL",
+      "Don't crash if PaymentItem.label is an abusive length": "FAIL",
+      "Don't crash if PaymentMethodData.supportedMethods is an abusive length": "FAIL",
+      "Don't crash if PaymentShippingOptions.label is an abusive length": "FAIL",
+      "Don't crash if details.displayItems has an abusive number of items": "FAIL",
+      "Don't crash if details.shippingOptions has an abusive number of items": "FAIL",
+      "Don't crash if the PaymentShippingOptions.amount.value is an abusive length": "FAIL",
+      "Don't crash if the request id has an abusive length": "FAIL",
+      "Don't crash if there is an abusive number of payment methods in the methodData sequence": "FAIL",
+      "Don't crash if total.amount.value is an abusive length": "FAIL"
+    }
+  },
+  "payment-request/payment-request-constructor.https.sub.html": {
+    "total": 30,
+    "failures": {
+      "For each item in details.displayItems: if item.amount.value is not a valid decimal monetary value, then throw a TypeError": "FAIL",
+      "For each option in details.shippingOptions: if option.amount.value is not a valid decimal monetary value, then throw a TypeError": "FAIL",
+      "If amount.value of additionalDisplayItems is not a valid decimal monetary value, then throw a TypeError": "FAIL",
+      "If details.id is missing, assign a unique identifier": "FAIL",
+      "If details.id is missing, assign an identifier": "FAIL",
+      "If details.total.amount.value is not a valid decimal monetary value, then throw a TypeError": "FAIL",
+      "If options.requestShipping is not set, then request.shippingType attribute is null.": "FAIL",
+      "If options.requestShipping is true, request.shippingType will be options.shippingType.": "FAIL",
+      "If payment method is duplicate, then throw a RangeError": "FAIL",
+      "If requestShipping is set, and if there is a multiple selected shipping options, only the last is selected.": "FAIL",
+      "If the first character of details.total.amount.value is U+002D HYPHEN-MINUS, then throw a TypeError": "FAIL",
+      "If the length of the methodData sequence is zero, then throw a TypeError": "FAIL",
+      "If the same id is provided, then use it": "FAIL",
+      "If there are any duplicate shipping option ids, and shipping is requested, then throw a TypeError": "FAIL",
+      "If there is a selected shipping option, and requestShipping is set, then that option becomes synchronously selected": "FAIL",
+      "If there is no selected shipping option, then PaymentRequest.shippingOption remains null": "FAIL",
+      "Modifier data must be JSON-serializable object (an Array in this case)": "FAIL",
+      "Modifier data must be JSON-serializable object (an Object in this case)": "FAIL",
+      "Modifier method data must be JSON-serializable object": "FAIL",
+      "Negative values are allowed for displayItems.amount.value, irrespective of total amount": "FAIL",
+      "PaymentDetailsBase members can be 0 length": "FAIL",
+      "PaymentRequest.shippingAddress must initially be null": "FAIL",
+      "Rethrow any exceptions of JSON-serializing modifier.data": "FAIL",
+      "Rethrow any exceptions of JSON-serializing paymentMethod.data into a string": "FAIL",
+      "Shipping type should be valid": "FAIL",
+      "Throw TypeError if modifier.total.amount.value is not a valid decimal monetary value": "FAIL",
+      "Throw when there are duplicate shippingOption ids, even if other values are different": "FAIL",
+      "Use ids even if they are strange": "FAIL",
+      "Use provided request ID": "FAIL",
+      "it handles high precision currency values without throwing": "FAIL"
+    }
+  },
+  "payment-request/payment-request-ctor-currency-code-checks.https.sub.html": {
+    "total": 10,
+    "failures": {
+      "Check and canonicalize invalid details.displayItems amount and rethrow RangeError.": "FAIL",
+      "Check and canonicalize invalid details.shippingOptions amount and rethrow RangeError.": "FAIL",
+      "Check and canonicalize invalid details.total.amount and rethrow any exceptions.": "FAIL",
+      "Check and canonicalize invalid modifiers[n].additionaDisplayItem amount and rethrow RangeError.": "FAIL",
+      "Check and canonicalize invalid modifiers[n].total amount and rethrow RangeError.": "FAIL",
+      "Check and canonicalize valid details.displayItems amount": "FAIL",
+      "Check and canonicalize valid details.shippingOptions amount.": "FAIL",
+      "Check and canonicalize valid details.total.amount": "FAIL",
+      "Check and canonicalize valid modifiers[n].additionaDisplayItem amount.": "FAIL",
+      "Check and canonicalize valid modifiers[n].total amount.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-ctor-pmi-handling.https.sub.html": {
+    "total": 4,
+    "failures": {
+      "Constructor MUST throw if given an invalid URL-based payment method identifier": "FAIL",
+      "Must not throw on syntactically valid standardized payment method identifiers, even if they are not supported": "FAIL",
+      "Must support valid standard URL PMIs": "FAIL",
+      "Must throw on syntactically invalid standardized payment method identifiers": "FAIL"
+    }
+  },
+  "payment-request/payment-request-disallowed-when-hidden.https.html": {
+    "total": 1,
+    "failures": {
+      "PaymentRequest.show() cannot be triggered from a hidden context": "FAIL"
+    }
+  },
+  "payment-request/payment-request-hasenrolledinstrument-method-protection.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Optionally, at the user agent's discretion, return a promise rejected with a \"NotAllowedError\" DOMException.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-hasenrolledinstrument-method.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "If request.[[state]] is \"closed\", then return a promise rejected with an \"InvalidStateError\" DOMException.": "FAIL",
+      "If request.[[state]] is \"interactive\", then return a promise rejected with an \"InvalidStateError\" DOMException.": "FAIL",
+      "hasEnrolledInstrument() resolves to false for unsupported payment methods.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-id-attribute.https.html": {
+    "total": 2,
+    "failures": {
+      "PaymentRequest's id attribute must be a UUID when PaymentDetailsInit.id is missing": "FAIL",
+      "PaymentRequest's id attribute's value can be set via PaymentDetailsInit dictionary": "FAIL"
+    }
+  },
+  "payment-request/payment-request-insecure.http.html": {
+    "total": 1
+  },
+  "payment-request/payment-request-not-exposed.https.worker.js": {
+    "total": 1
+  },
+  "payment-request/payment-request-onshippingaddresschange-attribute.https.html": {
+    "total": 4,
+    "failures": {
+      "Must have a onshippingaddresschange IDL attribute": "FAIL",
+      "onshippingaddresschange attribute and listeners both work": "FAIL",
+      "onshippingaddresschange attribute is a generic handler for \"shippingaddresschange\"": "FAIL",
+      "onshippingaddresschange attribute is a handler for PaymentRequestUpdateEvent": "FAIL"
+    }
+  },
+  "payment-request/payment-request-onshippingoptionchange-attribute.https.html": {
+    "total": 4,
+    "failures": {
+      "Must have a onshippingoptionchange IDL attribute": "FAIL",
+      "onshippingoptionchange attribute and listeners both work": "FAIL",
+      "onshippingoptionchange attribute is a generic handler for \"shippingoptionchange\"": "FAIL",
+      "onshippingoptionchange attribute is a handler for PaymentRequestUpdateEvent": "FAIL"
+    }
+  },
+  "payment-request/payment-request-shippingAddress-attribute.https.html": {
+    "total": 2,
+    "failures": {
+      ".shippingAddress attribute must default to null.": "FAIL",
+      "Must have a .shippingAddress IDL attribute.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-shippingOption-attribute.https.html": {
+    "total": 6,
+    "failures": {
+      ".shippingOption attribute must default to null.": "FAIL",
+      "Given multiple shipping options, it must use the selected shipping option for .shippingOption value.": "FAIL",
+      "If there are multiple of the shipping options with selected true, then .shippingOption is the last selected shipping option in order.": "FAIL",
+      "If there are multiple shipping options all with `selected` set to false, then .shippingOption is null.": "FAIL",
+      "If there is a single shipping option, but selected is false, then .shippingOption must be null.": "FAIL",
+      "Must have a .shippingOption IDL attribute.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-shippingType-attribute.https.html": {
+    "total": 3,
+    "failures": {
+      "If options.requestShipping is false, then request.shippingType attribute is null.": "FAIL",
+      "If options.requestShipping is true, request.shippingType will be options.shippingType.": "FAIL",
+      "Must have a shippingType IDL attribute": "FAIL"
+    }
+  },
+  "payment-request/payment-request-show-method.https.html": {
+    "total": 4,
+    "failures": {
+      "Calling show() multiple times always returns a new promise.": "FAIL",
+      "If payment method consultation produces no supported method of payment, then return a promise rejected with a \"NotSupportedError\" DOMException.": "FAIL",
+      "If the user agent's \"payment request is showing\" boolean is true, then return a promise rejected with an \"AbortError\" DOMException.": "FAIL",
+      "Throws if the promise [[state]] is not 'created'.": "FAIL"
+    }
+  },
+  "payment-request/payment-response/onpayerdetailchange-attribute.https.html": {
+    "total": 2,
+    "failures": {
+      "PaymentResponse has an onpayerdetailchange in the prototype chain": "FAIL",
+      "PaymentResponse inherits from EventTarget": "FAIL"
+    }
+  },
+  "payment-request/rejects_if_not_active.https.html": {
+    "total": 4,
+    "failures": {
+      "PaymentRequest.canMakePayment() rejects if the document is active, but not fully active.": "FAIL",
+      "PaymentRequest.canMakePayment() rejects if the document is not active.": "FAIL",
+      "PaymentRequest.show() aborts if the document is active, but not fully active.": "FAIL",
+      "PaymentRequest.show() aborts if the document is not active.": "FAIL"
+    }
+  },
+  "payment-request/show-consume-activation.https.html": {
+    "total": 1,
+    "failures": {
+      "Calling show consumes user activation, if present": "FAIL"
+    }
+  },
+  "payment-request/show-method-optional-promise-rejects.https.html": {
+    "total": 10,
+    "failures": {
+      "Must throw a RangeError when a modifier display item has an invalid currency.": "FAIL",
+      "Must throw a RangeError when a modifier's total item has an invalid currency.": "FAIL",
+      "Must throw as Modifier has a recursive dictionary.": "FAIL",
+      "Rejection of detailsPromise must abort the update with an 'AbortError' DOMException.": "FAIL",
+      "Total in the update is a string, so converting to IDL must abort the update with a TypeError.": "FAIL",
+      "Total is recursive, so converting to IDL must abort the update with a TypeError.": "FAIL",
+      "Updating with a displayItem with an invalid currency results in RangeError.": "FAIL",
+      "Updating with a negative total results in a TypeError.": "FAIL",
+      "Updating with a shippingOption with an invalid currency value results in a RangError.": "FAIL",
+      "Updating with duplicate shippingOptions (same IDs) results in a TypeError.": "FAIL"
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "payment-method-manifest/fetch-options.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Payment method identifier HEAD request omits credentials (cookies and authorization)": "FAIL",
+      "Payment method manifest GET request omits credentials (cookies and authorization)": "FAIL",
+      "Payment method manifest GET request sets Referer header to match PMI URL": "FAIL",
+      "Web app manifest GET request omits credentials (cookies and authorization)": "FAIL"
+    }
+  },
+  "payment-method-manifest/link-header-parsing.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Link header rel attribute supports space-separated relation tokens per RFC 8288": "FAIL",
+      "Link header rel parameter matching is ASCII case-insensitive": "FAIL",
+      "Link header rel parameter supports unquoted values per RFC 8288": "FAIL",
+      "Link header with additional parameters is parsed correctly": "FAIL",
+      "Link header with comma-separated targets correctly identifies payment-method-manifest link": "FAIL"
+    }
+  },
+  "payment-method-manifest/link-header-selection.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Link header selecting payment-method-manifest link from multiple entries": "FAIL",
+      "Link header with incorrect rel attribute is ignored": "FAIL",
+      "Link header with payment-method-manifest rel successfully initiates manifest fetch": "FAIL",
+      "Multiple rel=\"payment-method-manifest\" link headers use the first one": "FAIL",
+      "Payment Method Manifest fetch fails if Link header is missing": "FAIL"
+    }
+  },
+  "payment-method-manifest/link-header-target-url.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Link header targeting non-HTTPS URL is aborted": "FAIL",
+      "Relative Link header target is resolved against final post-redirect response URL": "FAIL"
+    }
+  },
+  "payment-method-manifest/pmi-http-status.https.window.js": {
+    "total": 3,
+    "failures": {
+      "HTTP 204 No Content response on initial PMI HEAD request succeeds": "FAIL",
+      "HTTP 404 response on initial PMI HEAD request aborts manifest fetching": "FAIL",
+      "HTTP 500 response on initial PMI HEAD request aborts manifest fetching": "FAIL"
+    }
+  },
+  "payment-method-manifest/pmi-redirects.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Cross-site redirects on initial HEAD request are prohibited and abort fetch": "FAIL",
+      "More than 3 redirects for the Link header HEAD request is not allowed": "FAIL",
+      "Same-site cross-origin redirects on initial HEAD request are permitted": "FAIL",
+      "Up to 3 redirects for the Link header HEAD request are allowed": "FAIL"
+    }
+  },
+  "payment-method-manifest/pmm-default-applications.https.window.js": {
+    "total": 10,
+    "failures": {
+      "Duplicate URLs in default_applications are deduplicated": "FAIL",
+      "Multiple default_applications web app manifests are fetched": "FAIL",
+      "Non-HTTPS URL in default_applications fails entire manifest validation without fetching valid HTTPS web app manifest": "FAIL",
+      "Non-HTTPS web app manifest URL in default_applications is not fetched": "FAIL",
+      "Non-string item in default_applications fails parsing cleanly and does not fetch web app manifest": "FAIL",
+      "Payment method manifest with non-array default_applications fails parsing cleanly and does not fetch web app manifest": "FAIL",
+      "Relative default_applications URL resolves against payment method manifest URL": "FAIL",
+      "Unparseable URL in default_applications fails parsing cleanly and does not fetch web app manifest": "FAIL",
+      "Unrecognized members in a payment method manifest are ignored": "FAIL",
+      "Web app manifest fetching end-to-end success": "FAIL"
+    }
+  },
+  "payment-method-manifest/pmm-http-status.https.window.js": {
+    "total": 2,
+    "failures": {
+      "HTTP 404 response on Payment Method Manifest GET request aborts ingestion and does not fetch web app manifest": "FAIL",
+      "HTTP 500 response on Payment Method Manifest GET request aborts ingestion and does not fetch web app manifest": "FAIL"
+    }
+  },
+  "payment-method-manifest/pmm-redirect-disallowed.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Manifest GET request with redirect aborts": "FAIL"
+    }
+  },
+  "payment-method-manifest/pmm-supported-origins.https.window.js": {
+    "total": 13,
+    "failures": {
+      "Empty array for supported_origins fails validation": "FAIL",
+      "Multiple valid HTTPS origins in supported_origins are allowed": "FAIL",
+      "Non-HTTPS origin in supported_origins fails validation": "FAIL",
+      "Non-array value for supported_origins fails validation": "FAIL",
+      "Non-string item in supported_origins fails validation": "FAIL",
+      "Null value for supported_origins fails validation": "FAIL",
+      "Omitting supported_origins is allowed": "FAIL",
+      "Origin with fragment in supported_origins fails validation": "FAIL",
+      "Origin with path in supported_origins fails validation": "FAIL",
+      "Origin with query in supported_origins fails validation": "FAIL",
+      "Origin with username or password in supported_origins fails validation": "FAIL",
+      "Relative URL in supported_origins fails validation": "FAIL",
+      "Wildcard \"*\" for supported_origins fails validation": "FAIL"
+    }
+  },
+  "payment-method-manifest/wam-redirect-disallowed.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Web app manifest GET request with redirect aborts": "FAIL"
+    }
+  }
+}

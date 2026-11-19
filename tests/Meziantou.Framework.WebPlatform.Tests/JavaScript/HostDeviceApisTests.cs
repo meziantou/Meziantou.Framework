@@ -58,6 +58,7 @@ public sealed class HostDeviceApisTests : IDisposable
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
             WebAuthentication = options.WebAuthentication,
+            UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
             ScreenOrientation = options.ScreenOrientation,
             VirtualKeyboard = options.VirtualKeyboard,
@@ -1563,6 +1564,123 @@ public sealed class HostDeviceApisTests : IDisposable
             """));
     }
 
+    // Credential Management and the user agent UI
+
+    private const string CredentialsScript = "window.go = p => p.then(c => document.title = c === null ? 'null' : [c.type, c.id, c.password ?? c.provider].join('|'), e => document.title = e.name);";
+
+    [Fact]
+    public void PasswordCredential_WithoutBackend_ResolvesNull()
+    {
+        var document = Load("<script>" + CredentialsScript + "</script>");
+
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ password: true }))"));
+        Assert.Equal("undefined", Run(document, "navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin })).then(r => document.title = String(r))"));
+    }
+
+    [Fact]
+    public void PasswordCredential_StoreAndGet()
+    {
+        #region WebPlatform_UserAgentUI_Credentials
+        var options = new BrowsingContextOptions
+        {
+            // The prompts of the user agent: the credential store and the credential chooser of the backend
+            UserAgentUI = new InMemoryCredentialStore(),
+        };
+        #endregion
+
+        var document = Load("<script>" + CredentialsScript + "</script>", options);
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ password: true }))"));
+        Run(document, "navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin }))");
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true }))"));
+
+        // Only the requested types are returned
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ federated: { providers: ['https://idp.example'] } }))"));
+    }
+
+    [Fact]
+    public void PasswordCredential_PreventSilentAccess_SilentRequestsReturnNull()
+    {
+        var backend = new InMemoryCredentialStore();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Run(document, "navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin }))");
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'silent' }))"));
+
+        Run(document, "navigator.credentials.preventSilentAccess()");
+        var prompts = backend.ChooserPrompts;
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'silent' }))"));
+        Assert.Equal(prompts, backend.ChooserPrompts);
+
+        // The user chooses a credential: the origin no longer requires user mediation
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true }))"));
+        Assert.True(backend.LastPrompt!.RequiresUserMediation);
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'silent' }))"));
+    }
+
+    [Fact]
+    public void Credentials_Create_FromFormAndData()
+    {
+        var document = Load("""
+            <form>
+              <input name=user autocomplete=username value=john>
+              <input name=pwd autocomplete=current-password value=old>
+              <input name=pwd2 autocomplete=new-password value=new>
+              <input name=display autocomplete=nickname value=Johnny>
+            </form>
+            <script>
+            """ + CredentialsScript + "</script>");
+
+        Assert.Equal("password|john|new", Run(document, "go(navigator.credentials.create({ password: document.forms[0] }))"));
+        Assert.Equal("Johnny|https://example.com", Run(document, "document.title = (c => [c.name, c.iconURL || location.origin].join('|'))(new PasswordCredential(document.forms[0]))"));
+        Assert.Equal("federated|john|https://idp.example", Run(document, "go(navigator.credentials.create({ federated: { id: 'john', provider: 'https://idp.example', origin: 'https://other.example' } }))"));
+        Assert.Equal("NotSupportedError", Run(document, "go(navigator.credentials.create({ password: document.forms[0], federated: { id: 'john', provider: 'https://idp.example', origin: location.origin } }))"));
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.create({ password: { id: '', password: 'x', origin: location.origin } }))"));
+    }
+
+    [Fact]
+    public void Credentials_Get_InvalidCombination_IsNotSupported()
+    {
+        var document = Load("<script>" + CredentialsScript + "</script>");
+
+        Assert.Equal("NotSupportedError", Run(document, "go(navigator.credentials.get({ password: true, publicKey: { challenge: new Uint8Array(1) } }))"));
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'conditional' }))"));
+    }
+
+    [Fact]
+    public void Credentials_Get_AbortClosesThePrompt()
+    {
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "window.controller = new AbortController();</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Run(document, "go(navigator.credentials.get({ password: true, signal: controller.signal }))");
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
+        Assert.Equal("AbortError", Run(document, "controller.abort()"));
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task Credentials_Get_AsynchronousAnswer()
+    {
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Run(document, "go(navigator.credentials.get({ password: true }))");
+
+        _ = Task.Run(() => backend.Answer.SetResult(new PasswordCredential(new PasswordCredentialData { Id = "jane", Password = "pass", Origin = "https://example.com" })));
+        Assert.Equal("password|jane|pass", await RunAsync(document));
+    }
+
+    private sealed class PendingCredentialChooser : UserAgentUIBackend
+    {
+        public TaskCompletionSource<Credential?> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<Credential?> ChooseCredentialAsync(CredentialChooserPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            return new(Answer.Task);
+        }
+    }
+
     // Screen Orientation
 
     private const string OrientationScript = """
@@ -2374,3 +2492,31 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,undefined,false", Run(document));
     }
 }
+
+#region WebPlatform_UserAgentUIBackend
+/// <summary>
+/// A credential store of the user agent: <c>navigator.credentials.store()</c> saves the credentials without asking, and
+/// <c>navigator.credentials.get()</c> returns the first stored credential that matches the request.
+/// </summary>
+internal sealed class InMemoryCredentialStore : UserAgentUIBackend
+{
+    private readonly List<Credential> _credentials = [];
+
+    public int ChooserPrompts { get; private set; }
+
+    public CredentialChooserPrompt? LastPrompt { get; private set; }
+
+    public override ValueTask<bool> StoreCredentialAsync(CredentialStorePrompt prompt, CancellationToken cancellationToken)
+    {
+        _credentials.Add(prompt.Credential);
+        return ValueTask.FromResult(true);
+    }
+
+    public override ValueTask<Credential?> ChooseCredentialAsync(CredentialChooserPrompt prompt, CancellationToken cancellationToken)
+    {
+        ChooserPrompts++;
+        LastPrompt = prompt;
+        return ValueTask.FromResult(_credentials.Find(prompt.Matches));
+    }
+}
+#endregion

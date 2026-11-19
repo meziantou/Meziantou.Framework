@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of payment-method-basic-card
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 0 | 4 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **0** | **4** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`apply_the_modifiers.html`](https://wpt.fyi/results/payment-method-basic-card/apply_the_modifiers.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`historical.https.html`](https://wpt.fyi/results/payment-method-basic-card/historical.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-canmakepayment-method.https.html`](https://wpt.fyi/results/payment-method-basic-card/payment-request-canmakepayment-method.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`steps_for_selecting_the_payment_handler.html`](https://wpt.fyi/results/payment-method-basic-card/steps_for_selecting_the_payment_handler.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
+| [`apply_the_modifiers.html`](https://wpt.fyi/results/payment-method-basic-card/apply_the_modifiers.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | Payment Request API |
+| [`historical.https.html`](https://wpt.fyi/results/payment-method-basic-card/historical.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Payment Request API |
+| [`payment-request-canmakepayment-method.https.html`](https://wpt.fyi/results/payment-method-basic-card/payment-request-canmakepayment-method.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Payment Request API |
+| [`steps_for_selecting_the_payment_handler.html`](https://wpt.fyi/results/payment-method-basic-card/steps_for_selecting_the_payment_handler.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | Payment Request API |

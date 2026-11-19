@@ -9,28 +9,28 @@ description: "The results of the web-platform-tests of merchant-validation, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
-| [Tentative](#tentative-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
+| [Tentative](#tentative-tests) | 1 | 3 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **1** | **4** | **0** | **25%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`onmerchantvalidation-attribute.https.html`](https://wpt.fyi/results/merchant-validation/onmerchantvalidation-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API (merchant validation) |
+| [`onmerchantvalidation-attribute.https.html`](https://wpt.fyi/results/merchant-validation/onmerchantvalidation-attribute.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Payment Request API (merchant validation) |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`complete-method.tentative.https.html`](https://wpt.fyi/results/merchant-validation/complete-method.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API (merchant validation) |
-| [`constructor.tentative.http.html`](https://wpt.fyi/results/merchant-validation/constructor.tentative.http.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API (merchant validation) |
-| [`constructor.tentative.https.html`](https://wpt.fyi/results/merchant-validation/constructor.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API (merchant validation) |
+| [`complete-method.tentative.https.html`](https://wpt.fyi/results/merchant-validation/complete-method.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Payment Request API (merchant validation) |
+| [`constructor.tentative.http.html`](https://wpt.fyi/results/merchant-validation/constructor.tentative.http.html) | Pass | 1 / 1 |  |  |
+| [`constructor.tentative.https.html`](https://wpt.fyi/results/merchant-validation/constructor.tentative.https.html) | Fail | 0 / 11 | NOT IMPLEMENTED | Payment Request API (merchant validation) |

@@ -122,6 +122,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
 
+    /// <summary>The prompts of the user agent (payment sheet, account choosers...), driven by the commands of the test driver.</summary>
+    private readonly WptUserAgentUI _userAgentUI = new();
+
     /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
     private readonly DisplayFeaturesProvider _displayFeatures = new();
     private readonly WptStash _stash = new();
@@ -241,6 +244,10 @@ internal sealed partial class WptTestRunner
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
+
+                // The prompts of the user agent, answered by the commands of the test driver (test_driver.set_spc_transaction_mode(),
+                // test_driver.select_fedcm_account(), test_driver.set_virtual_wallet_behavior()...)
+                UserAgentUI = _userAgentUI,
 
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
@@ -2018,6 +2025,30 @@ internal sealed partial class WptTestRunner
                 try
                 {
                     result = WptTestDriver.ExecuteWebAuthnCommand(_authenticators, command, arguments);
+                }
+                catch (WptWebDriverException ex)
+                {
+                    return adapter.Call(reject, adapter.Undefined, [adapter.FromString(ex.Message)]);
+                }
+
+                return adapter.Call(resolve, adapter.Undefined, [result is null ? adapter.Undefined : adapter.FromString(result)]);
+            }));
+            return adapter.Undefined;
+        });
+
+        // The commands of the prompts of the user agent (see WptUserAgentUI): the arguments and the result are JSON; as WebDriver
+        // commands, they run after the tasks that are already queued
+        Define("__wpt_user_agent_ui", 4, (_, args) =>
+        {
+            var command = adapter.ToString(args[0]);
+            var arguments = adapter.ToString(args[1]);
+            var (resolve, reject) = (args[2], args[3]);
+            QueueTask(() => realm.Run(() =>
+            {
+                string? result;
+                try
+                {
+                    result = _userAgentUI.Execute(command, System.Text.Json.Nodes.JsonNode.Parse(arguments)?.AsArray() ?? throw WptWebDriverException.InvalidArgument("the arguments are not an array"));
                 }
                 catch (WptWebDriverException ex)
                 {

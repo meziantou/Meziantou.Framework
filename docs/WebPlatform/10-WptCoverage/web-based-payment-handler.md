@@ -9,29 +9,29 @@ description: "The results of the web-platform-tests of web-based-payment-handler
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
+| [Stable](#stable-tests) | 5 | 10 | 0 | 50% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **10** | **10** | **–** |
+| **All** | **5** | **10** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 10
+- **NOT IMPLEMENTED**: 5
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`can-make-payment-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`can-make-payment-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.serviceworker.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`can-make-payment-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.worker.js) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`can-make-payment-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/web-based-payment-handler/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`payment-request-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`payment-request-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.serviceworker.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`payment-request-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.worker.js) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`same-object-attributes.https.html`](https://wpt.fyi/results/web-based-payment-handler/same-object-attributes.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`untrusted-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/untrusted-event.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
+| [`can-make-payment-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.html) | Pass | 1 / 1 |  |  |
+| [`can-make-payment-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.serviceworker.html) | Fail | 1 / 5 | NOT IMPLEMENTED | Payment Handler API |
+| [`can-make-payment-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.worker.js) | Pass | 1 / 1 |  |  |
+| [`can-make-payment-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event.https.html) | Fail | 0 / 7 | NOT IMPLEMENTED | Payment Handler API |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/web-based-payment-handler/idlharness.https.any.js) | Fail | 35 / 52 | NOT IMPLEMENTED | Payment Handler API |
+| [`payment-request-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.html) | Pass | 1 / 1 |  |  |
+| [`payment-request-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.serviceworker.html) | Fail | 1 / 5 | NOT IMPLEMENTED | Payment Handler API |
+| [`payment-request-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.worker.js) | Pass | 1 / 1 |  |  |
+| [`same-object-attributes.https.html`](https://wpt.fyi/results/web-based-payment-handler/same-object-attributes.https.html) | Pass | 1 / 1 |  |  |
+| [`untrusted-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/untrusted-event.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Payment Handler API |

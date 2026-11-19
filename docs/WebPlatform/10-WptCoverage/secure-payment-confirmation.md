@@ -9,39 +9,39 @@ description: "The results of the web-platform-tests of secure-payment-confirmati
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 20 | 20 | – |
+| [Stable](#stable-tests) | 1 | 20 | 0 | 5% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **20** | **20** | **–** |
+| **All** | **1** | **20** | **0** | **5%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 20
+- **NOT IMPLEMENTED**: 19
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`authentication-accepted-bbk-created.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-created.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-accepted-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-per-passkey.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-accepted-bbk-reused.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-reused.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-accepted.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-auth-another-way.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-auth-another-way.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-cannot-bypass-spc.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cannot-bypass-spc.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-cross-origin.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cross-origin.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-icon-data-url.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-icon-data-url.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-in-iframe.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-invalid-icon.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-icon.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-invalid-payment-entity-logo.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-payment-entity-logo.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-optout.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-optout.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-rejected.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-rejected.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-requires-user-activation.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-requires-user-activation.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`constructor-validate-payment-method-data.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor-validate-payment-method-data.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`constructor.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk-per-passkey.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment-bbk.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-in-iframe.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-accepted-bbk-created.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-created.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-accepted-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-per-passkey.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-accepted-bbk-reused.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-reused.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-accepted.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-auth-another-way.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-auth-another-way.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-cannot-bypass-spc.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cannot-bypass-spc.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-cross-origin.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cross-origin.sub.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-icon-data-url.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-icon-data-url.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-in-iframe.sub.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-invalid-icon.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-icon.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-invalid-payment-entity-logo.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-payment-entity-logo.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-optout.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-optout.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-rejected.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-rejected.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-requires-user-activation.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-requires-user-activation.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`constructor-validate-payment-method-data.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor-validate-payment-method-data.https.html) | Fail | 0 / 22 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`constructor.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor.https.html) | Fail | 0 / 10 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`enrollment-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk-per-passkey.https.html) | Pass | 1 / 1 |  |  |
+| [`enrollment-bbk.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk.https.html) | Error | 3 / 3 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`enrollment-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-in-iframe.sub.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`enrollment.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment.https.html) | Fail | 5 / 9 | NOT IMPLEMENTED | Secure Payment Confirmation |

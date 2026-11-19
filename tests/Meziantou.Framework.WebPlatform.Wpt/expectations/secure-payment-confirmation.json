@@ -1,0 +1,160 @@
+{
+  "secure-payment-confirmation/authentication-accepted-bbk-created.https.html": {
+    "total": 3,
+    "failures": {
+      "Creates a browser bound key on authentication.": "FAIL",
+      "If ES256 is supported creates a browser bound key on authentication.": "FAIL",
+      "If RS256 is supported creates a browser bound key on authentication.": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-accepted-bbk-per-passkey.https.html": {
+    "total": 1,
+    "failures": {
+      "If a browser bound keys are created on authentication then a different browser bound key is created for a different passkey": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-accepted-bbk-reused.https.html": {
+    "total": 3,
+    "failures": {
+      "If ES256 is supported, the browser bound key is the same during authentication as enrollment.": "FAIL",
+      "If RS256 is supported, the browser bound key is the same during authentication as enrollment.": "FAIL",
+      "Uses the same browser bound key authentication as enrollment.": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-accepted.https.html": {
+    "total": 2,
+    "failures": {
+      "Successful SPC authentication - mandatory fields": "FAIL",
+      "Successful SPC authentication - optional fields": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-auth-another-way.https.html": {
+    "total": 2,
+    "failures": {
+      "Choose to auth another way when credential matched": "FAIL",
+      "Choose to auth another way without matching credential": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-cannot-bypass-spc.https.html": {
+    "total": 1,
+    "failures": {
+      "Cannot bypass SPC authentication UI via navigator.credentials.get": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-cross-origin.sub.https.html": {
+    "total": 1,
+    "failures": {
+      "Cross-origin SPC authentication ceremony": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-icon-data-url.https.html": {
+    "total": 1,
+    "failures": {
+      "SPC authentication with data URL instrument icon": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-in-iframe.sub.https.html": {
+    "total": 2,
+    "failures": {
+      "SPC authentication ceremony in cross-origin iframe": "FAIL",
+      "SPC authentication ceremony in cross-origin iframe without payment permission": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-invalid-icon.https.html": {
+    "total": 2,
+    "failures": {
+      "SPC authentication allowing an invalid icon with iconMustBeShown option.": "FAIL",
+      "SPC authentication with an invalid icon": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-invalid-payment-entity-logo.https.html": {
+    "total": 1,
+    "failures": {
+      "SPC authentication with a PaymentEntityLogo that cannot be downloaded.": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-optout.https.html": {
+    "total": 1,
+    "failures": {
+      "SPC opt-out returns OptOutError": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-rejected.https.html": {
+    "total": 2,
+    "failures": {
+      "Rejected SPC authentication when credential matched": "FAIL",
+      "Rejected SPC authentication without matching credential": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-requires-user-activation.https.html": {
+    "total": 1,
+    "failures": {
+      "SPC authentication not allowed without a user activation": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/constructor-validate-payment-method-data.https.html": {
+    "total": 22,
+    "failures": {
+      "Empty ID within credentialIds field throws exception.": "FAIL",
+      "Empty challenge field throws exception.": "FAIL",
+      "Empty credentialIds field throws exception.": "FAIL",
+      "Empty instrument.details field throws exception.": "FAIL",
+      "Empty instrument.displayName field throws exception.": "FAIL",
+      "Empty instrument.icon field throws exception.": "FAIL",
+      "Empty logo field in a PaymentEntityLogo throws exception.": "FAIL",
+      "Empty payee name throws exception.": "FAIL",
+      "Empty payee origin throws exception.": "FAIL",
+      "Empty paymentEntitiesLogo field is valid.": "FAIL",
+      "Empty url field in a PaymentEntityLogo throws exception.": "FAIL",
+      "Invalid instrument.icon URL throws exception.": "FAIL",
+      "Invalid rpId field throws exception.": "FAIL",
+      "Invalid url field in a PaymentEntityLogo throws exception.": "FAIL",
+      "Large challenge value throws exception.": "FAIL",
+      "Large credentialIds value throws exception.": "FAIL",
+      "Multiple IDs in credentialIds is valid.": "FAIL",
+      "Non-HTTPS payee origin throws exception.": "FAIL",
+      "Null challenge field throws exception.": "FAIL",
+      "Omitting both payee origin and payee name throws exception.": "FAIL",
+      "Payee name without payee origin is valid.": "FAIL",
+      "Providing both payee name and payee origin is valid.": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/constructor.https.html": {
+    "total": 10,
+    "failures": {
+      "Extra payment method not allowed afterward.": "FAIL",
+      "Extra payment method not allowed beforehand.": "FAIL",
+      "Instrument display name is required.": "FAIL",
+      "Instrument field is required.": "FAIL",
+      "Instrument icon is required.": "FAIL",
+      "The challenge field is required.": "FAIL",
+      "The credentialIds field is required.": "FAIL",
+      "The timeout field is optional.": "FAIL",
+      "Valid payment method data does not throw exceptions.": "FAIL",
+      "rpId is required.": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/enrollment-bbk-per-passkey.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/enrollment-bbk.https.html": {
+    "harness": "ERROR",
+    "total": 3
+  },
+  "secure-payment-confirmation/enrollment-in-iframe.sub.https.html": {
+    "total": 3,
+    "failures": {
+      "SPC enrollment in cross-origin iframe": "FAIL",
+      "SPC enrollment in cross-origin iframe without payment permission": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/enrollment.https.html": {
+    "total": 9,
+    "failures": {
+      "Payment credential does not allow residentKey to be \"discouraged\".": "FAIL",
+      "Payment credential requires authenticatorAttachment to be \"platform\", not \"cross-platform\".": "FAIL",
+      "Payment credential requires userVerification to be \"required\", not \"discouraged\".": "FAIL",
+      "Payment credential requires userVerification to be \"required\", not \"preferred\".": "FAIL"
+    }
+  }
+}

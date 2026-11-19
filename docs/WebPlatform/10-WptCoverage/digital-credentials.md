@@ -9,51 +9,51 @@ description: "The results of the web-platform-tests of digital-credentials, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 24 | 24 | – |
-| [Tentative](#tentative-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 2 | 24 | 0 | 8% |
+| [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **27** | **27** | **–** |
+| **All** | **2** | **27** | **0** | **7%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 27
+- **NOT IMPLEMENTED**: 25
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`allow-attribute-with-create.https.html`](https://wpt.fyi/results/digital-credentials/allow-attribute-with-create.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`allow-attribute-with-get.https.html`](https://wpt.fyi/results/digital-credentials/allow-attribute-with-get.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`concurrent-requests.https.html`](https://wpt.fyi/results/digital-credentials/concurrent-requests.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`create-enabled-on-self-origin-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/create-enabled-on-self-origin-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`create-non-fully-active.https.html`](https://wpt.fyi/results/digital-credentials/create-non-fully-active.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`create.disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/create.disabled-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`default-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/default-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`digital-credential-user-agent-allows-protocol.https.html`](https://wpt.fyi/results/digital-credentials/digital-credential-user-agent-allows-protocol.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`get-enabled-on-self-origin-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/get-enabled-on-self-origin-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`get-non-fully-active.https.html`](https://wpt.fyi/results/digital-credentials/get-non-fully-active.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`get-opaque-origin-combinations.https.html`](https://wpt.fyi/results/digital-credentials/get-opaque-origin-combinations.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`get-opaque-origin-top-level-allow-same-origin.https.html`](https://wpt.fyi/results/digital-credentials/get-opaque-origin-top-level-allow-same-origin.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`get-opaque-origin-top-level.https.html`](https://wpt.fyi/results/digital-credentials/get-opaque-origin-top-level.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`get.disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/get.disabled-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`get.https.html`](https://wpt.fyi/results/digital-credentials/get.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`historical.any.js`](https://wpt.fyi/results/digital-credentials/historical.any.js) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`non-secure-contexts.http.html`](https://wpt.fyi/results/digital-credentials/non-secure-contexts.http.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`protocol-filtering-mdoc.https.html`](https://wpt.fyi/results/digital-credentials/protocol-filtering-mdoc.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`protocol-filtering-openid4vp.https.html`](https://wpt.fyi/results/digital-credentials/protocol-filtering-openid4vp.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`user-activation-get.https.html`](https://wpt.fyi/results/digital-credentials/user-activation-get.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`user-agent-allows-protocol.https.html`](https://wpt.fyi/results/digital-credentials/user-agent-allows-protocol.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`webdriver/create.https.html`](https://wpt.fyi/results/digital-credentials/webdriver/create.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`webdriver/get-mdoc.https.html`](https://wpt.fyi/results/digital-credentials/webdriver/get-mdoc.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`webdriver/get-openid4vp.https.html`](https://wpt.fyi/results/digital-credentials/webdriver/get-openid4vp.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
+| [`allow-attribute-with-create.https.html`](https://wpt.fyi/results/digital-credentials/allow-attribute-with-create.https.html) | Fail | 0 / 12 | NOT IMPLEMENTED | Digital Credentials API |
+| [`allow-attribute-with-get.https.html`](https://wpt.fyi/results/digital-credentials/allow-attribute-with-get.https.html) | Fail | 0 / 12 | NOT IMPLEMENTED | Digital Credentials API |
+| [`concurrent-requests.https.html`](https://wpt.fyi/results/digital-credentials/concurrent-requests.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Digital Credentials API |
+| [`create-enabled-on-self-origin-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/create-enabled-on-self-origin-by-permissions-policy.https.sub.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Digital Credentials API |
+| [`create-non-fully-active.https.html`](https://wpt.fyi/results/digital-credentials/create-non-fully-active.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | Digital Credentials API |
+| [`create.disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/create.disabled-by-permissions-policy.https.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Digital Credentials API |
+| [`default-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/default-permissions-policy.https.sub.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Digital Credentials API |
+| [`digital-credential-user-agent-allows-protocol.https.html`](https://wpt.fyi/results/digital-credentials/digital-credential-user-agent-allows-protocol.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Digital Credentials API |
+| [`get-enabled-on-self-origin-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/get-enabled-on-self-origin-by-permissions-policy.https.sub.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Digital Credentials API |
+| [`get-non-fully-active.https.html`](https://wpt.fyi/results/digital-credentials/get-non-fully-active.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | Digital Credentials API |
+| [`get-opaque-origin-combinations.https.html`](https://wpt.fyi/results/digital-credentials/get-opaque-origin-combinations.https.html) | Fail | 4 / 13 | NOT IMPLEMENTED | Digital Credentials API |
+| [`get-opaque-origin-top-level-allow-same-origin.https.html`](https://wpt.fyi/results/digital-credentials/get-opaque-origin-top-level-allow-same-origin.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Digital Credentials API |
+| [`get-opaque-origin-top-level.https.html`](https://wpt.fyi/results/digital-credentials/get-opaque-origin-top-level.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Digital Credentials API |
+| [`get.disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/digital-credentials/get.disabled-by-permissions-policy.https.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Digital Credentials API |
+| [`get.https.html`](https://wpt.fyi/results/digital-credentials/get.https.html) | Fail | 4 / 18 | NOT IMPLEMENTED | Digital Credentials API |
+| [`historical.any.js`](https://wpt.fyi/results/digital-credentials/historical.any.js) | Pass | 2 / 2 |  |  |
+| [`non-secure-contexts.http.html`](https://wpt.fyi/results/digital-credentials/non-secure-contexts.http.html) | Pass | 1 / 1 |  |  |
+| [`protocol-filtering-mdoc.https.html`](https://wpt.fyi/results/digital-credentials/protocol-filtering-mdoc.https.html) | Fail | 0 / 8 | NOT IMPLEMENTED | Digital Credentials API |
+| [`protocol-filtering-openid4vp.https.html`](https://wpt.fyi/results/digital-credentials/protocol-filtering-openid4vp.https.html) | Fail | 0 / 13 | NOT IMPLEMENTED | Digital Credentials API |
+| [`user-activation-get.https.html`](https://wpt.fyi/results/digital-credentials/user-activation-get.https.html) | Fail | 1 / 5 | NOT IMPLEMENTED | Digital Credentials API |
+| [`user-agent-allows-protocol.https.html`](https://wpt.fyi/results/digital-credentials/user-agent-allows-protocol.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Digital Credentials API |
+| [`webdriver/create.https.html`](https://wpt.fyi/results/digital-credentials/webdriver/create.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Digital Credentials API |
+| [`webdriver/get-mdoc.https.html`](https://wpt.fyi/results/digital-credentials/webdriver/get-mdoc.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Digital Credentials API |
+| [`webdriver/get-openid4vp.https.html`](https://wpt.fyi/results/digital-credentials/webdriver/get-openid4vp.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Digital Credentials API |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`create.tentative.https.html`](https://wpt.fyi/results/digital-credentials/create.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`digital-credentials-static-methods.tentative.https.html`](https://wpt.fyi/results/digital-credentials/digital-credentials-static-methods.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
-| [`user-activation-create.tentative.https.html`](https://wpt.fyi/results/digital-credentials/user-activation-create.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Digital Credentials API |
+| [`create.tentative.https.html`](https://wpt.fyi/results/digital-credentials/create.tentative.https.html) | Fail | 6 / 18 | NOT IMPLEMENTED | Digital Credentials API |
+| [`digital-credentials-static-methods.tentative.https.html`](https://wpt.fyi/results/digital-credentials/digital-credentials-static-methods.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Digital Credentials API |
+| [`user-activation-create.tentative.https.html`](https://wpt.fyi/results/digital-credentials/user-activation-create.tentative.https.html) | Fail | 1 / 5 | NOT IMPLEMENTED | Digital Credentials API |

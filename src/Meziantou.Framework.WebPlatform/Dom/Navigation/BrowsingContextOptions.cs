@@ -674,6 +674,14 @@ public sealed partial record BrowsingContextOptions
     public WebAuthenticationOptions? WebAuthentication { get; init; }
 
     /// <summary>
+    /// Gets or sets the user interface of the user agent (see <see cref="UserAgentUIBackend"/>): the prompts that the APIs show to
+    /// the user (the credential and account choosers, the payment sheet, the secure payment confirmation, the digital
+    /// credential requests), which the backend shows and answers. The default is null: every prompt behaves as if the user
+    /// dismissed it.
+    /// </summary>
+    public UserAgentUIBackend? UserAgentUI { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Screen Orientation API (https://w3c.github.io/screen-orientation/,
     /// <c>screen.orientation</c>): <see cref="ScreenOrientationOptions.Provider"/> is the screen of the device, its orientation
     /// and its locks. The default is null: a desktop screen, whose orientation cannot be locked.
@@ -714,6 +722,13 @@ public sealed partial record BrowsingContextOptions
 
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<NotificationRecord> ShownNotifications { get; } = [];
+
+    /// <summary>
+    /// The origins whose credentials cannot be returned without user mediation
+    /// (https://w3c.github.io/webappsec-credential-management/#origin-requires-user-mediation), set by
+    /// <c>navigator.credentials.preventSilentAccess()</c>. Lock it to use it.
+    /// </summary>
+    internal HashSet<string> OriginsRequiringUserMediation { get; } = new(StringComparer.Ordinal);
 }
 
 /// <summary>

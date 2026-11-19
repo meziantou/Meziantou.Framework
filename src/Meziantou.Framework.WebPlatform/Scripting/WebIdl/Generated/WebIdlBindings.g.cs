@@ -230,6 +230,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ExtendableEvent"] = Binding_ExtendableEvent<TAdapter, TValue>.Binding,
             ["ExtendableMessageEvent"] = Binding_ExtendableMessageEvent<TAdapter, TValue>.Binding,
             ["External"] = Binding_External<TAdapter, TValue>.Binding,
+            ["FederatedCredential"] = Binding_FederatedCredential<TAdapter, TValue>.Binding,
             ["FetchEvent"] = Binding_FetchEvent<TAdapter, TValue>.Binding,
             ["File"] = Binding_File<TAdapter, TValue>.Binding,
             ["FileList"] = Binding_FileList<TAdapter, TValue>.Binding,
@@ -445,6 +446,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PaintSize"] = Binding_PaintSize<TAdapter, TValue>.Binding,
             ["PaintWorkletGlobalScope"] = Binding_PaintWorkletGlobalScope<TAdapter, TValue>.Binding,
             ["PannerNode"] = Binding_PannerNode<TAdapter, TValue>.Binding,
+            ["PasswordCredential"] = Binding_PasswordCredential<TAdapter, TValue>.Binding,
             ["Path2D"] = Binding_Path2D<TAdapter, TValue>.Binding,
             ["Performance"] = Binding_Performance<TAdapter, TValue>.Binding,
             ["PerformanceContainerTiming"] = Binding_PerformanceContainerTiming<TAdapter, TValue>.Binding,
@@ -852,6 +854,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit dictionaryDom_ExtendableEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ExtendableEventInit(r, dictionaryDom_ExtendableEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.FederatedCredentialInit dictionaryDom_FederatedCredentialInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FederatedCredentialInit(r, dictionaryDom_FederatedCredentialInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.FileApi.FilePropertyBag dictionaryDom_FileApi_FilePropertyBag:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileApi_FilePropertyBag(r, dictionaryDom_FileApi_FilePropertyBag);
                 return true;
@@ -899,6 +904,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PageTransitionEventInit dictionaryDom_PageTransitionEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PageTransitionEventInit(r, dictionaryDom_PageTransitionEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PasswordCredentialData dictionaryDom_PasswordCredentialData:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PasswordCredentialData(r, dictionaryDom_PasswordCredentialData);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PermissionsPolicyViolationReportBody dictionaryDom_PermissionsPolicyViolationReportBody:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PermissionsPolicyViolationReportBody(r, dictionaryDom_PermissionsPolicyViolationReportBody);
@@ -1232,6 +1240,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.EventSourceInit dictionaryDom_EventSourceInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_EventSourceInit(r, dictionaryDom_EventSourceInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.FederatedCredentialRequestOptions dictionaryDom_FederatedCredentialRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FederatedCredentialRequestOptions(r, dictionaryDom_FederatedCredentialRequestOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.FileApi.BlobPropertyBag dictionaryDom_FileApi_BlobPropertyBag:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FileApi_BlobPropertyBag(r, dictionaryDom_FileApi_BlobPropertyBag);

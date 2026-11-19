@@ -11,16 +11,15 @@ description: "The results of the web-platform-tests of css/WOFF2, and why the te
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 292 | 298 | 1 | 98% |
+| [Reftests](#reftests) | 293 | 298 | 0 | 98% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **292** | **298** | **1** | **98%** |
+| **All** | **293** | **298** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 5
-- **FLAKY**: 1
 
 ## Reftests
 
@@ -309,7 +308,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tabledata-glyf-origlength-002.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-glyf-origlength-002.xht) | Fail | 0 / 1 | TEST BUG | the test font is decoded and used (`PASS` is rendered with its glyphs), but it is not the font of the reference: the word is rendered a few pixels higher and larger than with `SFNT-TTF-Reference.ttf`/`SFNT-CFF-Reference.otf` (the five tests `directory-knowntags-001`, `tabledata-glyf-bbox-001` and `tabledata-glyf-origlength-001` to `003` render the same and differ from their references by the same 13,290 pixels); they fail in all the browsers |
 | [`tabledata-glyf-origlength-003.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-glyf-origlength-003.xht) | Fail | 0 / 1 | TEST BUG | the test font is decoded and used (`PASS` is rendered with its glyphs), but it is not the font of the reference: the word is rendered a few pixels higher and larger than with `SFNT-TTF-Reference.ttf`/`SFNT-CFF-Reference.otf` (the five tests `directory-knowntags-001`, `tabledata-glyf-bbox-001` and `tabledata-glyf-origlength-001` to `003` render the same and differ from their references by the same 13,290 pixels); they fail in all the browsers |
 | [`tabledata-non-zero-loca-001.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-non-zero-loca-001.xht) | Pass | 1 / 1 |  |  |
-| [`tabledata-recontruct-loca-001.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-recontruct-loca-001.xht) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
+| [`tabledata-recontruct-loca-001.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-recontruct-loca-001.xht) | Pass | 1 / 1 |  |  |
 | [`tabledata-transform-bad-flag-001.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-transform-bad-flag-001.xht) | Pass | 1 / 1 |  |  |
 | [`tabledata-transform-bad-flag-002.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-transform-bad-flag-002.xht) | Pass | 1 / 1 |  |  |
 | [`tabledata-transform-hmtx-001.xht`](https://wpt.fyi/results/css/WOFF2/tabledata-transform-hmtx-001.xht) | Pass | 1 / 1 |  |  |

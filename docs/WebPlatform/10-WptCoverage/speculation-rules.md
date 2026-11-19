@@ -20,11 +20,10 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 3
-- **TEST BUG**: 6
+- **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 56
 - **TEST RUNNER**: 26
 - **OUT OF SCOPE**: 1
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -190,7 +189,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`prerender/sandbox-iframe.https.html`](https://wpt.fyi/results/speculation-rules/prerender/sandbox-iframe.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/scroll-into-view-cross-origin-iframe.https.html`](https://wpt.fyi/results/speculation-rules/prerender/scroll-into-view-cross-origin-iframe.https.html) | Fail | 2 / 6 | BUG | `focus()` of an element of a cross-origin iframe of a prerendering page does not update `document.activeElement` of the iframe; the test also times out in Chromium |
 | [`prerender/send-beacon.https.html`](https://wpt.fyi/results/speculation-rules/prerender/send-beacon.https.html) | Pass | 2 / 2 |  |  |
-| [`prerender/service-workers.https.html`](https://wpt.fyi/results/speculation-rules/prerender/service-workers.https.html) | Disabled | – | FLAKY | Two subtests register a service worker and create the prerendered page without waiting for the worker to be activated: a navigation is only controlled by an active worker, so when the activation is slower than the prerendering (on the loaded CI agents), the prerendered page is not controlled and its fetch of ping gets 404 Not Found instead of pong |
+| [`prerender/service-workers.https.html`](https://wpt.fyi/results/speculation-rules/prerender/service-workers.https.html) | Disabled | – | TEST BUG | the first subtest creates the prerendered page right after `service_worker_unregister_and_register()`, which does not wait for the worker to be activated: a navigation is only controlled by an active worker (https://w3c.github.io/ServiceWorker/#on-fetch-request-algorithm), so nothing makes the prerendered page controlled. It is when the activation ends before the prerendering (it passes locally); on the loaded CI agents the page is not controlled and its fetch of `ping` gets 404 Not Found instead of `pong` |
 | [`prerender/session-history-activation.https.html`](https://wpt.fyi/results/speculation-rules/prerender/session-history-activation.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/session-history-location.https.html`](https://wpt.fyi/results/speculation-rules/prerender/session-history-location.https.html) | Pass | 3 / 3 |  |  |
 | [`prerender/session-history-navigation.https.html`](https://wpt.fyi/results/speculation-rules/prerender/session-history-navigation.https.html) | Pass | 1 / 1 |  |  |

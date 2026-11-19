@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,123 | 2,214 | 31 | 97% |
+| [Stable](#stable-tests) | 2,124 | 2,214 | 30 | 97% |
 | [Tentative](#tentative-tests) | 62 | 223 | 32 | 32% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,656** | **3,014** | **132** | **92%** |
+| **All** | **2,657** | **3,014** | **131** | **92%** |
 
 ## Failure reasons
 
@@ -27,7 +27,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
   - `media`: 1
 - **TEST RUNNER**: 2
 - **OUT OF SCOPE**: 1
-- **PERFORMANCE**: 1
 
 ## Stable tests
 
@@ -2193,7 +2192,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tabular-data/processing-model-1/col-span-limits.html`](https://wpt.fyi/results/html/semantics/tabular-data/processing-model-1/col-span-limits.html) | Pass | 5 / 5 |  |  |
 | [`tabular-data/processing-model-1/rowspan-0-quirks.html`](https://wpt.fyi/results/html/semantics/tabular-data/processing-model-1/rowspan-0-quirks.html) | Pass | 2 / 2 |  |  |
 | [`tabular-data/processing-model-1/rowspan-0.html`](https://wpt.fyi/results/html/semantics/tabular-data/processing-model-1/rowspan-0.html) | Pass | 2 / 2 |  |  |
-| [`tabular-data/processing-model-1/span-limits.html`](https://wpt.fyi/results/html/semantics/tabular-data/processing-model-1/span-limits.html) | Disabled | – | PERFORMANCE | the test inserts 65,533 and 65,534 rows in two tables with `innerHTML` and reads their geometry: its subtests pass, but the styles and the layout of these tables take ~22 s of CPU in a Debug build (2026-11-06, on a Mac: ~32 s before the rows inserted by `innerHTML` stopped invalidating all the styles and the box tree, ~60 s before the incremental style and layout), too close to the harness timeout on the slower CI machines: each row computes about a hundred values of its styles |
+| [`tabular-data/processing-model-1/span-limits.html`](https://wpt.fyi/results/html/semantics/tabular-data/processing-model-1/span-limits.html) | Pass | 6 / 6 |  |  |
 | [`tabular-data/the-caption-element/caption_001.html`](https://wpt.fyi/results/html/semantics/tabular-data/the-caption-element/caption_001.html) | Pass | 5 / 5 |  |  |
 | [`tabular-data/the-table-element/caption-methods.html`](https://wpt.fyi/results/html/semantics/tabular-data/the-table-element/caption-methods.html) | Pass | 18 / 18 |  |  |
 | [`tabular-data/the-table-element/createTBody.html`](https://wpt.fyi/results/html/semantics/tabular-data/the-table-element/createTBody.html) | Pass | 15 / 15 |  |  |

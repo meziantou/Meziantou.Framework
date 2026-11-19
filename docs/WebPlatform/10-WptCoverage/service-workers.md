@@ -9,21 +9,20 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 250 | 283 | 5 | 90% |
+| [Stable](#stable-tests) | 253 | 283 | 1 | 90% |
 | [Tentative](#tentative-tests) | 7 | 11 | 0 | 64% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 3 | 0 | 67% |
-| **All** | **260** | **298** | **5** | **89%** |
+| **All** | **263** | **298** | **1** | **89%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 3
 - **TEST BUG**: 14
 - **NOT IMPLEMENTED**: 16
 - **TEST RUNNER**: 2
-- **FLAKY**: 4
 
 ## Stable tests
 
@@ -88,7 +87,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/clients-matchall-on-evaluation.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-on-evaluation.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/clients-matchall-order.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-order.https.html) | Fail | 4 / 7 | TEST RUNNER | the three subtests of the uncontrolled windows expect the window of the WPT harness (`/testharness_runner.html`) among the clients; the subtests of the controlled windows pass |
 | [`service-worker/clients-matchall.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/controlled-dedicatedworker-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-dedicatedworker-postMessage.https.html) | Disabled | – | FLAKY | Result depends on the platform: passes on Linux and macOS, times out on Windows (the 60 s wall-clock limit of the runner, before any subtest reports; reproduced). The fetch handler of the service worker answers the script of the dedicated worker after a `setTimeout(1000)` of the service worker, like the delayed response that hangs registration-script.https.html on Windows. To investigate |
+| [`service-worker/controlled-dedicatedworker-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-dedicatedworker-postMessage.https.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the messages that the service worker posts, during the fetch event of the script of a dedicated worker, to the client of `event.resultingClientId` (`clients.get()`) do not reach the worker: its `navigator.serviceWorker.onmessage` receives none, so the 2 subtests that wait for one time out (3 s) |
 | [`service-worker/controlled-iframe-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-iframe-postMessage.https.html) | Fail | 3 / 5 | NOT IMPLEMENTED | `clients.get(event.resultingClientId)` resolves with undefined until the document or the worker of the request exists (the reserved clients are not exposed), so the messages that the service worker posts while it handles the request are not sent. The specification waits for the client to be execution ready, which the test prevents (Chrome fails these subtests); Firefox and Safari give the reserved client and queue its messages |
 | [`service-worker/controller-on-disconnect.https.html`](https://wpt.fyi/results/service-workers/service-worker/controller-on-disconnect.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/controller-on-load.https.html`](https://wpt.fyi/results/service-workers/service-worker/controller-on-load.https.html) | Pass | 1 / 1 |  |  |
@@ -232,9 +231,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/registration-schedule-job.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-schedule-job.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/registration-scope-module-static-import.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-scope-module-static-import.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/registration-scope.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-scope.https.html) | Pass | 10 / 10 |  |  |
-| [`service-worker/registration-script-module.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script-module.https.html) | Disabled | – | FLAKY | Result depends on the platform: passes on Linux and macOS, times out on Windows (the 60 s wall-clock limit of the runner, before any subtest reports). Reproduced on Windows: the registration of a script whose response is a network error after a delay of the virtual clock (resources/invalid-chunked-encoding-with-flush.py) never completes, as in registration-script.https.html. To investigate |
+| [`service-worker/registration-script-module.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script-module.https.html) | Pass | 10 / 10 |  |  |
 | [`service-worker/registration-script-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script-url.https.html) | Pass | 8 / 8 |  |  |
-| [`service-worker/registration-script.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script.https.html) | Disabled | – | FLAKY | Result depends on the platform: passes on Linux and macOS, times out on Windows (the 60 s wall-clock limit of the runner, before any subtest reports). Reproduced on Windows: the `Registering invalid chunked encoding script with flush` subtest alone hangs, i.e. the registration of a script whose response is a network error after a delay of the virtual clock (resources/invalid-chunked-encoding-with-flush.py) never completes; a network error without delay (invalid-chunked-encoding.py) and a parse error pass. To investigate: the timer of the delay, queued from the job of the registration that runs on the thread pool |
+| [`service-worker/registration-script.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script.https.html) | Pass | 9 / 9 |  |  |
 | [`service-worker/registration-security-error.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-security-error.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/registration-service-worker-attributes.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-service-worker-attributes.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/registration-updateviacache.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-updateviacache.https.html) | Pass | 25 / 25 |  |  |
@@ -279,8 +278,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/uncontrolled-page.https.html`](https://wpt.fyi/results/service-workers/service-worker/uncontrolled-page.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/unregister-controller.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-controller.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/unregister-immediately-before-installed.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately-before-installed.https.html) | Disabled | – | NOT IMPLEMENTED | Runs until the maximum duration of the runner (1 minute): Clear-Site-Data is not implemented, so it cannot abort the evaluation of a service worker script that loops forever |
-| [`service-worker/unregister-immediately-during-extendable-events.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately-during-extendable-events.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the immediate clearing of the registrations by the `Clear-Site-Data` header (the `storage` type): the registrations are unregistered (https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage), so their workers are not terminated and their controlled clients keep them until they are unloaded; the tests expect the behavior of Chromium, which clears the registrations and their workers at once |
-| [`service-worker/unregister-immediately.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately.https.html) | Disabled | – | FLAKY | the result depends on the timing of the service worker jobs: Clear-Site-Data does not clear the registrations immediately (their workers are not terminated and their controlled clients keep them until they are unloaded), so the subtests wait for state changes that happen or not before the timeout. Locally the first subtest (a worker kept in the activating state) times out and the others do not run; on the Linux x64 runners of CI the first two pass and the third times out |
+| [`service-worker/unregister-immediately-during-extendable-events.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately-during-extendable-events.https.html) | Timeout | 0 / 1 | BUG | a fetch whose fetch event waits for its `respondWith()` promise is not failed when the service worker is terminated: `Clear-Site-Data` clears the registration at once (the worker becomes redundant and the client loses its controller), but the `fetch()` of the client stays pending instead of rejecting with a `TypeError` |
+| [`service-worker/unregister-immediately.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-immediately.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/unregister-then-register-new-script.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-then-register-new-script.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/unregister-then-register.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-then-register.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/unregister.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister.https.html) | Pass | 2 / 2 |  |  |

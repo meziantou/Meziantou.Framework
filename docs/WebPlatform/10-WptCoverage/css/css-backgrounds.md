@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 62 | 65 | 0 | 95% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 569 | 579 | 1 | 98% |
+| [Reftests](#reftests) | 570 | 579 | 0 | 98% |
 | [Crash tests](#crash-tests) | 10 | 10 | 0 | 100% |
-| **All** | **641** | **654** | **1** | **98%** |
+| **All** | **642** | **654** | **0** | **98%** |
 
 ## Failure reasons
 
@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 4
 - **TEST BUG**: 8
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -239,7 +238,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`background-clip/clip-text-text-align.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-text-align.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-text-text-decorations.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-text-decorations.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-text-text-emphasis.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-text-emphasis.html) | Pass | 1 / 1 |  |  |
-| [`background-clip/clip-text-transform.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-transform.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
+| [`background-clip/clip-text-transform.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-text-transform.html) | Pass | 1 / 1 |  |  |
 | [`background-clip_padding-box.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip_padding-box.html) | Pass | 1 / 1 |  |  |
 | [`background-color-body-propagation-001.html`](https://wpt.fyi/results/css/css-backgrounds/background-color-body-propagation-001.html) | Pass | 1 / 1 |  |  |
 | [`background-color-body-propagation-002.html`](https://wpt.fyi/results/css/css-backgrounds/background-color-body-propagation-002.html) | Pass | 1 / 1 |  |  |

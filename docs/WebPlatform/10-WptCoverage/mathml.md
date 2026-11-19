@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of mathml, and why the tests
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 202 | 210 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
-| [Reftests](#reftests) | 270 | 282 | 1 | 96% |
+| [Reftests](#reftests) | 271 | 282 | 0 | 96% |
 | [Crash tests](#crash-tests) | 126 | 126 | 0 | 100% |
-| **All** | **599** | **620** | **1** | **97%** |
+| **All** | **600** | **620** | **0** | **97%** |
 
 ## Failure reasons
 
@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 15
 - **NOT IMPLEMENTED**: 5
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -481,7 +480,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`relations/css-styling/mathvariant-font-style-font-weight.html`](https://wpt.fyi/results/mathml/relations/css-styling/mathvariant-font-style-font-weight.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/mi-fontstyle-fontweight.html`](https://wpt.fyi/results/mathml/relations/css-styling/mi-fontstyle-fontweight.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/mozilla-393760-1.xml`](https://wpt.fyi/results/mathml/relations/css-styling/mozilla-393760-1.xml) | Fail | 0 / 1 | TEST BUG | the italic `Y` of the `mi` (STIX Two Math) has an italic correction of 1.76px, which https://w3c.github.io/mathml-core/#layout-of-mrow adds to the inline size of the `mstyle` laid out as an mrow (11.47px) but not to the one of the `mi` (9.71px): the `mathbackground` and the CSS background of the `mi` of the test end at x=18, the `mathbackground` of the `mstyle` of the reference at x=19 (22 pixels of the column x=18, by up to 111). The test assumes that the background of an `mi` covers the same area as the one of an `mstyle` around it |
-| [`relations/css-styling/mozilla-393760-2.xml`](https://wpt.fyi/results/mathml/relations/css-styling/mozilla-393760-2.xml) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
+| [`relations/css-styling/mozilla-393760-2.xml`](https://wpt.fyi/results/mathml/relations/css-styling/mozilla-393760-2.xml) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/non-mathml-namespace-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/non-mathml-namespace-001.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/out-of-flow/absolutely-positioned-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/out-of-flow/absolutely-positioned-001.html) | Pass | 1 / 1 |  |  |
 | [`relations/css-styling/out-of-flow/fixed-positioned-001.html`](https://wpt.fyi/results/mathml/relations/css-styling/out-of-flow/fixed-positioned-001.html) | Pass | 1 / 1 |  |  |

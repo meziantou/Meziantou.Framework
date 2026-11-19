@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of js, and why the tests tha
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 16 | 26 | 1 | 64% |
+| [Stable](#stable-tests) | 17 | 26 | 0 | 65% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **16** | **26** | **1** | **64%** |
+| **All** | **17** | **26** | **0** | **65%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **NOT IMPLEMENTED**: 9
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -43,7 +42,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`builtins/WeakMap.prototype-properties.html`](https://wpt.fyi/results/js/builtins/WeakMap.prototype-properties.html) | Pass | 20 / 20 |  |  |
 | [`builtins/weakrefs/cleanup-prevented-with-reference.optional.any.js`](https://wpt.fyi/results/js/builtins/weakrefs/cleanup-prevented-with-reference.optional.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | `FinalizationRegistry.prototype.cleanupSome`: a TC39 proposal that is not part of ECMA-262 (Chromium, Firefox and Safari fail these tests too) |
 | [`builtins/weakrefs/cleanup-prevented-with-unregister.optional.any.js`](https://wpt.fyi/results/js/builtins/weakrefs/cleanup-prevented-with-unregister.optional.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | `FinalizationRegistry.prototype.cleanupSome`: a TC39 proposal that is not part of ECMA-262 (Chromium, Firefox and Safari fail these tests too) |
-| [`builtins/weakrefs/finalizationregistry-cleanupCallback-gets-a-microtask.optional.any.js`](https://wpt.fyi/results/js/builtins/weakrefs/finalizationregistry-cleanupCallback-gets-a-microtask.optional.any.js) | Disabled | – | FLAKY | `TestUtils.gc()` is not exposed, so `garbageCollect()` only allocates garbage: whether the .NET GC collects the target during the test (and the 1,000 cleanup callbacks run) depends on the timing, so it passes or fails randomly (the test is optional: the specification allows an implementation to never call them) |
+| [`builtins/weakrefs/finalizationregistry-cleanupCallback-gets-a-microtask.optional.any.js`](https://wpt.fyi/results/js/builtins/weakrefs/finalizationregistry-cleanupCallback-gets-a-microtask.optional.any.js) | Pass | 2 / 2 |  |  |
 | [`builtins/weakrefs/finalizationregistry-cleanupCallback-throws-onerror-interaction.optional.window.js`](https://wpt.fyi/results/js/builtins/weakrefs/finalizationregistry-cleanupCallback-throws-onerror-interaction.optional.window.js) | Pass | 1 / 1 |  |  |
 | [`builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback-queueMicrotask.optional.any.js`](https://wpt.fyi/results/js/builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback-queueMicrotask.optional.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | `FinalizationRegistry.prototype.cleanupSome`: a TC39 proposal that is not part of ECMA-262 (Chromium, Firefox and Safari fail these tests too) |
 | [`builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback-queueMicrotaskMutationObserver.optional.window.js`](https://wpt.fyi/results/js/builtins/weakrefs/gc-has-one-chance-to-call-cleanupCallback-queueMicrotaskMutationObserver.optional.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `FinalizationRegistry.prototype.cleanupSome`: a TC39 proposal that is not part of ECMA-262 (Chromium, Firefox and Safari fail these tests too) |

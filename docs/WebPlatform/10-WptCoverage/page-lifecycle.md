@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of page-lifecycle, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **FLAKY**: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -34,7 +34,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`child-display-none.tentative.html`](https://wpt.fyi/results/page-lifecycle/child-display-none.tentative.html) | Pass | 1 / 1 |  |  |
 | [`child-out-of-viewport.tentative.html`](https://wpt.fyi/results/page-lifecycle/child-out-of-viewport.tentative.html) | Pass | 1 / 1 |  |  |
-| [`worker-dispay-none.tentative.html`](https://wpt.fyi/results/page-lifecycle/worker-dispay-none.tentative.html) | Disabled | – | FLAKY | the dedicated workers of a frozen document are not blocked (https://wicg.github.io/page-lifecycle/#worker-changes): the workers of the frozen iframe keep posting their messages, so the test passes or fails depending on whether more than one message arrives before the iframe is resumed |
+| [`worker-dispay-none.tentative.html`](https://wpt.fyi/results/page-lifecycle/worker-dispay-none.tentative.html) | Disabled | – | NOT IMPLEMENTED | the dedicated workers of a frozen document are not paused (https://wicg.github.io/page-lifecycle/#worker-changes): freezing a document defers its own tasks and timers, but the event loops of its workers have no paused state, so the workers of the frozen iframe keep posting their messages. The test fails when more than one message of a worker arrives between the freeze and the resume, which depends on the timing, so it is not run |
 
 ## Reftests
 

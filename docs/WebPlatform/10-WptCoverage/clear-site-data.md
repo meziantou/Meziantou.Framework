@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of clear-site-data, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 11 | 13 | 0 | 85% |
+| [Stable](#stable-tests) | 12 | 13 | 0 | 92% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **13** | **15** | **0** | **87%** |
+| **All** | **14** | **15** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -38,7 +37,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`set-cookie-after-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-after-clear-cookies.https.html) | Pass | 1 / 1 |  |  |
 | [`set-cookie-before-clear-all.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-all.https.html) | Pass | 1 / 1 |  |  |
 | [`set-cookie-before-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-cookies.https.html) | Pass | 1 / 1 |  |  |
-| [`storage.https.html`](https://wpt.fyi/results/clear-site-data/storage.https.html) | Timeout | 6 / 8 | NOT IMPLEMENTED | the service worker registrations of the origin are unregistered (https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage), so the clients that a service worker controls keep it until they are unloaded (https://w3c.github.io/ServiceWorker/#unregister-algorithm); the test expects the behavior of Chromium, which deletes the registrations and removes the controller of the clients at once (`controllerchange`) |
+| [`storage.https.html`](https://wpt.fyi/results/clear-site-data/storage.https.html) | Pass | 8 / 8 |  |  |
 
 ## Tentative tests
 

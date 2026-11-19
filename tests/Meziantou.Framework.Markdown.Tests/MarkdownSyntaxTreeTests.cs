@@ -1122,6 +1122,15 @@ public sealed class MarkdownSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void Emoji_SmileyThatIsAPrefixOfAMarkdigAutolink()
+    {
+        // The prefix is not an autolink after ")", but it is still a smiley
+        var mapping = new MarkdownEmojiMapping(new Dictionary<string, string> { [":ok:"] = "\u2705" }, new Dictionary<string, string> { ["www."] = ":ok:" });
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Emoji | MarkdownExtensions.MarkdigAutolinks, EmojiMapping = mapping };
+        Assert.Equal("<p>a)\u2705</p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("a)www.\n", options)));
+    }
+
     [Theory]
     [InlineData("a :) and :angry:\n", "<p>a \U0001F603 and \U0001F620</p>\n")]
     [InlineData("not:) x:angry:x\n", "<p>not:) x:angry:x</p>\n")]

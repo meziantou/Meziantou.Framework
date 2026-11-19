@@ -9,6 +9,13 @@ namespace Meziantou.Framework.Markdown;
 /// <summary>A link (<c>[text](destination)</c>, <c>[text][label]</c>...) or an image (<c>![description](source)</c>).</summary>
 public sealed class MarkdownLinkSyntax : MarkdownInlineSyntax
 {
+    // The values read from the children once: -1 or null until then. NoValue stands for a null value.
+    private static readonly object NoValue = new();
+    private int _closeIndex = -1;
+    private int _linkKind = -1;
+    private object? _label;
+    private object? _definition;
+
     internal MarkdownLinkSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
     {
@@ -22,20 +29,30 @@ public sealed class MarkdownLinkSyntax : MarkdownInlineSyntax
     {
         get
         {
-            var close = CloseIndex;
-            var children = ChildNodesAndTokens();
-            if (close + 1 >= children.Count)
+            if (_linkKind < 0)
             {
-                return MarkdownLinkKind.Shortcut;
+                _linkKind = (int)GetLinkKind();
             }
 
-            return (SyntaxKind)children[close + 1].AsToken().RawKind switch
-            {
-                SyntaxKind.OpenParenthesisToken => MarkdownLinkKind.Inline,
-                _ when GetToken(SyntaxKind.LinkLabelToken).RawKind != 0 => MarkdownLinkKind.Full,
-                _ => MarkdownLinkKind.Collapsed,
-            };
+            return (MarkdownLinkKind)_linkKind;
         }
+    }
+
+    private MarkdownLinkKind GetLinkKind()
+    {
+        var close = CloseIndex;
+        var children = ChildNodesAndTokens();
+        if (close + 1 >= children.Count)
+        {
+            return MarkdownLinkKind.Shortcut;
+        }
+
+        return (SyntaxKind)children[close + 1].AsToken().RawKind switch
+        {
+            SyntaxKind.OpenParenthesisToken => MarkdownLinkKind.Inline,
+            _ when GetToken(SyntaxKind.LinkLabelToken).RawKind != 0 => MarkdownLinkKind.Full,
+            _ => MarkdownLinkKind.Collapsed,
+        };
     }
 
     /// <summary>Gets the inlines of the text of the link, between its brackets.</summary>
@@ -43,15 +60,31 @@ public sealed class MarkdownLinkSyntax : MarkdownInlineSyntax
 
     /// <summary>Gets the label that refers to a link reference definition, or <see langword="null"/> for an inline link.</summary>
     /// <remarks>The label of a collapsed or a shortcut link is its text.</remarks>
-    public string? Label => LinkKind switch
+    public string? Label
+    {
+        get
+        {
+            _label ??= ReadLabel() ?? NoValue;
+            return _label as string;
+        }
+    }
+
+    /// <summary>Gets the definition that a reference link refers to, or <see langword="null"/>.</summary>
+    public MarkdownLinkReferenceDefinitionSyntax? Definition
+    {
+        get
+        {
+            _definition ??= (Label is { } label ? FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.GetLinkReferenceDefinition(label) : null) ?? NoValue;
+            return _definition as MarkdownLinkReferenceDefinitionSyntax;
+        }
+    }
+
+    private string? ReadLabel() => LinkKind switch
     {
         MarkdownLinkKind.Inline => null,
         MarkdownLinkKind.Full => GetTokensText(SyntaxKind.LinkLabelToken),
         _ => string.Concat(Text.SelectMany(child => child.IsToken ? [child.AsToken()] : child.AsNode()!.DescendantTokens()).Select(GetTokenText)),
     };
-
-    /// <summary>Gets the definition that a reference link refers to, or <see langword="null"/>.</summary>
-    public MarkdownLinkReferenceDefinitionSyntax? Definition => Label is { } label ? FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.GetLinkReferenceDefinition(label) : null;
 
     /// <summary>Gets the heading that a reference link without definition links to with <see cref="MarkdownExtensions.AutoIdentifiers"/>, or <see langword="null"/>.</summary>
     public MarkdownHeadingSyntax? Heading => Label is { } label && Definition is null ? FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.GetHeading(label) : null;
@@ -76,19 +109,29 @@ public sealed class MarkdownLinkSyntax : MarkdownInlineSyntax
     {
         get
         {
-            var index = 0;
-            foreach (var child in ChildNodesAndTokens())
+            if (_closeIndex < 0)
             {
-                if (child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.CloseBracketToken)
-                {
-                    return index;
-                }
-
-                index++;
+                _closeIndex = GetCloseIndex();
             }
 
-            return index;
+            return _closeIndex;
         }
+    }
+
+    private int GetCloseIndex()
+    {
+        var index = 0;
+        foreach (var child in ChildNodesAndTokens())
+        {
+            if (child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.CloseBracketToken)
+            {
+                return index;
+            }
+
+            index++;
+        }
+
+        return index;
     }
 
     /// <summary>Returns this inline link with the destination <paramref name="destination"/>, or itself when it has this destination.</summary>

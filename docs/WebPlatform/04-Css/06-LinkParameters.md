@@ -49,7 +49,7 @@ image that paints with `currentcolor` follows `param(color: blue)`.
 
 | Where | Applies to |
 | --- | --- |
-| The `link-parameters` property: `link-parameters: param(--color: green), param(--size: 4px)` | The images of the element: the image of an `img`, an SVG `image` or `feImage` element, and its CSS images (`background-image`, `list-style-image`, `border-image-source`...) |
+| The `link-parameters` property: `link-parameters: param(--color: green), param(--size: 4px)` | The images of the element: the image of an `img`, an SVG `image` or `feImage` element, and its CSS images (`background-image`, `border-image-source`, `mask-image`, `content`...) |
 | A `param()` modifier of `url()`: `background-image: url("icon.svg" param(--color: green))` | That URL only |
 | The fragment of the URL: `<img src="icon.svg#:~:param(--color:green)">` | That URL only; several parameters are separated by `&` (`#:~:param(--a:red)&param(--b:blue)`) |
 

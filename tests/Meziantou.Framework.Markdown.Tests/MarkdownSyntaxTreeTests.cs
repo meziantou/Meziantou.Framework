@@ -433,6 +433,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("*a@b.com* a\\_b@c.com\n", "<p><em><a href=\"mailto:a@b.com\">a@b.com</a></em> <a href=\"mailto:a_b@c.com\">a_b@c.com</a></p>\n")]
     [InlineData("a@b.c1 a@b@c.d\n", "<p>a@b.c1 a@<a href=\"mailto:b@c.d\">b@c.d</a></p>\n")]
     [InlineData("mailto:a@b.c/mailto:d@e.f. mmmailto:g@h.i\n", "<p><a href=\"mailto:a@b.c\">mailto:a@b.c</a>/<a href=\"mailto:d@e.f\">mailto:d@e.f</a>. mmmailto:<a href=\"mailto:g@h.i\">g@h.i</a></p>\n")]
+    [InlineData(".mailto:a@b.c mailto:mailto:d@e.f\n", "<p>.<a href=\"mailto:a@b.c\">mailto:a@b.c</a> mailto:<a href=\"mailto:d@e.f\">mailto:d@e.f</a></p>\n")]
     [InlineData("xmpp:a@b.c xmpp:d@e.f/g. xmpp:h@i.j/k/l at:m@n.o\n", "<p><a href=\"xmpp:a@b.c\">xmpp:a@b.c</a> <a href=\"xmpp:d@e.f/g\">xmpp:d@e.f/g</a>. <a href=\"xmpp:h@i.j/k/l\">xmpp:h@i.j/k/l</a> at:<a href=\"mailto:m@n.o\">m@n.o</a></p>\n")]
     [InlineData("<title>a</title>\n", "&lt;title>a&lt;/title>\n")]
     [InlineData("<div>\n<script\nx\n", "<div>\n&lt;script\nx\n")]
@@ -2255,6 +2256,17 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void InlineExtensionsEndTheBacktickRunsOfTheirContent()
+    {
+        // The search of the unclosed ``` reads `` at the end, which the content of the extension ends after one backtick
+        var text = "a ``` @`x``";
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { SyntaxExtensions = [new LastCharacterSpanExtension()] });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal("<p>a ``` <span><code>x</code></span></p>\n", MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { NodeRenderers = [new SpanRenderer()] }));
+    }
+
+    [Fact]
     public void InlineExtensionsAreTriedBeforeTheBuiltInSyntaxes()
     {
         var options = new MarkdownParseOptions { SyntaxExtensions = [new WikiLinkExtension()] };
@@ -3992,6 +4004,25 @@ public sealed class MarkdownSyntaxTreeTests
             }
 
             return false;
+        }
+    }
+
+    // A span from @ to the last character of the text, which is its closing marker
+    private sealed class LastCharacterSpanExtension() : MarkdownInlineExtension("span", "@")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var length = context.Text.Length;
+            if (length < 3)
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 1);
+            context.AddInlines(1, length - 2);
+            context.AddMarker(length - 1, 1);
+            context.Complete(length);
+            return true;
         }
     }
 

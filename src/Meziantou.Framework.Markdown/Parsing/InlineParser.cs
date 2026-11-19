@@ -1833,13 +1833,14 @@ internal sealed class InlineParser
         var afterOpenTicks = _pos;
         var position = _pos;
 
-        // A search reached the end of the subject: the last run of each length after it is known
-        var hasCloser = _end > _backtickRunsScannedEnd || (_backtickRuns.TryGetValue(tickCount, out var lastRun) && lastRun >= afterOpenTicks);
+        // A search reached the end of the range: the last run of each length after it is known. The content of an extension has
+        // its own end, which can split a run, so it has its own state (see ParseExtensionContent).
+        var hasCloser = _end != _backtickRunsScannedEnd || (_backtickRuns.TryGetValue(tickCount, out var lastRun) && lastRun >= afterOpenTicks);
         while (hasCloser)
         {
             if (position >= _end)
             {
-                _backtickRunsScannedEnd = Math.Max(_backtickRunsScannedEnd, _end);
+                _backtickRunsScannedEnd = _end;
                 break;
             }
 
@@ -2425,6 +2426,7 @@ internal sealed class InlineParser
         var previousEnd = _end;
         var brackets = _brackets;
         var activeBrackets = _activeBrackets;
+        var backtickRunsScannedEnd = _backtickRunsScannedEnd;
         var anchorScanNode = _anchorScanNode;
         var anchorScanIsOpen = _anchorScanIsOpen;
         var stackBottom = _delimiters;
@@ -2435,6 +2437,10 @@ internal sealed class InlineParser
         _end = end;
         _brackets = null;
         _activeBrackets = 0;
+
+        // The runs that the outer searches recorded are kept: they only make a search run, which reads the runs as the content
+        // ends them
+        _backtickRunsScannedEnd = -1;
         _anchorScanNode = null;
         _anchorScanIsOpen = false;
         _scanningPipeTable = false;
@@ -2456,6 +2462,7 @@ internal sealed class InlineParser
             _end = previousEnd;
             _brackets = brackets;
             _activeBrackets = activeBrackets;
+            _backtickRunsScannedEnd = backtickRunsScannedEnd;
             _anchorScanNode = anchorScanNode;
             _anchorScanIsOpen = anchorScanIsOpen;
             _scanningPipeTable = scanningPipeTable;
@@ -3925,7 +3932,8 @@ internal sealed class InlineParser
 
     // The email addresses of a text, as cmark-gfm finds them: letters, digits, ., +, - and _ before an @, and segments of letters,
     // digits, - and _ separated by dots after it, which end with a letter. The address can start with mailto: or xmpp:, which
-    // are not after a letter or a digit, and an xmpp: address can have a resource after a /.
+    // are not after a letter or a digit, and an xmpp: address can have a resource after a /. The link starts at the scheme:
+    // cmark-gfm reads on before it, so that .mailto:a@b.c would link to .mailto:a@b.c.
     private static List<(int Start, int End)> FindEmailAddresses(string text)
     {
         var result = new List<(int Start, int End)>();
@@ -3944,12 +3952,14 @@ internal sealed class InlineParser
                 }
                 else if (c == ':' && IsScheme(text, lower, start, "mailto:"))
                 {
-                    start--;
+                    start -= "mailto:".Length;
+                    break;
                 }
                 else if (c == ':' && IsScheme(text, lower, start, "xmpp:"))
                 {
                     isXmpp = true;
-                    start--;
+                    start -= "xmpp:".Length;
+                    break;
                 }
                 else
                 {

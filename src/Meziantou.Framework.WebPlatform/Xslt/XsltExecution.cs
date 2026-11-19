@@ -467,33 +467,71 @@ internal sealed class XsltExecution
         }
     }
 
-    /// <summary>Adds the attributes of attribute sets to the element being created (https://www.w3.org/TR/xslt-10/#attribute-sets).</summary>
+    /// <summary>
+    /// Adds the attributes of attribute sets to the element being created (https://www.w3.org/TR/xslt-10/#attribute-sets): the
+    /// attributes of the sets a set uses, then its own attributes. The sets are walked with a stack of their own, so a long
+    /// chain of sets does not overflow the stack; a set that uses itself, directly or not, is an error.
+    /// </summary>
     public void UseAttributeSets(XsltQName[] names)
     {
-        foreach (var name in names)
+        if (names.Length == 0)
+            return;
+
+        var locals = _locals;
+        var frames = new Stack<(XsltQName Name, XsltAttributeSet Set, int NextUsedSet)>();
+        try
         {
-            if (!_stylesheet.AttributeSets.TryGetValue(name, out var set))
-                throw new XsltException($"The attribute set '{name}' is not declared");
-
-            if (!_usedAttributeSets.Add(name))
-                throw new XsltException($"The attribute set '{name}' uses itself");
-
-            var locals = _locals;
-            try
+            var next = 0;
+            while (true)
             {
-                UseAttributeSets([.. set.UsedSets]);
-
-                // The attribute sets only see the global variables
-                _locals = null;
-                foreach (var attribute in set.Attributes)
+                XsltQName name;
+                if (frames.TryPeek(out var frame))
                 {
-                    attribute.Execute(this);
+                    if (frame.NextUsedSet == frame.Set.UsedSets.Count)
+                    {
+                        // The sets it uses are applied: its own attributes, which only see the global variables (the set
+                        // stays in the stack while they are instantiated: an attribute that uses the set is an error)
+                        _locals = null;
+                        foreach (var attribute in frame.Set.Attributes)
+                        {
+                            attribute.Execute(this);
+                        }
+
+                        _locals = locals;
+                        frames.Pop();
+                        _usedAttributeSets.Remove(frame.Name);
+                        continue;
+                    }
+
+                    name = frame.Set.UsedSets[frame.NextUsedSet];
+                    frames.Pop();
+                    frames.Push(frame with { NextUsedSet = frame.NextUsedSet + 1 });
                 }
+                else if (next < names.Length)
+                {
+                    name = names[next++];
+                }
+                else
+                {
+                    return;
+                }
+
+                CheckLimits();
+                if (!_stylesheet.AttributeSets.TryGetValue(name, out var set))
+                    throw new XsltException($"The attribute set '{name}' is not declared");
+
+                if (!_usedAttributeSets.Add(name))
+                    throw new XsltException($"The attribute set '{name}' uses itself");
+
+                frames.Push((name, set, 0));
             }
-            finally
+        }
+        finally
+        {
+            _locals = locals;
+            foreach (var frame in frames)
             {
-                _locals = locals;
-                _usedAttributeSets.Remove(name);
+                _usedAttributeSets.Remove(frame.Name);
             }
         }
     }

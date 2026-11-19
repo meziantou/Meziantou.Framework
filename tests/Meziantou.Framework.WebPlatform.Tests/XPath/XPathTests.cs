@@ -1,6 +1,9 @@
+using System.Globalization;
+using System.Text;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Xslt;
 
 namespace Meziantou.Framework.WebPlatform.Tests.XPath;
 
@@ -1202,6 +1205,62 @@ public sealed class XPathTests
             <xsl:template match="item" mode="content"><xsl:param name="p" select="'-'"/><xsl:for-each select="."><xsl:sort select="."/><xsl:value-of select="concat(., $p)"/></xsl:for-each></xsl:template>
             """;
         Assert.Equal("[][][b-a-]", TransformToText(Templates, "<root><item>b</item><item>a</item></root>"));
+    }
+
+    [Fact]
+    public void Xslt_AttributeSets_UsedSetsAndCycles()
+    {
+        // The attributes of the used sets, in order, then the attributes of the set; a set may be used twice, but not by itself
+        const string Sets = """
+            <xsl:attribute-set name="x" use-attribute-sets="y z"><xsl:attribute name="v">x</xsl:attribute></xsl:attribute-set>
+            <xsl:attribute-set name="y"><xsl:attribute name="v">y</xsl:attribute><xsl:attribute name="y">1</xsl:attribute></xsl:attribute-set>
+            <xsl:attribute-set name="z" use-attribute-sets="y"><xsl:attribute name="z"><xsl:value-of select="count(/root/*)"/></xsl:attribute></xsl:attribute-set>
+            """;
+        Assert.Equal("""<r v="x" y="1" z="2" w="r"/>""", TransformToXml(Stylesheet(Sets + """<xsl:template match="/"><r xsl:use-attribute-sets="x" w="r"/></xsl:template>"""), "<root><a/><b/></root>"));
+
+        foreach (var cycle in new[]
+        {
+            """<xsl:attribute-set name="a" use-attribute-sets="a"/>""",
+            """<xsl:attribute-set name="a" use-attribute-sets="b"/><xsl:attribute-set name="b" use-attribute-sets="c"/><xsl:attribute-set name="c" use-attribute-sets="a"/>""",
+            """<xsl:attribute-set name="a"><xsl:attribute name="v"><e xsl:use-attribute-sets="a"/></xsl:attribute></xsl:attribute-set>""",
+            """<xsl:attribute-set name="a" use-attribute-sets="undeclared"/>""",
+        })
+        {
+            var processor = CreateProcessor(Stylesheet(cycle + """<xsl:template match="/"><r xsl:use-attribute-sets="a"/></xsl:template>"""));
+            Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
+        }
+    }
+
+    [Fact]
+    public void Xslt_AttributeSets_LongChain_DoesNotOverflowTheStack()
+    {
+        // Each set uses the next one: the sets are walked without recursion
+        const int Count = 100_000;
+        var sets = new StringBuilder();
+        for (var i = 0; i < Count; i++)
+        {
+            sets.Append(CultureInfo.InvariantCulture, $"""<xsl:attribute-set name="s{i}" use-attribute-sets="s{i + 1}"><xsl:attribute name="a">{i}</xsl:attribute></xsl:attribute-set>""");
+        }
+
+        sets.Append(CultureInfo.InvariantCulture, $"""<xsl:attribute-set name="s{Count}"><xsl:attribute name="a">last</xsl:attribute><xsl:attribute name="b">last</xsl:attribute></xsl:attribute-set>""");
+        var template = """<xsl:template match="/"><r xsl:use-attribute-sets="s0"/></xsl:template>""";
+        Assert.Equal("""<r a="0" b="last"/>""", TransformToXml(Stylesheet(sets + template), "<root/>"));
+
+        // The same chain closed into a cycle is an error
+        var cycle = sets.ToString().Replace($"""name="s{Count}">""", $"""name="s{Count}" use-attribute-sets="s0">""", StringComparison.Ordinal);
+        Assert.Equal("OperationError", Assert.Throws<DomException>(() => CreateProcessor(Stylesheet(cycle + template)).TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
+
+        // Each use of a set is a step of the transformation: the sets used an exponential number of times stop at the limit
+        var exponential = new StringBuilder();
+        for (var i = 0; i < 64; i++)
+        {
+            exponential.Append(CultureInfo.InvariantCulture, $"""<xsl:attribute-set name="s{i}" use-attribute-sets="s{i + 1} s{i + 1}"/>""");
+        }
+
+        exponential.Append("""<xsl:attribute-set name="s64"><xsl:attribute name="a">1</xsl:attribute></xsl:attribute-set>""");
+        var processor = new XsltProcessor { Limits = new XsltLimits { MaxSteps = 100_000 } };
+        processor.ImportStylesheet(XmlDocumentParser.ParseDocument(Stylesheet(exponential + template)));
+        Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
     }
 
     [Fact]

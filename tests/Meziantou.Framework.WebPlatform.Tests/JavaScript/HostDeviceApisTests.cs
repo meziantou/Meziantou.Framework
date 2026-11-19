@@ -3854,6 +3854,30 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void CanvasCaptureStream_RespectsTheFrameRate()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=1 height=1></canvas>", new BrowsingContextOptions { TimeProvider = clock });
+        var canvas = (HtmlCanvasElement)document.QuerySelector("canvas")!;
+        var context = (ImageBitmapRenderingContext)canvas.GetContext("bitmaprenderer")!;
+        var track = (CanvasCaptureMediaStreamTrack)canvas.CaptureStream(frameRequestRate: 1).GetVideoTracks()[0];
+
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [1, 0, 0, 255])));
+        Assert.Equal(1, track.GetVideoFrame()!.Pixels.Span[0]);
+
+        // A second change within the second of the frame rate is captured once the second elapsed
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [2, 0, 0, 255])));
+        Assert.Equal(1, track.GetVideoFrame()!.Pixels.Span[0]);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(2, track.GetVideoFrame()!.Pixels.Span[0]);
+
+        // requestFrame() captures the canvas at once
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [3, 0, 0, 255])));
+        track.RequestFrame();
+        Assert.Equal(3, track.GetVideoFrame()!.Pixels.Span[0]);
+    }
+
+    [Fact]
     public void CanvasCaptureStream_FollowsTheSizeOfTheCanvas()
     {
         var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");

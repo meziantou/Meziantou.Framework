@@ -33,6 +33,8 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
 {
     private readonly double? _frameRequestRate;
     private bool _frameRequested;
+    private bool _frameForced;
+    private long? _lastCaptureTimestamp;
     private bool _muteQueued;
     private MediaVideoFrame? _frame;
 
@@ -81,13 +83,20 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
         }
     }
 
-    public void RequestFrame() => _frameRequested = true;
+    /// <summary>Captures the content of the canvas, even when it did not change and whatever the frame rate.</summary>
+    public void RequestFrame()
+    {
+        _frameRequested = true;
+        _frameForced = true;
+    }
 
     public override MediaVideoFrame? GetVideoFrame()
     {
-        if (_frameRequested && !IsStopped)
+        if (_frameRequested && !IsStopped && CanCaptureFrame())
         {
             _frameRequested = false;
+            _frameForced = false;
+            _lastCaptureTimestamp = Clock.GetTimestamp();
             var pixels = Canvas.GetBitmapSnapshot();
             if (!pixels.IsOriginClean)
             {
@@ -104,6 +113,20 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
         return _frame;
     }
 
+    private TimeProvider Clock => Canvas.RelevantGlobal?.EventLoop.TimeProvider ?? TimeProvider.System;
+
+    /// <summary>
+    /// Whether a frame can be captured now: the frames are captured at most at the frame rate given to <c>captureStream()</c>
+    /// (a change of the canvas made sooner is captured once the interval elapsed), unless <see cref="RequestFrame"/> was called.
+    /// </summary>
+    private bool CanCaptureFrame()
+    {
+        if (_frameForced || _frameRequestRate is not > 0 || _lastCaptureTimestamp is not { } last)
+            return true;
+
+        return Clock.GetElapsedTime(last).TotalSeconds >= 1 / _frameRequestRate.Value;
+    }
+
     /// <summary>
     /// The canvas is not origin-clean: its content is never captured, and the tracks are muted
     /// (https://w3c.github.io/mediacapture-fromelement/#dom-htmlcanvaselement-capturestream). The last frame, captured while
@@ -113,6 +136,7 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
     {
         _frame = null;
         _frameRequested = false;
+        _frameForced = false;
         if (IsMuted || _muteQueued)
             return;
 

@@ -407,8 +407,9 @@ public static class MarkdownFuzzTargets
             if (options.DisableHtml)
             {
                 // The HTML of the text is text, so every id is one the renderer writes: the ids of the document have the prefix, and
-                // so do the links to the footnotes and back
-                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(html, "(?: id=\"|href=\"#)(?<id>[^\"]*)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
+                // so do the links to the footnotes and back. The attributes are the ones in a tag: the text of a diagram is written as
+                // Markdig writes it, where only < and & are escaped, so it can contain id="a" as text.
+                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(html, "(?<=<[^<>]*)(?: id=\"|href=\"#)(?<id>[^\"]*)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
                 {
                     var id = match.Groups["id"].Value;
                     FuzzAssert.True(id.StartsWith("u-", StringComparison.Ordinal) || (match.Value.StartsWith(" id", StringComparison.Ordinal) && id.StartsWith("pragma-line-", StringComparison.Ordinal)) || (match.Value.StartsWith("href", StringComparison.Ordinal) && !id.StartsWith("fn", StringComparison.Ordinal)), $"The id {FuzzAssert.Format(id)} of {FuzzAssert.Format(match.Value)} has no prefix: {FuzzAssert.Format(text)}");

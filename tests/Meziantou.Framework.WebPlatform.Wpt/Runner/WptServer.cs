@@ -55,10 +55,19 @@ internal static partial class WptServer
     /// <summary>The subdomain of the configuration of wptserve that does not resolve (<c>not_subdomains</c>): its requests are network errors.</summary>
     private const string NotSubdomain = "nonexistent";
 
+    /// <summary>
+    /// The ports of the servers. The <c>-local</c> and <c>-public</c> ports are the servers that wptserve runs for the tests of Local
+    /// Network Access (the browsers treat them as the local and public address spaces): their port is chosen by wptserve
+    /// (<c>auto</c> in the configuration), and they serve the same files.
+    /// </summary>
     private static readonly Dictionary<string, int[]> Ports = new(StringComparer.Ordinal)
     {
         ["http"] = [8000, 8001],
+        ["http-local"] = [8002],
+        ["http-public"] = [8003],
         ["https"] = [8443, 8444],
+        ["https-local"] = [8445],
+        ["https-public"] = [8446],
         ["ws"] = [8888],
         ["wss"] = [8889],
         ["h2"] = [9000],
@@ -74,7 +83,7 @@ internal static partial class WptServer
     public static bool IsHost(Url url) => url.Protocol is "http:" or "https:"
         && (url.Hostname is Domain or AltDomain or "127.0.0.1" || url.Hostname.EndsWith("." + Domain, StringComparison.Ordinal) || url.Hostname.EndsWith("." + AltDomain, StringComparison.Ordinal))
         && !url.Hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
-        && (url.Port.Length == 0 || url.Port is var port && (url.Protocol == "http:" ? Ports["http"] : [.. Ports["https"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port));
+        && (url.Port.Length == 0 || url.Port is var port && (url.Protocol == "http:" ? (int[])[.. Ports["http"], .. Ports["http-local"], .. Ports["http-public"]] : [.. Ports["https"], .. Ports["https-local"], .. Ports["https-public"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port));
 
     /// <summary>
     /// Whether a URL is served by the WebSocket server of wptserve: the hosts of <see cref="IsHost"/>, on the <c>ws</c> port for

@@ -3569,6 +3569,11 @@ public sealed partial class BrowsingContext : IDisposable
             PointerLockModel.OnDocumentUnloaded(document);
             ReleaseDeviceLocks(document);
             ModelContext.RunUnloadingDocumentCleanupSteps(document);
+            PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
+
+            // The prompts of the user agent that the document shows are closed, including when it enters the back/forward
+            // cache: a pending request cannot be answered after the document is restored
+            document.ClosePrompts();
             if (persisted)
                 return;
 
@@ -3614,6 +3619,7 @@ public sealed partial class BrowsingContext : IDisposable
     {
         // https://webmachinelearning.github.io/webmcp/#unloading-document-cleanup-steps (the documents that are destroyed without being unloaded, e.g. an initial about:blank document)
         ModelContext.RunUnloadingDocumentCleanupSteps(document);
+        PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
 
         // The pointer lock of an element of the document is exited (https://w3c.github.io/pointerlock/#requirements), and
         // the locks of its window are released (https://w3c.github.io/web-locks/#lock-termination)
@@ -3681,6 +3687,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         // The realtime audio contexts of the document are closed
         document.CloseAudioContexts();
+
+        // The prompts of the user agent that the document shows are closed (e.g. a pending digital credential request is aborted)
+        document.ClosePrompts();
 
         // https://w3c.github.io/FileAPI/#lifeTime: the blob URLs created by the document are revoked
         document.BrowsingContext?.BlobUrls.RemoveEntries(document);
@@ -3901,6 +3910,7 @@ public sealed partial class BrowsingContext : IDisposable
             Options.ScriptEngine?.DestroyRealm(window);
         }
 
+        IdentityProviderDialogs.NotifyDestroyed(this);
         Options.BrowsingContextDestroyed?.Invoke(CallbackContext.For(this));
     }
 

@@ -9,29 +9,30 @@ description: "The results of the web-platform-tests of web-based-payment-handler
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
+| [Stable](#stable-tests) | 8 | 10 | 0 | 80% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **10** | **10** | **–** |
+| **All** | **8** | **10** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 10
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`can-make-payment-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`can-make-payment-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.serviceworker.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`can-make-payment-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.worker.js) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`can-make-payment-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/web-based-payment-handler/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`payment-request-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`payment-request-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.serviceworker.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`payment-request-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.worker.js) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`same-object-attributes.https.html`](https://wpt.fyi/results/web-based-payment-handler/same-object-attributes.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
-| [`untrusted-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/untrusted-event.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Handler API |
+| [`can-make-payment-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.html) | Pass | 1 / 1 |  |  |
+| [`can-make-payment-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.serviceworker.html) | Fail | 4 / 5 | TEST BUG | "can be constructed with an EventInitDict" passes an init dictionary to `new CanMakePaymentEvent()`, whose only constructor argument is the type (https://w3c.github.io/web-based-payment-handler/#the-canmakepaymentevent, `constructor(DOMString type)`): the dictionary is ignored, so `bubbles`, `cancelable` and `composed` are false |
+| [`can-make-payment-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.worker.js) | Pass | 1 / 1 |  |  |
+| [`can-make-payment-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event.https.html) | Fail | 1 / 7 | NOT IMPLEMENTED | the invocation of the payment handlers of the service workers: the just-in-time installation of the payment app of the web app manifest that the payment method manifest names, the `canmakepayment` and `paymentrequest` events fired by the user agent, and `PaymentRequestEvent.openWindow()` (the library implements `PaymentManager` and the event interfaces only) |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/web-based-payment-handler/idlharness.https.any.js) | Pass | 52 / 52 |  |  |
+| [`payment-request-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.html) | Pass | 1 / 1 |  |  |
+| [`payment-request-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.serviceworker.html) | Pass | 5 / 5 |  |  |
+| [`payment-request-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.worker.js) | Pass | 1 / 1 |  |  |
+| [`same-object-attributes.https.html`](https://wpt.fyi/results/web-based-payment-handler/same-object-attributes.https.html) | Pass | 1 / 1 |  |  |
+| [`untrusted-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/untrusted-event.https.html) | Pass | 1 / 1 |  |  |

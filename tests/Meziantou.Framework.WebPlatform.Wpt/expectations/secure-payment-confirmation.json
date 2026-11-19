@@ -1,0 +1,79 @@
+{
+  "secure-payment-confirmation/authentication-accepted-bbk-created.https.html": {
+    "total": 3
+  },
+  "secure-payment-confirmation/authentication-accepted-bbk-per-passkey.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/authentication-accepted-bbk-reused.https.html": {
+    "total": 3
+  },
+  "secure-payment-confirmation/authentication-accepted.https.html": {
+    "total": 2
+  },
+  "secure-payment-confirmation/authentication-auth-another-way.https.html": {
+    "total": 2
+  },
+  "secure-payment-confirmation/authentication-cannot-bypass-spc.https.html": {
+    "total": 1,
+    "failures": {
+      "Cannot bypass SPC authentication UI via navigator.credentials.get": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/authentication-cross-origin.sub.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/authentication-icon-data-url.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/authentication-in-iframe.sub.https.html": {
+    "total": 2
+  },
+  "secure-payment-confirmation/authentication-invalid-icon.https.html": {
+    "total": 2
+  },
+  "secure-payment-confirmation/authentication-invalid-payment-entity-logo.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/authentication-optout.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/authentication-rejected.https.html": {
+    "total": 2
+  },
+  "secure-payment-confirmation/authentication-requires-user-activation.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/constructor-validate-payment-method-data.https.html": {
+    "total": 22,
+    "failures": {
+      "Large challenge value throws exception.": "FAIL",
+      "Large credentialIds value throws exception.": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/constructor.https.html": {
+    "total": 10
+  },
+  "secure-payment-confirmation/enrollment-bbk-per-passkey.https.html": {
+    "total": 1
+  },
+  "secure-payment-confirmation/enrollment-bbk.https.html": {
+    "harness": "ERROR",
+    "total": 3
+  },
+  "secure-payment-confirmation/enrollment-in-iframe.sub.https.html": {
+    "total": 3,
+    "failures": {
+      "SPC enrollment in cross-origin iframe without payment permission": "FAIL"
+    }
+  },
+  "secure-payment-confirmation/enrollment.https.html": {
+    "total": 9,
+    "failures": {
+      "Payment credential does not allow residentKey to be \"discouraged\".": "FAIL",
+      "Payment credential requires authenticatorAttachment to be \"platform\", not \"cross-platform\".": "FAIL",
+      "Payment credential requires userVerification to be \"required\", not \"discouraged\".": "FAIL",
+      "Payment credential requires userVerification to be \"required\", not \"preferred\".": "FAIL"
+    }
+  }
+}

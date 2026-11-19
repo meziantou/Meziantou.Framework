@@ -264,6 +264,26 @@ public sealed class WptTests
 
     public static TheoryData<string> WebAuthnTests => GetTests("webauthn");
 
+    public static TheoryData<string> CredentialManagementTests => GetTests("credential-management");
+
+    public static TheoryData<string> PaymentRequestTests => GetTests("payment-request");
+
+    public static TheoryData<string> PaymentMethodBasicCardTests => GetTests("payment-method-basic-card");
+
+    public static TheoryData<string> PaymentMethodIdTests => GetTests("payment-method-id");
+
+    public static TheoryData<string> PaymentMethodManifestTests => GetTests("payment-method-manifest");
+
+    public static TheoryData<string> MerchantValidationTests => GetTests("merchant-validation");
+
+    public static TheoryData<string> SecurePaymentConfirmationTests => GetTests("secure-payment-confirmation");
+
+    public static TheoryData<string> FedCmTests => GetTests("fedcm");
+
+    public static TheoryData<string> DigitalCredentialsTests => GetTests("digital-credentials");
+
+    public static TheoryData<string> WebBasedPaymentHandlerTests => GetTests("web-based-payment-handler");
+
     public static TheoryData<string> SaveDataTests => GetTests("savedata");
 
     public static TheoryData<string> GpcTests => GetTests("gpc");
@@ -1262,6 +1282,46 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebAuthnTests))]
     public void WebAuthn(string test) => Run("webauthn", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CredentialManagementTests))]
+    public void CredentialManagement(string test) => Run("credential-management", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentRequestTests))]
+    public void PaymentRequest(string test) => Run("payment-request", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentMethodBasicCardTests))]
+    public void PaymentMethodBasicCard(string test) => Run("payment-method-basic-card", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentMethodIdTests))]
+    public void PaymentMethodId(string test) => Run("payment-method-id", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentMethodManifestTests))]
+    public void PaymentMethodManifest(string test) => Run("payment-method-manifest", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MerchantValidationTests))]
+    public void MerchantValidation(string test) => Run("merchant-validation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SecurePaymentConfirmationTests))]
+    public void SecurePaymentConfirmation(string test) => Run("secure-payment-confirmation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(FedCmTests))]
+    public void FedCm(string test) => Run("fedcm", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DigitalCredentialsTests))]
+    public void DigitalCredentials(string test) => Run("digital-credentials", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebBasedPaymentHandlerTests))]
+    public void WebBasedPaymentHandler(string test) => Run("web-based-payment-handler", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(SaveDataTests))]

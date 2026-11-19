@@ -334,6 +334,55 @@
     return webauthn('set_credential_properties', authenticator_id, credential_id, props);
   };
 
+  // The prompts of the user agent (see WptUserAgentUI.cs): the payment sheet and the transaction dialog of Secure Payment
+  // Confirmation, the dialogs of FedCM and the virtual wallet of the Digital Credentials API. The arguments and the results are
+  // JSON, as the WebDriver commands.
+  const userAgentUI = (command, ...args) => new Promise((resolve, reject) => __wpt_user_agent_ui(
+    command,
+    JSON.stringify(args),
+    (result) => resolve(result === undefined ? undefined : JSON.parse(result)),
+    (message) => reject(new Error(message))));
+
+  internal.set_spc_transaction_mode = function (mode, context) {
+    return userAgentUI('set_spc_transaction_mode', mode);
+  };
+
+  internal.set_fedcm_delay_enabled = function (enabled, context) {
+    return userAgentUI('set_fedcm_delay_enabled', enabled);
+  };
+
+  internal.reset_fedcm_cooldown = function (context) {
+    return userAgentUI('reset_fedcm_cooldown');
+  };
+
+  internal.get_fedcm_dialog_type = function (context) {
+    return userAgentUI('get_fedcm_dialog_type');
+  };
+
+  internal.get_fedcm_dialog_title = function (context) {
+    return userAgentUI('get_fedcm_dialog_title');
+  };
+
+  internal.get_fedcm_account_list = function (context) {
+    return userAgentUI('get_fedcm_account_list');
+  };
+
+  internal.select_fedcm_account = function (account_index, context) {
+    return userAgentUI('select_fedcm_account', account_index);
+  };
+
+  internal.cancel_fedcm_dialog = function (context) {
+    return userAgentUI('cancel_fedcm_dialog');
+  };
+
+  internal.click_fedcm_dialog_button = function (dialog_button, context) {
+    return userAgentUI('click_fedcm_dialog_button', dialog_button);
+  };
+
+  internal.set_virtual_wallet_behavior = function (action, protocol, response, context) {
+    return userAgentUI('set_virtual_wallet_behavior', action, protocol === undefined ? null : protocol, response === undefined ? null : response);
+  };
+
   // The properties of the contact of a pointer action (https://w3c.github.io/webdriver/#dfn-process-pointer-parameters)
   const pointerProperties = ['width', 'height', 'pressure', 'tangentialPressure', 'tiltX', 'tiltY', 'twist', 'altitudeAngle', 'azimuthAngle'];
 

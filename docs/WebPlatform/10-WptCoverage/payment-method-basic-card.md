@@ -9,23 +9,24 @@ description: "The results of the web-platform-tests of payment-method-basic-card
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 1 | 4 | 0 | 25% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **1** | **4** | **0** | **25%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 4
+- **TEST BUG**: 1
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`apply_the_modifiers.html`](https://wpt.fyi/results/payment-method-basic-card/apply_the_modifiers.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`historical.https.html`](https://wpt.fyi/results/payment-method-basic-card/historical.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-canmakepayment-method.https.html`](https://wpt.fyi/results/payment-method-basic-card/payment-request-canmakepayment-method.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`steps_for_selecting_the_payment_handler.html`](https://wpt.fyi/results/payment-method-basic-card/steps_for_selecting_the_payment_handler.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
+| [`apply_the_modifiers.html`](https://wpt.fyi/results/payment-method-basic-card/apply_the_modifiers.html) | Timeout | 0 / 0 | TEST RUNNER | manual test (a person must click the buttons that start the subtests, and check the payment sheet), it times out |
+| [`historical.https.html`](https://wpt.fyi/results/payment-method-basic-card/historical.https.html) | Pass | 1 / 1 |  |  |
+| [`payment-request-canmakepayment-method.https.html`](https://wpt.fyi/results/payment-method-basic-card/payment-request-canmakepayment-method.https.html) | Fail | 2 / 3 | TEST BUG | the test constructs a request with 500 `this-is-not-supported` payment methods, whose duplicates the constructor rejects with a `RangeError` (https://w3c.github.io/payment-request/#constructor: "If seenPMIs contains pmi throw a RangeError"); Chromium fails it too |
+| [`steps_for_selecting_the_payment_handler.html`](https://wpt.fyi/results/payment-method-basic-card/steps_for_selecting_the_payment_handler.html) | Timeout | 0 / 0 | TEST RUNNER | manual test (a person must click the buttons that start the subtests, and check the payment sheet), it times out |

@@ -9,35 +9,36 @@ description: "The results of the web-platform-tests of credential-management, an
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 16 | 16 | – |
+| [Stable](#stable-tests) | 7 | 16 | 0 | 44% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **16** | **16** | **–** |
+| **All** | **7** | **16** | **0** | **44%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 16
+- **TEST BUG**: 6
+- **NOT IMPLEMENTED**: 4
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`credentialscontainer-create-basics.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-create-basics.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`credentialscontainer-frame-basics.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-frame-basics.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`credentialscontainer-get-basics.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-get-basics.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`credentialscontainer-prevent-silent-access.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-prevent-silent-access.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`federatedcredential-framed-get.sub.https.html`](https://wpt.fyi/results/credential-management/federatedcredential-framed-get.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`historical.https.html`](https://wpt.fyi/results/credential-management/historical.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/credential-management/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`non-fully-active.https.html`](https://wpt.fyi/results/credential-management/non-fully-active.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`origin-bound-opaque-origin-top-level-allow-same-origin.https.html`](https://wpt.fyi/results/credential-management/origin-bound-opaque-origin-top-level-allow-same-origin.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`origin-bound-opaque-origin-top-level.https.html`](https://wpt.fyi/results/credential-management/origin-bound-opaque-origin-top-level.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`origin-bound-opaque-origin.https.html`](https://wpt.fyi/results/credential-management/origin-bound-opaque-origin.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`otpcredential-get-basics.https.html`](https://wpt.fyi/results/credential-management/otpcredential-get-basics.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`otpcredential-iframe.https.html`](https://wpt.fyi/results/credential-management/otpcredential-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`otpcredential-store.https.html`](https://wpt.fyi/results/credential-management/otpcredential-store.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`passwordcredential-framed-get.sub.https.html`](https://wpt.fyi/results/credential-management/passwordcredential-framed-get.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
-| [`require_securecontext.html`](https://wpt.fyi/results/credential-management/require_securecontext.html) | Disabled | – | NOT IMPLEMENTED | Credential Management API |
+| [`credentialscontainer-create-basics.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-create-basics.https.html) | Fail | 13 / 17 | TEST BUG | `PasswordCredentialData.origin` and `FederatedCredentialInit.origin` are required members (https://w3c.github.io/webappsec-credential-management/#dictdef-passwordcredentialdata): the test creates the credential without `origin`, whose conversion throws a TypeError (Chromium does not require it); "rejects when aborted after the promise creation" calls `create({ signal })` without a type of credential, which is rejected with a NotSupportedError at once; the test expects the promise to stay pending until the signal is aborted |
+| [`credentialscontainer-frame-basics.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-frame-basics.https.html) | Timeout | 0 / 1 | TEST BUG | the `data:` document posts its message while it is parsed, before the load event of the iframe, and the test only listens for the message after the load event: the message is missed (the test also times out in Edge) |
+| [`credentialscontainer-get-basics.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-get-basics.https.html) | Fail | 3 / 6 | TEST BUG, NOT IMPLEMENTED | `get({ password: true, federated })` expects a NotAllowedError for the lack of user activation, which the algorithm does not require (https://w3c.github.io/webappsec-credential-management/#algorithm-request): the request resolves with null (no stored credential); and `get({ signal })` without a type of credential is rejected with a NotSupportedError at once (step 7), while the test expects the promise to stay pending until the signal is aborted; the `otp` member (WebOTP, `OTPCredential`) of `CredentialRequestOptions`: it is ignored, so `get()` with a password and `otp` requests the passwords instead of rejecting the combination with a NotSupportedError |
+| [`credentialscontainer-prevent-silent-access.https.html`](https://wpt.fyi/results/credential-management/credentialscontainer-prevent-silent-access.https.html) | Pass | 1 / 1 |  |  |
+| [`federatedcredential-framed-get.sub.https.html`](https://wpt.fyi/results/credential-management/federatedcredential-framed-get.sub.https.html) | Pass | 6 / 6 |  |  |
+| [`historical.https.html`](https://wpt.fyi/results/credential-management/historical.https.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/credential-management/idlharness.https.window.js) | Fail | 79 / 96 | TEST BUG | the test creates the `PasswordCredential` and `FederatedCredential` objects without `origin`, a required member of their dictionaries (https://w3c.github.io/webappsec-credential-management/#dictdef-passwordcredentialdata): the constructors throw, so the objects are not tested |
+| [`non-fully-active.https.html`](https://wpt.fyi/results/credential-management/non-fully-active.https.html) | Pass | 1 / 1 |  |  |
+| [`origin-bound-opaque-origin-top-level-allow-same-origin.https.html`](https://wpt.fyi/results/credential-management/origin-bound-opaque-origin-top-level-allow-same-origin.https.html) | Pass | 3 / 3 |  |  |
+| [`origin-bound-opaque-origin-top-level.https.html`](https://wpt.fyi/results/credential-management/origin-bound-opaque-origin-top-level.https.html) | Fail | 1 / 3 | TEST BUG | `PasswordCredentialData.origin` and `FederatedCredentialInit.origin` are required members (https://w3c.github.io/webappsec-credential-management/#dictdef-passwordcredentialdata): the test creates the credential without `origin`, whose conversion throws a TypeError (Chromium does not require it), before the origin is checked |
+| [`origin-bound-opaque-origin.https.html`](https://wpt.fyi/results/credential-management/origin-bound-opaque-origin.https.html) | Fail | 4 / 9 | TEST BUG | `PasswordCredentialData.origin` and `FederatedCredentialInit.origin` are required members (https://w3c.github.io/webappsec-credential-management/#dictdef-passwordcredentialdata): the test creates the credential without `origin`, whose conversion throws a TypeError (Chromium does not require it), before the origin is checked |
+| [`otpcredential-get-basics.https.html`](https://wpt.fyi/results/credential-management/otpcredential-get-basics.https.html) | Fail | 2 / 6 | NOT IMPLEMENTED | the WebOTP API (`OTPCredential`, https://wicg.github.io/web-otp/); the tests also need the mock SMS receiver of Chromium (`otpcredential-helper.js` throws "Unsupported browser") |
+| [`otpcredential-iframe.https.html`](https://wpt.fyi/results/credential-management/otpcredential-iframe.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the WebOTP API (`OTPCredential`, https://wicg.github.io/web-otp/); the tests also need the mock SMS receiver of Chromium (`otpcredential-helper.js` throws "Unsupported browser") |
+| [`otpcredential-store.https.html`](https://wpt.fyi/results/credential-management/otpcredential-store.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the WebOTP API (`OTPCredential`, https://wicg.github.io/web-otp/); the tests also need the mock SMS receiver of Chromium (`otpcredential-helper.js` throws "Unsupported browser") |
+| [`passwordcredential-framed-get.sub.https.html`](https://wpt.fyi/results/credential-management/passwordcredential-framed-get.sub.https.html) | Pass | 6 / 6 |  |  |
+| [`require_securecontext.html`](https://wpt.fyi/results/credential-management/require_securecontext.html) | Pass | 1 / 1 |  |  |

@@ -122,6 +122,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
 
+    /// <summary>The prompts of the user agent (payment sheet, account choosers...), driven by the commands of the test driver.</summary>
+    private readonly WptUserAgentUI _userAgentUI = new();
+
     /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
     private readonly DisplayFeaturesProvider _displayFeatures = new();
     private readonly WptStash _stash = new();
@@ -241,6 +244,10 @@ internal sealed partial class WptTestRunner
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
+
+                // The prompts of the user agent, answered by the commands of the test driver (test_driver.set_spc_transaction_mode(),
+                // test_driver.select_fedcm_account(), test_driver.set_virtual_wallet_behavior()...)
+                UserAgentUI = _userAgentUI,
 
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
@@ -436,8 +443,8 @@ internal sealed partial class WptTestRunner
             if (cancellationToken.IsCancellationRequested)
                 return ValueTask.FromCanceled<DocumentResource?>(cancellationToken);
 
-            // The requests of fetch() and XMLHttpRequest
-            if (request.Destination == RequestDestination.Empty)
+            // The requests of fetch() and XMLHttpRequest, and the requests of FedCM to the identity providers
+            if (request.Destination is RequestDestination.Empty or RequestDestination.WebIdentity)
                 return runner.LoadFetchResource(request, cancellationToken);
 
             return Load(request.Url, request);
@@ -2029,6 +2036,30 @@ internal sealed partial class WptTestRunner
             return adapter.Undefined;
         });
 
+        // The commands of the prompts of the user agent (see WptUserAgentUI): the arguments and the result are JSON; as WebDriver
+        // commands, they run after the tasks that are already queued
+        Define("__wpt_user_agent_ui", 4, (_, args) =>
+        {
+            var command = adapter.ToString(args[0]);
+            var arguments = adapter.ToString(args[1]);
+            var (resolve, reject) = (args[2], args[3]);
+            QueueTask(() => realm.Run(() =>
+            {
+                string? result;
+                try
+                {
+                    result = _userAgentUI.Execute(command, System.Text.Json.Nodes.JsonNode.Parse(arguments)?.AsArray() ?? throw WptWebDriverException.InvalidArgument("the arguments are not an array"));
+                }
+                catch (WptWebDriverException ex)
+                {
+                    return adapter.Call(reject, adapter.Undefined, [adapter.FromString(ex.Message)]);
+                }
+
+                return adapter.Call(resolve, adapter.Undefined, [result is null ? adapter.Undefined : adapter.FromString(result)]);
+            }));
+            return adapter.Undefined;
+        });
+
         // https://w3c.github.io/device-posture/#set-device-posture and https://w3c.github.io/device-posture/#clear-device-posture
         Define("__wpt_set_device_posture", 3, (_, args) =>
         {
@@ -2370,6 +2401,7 @@ internal sealed partial class WptTestRunner
         "cpu" => PressureSource.Cpu,
         _ => null,
     };
+
     /// <summary>
     /// Parses the display features of the Set Display Features command (https://drafts.csswg.org/css-viewport/#set-display-features),
     /// or returns null with the error.
@@ -2544,8 +2576,9 @@ internal sealed partial class WptTestRunner
 
             // The handlers of the WebSocket server run on the thread pool: the clock is not advanced while a connection is busy
             // (a handler is about to respond, or the library is processing a message). The task queue is checked afterwards: a
-            // connection that becomes idle has queued its tasks
-            if (_webSocketServer.IsBusy)
+            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch of a
+            // payment method manifest)
+            if (_webSocketServer.IsBusy || eventLoop.HasPendingUserAgentWork)
             {
                 workerWait.SpinOnce();
                 continue;

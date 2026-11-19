@@ -9,106 +9,108 @@ description: "The results of the web-platform-tests of fedcm, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 68 | 68 | – |
-| [Tentative](#tentative-tests) | 0 | 14 | 14 | – |
+| [Stable](#stable-tests) | 59 | 68 | 0 | 87% |
+| [Tentative](#tentative-tests) | 7 | 14 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **82** | **82** | **–** |
+| **All** | **66** | **82** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 82
+- **TEST BUG**: 6
+- **NOT IMPLEMENTED**: 9
+- **TEST RUNNER**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`alternative-identifiers/fedcm-single-identifier.https.html`](https://wpt.fyi/results/fedcm/alternative-identifiers/fedcm-single-identifier.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-abort-silent-mediation-not-permitted.https.html`](https://wpt.fyi/results/fedcm/fedcm-abort-silent-mediation-not-permitted.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-abort.https.html`](https://wpt.fyi/results/fedcm/fedcm-abort.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-accounts-endpoint-rejects-redirects.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-endpoint-rejects-redirects.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-after-abort.https.html`](https://wpt.fyi/results/fedcm/fedcm-after-abort.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/fedcm-continue-on-disallowed.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-continue-on-disallowed.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/fedcm-continue-on-with-account.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-continue-on-with-account.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/fedcm-continue-on.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-continue-on.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/fedcm-disclosure-text-shown.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-disclosure-text-shown.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/fedcm-params.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-params.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/fedcm-resolve-side-effects.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-resolve-side-effects.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/fedcm-userinfo-after-resolve.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-userinfo-after-resolve.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-authz/resolve-after-preventsilentaccess.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/resolve-after-preventsilentaccess.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-auto-reauthn-without-approved-clients.https.html`](https://wpt.fyi/results/fedcm/fedcm-auto-reauthn-without-approved-clients.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-auto-selected-flag.https.html`](https://wpt.fyi/results/fedcm/fedcm-auto-selected-flag.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-basic.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-client-metadata-not-cached.https.html`](https://wpt.fyi/results/fedcm/fedcm-client-metadata-not-cached.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-context.https.html`](https://wpt.fyi/results/fedcm/fedcm-context.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-cross-origin-policy.https.html`](https://wpt.fyi/results/fedcm/fedcm-cross-origin-policy.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-csp.https.html`](https://wpt.fyi/results/fedcm/fedcm-csp.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-delegation/evt-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-delegation/evt-basic.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-disconnect-errors.https.html`](https://wpt.fyi/results/fedcm/fedcm-disconnect-errors.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-disconnect-iframe.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-disconnect-iframe.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-disconnect.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-disconnect.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-domainhint-any.https.html`](https://wpt.fyi/results/fedcm/fedcm-domainhint-any.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-domainhint-matches-account.https.html`](https://wpt.fyi/results/fedcm/fedcm-domainhint-matches-account.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-domainhint-matches-from-two-accounts.https.html`](https://wpt.fyi/results/fedcm/fedcm-domainhint-matches-from-two-accounts.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-error-attribute/fedcm-error-attribute.https.html`](https://wpt.fyi/results/fedcm/fedcm-error-attribute/fedcm-error-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-error-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-error-basic.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-flexible-token/basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-flexible-token/basic.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-flexible-token/complex.https.html`](https://wpt.fyi/results/fedcm/fedcm-flexible-token/complex.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-flexible-token/resolve-flexible-tokens.https.html`](https://wpt.fyi/results/fedcm/fedcm-flexible-token/resolve-flexible-tokens.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-identity-assertion-nocors.https.html`](https://wpt.fyi/results/fedcm/fedcm-identity-assertion-nocors.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-iframe.https.html`](https://wpt.fyi/results/fedcm/fedcm-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-login-status/confirm-idp-login.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/confirm-idp-login.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-login-status/cross-origin-status.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/cross-origin-status.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-login-status/idp-login-with-failed-accounts-fetch.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/idp-login-with-failed-accounts-fetch.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-login-status/logged-out.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/logged-out.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-login-status/login-page-broken.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/login-page-broken.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-loginhint.https.html`](https://wpt.fyi/results/fedcm/fedcm-loginhint.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-manifest-not-in-list.https.html`](https://wpt.fyi/results/fedcm/fedcm-manifest-not-in-list.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-multi-idp/fedcm-multi-idp-abort.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-abort.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-multi-idp/fedcm-multi-idp-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-basic.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-multi-idp/fedcm-multi-idp-context.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-context.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-multi-idp/fedcm-multi-idp-mediation-optional.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-mediation-optional.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-multi-idp/fedcm-multi-idp-mediation-silent.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-mediation-silent.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-multi-idp/fedcm-too-many-idps.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-too-many-idps.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-navigation-interception/continue-on-redirect-POST.https.html`](https://wpt.fyi/results/fedcm/fedcm-navigation-interception/continue-on-redirect-POST.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-no-domainhint-matches-account.https.html`](https://wpt.fyi/results/fedcm/fedcm-no-domainhint-matches-account.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-no-login-url.https.html`](https://wpt.fyi/results/fedcm/fedcm-no-login-url.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-nonce-is-optional.https.html`](https://wpt.fyi/results/fedcm/fedcm-nonce-is-optional.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-not-observed-by-service-worker.https.html`](https://wpt.fyi/results/fedcm/fedcm-not-observed-by-service-worker.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-opaque-rp-origin.https.html`](https://wpt.fyi/results/fedcm/fedcm-opaque-rp-origin.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-pending-call-rejected.https.html`](https://wpt.fyi/results/fedcm/fedcm-pending-call-rejected.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-pending-disconnect.https.html`](https://wpt.fyi/results/fedcm/fedcm-pending-disconnect.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-pending-userinfo.https.html`](https://wpt.fyi/results/fedcm/fedcm-pending-userinfo.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-register/fedcm-no-registered-idps.https.html`](https://wpt.fyi/results/fedcm/fedcm-register/fedcm-no-registered-idps.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-reject-invalid-responses.https.html`](https://wpt.fyi/results/fedcm/fedcm-reject-invalid-responses.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-returning-account-auto-reauthn.https.html`](https://wpt.fyi/results/fedcm/fedcm-returning-account-auto-reauthn.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-same-site-none.https.html`](https://wpt.fyi/results/fedcm/fedcm-same-site-none.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-store.https.html`](https://wpt.fyi/results/fedcm/fedcm-store.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-token-endpoint-rejects-redirects.https.html`](https://wpt.fyi/results/fedcm/fedcm-token-endpoint-rejects-redirects.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-token-returned-with-http-error.https.html`](https://wpt.fyi/results/fedcm/fedcm-token-returned-with-http-error.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-too-many-disconnect-calls.https.html`](https://wpt.fyi/results/fedcm/fedcm-too-many-disconnect-calls.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-userinfo.https.html`](https://wpt.fyi/results/fedcm/fedcm-userinfo.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-well-known-validation/well-known-client-metadata-validation.https.html`](https://wpt.fyi/results/fedcm/fedcm-well-known-validation/well-known-client-metadata-validation.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`third-party-iframe/fedcm-third-party-iframe-active-mode.https.html`](https://wpt.fyi/results/fedcm/third-party-iframe/fedcm-third-party-iframe-active-mode.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`third-party-iframe/fedcm-third-party-iframe.https.html`](https://wpt.fyi/results/fedcm/third-party-iframe/fedcm-third-party-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
+| [`alternative-identifiers/fedcm-single-identifier.https.html`](https://wpt.fyi/results/fedcm/alternative-identifiers/fedcm-single-identifier.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-abort-silent-mediation-not-permitted.https.html`](https://wpt.fyi/results/fedcm/fedcm-abort-silent-mediation-not-permitted.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-abort.https.html`](https://wpt.fyi/results/fedcm/fedcm-abort.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-accounts-endpoint-rejects-redirects.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-endpoint-rejects-redirects.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-after-abort.https.html`](https://wpt.fyi/results/fedcm/fedcm-after-abort.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-authz/fedcm-continue-on-disallowed.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-continue-on-disallowed.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-authz/fedcm-continue-on-with-account.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-continue-on-with-account.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-authz/fedcm-continue-on.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-continue-on.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-authz/fedcm-disclosure-text-shown.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-disclosure-text-shown.https.html) | Pass | 4 / 4 |  |  |
+| [`fedcm-authz/fedcm-params.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-params.https.html) | Pass | 2 / 2 |  |  |
+| [`fedcm-authz/fedcm-resolve-side-effects.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-resolve-side-effects.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-authz/fedcm-userinfo-after-resolve.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/fedcm-userinfo-after-resolve.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-authz/resolve-after-preventsilentaccess.https.html`](https://wpt.fyi/results/fedcm/fedcm-authz/resolve-after-preventsilentaccess.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-auto-reauthn-without-approved-clients.https.html`](https://wpt.fyi/results/fedcm/fedcm-auto-reauthn-without-approved-clients.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-auto-selected-flag.https.html`](https://wpt.fyi/results/fedcm/fedcm-auto-selected-flag.https.html) | Fail | 0 / 1 | TEST BUG | the test assumes that the third-party cookies of the identity provider are blocked: an account whose `approved_clients` contains the `clientId` is eligible for auto reauthentication when the third-party cookies of its provider are available (https://w3c-fedid.github.io/FedCM/#eligible-for-auto-reauthentication), which they are in the runner (as in the browsers that do not block them), so two accounts are eligible and the account chooser is shown instead of the auto reauthentication |
+| [`fedcm-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-basic.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-client-metadata-not-cached.https.html`](https://wpt.fyi/results/fedcm/fedcm-client-metadata-not-cached.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-context.https.html`](https://wpt.fyi/results/fedcm/fedcm-context.https.html) | Pass | 4 / 4 |  |  |
+| [`fedcm-cross-origin-policy.https.html`](https://wpt.fyi/results/fedcm/fedcm-cross-origin-policy.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-csp.https.html`](https://wpt.fyi/results/fedcm/fedcm-csp.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-delegation/evt-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-delegation/evt-basic.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the Email Verification Protocol (the `email-verification-token` autofill of the form fields, issued by the identity provider) |
+| [`fedcm-disconnect-errors.https.html`](https://wpt.fyi/results/fedcm/fedcm-disconnect-errors.https.html) | Pass | 3 / 3 |  |  |
+| [`fedcm-disconnect-iframe.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-disconnect-iframe.sub.https.html) | Pass | 3 / 3 |  |  |
+| [`fedcm-disconnect.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-disconnect.sub.https.html) | Pass | 7 / 7 |  |  |
+| [`fedcm-domainhint-any.https.html`](https://wpt.fyi/results/fedcm/fedcm-domainhint-any.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-domainhint-matches-account.https.html`](https://wpt.fyi/results/fedcm/fedcm-domainhint-matches-account.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-domainhint-matches-from-two-accounts.https.html`](https://wpt.fyi/results/fedcm/fedcm-domainhint-matches-from-two-accounts.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-error-attribute/fedcm-error-attribute.https.html`](https://wpt.fyi/results/fedcm/fedcm-error-attribute/fedcm-error-attribute.https.html) | Pass | 4 / 4 |  |  |
+| [`fedcm-error-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-error-basic.https.html) | Pass | 3 / 3 |  |  |
+| [`fedcm-flexible-token/basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-flexible-token/basic.https.html) | Pass | 8 / 8 |  |  |
+| [`fedcm-flexible-token/complex.https.html`](https://wpt.fyi/results/fedcm/fedcm-flexible-token/complex.https.html) | Pass | 6 / 6 |  |  |
+| [`fedcm-flexible-token/resolve-flexible-tokens.https.html`](https://wpt.fyi/results/fedcm/fedcm-flexible-token/resolve-flexible-tokens.https.html) | Pass | 6 / 6 |  |  |
+| [`fedcm-identity-assertion-nocors.https.html`](https://wpt.fyi/results/fedcm/fedcm-identity-assertion-nocors.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-iframe.https.html`](https://wpt.fyi/results/fedcm/fedcm-iframe.https.html) | Timeout | 5 / 6 | TEST RUNNER | the runner does not serve `localhost`: the iframe of `http://localhost:8000` is not loaded |
+| [`fedcm-login-status/confirm-idp-login.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/confirm-idp-login.https.html) | Fail | 0 / 1 | TEST BUG | the login page sets the `accounts` cookie with `document.cookie` without `SameSite` attribute: the cookie is `Lax` by default (https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-the-samesite-attribute), and the accounts endpoint is fetched with the cookies of a cross-site request (`SameSite=None`, https://w3c-fedid.github.io/FedCM/#fetch-the-accounts, which fedcm-same-site-none.https.html checks), so the accounts are still empty and the confirm IDP login dialog is shown again |
+| [`fedcm-login-status/cross-origin-status.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/cross-origin-status.https.html) | Pass | 5 / 5 |  |  |
+| [`fedcm-login-status/idp-login-with-failed-accounts-fetch.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/idp-login-with-failed-accounts-fetch.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-login-status/logged-out.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/logged-out.https.html) | Pass | 2 / 2 |  |  |
+| [`fedcm-login-status/login-page-broken.https.html`](https://wpt.fyi/results/fedcm/fedcm-login-status/login-page-broken.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-loginhint.https.html`](https://wpt.fyi/results/fedcm/fedcm-loginhint.https.html) | Pass | 3 / 3 |  |  |
+| [`fedcm-manifest-not-in-list.https.html`](https://wpt.fyi/results/fedcm/fedcm-manifest-not-in-list.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-multi-idp/fedcm-multi-idp-abort.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-abort.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-multi-idp/fedcm-multi-idp-basic.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-basic.https.html) | Pass | 2 / 2 |  |  |
+| [`fedcm-multi-idp/fedcm-multi-idp-context.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-context.https.html) | Pass | 2 / 2 |  |  |
+| [`fedcm-multi-idp/fedcm-multi-idp-mediation-optional.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-mediation-optional.https.html) | Fail | 2 / 3 | TEST BUG | "Mediation optional automatically succeeds when there is one returning account": the test assumes that the third-party cookies of the identity provider are blocked: an account whose `approved_clients` contains the `clientId` is eligible for auto reauthentication when the third-party cookies of its provider are available (https://w3c-fedid.github.io/FedCM/#eligible-for-auto-reauthentication), which they are in the runner (as in the browsers that do not block them), so two accounts are eligible and the account chooser is shown instead of the auto reauthentication |
+| [`fedcm-multi-idp/fedcm-multi-idp-mediation-silent.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-multi-idp-mediation-silent.https.html) | Pass | 3 / 3 |  |  |
+| [`fedcm-multi-idp/fedcm-too-many-idps.https.html`](https://wpt.fyi/results/fedcm/fedcm-multi-idp/fedcm-too-many-idps.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-navigation-interception/continue-on-redirect-POST.https.html`](https://wpt.fyi/results/fedcm/fedcm-navigation-interception/continue-on-redirect-POST.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the navigation interception of FedCM (the `federation-initiate-request` response header) and the redirect options of `IdentityProvider.resolve()` |
+| [`fedcm-no-domainhint-matches-account.https.html`](https://wpt.fyi/results/fedcm/fedcm-no-domainhint-matches-account.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-no-login-url.https.html`](https://wpt.fyi/results/fedcm/fedcm-no-login-url.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-nonce-is-optional.https.html`](https://wpt.fyi/results/fedcm/fedcm-nonce-is-optional.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-not-observed-by-service-worker.https.html`](https://wpt.fyi/results/fedcm/fedcm-not-observed-by-service-worker.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-opaque-rp-origin.https.html`](https://wpt.fyi/results/fedcm/fedcm-opaque-rp-origin.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-pending-call-rejected.https.html`](https://wpt.fyi/results/fedcm/fedcm-pending-call-rejected.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-pending-disconnect.https.html`](https://wpt.fyi/results/fedcm/fedcm-pending-disconnect.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-pending-userinfo.https.html`](https://wpt.fyi/results/fedcm/fedcm-pending-userinfo.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-register/fedcm-no-registered-idps.https.html`](https://wpt.fyi/results/fedcm/fedcm-register/fedcm-no-registered-idps.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the registration of identity providers (`IdentityProvider.register()`): the config URL `any` is not a valid URL, so the request is rejected with an InvalidStateError (as the browsers reject an invalid config URL) instead of the NetworkError of an unregistered provider |
+| [`fedcm-reject-invalid-responses.https.html`](https://wpt.fyi/results/fedcm/fedcm-reject-invalid-responses.https.html) | Pass | 5 / 5 |  |  |
+| [`fedcm-returning-account-auto-reauthn.https.html`](https://wpt.fyi/results/fedcm/fedcm-returning-account-auto-reauthn.https.html) | Fail | 0 / 1 | TEST BUG | the test assumes that the third-party cookies of the identity provider are blocked: an account whose `approved_clients` contains the `clientId` is eligible for auto reauthentication when the third-party cookies of its provider are available (https://w3c-fedid.github.io/FedCM/#eligible-for-auto-reauthentication), which they are in the runner (as in the browsers that do not block them), so two accounts are eligible and the account chooser is shown instead of the auto reauthentication |
+| [`fedcm-same-site-none.https.html`](https://wpt.fyi/results/fedcm/fedcm-same-site-none.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-store.https.html`](https://wpt.fyi/results/fedcm/fedcm-store.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-token-endpoint-rejects-redirects.https.html`](https://wpt.fyi/results/fedcm/fedcm-token-endpoint-rejects-redirects.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-token-returned-with-http-error.https.html`](https://wpt.fyi/results/fedcm/fedcm-token-returned-with-http-error.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-too-many-disconnect-calls.https.html`](https://wpt.fyi/results/fedcm/fedcm-too-many-disconnect-calls.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-userinfo.https.html`](https://wpt.fyi/results/fedcm/fedcm-userinfo.https.html) | Pass | 3 / 3 |  |  |
+| [`fedcm-well-known-validation/well-known-client-metadata-validation.https.html`](https://wpt.fyi/results/fedcm/fedcm-well-known-validation/well-known-client-metadata-validation.https.html) | Fail | 4 / 8 | TEST BUG | the identity provider is same site with the site, so its well-known file is not fetched (https://w3c-fedid.github.io/FedCM/#fetch-the-config-file, `skipWellKnown`): the requests that the test expects to fail because of the format of the well-known file succeed |
+| [`third-party-iframe/fedcm-third-party-iframe-active-mode.https.html`](https://wpt.fyi/results/fedcm/third-party-iframe/fedcm-third-party-iframe-active-mode.https.html) | Pass | 1 / 1 |  |  |
+| [`third-party-iframe/fedcm-third-party-iframe.https.html`](https://wpt.fyi/results/fedcm/third-party-iframe/fedcm-third-party-iframe.https.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`fedcm-accounts-push/fedcm-accounts-push-basic.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-accounts-push-basic.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-accounts-push/fedcm-accounts-push-caches-pictures.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-accounts-push-caches-pictures.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-accounts-push/fedcm-identity-create-store-collect.tentative.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-identity-create-store-collect.tentative.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-accounts-push/fedcm-identity-discovery.tentative.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-identity-discovery.tentative.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-accounts-push/store-account-list.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/store-account-list.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-active-cannot-replace-active.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-active-cannot-replace-active.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-active-replaces-passive.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-active-replaces-passive.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-button-mode-auto-selected-flag.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-button-mode-auto-selected-flag.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-button-mode-basics.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-button-mode-basics.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-passive-after-active.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-passive-after-active.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-passive-cannot-replace-active.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-passive-cannot-replace-active.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-use-other-account-button-flow.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-use-other-account-button-flow.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-button-and-other-account/fedcm-use-other-account.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-use-other-account.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
-| [`fedcm-storage-access-api-autogrant.tentative.https.sub.html`](https://wpt.fyi/results/fedcm/fedcm-storage-access-api-autogrant.tentative.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Federated Credential Management |
+| [`fedcm-accounts-push/fedcm-accounts-push-basic.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-accounts-push-basic.tentative.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the tentative accounts push of FedCM (the `accounts` of the options of `navigator.login.setStatus()`, used instead of the accounts endpoint, and the prefetch of their pictures) |
+| [`fedcm-accounts-push/fedcm-accounts-push-caches-pictures.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-accounts-push-caches-pictures.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative accounts push of FedCM (the `accounts` of the options of `navigator.login.setStatus()`, used instead of the accounts endpoint, and the prefetch of their pictures) |
+| [`fedcm-accounts-push/fedcm-identity-create-store-collect.tentative.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-identity-create-store-collect.tentative.sub.https.html) | Error | 0 / 16 | NOT IMPLEMENTED | the tentative lightweight FedCM (`navigator.credentials.create({ identity })`, the `IdentityCredential` constructor, the stored identity credentials and their discovery by `origin` and `loginURL`) |
+| [`fedcm-accounts-push/fedcm-identity-discovery.tentative.sub.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/fedcm-identity-discovery.tentative.sub.https.html) | Error | 0 / 5 | NOT IMPLEMENTED | the tentative lightweight FedCM (`navigator.credentials.create({ identity })`, the `IdentityCredential` constructor, the stored identity credentials and their discovery by `origin` and `loginURL`) |
+| [`fedcm-accounts-push/store-account-list.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-accounts-push/store-account-list.tentative.https.html) | Fail | 3 / 4 | NOT IMPLEMENTED | the tentative accounts push of FedCM: the second argument of `navigator.login.setStatus()` is ignored, so an invalid account is not rejected with a TypeError |
+| [`fedcm-button-and-other-account/fedcm-active-cannot-replace-active.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-active-cannot-replace-active.tentative.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-button-and-other-account/fedcm-active-replaces-passive.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-active-replaces-passive.tentative.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-button-and-other-account/fedcm-button-mode-auto-selected-flag.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-button-mode-auto-selected-flag.tentative.https.html) | Fail | 0 / 1 | TEST BUG | the test assumes that the third-party cookies of the identity provider are blocked: an account whose `approved_clients` contains the `clientId` is eligible for auto reauthentication when the third-party cookies of its provider are available (https://w3c-fedid.github.io/FedCM/#eligible-for-auto-reauthentication), which they are in the runner (as in the browsers that do not block them), so two accounts are eligible and the account chooser is shown instead of the auto reauthentication |
+| [`fedcm-button-and-other-account/fedcm-button-mode-basics.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-button-mode-basics.tentative.https.html) | Pass | 3 / 3 |  |  |
+| [`fedcm-button-and-other-account/fedcm-passive-after-active.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-passive-after-active.tentative.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-button-and-other-account/fedcm-passive-cannot-replace-active.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-passive-cannot-replace-active.tentative.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-button-and-other-account/fedcm-use-other-account-button-flow.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-use-other-account-button-flow.tentative.https.html) | Pass | 2 / 2 |  |  |
+| [`fedcm-button-and-other-account/fedcm-use-other-account.tentative.https.html`](https://wpt.fyi/results/fedcm/fedcm-button-and-other-account/fedcm-use-other-account.tentative.https.html) | Pass | 1 / 1 |  |  |
+| [`fedcm-storage-access-api-autogrant.tentative.https.sub.html`](https://wpt.fyi/results/fedcm/fedcm-storage-access-api-autogrant.tentative.https.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the storage access granted to the frames of an identity provider whose account is connected to the site; and the requests of FedCM do not bypass the blocking of the third-party cookies, so the accounts endpoint gets no cookie once the test blocks them |

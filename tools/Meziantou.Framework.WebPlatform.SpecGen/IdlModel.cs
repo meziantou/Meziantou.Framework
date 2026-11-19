@@ -409,7 +409,32 @@ internal sealed partial class IdlModel
         AddCanvasGradientInterpolation(model);
         AddWebMcpPullRequests(model);
         AddHtmlInCanvas(model);
+        AddFedCmNonce(model);
         return model;
+    }
+
+    /// <summary>
+    /// The deprecated <c>nonce</c> member of the FedCM requests, which the specification moved to the <c>params</c> member
+    /// (https://github.com/w3c-fedid/FedCM/pull/697), but which the browsers still send to the identity assertion endpoint and
+    /// the web-platform-tests of <c>fedcm</c> use:
+    /// <code>
+    /// partial dictionary IdentityProviderRequestOptions { DOMString nonce; };
+    /// </code>
+    /// </summary>
+    private static void AddFedCmNonce(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("IdentityProviderRequestOptions", out var options) || options.Members.Exists(m => m.Name == "nonce"))
+            return;
+
+        options.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Field,
+            Name = "nonce",
+            Type = new IdlType { Name = "DOMString" },
+            Href = "https://w3c-fedid.github.io/FedCM/#dom-identityproviderrequestoptions-nonce",
+            Source = "fedcm",
+            DeclaringDefinition = options.Name,
+        });
     }
 
     /// <summary>

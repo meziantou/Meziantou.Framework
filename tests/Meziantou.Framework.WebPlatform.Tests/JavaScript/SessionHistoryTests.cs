@@ -297,7 +297,7 @@ public sealed class SessionHistoryTests : IDisposable
         Assert.Equal("null,https://example.com null", document.Title);
     }
 
-    private BrowsingContext CreateBackForwardCacheContext(int backForwardCacheSize = 6, TimeProvider? timeProvider = null)
+    private BrowsingContext CreateBackForwardCacheContext(int backForwardCacheSize = 6, TimeProvider? timeProvider = null, UserAgentUIBackend? userAgentUI = null)
     {
         return _contexts.Create(new BrowsingContextOptions
         {
@@ -306,6 +306,7 @@ public sealed class SessionHistoryTests : IDisposable
             UnhandledScriptError = (_, error) => _errors.Add(error),
             BackForwardCacheSize = backForwardCacheSize,
             TimeProvider = timeProvider,
+            UserAgentUI = userAgentUI,
         });
     }
 
@@ -350,6 +351,53 @@ public sealed class SessionHistoryTests : IDisposable
         context.Window.History.Forward();
         RunEventLoop();
         Assert.Same(b, context.Document);
+    }
+
+    [Fact]
+    public void BackForwardCache_ClosesThePromptsOfTheUserAgent()
+    {
+        // The wallet of a digital credential request is closed when the page enters the back/forward cache: the request is
+        // not answered after the page is restored
+        var wallet = new PendingWallet();
+        var context = CreateBackForwardCacheContext(userAgentUI: wallet);
+        var a = context.Navigate("https://example.com/a.html", _ => PageTransitionLogger + """
+            <script>
+              window.request = () => navigator.credentials.get({ digital: { requests: [{ protocol: 'org-iso-mdoc', data: {} }] } })
+                .then(c => log.push('credential ' + c.protocol), e => log.push(e.name));
+            </script>
+            """);
+        RunEventLoop();
+        Window.NotifyActivation(a);
+        TestScriptEngines.Evaluate(_engine, a.DefaultView!, "request()");
+        RunEventLoop();
+        Assert.True(wallet.CancellationToken.CanBeCanceled);
+        Assert.False(wallet.CancellationToken.IsCancellationRequested);
+
+        context.Navigate("https://example.com/b.html", _ => "b");
+        RunEventLoop();
+        Assert.Equal(1, context.BackForwardCacheCount);
+        Assert.True(wallet.CancellationToken.IsCancellationRequested);
+
+        wallet.Answer.SetResult(new DigitalCredentialResponse("org-iso-mdoc", "{}"));
+        context.Window.History.Back();
+        RunEventLoop();
+
+        Assert.Empty(_errors);
+        Assert.Same(a, context.Document);
+        Assert.Equal("pageshow false,pagehide true,AbortError,pageshow true", TestScriptEngines.Evaluate(_engine, a.DefaultView!, "log.join()"));
+    }
+
+    private sealed class PendingWallet : UserAgentUIBackend
+    {
+        public TaskCompletionSource<DigitalCredentialResponse?> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<DigitalCredentialResponse?> RequestDigitalCredentialAsync(DigitalCredentialPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            return new(Answer.Task);
+        }
     }
 
     [Fact]

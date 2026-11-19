@@ -3037,6 +3037,34 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
     }
 
+    public sealed class AddressErrors
+    {
+        public string? AddressLine { get => throw null; init { } }
+        public string? City { get => throw null; init { } }
+        public string? Country { get => throw null; init { } }
+        public string? DependentLocality { get => throw null; init { } }
+        public string? Organization { get => throw null; init { } }
+        public string? Phone { get => throw null; init { } }
+        public string? PostalCode { get => throw null; init { } }
+        public string? Recipient { get => throw null; init { } }
+        public string? Region { get => throw null; init { } }
+        public string? SortingCode { get => throw null; init { } }
+    }
+
+    public sealed class AddressInit
+    {
+        public System.Collections.Generic.IReadOnlyList<string> AddressLine { get => throw null; init { } }
+        public string City { get => throw null; init { } }
+        public string Country { get => throw null; init { } }
+        public string DependentLocality { get => throw null; init { } }
+        public string Organization { get => throw null; init { } }
+        public string Phone { get => throw null; init { } }
+        public string PostalCode { get => throw null; init { } }
+        public string Recipient { get => throw null; init { } }
+        public string Region { get => throw null; init { } }
+        public string SortingCode { get => throw null; init { } }
+    }
+
     public enum AlignSetting
     {
         Start = 0,
@@ -3147,6 +3175,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? AppidExclude { get => throw null; init { } }
         public bool? CredProps { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobInputs? LargeBlob { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPaymentInputs? Payment { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfInputs? Prf { get => throw null; init { } }
         public string? RemoteClientDataJson { get => throw null; init { } }
     }
@@ -3167,6 +3196,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool? AppidExclude { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CredentialPropertiesOutput? CredProps { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobOutputs? LargeBlob { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPaymentOutputs? Payment { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfOutputs? Prf { get => throw null; init { } }
         public bool? RemoteClientDataJson { get => throw null; init { } }
     }
@@ -3207,6 +3237,24 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Blob { get => throw null; init { } }
         public bool? Supported { get => throw null; init { } }
         public bool? Written { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPaymentInputs
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialParameters>? BrowserBoundPubKeyCredParams { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentCredentialInstrument? Instrument { get => throw null; init { } }
+        public bool? IsPayment { get => throw null; init { } }
+        public string? PayeeName { get => throw null; init { } }
+        public string? PayeeOrigin { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentEntityLogo>? PaymentEntitiesLogos { get => throw null; init { } }
+        public string? RpId { get => throw null; init { } }
+        public string? TopOrigin { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentCurrencyAmount? Total { get => throw null; init { } }
+    }
+
+    public sealed class AuthenticationExtensionsPaymentOutputs
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BrowserBoundSignature? BrowserBoundSignature { get => throw null; init { } }
     }
 
     public sealed class AuthenticationExtensionsPrfInputs
@@ -3443,6 +3491,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void PostMessage(object? message) { }
     }
 
+    public sealed class BrowserBoundSignature
+    {
+        public required System.ReadOnlyMemory<byte> Signature { get => throw null; init { } }
+    }
+
     public sealed class BrowsingContext : System.IDisposable
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BrowsingContext> Children { get => throw null; }
@@ -3548,6 +3601,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Scripting.ScriptError>? UnhandledScriptError { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
         public string? UserAgent { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend? UserAgentUI { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.UserPrompt, Meziantou.Framework.WebPlatform.Dom.UserPromptResult>? UserPromptHandler { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, System.Collections.Generic.IReadOnlyList<System.TimeSpan>>? Vibrate { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions? Viewport { get => throw null; init { } }
@@ -3639,6 +3693,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.GlobalScope? Global { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions Options { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Window? Window { get => throw null; }
+    }
+
+    public sealed class CanMakePaymentEvent : Meziantou.Framework.WebPlatform.Dom.ExtendableEvent
+    {
+        public CanMakePaymentEvent(string type) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit)) { }
+        public void RespondWith(System.Threading.Tasks.Task<bool> canMakePaymentResponse) { }
     }
 
     public enum CanvasColorType
@@ -4211,6 +4271,20 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Wimax = 8,
     }
 
+    public sealed class ContactAddress
+    {
+        public System.Collections.Generic.IReadOnlyList<string> AddressLine { get => throw null; init { } }
+        public string City { get => throw null; init { } }
+        public string Country { get => throw null; init { } }
+        public string DependentLocality { get => throw null; init { } }
+        public string Organization { get => throw null; init { } }
+        public string Phone { get => throw null; init { } }
+        public string PostalCode { get => throw null; init { } }
+        public string Recipient { get => throw null; init { } }
+        public string Region { get => throw null; init { } }
+        public string SortingCode { get => throw null; init { } }
+    }
+
     public sealed class ContentSecurityPolicyViolationReport
     {
         public string BlockedUrl { get => throw null; }
@@ -4365,11 +4439,28 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static System.Threading.Tasks.Task<bool> IsConditionalMediationAvailable() => throw null;
     }
 
+    public sealed class CredentialChooserPrompt : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.FederatedCredentialRequestOptions? Federated { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.CredentialMediationRequirement Mediation { get => throw null; }
+        public bool Password { get => throw null; }
+        public bool RequiresUserMediation { get => throw null; }
+        public bool Matches(Meziantou.Framework.WebPlatform.Dom.Credential credential) => throw null;
+    }
+
     public sealed class CredentialCreationOptions
     {
+        public Meziantou.Framework.WebPlatform.Dom.DigitalCredentialCreationOptions? Digital { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.FederatedCredentialInit? Federated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CredentialMediationRequirement Mediation { get => throw null; init { } }
+        public object? Password { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialCreationOptions? PublicKey { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public abstract class CredentialData
+    {
+        public required string Id { get => throw null; init { } }
     }
 
     public enum CredentialMediationRequirement
@@ -4387,10 +4478,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class CredentialRequestOptions
     {
+        public Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequestOptions? Digital { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.FederatedCredentialRequestOptions? Federated { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptions? Identity { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CredentialMediationRequirement Mediation { get => throw null; init { } }
+        public bool Password { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptions? PublicKey { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
         public string? UiMode { get => throw null; init { } }
+    }
+
+    public sealed class CredentialStorePrompt : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Credential Credential { get => throw null; }
     }
 
     public sealed class CredentialsContainer
@@ -4723,6 +4823,77 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class DeviceSensorsOptions
     {
         public Meziantou.Framework.WebPlatform.Dom.DeviceSensorProvider? Provider { get => throw null; init { } }
+    }
+
+    public sealed class DigitalCredential : Meziantou.Framework.WebPlatform.Dom.Credential
+    {
+        public object Data { get => throw null; }
+        public override string Id { get => throw null; }
+        public string Protocol { get => throw null; }
+        public override string Type { get => throw null; }
+        public static bool UserAgentAllowsProtocol(string protocol) => throw null;
+    }
+
+    public sealed class DigitalCredentialCreateRequest
+    {
+        public required object Data { get => throw null; init { } }
+        public required string Protocol { get => throw null; init { } }
+    }
+
+    public sealed class DigitalCredentialCreationOptions
+    {
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialCreateRequest> Requests { get => throw null; init { } }
+    }
+
+    public sealed class DigitalCredentialGetRequest
+    {
+        public required object Data { get => throw null; init { } }
+        public required string Protocol { get => throw null; init { } }
+    }
+
+    public sealed class DigitalCredentialPrompt : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequestKind Kind { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequest> Requests { get => throw null; }
+    }
+
+    public sealed class DigitalCredentialRequest : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequest>
+    {
+        public string Data { get => throw null; init { } }
+        public string Protocol { get => throw null; init { } }
+        public DigitalCredentialRequest(string Protocol, string Data) { }
+        public void Deconstruct(out string Protocol, out string Data) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequest? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequest? left, Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequest? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequest? left, Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequest? right) => throw null;
+    }
+
+    public enum DigitalCredentialRequestKind
+    {
+        Presentation = 0,
+        Issuance = 1,
+    }
+
+    public sealed class DigitalCredentialRequestOptions
+    {
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialGetRequest> Requests { get => throw null; init { } }
+    }
+
+    public sealed class DigitalCredentialResponse : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse>
+    {
+        public string Data { get => throw null; init { } }
+        public string Protocol { get => throw null; init { } }
+        public DigitalCredentialResponse(string Protocol, string Data) { }
+        public void Deconstruct(out string Protocol, out string Data) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse? left, Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse? left, Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse? right) => throw null;
     }
 
     public enum DirectionSetting
@@ -6064,6 +6235,33 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public void AddSearchProvider() { }
         public void IsSearchProviderInstalled() { }
+    }
+
+    public sealed class FederatedCredential : Meziantou.Framework.WebPlatform.Dom.Credential
+    {
+        public string IconUrl { get => throw null; }
+        public override string Id { get => throw null; }
+        public string Name { get => throw null; }
+        public string Origin { get => throw null; }
+        public string? Protocol { get => throw null; }
+        public string Provider { get => throw null; }
+        public override string Type { get => throw null; }
+        public FederatedCredential(Meziantou.Framework.WebPlatform.Dom.FederatedCredentialInit data) { }
+    }
+
+    public sealed class FederatedCredentialInit : Meziantou.Framework.WebPlatform.Dom.CredentialData
+    {
+        public string? IconUrl { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public required string Origin { get => throw null; init { } }
+        public string? Protocol { get => throw null; init { } }
+        public required string Provider { get => throw null; init { } }
+    }
+
+    public sealed class FederatedCredentialRequestOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? Protocols { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Providers { get => throw null; init { } }
     }
 
     public sealed class FetchEvent : Meziantou.Framework.WebPlatform.Dom.ExtendableEvent
@@ -8060,6 +8258,149 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public ulong OldVersion { get => throw null; init { } }
     }
 
+    public sealed class IdentityAccountChoice
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdentityProviderAccount? Account { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.IdentityAccountChoice UseOtherAccount { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.IdentityAccountChoice Select(Meziantou.Framework.WebPlatform.Dom.IdentityProviderAccount account) => throw null;
+    }
+
+    public sealed class IdentityAccountChooserPrompt : Meziantou.Framework.WebPlatform.Dom.IdentityCredentialPrompt
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.IdentityProviderAccount> Accounts { get => throw null; }
+        public bool ShowsSiteOrigin { get => throw null; }
+        public bool SupportsUseOtherAccount { get => throw null; }
+    }
+
+    public sealed class IdentityAutoReauthenticationPrompt : Meziantou.Framework.WebPlatform.Dom.IdentityCredentialPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdentityProviderAccount Account { get => throw null; }
+    }
+
+    public sealed class IdentityCredential : Meziantou.Framework.WebPlatform.Dom.Credential
+    {
+        public string ConfigUrl { get => throw null; }
+        public override string Id { get => throw null; }
+        public bool IsAutoSelected { get => throw null; }
+        public object? Token { get => throw null; }
+        public override string Type { get => throw null; }
+        public static System.Threading.Tasks.Task Disconnect(Meziantou.Framework.WebPlatform.Dom.IdentityCredentialDisconnectOptions options) => throw null;
+    }
+
+    public sealed class IdentityCredentialDisconnectOptions : Meziantou.Framework.WebPlatform.Dom.IdentityProviderConfig
+    {
+        public required string AccountHint { get => throw null; init { } }
+    }
+
+    public sealed class IdentityCredentialError : Meziantou.Framework.WebPlatform.Dom.DomException
+    {
+        public string Error { get => throw null; }
+        public string Url { get => throw null; }
+        public IdentityCredentialError(string? message) { }
+        public IdentityCredentialError(string message, Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorInit? options) { }
+        public IdentityCredentialError(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class IdentityCredentialErrorInit
+    {
+        public string? Error { get => throw null; init { } }
+        public string? Url { get => throw null; init { } }
+    }
+
+    public sealed class IdentityCredentialErrorPrompt : Meziantou.Framework.WebPlatform.Dom.IdentityCredentialPrompt
+    {
+        public string ConfigUrl { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.IdentityCredentialError Error { get => throw null; }
+    }
+
+    public abstract class IdentityCredentialPrompt : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode Mode { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext RequestContext { get => throw null; }
+    }
+
+    public sealed class IdentityCredentialRequestOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext Context { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode Mode { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.IdentityProviderRequestOptions> Providers { get => throw null; init { } }
+    }
+
+    public enum IdentityCredentialRequestOptionsContext
+    {
+        Signin = 0,
+        Signup = 1,
+        Use = 2,
+        Continue = 3,
+    }
+
+    public enum IdentityCredentialRequestOptionsMode
+    {
+        Active = 0,
+        Passive = 1,
+    }
+
+    public sealed class IdentityProvider
+    {
+        public static void Close() { }
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.IdentityUserInfo>> GetUserInfo(Meziantou.Framework.WebPlatform.Dom.IdentityProviderConfig config) => throw null;
+        public static System.Threading.Tasks.Task Resolve(object? token, Meziantou.Framework.WebPlatform.Dom.IdentityResolveOptions? options = null) => throw null;
+    }
+
+    public sealed class IdentityProviderAccount
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? ApprovedClients { get => throw null; init { } }
+        public string ConfigUrl { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string>? DomainHints { get => throw null; init { } }
+        public string? Email { get => throw null; init { } }
+        public string? GivenName { get => throw null; init { } }
+        public string Id { get => throw null; }
+        public bool IsConnected { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string>? LabelHints { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? LoginHints { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public string? Picture { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte>? PictureContent { get => throw null; }
+        public string? PrivacyPolicyUrl { get => throw null; }
+        public string? Tel { get => throw null; init { } }
+        public string? TermsOfServiceUrl { get => throw null; }
+        public string? Username { get => throw null; init { } }
+    }
+
+    public class IdentityProviderConfig
+    {
+        public required string ClientId { get => throw null; init { } }
+        public required string ConfigUrl { get => throw null; init { } }
+    }
+
+    public sealed class IdentityProviderLoginPrompt : Meziantou.Framework.WebPlatform.Dom.IdentityCredentialPrompt
+    {
+        public string ConfigUrl { get => throw null; }
+        public string LoginUrl { get => throw null; }
+    }
+
+    public sealed class IdentityProviderRequestOptions : Meziantou.Framework.WebPlatform.Dom.IdentityProviderConfig
+    {
+        public string? DomainHint { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Fields { get => throw null; init { } }
+        public string? LoginHint { get => throw null; init { } }
+        public string? Nonce { get => throw null; init { } }
+        public object? Params { get => throw null; init { } }
+    }
+
+    public sealed class IdentityResolveOptions
+    {
+        public string? AccountId { get => throw null; init { } }
+    }
+
+    public sealed class IdentityUserInfo
+    {
+        public string? Email { get => throw null; init { } }
+        public string? GivenName { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public string? Picture { get => throw null; init { } }
+    }
+
     public sealed class IdleDeadline
     {
         public bool DidTimeout { get => throw null; }
@@ -8855,6 +9196,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Steal { get => throw null; init { } }
     }
 
+    public enum LoginStatus
+    {
+        LoggedIn = 0,
+        LoggedOut = 1,
+    }
+
     public sealed class Magnetometer : Meziantou.Framework.WebPlatform.Dom.Sensor
     {
         public double? X { get => throw null; }
@@ -9548,6 +9895,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Language { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.NavigatorLogin Login { get => throw null; }
         public int MaxTouchPoints { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.MediaSession MediaSession { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PluginMimeTypeArray MimeTypes { get => throw null; }
@@ -9581,6 +9929,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void UnregisterProtocolHandler(string scheme, string url) { }
         public bool Vibrate(System.Collections.Generic.IReadOnlyList<uint> pattern) => throw null;
         public bool Vibrate(uint pattern) => throw null;
+    }
+
+    public sealed class NavigatorLogin
+    {
+        public System.Threading.Tasks.Task SetStatus(Meziantou.Framework.WebPlatform.Dom.LoginStatus status) => throw null;
     }
 
     public sealed class NavigatorUABrandVersion
@@ -10010,6 +10363,26 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions(Meziantou.Framework.WebPlatform.Dom.TrustedHtmlParserOptions value) => throw null;
     }
 
+    public sealed class PasswordCredential : Meziantou.Framework.WebPlatform.Dom.Credential
+    {
+        public string IconUrl { get => throw null; }
+        public override string Id { get => throw null; }
+        public string Name { get => throw null; }
+        public string Origin { get => throw null; }
+        public string Password { get => throw null; }
+        public override string Type { get => throw null; }
+        public PasswordCredential(Meziantou.Framework.WebPlatform.Dom.HtmlFormElement form) { }
+        public PasswordCredential(Meziantou.Framework.WebPlatform.Dom.PasswordCredentialData data) { }
+    }
+
+    public sealed class PasswordCredentialData : Meziantou.Framework.WebPlatform.Dom.CredentialData
+    {
+        public string? IconUrl { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public required string Origin { get => throw null; init { } }
+        public required string Password { get => throw null; init { } }
+    }
+
     public sealed class Path2D
     {
         public Path2D(object? path) { }
@@ -10024,6 +10397,362 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void QuadraticCurveTo(double cpx, double cpy, double x, double y) { }
         public void Rect(double x, double y, double w, double h) { }
         public void RoundRect(double x, double y, double w, double h, object? radii = null) { }
+    }
+
+    public sealed class PayerErrors
+    {
+        public string? Email { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public string? Phone { get => throw null; init { } }
+    }
+
+    public sealed class PaymentAppManifest : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PaymentAppManifest>
+    {
+        public string Content { get => throw null; init { } }
+        public string Url { get => throw null; init { } }
+        public PaymentAppManifest(string Url, string Content) { }
+        public void Deconstruct(out string Url, out string Content) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.PaymentAppManifest? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.PaymentAppManifest? left, Meziantou.Framework.WebPlatform.Dom.PaymentAppManifest? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.PaymentAppManifest? left, Meziantou.Framework.WebPlatform.Dom.PaymentAppManifest? right) => throw null;
+    }
+
+    public enum PaymentComplete
+    {
+        Fail = 0,
+        Success = 1,
+        Unknown = 2,
+    }
+
+    public sealed class PaymentCompleteDetails
+    {
+        public object? Data { get => throw null; init { } }
+    }
+
+    public sealed class PaymentCredentialInstrument
+    {
+        public string? Details { get => throw null; init { } }
+        public required string DisplayName { get => throw null; init { } }
+        public required string Icon { get => throw null; init { } }
+        public bool IconMustBeShown { get => throw null; init { } }
+    }
+
+    public sealed class PaymentCurrencyAmount
+    {
+        public required string Currency { get => throw null; init { } }
+        public required string Value { get => throw null; init { } }
+    }
+
+    public enum PaymentDelegation
+    {
+        ShippingAddress = 0,
+        PayerName = 1,
+        PayerPhone = 2,
+        PayerEmail = 3,
+    }
+
+    public class PaymentDetailsBase
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentItem>? DisplayItems { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentDetailsModifier>? Modifiers { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentShippingOption>? ShippingOptions { get => throw null; init { } }
+    }
+
+    public sealed class PaymentDetailsInit : Meziantou.Framework.WebPlatform.Dom.PaymentDetailsBase
+    {
+        public string? Id { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.PaymentItem Total { get => throw null; init { } }
+    }
+
+    public sealed class PaymentDetailsModifier
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentItem>? AdditionalDisplayItems { get => throw null; init { } }
+        public object? Data { get => throw null; init { } }
+        public required string SupportedMethods { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentItem? Total { get => throw null; init { } }
+    }
+
+    public sealed class PaymentDetailsUpdate : Meziantou.Framework.WebPlatform.Dom.PaymentDetailsBase
+    {
+        public string? Error { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PayerErrors? PayerErrors { get => throw null; init { } }
+        public object? PaymentMethodErrors { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AddressErrors? ShippingAddressErrors { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentItem? Total { get => throw null; init { } }
+    }
+
+    public sealed class PaymentEntityLogo
+    {
+        public required string Label { get => throw null; init { } }
+        public required string Url { get => throw null; init { } }
+    }
+
+    public sealed class PaymentHandlerQuery : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod Method { get => throw null; }
+    }
+
+    public sealed class PaymentHandlerResponse
+    {
+        public object? Details { get => throw null; init { } }
+        public string? MethodName { get => throw null; init { } }
+        public string? PayerEmail { get => throw null; init { } }
+        public string? PayerName { get => throw null; init { } }
+        public string? PayerPhone { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AddressInit? ShippingAddress { get => throw null; init { } }
+        public string? ShippingOption { get => throw null; init { } }
+    }
+
+    public sealed class PaymentItem
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.PaymentCurrencyAmount Amount { get => throw null; init { } }
+        public required string Label { get => throw null; init { } }
+        public bool Pending { get => throw null; init { } }
+    }
+
+    public sealed class PaymentManager
+    {
+        public System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Dom.PaymentDelegation> Delegations { get => throw null; }
+        public string UserHint { get => throw null; set { } }
+        public System.Threading.Tasks.Task EnableDelegations(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentDelegation> delegations) => throw null;
+    }
+
+    public sealed class PaymentMethodChangeEvent : Meziantou.Framework.WebPlatform.Dom.PaymentRequestUpdateEvent
+    {
+        public object? MethodDetails { get => throw null; }
+        public string MethodName { get => throw null; }
+        public PaymentMethodChangeEvent(string type, Meziantou.Framework.WebPlatform.Dom.PaymentMethodChangeEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.PaymentRequestUpdateEventInit)) { }
+    }
+
+    public sealed class PaymentMethodChangeEventInit : Meziantou.Framework.WebPlatform.Dom.PaymentRequestUpdateEventInit
+    {
+        public object? MethodDetails { get => throw null; init { } }
+        public string MethodName { get => throw null; init { } }
+    }
+
+    public sealed class PaymentMethodData
+    {
+        public object? Data { get => throw null; init { } }
+        public required string SupportedMethods { get => throw null; init { } }
+    }
+
+    public static class PaymentMethodIdentifier
+    {
+        public static bool IsUrlBased(string identifier) => throw null;
+        public static bool IsValid(string identifier) => throw null;
+    }
+
+    public sealed class PaymentMethodManifest
+    {
+        public System.Collections.Generic.IReadOnlyList<string> DefaultApplications { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> SupportedOrigins { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifest? Parse(System.ReadOnlySpan<byte> content, string url) => throw null;
+    }
+
+    public sealed class PaymentMethodManifestRequest : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public string MethodIdentifier { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifestResult?> FetchAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class PaymentMethodManifestResult
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentAppManifest> Applications { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifest Manifest { get => throw null; }
+        public string ManifestUrl { get => throw null; }
+    }
+
+    public sealed class PaymentOptions
+    {
+        public bool RequestBillingAddress { get => throw null; init { } }
+        public bool RequestPayerEmail { get => throw null; init { } }
+        public bool RequestPayerName { get => throw null; init { } }
+        public bool RequestPayerPhone { get => throw null; init { } }
+        public bool RequestShipping { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentShippingType ShippingType { get => throw null; init { } }
+    }
+
+    public sealed class PaymentRequest : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public string Id { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnPaymentMethodChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnShippingAddressChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnShippingOptionChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.ContactAddress? ShippingAddress { get => throw null; }
+        public string? ShippingOption { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentShippingType? ShippingType { get => throw null; }
+        public PaymentRequest(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentMethodData> methodData, Meziantou.Framework.WebPlatform.Dom.PaymentDetailsInit details, Meziantou.Framework.WebPlatform.Dom.PaymentOptions? options = null) { }
+        public PaymentRequest(Meziantou.Framework.WebPlatform.Dom.Window window, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentMethodData> methodData, Meziantou.Framework.WebPlatform.Dom.PaymentDetailsInit details, Meziantou.Framework.WebPlatform.Dom.PaymentOptions? options = null) { }
+        public System.Threading.Tasks.Task Abort() => throw null;
+        public System.Threading.Tasks.Task<bool> CanMakePayment() => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, bool>>> GetSecurePaymentConfirmationCapabilities() => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationAvailability> SecurePaymentConfirmationAvailability() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentResponse> Show(System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentDetailsUpdate>? detailsPromise = null) => throw null;
+    }
+
+    public sealed class PaymentRequestDetailsUpdate
+    {
+        public string? Error { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentDetailsModifier>? Modifiers { get => throw null; init { } }
+        public object? PaymentMethodErrors { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AddressErrors? ShippingAddressErrors { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentShippingOption>? ShippingOptions { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentCurrencyAmount? Total { get => throw null; init { } }
+    }
+
+    public sealed class PaymentRequestEvent : Meziantou.Framework.WebPlatform.Dom.ExtendableEvent
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentMethodData> MethodData { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentDetailsModifier> Modifiers { get => throw null; }
+        public object? PaymentOptions { get => throw null; }
+        public string PaymentRequestId { get => throw null; }
+        public string PaymentRequestOrigin { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentShippingOption>? ShippingOptions { get => throw null; }
+        public string TopOrigin { get => throw null; }
+        public object Total { get => throw null; }
+        public PaymentRequestEvent(string type, Meziantou.Framework.WebPlatform.Dom.PaymentRequestEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit)) { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentRequestDetailsUpdate?> ChangePaymentMethod(string methodName, object? methodDetails = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentRequestDetailsUpdate?> ChangeShippingAddress(Meziantou.Framework.WebPlatform.Dom.AddressInit? shippingAddress = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentRequestDetailsUpdate?> ChangeShippingOption(string shippingOption) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.WindowClient?> OpenWindow(string url) => throw null;
+        public void RespondWith(System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentHandlerResponse> handlerResponsePromise) { }
+    }
+
+    public sealed class PaymentRequestEventInit : Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentMethodData>? MethodData { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentDetailsModifier>? Modifiers { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentOptions? PaymentOptions { get => throw null; init { } }
+        public string? PaymentRequestId { get => throw null; init { } }
+        public string? PaymentRequestOrigin { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentShippingOption>? ShippingOptions { get => throw null; init { } }
+        public string? TopOrigin { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentCurrencyAmount? Total { get => throw null; init { } }
+    }
+
+    public class PaymentRequestUpdateEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public PaymentRequestUpdateEvent(string type, Meziantou.Framework.WebPlatform.Dom.PaymentRequestUpdateEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+        public void UpdateWith(System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentDetailsUpdate> detailsPromise) { }
+    }
+
+    public class PaymentRequestUpdateEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+    }
+
+    public sealed class PaymentResponse : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public object Details { get => throw null; }
+        public string MethodName { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnPayerDetailChange { get => throw null; set { } }
+        public string? PayerEmail { get => throw null; }
+        public string? PayerName { get => throw null; }
+        public string? PayerPhone { get => throw null; }
+        public string RequestId { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ContactAddress? ShippingAddress { get => throw null; }
+        public string? ShippingOption { get => throw null; }
+        public System.Threading.Tasks.Task Complete(Meziantou.Framework.WebPlatform.Dom.PaymentComplete result = Meziantou.Framework.WebPlatform.Dom.PaymentComplete.Unknown, Meziantou.Framework.WebPlatform.Dom.PaymentCompleteDetails? details = null) => throw null;
+        public System.Threading.Tasks.Task Retry(Meziantou.Framework.WebPlatform.Dom.PaymentValidationErrors? errorFields = null) => throw null;
+    }
+
+    public sealed class PaymentSheetDetails
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentItem> DisplayItems { get => throw null; }
+        public string Id { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentSheetModifier> Modifiers { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentShippingOption> ShippingOptions { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentItem Total { get => throw null; }
+    }
+
+    public sealed class PaymentSheetErrors
+    {
+        public string? Error { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PayerErrors? Payer { get => throw null; init { } }
+        public string? PaymentMethod { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AddressErrors? ShippingAddress { get => throw null; init { } }
+    }
+
+    public sealed class PaymentSheetMethod : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod>
+    {
+        public string? Data { get => throw null; init { } }
+        public string Identifier { get => throw null; init { } }
+        public PaymentSheetMethod(string Identifier, string? Data) { }
+        public void Deconstruct(out string Identifier, out string? Data) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod? left, Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod? left, Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod? right) => throw null;
+    }
+
+    public sealed class PaymentSheetModifier : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PaymentSheetModifier>
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentItem> AdditionalDisplayItems { get => throw null; init { } }
+        public string? Data { get => throw null; init { } }
+        public string SupportedMethods { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentItem? Total { get => throw null; init { } }
+        public PaymentSheetModifier(string SupportedMethods, Meziantou.Framework.WebPlatform.Dom.PaymentItem? Total, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentItem> AdditionalDisplayItems, string? Data) { }
+        public void Deconstruct(out string SupportedMethods, out Meziantou.Framework.WebPlatform.Dom.PaymentItem? Total, out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentItem> AdditionalDisplayItems, out string? Data) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.PaymentSheetModifier? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.PaymentSheetModifier? left, Meziantou.Framework.WebPlatform.Dom.PaymentSheetModifier? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.PaymentSheetModifier? left, Meziantou.Framework.WebPlatform.Dom.PaymentSheetModifier? right) => throw null;
+    }
+
+    public sealed class PaymentSheetPrompt : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PaymentSheetDetails Details { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentSheetErrors? Errors { get => throw null; }
+        public bool IsUpdating { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentSheetMethod> Methods { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentOptions Options { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentSheetResponse? Response { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ContactAddress? ShippingAddress { get => throw null; }
+        public string? ShippingOption { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentSheetDetails> ChangePayerDetailsAsync(string? payerName, string? payerEmail, string? payerPhone, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentSheetDetails> ChangePaymentMethodAsync(string methodName, string? methodDetails, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentSheetDetails> ChangeShippingAddressAsync(Meziantou.Framework.WebPlatform.Dom.ContactAddress address, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentSheetDetails> ChangeShippingOptionAsync(string shippingOptionId, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PaymentSheetDetails> WaitForUpdateAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class PaymentSheetResponse
+    {
+        public string Details { get => throw null; init { } }
+        public required string MethodName { get => throw null; init { } }
+        public string? PayerEmail { get => throw null; init { } }
+        public string? PayerName { get => throw null; init { } }
+        public string? PayerPhone { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ContactAddress? ShippingAddress { get => throw null; init { } }
+    }
+
+    public sealed class PaymentShippingOption
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.PaymentCurrencyAmount Amount { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public required string Label { get => throw null; init { } }
+        public bool Selected { get => throw null; init { } }
+    }
+
+    public enum PaymentShippingType
+    {
+        Shipping = 0,
+        Delivery = 1,
+        Pickup = 2,
+    }
+
+    public sealed class PaymentValidationErrors
+    {
+        public string? Error { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PayerErrors? Payer { get => throw null; init { } }
+        public object? PaymentMethod { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AddressErrors? ShippingAddress { get => throw null; init { } }
     }
 
     public sealed class PendingInputOptions
@@ -11016,6 +11745,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         SpeculationRules = 21,
         AudioWorklet = 22,
         Xslt = 23,
+        WebIdentity = 24,
     }
 
     public enum RequestMode
@@ -11419,6 +12149,51 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double? Top { get => throw null; init { } }
     }
 
+    public enum SecurePaymentConfirmationAvailability
+    {
+        Available = 0,
+        UnavailableUnknownReason = 1,
+        UnavailableFeatureNotEnabled = 2,
+        UnavailableNoPermissionPolicy = 3,
+        UnavailableNoUserVerifyingPlatformAuthenticator = 4,
+    }
+
+    public enum SecurePaymentConfirmationChoice
+    {
+        Decline = 0,
+        Accept = 1,
+        AuthenticateAnotherWay = 2,
+        OptOut = 3,
+    }
+
+    public sealed class SecurePaymentConfirmationPrompt : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public int CredentialCount { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentCredentialInstrument Instrument { get => throw null; }
+        public string? PayeeName { get => throw null; }
+        public string? PayeeOrigin { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentEntityLogo> PaymentEntitiesLogos { get => throw null; }
+        public string RpId { get => throw null; }
+        public bool ShowOptOut { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentCurrencyAmount Total { get => throw null; }
+    }
+
+    public sealed class SecurePaymentConfirmationRequest
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialParameters>? BrowserBoundPubKeyCredParams { get => throw null; init { } }
+        public required System.ReadOnlyMemory<byte> Challenge { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> CredentialIds { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs? Extensions { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.PaymentCredentialInstrument Instrument { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Locale { get => throw null; init { } }
+        public string? PayeeName { get => throw null; init { } }
+        public string? PayeeOrigin { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentEntityLogo>? PaymentEntitiesLogos { get => throw null; init { } }
+        public required string RpId { get => throw null; init { } }
+        public bool? ShowOptOut { get => throw null; init { } }
+        public uint? Timeout { get => throw null; init { } }
+    }
+
     public sealed class SecurityPolicyViolationEvent : Meziantou.Framework.WebPlatform.Dom.Event
     {
         public string BlockedUri { get => throw null; }
@@ -11551,6 +12326,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Clients Clients { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.CookieStore CookieStore { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnActivate { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCanMakePayment { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCookieChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnFetch { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnInstall { get => throw null; set { } }
@@ -11558,6 +12334,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessageError { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnNotificationClick { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnNotificationClose { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnPaymentRequest { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration Registration { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorker ServiceWorker { get => throw null; }
         public System.Threading.Tasks.Task SkipWaiting() => throw null;
@@ -11570,6 +12347,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorker? Installing { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigationPreloadManager NavigationPreload { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnUpdateFound { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.PaymentManager PaymentManager { get => throw null; }
         public string Scope { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerUpdateViaCache UpdateViaCache { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorker? Waiting { get => throw null; }
@@ -13856,6 +14634,31 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public bool HasBeenActive { get => throw null; }
         public bool IsActive { get => throw null; }
+    }
+
+    public abstract class UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public string Origin { get => throw null; }
+        public string TopLevelOrigin { get => throw null; }
+    }
+
+    public abstract class UserAgentUIBackend
+    {
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.Credential?> ChooseCredentialAsync(Meziantou.Framework.WebPlatform.Dom.CredentialChooserPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.IdentityAccountChoice?> ChooseIdentityAccountAsync(Meziantou.Framework.WebPlatform.Dom.IdentityAccountChooserPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask CompletePaymentAsync(Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt prompt, Meziantou.Framework.WebPlatform.Dom.PaymentComplete result, string serializedData, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> ConfirmIdentityProviderLoginAsync(Meziantou.Framework.WebPlatform.Dom.IdentityProviderLoginPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> HasPaymentHandlerAsync(Meziantou.Framework.WebPlatform.Dom.PaymentHandlerQuery query, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask IngestPaymentMethodManifestAsync(Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifestRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse?> RequestDigitalCredentialAsync(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PaymentSheetResponse?> RetryPaymentAsync(Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> ShowIdentityAutoReauthenticationAsync(Meziantou.Framework.WebPlatform.Dom.IdentityAutoReauthenticationPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask ShowIdentityCredentialErrorAsync(Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PaymentSheetResponse?> ShowPaymentSheetAsync(Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationChoice> ShowSecurePaymentConfirmationAsync(Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<bool> StoreCredentialAsync(Meziantou.Framework.WebPlatform.Dom.CredentialStorePrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual void ValidatePaymentMethodData(string methodIdentifier, string serializedData) { }
     }
 
     public enum UserIdleState

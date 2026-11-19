@@ -601,7 +601,9 @@ are the authenticator configuration of WebDriver:
 - A `Ctap1U2f` authenticator has neither discoverable credentials, user verification nor extensions, and only creates
   ES256 keys. The others create ES256, EdDSA (Ed25519) and RS256 keys, in the order of preference of the page.
 - `Extensions` lists the authenticator extensions: `prf` (the pseudo-random function of the `prf` extension) and
-  `largeBlob` (the blobs of the `largeBlob` extension). The client also implements the `credProps` extension.
+  `largeBlob` (the blobs of the `largeBlob` extension). The client also implements the `credProps` extension, and the
+  `payment` extension of [Secure Payment Confirmation](09-UserAgentUI.md#secure-payment-confirmation) (a credential for the
+  payments, whose authentications only the `secure-payment-confirmation` payment method can request).
 
 The credentials of an authenticator can be listed with
 [GetCredentials](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator.GetCredentials), added with
@@ -611,8 +613,8 @@ whose private key is a PKCS #8 package), and removed with
 shared by several browsing contexts, and used from any thread.
 
 The client checks the origin and the RP ID, and the permissions policies: `publickey-credentials-create` and
-`publickey-credentials-get` (allowed in the same-origin frames by default). A cross-origin frame must have a transient
-activation to create a credential. A ceremony is performed by a task of the event loop: the first authenticator that can
+`publickey-credentials-get` (allowed in the same-origin frames by default; `payment` also allows to create a credential). A
+cross-origin frame must have a transient activation to create a credential. A ceremony is performed by a task of the event loop: the first authenticator that can
 complete it is used, without user interface. When no authenticator can (there is none, none satisfies the options, or
 none has an eligible credential), the ceremony fails with a `NotAllowedError`, as when a user cancels the dialog of a
 browser, without waiting for the end of the timeout. A request with the `conditional` mediation waits for the user to

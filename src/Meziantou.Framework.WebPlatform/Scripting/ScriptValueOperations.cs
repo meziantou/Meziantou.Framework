@@ -48,6 +48,13 @@ internal interface IScriptValueOperations
 
     /// <summary>https://webidl.spec.whatwg.org/#js-DOMString</summary>
     string ToDomString(object? value);
+
+    /// <summary>
+    /// Converts the data of the <c>secure-payment-confirmation</c> payment method to its additional data type
+    /// (https://w3c.github.io/secure-payment-confirmation/#sctn-payment-method-additional-data-type).
+    /// </summary>
+    /// <exception cref="TypeErrorException">The value cannot be converted to the dictionary.</exception>
+    SecurePaymentConfirmationRequest ToSecurePaymentConfirmationRequest(object? value);
 }
 
 /// <summary>
@@ -114,6 +121,10 @@ internal sealed class DotNetScriptValueOperations : IScriptValueOperations
     };
 
     public string ToDomString(object? value) => ToDomString(value, converting: null);
+
+    // The .NET code gives the dictionary itself
+    public SecurePaymentConfirmationRequest ToSecurePaymentConfirmationRequest(object? value)
+        => value as SecurePaymentConfirmationRequest ?? throw new TypeErrorException("The data of the secure-payment-confirmation payment method is not a SecurePaymentConfirmationRequest");
 
     /// <summary>
     /// Converts a value to a string; a list is the strings of its elements joined by commas, and a list that contains itself

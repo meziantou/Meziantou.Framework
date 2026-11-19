@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using static Meziantou.AspNetCore.Testing.Expectations;
 
 namespace Meziantou.AspNetCore.Testing.Tests;
@@ -259,6 +260,23 @@ public sealed class WebAppBrowserTests
 
         var exception = Assert.Throws<InvalidOperationException>(browser.NewPage);
         Assert.Contains("cannot replace the DocumentLoader or the ScriptEngine", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TimeProviderIsTheClockOfTheDates()
+    {
+        #region WebAppBrowser_TimeProvider
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero));
+        clock.SetLocalTimeZone(TimeZoneInfo.CreateCustomTimeZone("Test", TimeSpan.FromHours(2), "Test", "Test"));
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { TimeProvider = clock });
+
+        // The page writes new Date().toISOString() and new Date().getTimezoneOffset()
+        var page = await browser.OpenAsync("/clock");
+
+        Assert.Equal("2026-01-10T12:00:00.000Z -120", page.Find("output").TextContent);
+        #endregion
+        Assert.Empty(page.ScriptErrors);
     }
 
     [Fact]

@@ -19,7 +19,11 @@ public sealed class TestPageSettings
     /// <summary>Gets the engine that runs the scripts of the page, or null to run no script. The page disposes it.</summary>
     public ScriptEngine? ScriptEngine { get; init; }
 
-    /// <summary>Gets the clock of the timers of the page (<c>setTimeout()</c>, the animations...), or null for the system clock.</summary>
+    /// <summary>
+    /// Gets the clock of the timers of the page (<c>setTimeout()</c>, the animations...), or null for the system clock. The
+    /// clock of the dates of the scripts (<c>Date</c>) is the one of <see cref="ScriptEngine"/>: give the same clock to
+    /// the engine (for instance <c>JavaScriptScriptEngineOptions.TimeProvider</c>) for the page to have one clock.
+    /// </summary>
     public TimeProvider? TimeProvider { get; init; }
 
     /// <summary>Gets the maximum time the waits of the page wait for. The default is 10 seconds.</summary>

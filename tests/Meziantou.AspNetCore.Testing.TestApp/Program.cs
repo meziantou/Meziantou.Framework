@@ -35,6 +35,13 @@ app.MapGet("/client", () => Html("Client", """
       });
     </script>
     """));
+app.MapGet("/clock", () => Html("Clock", """
+    <output></output>
+    <script>
+      const now = new Date();
+      document.querySelector('output').textContent = now.toISOString() + ' ' + now.getTimezoneOffset();
+    </script>
+    """));
 app.MapGet("/secure", (HttpContext context) =>
 {
     // The policy blocks the inline script; the script of the application copies and pastes a text

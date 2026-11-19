@@ -501,6 +501,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownHtmlRendererOptions : System.IEquatable<Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions>
     {
+        public System.Collections.Generic.IReadOnlyCollection<string>? AllowedUrlSchemes { get => throw null; init { } }
         public System.Func<string, bool> AttributeFilter { get => throw null; init { } }
         public System.Uri? BaseUrl { get => throw null; init { } }
         public static Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions Default { get => throw null; }

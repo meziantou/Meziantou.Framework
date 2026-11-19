@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.RegularExpressions;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Language;
 using Meziantou.Framework.Language.Fuzz;
@@ -65,11 +67,24 @@ public static class MarkdownFuzzTargets
 
     private static readonly string[] EscaperTokens = ["\\", "`", "``", "```", "~~~", "*", "_", "[", "]", "(", ")", "<", ">", "&", "&amp;", "&#35;", "\"", "'", "|", "#", "-", "=", "!", " ", "\t", "\n", "\r\n", "\n\n", "\u00A0", "\u0000", "\u0085", "https://"];
 
+    // With AllowedUrlSchemes, the HTML is the one without it, where the href and the src of each tag whose URL has a scheme that
+    // is not allowed are empty: a URL with such a scheme never comes out, and the other URLs are kept. The scheme is read as a
+    // browser reads it, independently of the renderer. Raw HTML is disabled: the filter does not apply to it.
+    private static readonly string[] AllowedUrlSchemes = ["http", "https", "mailto"];
+    private static readonly MarkdownParseOptions[] UrlFilterParseOptions = [MarkdownParseOptions.GitHubFlavored with { DisableHtml = true }, AllExtensionsWithoutHtml];
+    private static readonly MarkdownHtmlRendererOptions UnfilteredUrlOptions = new() { LinkRel = "nofollow", PragmaLines = true };
+    private static readonly MarkdownHtmlRendererOptions FilteredUrlOptions = UnfilteredUrlOptions with { AllowedUrlSchemes = AllowedUrlSchemes };
+    private static readonly Regex HtmlTag = new("<[a-z][^<>]*>", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10));
+    private static readonly Regex UrlAttribute = new(" (?<name>href|src)=\"(?<value>[^\"]*)\"", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10));
+    private static readonly Regex UrlScheme = new("^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10));
+    private static readonly string[] UrlFilterTokens = [.. ExtensionTokens, "javascript:", "JavaScript:", "vbscript:", "data:", "data:text/html,", "mailto:", "http:", "https:", "c:", "a+b.c-d:", "//", "%09", "&#9;", "&#x0A;", "&colon;", "\\:", "\u0001", "\u001F", "<javascript:x>", "](javascript:", "![](data:", "](<java\tscript:x>)", "{href=x}", "{src=x}"];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("markdown", data => Parse(data, MarkdownParseOptions.Default)) { Seeds = GetSeeds, Dictionary = Tokens },
         new("markdown-gfm", data => Parse(data, MarkdownParseOptions.GitHubFlavored)) { Seeds = GetGfmSeeds, Dictionary = GfmTokens },
         new("markdown-extensions", data => Parse(data, (data.Length % 4) switch { 0 => AllExtensions, 2 => AllExtensionsWithPipeTableOptions, _ => AllExtensionsWithoutHtml })) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
+        new("markdown-url-filter", FilterUrls) { Seeds = GetUrlFilterSeeds, Dictionary = UrlFilterTokens },
         new("markdown-escaper", Escape) { Seeds = GetEscaperSeeds, Dictionary = EscaperTokens },
         new("markdown-formatter", Format) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
         new("markdown-syntax-extensions", ParseWithSyntaxExtensions) { Seeds = GetSyntaxExtensionSeeds, Dictionary = SyntaxExtensionTokens },
@@ -217,6 +232,51 @@ public static class MarkdownFuzzTargets
         for (var i = 0; i < texts.Length; i++)
         {
             yield return FuzzSeed.FromText($"escaper-{i + 1}", texts[i]);
+        }
+    }
+
+    private static void FilterUrls(ReadOnlySpan<byte> data)
+    {
+        var text = FuzzText.Decode(data);
+        var tree = MarkdownSyntaxTree.ParseText(text, UrlFilterParseOptions[data.Length % UrlFilterParseOptions.Length]);
+        var unfiltered = MarkdownHtmlRenderer.ToHtml(tree, UnfilteredUrlOptions);
+        var filtered = MarkdownHtmlRenderer.ToHtml(tree, FilteredUrlOptions);
+
+        foreach (Match tag in HtmlTag.Matches(filtered))
+        {
+            foreach (Match attribute in UrlAttribute.Matches(tag.Value))
+            {
+                FuzzAssert.True(IsAllowedUrl(attribute.Groups["value"].Value), $"The URL {FuzzAssert.Format(attribute.Value)} has a scheme that is not allowed: {FuzzAssert.Format(text)}");
+            }
+        }
+
+        var expected = HtmlTag.Replace(unfiltered, tag => UrlAttribute.Replace(tag.Value, attribute => IsAllowedUrl(attribute.Groups["value"].Value) ? attribute.Value : $" {attribute.Groups["name"].Value}=\"\""));
+        FuzzAssert.True(filtered == expected, $"The filtered HTML {FuzzAssert.Format(filtered)} is not the HTML {FuzzAssert.Format(expected)}: {FuzzAssert.Format(text)}");
+
+        // The browsers ignore the C0 controls and the spaces at the start of a URL, and remove its tabs and line endings
+        static bool IsAllowedUrl(string value)
+        {
+            var url = WebUtility.HtmlDecode(value).TrimStart(Enumerable.Range(0, 0x21).Select(c => (char)c).ToArray()).Replace("\t", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal).Replace("\r", "", StringComparison.Ordinal);
+            return UrlScheme.Match(url) is not { Success: true } match || AllowedUrlSchemes.Contains(match.Groups["scheme"].Value, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetUrlFilterSeeds()
+    {
+        string[] texts =
+        [
+            "[a](javascript:alert(1)) [b](https://example.com) [c](/relative) ![d](data:image/png;base64,AA==) <vbscript:x>", "[a](JavaScript:x)", "[a](<java\tscript:x>)", "[a](HTTPS://a.b)",
+            "[a](./javascript:x) [b](#javascript:x) [c](?javascript:x) [d](//a.b/c)", "[a](c:/x) [b](1a:x)", "<mailto:a@b.c> <a@b.c>", "![](https://youtu.be/x) ![](javascript:a.mp4)",
+            "[a]: javascript:x\n\n[a] ![a]", "[a](&#106;avascript:x) [b](java&#x09;script:x) [c](javascript&colon;x)", "x www.example.com javascript:x mailto:a@b.c tel:+1", "[a](u){href=javascript:x src=data:x}",
+        ];
+        for (var i = 0; i < texts.Length; i++)
+        {
+            yield return FuzzSeed.FromText($"url-filter-{i + 1}", texts[i]);
+        }
+
+        foreach (var seed in GetGfmSeeds())
+        {
+            yield return seed;
         }
     }
 

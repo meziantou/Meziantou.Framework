@@ -42,7 +42,8 @@ public sealed class MarkdownHtmlWriter
     /// <summary>
     /// Writes a URL as the value of an attribute, as the renderer writes the URLs of the links: made absolute with
     /// <see cref="MarkdownHtmlRendererOptions.BaseUrl"/>, changed by <see cref="MarkdownHtmlRendererOptions.LinkRewriter"/>,
-    /// percent-encoded, then escaped. Plain text does not write it.
+    /// percent-encoded, written empty when its scheme is not one of <see cref="MarkdownHtmlRendererOptions.AllowedUrlSchemes"/>,
+    /// then escaped. Plain text does not write it.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="url"/> is <see langword="null"/>.</exception>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "The URL is written to the HTML as the Markdown has it")]

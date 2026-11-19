@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meziantou.Framework.Markdown.Parsing;
 using Meziantou.Xunit;
 
@@ -153,6 +154,18 @@ public sealed class MarkdownSyntaxTreeTests
 
         // The < of the filtered tags is escaped, the other tags are written as they are
         Assert.Equal("&lt;script>alert(1)&lt;/script>\n<p>Some <b>bold</b> text</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void TagFilterIsNotASanitizer()
+    {
+        #region MarkdownHtmlRenderer_TagFilterBypass
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.TagFilter };
+        var tree = MarkdownSyntaxTree.ParseText("<div>\n<script/src=https://example.com/x.js></script>\n</div>\n", options);
+
+        // As in GitHub, a / after the name is not filtered: browsers read <script/src=...> as a script
+        Assert.Equal("<div>\n<script/src=https://example.com/x.js>&lt;/script>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree));
         #endregion
     }
 
@@ -487,6 +500,16 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Theory]
+    [InlineData("```mermaid {#d .big title=t}\na\n```\n", "<pre id=\"d\" class=\"big mermaid\" title=\"t\">a\n</pre>\n")]
+    [InlineData("{.p}\n```nomnoml\n[a]\n```\n", "<div class=\"nomnoml p\">[a]\n</div>\n")]
+    public void RendersTheGenericAttributesOfDiagrams(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Diagrams | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
     [InlineData(false, "> [!Custom]\n> a\n", "<div class=\"markdown-alert markdown-alert-custom\">\n<p>a</p>\n</div>\n")]
     [InlineData(false, "> [!NOTE]\n", "<div class=\"markdown-alert markdown-alert-note\">\n<p class=\"markdown-alert-title\">")]
     [InlineData(false, "- > [!NOTE]\n", "<ul>\n<li>\n<blockquote>\n<p>[!NOTE]</p>\n</blockquote>\n</li>\n</ul>\n")]
@@ -574,9 +597,13 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[a{.x}](u)\n", "<p class=\"x\"><a href=\"u\">a</a></p>\n")]
     [InlineData("*{.c}\nA\n", "<p>*A</p>\n")]
     [InlineData("[l](u) {title=t}\n", "<p title=\"t\"><a href=\"u\">l</a></p>\n")]
-    [InlineData("[l](u \"md\"){#i title=t onclick=x data-x=1 hidden}\n", "<p><a href=\"u\" id=\"i\" title=\"t\" hidden=\"\" title=\"md\">l</a></p>\n")]
+    [InlineData("[l](u \"md\"){#i title=t onclick=x data-x=1 hidden}\n", "<p><a href=\"u\" id=\"i\" hidden=\"\" title=\"md\">l</a></p>\n")]
+    [InlineData("[l](u){title=t}\n", "<p><a href=\"u\" title=\"t\">l</a></p>\n")]
+    [InlineData("![real](x.png){alt=fake}\n", "<p><img src=\"x.png\" alt=\"real\" /></p>\n")]
+    [InlineData("![real](x.png \"t\"){ALT=fake Title=u lang=fr}\n", "<p><img src=\"x.png\" lang=\"fr\" alt=\"real\" title=\"t\" /></p>\n")]
     [InlineData("a{#x .b lang=de}{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"b c\" lang=\"de\">a</p>\n")]
-    [InlineData("a{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"c\" lang=\"en\" lang=\"fr\">a</p>\n")]
+    [InlineData("a{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"c\" lang=\"en\">a</p>\n")]
+    [InlineData("a{lang=en LANG=fr title=a title=b title=c title=d title=e title=f title=g title=h title=i}\n", "<p lang=\"en\" title=\"a\">a</p>\n")]
     [InlineData("$$ {.e}\nx\n$$\n", "<div class=\"math e\">")]
     [InlineData("a\n{#t}\n", "<p>a</p>\n")]
     [InlineData("Title\n{#t}\n---\n", "<h2 id=\"t\">Title\n</h2>\n")]
@@ -1498,6 +1525,78 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void EscapesTheRelOfLinks()
+    {
+        var options = new MarkdownHtmlRendererOptions { LinkRel = "a\" onclick=\"alert(1)" };
+
+        Assert.Equal("<p><a href=\"u\" rel=\"a&quot; onclick=&quot;alert(1)\">x</a></p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("[x](u)\n"), options));
+    }
+
+    // The rel of the options and the target of the autolinks are the ones of the renderer: generic attributes cannot write them again
+    [Theory]
+    [InlineData("[x](u){target=_blank rel=opener}\n", "<p><a href=\"u\" target=\"_blank\" rel=\"noopener noreferrer\">x</a></p>\n")]
+    [InlineData("<https://a.b>{REL=opener}\n", "<p><a href=\"https://a.b\" rel=\"noopener noreferrer\">https://a.b</a></p>\n")]
+    [InlineData("<a@b.c>{rel=me}\n", "<p><a href=\"mailto:a@b.c\" rel=\"me\">a@b.c</a></p>\n")]
+    public void GenericAttributesDoNotReplaceTheAttributesOfTheRenderer(string text, string expected)
+    {
+        var parseOptions = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.MarkdigAutolinks, AutolinkOptions = new MarkdownAutolinkOptions { OpenInNewWindow = true } };
+        var options = new MarkdownHtmlRendererOptions { LinkRel = "noopener noreferrer" };
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, parseOptions), options));
+    }
+
+    [Fact]
+    public void FiltersTheSchemesOfTheUrls()
+    {
+        #region MarkdownHtmlRendererOptions_AllowedUrlSchemes
+        var tree = MarkdownSyntaxTree.ParseText("[a](javascript:alert(1)) [b](https://example.com) [c](/relative) ![d](data:image/png;base64,AA==) <vbscript:x>\n");
+        var options = new MarkdownHtmlRendererOptions { AllowedUrlSchemes = ["http", "https", "mailto"] };
+
+        // The URLs whose scheme is not allowed are written empty, the relative URLs are kept
+        Assert.Equal("<p><a href=\"\">a</a> <a href=\"https://example.com\">b</a> <a href=\"/relative\">c</a> <img src=\"\" alt=\"d\" /> <a href=\"\">vbscript:x</a></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("[a](JavaScript:x)\n", "<p><a href=\"\">a</a></p>\n")]
+    [InlineData("[a](<java\tscript:x>)\n", "<p><a href=\"java%09script:x\">a</a></p>\n")]
+    [InlineData("[a](HTTPS://a.b)\n", "<p><a href=\"HTTPS://a.b\">a</a></p>\n")]
+    [InlineData("[a](./javascript:x) [b](#javascript:x) [c](?javascript:x) [d](//a.b/c)\n", "<p><a href=\"./javascript:x\">a</a> <a href=\"#javascript:x\">b</a> <a href=\"?javascript:x\">c</a> <a href=\"//a.b/c\">d</a></p>\n")]
+    [InlineData("[a](c:/x) [b](1a:x)\n", "<p><a href=\"\">a</a> <a href=\"1a:x\">b</a></p>\n")]
+    [InlineData("<mailto:a@b.c> <a@b.c>\n", "<p><a href=\"mailto:a@b.c\">mailto:a@b.c</a> <a href=\"mailto:a@b.c\">a@b.c</a></p>\n")]
+    public void FiltersTheSchemesOfTheUrlsAsBrowsersReadThem(string text, string expected)
+    {
+        var options = new MarkdownHtmlRendererOptions { AllowedUrlSchemes = ["https", "mailto"] };
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text), options));
+    }
+
+    [Theory]
+    [InlineData("javascript:x", "javascript")]
+    [InlineData(" \u0001javascript:x", "javascript")]
+    [InlineData("java\tscr\nipt\r:x", "javascript")]
+    [InlineData("a+b-c.d:x", "a+b-c.d")]
+    [InlineData("/a:b", null)]
+    [InlineData("1a:b", null)]
+    [InlineData(":b", null)]
+    [InlineData("a b:c", null)]
+    [InlineData("a", null)]
+    [InlineData("", null)]
+    public void ReadsTheSchemeOfAUrlAsBrowsersReadIt(string url, string? expected)
+    {
+        Assert.Equal(expected, MarkdownHtmlRenderer.Writer.TryGetUrlScheme(url, out var scheme) ? scheme.ToString() : null);
+    }
+
+    [Fact]
+    public void FiltersTheUrlsOfMediaLinks()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("![](https://youtu.be/x) ![](javascript:a.mp4)\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.MediaLinks });
+        var options = new MarkdownHtmlRendererOptions { AllowedUrlSchemes = ["http"] };
+
+        Assert.Equal("<p><iframe src=\"\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe> <video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"\"></source></video></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+    }
+
+    [Fact]
     public void WritesThePragmaLines()
     {
         #region MarkdownHtmlRenderer_PragmaLines
@@ -1662,6 +1761,19 @@ public sealed class MarkdownSyntaxTreeTests
         var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options));
 
         Assert.Equal(isRightToLeft, html.Contains("<p dir=\"rtl\">", StringComparison.Ordinal), html);
+    }
+
+    // Finding whether a bracket is closed was quadratic in the number of brackets: 160 KB of [ took 40 seconds
+    [Fact]
+    public void TheDirectionOfManyBracketsIsLinear()
+    {
+        var tree = MarkdownSyntaxTree.ParseText(new string('[', 200_000) + "مرحبا", new MarkdownParseOptions { Extensions = MarkdownExtensions.Globalization });
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownHtmlRenderer.ToHtml(tree);
+
+        Assert.StartsWith("<p dir=\"rtl\">[[", html, StringComparison.Ordinal);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
     [Fact]
@@ -2654,8 +2766,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData(":::\nfoo\n:::", "foo\n", MarkdownExtensions.CustomContainers)]
     [InlineData(":::bar\nfoo\n:::", "foo\n", MarkdownExtensions.CustomContainers | MarkdownExtensions.GenericAttributes)]
     [InlineData("```mermaid\nA --> B & C <x> \"q\"\n```", "A --> B & C <x> \"q\"\n", MarkdownExtensions.Diagrams)]
-    [InlineData("| Header1 | Header2 | Header3 |\n|--|--|--|\nt**es**t|value2|value3", "Header1 Header2 Header3 test value2 value3 \n", MarkdownExtensions.PipeTables)]
-    [InlineData("| a | b |\n|---|---|\n| c | d |\n\ne", "a b c d \ne\n", MarkdownExtensions.Tables)]
+    [InlineData("| Header1 | Header2 | Header3 |\n|--|--|--|\nt**es**t|value2|value3", "Header1 Header2 Header3 \ntest value2 value3 \n", MarkdownExtensions.PipeTables)]
+    [InlineData("| a | b |\n|---|---|\n| c | d |\n\ne", "a b \nc d \ne\n", MarkdownExtensions.Tables)]
+    [InlineData("+---+---+\n| a | b |\n+===+===+\n| c | d |\n+---+---+\n\ne", "a b \nc d \ne\n", MarkdownExtensions.GridTables)]
     [InlineData("Term 1\nTerm 2\n:   Definition 1\n:   Definition 2\n\n    More", "Term 1\nTerm 2\nDefinition 1\nDefinition 2\nMore\n", MarkdownExtensions.DefinitionLists)]
     [InlineData("^^^\n![alt](a.png)\n^^^ The *caption*", "alt\nThe caption\n", MarkdownExtensions.Figures)]
     [InlineData("a\n\n^^ The *footer*\n^^ on two lines", "a\nThe footer\non two lines\n", MarkdownExtensions.Footers)]

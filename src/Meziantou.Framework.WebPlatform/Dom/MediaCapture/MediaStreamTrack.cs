@@ -271,8 +271,10 @@ public partial class MediaStreamTrack : EventTarget
         // https://w3c.github.io/mediacapture-main/#dfn-applyconstraints-algorithm
         Dictionary<string, object>? settings;
         string failedConstraint;
-        if (Source.Model is { } model)
+        if (Source.GetModelForTrack(this) is { } model)
         {
+            // The settings that the source can give to the track without breaking its other tracks (a conflict rejects the
+            // call before the track and the source change)
             var selection = MediaTrackConstraintProcessing.SelectSettings(model, constraints, Source.FixedValues);
             settings = selection.Settings;
             failedConstraint = selection.FailedConstraint;

@@ -220,6 +220,11 @@ private sealed class SolidColorCamera : MediaCaptureBackend
   a device is plugged in or removed: the pages that can see the change get a `devicechange` event. A source calls
   `SetMuted` while it cannot produce media, and `End` when its device is removed: its tracks fire `mute`, `unmute` and
   `ended`. A source that is already muted or ended when `StartCapture` returns gives muted or ended tracks.
+- The clones of a track share its device, and each one gets the media at its own settings. When the tracks have
+  different sizes or frame rates, the device runs in the smallest native mode that covers all of them (the source gets
+  the new settings in `OnSettingsChanged`). `applyConstraints()` on a track only selects settings that a native mode
+  can give together with the other live tracks of the device: constraints that only another mode satisfies reject the
+  call with an `OverconstrainedError`, and neither the track nor the device change.
 - The capture stops when the last track of a device stops, or when the document is unloaded: the source is disposed.
 
 The streams also come from the page itself: `canvas.captureStream()` captures a canvas when it changes, at most

@@ -41,6 +41,12 @@ internal abstract class MediaStreamTrackSource
     /// <summary>The constrainable properties of the source, or null when the constraints cannot change its settings.</summary>
     public virtual MediaTrackSourceModel? Model => null;
 
+    /// <summary>
+    /// The model in which the constraints of a track select its settings (<c>applyConstraints()</c>): the settings that the
+    /// source can give to the track without changing the media of its other tracks in a way they cannot use.
+    /// </summary>
+    public virtual MediaTrackSourceModel? GetModelForTrack(MediaStreamTrack track) => Model;
+
     /// <summary>The values of the properties that the constraints cannot change (e.g. the <c>deviceId</c> of a device), or null.</summary>
     public virtual IReadOnlyDictionary<string, object>? FixedValues => null;
 
@@ -189,24 +195,88 @@ internal sealed class CaptureDeviceTrackSource : MediaStreamTrackSource
 
     public override IReadOnlyDictionary<string, object> FixedValues => _fixedValues;
 
+    /// <summary>
+    /// The settings of a track that shares the device with other live tracks come from the native modes that can also give
+    /// their media to these tracks (by cropping, scaling down or dropping frames): constraints that only another mode can
+    /// satisfy are rejected with an <c>OverconstrainedError</c>, without changing the device nor the other tracks
+    /// (https://w3c.github.io/mediacapture-main/#dfn-applyconstraints-algorithm).
+    /// </summary>
+    public override MediaTrackSourceModel? GetModelForTrack(MediaStreamTrack track)
+    {
+        if (_model.VideoModes.Count == 0)
+            return _model;
+
+        var others = Tracks.Where(other => other != track).ToList();
+        if (others.Count == 0)
+            return _model;
+
+        var modes = _model.VideoModes.Where(mode => others.TrueForAll(other => Covers(mode, other.Settings))).ToList();
+        if (modes.Count == _model.VideoModes.Count)
+            return _model;
+
+        if (modes.Count == 0)
+        {
+            // Only the tracks created when the device had other modes have no common mode: the largest one
+            modes.Add(GetLargestMode());
+        }
+
+        return new MediaTrackSourceModel
+        {
+            Kind = _model.Kind,
+            Capabilities = _model.Capabilities,
+            Defaults = _model.Defaults,
+            VideoModes = modes,
+        };
+    }
+
     public override Dictionary<string, object> GetInitialSettings() => new(_settings, StringComparer.Ordinal);
 
     /// <summary>
-    /// The settings of a track changed: the device is configured with settings that all its live tracks can use (the largest
-    /// size, frame rate and number of channels of the tracks; the other values of the track whose constraints changed).
-    /// Each track adapts the media to its own settings: the frames are scaled to its size, and the audio is mixed to its
-    /// number of channels (see <see cref="MediaStreamTrack.GetVideoFrame"/> and <see cref="MediaStreamTrack.ReadAudio"/>).
+    /// The settings of a track changed: the device is configured with settings that all its live tracks can use (the other
+    /// values come from the track whose constraints changed). When the tracks have different sizes or frame rates, the
+    /// device runs in the smallest native mode that can give their media to all of them (by cropping, scaling down or
+    /// dropping frames), and the audio has the largest number of channels of the tracks. Each track adapts the media to its
+    /// own settings: the frames are scaled to its size, and the audio is mixed to its number of channels (see
+    /// <see cref="MediaStreamTrack.GetVideoFrame"/> and <see cref="MediaStreamTrack.ReadAudio"/>).
     /// </summary>
     public override void ApplySettings(MediaStreamTrack track, IReadOnlyDictionary<string, object> settings)
     {
         var combined = new Dictionary<string, object>(settings, StringComparer.Ordinal);
-        foreach (var other in Tracks)
+        var tracksSettings = Tracks.Select(other => other == track ? settings : other.Settings).ToList();
+        foreach (var other in tracksSettings)
         {
-            foreach (var name in (ReadOnlySpan<string>)["width", "height", "frameRate", "channelCount"])
+            if (other.GetValueOrDefault("channelCount") is double channels && (combined.GetValueOrDefault("channelCount") is not double current || channels > current))
             {
-                if (other.Settings.GetValueOrDefault(name) is double value && (!combined.TryGetValue(name, out var current) || current is not double currentValue || value > currentValue))
+                combined["channelCount"] = channels;
+            }
+        }
+
+        if (_model.VideoModes.Count > 0 && tracksSettings.Exists(other => !SameVideoMode(other, settings)))
+        {
+            var mode = _model.VideoModes
+                .Where(mode => tracksSettings.TrueForAll(other => Covers(mode, other)))
+                .OrderBy(mode => (long)mode.Width * mode.Height)
+                .ThenBy(mode => mode.FrameRate)
+                .FirstOrDefault();
+
+            // The settings of the tracks come from modes that can give their media to all of them (see GetModelForTrack): the
+            // largest mode is for the tracks created when the device had other modes
+            mode ??= GetLargestMode();
+            combined["width"] = (double)mode.Width;
+            combined["height"] = (double)mode.Height;
+            combined["frameRate"] = mode.FrameRate;
+            combined["resizeMode"] = "none";
+        }
+        else if (_model.VideoModes.Count == 0)
+        {
+            foreach (var other in tracksSettings)
+            {
+                foreach (var name in (ReadOnlySpan<string>)["width", "height", "frameRate"])
                 {
-                    combined[name] = value;
+                    if (other.GetValueOrDefault(name) is double value && (combined.GetValueOrDefault(name) is not double current || value > current))
+                    {
+                        combined[name] = value;
+                    }
                 }
             }
         }
@@ -218,6 +288,27 @@ internal sealed class CaptureDeviceTrackSource : MediaStreamTrackSource
 
         _settings = combined;
         _capture.ApplySettings(MediaTrackConstrainableProperty.CreateSettings(combined));
+
+        static bool SameVideoMode(IReadOnlyDictionary<string, object> a, IReadOnlyDictionary<string, object> b)
+        {
+            foreach (var name in (ReadOnlySpan<string>)["width", "height", "frameRate"])
+            {
+                if (!Equals(a.GetValueOrDefault(name), b.GetValueOrDefault(name)))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    private MediaCaptureVideoMode GetLargestMode() => _model.VideoModes.OrderByDescending(mode => (long)mode.Width * mode.Height).ThenByDescending(mode => mode.FrameRate).First();
+
+    /// <summary>Whether a native mode can give its media to a track: its frames can be cropped and scaled down to the size of the track, and its frame rate decimated to the one of the track.</summary>
+    private static bool Covers(MediaCaptureVideoMode mode, IReadOnlyDictionary<string, object> settings)
+    {
+        return (settings.GetValueOrDefault("width") is not double width || width <= mode.Width)
+            && (settings.GetValueOrDefault("height") is not double height || height <= mode.Height)
+            && (settings.GetValueOrDefault("frameRate") is not double frameRate || frameRate <= mode.FrameRate + 1e-9);
     }
 
     public override MediaVideoFrame? GetVideoFrame() => IsStopped ? null : _capture.GetVideoFrame(_clock.GetElapsedTime(_startTimestamp));

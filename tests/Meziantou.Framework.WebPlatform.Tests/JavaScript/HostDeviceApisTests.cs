@@ -3580,6 +3580,29 @@ public sealed class HostDeviceApisTests : IDisposable
     }
     #endregion
 
+    // A camera with a large mode and a fast mode, which records the settings of its last source
+    private sealed class TwoModeCamera : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Camera = new()
+        {
+            Id = "camera-1",
+            Kind = MediaDeviceKind.VideoInput,
+            Label = "Two-mode camera",
+            DefaultSettings = new MediaTrackSettings { Width = 1920, Height = 1080, FrameRate = 30 },
+            VideoModes = [new MediaCaptureVideoMode(1920, 1080, 30), new MediaCaptureVideoMode(1280, 720, 60)],
+        };
+
+        public MediaCaptureSource? LastSource { get; private set; }
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Camera];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request);
+
+        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        {
+        }
+    }
+
     // A microphone that plays a ramp on every channel: the value of a frame is its position, divided by 1000
     private sealed class RampMicrophone : MediaCaptureBackend
     {
@@ -3809,6 +3832,56 @@ public sealed class HostDeviceApisTests : IDisposable
         var stereo = new float[4];
         clone.ReadAudio(10, stereo);
         Assert.Equal([0.010f, 0.010f, 0.011f, 0.011f], stereo);
+    }
+
+    [Fact]
+    public void ApplyConstraints_OfACloneKeepsTheDeviceInANativeModeThatCoversEveryTrack()
+    {
+        var backend = new TwoModeCamera();
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = backend, Permissions = GrantedPermissions("camera") });
+        var original = GetUserMedia(document, new MediaStreamConstraints { Video = true }).GetVideoTracks()[0];
+        var clone = original.Clone();
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+
+        // Only the fast mode gives 60 frames per second, but it cannot give the size of the original track: the call is
+        // rejected, and neither the clone nor the device change
+        var conflict = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Exact = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("frameRate", Assert.IsType<OverconstrainedError>(conflict.Exception?.InnerException).Constraint);
+        Assert.Equal(30d, clone.GetSettings().FrameRate);
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+
+        // An ideal frame rate falls back to the modes that cover the original track
+        var ideal = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Ideal = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(ideal.IsCompletedSuccessfully);
+        Assert.Equal(30d, clone.GetSettings().FrameRate);
+
+        // A smaller size: the device stays in the smallest native mode that covers both tracks
+        var smaller = clone.ApplyConstraints(new MediaTrackConstraints { Width = new ConstrainULongRange { Exact = 640 }, Height = new ConstrainULongRange { Exact = 360 }, FrameRate = new ConstrainDoubleRange { Exact = 15 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(smaller.IsCompletedSuccessfully);
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+        Assert.Equal(1920u, original.GetSettings().Width);
+
+        // Once the original track stopped, the clone can use the fast mode; a track of each size runs the device in the fast mode
+        original.Stop();
+        var fast = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Exact = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(fast.IsCompletedSuccessfully);
+        Assert.Equal(60d, clone.GetSettings().FrameRate);
+        var second = clone.Clone();
+        var slow = clone.ApplyConstraints(new MediaTrackConstraints { Width = new ConstrainULongRange { Exact = 640 }, Height = new ConstrainULongRange { Exact = 360 }, FrameRate = new ConstrainDoubleRange { Exact = 15 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(slow.IsCompletedSuccessfully);
+        Assert.Equal(("1280x720", 60d), DeviceMode());
+        Assert.Equal(60d, second.GetSettings().FrameRate);
+
+        (string Size, double FrameRate) DeviceMode()
+        {
+            var settings = backend.LastSource!.Settings;
+            return ($"{settings.Width}x{settings.Height}", settings.FrameRate!.Value);
+        }
     }
 
     [Fact]

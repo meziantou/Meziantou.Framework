@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Markdown.Parsing;
 
 /// <summary>
@@ -133,13 +135,6 @@ internal sealed class GridTableLayout
         public int End { get; } = end;
 
         public MarkdownTableAlignment Alignment { get; } = alignment;
-
-        // The number of columns of the cell that starts in the column on the current line, which is 0 when another cell covers it
-        public int CurrentColumnSpan { get; set; } = -1;
-
-        public int PreviousColumnSpan { get; set; }
-
-        public Cell? CurrentCell { get; set; }
     }
 
     internal sealed class Row
@@ -171,11 +166,35 @@ internal sealed class GridTableLayout
         public List<(int Line, int Start, int End)> Segments { get; } = [];
     }
 
+    // The work for a line is bounded by its length, not by the number of columns: the columns that start after the end of the
+    // line are not read, as they all belong to the cell that starts last on the line. Only the columns where a cell starts and
+    // the cells that are open are tracked.
     private sealed class Reader(List<Column> columns, IReadOnlyList<string> lines)
     {
         public List<Row> Rows { get; } = [];
 
+        // The columns where a cell starts on the current line and on the previous one, in order: each cell spans the columns up
+        // to the next one, and the last one up to the end of the table
+        private List<int> _starts = [];
+        private List<int> _previousStarts = [];
+        private int _lineCount;
+
+        // The number of columns of the cell that starts in a column on the current line, valid when the line stamp of the
+        // column is the current one: 0 when another cell covers the column
+        private readonly int[] _spans = new int[columns.Count];
+        private readonly int[] _spanStamps = new int[columns.Count];
+        private int _stamp;
+
+        // The cell of each column that is not added to a row yet or that continues in the next row, and the columns that have one
+        private readonly Cell?[] _cells = new Cell?[columns.Count];
+        private readonly List<int> _openColumns = [];
+
+        // The rows already marked as the header by a line of =
+        private int _headerRowCount;
+
         private static char PeekChar(string line, int index) => index >= 0 && index < line.Length ? line[index] : '\0';
+
+        private int GetSpan(int columnIndex) => _spanStamps[columnIndex] == _stamp ? _spans[columnIndex] : 0;
 
         // A line that starts with +: the cells that it does not cross continue in the next row, and the rows before a line of
         // = are the header
@@ -184,21 +203,20 @@ internal sealed class GridTableLayout
             var line = lines[lineIndex];
             var isHeaderRow = PeekChar(line, 1) == '=' || PeekChar(line, 2) == '=';
             var hasRowSpan = false;
-            foreach (var column in columns)
+            foreach (var columnIndex in _openColumns)
             {
-                if (column.CurrentCell is { } cell)
+                var column = columns[columnIndex];
+                var cell = _cells[columnIndex]!;
+                var (start, end) = PipeTableScanner.Trim(line, Math.Min(column.Start + 1, line.Length), Math.Min(column.End, line.Length));
+                if (end <= start || !IsRowSeparator(line.AsSpan(start, end - start)))
                 {
-                    var (start, end) = PipeTableScanner.Trim(line, Math.Min(column.Start + 1, line.Length), Math.Min(column.End, line.Length));
-                    if (end <= start || !IsRowSeparator(line.AsSpan(start, end - start)))
-                    {
-                        hasRowSpan = true;
-                        cell.RowSpan++;
-                        cell.AllowClose = false;
-                    }
-                    else
-                    {
-                        cell.AllowClose = true;
-                    }
+                    hasRowSpan = true;
+                    cell.RowSpan++;
+                    cell.AllowClose = false;
+                }
+                else
+                {
+                    cell.AllowClose = true;
                 }
             }
 
@@ -206,9 +224,9 @@ internal sealed class GridTableLayout
             EndRow(isLastRow: false);
             if (isHeaderRow)
             {
-                foreach (var row in Rows)
+                for (; _headerRowCount < Rows.Count; _headerRowCount++)
                 {
-                    row.IsHeader = true;
+                    Rows[_headerRowCount].IsHeader = true;
                 }
             }
 
@@ -231,27 +249,27 @@ internal sealed class GridTableLayout
             return true;
         }
 
-        // Each | or + at the start of a column starts a cell, which spans the columns up to the next one
+        // Each | or + at the start of a column starts a cell, which spans the columns up to the next one. Only the columns that
+        // start before the end of the line can have one.
         private void SetColumnSpans(string line)
         {
-            foreach (var column in columns)
+            (_previousStarts, _starts) = (_starts, _previousStarts);
+            _starts.Clear();
+            _lineCount++;
+            _stamp++;
+            for (var i = 0; i < columns.Count && columns[i].Start < line.Length; i++)
             {
-                column.PreviousColumnSpan = column.CurrentColumnSpan;
-                column.CurrentColumnSpan = 0;
+                if (line[columns[i].Start] is '|' or '+')
+                {
+                    _starts.Add(i);
+                }
             }
 
-            var columnIndex = -1;
-            for (var i = 0; i < columns.Count; i++)
+            for (var i = 0; i < _starts.Count; i++)
             {
-                if (PeekChar(line, columns[i].Start) is '|' or '+')
-                {
-                    columnIndex = i;
-                }
-
-                if (columnIndex >= 0)
-                {
-                    columns[columnIndex].CurrentColumnSpan++;
-                }
+                var columnIndex = _starts[i];
+                _spans[columnIndex] = (i + 1 < _starts.Count ? _starts[i + 1] : columns.Count) - columnIndex;
+                _spanStamps[columnIndex] = _stamp;
             }
         }
 
@@ -259,30 +277,36 @@ internal sealed class GridTableLayout
         public void EndRow(bool isLastRow)
         {
             Row? row = null;
-            foreach (var column in columns)
+            _openColumns.Sort();
+            var openCount = 0;
+            for (var i = 0; i < _openColumns.Count; i++)
             {
-                if (column.CurrentCell is { } cell)
+                var columnIndex = _openColumns[i];
+                var cell = _cells[columnIndex]!;
+                row ??= new Row { Line = cell.Segments.Count > 0 ? cell.Segments[0].Line : -1 };
+                if (!cell.IsInRow)
                 {
-                    row ??= new Row { Line = cell.Segments.Count > 0 ? cell.Segments[0].Line : -1 };
-                    if (!cell.IsInRow)
-                    {
-                        cell.IsInRow = true;
-                        row.Cells.Add(cell);
-                    }
+                    cell.IsInRow = true;
+                    row.Cells.Add(cell);
                 }
 
                 // Markdig does not close a cell that the last line spans: the grid table that ends it is kept
-                if (isLastRow && column.CurrentCell is { AllowClose: false } openCell)
+                if (isLastRow && !cell.AllowClose)
                 {
-                    openCell.IsClosed = false;
+                    cell.IsClosed = false;
                 }
 
-                if (isLastRow || column.CurrentColumnSpan == 0 || column.CurrentCell is { AllowClose: true })
+                if (isLastRow || GetSpan(columnIndex) == 0 || cell.AllowClose)
                 {
-                    column.CurrentCell = null;
+                    _cells[columnIndex] = null;
+                }
+                else
+                {
+                    _openColumns[openCount++] = columnIndex;
                 }
             }
 
+            _openColumns.RemoveRange(openCount, _openColumns.Count - openCount);
             if (row is { Cells.Count: > 0 })
             {
                 Rows.Add(row);
@@ -300,15 +324,17 @@ internal sealed class GridTableLayout
                 EndRow(isLastRow: false);
             }
 
-            for (var i = 0; i < columns.Count;)
+            // The cells start in the first column, else the line has none
+            if (_starts is not [0, ..])
             {
-                var column = columns[i];
-                var nextColumnIndex = i + column.CurrentColumnSpan;
-                if (nextColumnIndex == i)
-                {
-                    break;
-                }
+                return;
+            }
 
+            for (var startIndex = 0; startIndex < _starts.Count; startIndex++)
+            {
+                var i = _starts[startIndex];
+                var column = columns[i];
+                var nextColumnIndex = startIndex + 1 < _starts.Count ? _starts[startIndex + 1] : columns.Count;
                 var start = column.Start + 1;
                 int end;
                 if (nextColumnIndex < columns.Count)
@@ -335,26 +361,20 @@ internal sealed class GridTableLayout
                 // On a line that starts with +, the dashes of a cell, or no text, separate the rows
                 if (!isRowLine || !IsRowSeparator(line.AsSpan(start, end - start)))
                 {
-                    column.CurrentCell ??= new Cell(i, column.CurrentColumnSpan);
-                    column.CurrentCell.Segments.Add((lineIndex, start, end));
-                }
+                    if (_cells[i] is not { } cell)
+                    {
+                        cell = new Cell(i, nextColumnIndex - i);
+                        _cells[i] = cell;
+                        _openColumns.Add(i);
+                    }
 
-                i = nextColumnIndex;
+                    cell.Segments.Add((lineIndex, start, end));
+                }
             }
         }
 
-        private bool CanContinueRow()
-        {
-            foreach (var column in columns)
-            {
-                if (column.PreviousColumnSpan != column.CurrentColumnSpan)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        // The cells of the line start in the same columns as the ones of the previous line
+        private bool CanContinueRow() => _lineCount > 1 && CollectionsMarshal.AsSpan(_starts).SequenceEqual(CollectionsMarshal.AsSpan(_previousStarts));
 
         // Every row has at most as many columns as the table, with the cells of the rows above that span it
         public bool IsValid()

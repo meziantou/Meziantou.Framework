@@ -35,11 +35,33 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     // For the content of a cell, the blocks it is in, in this tree and the trees around it
     internal int CellDepth => _cell?.Depth ?? 0;
 
+    // The normalized labels of the link reference definitions and of the footnotes that the cells of the grid tables of the tree
+    // use: the ones of the tree and of the trees around it. They are read once for all the cells of the tree.
+    private CellLabels? _cellLabels;
+
+    private sealed record CellLabels(string[] References, string[] Footnotes);
+
+    private CellLabels GetCellLabels()
+    {
+        if (_cellLabels is { } labels)
+        {
+            return labels;
+        }
+
+        var outer = Container?.GetCellLabels();
+        var root = GetRoot();
+        string[] references = [.. root.LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)), .. outer?.References ?? []];
+        string[] footnotes = Options.Extensions.HasFlag(MarkdownExtensions.Footnotes) ? [.. root.Blocks.OfType<MarkdownFootnoteDefinitionSyntax>().Select(definition => Scanners.NormalizeLabel(definition.Label)), .. outer?.Footnotes ?? []] : [];
+        labels = new CellLabels(references, footnotes);
+        _cellLabels = labels;
+        return labels;
+    }
+
     internal static MarkdownSyntaxTree ParseCell(string text, MarkdownSyntaxTree? container, bool isClosed, int depth)
     {
         var options = container?.Options ?? MarkdownParseOptions.Default;
-        string[] labels = [.. container?.GetRoot().LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)) ?? []];
-        var cell = new CellContext(labels, KeepsGridTable: !isClosed, depth);
+        var labels = container?.GetCellLabels();
+        var cell = new CellContext(labels?.References ?? [], labels?.Footnotes ?? [], KeepsGridTable: !isClosed, depth);
         var green = MarkdownParser.Parse(text, options, cell);
         return new MarkdownSyntaxTree(SourceText.From(text), options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), container?.FilePath, container, cell);
     }

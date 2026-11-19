@@ -57,7 +57,7 @@ the same properties many times per pass, so it reads them through a typed view: 
   ([calc-range](https://drafts.csswg.org/css-values-4/#calc-range)); NaN is 0 and the infinite values are clamped to
   `CalcLength.MaxLength`.
 - `LengthPercentageAuto` (margins, insets, `scroll-padding`), `Size` (`SizeKind`: `auto`, `none`, a length-percentage,
-  `min-content`, `max-content`, `fit-content`, `fit-content()`, `stretch`, `contain`, `content` for `flex-basis`, and
+  `min-content`, `max-content`, `fit-content`, `fit-content()`, `stretch`, `stretch()`, `contain`, `content` for `flex-basis`, and
   `calc-size()` whose function is kept for the intrinsic sizing). The anchor functions are resolved by the layout of the
   anchor-positioned boxes (see [Anchor positioning](#anchor-positioning-csslayoutpositionedanchorpositioningcs)): an unresolved
   one is the `auto`/`none` of the property. `LayoutStyle.Anchor` (`AnchorPositioningStyle`) holds the properties of the anchor
@@ -753,7 +753,11 @@ browsers ship): the intrinsic sizes of the boxes, their contributions, and the r
   `min-content`/`max-content` are the intrinsic sizes plus the edges, `fit-content` is `min(max-content, max(min-content,
   stretch))`, `fit-content(<length-percentage>)` the same formula with `stretch(<argument>)` as the available space (the
   margin box fits the argument: the margins, `auto` as zero, are subtracted from it); they are not affected by
-  `box-sizing`.
+  `box-sizing`. `stretch(<length-percentage>)` is that border-box size in both axes (`AxisSizing.Margins`: the untrimmed
+  margins, collapsed or not, at least the paddings and borders); a percentage of an indefinite basis behaves as a percentage
+  `<length-percentage>` (`auto`, `none`, or resolved against zero for a minimum), in the contributions too. The table
+  cells, which have no margins, take the argument as their border-box width, and the table wrapper box passes its block
+  margins to the height of the table grid box.
   In the block axis, the intrinsic keywords are the automatic (content-based) block size (`AxisSizing.ContentSize`): a
   preferred size behaves as `auto`, and the minimum and maximum sizes are applied again once the contents are laid out (the
   replaced elements know it before: their natural block size, or the size transferred from the used inline size).

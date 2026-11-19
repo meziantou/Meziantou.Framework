@@ -644,6 +644,10 @@ internal sealed partial class TableLayoutAlgorithm
                 cssWidth = ToBorderBox(layout, width, edges);
                 break;
 
+            case TableSizeKind.Auto when GetCellStretchSize(boxModel.GetSize(horizontal), edges) is { } stretch:
+                cssWidth = stretch;
+                break;
+
             case TableSizeKind.Percent:
                 cell.Percent = width;
                 if (Classify(boxModel.GetMaxSize(horizontal), out var maxPercent) == TableSizeKind.Percent)
@@ -654,8 +658,8 @@ internal sealed partial class TableLayoutAlgorithm
                 break;
         }
 
-        double? cssMin = Classify(boxModel.GetMinSize(horizontal), out var minWidth) == TableSizeKind.Fixed ? ToBorderBox(layout, minWidth, edges) : null;
-        double? cssMax = Classify(boxModel.GetMaxSize(horizontal), out var maxWidth) == TableSizeKind.Fixed ? ToBorderBox(layout, maxWidth, edges) : null;
+        double? cssMin = Classify(boxModel.GetMinSize(horizontal), out var minWidth) == TableSizeKind.Fixed ? ToBorderBox(layout, minWidth, edges) : GetCellStretchSize(boxModel.GetMinSize(horizontal), edges);
+        double? cssMax = Classify(boxModel.GetMaxSize(horizontal), out var maxWidth) == TableSizeKind.Fixed ? ToBorderBox(layout, maxWidth, edges) : GetCellStretchSize(boxModel.GetMaxSize(horizontal), edges);
         var min = Math.Min(content.MinContent, cssMax ?? double.PositiveInfinity);
         if (cssMin is { } minimum)
         {
@@ -677,6 +681,14 @@ internal sealed partial class TableLayoutAlgorithm
     /// <summary>Returns the border-box size of a length of a table part with <c>box-sizing</c>.</summary>
     private static double ToBorderBox(LayoutStyle style, double value, double edges)
         => style.BoxSizing == BoxSizing.BorderBox ? Math.Max(value, edges) : Math.Max(0, value) + edges;
+
+    /// <summary>
+    /// Returns the border-box width of a cell given by a <c>stretch()</c> whose argument is a length
+    /// (https://drafts.csswg.org/css-sizing-4/#funcdef-width-stretch), or null: the margins do not apply to the table cells, so
+    /// the border box fits the argument, whatever the <c>box-sizing</c> (the percentages are treated as <c>auto</c>, like a mix
+    /// of a length and a percentage).
+    /// </summary>
+    private static double? GetCellStretchSize(Size size, double edges) => size is { Kind: SizeKind.StretchFunction, Value.IsFixed: true } ? Math.Max(size.Value.Length, edges) : null;
 
     /// <summary>
     /// https://quirks.spec.whatwg.org/#the-table-cell-nowrap-minimum-width-calculation-quirk: in quirks mode, the minimum width
@@ -808,11 +820,14 @@ internal sealed partial class TableLayoutAlgorithm
             if (count <= 0)
                 continue;
 
-            switch (Classify(layout.Box.GetSize(horizontal), out var width))
+            var cellWidth = layout.Box.GetSize(horizontal);
+            var widthKind = Classify(cellWidth, out var width);
+            var borderBoxWidth = widthKind == TableSizeKind.Fixed ? ToBorderBox(layout, width, edges) : GetCellStretchSize(cellWidth, edges);
+            switch (widthKind)
             {
-                case TableSizeKind.Fixed:
+                case TableSizeKind.Fixed or TableSizeKind.Auto when borderBoxWidth is { } fixedWidth:
                     // The width of the cell minus the border spacing between its columns, shared by its columns
-                    var share = Math.Max(0, ToBorderBox(layout, width, edges) - (InlineSpacing * (count - 1))) / count;
+                    var share = Math.Max(0, fixedWidth - (InlineSpacing * (count - 1))) / count;
                     for (var i = cell.Column; i < end; i++)
                     {
                         if (!defined[i])

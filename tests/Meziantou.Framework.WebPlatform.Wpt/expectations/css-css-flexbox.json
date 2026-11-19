@@ -1230,7 +1230,7 @@
     "total": 1
   },
   "css/css-flexbox/flex-basis-stretch-function-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/flex-box-wrap.html": {
     "reftest": "PASS"
@@ -3852,23 +3852,7 @@
     "total": 7
   },
   "css/css-flexbox/parsing/flex-basis-stretch-function.html": {
-    "total": 17,
-    "failures": {
-      "Property flex-basis value 'stretch(10px)'": "FAIL",
-      "Property flex-basis value 'stretch(20%)'": "FAIL",
-      "Property flex-basis value 'stretch(calc(10px + 0.5em))'": "FAIL",
-      "e.style['flex'] = \"1 stretch(10px)\" should not set unrelated longhands": "FAIL",
-      "e.style['flex'] = \"1 stretch(10px)\" should set flex-basis": "FAIL",
-      "e.style['flex'] = \"1 stretch(10px)\" should set flex-grow": "FAIL",
-      "e.style['flex'] = \"1 stretch(10px)\" should set flex-shrink": "FAIL",
-      "e.style['flex'] = \"stretch(10%) 2 3\" should not set unrelated longhands": "FAIL",
-      "e.style['flex'] = \"stretch(10%) 2 3\" should set flex-basis": "FAIL",
-      "e.style['flex'] = \"stretch(10%) 2 3\" should set flex-grow": "FAIL",
-      "e.style['flex'] = \"stretch(10%) 2 3\" should set flex-shrink": "FAIL",
-      "e.style['flex-basis'] = \"stretch(10%)\" should set the property value": "FAIL",
-      "e.style['flex-basis'] = \"stretch(10px)\" should set the property value": "FAIL",
-      "e.style['flex-basis'] = \"stretch(calc(10% - 0.5em))\" should set the property value": "FAIL"
-    }
+    "total": 17
   },
   "css/css-flexbox/parsing/flex-basis-valid.html": {
     "total": 8

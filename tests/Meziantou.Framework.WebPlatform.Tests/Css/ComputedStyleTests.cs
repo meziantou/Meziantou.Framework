@@ -334,6 +334,8 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<!DOCTYPE html><body><table><tr><td id=target height=0></td></tr></table>", "height", "auto")]
     [InlineData("<math><mspace id=target width=50%></mspace></math>", "width", "auto")]
     [InlineData("<!DOCTYPE html><div id=target style='width: fit-content'></div>", "width", "fit-content")]
+    [InlineData("<!DOCTYPE html><div id=target style='max-width: stretch(calc(10px + 0.5em)); font-size: 20px'></div>", "max-width", "stretch(20px)")]
+    [InlineData("<!DOCTYPE html><div id=target style='flex: 1 stretch(10%)'></div>", "flex-basis", "stretch(10%)")]
     [InlineData("<!DOCTYPE html><div id=target style='width: calc-size(any, 50px + 30%)'></div>", "width", "calc-size(any, 30% + 50px)")]
     [InlineData("<!DOCTYPE html><div id=target style='height: calc-size(min-content, size * 2)'></div>", "height", "calc-size(min-content, 2 * size)")]
     public void PresentationalHintsAndSizes_ComputedValues(string html, string property, string expected)

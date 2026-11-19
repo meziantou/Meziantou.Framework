@@ -527,7 +527,7 @@ internal static class IntrinsicSizing
 /// <summary>
 /// The resolution of the sizing properties of a box in one of its axes (https://drafts.csswg.org/css-sizing-3/#sizing-values,
 /// https://drafts.csswg.org/css-sizing-4/#sizing-values) to border-box sizes: the &lt;length-percentage&gt; values with
-/// <c>box-sizing</c>, the intrinsic size keywords, <c>stretch</c> and <c>calc-size()</c>.
+/// <c>box-sizing</c>, the intrinsic size keywords, <c>stretch</c>, <c>stretch()</c> and <c>calc-size()</c>.
 /// </summary>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct AxisSizing
@@ -562,7 +562,8 @@ internal readonly record struct AxisSizing
 
     /// <summary>
     /// The margins of the axis (the <c>auto</c> margins are zero, the trimmed and collapsed margins are not), which
-    /// <c>fit-content(&lt;length-percentage&gt;)</c> subtracts from its argument (see <see cref="StretchInto"/>).
+    /// <c>stretch(&lt;length-percentage&gt;)</c> and <c>fit-content(&lt;length-percentage&gt;)</c> subtract from their argument
+    /// (see <see cref="StretchInto"/>).
     /// </summary>
     public double Margins { get; init; }
 
@@ -717,6 +718,14 @@ internal readonly record struct AxisSizing
             case SizeKind.Stretch:
                 return StretchSize;
 
+            case SizeKind.StretchFunction:
+                // https://drafts.csswg.org/css-sizing-4/#funcdef-width-stretch: the argument resolves as a <length-percentage> (a
+                // percentage of an indefinite size behaves as auto, or as 0 in a minimum size, see the LengthPercentage case)
+                if (property == SizingProperty.Minimum && PercentageBasis is null && size.Value.HasPercentage)
+                    return size.Value.Resolve(0) > 0 ? StretchInto(size.Value.Resolve(0)) : null;
+
+                return size.Value.TryResolve(PercentageBasis) is { } marginBoxSize ? StretchInto(marginBoxSize) : null;
+
             case SizeKind.CalcSize:
                 return size.CalcSize is { } calcSize ? ResolveCalcSize(calcSize, property) : null;
 
@@ -866,6 +875,13 @@ internal readonly record struct AxisSizing
 
             case SizeKind.FitContent:
                 return GetIntrinsicSizes();
+
+            case SizeKind.StretchFunction:
+                // A cyclic percentage behaves as a percentage of a <length-percentage> (see above)
+                if (size.Value.HasPercentage && property != SizingProperty.Minimum)
+                    return null;
+
+                return IntrinsicSizes.FromSize(StretchInto(size.Value.Resolve(0)));
 
             case SizeKind.FitContentFunction:
                 if (size.Value.HasPercentage)

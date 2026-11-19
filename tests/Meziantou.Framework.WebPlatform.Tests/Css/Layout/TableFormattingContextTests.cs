@@ -50,6 +50,28 @@ public sealed class TableFormattingContextTests : IDisposable
         Assert.Equal(46, GetRect(document, "c").Width);
     }
 
+    [Theory]
+    [InlineData("", "width: stretch(100px)")]
+    [InlineData("", "width: stretch(100px); margin: 0 50px; box-sizing: border-box")]
+    [InlineData("", "width: 200px; max-width: stretch(100px)")]
+    [InlineData("table-layout: fixed; width: 1px", "width: stretch(100px)")]
+    public void Cell_StretchFunction(string tableStyle, string cellStyle)
+    {
+        // https://drafts.csswg.org/css-sizing-4/#funcdef-width-stretch: the margins do not apply to the cells, so the border box
+        // of the cell fits the argument, whatever the box-sizing
+        var document = Parse($"<table style='{tableStyle}'><tr><td id=c style='height: 10px; padding-right: 20px; {cellStyle}'></td></tr></table>");
+        Assert.Equal(100, GetRect(document, "c").Width);
+    }
+
+    [Fact]
+    public void Table_StretchFunction()
+    {
+        // The margins of the table wrapper box are taken off the arguments (the percentage margins resolve against the inline size
+        // of the containing block)
+        var document = Parse("<div style='width: 200px; height: 400px'><table id=t style='width: stretch(75%); margin-right: 50px; height: stretch(37.5%); margin-bottom: 25%'><tr><td></td></tr></table></div>");
+        Assert.Equal(Rect(0, 0, 100, 100), GetRect(document, "t"));
+    }
+
     [Fact]
     public void TableWithoutRows_IgnoresItsColumns()
     {

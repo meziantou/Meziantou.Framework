@@ -107,8 +107,9 @@ internal sealed class BlockParser
     }
 
     /// <param name="cell">For the content of a cell of a grid table, the context of the table.</param>
+    /// <param name="definitions">For a part of the text of a document, the definitions of the document.</param>
     /// <summary>Adds the nodes and tokens of the text to <paramref name="tree"/>, the document first. Returns the trivia that is not whitespace.</summary>
-    public static List<TriviaSpan> Parse(string text, MarkdownParseOptions options, TreeBuffer tree, CellContext? cell = null)
+    public static List<TriviaSpan> Parse(string text, MarkdownParseOptions options, TreeBuffer tree, CellContext? cell = null, DocumentDefinitions? definitions = null)
     {
         var parser = new BlockParser(text, options, tree) { _keepsGridTable = cell?.KeepsGridTable ?? false, _baseDepth = cell?.Depth ?? 0, _isCell = cell is not null };
         foreach (var label in cell?.References ?? [])
@@ -120,6 +121,21 @@ internal sealed class BlockParser
         foreach (var label in cell?.Footnotes ?? [])
         {
             parser._inlineParser.Footnotes.Add(label);
+        }
+
+        if (definitions is not null)
+        {
+            foreach (var label in definitions.References)
+            {
+                parser._references.TryAdd(label, value: true);
+            }
+
+            parser._inlineParser.Footnotes.UnionWith(definitions.Footnotes);
+            parser._inlineParser.HeadingLabels.UnionWith(definitions.HeadingLabels);
+            foreach (var (label, length) in definitions.Abbreviations)
+            {
+                parser._inlineParser.Abbreviations[label] = length;
+            }
         }
 
         parser.ParseBlocks();
@@ -229,7 +245,16 @@ internal sealed class BlockParser
         return 0;
     }
 
-    private bool IsFrontMatterFence(int start, int end, char c) => end - start >= 3 && _text[start] == c && _text[start + 1] == c && _text[start + 2] == c && _text.AsSpan(start + 3, end - start - 3).Trim(" \t\v\f").IsEmpty;
+    private bool IsFrontMatterFence(int start, int end, char c) => IsFrontMatterFence(_text.AsSpan(start, end - start), c);
+
+    private static bool IsFrontMatterFence(ReadOnlySpan<char> line, char c) => line is [var c1, var c2, var c3, ..] && c1 == c && c2 == c && c3 == c && line[3..].Trim(" \t\v\f").IsEmpty;
+
+    /// <summary>Gets a value indicating whether the first line of the text is the <c>---</c> that opens a YAML front matter, which a later line can close.</summary>
+    public static bool StartsWithFrontMatterFence(string text)
+    {
+        var lineEnd = text.AsSpan().IndexOfAny('\r', '\n');
+        return lineEnd >= 0 && IsFrontMatterFence(text.AsSpan(0, lineEnd), '-');
+    }
 
     private (int LineEnd, int EolEnd) GetLine(int start)
     {

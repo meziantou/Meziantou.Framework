@@ -1797,9 +1797,10 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("# Title {#custom}\n\n[Title]\n\n[x](#custom)\n", "<h1 id=\"p&quot;-custom\"><a id=\"pragma-line-0\"></a>Title</h1>\n<p id=\"pragma-line-2\"><a href=\"#p%22-custom\">Title</a></p>\n<p id=\"pragma-line-4\"><a href=\"#custom\">x</a></p>\n")]
     [InlineData("# Title\n\n[Title]\n\nText {#t}\n", "<h1 id=\"p&quot;-title\"><a id=\"pragma-line-0\"></a>Title</h1>\n<p id=\"pragma-line-2\"><a href=\"#p%22-title\">Title</a></p>\n<a id=\"pragma-line-4\"></a>\n<p id=\"p&quot;-t\">Text</p>\n")]
     [InlineData("x[^1]\n\n[^1]: note\n", "<p id=\"pragma-line-0\">x<a id=\"p&quot;-fnref:1\" href=\"#p&quot;-fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"p&quot;-fn:1\">\n<p id=\"pragma-line-2\">note<a href=\"#p&quot;-fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    [InlineData("```nomnoml {#n}\niv id=\"f\"\n```\n", "<a id=\"pragma-line-0\"></a>\n<div id=\"p&quot;-n\" class=\"nomnoml\">iv id=\"f\"\n</div>\n")]
     public void WritesTheIdPrefixOfTheIdsThatTheDocumentSets(string markdown, string expected)
     {
-        var tree = MarkdownSyntaxTree.ParseText(markdown, new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.Footnotes | MarkdownExtensions.GenericAttributes });
+        var tree = MarkdownSyntaxTree.ParseText(markdown, new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.Footnotes | MarkdownExtensions.GenericAttributes | MarkdownExtensions.Diagrams });
 
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { PragmaLines = true, IdPrefix = "p\"-" }));
     }
@@ -4208,6 +4209,25 @@ public sealed class MarkdownSyntaxTreeTests
         // A line ending in generic attributes is a space of the attributes
         var withAttributes = MarkdownSyntaxTree.ParseText("text {title=\"a\nb\"}\n===\n", AttributeOptions).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
         Assert.Equal("a b", withAttributes.DescendantNodes().OfType<MarkdownGenericAttributesSyntax>().Single().Properties.Single().Value);
+    }
+
+    [Theory]
+    [InlineData("+---  \n-----\n", 6, "###### +---", "  \n")]
+    [InlineData("+---+\n| a |\n+\n| b |\n+===+\n| c-z*\t\n====\n", 5, "##### +---+ | a | + | b | +===+ | c-z*", "\t\n")]
+    public void SetextHeadingWithLevelEndsWithTrailingWhitespaceAsTrivia(string text, int level, string expected, string trailingTrivia)
+    {
+        // A line that a grid table could start keeps the whitespace at the end of the heading as a text token of its own, as Markdig
+        // keeps the text of the line
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables | MarkdownExtensions.SmartyPants };
+        var heading = MarkdownSyntaxTree.ParseText(text, options).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();
+
+        var atx = heading.WithLevel(level);
+
+        Assert.Equal(expected, atx.ToString());
+        Assert.Equal(expected + trailingTrivia, atx.ToFullString());
+        var read = MarkdownSyntaxTree.ParseText(expected, options).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();
+        Assert.Equal(level, read.Level);
+        Assert.Equal(expected.Length, read.Span.End);
     }
 
     [Theory]

@@ -2,6 +2,7 @@
 // Target Frameworks: net10.0, net11.0
 // Assembly References:
 //   Meziantou.Framework.Language
+//   Meziantou.Framework.Unicode
 #nullable enable
 
 namespace Meziantou.Framework.Markdown
@@ -224,6 +225,7 @@ namespace Meziantou.Framework.Markdown
         public static string CreateCodeSpan(string content) => throw null;
         public static string CreateFencedCodeBlock(string code, string? infoString = null) => throw null;
         public static string Escape(string text) => throw null;
+        public static string Escape(string text, Meziantou.Framework.Markdown.MarkdownParseOptions options) => throw null;
         public static string EscapeLinkDestination(string url) => throw null;
         public static string EscapeLinkLabel(string label) => throw null;
         public static string EscapeLinkTitle(string title) => throw null;

@@ -1780,6 +1780,38 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted)));
     }
 
+    [Fact]
+    public void FormatterParsesTheFirstBlockOfTheItemsOfNestedLists()
+    {
+        // The marker of a list is checked with the first block of each item, not with the lists nested in it
+        var calls = 0;
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new ParseHandlerExtension("count", "\u00A7", (ref MarkdownInlineParseContext context) =>
+        {
+            calls++;
+            return false;
+        })] };
+        var text = string.Concat(Enumerable.Range(0, 50).Select(i => new string(' ', 2 * i) + "- \u00A7\n"));
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        calls = 0;
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal(text, formatted);
+        Assert.InRange(calls, 0, 500, "The formatter parses the trigger characters of the text a few times each");
+    }
+
+    [Fact]
+    public void FormatterAlignsTheTablesWithTheDisplayWidthOfTheCells()
+    {
+        // A wide character, an emoji and a flag use two columns of a monospace editor, and a combining mark none
+        var tree = MarkdownSyntaxTree.ParseText("| a | b |\n|-|-|\n| \u6F22\u5B57 | x |\n| e\u0301 | \U0001F600 |\n| \U0001F1EB\U0001F1F7 | \u2764\uFE0F |\n| a\u200Bb | \uFF21 |\n", MarkdownParseOptions.GitHubFlavored);
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal("| a    | b   |\n| ---- | --- |\n| \u6F22\u5B57 | x   |\n| e\u0301    | \U0001F600  |\n| \U0001F1EB\U0001F1F7   | \u2764\uFE0F  |\n| a\u200Bb   | \uFF21  |\n", formatted);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted, MarkdownParseOptions.GitHubFlavored)));
+    }
+
     [Theory]
     [InlineData("", "", true)]
     [InlineData("a\nb", "a\nb", true)]
@@ -2718,6 +2750,13 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("https://example.com www.example.com")]
     [InlineData("a\n# b\n- c\n> d")]
     [InlineData("é ✓ 😀")]
+    [InlineData("    indented text")]
+    [InlineData("\ttab")]
+    [InlineData("a  \nb")]
+    [InlineData("a\t\n  b  ")]
+    [InlineData(" a ")]
+    [InlineData("a\n \nb")]
+    [InlineData("  ")]
     public void EscapedTextIsParsedBackToTheText(string text)
     {
         var escaped = MarkdownEscaper.Escape(text);
@@ -2734,6 +2773,50 @@ public sealed class MarkdownSyntaxTreeTests
     {
         var text = "plain text";
         Assert.Same(text, MarkdownEscaper.Escape(text));
+    }
+
+    [Theory]
+    [InlineData("    indented text", "<p>    indented text</p>\n")]
+    [InlineData("a\n\n\tb", "<p>a</p>\n<p>\tb</p>\n")]
+    [InlineData("a  \nb", "<p>a  \nb</p>\n")]
+    public void EscapedTextKeepsTheWhitespaceAroundItsLines(string text, string expected)
+    {
+        // The parser would strip the whitespace, which would start an indented code block or end the line with a hard line break
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(MarkdownEscaper.Escape(text))));
+    }
+
+    [Theory]
+    [InlineData("Thanks \u00A7alice and Tom")]
+    [InlineData("\u00B6\u00B6\u00B6 note\nb \u00B6\u00B6\u00B6")]
+    [InlineData("xD and :) and (y)")]
+    [InlineData("a\u00A7\U0001F600\u00A7")]
+    public void EscapedTextIsParsedBackToTheTextWithTheExtensions(string text)
+    {
+        var options = new MarkdownParseOptions
+        {
+            Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension),
+            EmojiMapping = new MarkdownEmojiMapping(new Dictionary<string, string> { [":laughing:"] = "\U0001F606", [":ok:"] = "\u2705" }, new Dictionary<string, string> { ["xD"] = ":laughing:", ["(y)"] = ":ok:" }),
+            SyntaxExtensions = [new MentionExtension("section", "\u00A7"), new MentionExtension("tag", "T"), new PilcrowFenceExtension()],
+        };
+
+        var escaped = MarkdownEscaper.Escape(text, options);
+
+        var paragraph = Assert.IsType<MarkdownParagraphSyntax>(MarkdownSyntaxTree.ParseText(escaped, options).GetRoot().Blocks.Single());
+        Assert.Equal(text, paragraph.GetPlainText());
+        Assert.NotEqual(escaped, MarkdownEscaper.Escape(text));
+    }
+
+    [Fact]
+    public void EscapeWritesTheTriggerCharactersOfTheExtensionsAsEntities()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new MentionExtension("section", "\u00A7"), new PilcrowFenceExtension()] };
+
+        Assert.Equal("&#167;a \\@b", MarkdownEscaper.Escape("\u00A7a @b", options));
+
+        // The trigger character of a fenced block starts a line
+        Assert.Equal("&#182;\u00B6 a \u00B6\n&#182;", MarkdownEscaper.Escape("\u00B6\u00B6 a \u00B6\n\u00B6", options));
+        Assert.Same("plain text", MarkdownEscaper.Escape("plain text", options));
+        Assert.Throws<ArgumentNullException>("options", () => MarkdownEscaper.Escape("a", options: null!));
     }
 
     [Theory]
@@ -2768,6 +2851,22 @@ public sealed class MarkdownSyntaxTreeTests
         var code = MarkdownSyntaxTree.ParseText(MarkdownEscaper.CreateCodeSpan("a\nb\r\nc")).GetRoot().DescendantNodes().OfType<MarkdownCodeSpanSyntax>().Single();
 
         Assert.Equal("a b c", code.Code);
+    }
+
+    [Theory]
+    [InlineData("a\n# b")]
+    [InlineData("a\n- b")]
+    [InlineData("a\r\n> b")]
+    [InlineData("a\r<div>")]
+    [InlineData("a\n\nb")]
+    [InlineData("\na\n")]
+    public void CodeSpanStaysInItsParagraph(string content)
+    {
+        // A line of the content could start a block, so the line endings are written as the spaces the parser makes them
+        var paragraph = Assert.IsType<MarkdownParagraphSyntax>(MarkdownSyntaxTree.ParseText("x " + MarkdownEscaper.CreateCodeSpan(content)).GetRoot().Blocks.Single());
+
+        var code = Assert.IsType<MarkdownCodeSpanSyntax>(paragraph.Inlines.Last().AsNode());
+        Assert.Equal(content.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' '), code.Code);
     }
 
     [Fact]
@@ -2813,6 +2912,17 @@ public sealed class MarkdownSyntaxTreeTests
     public void FencedCodeBlockInfoStringCannotHaveLineEndings()
     {
         Assert.Throws<ArgumentException>("infoString", () => MarkdownEscaper.CreateFencedCodeBlock("x", "a\nb"));
+    }
+
+    [Fact]
+    public void FencedCodeBlockInfoStringIsNotReadAsGenericAttributes()
+    {
+        var fence = MarkdownEscaper.CreateFencedCodeBlock("x", "csharp {title=a}");
+        var block = MarkdownSyntaxTree.ParseText(fence, new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes }).GetRoot().Blocks.OfType<MarkdownCodeBlockSyntax>().Single();
+
+        Assert.Equal("```csharp &#123;title=a}\nx\n```\n", fence);
+        Assert.Equal("csharp {title=a}", block.Info);
+        Assert.True(block.GetGenericAttributes().IsEmpty);
     }
 
     [Theory]
@@ -2862,6 +2972,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("]")]
     [InlineData("*a* `b`")]
     [InlineData("a&amp;b")]
+    [InlineData("a\n# b")]
+    [InlineData("a\r\n- b")]
+    [InlineData("a\n\nb")]
     public void LinkLabelMatchesItsDefinition(string label)
     {
         var escaped = MarkdownEscaper.EscapeLinkLabel(label);
@@ -2869,6 +2982,21 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.NotNull(link.Definition);
         Assert.Equal("/url", link.Destination);
+    }
+
+    [Theory]
+    [InlineData("^1", @"\^1")]
+    [InlineData(" \t^1", " \t\\^1")]
+    [InlineData("\n^1", @" \^1")]
+    [InlineData("a^1", "a^1")]
+    public void LinkLabelIsNotAFootnote(string label, string expected)
+    {
+        var escaped = MarkdownEscaper.EscapeLinkLabel(label);
+        var root = MarkdownSyntaxTree.ParseText($"[x][{escaped}]\n\n[{escaped}]: /url", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes }).GetRoot();
+
+        Assert.Equal(expected, escaped);
+        Assert.Equal("/url", root.DescendantNodes().OfType<MarkdownLinkSyntax>().Single().Destination);
+        Assert.Empty(root.DescendantNodes().OfType<MarkdownFootnoteDefinitionSyntax>());
     }
 
     [Theory]
@@ -2896,6 +3024,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("*a* `b` [c](d)", "*a* `b` [c](d)")]
     [InlineData("---", "---")]
     [InlineData("a\u0085b", "a\u0085b")]
+    [InlineData(" a ", " a ")]
+    [InlineData("\na", " a")]
     public void TableCellIsParsedBackToTheText(string text, string expected)
     {
         foreach (var extensions in new[] { MarkdownExtensions.PipeTables, MarkdownExtensions.Tables })
@@ -3986,6 +4116,14 @@ public sealed class MarkdownSyntaxTreeTests
         }
     }
     #endregion
+
+    // A fence of pilcrows, which a backslash cannot escape: the blocks are between two lines that start with three of them
+    private sealed class PilcrowFenceExtension() : MarkdownFencedBlockExtension("pilcrow", "\u00B6", MarkdownFencedBlockContent.Blocks)
+    {
+        public override int TryOpen(ReadOnlySpan<char> line) => line.StartsWith("\u00B6\u00B6\u00B6", StringComparison.Ordinal) ? 3 : 0;
+
+        public override int TryClose(ReadOnlySpan<char> line, ReadOnlySpan<char> openingFence) => line.StartsWith(openingFence, StringComparison.Ordinal) ? openingFence.Length : 0;
+    }
 
     // %%% info, raw lines, then %%%
     private sealed class RawFenceExtension() : MarkdownFencedBlockExtension("raw", "%", MarkdownFencedBlockContent.RawLines)

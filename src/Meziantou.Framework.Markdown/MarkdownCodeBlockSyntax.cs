@@ -169,11 +169,10 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
         return MarkdownNodeEditor.WithChildren(this, children);
     }
 
-    // The info string, escaped: a ~ that starts it would lengthen a fence of tildes, and a { would start generic attributes, which
-    // are written as entities
+    // The info string, escaped: a ~ that starts it would lengthen a fence of tildes, which is written as an entity
     private static string EscapeInfo(string info)
     {
-        var escaped = MarkdownEscaper.EscapeInfoString(info).Replace("{", "&#123;", StringComparison.Ordinal);
+        var escaped = MarkdownEscaper.EscapeInfoString(info);
         return escaped.StartsWith('~', StringComparison.Ordinal) ? string.Concat("&#126;", escaped.AsSpan(1)) : escaped;
     }
 

@@ -38,6 +38,49 @@ public sealed class ReportingTests : IDisposable
         Assert.Null(StructuredFields.ParseDictionary("A=1"));
     }
 
+    [Fact]
+    public void NetworkErrorLogging_ReportsTheRequestsOfAnOriginWithAPolicy()
+    {
+        #region WebPlatform_NetworkErrorLogging
+        // Network Error Logging is disabled by default: give the browsing contexts a cache of the NEL policies
+        var networkErrorLogging = new NetworkErrorLoggingCache();
+        var options = new BrowsingContextOptions { NetworkErrorLogging = networkErrorLogging };
+        #endregion
+
+        Assert.Same(networkErrorLogging, options.NetworkErrorLogging);
+        Load("<img src='/image.png'><img src='/missing.png'>", [
+            new("NEL", """{"report_to": "nel", "max_age": 86400, "success_fraction": 1.0}"""),
+            new("Reporting-Endpoints", "nel=\"/reports\""),
+        ], networkErrorLogging);
+
+        var reports = _requests
+            .Where(request => request.Url == "https://example.com/reports" && request.Method == "POST")
+            .SelectMany(request => JsonDocument.Parse(request.Body!.Value).RootElement.EnumerateArray().Select(report => report.Clone()))
+            .ToList();
+        Assert.All(reports, report => Assert.Equal("network-error", report.GetProperty("type").GetString()));
+        var urls = reports.Select(report => report.GetProperty("url").GetString()).ToList();
+        Assert.Contains("https://example.com/", urls);
+        Assert.Contains("https://example.com/image.png", urls);
+        var image = reports.First(report => report.GetProperty("url").GetString() == "https://example.com/image.png").GetProperty("body");
+        Assert.Equal("ok", image.GetProperty("type").GetString());
+        Assert.Equal("application", image.GetProperty("phase").GetString());
+        Assert.Equal(200, image.GetProperty("status_code").GetInt32());
+        Assert.Equal(1.0, image.GetProperty("sampling_fraction").GetDouble());
+        Assert.Equal(1, NetworkErrorLoggingPolicyHeader.Parse("""{"max_age": 0}""")!.FailureFraction);
+        Assert.Null(NetworkErrorLoggingPolicyHeader.Parse("""{"max_age": 60}"""));
+    }
+
+    [Fact]
+    public void NetworkErrorLogging_IsDisabledByDefault()
+    {
+        Load("<img src='/image.png'>", [
+            new("NEL", """{"report_to": "nel", "max_age": 86400, "success_fraction": 1.0}"""),
+            new("Reporting-Endpoints", "nel=\"/reports\""),
+        ]);
+
+        Assert.DoesNotContain(_requests, request => request.Url == "https://example.com/reports");
+    }
+
     [Theory]
     [InlineData("blocked-destinations=(script)", "inline", "Script", "")]
     [InlineData("blocked-destinations=(script style), sources=(inline), endpoints=(a b)", "inline", "Script Style", "a b")]
@@ -403,9 +446,9 @@ public sealed class ReportingTests : IDisposable
         document.Body!.AppendChild(script);
     }
 
-    private Document Load(string html, IReadOnlyList<KeyValuePair<string, string>> headers)
+    private Document Load(string html, IReadOnlyList<KeyValuePair<string, string>> headers, NetworkErrorLoggingCache? networkErrorLogging = null)
     {
-        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this, html, headers) });
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this, html, headers), NetworkErrorLogging = networkErrorLogging });
         context.Navigate("https://example.com/");
         _contexts.EventLoop.RunUntilIdle();
         return context.Document;

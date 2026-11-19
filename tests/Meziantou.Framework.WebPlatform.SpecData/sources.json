@@ -413,6 +413,7 @@
       "upgrade-insecure-requests",
       "reporting",
       "deprecation-reporting",
+      "network-error-logging",
       "intervention-reporting",
       "cors",
       "mimesniff",

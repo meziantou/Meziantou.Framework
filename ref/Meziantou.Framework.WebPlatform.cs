@@ -3635,6 +3635,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend? MediaCapture { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.MediaSessionOptions? MediaSession { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.NetworkErrorLoggingCache? NetworkErrorLogging { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformationOptions? NetworkInformation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PendingInputOptions? PendingInput { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
@@ -10582,6 +10583,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? left, Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? left, Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? right) => throw null;
+    }
+
+    public sealed class NetworkErrorLoggingCache
+    {
+        public void Clear() { }
+        public int GetPolicyCount(System.DateTimeOffset now) => throw null;
     }
 
     public sealed class NetworkInformation : Meziantou.Framework.WebPlatform.Dom.EventTarget

@@ -226,6 +226,32 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 The requests are canceled when the navigation is aborted (another navigation, the removal of the `iframe`) and when the
 browsing context is disposed: pass the `CancellationToken` to your I/O.
 
+### Network Error Logging
+
+[Network Error Logging](https://w3c.github.io/network-error-logging/) is disabled by default: the reports describe the
+requests of the user, and are sent to collectors that the sites choose. Enable it with
+[BrowsingContextOptions.NetworkErrorLogging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.NetworkErrorLogging):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/ReportingTests.cs;region=WebPlatform_NetworkErrorLogging;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Network Error Logging is disabled by default: give the browsing contexts a cache of the NEL policies
+var networkErrorLogging = new NetworkErrorLoggingCache();
+var options = new BrowsingContextOptions { NetworkErrorLogging = networkErrorLogging };
+```
+<!-- endref -->
+
+- The `NEL` header of a secure response (`{"report_to": "group", "max_age": 86400}`) sets the policy of its origin, and
+  `max_age: 0` removes it. `report_to` names an endpoint of the `Reporting-Endpoints` header or a group of the legacy
+  `Report-To` header of the same response.
+- Each request sent to the network (the redirects and the `304` revalidations included, not the responses of the HTTP
+  cache) to an origin with a policy generates a `network-error` report, sent to the endpoint of the policy: `ok`,
+  `http.error` (`4xx` and `5xx`), or the type of the failure. The loader reports the failure with the
+  `HttpRequestError` of the `HttpRequestException` it throws (`dns.name_not_resolved`, `tcp.failed`, `tls.failed`...).
+  The `success_fraction` (0 by default) and `failure_fraction` (1 by default) members sample the reports.
+- A policy with `include_subdomains` also applies to the subdomains of its origin, for their DNS failures only (the URL of
+  the report is then the origin of the request).
+- The reports are not visible to the `ReportingObserver`s. The cache can be shared by several browsing contexts.
+
 ## Downloads
 
 A hyperlink with a `download` attribute, and a navigation to a response that is not displayed (its `Content-Disposition`

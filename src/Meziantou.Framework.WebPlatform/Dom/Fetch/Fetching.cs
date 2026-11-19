@@ -1361,7 +1361,23 @@ internal static class Fetching
         }
 
         var isWebSocket = request.Mode == RequestMode.WebSocket;
+        var startTime = eventLoop.TimeProvider.GetUtcNow();
         var resource = await LoadAsync(eventLoop, isWebSocket ? loader.ConnectWebSocketAsync : loader.LoadAsync, documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
+
+        // https://w3c.github.io/network-error-logging/: the response (or the failure) of the request generates a network-error
+        // report when its origin has a NEL policy, from a task of the event loop of the request (only when a policy exists or
+        // the response sets one: the other requests queue no task)
+        if ((request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? browsingContext?.Options)?.NetworkErrorLogging is { } networkErrorLogging
+            && (!networkErrorLogging.IsEmpty || (resource is not null && HeaderList.Get(resource.Headers, "NEL") is not null))
+            && !cancellationToken.IsCancellationRequested)
+        {
+            var endTime = eventLoop.TimeProvider.GetUtcNow();
+            var reportedResource = resource;
+            var loaderException = documentRequest.LoaderException;
+            var reportedUrl = request.CurrentUrl;
+            var sentHeaders = headers;
+            eventLoop.QueueTask(() => NetworkErrorLogging.OnNetworkResponse(request, reportedUrl, sentHeaders, reportedResource, loaderException, startTime, endTime));
+        }
 
         // https://fetch.spec.whatwg.org/#fetch-timing-info-final-network-response-start-time: the headers of the final response
         // are received (the rest of a body that arrives over time is received later)
@@ -1749,21 +1765,22 @@ internal static class Fetching
             response = load(request, cancellationToken);
         }
 #pragma warning disable CA1031 // An exception thrown by the loader is a network error
-        catch (Exception)
+        catch (Exception ex)
 #pragma warning restore CA1031
         {
+            request.LoaderException = ex;
             return Task.FromResult<DocumentResource?>(null);
         }
 
         if (response.IsCompleted || synchronous)
-            return Task.FromResult(GetResult(response.IsCompleted ? response : new ValueTask<DocumentResource?>(WaitForResult(response.AsTask(), cancellationToken))));
+            return Task.FromResult(GetResult(response.IsCompleted ? response : new ValueTask<DocumentResource?>(WaitForResult(response.AsTask(), request, cancellationToken)), request));
 
         var completion = new TaskCompletionSource<DocumentResource?>();
         eventLoop.BeginOperation();
         _ = response.AsTask().ContinueWith(
             completed =>
             {
-                eventLoop.QueueTask(() => completion.SetResult(GetResult(new ValueTask<DocumentResource?>(completed))));
+                eventLoop.QueueTask(() => completion.SetResult(GetResult(new ValueTask<DocumentResource?>(completed), request)));
                 eventLoop.EndOperation();
             },
             CancellationToken.None,
@@ -1771,7 +1788,7 @@ internal static class Fetching
             TaskScheduler.Default);
         return completion.Task;
 
-        static DocumentResource? WaitForResult(Task<DocumentResource?> task, CancellationToken cancellationToken)
+        static DocumentResource? WaitForResult(Task<DocumentResource?> task, DocumentRequest request, CancellationToken cancellationToken)
         {
             // A worker that waits for a synchronous request is not running: the host may advance a fake clock. The wait ends
             // when the fetch is terminated (e.g. the timeout of a synchronous XMLHttpRequest), even if the loader ignores it
@@ -1783,23 +1800,25 @@ internal static class Fetching
                 return task.GetAwaiter().GetResult();
             }
 #pragma warning disable CA1031 // An exception thrown by the loader is a network error
-            catch (Exception)
+            catch (Exception ex)
 #pragma warning restore CA1031
             {
+                request.LoaderException = ex;
                 return null;
             }
         }
 
-        static DocumentResource? GetResult(ValueTask<DocumentResource?> completedResponse)
+        static DocumentResource? GetResult(ValueTask<DocumentResource?> completedResponse, DocumentRequest request)
         {
             try
             {
                 return completedResponse.Result;
             }
 #pragma warning disable CA1031 // An exception thrown by the loader (including a cancellation) is a network error
-            catch (Exception)
+            catch (Exception ex)
 #pragma warning restore CA1031
             {
+                request.LoaderException = ex;
                 return null;
             }
         }

@@ -98,6 +98,15 @@ public sealed partial record BrowsingContextOptions
     public StorageOptions? Storage { get; init; }
 
     /// <summary>
+    /// Gets or sets the Network Error Logging policies of the origins (https://w3c.github.io/network-error-logging/): the
+    /// <c>NEL</c> header of a secure response sets the policy of its origin, and the requests to an origin that has a policy
+    /// generate <c>network-error</c> reports, sent to the endpoint of the policy. The cache can be shared by several browsing
+    /// contexts. The default is null: Network Error Logging is disabled, the <c>NEL</c> headers are ignored and no report is
+    /// sent (the reports describe the requests of the user to collectors chosen by the sites).
+    /// </summary>
+    public NetworkErrorLoggingCache? NetworkErrorLogging { get; init; }
+
+    /// <summary>
     /// Gets or sets the storage of the service worker registrations of the browsing contexts
     /// (<c>navigator.serviceWorker</c>), e.g. a database or a <see cref="InMemoryServiceWorkerBackend"/> shared by several
     /// browsing contexts: the registrations, and the scripts of their service workers, outlive the browsing contexts. The
@@ -829,6 +838,9 @@ public abstract class DocumentLoader
 /// <summary>A request of a document, given to <see cref="DocumentLoader.LoadAsync"/>.</summary>
 public sealed class DocumentRequest
 {
+    /// <summary>The exception thrown by the <see cref="DocumentLoader"/> when the request failed (the type of the <c>network-error</c> reports), or null.</summary>
+    internal Exception? LoaderException { get; set; }
+
     /// <summary>Creates a request.</summary>
     /// <param name="url">The absolute URL of the document, serialized as specified by the WHATWG URL Standard.</param>
     public DocumentRequest(string url)

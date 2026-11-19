@@ -41,7 +41,6 @@
     "media-capabilities/*": [{ "kind": "NOT IMPLEMENTED", "description": "Media Capabilities API (`navigator.mediaCapabilities`)" }],
     "mediacapture-record/*": [{ "kind": "NOT IMPLEMENTED", "description": "MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase)" }],
     "nav-tracking-mitigations/*": [{ "kind": "NOT IMPLEMENTED", "description": "navigational tracking mitigations (bounce tracking)" }],
-    "network-error-logging/*": [{ "kind": "NOT IMPLEMENTED", "description": "Network Error Logging (Reporting API)" }],
     "old-tests/*": [{ "kind": "OUT OF SCOPE", "description": "legacy tests that are not maintained (old submissions)" }],
     "periodic-background-sync/*": [{ "kind": "NOT IMPLEMENTED", "description": "Periodic Background Sync" }],
     "permissions-request/*": [{ "kind": "NOT IMPLEMENTED", "description": "Permissions API (permission requests)" }],

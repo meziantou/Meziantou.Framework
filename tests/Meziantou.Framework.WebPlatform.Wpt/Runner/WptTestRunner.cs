@@ -239,6 +239,9 @@ internal sealed partial class WptTestRunner
                 // The cookies of the responses of the WPT server, sent with the next requests (see GetRequestHeaders)
                 CookieJar = _cookieJar,
 
+                // Network Error Logging is enabled, as in Chromium: the network-error reports are sent to report.py
+                NetworkErrorLogging = new NetworkErrorLoggingCache(),
+
                 // The history of the visited links of the test, which starts empty: the page of the test is visited (as in the
                 // browsers, where the tests link to their own URL to get a visited link), the other URLs are not
                 VisitedLinks = new InMemoryVisitedLinkStore(),
@@ -479,6 +482,10 @@ internal sealed partial class WptTestRunner
         {
             if (cancellationToken.IsCancellationRequested)
                 return ValueTask.FromCanceled<DocumentResource?>(cancellationToken);
+
+            // The subdomain that does not resolve: the request fails with a DNS error (the type of the network-error reports)
+            if (WptServer.IsUnresolvedHost(new Url(request.Url)))
+                return ValueTask.FromException<DocumentResource?>(new HttpRequestException(HttpRequestError.NameResolutionError, "The host name does not resolve"));
 
             // The requests of fetch() and XMLHttpRequest, and the requests of FedCM to the identity providers
             if (request.Destination is RequestDestination.Empty or RequestDestination.WebIdentity)

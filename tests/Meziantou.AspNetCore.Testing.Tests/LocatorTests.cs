@@ -310,6 +310,8 @@ public sealed class LocatorTests
                 #scroller { position: absolute; top: 0; left: 100px; width: 100px; height: 100px; overflow: auto }
                 #clipped { margin-top: 95px }
                 #fixed { position: fixed; top: 400px; left: 10px }
+                #tall { position: absolute; top: 0; left: 250px; width: 100px; height: 2000px; display: block }
+                #tall-target { position: absolute; top: 50px; left: 10px }
                 """,
             },
         });
@@ -317,15 +319,23 @@ public sealed class LocatorTests
             <input type="checkbox" id="partial" aria-label="Partial">
             <div id="scroller"><input type="checkbox" id="clipped" aria-label="Clipped"><div style="height: 300px"></div></div>
             <input type="checkbox" id="fixed" aria-label="Fixed">
+            <label id="tall" for="tall-target">Tall label</label>
+            <input type="checkbox" id="tall-target" aria-label="Tall target">
             """);
+
+        // The center of the element is in the viewport, but the scroll container clips it
+        var clipped = host.Document.GetElementById("clipped")!.GetBoundingClientRect();
+        Assert.True(clipped.Y + (clipped.Height / 2) is > 100 and < 300);
+        await page.GetByLabel("Clipped").CheckAsync();
+        Assert.True(page.GetByLabel("Clipped").IsChecked);
 
         // The center of the element is below the viewport, but its top is visible
         await page.GetByLabel("Partial").CheckAsync();
         Assert.True(page.GetByLabel("Partial").IsChecked);
 
-        // The center of the element is clipped by the scroll container
-        await page.GetByLabel("Clipped").CheckAsync();
-        Assert.True(page.GetByLabel("Clipped").IsChecked);
+        // The requested point is scrolled into the viewport, not the center of the element
+        await page.GetByText("Tall label").ClickAsync(new ClickOptions { Position = new ElementPosition(10, 1800) });
+        Assert.True(page.GetByLabel("Tall target").IsChecked);
 
         // Scrolling cannot bring a fixed element into the viewport
         var exception = await Assert.ThrowsAsync<ElementNotInteractableException>(() => page.GetByLabel("Fixed").ClickAsync());

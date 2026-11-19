@@ -551,7 +551,7 @@ public sealed partial class PageInput
         var scrolled = false;
         if (rect.Bottom <= 0 || rect.Right <= 0 || rect.Top >= viewport.InnerHeight || rect.Left >= viewport.InnerWidth || !IsInViewport(viewport, point))
         {
-            rect = ScrollIntoView(element);
+            rect = ScrollIntoView(viewport, element, position);
             point = GetActionPoint(rect, position);
             scrolled = true;
         }
@@ -597,7 +597,7 @@ public sealed partial class PageInput
                 // As in Playwright, scroll the element into view before the next attempt: a scroll container may clip it
                 if (!scrolled)
                 {
-                    _ = ScrollIntoView(element);
+                    _ = ScrollIntoView(viewport, element, position);
                 }
 
                 return $"{ActionTarget.DescribeElement(hit)} receives the input at ({point.X}, {point.Y})";
@@ -611,9 +611,17 @@ public sealed partial class PageInput
 
     private static bool IsInViewport(Window viewport, (double X, double Y) point) => point.X >= 0 && point.Y >= 0 && point.X < viewport.InnerWidth && point.Y < viewport.InnerHeight;
 
-    private static DomRect ScrollIntoView(Element element)
+    private static DomRect ScrollIntoView(Window viewport, Element element, ElementPosition? position)
     {
         _ = element.ScrollIntoView(new ScrollIntoViewOptions { Block = ScrollLogicalPosition.Center, Inline = ScrollLogicalPosition.Center });
+        var rect = element.GetBoundingClientRect();
+        if (position is null)
+            return rect;
+
+        // Centering the element can move the requested point out of the viewport when the element is larger than the
+        // viewport, so the viewport is scrolled to center the point instead
+        var point = GetActionPoint(rect, position);
+        _ = viewport.ScrollBy(point.X - (viewport.InnerWidth / 2d), point.Y - (viewport.InnerHeight / 2d));
         return element.GetBoundingClientRect();
     }
 

@@ -37,12 +37,12 @@ public partial class Window
         }
 
         // The callback is attributed to the script of the caller (see TaskAttribution)
-        if (TaskAttribution.Current is { } scriptUrl)
+        if (TaskAttribution.Current is { } attribution)
         {
             var attributedCallback = callback;
             callback = time =>
             {
-                using var scope = TaskAttribution.Enter(scriptUrl);
+                using var scope = TaskAttribution.Enter(attribution);
                 attributedCallback(time);
             };
         }

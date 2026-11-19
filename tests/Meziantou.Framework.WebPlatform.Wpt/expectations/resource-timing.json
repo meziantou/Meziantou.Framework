@@ -440,16 +440,10 @@
     }
   },
   "resource-timing/tentative/initiator-url/post-message-shared-worker.html": {
-    "total": 1,
-    "failures": {
-      "check initiatorUrl for resources fetched in message handler in worker thread": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/tentative/initiator-url/post-message-worker.html": {
-    "total": 1,
-    "failures": {
-      "check initiatorUrl for resources fetched in message handler in worker thread": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/tentative/initiator-url/post-task.any.js#dedicatedworker": {
     "total": 1

@@ -85,7 +85,7 @@ internal sealed class ResourceTiming
         _startTimestamp = global.EventLoop.TimeProvider.GetTimestamp();
 
         // The initiator of the fetch: the style sheet of the request, the script to which the running task is attributed, or the global object
-        _initiatorUrl = request.InitiatorUrl ?? TaskAttribution.Current ?? global.EnvironmentDocument.Url;
+        _initiatorUrl = request.InitiatorUrl ?? TaskAttribution.GetScriptUrl(global.EventLoop) ?? global.EnvironmentDocument.Url;
     }
 
     /// <summary>

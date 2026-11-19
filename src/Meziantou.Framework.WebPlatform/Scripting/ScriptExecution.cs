@@ -35,7 +35,7 @@ internal static class ScriptExecution
         Document.CurrentGlobalDocument = window.EnvironmentDocument;
 
         // The script, and the tasks and callbacks it schedules, are attributed to its URL (the URL of the document for an inline script)
-        using var attribution = TaskAttribution.Enter(script.OriginalSourceUrl ?? script.Url);
+        using var attribution = TaskAttribution.Enter(script.OriginalSourceUrl ?? script.Url, eventLoop);
 
         // The exception is reported before cleaning up after running the script: the error event listeners are invoked
         // while the JavaScript execution context stack is not empty, so the microtasks they queue run once all of them return
@@ -92,7 +92,7 @@ internal static class ScriptExecution
         Document.CurrentGlobalDocument = window.EnvironmentDocument;
 
         // The module, and the tasks and callbacks it schedules, are attributed to its URL
-        using var attribution = TaskAttribution.Enter(script.BaseUrl);
+        using var attribution = TaskAttribution.Enter(script.BaseUrl, window.EventLoop);
         try
         {
             using (AuthorCodeScope.Enter())

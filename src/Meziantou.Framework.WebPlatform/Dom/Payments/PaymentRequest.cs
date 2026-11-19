@@ -287,10 +287,31 @@ public sealed partial class PaymentRequest : EventTarget
                         return;
                     }
 
-                    // The payment handler of Secure Payment Confirmation shows the transaction dialog
+                    // The payment handler of Secure Payment Confirmation shows the transaction dialog, with the details updated by
+                    // the promise given to show(): the transaction (its total) is signed once the update completes, and an update
+                    // that fails aborts the request
                     if (_securePaymentConfirmation is not null)
                     {
-                        ShowTransactionDialog(token);
+                        if (detailsPromise is null)
+                        {
+                            ShowTransactionDialog(token);
+                            return;
+                        }
+
+                        var updated = new TaskCompletionSource<PaymentSheetDetails>();
+                        (_updateWaiters ??= []).Add(updated);
+                        UpdateDetails(detailsPromise, pmi: null);
+                        _ = updated.Task.ContinueWith(
+                            completed =>
+                            {
+                                if (completed.IsCompletedSuccessfully && State == PaymentRequestState.Interactive && !token.IsCancellationRequested)
+                                {
+                                    ShowTransactionDialog(token);
+                                }
+                            },
+                            CancellationToken.None,
+                            TaskContinuationOptions.ExecuteSynchronously,
+                            TaskScheduler.Default);
                         return;
                     }
 

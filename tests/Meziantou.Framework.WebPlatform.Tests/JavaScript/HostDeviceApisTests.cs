@@ -2164,6 +2164,30 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task SecurePaymentConfirmation_Show_AppliesTheDetailsPromise()
+    {
+        // The transaction is signed with the total of the promise given to show(), and a rejected promise aborts the request
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = transactionDialog,
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        Activate(document);
+        Assert.Equal("USD|2.50", await RunAsync(document, """
+            spc([credential.rawId]).show(Promise.resolve({ total: { label: 'Total', amount: { currency: 'usd', value: '2.50' } } }))
+              .then(response => response.complete('success').then(() => document.title = [clientData(response.details).payment.total.currency, clientData(response.details).payment.total.value].join('|')), e => document.title = e.name);
+            """));
+        Assert.Equal("2.50", transactionDialog.LastPrompt!.Total.Value);
+
+        Activate(document);
+        Assert.Equal("AbortError", await RunAsync(document, "go(spc([credential.rawId]).show(Promise.reject(new Error('no'))))"));
+    }
+
+    [Fact]
     public async Task SecurePaymentConfirmation_Retry_IsNotSupported()
     {
         // The transaction dialog cannot be shown again: retry() is rejected without changing the state of the request, so the

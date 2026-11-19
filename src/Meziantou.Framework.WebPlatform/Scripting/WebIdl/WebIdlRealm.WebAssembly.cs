@@ -61,6 +61,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineOperation(namespaceObject, "instantiate", 1, static (r, _, a) => r.WasmInstantiate(a), returnsPromise: true);
             DefineOperation(namespaceObject, "compileStreaming", 1, static (r, _, a) => r.WasmStreaming(a, instantiate: false), returnsPromise: true);
             DefineOperation(namespaceObject, "instantiateStreaming", 1, static (r, _, a) => r.WasmStreaming(a, instantiate: true), returnsPromise: true);
+            DefineOperation(namespaceObject, "namespaceInstance", 1, static (r, _, a) => r.WasmNamespaceInstance(a));
             DefineAttribute(namespaceObject, "JSTag", static (r, _) => r.GetWasmTagObject(r.WebAssemblyState.Store.JavaScriptExceptionTag), setter: null);
 
             // [LegacyNamespace=WebAssembly]: the interface objects are properties of the namespace object
@@ -381,13 +382,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (moduleImports.Count > 0 && importObject is null)
             throw CreateTypeError("The module has imports, but no import object was given");
 
-        var state = WebAssemblyState;
         var imports = new List<WasmExtern>(moduleImports.Count);
         var functionIndex = 0;
         foreach (var import in moduleImports)
         {
-            // The builtins and the imported string constants are provided by the host
-            if (IsWasmBuiltinOrStringImport(import, moduleObject.BuiltinSets, moduleObject.ImportedStringModule))
+            // The builtins and the imported string constants are provided by the host. An import of the module of a builtin
+            // set that is not a builtin of the set is read from the import object (e.g. a polyfill of a newer builtin)
+            if (IsReflectedAsWasmBuiltinOrStringImport(import, moduleObject.BuiltinSets, moduleObject.ImportedStringModule))
             {
                 imports.Add(ReadWasmBuiltinOrStringImport(moduleObject, import));
                 if (import.Type is WasmFunctionType)
@@ -403,74 +404,79 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 throw CreateTypeError($"The import object has no object for the module '{import.Module}'");
 
             var v = Adapter.Get(o, Key(import.Name));
-            switch (import.Type)
+            imports.Add(ReadWasmImportValue(import, v, incumbent, functionIndex));
+            if (import.Type is WasmFunctionType)
             {
-                case WasmFunctionType functionType:
-                    if (!Adapter.IsCallable(v))
-                        throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a function");
-
-                    if (!state.FunctionAddresses.TryGetValue(v, out var function))
-                    {
-                        function = CreateWasmHostFunction(v, functionType, incumbent);
-                        state.FunctionNames.AddOrUpdate(function, functionIndex.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    }
-
-                    functionIndex++;
-                    imports.Add(function);
-                    break;
-
-                case WasmGlobalType globalType:
-                    if (Unwrap(v) is WebAssemblyGlobalObject globalObject)
-                    {
-                        imports.Add(globalObject.Global);
-                        break;
-                    }
-
-                    var valueType = globalType.ValueType;
-                    if ((valueType.Kind == WasmValueKind.I64 && !Adapter.IsBigInt(v)) ||
-                        (valueType.Kind is WasmValueKind.I32 or WasmValueKind.F32 or WasmValueKind.F64 && !Adapter.IsNumber(v)) ||
-                        valueType.Kind == WasmValueKind.V128)
-                    {
-                        throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a valid global value");
-                    }
-
-                    WasmValue value;
-                    try
-                    {
-                        value = ToWasmValue(v, valueType);
-                    }
-                    catch (Exception ex) when (Adapter.TryGetThrownValue(ex, out var thrown) && IsTypeError(thrown))
-                    {
-                        throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a valid global value");
-                    }
-
-                    imports.Add(WasmCall(() => state.Store.CreateGlobal(new WasmGlobalType(valueType, mutable: false) { Native = globalType.Mutable ? null : globalType.Native }, value)));
-                    break;
-
-                case WasmMemoryType:
-                    if (Unwrap(v) is not WebAssemblyMemoryObject { Memory: { } memory })
-                        throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a WebAssembly.Memory");
-
-                    imports.Add(memory);
-                    break;
-
-                case WasmTableType:
-                    if (Unwrap(v) is not WebAssemblyTableObject tableObject)
-                        throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a WebAssembly.Table");
-
-                    imports.Add(tableObject.Table);
-                    break;
-
-                default:
-                    if (Unwrap(v) is not WebAssemblyTagObject tagObject)
-                        throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a WebAssembly.Tag");
-
-                    imports.Add(tagObject.Tag);
-                    break;
+                functionIndex++;
             }
         }
 
         return imports;
+    }
+
+    /// <summary>
+    /// https://webassembly.github.io/spec/js-api/#read-an-import-value: the extern of the value <paramref name="v"/> of an
+    /// import. <paramref name="functionIndex"/> is the index of the imported function, which names its host function.
+    /// </summary>
+    internal WasmExtern ReadWasmImportValue(WasmImport import, TValue v, GlobalScope? incumbent, int functionIndex)
+    {
+        var state = WebAssemblyState;
+        switch (import.Type)
+        {
+            case WasmFunctionType functionType:
+                if (!Adapter.IsCallable(v))
+                    throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a function");
+
+                if (!state.FunctionAddresses.TryGetValue(v, out var function))
+                {
+                    function = CreateWasmHostFunction(v, functionType, incumbent);
+                    state.FunctionNames.AddOrUpdate(function, functionIndex.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                }
+
+                return function;
+
+            case WasmGlobalType globalType:
+                if (Unwrap(v) is WebAssemblyGlobalObject globalObject)
+                    return globalObject.Global;
+
+                var valueType = globalType.ValueType;
+                if ((valueType.Kind == WasmValueKind.I64 && !Adapter.IsBigInt(v)) ||
+                    (valueType.Kind is WasmValueKind.I32 or WasmValueKind.F32 or WasmValueKind.F64 && !Adapter.IsNumber(v)) ||
+                    valueType.Kind == WasmValueKind.V128)
+                {
+                    throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a valid global value");
+                }
+
+                WasmValue value;
+                try
+                {
+                    value = ToWasmValue(v, valueType);
+                }
+                catch (Exception ex) when (Adapter.TryGetThrownValue(ex, out var thrown) && IsTypeError(thrown))
+                {
+                    throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a valid global value");
+                }
+
+                return WasmCall(() => state.Store.CreateGlobal(new WasmGlobalType(valueType, mutable: false) { Native = globalType.Mutable ? null : globalType.Native }, value));
+
+            case WasmMemoryType:
+                if (Unwrap(v) is not WebAssemblyMemoryObject { Memory: { } memory })
+                    throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a WebAssembly.Memory");
+
+                return memory;
+
+            case WasmTableType:
+                if (Unwrap(v) is not WebAssemblyTableObject tableObject)
+                    throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a WebAssembly.Table");
+
+                return tableObject.Table;
+
+            default:
+                if (Unwrap(v) is not WebAssemblyTagObject tagObject)
+                    throw CreateWasmError("LinkError", $"The import '{import.Module}.{import.Name}' is not a WebAssembly.Tag");
+
+                return tagObject.Tag;
+        }
     }
 
     private bool IsTypeError(TValue value)

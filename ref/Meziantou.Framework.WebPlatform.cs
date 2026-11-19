@@ -15431,6 +15431,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public TValue? GetAbstractModuleSource() => throw null;
         Meziantou.Framework.WebPlatform.Scripting.JsErrorInformation GetErrorInformation(TValue error);
         TValue GetGlobalObject(object realm);
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0014", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public object? GetModuleOfNamespace(TValue value) => throw null;
         bool GetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
         public int GetPropertyCount(TValue obj) => throw null;
         TValue GetPrototypeOf(TValue obj);

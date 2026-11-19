@@ -490,12 +490,23 @@ has its own store of instances, memories, tables, globals and tags):
   size under the lock of the memory, and a growth that another agent overtook fails and starts again (`GrowTo`).
 - The running code is interrupted by the limits of the script engine (e.g. `JavaScriptScriptEngineOptions.Timeout`), and
   a stack overflow throws a `RangeError`.
+- The ESM integration (https://webassembly.github.io/esm-integration/js-api/index.html): a module script, a static or
+  dynamic import, or the script of a module worker whose response has the `application/wasm` MIME type is a WebAssembly
+  module (`ModuleFetching`, `FetchedModule.WasmBytes`). `WebIdlRealm.ParseWasmModuleScript` compiles it with the builtin
+  set `js-string` and the imported string constants of `wasm:js/string-constants`, and rejects the reserved names
+  (`wasm:`, `wasm-js:`) with a `LinkError`; the JavaScript engine adapter creates its module record, a
+  `JsHostDefinedModule` of the engine (a cyclic module whose requested modules are the modules of the external imports)
+  whose module source is the `WebAssembly.Module` object. When the module is evaluated, after its dependencies,
+  `ExecuteWasmModuleScript` reads the imports (an export of another WebAssembly module is taken from its instance, a
+  binding of a JavaScript module is read as an import value, a binding that is not initialized yet is a `LinkError`),
+  instantiates the module, and initializes the exports: the globals are unwrapped (a mutable global is a live binding, a
+  `v128` or `exnref` global stays uninitialized), the other exports are the values of the exports object.
+  `WebAssembly.namespaceInstance()` returns the instance of the module of a namespace object (`IJsAdapter.GetModuleOfNamespace`).
 
 The Wasmtime runtime enables the features of WebAssembly 3.0 (the reference types, the typed function references, the
 GC types, the exceptions, the tail calls, memory64, the multiple memories, the SIMD and relaxed SIMD instructions) and
-the wide arithmetic, and the threads (the shared memories and the atomic instructions). Not implemented: the JS String Builtins (`builtins`, `importedStringConstants`), the ESM
-integration (`import` of a module), JavaScript Promise Integration, the type reflection (`type()`), the resizable buffers
-of the memories (`toResizableBuffer()`): see the [WPT coverage of wasm](../../../docs/WebPlatform/10-WptCoverage/wasm.md).
+the wide arithmetic, and the threads (the shared memories and the atomic instructions). Not implemented: JavaScript
+Promise Integration, the type reflection (`type()`): see the [WPT coverage of wasm](../../../docs/WebPlatform/10-WptCoverage/wasm.md).
 
 The runtime does not use the signal handlers of Wasmtime (the traps are explicit checks) and does not register native
 unwind information for the compiled code (`native_unwind_info` is disabled): on macOS, `__register_frame` and
@@ -623,7 +634,8 @@ for each engine: the calls to the adapter are direct calls that can be inlined, 
 - Module sources (https://tc39.es/proposal-source-phase-imports/): `GetAbstractModuleSource` returns
   `%AbstractModuleSource%`, which `WebAssembly.Module` extends, and `SetModuleSourceClassName` sets the
   [[ModuleSourceClassName]] of its instances (read by the `%AbstractModuleSource%.prototype[@@toStringTag]` getter);
-  without them, `WebAssembly.Module` extends nothing.
+  without them, `WebAssembly.Module` extends nothing. `GetModuleOfNamespace` returns the module record of a module
+  namespace object, for `WebAssembly.namespaceInstance()`; without it, `namespaceInstance()` throws a `TypeError`.
 
 The adapter must return the same `TValue` instance for the same JavaScript object: the bindings compare the objects by
 reference and cache data per object.

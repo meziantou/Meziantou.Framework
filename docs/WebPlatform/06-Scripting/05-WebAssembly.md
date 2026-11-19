@@ -55,6 +55,57 @@ shared with the `ArrayBuffer` objects of the scripts), and how often the running
 ([InterruptionCheckInterval](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.InterruptionCheckInterval), 10 ms by default).
 A table has at most 10,000,000 elements, the limit of the JavaScript API of browsers: `table.grow` returns -1 beyond it.
 
+## Module scripts
+
+A module script can import a WebAssembly module, as a JavaScript module ([ESM integration](https://github.com/WebAssembly/esm-integration)):
+a response whose MIME type is `application/wasm` is a WebAssembly module.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasmtime_ModuleScripts;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var runtime = new WasmtimeRuntime();
+using var engine = new JavaScriptScriptEngine();
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    ScriptEngine = engine,
+    WebAssemblyRuntime = runtime,
+});
+
+var document = await context.NavigateAsync("https://example.com/", _ => """
+    <output></output>
+    <script type="module">
+      // A response whose MIME type is application/wasm (a data: URL here) is a WebAssembly module:
+      // (module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))
+      import { add } from "data:application/wasm;base64,AGFzbQEAAAABBwFgAn9/AX8DAgEABwcBA2FkZAAACgkBBwAgACABags=";
+
+      // A source phase import gives the compiled WebAssembly.Module, without instantiating it
+      import source addModule from "data:application/wasm;base64,AGFzbQEAAAABBwFgAn9/AX8DAgEABwcBA2FkZAAACgkBBwAgACABags=";
+
+      const { exports } = new WebAssembly.Instance(addModule);
+      document.querySelector('output').textContent = add(2, 3) + ' ' + exports.add(4, 5);
+    </script>
+    """);
+await context.EventLoop.RunUntilIdleAsync();
+
+Assert.Equal("5 9", document.QuerySelector("output")!.TextContent);
+```
+<!-- endref -->
+
+- `<script type="module" src="app.wasm">`, `import`, `import()`, `<link rel="modulepreload">` and the script of a
+  module worker (`new Worker("app.wasm", { type: "module" })`) load WebAssembly modules.
+- The imports of the module are the exports of other modules: `(import "./lib.js" "log" (func))` imports the `log`
+  export of `./lib.js`, and an import of a WebAssembly module gets the export of its instance. The modules it imports run
+  before it; a module that is not evaluated yet (a cycle) gives a `LinkError`.
+- Its exports are the bindings of the module: the functions, memories and tables are the objects of the exports of the
+  instance, the globals are their values. The binding of a mutable global follows its value; the one of a `v128` global
+  throws a `ReferenceError`. `WebAssembly.namespaceInstance(ns)` returns the `WebAssembly.Instance`.
+- `import source mod from "./app.wasm"` and `import.source()` give the compiled `WebAssembly.Module` without instantiating
+  it.
+- The modules are compiled with the JS String Builtins (`wasm:js-string`) and the imported string constants of
+  `wasm:js/string-constants`. A module that does not compile is a `CompileError`, a module whose imports or exports use
+  the reserved names (`wasm:`, `wasm-js:`) a `LinkError`, reported as the error of the script.
+- A WebAssembly module is a script: the `script-src` directive of the Content Security Policy applies, not
+  `'wasm-unsafe-eval'`.
+
 ## Threads
 
 The modules compiled with the threads, such as the Emscripten builds with `-pthread`, run in the windows and the

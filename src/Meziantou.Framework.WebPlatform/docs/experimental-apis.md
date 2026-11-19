@@ -157,7 +157,9 @@ The properties of `CssStyleProperties` that the browsers implement but no specif
 `IJsAdapter<TValue>.GetAbstractModuleSource()` and `SetModuleSourceClassName()`: `WebAssembly.Module` extends the
 `%AbstractModuleSource%` intrinsic of the [source phase imports proposal](https://github.com/tc39/proposal-source-phase-imports)
 (TC39), as the [ESM integration of WebAssembly](https://github.com/WebAssembly/esm-integration) defines, and its instances
-are module source objects. Only the script engine adapters implement or call them.
+are module source objects. `IJsAdapter<TValue>.GetModuleOfNamespace()` returns the module record of a module namespace
+object, for `WebAssembly.namespaceInstance()` of the ESM integration. Only the script engine adapters implement or call
+them.
 
 <a id="WEBPLATEXP0015"></a>
 

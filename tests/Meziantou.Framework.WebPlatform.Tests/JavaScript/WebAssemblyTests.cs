@@ -589,6 +589,103 @@ public sealed class WebAssemblyTests : IDisposable
         Assert.Equal("123456,[object WebAssembly.Memory],RangeError", result);
     }
 
+    // Loads a document whose module scripts import the WebAssembly modules of the loader, and returns its title once idle
+    private async Task<string> LoadModulesAsync(string html, Dictionary<string, string> scripts, Dictionary<string, string> modules, bool withRuntime = true)
+    {
+        var loader = new RecordingLoader();
+        foreach (var (url, source) in scripts)
+        {
+            loader.Resources["https://example.com/" + url] = new DocumentResource(source) { Headers = [new("Content-Type", "text/javascript")] };
+        }
+
+        foreach (var (url, text) in modules)
+        {
+            loader.Resources["https://example.com/" + url] = new DocumentResource(WasmtimeRuntime.WatToWasm(text)) { Headers = [new("Content-Type", "application/wasm")] };
+        }
+
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = loader,
+            WebAssemblyRuntime = withRuntime ? Runtime : null,
+            UnhandledScriptError = (_, error) =>
+            {
+                lock (_errors)
+                {
+                    _errors.Add(error);
+                }
+            },
+        });
+
+        var document = context.Navigate("https://example.com/page.html", _ => html);
+        await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
+        return document.Title;
+    }
+
+    [Fact]
+    public async Task ModuleScripts_ImportWebAssemblyModules()
+    {
+        var result = await LoadModulesAsync(
+            """
+            <script type=module>
+              import { run } from './main.wasm';
+              import * as counter from './counter.wasm';
+              import source mainSource from './main.wasm';
+              window.log = [];
+              const before = counter.value;
+              run();
+              const instance = WebAssembly.namespaceInstance(counter);
+              document.title = [before, counter.value, window.log.join(), Object.keys(counter).join(), mainSource instanceof WebAssembly.Module,
+                WebAssembly.Module.imports(mainSource).map(i => i.module).join(), instance instanceof WebAssembly.Instance,
+                instance.exports.value instanceof WebAssembly.Global, instance === WebAssembly.namespaceInstance(counter)].join('|');
+            </script>
+            """,
+            new() { ["log.js"] = "export function log(value) { window.log.push('log ' + value); }" },
+            new()
+            {
+                ["counter.wasm"] = """(module (global (export "value") (mut i32) (i32.const 1)) (func (export "increment") (global.set 0 (i32.add (global.get 0) (i32.const 1)))))""",
+                ["main.wasm"] = """
+                    (module
+                      (import "./log.js" "log" (func $log (param i32)))
+                      (import "./counter.wasm" "increment" (func $increment))
+                      (func (export "run") (call $increment) (call $log (i32.const 7))))
+                    """,
+            });
+
+        Assert.Equal("1|2|log 7|increment,value|true|./log.js,./counter.wasm|true|true|true", result);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public async Task ModuleScripts_WebAssemblyModuleWithAnInvalidImportThrowsALinkError()
+    {
+        var result = await LoadModulesAsync(
+            """
+            <script>window.addEventListener('error', e => document.title = e.error.name + ' ' + (e.error instanceof WebAssembly.LinkError));</script>
+            <script type=module src=main.wasm></script>
+            """,
+            new() { ["lib.js"] = "export const f = 5;" },
+            new() { ["main.wasm"] = """(module (import "./lib.js" "f" (func)))""" });
+
+        Assert.Equal("LinkError true", result);
+        lock (_errors)
+        {
+            _errors.Clear();
+        }
+    }
+
+    [Fact]
+    public async Task ModuleScripts_WebAssemblyModuleNeedsARuntime()
+    {
+        var result = await LoadModulesAsync(
+            "<script type=module src=main.wasm onerror=\"document.title = 'error'\"></script>",
+            [],
+            new() { ["main.wasm"] = "(module)" },
+            withRuntime: false);
+
+        Assert.Equal("error", result);
+    }
+
     [Fact]
     public async Task Globals_ConvertTheirValues()
     {
@@ -884,6 +981,38 @@ public sealed class WebAssemblyTests : IDisposable
         await context.EventLoop.RunUntilIdleAsync();
 
         Assert.Equal("5", document.QuerySelector("output")!.TextContent);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_WebAssemblyModuleScripts()
+    {
+        #region WebPlatformWasmtime_ModuleScripts
+        using var runtime = new WasmtimeRuntime();
+        using var engine = new JavaScriptScriptEngine();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            ScriptEngine = engine,
+            WebAssemblyRuntime = runtime,
+        });
+
+        var document = await context.NavigateAsync("https://example.com/", _ => """
+            <output></output>
+            <script type="module">
+              // A response whose MIME type is application/wasm (a data: URL here) is a WebAssembly module:
+              // (module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))
+              import { add } from "data:application/wasm;base64,AGFzbQEAAAABBwFgAn9/AX8DAgEABwcBA2FkZAAACgkBBwAgACABags=";
+
+              // A source phase import gives the compiled WebAssembly.Module, without instantiating it
+              import source addModule from "data:application/wasm;base64,AGFzbQEAAAABBwFgAn9/AX8DAgEABwcBA2FkZAAACgkBBwAgACABags=";
+
+              const { exports } = new WebAssembly.Instance(addModule);
+              document.querySelector('output').textContent = add(2, 3) + ' ' + exports.add(4, 5);
+            </script>
+            """);
+        await context.EventLoop.RunUntilIdleAsync();
+
+        Assert.Equal("5 9", document.QuerySelector("output")!.TextContent);
         #endregion
     }
 

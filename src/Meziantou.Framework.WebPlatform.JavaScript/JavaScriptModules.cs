@@ -262,7 +262,20 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
             return Build(realm, script.Url, script.SourceText, ModuleType.JavaScript, hostDefined, script.Global, isInline: true, Math.Max(0, script.SourceTextLine - 1), script.SourceTextColumn);
         }
 
-        var module = Build(realm, script.BaseUrl, script.SourceText, ModuleType.JavaScript, hostDefined, script.Global, isInline: false, 0, 0);
+        // The script of a module worker can be a WebAssembly module
+        JsModule module;
+        if (script.WasmBytes is { } wasmBytes)
+        {
+            if (realm.WebAssemblyRuntime is null || !realm.Features.WebAssemblyEnabled)
+                throw ((JsRealm)realm.EngineRealm).CreateException(JsErrorType.TypeError, "The WebAssembly module scripts need a WebAssembly runtime");
+
+            module = BuildWasmModule(realm, script.BaseUrl, wasmBytes, hostDefined);
+        }
+        else
+        {
+            module = Build(realm, script.BaseUrl, script.SourceText, ModuleType.JavaScript, hostDefined, script.Global, isInline: false, 0, 0);
+        }
+
         var map = (_moduleMaps ??= []).GetOrCreateValue(script.Global);
         map.TryAdd((script.BaseUrl, ModuleType.JavaScript), new ModuleMapEntry { Module = module, Url = script.BaseUrl, SourceText = script.SourceText });
         return module;
@@ -458,6 +471,12 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
             using var scope = owner.EnterJavaScript();
             realm.Run(() =>
             {
+                // A WebAssembly module needs a WebAssembly runtime: without one, its MIME type is not valid
+                if (fetched is { WasmBytes: not null } && (realm.WebAssemblyRuntime is null || !realm.Features.WebAssemblyEnabled))
+                {
+                    fetched = null;
+                }
+
                 if (fetched is null)
                 {
                     // A failed fetch is not kept in the module map: the imports that joined it fail, and the next import
@@ -477,7 +496,9 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
                     var hostDefined = new ScriptHostDefined { BaseUrl = fetched.Url, FetchOptions = fetchOptions.WithResponseReferrerPolicy(fetched.ReferrerPolicy), IsModule = true };
                     try
                     {
-                        entry.Module = Build(realm, fetched.Url, fetched.SourceText, type, hostDefined, window, isInline: false, 0, 0);
+                        entry.Module = fetched.WasmBytes is { } wasmBytes
+                            ? BuildWasmModule(realm, fetched.Url, wasmBytes, hostDefined)
+                            : Build(realm, fetched.Url, fetched.SourceText, type, hostDefined, window, isInline: false, 0, 0);
                     }
                     catch (JsException ex)
                     {
@@ -549,6 +570,57 @@ internal sealed class JavaScriptModuleLoader(JavaScriptScriptEngine owner) : JsM
         {
             throw engineRealm.CreateException(JsErrorType.TypeError, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Creates the WebAssembly Module Record of a WebAssembly module script
+    /// (https://webassembly.github.io/esm-integration/js-api/index.html#parse-a-webassembly-module): a host-defined module
+    /// whose source is the <c>WebAssembly.Module</c> object, and whose evaluation instantiates the module with the bindings
+    /// it imports. Throws a CompileError or a LinkError.
+    /// </summary>
+    private JsHostDefinedModule BuildWasmModule(WebIdlRealm<JavaScriptAdapter, object> realm, string url, byte[] bytes, ScriptHostDefined hostDefined)
+    {
+        var engineRealm = (JsRealm)realm.EngineRealm;
+        try
+        {
+            var moduleObject = realm.ParseWasmModuleScript(bytes, out var requestedModules, out var exportNames);
+            var module = engineRealm.CreateHostDefinedModule(requestedModules, exportNames, record => realm.ExecuteWasmModuleScript(record, import => ResolveWasmImport(record, import), (name, value, getter) =>
+            {
+                if (getter is not null)
+                {
+                    record.SetExportGetter(name, () => ToJs(getter()));
+                }
+                else if (value is not null)
+                {
+                    record.SetExport(name, ToJs(value));
+                }
+            }), url, hostDefined);
+            realm.RegisterWasmModuleRecord(module, moduleObject);
+            module.ModuleSource = (JsObject)realm.GetWrapper(moduleObject);
+            return module;
+        }
+        catch (JsException ex)
+        {
+            // The error is located in the module
+            if (ex.Value.TryGetObject() is { } error)
+            {
+                (_parseErrorLocations ??= []).AddOrUpdate(error, new ErrorLocation(url, 0, 0));
+            }
+
+            throw;
+        }
+    }
+
+    /// <summary>Resolves an import of a WebAssembly module in the module graph (the binding of a module, or the export of another WebAssembly module).</summary>
+    private static WasmModuleScriptImport<object> ResolveWasmImport(JsHostDefinedModule module, WebAssembly.WasmImport import)
+    {
+        var binding = module.GetImport(import.Module, import.Name);
+
+        // The export of a WebAssembly module is read from its instance
+        if (binding.Module is JsHostDefinedModule && !binding.IsNamespace)
+            return new(binding.Module, binding.BindingName, Value: null);
+
+        return new(binding.IsNamespace ? null : binding.Module, binding.BindingName, binding.TryGetValue(out var value) ? ToObject(value) : null);
     }
 
     /// <summary>The location of a parse error: the URL of the module (null for an inline script), and the position in its source text (1-based, or 0).</summary>

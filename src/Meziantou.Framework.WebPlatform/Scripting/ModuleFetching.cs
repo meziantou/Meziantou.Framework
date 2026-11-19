@@ -9,7 +9,14 @@ namespace Meziantou.Framework.WebPlatform.Scripting;
 /// The source of a fetched module: its response URL, its source text, and the policy of its <c>Referrer-Policy</c> header
 /// (the empty string when there is none), which becomes the referrer policy of the fetch options of the module.
 /// </summary>
-internal sealed record FetchedModule(string Url, string SourceText, string ReferrerPolicy = "");
+internal sealed record FetchedModule(string Url, string SourceText, string ReferrerPolicy = "")
+{
+    /// <summary>
+    /// Gets the bytes of a WebAssembly module (a JavaScript module request whose response has the <c>application/wasm</c>
+    /// MIME type, https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-single-module-script), or null.
+    /// </summary>
+    public byte[]? WasmBytes { get; init; }
+}
 
 /// <summary>
 /// Fetches the module scripts (https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-single-module-script) with
@@ -176,6 +183,14 @@ internal static class ModuleFetching
             ModuleType.Text => true,
             _ => HtmlScriptElement.IsJavaScriptMimeTypeEssenceMatch(essence),
         };
+
+        // https://webassembly.github.io/esm-integration/js-api/index.html: a JavaScript module request ("javascript-or-wasm")
+        // whose response is a WebAssembly module creates a WebAssembly module script from the bytes of the response
+        if (type == ModuleType.JavaScript && essence == "application/wasm")
+        {
+            var bytes = resource.ContentBytes?.ToArray() ?? System.Text.Encoding.UTF8.GetBytes(resource.Content!);
+            return new FetchedModule(resource.Url ?? url, "", ReferrerPolicies.ParseHeader(resource.Headers)) { WasmBytes = bytes };
+        }
 
         if (!validMimeType)
             return null;

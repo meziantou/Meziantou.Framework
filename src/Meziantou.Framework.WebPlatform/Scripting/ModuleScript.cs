@@ -57,6 +57,12 @@ public sealed class ModuleScript
     public bool IsInline { get; init; }
 
     /// <summary>
+    /// Gets the bytes of the WebAssembly module of the script (the script of a module worker whose response has the
+    /// <c>application/wasm</c> MIME type), or null for a JavaScript module script.
+    /// </summary>
+    internal byte[]? WasmBytes { get; init; }
+
+    /// <summary>
     /// Gets the line (1-based) of the start of the source text in the document of an inline script: the line numbers of its
     /// errors are the lines in the document. The default value is 1.
     /// </summary>

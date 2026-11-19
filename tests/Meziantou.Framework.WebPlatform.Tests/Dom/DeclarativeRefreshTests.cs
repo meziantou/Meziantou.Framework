@@ -161,11 +161,55 @@ public sealed class DeclarativeRefreshTests : IDisposable
         Assert.Equal("https://example.com/other.html", context.Document.Url);
     }
 
+    [Fact]
+    public void DocumentOpen_CancelsARefreshWithATimeoutOfZero()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, DocumentLoader = new Loader(_requests), DeclarativeRefreshEnabled = true });
+        var document = context.Navigate(PageUrl, _ => new DocumentResource("<p>") { Headers = [new("Refresh", "0; url=next.html")] });
+        document.Open();
+        document.Close();
+        Advance(2);
+
+        Assert.Empty(_requests);
+        Assert.Same(document, context.Document);
+    }
+
+    [Fact]
+    public void DocumentOpen_CancelsARefreshWithATimeoutOfZeroDuringAnotherNavigation()
+    {
+        // Stopping the ongoing navigation does not cancel the refresh: document.open() cancels it too
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, DocumentLoader = new Loader(_requests), DeclarativeRefreshEnabled = true });
+        var document = context.Navigate(PageUrl, _ => new DocumentResource("<p>") { Headers = [new("Refresh", "0; url=next.html")] });
+        context.Window.Location.Href = "slow.html";
+        document.Open();
+        document.Close();
+        Advance(2);
+
+        Assert.DoesNotContain("https://example.com/dir/next.html", _requests);
+        Assert.Same(document, context.Document);
+    }
+
+    [Fact]
+    public void DocumentOpen_DoesNotCancelARefreshWithATimeout()
+    {
+        var context = Load("<p>", [new("Refresh", "1; url=next.html")]);
+        context.Document.Open();
+        context.Document.Close();
+        Advance(2);
+
+        Assert.Equal(["https://example.com/dir/next.html"], _requests);
+    }
+
     private sealed class Loader(List<string> requests) : DocumentLoader
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
             requests.Add(request.Url);
+
+            // The response of slow.html never comes: its navigation stays ongoing
+            if (request.Url.EndsWith("/slow.html", StringComparison.Ordinal))
+                return new ValueTask<DocumentResource?>(new TaskCompletionSource<DocumentResource?>().Task);
+
             return ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>loaded"));
         }
     }

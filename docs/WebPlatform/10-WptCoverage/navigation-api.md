@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of navigation-api, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 460 | 469 | 0 | 98% |
+| [Stable](#stable-tests) | 462 | 469 | 0 | 99% |
 | [Tentative](#tentative-tests) | 3 | 12 | 0 | 25% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 2 | 3 | 0 | 67% |
-| **All** | **465** | **484** | **0** | **96%** |
+| **All** | **467** | **484** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
-- **TEST BUG**: 4
+- **BUG**: 1
+- **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 11
 
 ## Stable tests
@@ -116,7 +116,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`navigate-event/intercept-reject.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-reject.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/intercept-resolve.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-resolve.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/intercept-same-document-history-back.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-same-document-history-back.html) | Pass | 1 / 1 |  |  |
-| [`navigate-event/intercept-stops-ongoing-cross-document-navigation.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-stops-ongoing-cross-document-navigation.html) | Timeout | 0 / 1 | BUG | the test times out: the first navigation commits as soon as the headers of its delayed response arrive (the runner sends the headers of `blank.html?pipe=trickle(d1)` at once and the body after 1 s, as wptserve does, and a navigation commits with its response, https://html.spec.whatwg.org/multipage/browsing-the-web.html#populating-a-session-history-entry), so the iframe has a new document before the intercepted `navigation.navigate("?intercepted")` starts; the promises of the first navigation belong to the replaced window and never settle. The test expects the navigation to be still in flight after 200 ms: the library would have to wait for the first bytes of the body before committing a navigation. Edge (the only browser of wpt.fyi with results) fails the test too |
+| [`navigate-event/intercept-stops-ongoing-cross-document-navigation.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-stops-ongoing-cross-document-navigation.html) | Timeout | 0 / 1 | TEST BUG | the test expects the `finished` promise of the first `navigate()`, a navigation to another document that is not intercepted, to be rejected with an `AbortError` when the intercepted `navigate("?intercepted")` stops it; the API method tracker of such a navigation is cleaned up once its `navigate` event is committed ("If endResultIsSameDocument is false and apiMethodTracker is non-null, then clean up apiMethodTracker", https://html.spec.whatwg.org/multipage/nav-history-apis.html#commit-a-navigate-event), so aborting the navigation does not reject its promises: they stay pending, as `ordering-and-transition/navigate-cross-document-double.html` and `navigate-204-205-download-then-same-document.html` expect, and the test times out waiting for `firstFinished`. The library also commits the first navigation as soon as the headers of its delayed response arrive (the runner sends the headers of `blank.html?pipe=trickle(d1)` at once, as wptserve does), so the iframe has a new document before the second navigation starts. Edge (the only browser of wpt.fyi with results) fails the test too |
 | [`navigate-event/intercepted-navigation-after-bfcache-restore.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercepted-navigation-after-bfcache-restore.html) | Fail | 0 / 1 | NOT IMPLEMENTED | an intercepted same-document navigation is aborted when a cross-document navigation of its traversable starts (the navigation API is informed about the aborting navigation although no navigate event fires at the document), so `navigation.navigate()` rejects with an `AbortError` once the page is restored from the back/forward cache, instead of finishing |
 | [`navigate-event/navigate-anchor-cross-origin-userInitiated.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-anchor-cross-origin-userInitiated.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-anchor-cross-origin.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-anchor-cross-origin.html) | Pass | 1 / 1 |  |  |
@@ -390,9 +390,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ordering-and-transition/location-href-intercept-reentrant.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/location-href-intercept-reentrant.html) | Pass | 2 / 2 |  |  |
 | [`ordering-and-transition/location-href-intercept-reject.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/location-href-intercept-reject.html) | Pass | 2 / 2 |  |  |
 | [`ordering-and-transition/location-href-intercept.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/location-href-intercept.html) | Pass | 2 / 2 |  |  |
-| [`ordering-and-transition/navigate-204-205-download-then-same-document.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html) | Fail | 0 / 3 | BUG | the API method tracker of a `navigate()` to another document that is not intercepted stays the ongoing API method tracker after the `navigate` event ("If endResultIsSameDocument is false and apiMethodTracker is non-null, then clean up apiMethodTracker", https://html.spec.whatwg.org/multipage/nav-history-apis.html#inner-navigate-event-firing-algorithm), so aborting the ongoing navigation when the second navigation starts rejects the `committed` and `finished` promises of the first `navigate()` (`committed rejected 1`, `finished rejected 1`), which must stay pending; here the first navigation is to a 204 or 205 response or a download, and its promises are rejected when the same-document `navigate("#1")` aborts it |
+| [`ordering-and-transition/navigate-204-205-download-then-same-document.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-204-205-download-then-same-document.html) | Pass | 3 / 3 |  |  |
 | [`ordering-and-transition/navigate-canceled.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-canceled.html) | Pass | 1 / 1 |  |  |
-| [`ordering-and-transition/navigate-cross-document-double.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-double.html) | Fail | 0 / 1 | BUG | the API method tracker of a `navigate()` to another document that is not intercepted stays the ongoing API method tracker after the `navigate` event ("If endResultIsSameDocument is false and apiMethodTracker is non-null, then clean up apiMethodTracker", https://html.spec.whatwg.org/multipage/nav-history-apis.html#inner-navigate-event-firing-algorithm), so aborting the ongoing navigation when the second navigation starts rejects the `committed` and `finished` promises of the first `navigate()` (`committed rejected 1`, `finished rejected 1`), which must stay pending |
+| [`ordering-and-transition/navigate-cross-document-double.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-double.html) | Pass | 1 / 1 |  |  |
 | [`ordering-and-transition/navigate-cross-document-event-order-with-pagehide.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-event-order-with-pagehide.html) | Pass | 1 / 1 |  |  |
 | [`ordering-and-transition/navigate-cross-document-event-order.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-cross-document-event-order.html) | Pass | 1 / 1 |  |  |
 | [`ordering-and-transition/navigate-double-intercept.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-double-intercept.html) | Pass | 2 / 2 |  |  |

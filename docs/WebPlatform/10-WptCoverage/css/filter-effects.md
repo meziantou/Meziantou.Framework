@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 36 | 38 | 0 | 95% |
+| [Stable](#stable-tests) | 38 | 38 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 385 | 395 | 0 | 97% |
 | [Crash tests](#crash-tests) | 22 | 23 | 1 | 100% |
-| **All** | **443** | **456** | **1** | **97%** |
+| **All** | **445** | **456** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 2
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 1
 - **PERFORMANCE**: 1
@@ -48,13 +48,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`idlharness.any.js`](https://wpt.fyi/results/css/filter-effects/idlharness.any.js) | Pass | 538 / 538 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/filter-effects/inheritance.html) | Pass | 12 / 12 |  |  |
 | [`parsing/backdrop-filter-computed.html`](https://wpt.fyi/results/css/filter-effects/parsing/backdrop-filter-computed.html) | Pass | 74 / 74 |  |  |
-| [`parsing/backdrop-filter-parsing-invalid.html`](https://wpt.fyi/results/css/filter-effects/parsing/backdrop-filter-parsing-invalid.html) | Fail | 90 / 91 | BUG | 1 of 91 subtests: a negative blur radius in `drop-shadow()` (`drop-shadow(10px 10px -1px red)`) is accepted: the grammar of webref is `<length>{2,3}` and the prose restriction (the blur radius is not negative, https://drafts.fxtf.org/filter-effects/#funcdef-filter-drop-shadow) is not checked |
+| [`parsing/backdrop-filter-parsing-invalid.html`](https://wpt.fyi/results/css/filter-effects/parsing/backdrop-filter-parsing-invalid.html) | Pass | 91 / 91 |  |  |
 | [`parsing/backdrop-filter-parsing-valid.html`](https://wpt.fyi/results/css/filter-effects/parsing/backdrop-filter-parsing-valid.html) | Pass | 94 / 94 |  |  |
 | [`parsing/color-interpolation-filters-computed.html`](https://wpt.fyi/results/css/filter-effects/parsing/color-interpolation-filters-computed.html) | Pass | 3 / 3 |  |  |
 | [`parsing/color-interpolation-filters-parsing-invalid.html`](https://wpt.fyi/results/css/filter-effects/parsing/color-interpolation-filters-parsing-invalid.html) | Pass | 3 / 3 |  |  |
 | [`parsing/color-interpolation-filters-parsing-valid.html`](https://wpt.fyi/results/css/filter-effects/parsing/color-interpolation-filters-parsing-valid.html) | Pass | 4 / 4 |  |  |
 | [`parsing/filter-computed.html`](https://wpt.fyi/results/css/filter-effects/parsing/filter-computed.html) | Pass | 128 / 128 |  |  |
-| [`parsing/filter-parsing-invalid.html`](https://wpt.fyi/results/css/filter-effects/parsing/filter-parsing-invalid.html) | Fail | 90 / 91 | BUG | 1 of 91 subtests: a negative blur radius in `drop-shadow()` (`drop-shadow(10px 10px -1px red)`) is accepted: the grammar of webref is `<length>{2,3}` and the prose restriction (the blur radius is not negative, https://drafts.fxtf.org/filter-effects/#funcdef-filter-drop-shadow) is not checked |
+| [`parsing/filter-parsing-invalid.html`](https://wpt.fyi/results/css/filter-effects/parsing/filter-parsing-invalid.html) | Pass | 91 / 91 |  |  |
 | [`parsing/filter-parsing-valid.html`](https://wpt.fyi/results/css/filter-effects/parsing/filter-parsing-valid.html) | Pass | 144 / 144 |  |  |
 | [`parsing/flood-color-computed.html`](https://wpt.fyi/results/css/filter-effects/parsing/flood-color-computed.html) | Pass | 8 / 8 |  |  |
 | [`parsing/flood-color-invalid.html`](https://wpt.fyi/results/css/filter-effects/parsing/flood-color-invalid.html) | Pass | 2 / 2 |  |  |

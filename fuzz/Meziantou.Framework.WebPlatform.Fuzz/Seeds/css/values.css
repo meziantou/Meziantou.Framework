@@ -1,0 +1,8 @@
+a { background-image: linear-gradient(red 0, blue), linear-gradient(to top left, red 0 50%, blue), radial-gradient(ellipse closest-side, red, blue 0); }
+b { background-image: radial-gradient(circle 10px, red, blue), radial-gradient(10px circle at left top, red, blue), radial-gradient(ellipse 10px 20% at center, red, blue), radial-gradient(closest-side ellipse in oklch, red, blue); }
+c { background-image: radial-gradient(circle 10px 10px, red, blue); background-image: radial-gradient(ellipse 10px, red, blue); background-image: radial-gradient(circle farthest-corner, red, blue); background-image: conic-gradient(red 0, blue); }
+d { border-shape: circle() border-box circle() content-box; border-shape: circle() half-border-box; border-shape: circle() margin-box circle() padding-box; }
+e { background-image: image(url(foo.png)); background-image: image(url(foo.png), red); background-image: image("foo.png"); background-image: image(rtl url(a.png)); }
+f { image-resolution: 2dpcm from-image; image-resolution: snap from-image 0dppx; image-resolution: snap -8dpcm from-image; image-resolution: snap 7.5dpi; }
+g { cursor: image-set(linear-gradient(red) 1x), pointer; cursor: image-set("a.png" 1x, url(b.png) 2x) 5 6, grab; cursor: -webkit-image-set(url(a.png) 1x), auto; }
+h { filter: drop-shadow(10px 10px -1px red); filter: drop-shadow(red 10px 10px 0); backdrop-filter: drop-shadow(10px 10px calc(-1px) red); --empty:; --space: ; }

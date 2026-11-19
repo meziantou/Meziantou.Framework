@@ -391,8 +391,9 @@ internal static partial class CssPropertyRules
     }
 
     /// <summary>
-    /// cursor (https://drafts.csswg.org/css-ui-4/#cursor): each image is a url() or an image-set() (or a light-dark() of
-    /// them), not a gradient, followed by no hotspot or two numbers, then a comma; the list ends with a keyword.
+    /// cursor (https://drafts.csswg.org/css-ui-4/#cursor): each image is a url() or an image-set() whose images are URLs or
+    /// strings (a &lt;url-set&gt;, https://drafts.csswg.org/css-ui-4/#typedef-cursor-url-set), or a light-dark() of them, not a
+    /// gradient, followed by no hotspot or two numbers, then a comma; the list ends with a keyword.
     /// </summary>
     private static bool IsValidCursor(CssPropertyDefinition property, List<CssComponentValue> significant)
     {
@@ -413,10 +414,18 @@ internal static partial class CssPropertyRules
             CssPreservedToken { Type: CssTokenType.Url } => true,
             CssFunction function => InfraAscii.ToAsciiLowercase(function.Name) switch
             {
-                "url" or "src" or "image-set" or "-webkit-image-set" => true,
+                "url" or "src" => true,
+                "image-set" or "-webkit-image-set" => SplitAtCommas(function.Value).TrueForAll(static option => option is [var source, ..] && IsUrlOrString(source)),
                 "light-dark" => SplitAtCommas(function.Value) is [[var light], [var dark]] && IsCursorImage(light) && IsCursorImage(dark),
                 _ => false,
             },
+            _ => false,
+        };
+
+        static bool IsUrlOrString(CssComponentValue value) => value switch
+        {
+            CssPreservedToken { Type: CssTokenType.Url or CssTokenType.String } => true,
+            CssFunction function => InfraAscii.ToAsciiLowercase(function.Name) is "url" or "src",
             _ => false,
         };
     }

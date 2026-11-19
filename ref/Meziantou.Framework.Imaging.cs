@@ -3288,6 +3288,12 @@ namespace Meziantou.Framework.Imaging.Drawing
         public PointLight(double x, double y, double z) { }
     }
 
+    public sealed class QuantizeFilter : Meziantou.Framework.Imaging.Drawing.Filter
+    {
+        public int BitsPerSample { get => throw null; }
+        public QuantizeFilter(int bitsPerSample) { }
+    }
+
     public sealed class RadialGradientBrush : Meziantou.Framework.Imaging.Drawing.GradientBrush
     {
         public Meziantou.Framework.Imaging.PointD Center { get => throw null; }

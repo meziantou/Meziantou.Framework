@@ -91,7 +91,7 @@ internal sealed partial class DisplayListRasterizer
                 var (localScaleX, localScaleY) = GetScaleFactors(transform);
                 var deviceScaleX = scale.X * localScaleX / pixelScaleX;
                 var deviceScaleY = scale.Y * localScaleY / pixelScaleY;
-                var frame = image.GetFrame(_colorSpace, preserveRange: _floatTarget);
+                var frame = image.GetFrame(_colorSpace, preserveRange: _floatTarget, _wideTarget);
                 var toNatural = pixelScaleX != 1 || pixelScaleY != 1 ? new AffineTransform(1 / pixelScaleX, 0, 0, 1 / pixelScaleY, 0, 0) : AffineTransform.Identity;
                 Meziantou.Framework.Imaging.Rectangle? region = null;
                 if (imageShader.SourceRect is { } sourceRect)
@@ -171,7 +171,7 @@ internal sealed partial class DisplayListRasterizer
                 if (content is null)
                     return null;
 
-                var filter = CreateFilter(filtered.Filters);
+                var filter = CreateRoundedFilter(filtered.Filters);
                 var rect = new RectangleD(0, 0, filtered.Size.Width, filtered.Size.Height);
                 return CreatePattern(rect, 0, 0, D.ImageWrapMode.Transparent, D.ImageWrapMode.Transparent, transform, canvas =>
                 {

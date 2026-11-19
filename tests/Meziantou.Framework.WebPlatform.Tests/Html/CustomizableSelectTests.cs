@@ -220,6 +220,22 @@ public sealed class CustomizableSelectTests : IDisposable
     }
 
     [Fact]
+    public void InsertingASelectedContent_PerformsThePendingUpdateOfTheSelect()
+    {
+        var document = Load("<select><button><selectedcontent></selectedcontent></button><option>one<option>two</select>");
+        var select = Select(document);
+        var selectedContent = document.QuerySelector("selectedcontent")!;
+        Assert.Equal("one", selectedContent.TextContent);
+
+        select.Options[0]!.Remove();
+        var inserted = document.CreateElement("selectedcontent");
+        document.QuerySelector("button")!.AppendChild(inserted);
+
+        Assert.Equal("two", selectedContent.TextContent);
+        Assert.Equal("two", inserted.TextContent);
+    }
+
+    [Fact]
     public void ListBoxWithBaseAppearance_TogglesTheOptions()
     {
         var document = Load("<button id=before>b</button><select multiple>" + Options + "</select><select size=3 id=single>" + Options.Replace("id=", "class=", StringComparison.Ordinal) + "</select>", "<style>body { margin: 0 } select { appearance: base-select }</style>");

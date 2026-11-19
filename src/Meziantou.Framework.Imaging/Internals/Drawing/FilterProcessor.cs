@@ -406,6 +406,33 @@ internal sealed class FilterProcessor : IDisposable
         BlurAxis(surface, Math.Min(sigmaY * _scaleY, GaussianKernel.MaxSigma), mode, horizontal: false);
     }
 
+    /// <summary>Rounds every value of a surface (the premultiplied colors and the alpha) to a multiple of <c>1 / max</c>.</summary>
+    public void Quantize(FilterSurface surface, int max)
+    {
+        var values = surface.Values;
+        var rowLength = 4 * surface.Bounds.Width;
+        for (var start = 0; start < values.Length; start += rowLength)
+        {
+            if (((start / rowLength) & 63) == 0)
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            Quantize(values.Slice(start, rowLength), max);
+        }
+    }
+
+    /// <summary>Rounds values (fractions of one) to a multiple of <c>1 / max</c>, to nearest with ties upward; a value that is not a number becomes zero.</summary>
+    internal static void Quantize(Span<float> values, int max)
+    {
+        var scale = (double)max;
+        for (var i = 0; i < values.Length; i++)
+        {
+            var rounded = Math.Floor((values[i] * scale) + 0.5);
+            values[i] = (float)(rounded >= max ? 1 : rounded > 0 ? rounded / scale : 0);
+        }
+    }
+
     /// <summary>Applies a color matrix to the straight colors of the pixels of a surface.</summary>
     public void ApplyColorMatrix(FilterSurface surface, ColorMatrix matrix) => ApplyColorMatrix(surface, matrix, surface.Bounds);
 

@@ -393,14 +393,7 @@
     "total": 4
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js": {
-    "harness": "TIMEOUT",
-    "total": 6,
-    "failures": {
-      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (XMLHttpRequest)": "TIMEOUT",
-      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (fetch())": "FAIL",
-      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (XMLHttpRequest)": "TIMEOUT",
-      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (fetch())": "FAIL"
-    }
+    "total": 6
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-header.window.js": {
     "total": 3
@@ -409,12 +402,7 @@
     "total": 3
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-while-navigating.window.js": {
-    "total": 9,
-    "failures": {
-      "document.open() aborts documents that are navigating through Location (image loading)": "FAIL",
-      "document.open() aborts documents that are navigating through iframe loading (image loading)": "FAIL",
-      "document.open() aborts documents that are queued for navigation through .click() (image loading)": "FAIL"
-    }
+    "total": 9
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort.sub.window.js": {
     "total": 5
@@ -583,10 +571,7 @@
     "total": 2
   },
   "html/webappapis/scripting/event-loops/document-without-browsing-context.window.js": {
-    "total": 7,
-    "failures": {
-      "Mutation observer watching template contents": "FAIL"
-    }
+    "total": 7
   },
   "html/webappapis/scripting/event-loops/microtask_after_raf.html": {
     "total": 1

@@ -25,7 +25,8 @@ public partial class Document
     /// The paint step of the rendering update for the canvases of the document (https://github.com/WICG/html-in-canvas: "this
     /// event fires just after intersection observer steps have run"): the snapshots of the drawable elements of each canvas are
     /// recorded, then the <c>paint</c> events are fired, "in reverse tree order", at the canvases whose drawable elements changed
-    /// or that requested one. The canvases that are no longer connected nor drawable are forgotten.
+    /// (also by the drawings of the paint events fired before, see <see cref="HtmlCanvasElement.UpdateCanvasImages"/>) or that
+    /// requested one. The canvases that are no longer connected nor drawable are forgotten.
     /// </summary>
     internal void RunCanvasPaintSteps()
     {
@@ -39,25 +40,28 @@ public partial class Document
         var canvases = GetInShadowIncludingTreeOrder(_renderedCanvases);
         var engine = GetLayoutEngine();
         engine.EnsureLayout();
-        var events = new List<(HtmlCanvasElement Canvas, List<Element> Changed)>();
+        var results = new List<(HtmlCanvasElement Canvas, List<Element> Changed, bool Fires)>();
         foreach (var canvas in canvases)
         {
-            switch (canvas.RecordSnapshots(engine))
+            if (canvas.RecordSnapshots(engine) is { } result)
             {
-                case null:
-                    _renderedCanvases.Remove(canvas);
-                    break;
-
-                case { Fires: true } result:
-                    events.Add((canvas, result.Changed));
-                    break;
+                results.Add((canvas, result.Changed, result.Fires));
+            }
+            else
+            {
+                _renderedCanvases.Remove(canvas);
             }
         }
 
-        for (var i = events.Count - 1; i >= 0; i--)
+        // The snapshots draw the current bitmaps of their canvases: the drawings of the paint event of a nested canvas (fired
+        // first) change the snapshot of its drawable ancestor recorded by this rendering update
+        for (var i = results.Count - 1; i >= 0; i--)
         {
-            var (canvas, changed) = events[i];
-            canvas.FireEvent(new CanvasPaintEvent("paint", new CanvasPaintEventInit { ChangedElements = changed }));
+            var (canvas, changed, fires) = results[i];
+            if (canvas.UpdateCanvasImages(changed) | fires)
+            {
+                canvas.FireEvent(new CanvasPaintEvent("paint", new CanvasPaintEventInit { ChangedElements = changed }));
+            }
         }
     }
 

@@ -497,24 +497,48 @@ internal sealed partial class ComputedStyle
     }
 
     /// <summary>
-    /// Returns the value of a property in a keyframe: its value, or the value of the logical property that maps to it (a
-    /// physical property wins over a logical property, https://drafts.csswg.org/web-animations-1/#calculating-computed-keyframes).
+    /// Returns the value of a property in a keyframe: its value, or the value of the logical property that maps to it. When
+    /// both are set, the later declaration wins in a keyframe of an @keyframes rule (https://drafts.csswg.org/css-logical-1/#box);
+    /// otherwise the value of an implicit keyframe (the underlying value) loses, then a longhand wins over a shorthand, and a
+    /// physical property over a logical property (https://drafts.csswg.org/web-animations-1/#calculating-computed-keyframes).
     /// </summary>
     private CssLonghandValue? GetKeyframeValue(ProcessedKeyframe keyframe, string property)
     {
-        if (keyframe.Longhands.TryGetValue(property, out var value))
-            return value;
-
+        var hasPhysical = keyframe.Longhands.TryGetValue(property, out var physical);
         if (!keyframe.HasFlowRelativeLonghands || CssPropertyRegistry.IsCustomProperty(property))
-            return null;
+            return hasPhysical ? physical : null;
 
+        string? logicalName = null;
+        CssLonghandValue logical = default;
         foreach (var (name, longhand) in keyframe.Longhands)
         {
             if (LogicalProperties.IsFlowRelative(name) && LogicalProperties.GetPhysicalProperty(name, this) == property)
-                return longhand;
+            {
+                logicalName = name;
+                logical = longhand;
+                break;
+            }
         }
 
-        return null;
+        if (logicalName is null)
+            return hasPhysical ? physical : null;
+
+        if (!hasPhysical)
+            return logical;
+
+        // The values of the implicit keyframes are not declared (their position is -1)
+        if (keyframe.DeclarationOrder is { } order)
+            return order.GetValueOrDefault(logicalName, -1) > order.GetValueOrDefault(property, -1) ? logical : physical;
+
+        var physicalIsImplicit = physical.Value == Animations.CssKeyframesResolver.NeutralValue;
+        var logicalIsImplicit = logical.Value == Animations.CssKeyframesResolver.NeutralValue;
+        if (physicalIsImplicit != logicalIsImplicit)
+            return physicalIsImplicit ? logical : physical;
+
+        // As in the browsers (WPT css/css-logical/animation-001.html), the number of longhands of the shorthands does not
+        // matter between a logical and a physical property: a physical shorthand wins over a logical shorthand
+        var fromShorthands = keyframe.LonghandsFromShorthands;
+        return fromShorthands is not null && !fromShorthands.Contains(logicalName) && fromShorthands.Contains(property) ? logical : physical;
     }
 
     /// <summary>

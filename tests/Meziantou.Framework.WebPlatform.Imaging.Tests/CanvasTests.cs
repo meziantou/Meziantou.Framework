@@ -994,6 +994,34 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void Layers_FilterResultsAreRoundedToPremultipliedEightBitColors()
+    {
+        var (_, _, context) = Create(200, 200);
+        context.BeginLayer(new BeginLayerOptions { Filter = "blur(10px)" });
+        context.FillStyle = "teal";
+        context.FillRect(50, 50, 100, 100);
+        context.EndLayer();
+
+        Assert.Equal([0, 128, 128, 254], GetPixel(context, 100, 72));
+        Assert.Equal([0, 129, 129, 254], GetPixel(context, 100, 73));
+    }
+
+    [Fact]
+    public void Canvas_TranslucentPixelsArePaintedAsPremultipliedEightBitColors()
+    {
+        // The browsers hold the premultiplied components of the canvas: (0, 128, 128, 254) is (0, 127, 127, 254) premultiplied,
+        // which gives 127 + 1 over white, where the straight color would give 128.498 (rounded to 129)
+        var context = _pages.Load("<body style='margin: 0'><canvas id=c width=4 height=4 style='display: block'></canvas>", scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)context.Document!.GetElementById("c")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.FillStyle = "rgba(0, 128, 128, 0.996)";
+        context2D.FillRect(0, 0, 4, 4);
+        Assert.Equal([0, 128, 128, 254], GetPixel(context2D, 1, 1));
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(new Rgba32(1, 128, 128, 255), screenshot.GetPixel(1, 1));
+    }
+
+    [Fact]
     public void Layers_ClearRectClearsTheLayer()
     {
         var (_, _, context) = Create(30, 10);
@@ -1338,6 +1366,19 @@ public sealed class CanvasTests : IDisposable
         Assert.Contains(pixels, value => value is > 0 and < 255);
     }
 
+    [Fact]
+    public void CanvasFilter_TurbulenceIsTheNoiseOfAnSvgFeTurbulenceElement()
+    {
+        var context = _pages.Load("<svg width=0 height=0><filter id=t><feTurbulence baseFrequency='0.05' numOctaves='2' seed='3'/></filter></svg><canvas id=a width=20 height=10></canvas><canvas id=b width=20 height=10></canvas>", scriptingEnabled: true);
+        var filtered = (CanvasRenderingContext2D)((HtmlCanvasElement)context.Document!.GetElementById("a")!).GetContext("2d")!;
+        var referenced = (CanvasRenderingContext2D)((HtmlCanvasElement)context.Document!.GetElementById("b")!).GetContext("2d")!;
+        filtered.Filter = new CanvasFilter(new Dictionary<string, object?> { ["name"] = "turbulence", ["baseFrequency"] = 0.05, ["numOctaves"] = 2, ["seed"] = 3 });
+        filtered.FillRect(0, 0, 1, 1);
+        referenced.Filter = "url(#t)";
+        referenced.FillRect(0, 0, 1, 1);
+        Assert.Equal(referenced.GetImageData(0, 0, 20, 10).Data.ToArray(), filtered.GetImageData(0, 0, 20, 10).Data.ToArray());
+    }
+
 #pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
     [Fact]
     public void CanvasFilter_IsTheFilterOfALayer()
@@ -1386,4 +1427,116 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal([0, 255, 0, 255], GetPixel(context, 15, 5));
     }
 #pragma warning restore WEBPLATEXP0021
+
+#pragma warning disable WEBPLATEXP0023
+    [Fact]
+    public void DrawElementImage_DrawsTheCurrentBitmapOfTheNestedCanvases()
+    {
+        var page = _pages.Load("""
+            <canvas id=c width=20 height=10 content=drawable>
+              <div drawable id=d style="width: 20px; height: 10px; background: red"><canvas id=n width=10 height=10 style="display: block"></canvas></div>
+            </canvas>
+            """, scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)page.Document!.GetElementById("c")!;
+        var nested = (HtmlCanvasElement)page.Document.GetElementById("n")!;
+        var element = page.Document.GetElementById("d")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        var events = new List<string>();
+        canvas.OnPaint = e => events.Add(string.Join('+', ((CanvasPaintEvent)e).ChangedElements.Select(changed => changed.Id)));
+
+        void Render()
+        {
+            _pages.Clock.Advance(TimeSpan.FromMilliseconds(20));
+            page.EventLoop.RunUntilIdle();
+        }
+
+        // (the canvases are rendered when scripting is enabled)
+        Render();
+        Assert.Equal(["d"], events);
+
+        // The snapshot was recorded before the nested canvas had a context: it draws its current bitmap
+        var nestedContext = (CanvasRenderingContext2D)nested.GetContext("2d")!;
+        nestedContext.FillStyle = "blue";
+        nestedContext.FillRect(0, 0, 10, 10);
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 15, 5));
+
+        // A change of the bitmap changes the snapshot once
+        Render();
+        Render();
+        Assert.Equal(["d", "d"], events);
+
+        // An element image draws the bitmap of the nested canvas when it was captured
+        var image = canvas.CaptureElementImage(element);
+        nestedContext.FillStyle = "lime";
+        nestedContext.FillRect(0, 0, 10, 10);
+        context.DrawElementImage(image, 0, 0);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 5, 5));
+    }
+
+    [Fact]
+    public void DrawElementImage_DrawsTheCanvasThatReplacedANestedCanvas()
+    {
+        var page = _pages.Load("""
+            <canvas id=c width=20 height=10 content=drawable>
+              <div drawable id=d style="width: 20px; height: 10px; background: red"><canvas id=n width=10 height=10 style="display: block"></canvas></div>
+            </canvas>
+            """, scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)page.Document!.GetElementById("c")!;
+        var nested = (HtmlCanvasElement)page.Document.GetElementById("n")!;
+        var element = page.Document.GetElementById("d")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        var nestedContext = (CanvasRenderingContext2D)nested.GetContext("2d")!;
+        nestedContext.FillStyle = "blue";
+        nestedContext.FillRect(0, 0, 10, 10);
+
+        void Render()
+        {
+            _pages.Clock.Advance(TimeSpan.FromMilliseconds(20));
+            page.EventLoop.RunUntilIdle();
+        }
+
+        Render();
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+
+        // A canvas with the same size and ID at the same place does not change the display list of the element: its snapshot draws the new canvas
+        var replacement = (HtmlCanvasElement)page.Document.CreateElement("canvas");
+        replacement.Width = 10;
+        replacement.Height = 10;
+        replacement.SetAttribute("style", "display: block");
+        replacement.Id = "n";
+        var replacementContext = (CanvasRenderingContext2D)replacement.GetContext("2d")!;
+        replacementContext.FillStyle = "lime";
+        replacementContext.FillRect(0, 0, 10, 10);
+        nested.ReplaceWith(replacement);
+        Render();
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 5, 5));
+    }
+
+    [Fact]
+    public void DrawElementImage_InlineDrawableElement()
+    {
+        var page = _pages.Load("""
+            <canvas id=c width=50 height=50 content=drawable>
+              <div style="width: 20px"><span drawable id=d style="color: lime">X XX<span style="position: fixed; left: 5px; top: 30px; width: 5px; height: 5px; background: blue"></span></span></div>
+            </canvas>
+            """, scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)page.Document!.GetElementById("c")!;
+        var element = page.Document.GetElementById("d")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(20));
+        page.EventLoop.RunUntilIdle();
+
+        // The fragments of the element on its two lines, and its fixed positioned descendant, which it contains
+        context.DrawElementImage(element, 0, 0, 40, 40, 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 5, 5));
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 15, 15));
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 7, 32));
+    }
+#pragma warning restore WEBPLATEXP0023
 }

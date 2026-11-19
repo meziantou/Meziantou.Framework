@@ -12,6 +12,27 @@ internal static class PixelConversions
     /// </summary>
     public static byte ToByte(ushort value) => (byte)(((value * 65280L) + (65535L * 129)) / (65535L * 256));
 
+    /// <summary>
+    /// Converts an 8-bit pixel (straight alpha) to the 16-bit pixel of its premultiplied 8-bit components, as a browser holds
+    /// the pixels of a canvas: each color <c>c</c> of alpha <c>a</c> becomes <c>round(c a / 255)</c> (to nearest, ties upward),
+    /// divided by the alpha. A straight 8-bit color rounded from such a component gives that component back.
+    /// </summary>
+    public static Rgba64 FromPremultipliedByte(Rgba32 pixel)
+    {
+        return pixel.A switch
+        {
+            0 => default,
+            255 => new Rgba64((ushort)(pixel.R * 257), (ushort)(pixel.G * 257), (ushort)(pixel.B * 257), ushort.MaxValue),
+            _ => new Rgba64(Convert(pixel.R, pixel.A), Convert(pixel.G, pixel.A), Convert(pixel.B, pixel.A), (ushort)(pixel.A * 257)),
+        };
+
+        static ushort Convert(byte color, byte alpha)
+        {
+            var premultiplied = ((color * alpha) + 127) / 255;
+            return (ushort)(((premultiplied * 65535L) + (alpha / 2)) / alpha);
+        }
+    }
+
     /// <summary>Converts 16-bit pixels to 8-bit RGBA bytes.</summary>
     public static void ToBytes(ReadOnlySpan<Rgba64> pixels, Span<byte> destination)
     {

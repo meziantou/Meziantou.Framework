@@ -126,7 +126,7 @@
     "total": 11
   },
   "css/css-ruby/nested-ruby-pairing-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-ruby/parsing/ruby-align-invalid.html": {
     "total": 4

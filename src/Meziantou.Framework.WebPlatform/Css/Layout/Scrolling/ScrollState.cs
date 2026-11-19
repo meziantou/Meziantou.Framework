@@ -64,15 +64,22 @@ internal sealed class ScrollState
     /// <summary>The style of the scroll container (of the root element for the viewport, null without root box): its scroll-snap-type and scroll-padding.</summary>
     internal LayoutStyle? ContainerStyle { get; set; }
 
+    /// <summary>
+    /// The overflow of the scrolling area below which a side does not scroll: the rounding errors of the sums of fractional sizes
+    /// (e.g. the rows of a list box laid out from its block-end side in <c>vertical-rl</c>, 1.4e-14px past its scrollport, WPT
+    /// css/css-writing-modes/forms/select-multiple-scrolling.optional.html), which the layout units of the browsers (1/64px) do not have.
+    /// </summary>
+    private const double OverflowTolerance = 1e-9;
+
     /// <summary>The smallest scroll position.</summary>
     public PhysicalOffset MinOffset => new(
-        ScrollContainers.IsScrollable(Overflow.X) ? Math.Min(0, ScrollingArea.Left - Scrollport.Left) : 0,
-        ScrollContainers.IsScrollable(Overflow.Y) ? Math.Min(0, ScrollingArea.Top - Scrollport.Top) : 0);
+        ScrollContainers.IsScrollable(Overflow.X) ? GetStartOverflow(ScrollingArea.Left - Scrollport.Left) : 0,
+        ScrollContainers.IsScrollable(Overflow.Y) ? GetStartOverflow(ScrollingArea.Top - Scrollport.Top) : 0);
 
     /// <summary>The largest scroll position.</summary>
     public PhysicalOffset MaxOffset => new(
-        ScrollContainers.IsScrollable(Overflow.X) ? Math.Max(0, ScrollingArea.Right - Scrollport.Right) : 0,
-        ScrollContainers.IsScrollable(Overflow.Y) ? Math.Max(0, ScrollingArea.Bottom - Scrollport.Bottom) : 0);
+        ScrollContainers.IsScrollable(Overflow.X) ? GetEndOverflow(ScrollingArea.Right - Scrollport.Right) : 0,
+        ScrollContainers.IsScrollable(Overflow.Y) ? GetEndOverflow(ScrollingArea.Bottom - Scrollport.Bottom) : 0);
 
     /// <summary>Whether the scrolling area is larger than the scrollport in an axis that scrolls (https://drafts.csswg.org/cssom-view/#scrolling-box: "has overflow").</summary>
     public bool HasOverflow => MinOffset != MaxOffset;
@@ -146,6 +153,12 @@ internal sealed class ScrollState
     /// scroll target anymore (https://drafts.csswg.org/css-scroll-snap-2/#post-first-layout-arrivals).
     /// </summary>
     internal bool IsScrolledByOperation { get; set; }
+
+    /// <summary>Returns how far the scrolling area extends past a start side of the scrollport (negative), or 0.</summary>
+    private static double GetStartOverflow(double difference) => difference < -OverflowTolerance ? difference : 0;
+
+    /// <summary>Returns how far the scrolling area extends past an end side of the scrollport, or 0.</summary>
+    private static double GetEndOverflow(double difference) => difference > OverflowTolerance ? difference : 0;
 
     /// <summary>Clamps a scroll position to the scrolling area (https://drafts.csswg.org/cssom-view/#scroll-an-element).</summary>
     public PhysicalOffset Clamp(PhysicalOffset position)

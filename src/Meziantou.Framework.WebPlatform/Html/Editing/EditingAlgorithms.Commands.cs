@@ -92,6 +92,48 @@ internal sealed partial class EditingAlgorithms
         return NormalizeColor(color) ?? value;
     }
 
+    /// <summary>
+    /// The editable Text node that ends before the boundary point in its parent, when only empty inline elements and
+    /// collapsed white space nodes are between them (the last Text node of a previous inline element is found in it); else
+    /// null.
+    /// </summary>
+    private Text? GetTextBeforeEmptyInlineContent(Node container, int offset)
+    {
+        var current = ChildAt(container, offset - 1);
+        var parent = container;
+        while (true)
+        {
+            if (current is null)
+            {
+                // The children of an inline element are exhausted: continue before it
+                if (ReferenceEquals(parent, container) || parent.ParentNode is not { } grandParent)
+                    return null;
+
+                current = parent.PreviousSibling;
+                parent = grandParent;
+                continue;
+            }
+
+            switch (current)
+            {
+                case Text text when IsCollapsedWhitespaceNode(text):
+                    current = text.PreviousSibling;
+                    break;
+
+                case Text text:
+                    return IsEditable(text) ? text : null;
+
+                case Element element when IsInlineNode(element) && IsEditable(element) && !IsAtomicElement(element) && !IsHtmlElement(element, VoidElementNames):
+                    parent = element;
+                    current = element.LastChild;
+                    break;
+
+                default:
+                    return null;
+            }
+        }
+    }
+
     private static bool IsInSelectElement(Node node)
     {
         for (var current = node; current is not null; current = current.ParentNode)
@@ -1911,9 +1953,19 @@ internal sealed partial class EditingAlgorithms
 
         // The text cannot be in a void element (e.g. a caret set in a br or in an hr): as in the browsers, it is inserted
         // before the element
+        var leftVoidElement = false;
         while (IsHtmlElement(range.StartContainer, VoidElementNames) && IsEditable(range.StartContainer) && range.StartContainer.ParentNode is { } voidParent)
         {
             CollapseTo(voidParent, NodeIndex(range.StartContainer));
+            leftVoidElement = true;
+        }
+
+        // As in Chrome and Safari, the text inserted before an inline void element is inserted at the end of the text that
+        // precedes it, after the empty inline elements and the collapsed white space between them (abc<span></span><br>
+        // gives abcdef<span></span><br>, and <span>abc</span><img> gives <span>abcdef</span><img>)
+        if (leftVoidElement && IsInlineNode(ChildAt(range.StartContainer, (int)range.StartOffset)) && GetTextBeforeEmptyInlineContent(range.StartContainer, (int)range.StartOffset) is { } textBeforeVoidElement)
+        {
+            CollapseTo(textBeforeVoidElement, NodeLength(textBeforeVoidElement));
         }
 
         // A link whose contents were deleted with a selection that goes out of it is removed (the text is not a part of it)

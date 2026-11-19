@@ -27,6 +27,11 @@ internal sealed class ImagingRenderingImage : RenderingImage
     private Image<RgbaHalf>? _extended;
     private Dictionary<RenderingColorSpace, Image<Rgba64>>? _normalizedImages;
 
+    // The pixels of a canvas of 8-bit components drawn on a bitmap of wider components, as a browser holds them (premultiplied
+    // 8-bit components), per frame of the image (the image, or its conversion to another color space)
+    private readonly bool _isPremultipliedBitmap;
+    private Dictionary<ImageFrame, Image<Rgba64>>? _premultipliedImages;
+
     // The image of the colors of a decoded image outside of the gamut of sRGB, and how it is decoded the first time
     private Func<ImagingRenderingImage?>? _wideGamutSource;
     private ImagingRenderingImage? _wideGamut;
@@ -45,6 +50,18 @@ internal sealed class ImagingRenderingImage : RenderingImage
 
     /// <summary>Creates an image that owns the pixels of an image (of <see cref="Rgba32"/> or <see cref="Rgba64"/> pixels) in a color space.</summary>
     public ImagingRenderingImage(Image image, RenderingColorSpace colorSpace)
+        : this(image, colorSpace, isPremultipliedBitmap: false)
+    {
+    }
+
+    /// <summary>Creates an image that owns the pixels of an image (of <see cref="Rgba32"/> or <see cref="Rgba64"/> pixels) in a color space.</summary>
+    /// <param name="image">The pixels.</param>
+    /// <param name="colorSpace">The color space of the pixels.</param>
+    /// <param name="isPremultipliedBitmap">
+    /// Whether the pixels are those of a bitmap that a browser holds as premultiplied components (a canvas): when its 8-bit
+    /// pixels are drawn on a bitmap of wider components, their colors are the ones of the premultiplied 8-bit components.
+    /// </param>
+    public ImagingRenderingImage(Image image, RenderingColorSpace colorSpace, bool isPremultipliedBitmap)
     {
         ArgumentNullException.ThrowIfNull(image);
         if (image is not (Image<Rgba32> or Image<Rgba64> or Image<RgbaHalf>))
@@ -54,6 +71,7 @@ internal sealed class ImagingRenderingImage : RenderingImage
         _width = image.Width;
         _height = image.Height;
         _colorSpace = colorSpace;
+        _isPremultipliedBitmap = isPremultipliedBitmap;
         _pixelFormat = image is Image<RgbaHalf> or Image<Rgba64> ? Dom.ImageDataPixelFormat.RgbaFloat16 : Dom.ImageDataPixelFormat.RgbaUnorm8;
     }
 
@@ -174,6 +192,44 @@ internal sealed class ImagingRenderingImage : RenderingImage
                     Dom.CanvasRenderingContext2DBase.CopyHalfToBytes(halves, destination[..length]);
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// Returns the frame of the pixels of the image in a color space (converted the first time), to draw on a bitmap. On a
+    /// bitmap of wider components than 8 bits, the 8-bit pixels of a canvas are drawn as the premultiplied 8-bit components
+    /// that a browser holds give them: each color <c>c</c> of alpha <c>a</c> is <c>round(c a / 255)</c> multiplied by the alpha,
+    /// so the canvas is composited on the page as in the browsers (its straight 8-bit colors are rounded from those values).
+    /// </summary>
+    /// <param name="colorSpace">The color space of the bitmap.</param>
+    /// <param name="preserveRange">Whether the colors outside of the gamut of the color space are kept (a bitmap of floating-point components).</param>
+    /// <param name="isWideTarget">Whether the bitmap has components of more than 8 bits.</param>
+    public ImageFrame GetFrame(RenderingColorSpace colorSpace, bool preserveRange, bool isWideTarget)
+    {
+        var frame = GetFrame(colorSpace, preserveRange);
+        if (!isWideTarget || !_isPremultipliedBitmap || frame is not ImageFrame<Rgba32> narrow)
+            return frame;
+
+        lock (_lock)
+        {
+            ObjectDisposedException.ThrowIf(_image is null, this);
+            _premultipliedImages ??= new(ReferenceEqualityComparer.Instance);
+            if (!_premultipliedImages.TryGetValue(frame, out var premultiplied))
+            {
+                var source = new Rgba32[narrow.Width * narrow.Height];
+                narrow.CopyPixelDataTo(source, 0);
+                var pixels = new Rgba64[source.Length];
+                for (var i = 0; i < source.Length; i++)
+                {
+                    pixels[i] = PixelConversions.FromPremultipliedByte(source[i]);
+                }
+
+                var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(pixels.AsSpan()));
+                premultiplied = Image.ImportPixelBytes<Rgba64>(bytes, narrow.Width, narrow.Height, narrow.Width * 8);
+                _premultipliedImages.Add(frame, premultiplied);
+            }
+
+            return premultiplied.Frames[0];
         }
     }
 
@@ -332,6 +388,16 @@ internal sealed class ImagingRenderingImage : RenderingImage
                 _wideGamut?.Dispose();
                 _wideGamut = null;
                 _wideGamutSource = null;
+                if (_premultipliedImages is not null)
+                {
+                    foreach (var image in _premultipliedImages.Values)
+                    {
+                        image.Dispose();
+                    }
+
+                    _premultipliedImages = null;
+                }
+
                 if (_normalizedImages is not null)
                 {
                     foreach (var image in _normalizedImages.Values)

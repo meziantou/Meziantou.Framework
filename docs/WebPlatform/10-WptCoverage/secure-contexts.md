@@ -9,17 +9,11 @@ description: "The results of the web-platform-tests of secure-contexts, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 11 | 12 | 0 | 92% |
+| [Stable](#stable-tests) | 12 | 12 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **13** | **14** | **0** | **93%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 1
+| **All** | **14** | **14** | **0** | **100%** |
 
 ## Stable tests
 
@@ -32,7 +26,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`basic-shared-worker.html`](https://wpt.fyi/results/secure-contexts/basic-shared-worker.html) | Pass | 5 / 5 |  |  |
 | [`basic-shared-worker.https.html`](https://wpt.fyi/results/secure-contexts/basic-shared-worker.https.html) | Pass | 5 / 5 |  |  |
 | [`detached-iframe.html`](https://wpt.fyi/results/secure-contexts/detached-iframe.html) | Pass | 1 / 1 |  |  |
-| [`nested-data-url-iframe.html`](https://wpt.fyi/results/secure-contexts/nested-data-url-iframe.html) | Fail | 5 / 6 | BUG | 1 of 6 subtests: the initial about:blank document of a popup opened by a `data:` URL iframe is a secure context: `Window.isSecureContext` only checks the documents of the navigable and of its ancestors, while the top-level creation URL of a new top-level browsing context is the one of its creator (https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context, step 11), here the non-secure URL of the test document, and a secure context is decided by that URL (https://html.spec.whatwg.org/multipage/webappapis.html#secure-context) |
+| [`nested-data-url-iframe.html`](https://wpt.fyi/results/secure-contexts/nested-data-url-iframe.html) | Pass | 6 / 6 |  |  |
 | [`nested-data-url-iframe.https.html`](https://wpt.fyi/results/secure-contexts/nested-data-url-iframe.https.html) | Pass | 6 / 6 |  |  |
 | [`sandboxed-iframe-child.https.html`](https://wpt.fyi/results/secure-contexts/sandboxed-iframe-child.https.html) | Pass | 1 / 1 |  |  |
 | [`shared-worker-insecure-first.https.html`](https://wpt.fyi/results/secure-contexts/shared-worker-insecure-first.https.html) | Pass | 4 / 4 |  |  |

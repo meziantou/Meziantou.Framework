@@ -310,7 +310,8 @@ internal sealed partial class TableLayoutAlgorithm
     /// <param name="percentageBasis">The inline size of the containing block of the table wrapper box, or null when it is indefinite.</param>
     /// <param name="captionMin">CAPMIN: the largest min-content contribution of the captions.</param>
     /// <param name="percentageBlockSize">The block size of the containing block of the table when it is definite (for an <c>aspect-ratio</c>).</param>
-    public double ComputeTableInlineSize(double availableInlineSize, double? percentageBasis, double captionMin, double? percentageBlockSize = null)
+    /// <param name="inlineMargins">The inline margins of the table wrapper box, which <c>fit-content(&lt;length-percentage&gt;)</c> subtracts from its argument.</param>
+    public double ComputeTableInlineSize(double availableInlineSize, double? percentageBasis, double captionMin, double? percentageBlockSize = null, double inlineMargins = 0)
     {
         var grid = ComputeGridIntrinsicSizes();
         var edges = Border.InlineSum() + GetPadding(percentageBasis ?? 0).InlineSum();
@@ -323,6 +324,7 @@ internal sealed partial class TableLayoutAlgorithm
             PaddingAndBorder = edges,
             Edges = edges,
             StretchSize = Math.Max(availableInlineSize, edges),
+            Margins = inlineMargins,
         };
 
         // An auto (or fit-content) width is the fit-content size in the available space, where the percentage columns may make
@@ -613,10 +615,13 @@ internal sealed partial class TableLayoutAlgorithm
         IntrinsicSizes content;
         if (WritingDirection.FromStyle(layout).IsOrthogonalTo(_writingDirection))
         {
-            // An orthogonal cell contributes its block size (the margins of the cells are ignored)
+            // An orthogonal cell contributes its block size (the margins of the cells are ignored), with the borders of the cell in
+            // the table (the halves of the collapsed borders in the collapsing border model, WPT
+            // css/css-writing-modes/orthogonal-cell-rowspan-003.html) instead of the borders of its style
             var contribution = IntrinsicSizing.GetContribution(_context, cell.Box, _writingDirection, containingBlockBlockSize: null);
             var margins = _writingDirection.ToLogical(FormattingContext.ResolveMargins(boxModel, 0)).InlineSum();
-            content = contribution.Add(-margins);
+            var styleBorders = _writingDirection.ToLogical(boxModel.BorderWidth).InlineSum();
+            content = contribution.Add(cell.Border.InlineSum() - styleBorders - margins);
         }
         else
         {

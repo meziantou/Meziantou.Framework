@@ -212,6 +212,10 @@ displayed a new scroll position, `framesExpected` the frames at 60 Hz during the
 an instant scroll is displayed by one frame), and `checkerboardTime` is 0. The scrolls of the scripts (`scrollTo()`...)
 are not reported.
 
+As in the browsers, a scroll of the user also stops the reporting of the `largest-contentful-paint` and `container`
+performance entries of the window, as a key press, a pointer press or a click does. The scrolls of the scripts do not
+stop them.
+
 ## Run the event loop on your own thread
 
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is

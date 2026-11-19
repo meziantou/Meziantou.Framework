@@ -76,5 +76,5 @@ public sealed class GamutMappingTests
     }
 
     [Fact]
-    public void Rec2020UsesThePiecewiseTransferFunction() => AssertColor((0, 128, 0), Paint("color(rec2020 0.235202 0.431704 0.085432)"));
+    public void Rec2020UsesThePure24GammaTransferFunction() => AssertColor((0, 128, 0), Paint("color(rec2020 0.3323222 0.5097924 0.1917788)"));
 }

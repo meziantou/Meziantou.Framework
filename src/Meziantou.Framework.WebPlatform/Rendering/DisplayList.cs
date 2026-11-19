@@ -335,10 +335,13 @@ internal sealed class DisplayListBuilder
     /// Saves the state before drawing the content of another document for a node (e.g. an SVG image of an element): the operations
     /// until the matching restore are the paint of <paramref name="source"/> (for the paint timing).
     /// </summary>
-    public void Save(Node source)
+    /// <returns>The operation that saves the state.</returns>
+    public SaveItem Save(Node source)
     {
-        _items.Add(new SaveItem { Source = source });
+        var item = new SaveItem { Source = source };
+        _items.Add(item);
         SaveCount++;
+        return item;
     }
 
     public void SaveLayer(SaveLayerItem layer)

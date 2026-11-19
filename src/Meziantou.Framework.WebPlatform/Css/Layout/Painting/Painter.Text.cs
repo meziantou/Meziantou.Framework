@@ -156,7 +156,7 @@ internal sealed partial class Painter
                     {
                         if (segment.Highlight == i)
                         {
-                            PaintGlyphsBetween(segment.Start, segment.End, highlight.Color!.Value, highlight.Stroke.ToPaint());
+                            PaintRecoloredGlyphs(segment.Start, segment.End, highlight, underBackgrounds: false);
                         }
                     }
                 }
@@ -178,6 +178,10 @@ internal sealed partial class Painter
                 {
                     PaintPart(position, segment.Start);
                     position = segment.End;
+                    if (underBackgrounds)
+                    {
+                        PaintRecoloredGlyphs(segment.Start, segment.End, highlights![segment.Highlight], underBackgrounds: true);
+                    }
                 }
             }
 
@@ -199,7 +203,7 @@ internal sealed partial class Painter
                 foreach (var (rangeStart, rangeEnd) in backgrounds.Ranges)
                 {
                     // (the ranges are disjoint: a part outside of them is before or after each background)
-                    PaintOutsideBackgrounds(current, Math.Min(end, rangeStart));
+                    PaintOutsideBackgrounds(current, Math.Min(end, rangeStart), underBackgrounds, fill, textStroke);
                     if (!underBackgrounds)
                     {
                         PaintGlyphsBetween(Math.Max(current, rangeStart), Math.Min(end, rangeEnd), fill, textStroke);
@@ -208,52 +212,76 @@ internal sealed partial class Painter
                     current = Math.Max(current, rangeEnd);
                 }
 
-                PaintOutsideBackgrounds(current, end);
+                PaintOutsideBackgrounds(current, end, underBackgrounds, fill, textStroke);
+            }
+        }
 
-                void PaintOutsideBackgrounds(double from, double to)
+        // Paints the glyphs of a part of the text recolored by a highlight. As the text that is not highlighted, the ink of its
+        // glyphs that overhangs the background of another highlight after them (e.g. the antialiased edge of the last glyph of a
+        // highlight followed by another one) is painted under that background, as the text of an inline box is under the
+        // background of the next inline box. The text of the selection, the topmost overlay, is over all the backgrounds
+        void PaintRecoloredGlyphs(double start, double end, in TextHighlight highlight, bool underBackgrounds)
+        {
+            var color = highlight.Color!.Value;
+            var stroke = highlight.Stroke.ToPaint();
+            if (highlightBackgrounds is null || highlight.IsSelection)
+            {
+                if (!underBackgrounds)
                 {
-                    if (to <= from)
-                        return;
+                    PaintGlyphsBetween(start, end, color, stroke);
+                }
 
-                    // The backgrounds over the glyphs: the ones of the selection, and the ones of the other highlights after the
-                    // glyphs (in the order of the text)
-                    var forward = fragment.ShapedText is not { IsRightToLeft: true };
-                    DisplayPath? inside = null;
-                    _builder.Save();
-                    foreach (var background in backgrounds.Backgrounds)
-                    {
-                        var before = forward ? to <= background.Start : from >= background.End;
-                        var after = forward ? from >= background.End : to <= background.Start;
-                        if (!before && !(after && background.IsSelection))
-                            continue;
+                return;
+            }
 
-                        if (underBackgrounds)
-                        {
-                            inside ??= new DisplayPath();
-                            inside.AddRect(background.Rect);
-                        }
-                        else
-                        {
-                            var outside = new DisplayPath { FillRule = FillRule.EvenOdd };
-                            outside.AddRect(new PhysicalRect(-UnclippedExtent, -UnclippedExtent, 2 * UnclippedExtent, 2 * UnclippedExtent));
-                            outside.AddRect(background.Rect);
-                            _builder.Add(new ClipPathItem(outside, AntiAlias: false));
-                        }
-                    }
+            PaintOutsideBackgrounds(start, end, underBackgrounds, color, stroke);
+        }
 
-                    if (!underBackgrounds || inside is not null)
-                    {
-                        if (inside is not null)
-                        {
-                            _builder.Add(new ClipPathItem(inside, AntiAlias: false));
-                        }
+        // Paints the glyphs between two positions that are outside of the backgrounds of the highlights: the part of their ink
+        // over the backgrounds that are painted over them is painted under the backgrounds (underBackgrounds), the rest of it
+        // over them
+        void PaintOutsideBackgrounds(double from, double to, bool underBackgrounds, DisplayColor color, DisplayPaint? stroke)
+        {
+            if (to <= from)
+                return;
 
-                        PaintGlyphsBetween(from, to, fill, textStroke);
-                    }
+            // The backgrounds over the glyphs: the ones of the selection, and the ones of the other highlights after the
+            // glyphs (in the order of the text)
+            var forward = fragment.ShapedText is not { IsRightToLeft: true };
+            DisplayPath? inside = null;
+            _builder.Save();
+            foreach (var background in highlightBackgrounds!.Value.Backgrounds)
+            {
+                var before = forward ? to <= background.Start : from >= background.End;
+                var after = forward ? from >= background.End : to <= background.Start;
+                if (!before && !(after && background.IsSelection))
+                    continue;
 
-                    _builder.Restore();
+                if (underBackgrounds)
+                {
+                    inside ??= new DisplayPath();
+                    inside.AddRect(background.Rect);
+                }
+                else
+                {
+                    var outside = new DisplayPath { FillRule = FillRule.EvenOdd };
+                    outside.AddRect(new PhysicalRect(-UnclippedExtent, -UnclippedExtent, 2 * UnclippedExtent, 2 * UnclippedExtent));
+                    outside.AddRect(background.Rect);
+                    _builder.Add(new ClipPathItem(outside, AntiAlias: false));
                 }
             }
+
+            if (!underBackgrounds || inside is not null)
+            {
+                if (inside is not null)
+                {
+                    _builder.Add(new ClipPathItem(inside, AntiAlias: false));
+                }
+
+                PaintGlyphsBetween(from, to, color, stroke);
+            }
+
+            _builder.Restore();
         }
 
         // The shadows of the highlighted characters, the first one on top

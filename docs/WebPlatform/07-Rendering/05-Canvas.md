@@ -48,6 +48,12 @@ using var screenshot = canvas.TakeScreenshot();
 - The bitmap of a canvas has 8 bits per component by default. Request [CanvasColorType.Float16](cref:Meziantou.Framework.WebPlatform.Dom.CanvasColorType.Float16)
   in [CanvasRenderingContext2DSettings.ColorType](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings.ColorType) to use half-float pixels. [ToDataUrl()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToDataUrl) and [ToBlob()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToBlob) serialize it as PNG,
   JPEG or WebP.
+- The browsers hold the 8-bit pixels of a canvas multiplied by their alpha. The page paints a canvas with those values:
+  a translucent pixel `(0, 128, 128, 254)` is painted as `(0, 127, 127)` multiplied by its alpha (127.498 rounded),
+  as in the browsers. `GetImageData()` still returns the straight colors.
+- The result of a filter that reads other pixels than the one it computes (a blur, a shadow, most SVG primitives) is rounded
+  to 8-bit components multiplied by their alpha, as the browsers draw it on an 8-bit texture: the result of the same filter
+  in a canvas and on an element of the page is the same. Color filters (`invert()`, `feColorMatrix`...) are not rounded.
 - A canvas is rendered only when scripting is enabled: as in a browser, a page without scripting shows the fallback
   content of the `canvas` element. Set [ScriptingEnabled](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ScriptingEnabled) (or give a script engine) when you draw from .NET.
 - [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) works the same way, also in the workers.
@@ -174,7 +180,8 @@ A [CanvasFilter](cref:Meziantou.Framework.WebPlatform.Dom.CanvasFilter) describe
 primitives instead of CSS filter functions. It is the [Filter](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.Filter)
 of a context, or the filter of a layer. Each primitive is a dictionary whose `name` is `gaussianBlur`, `dropShadow`,
 `colorMatrix`, `componentTransfer`, `convolveMatrix` or `turbulence`, and whose other entries are the attributes of the
-SVG primitive (`stdDeviation`, `dx`, `floodColor`, `funcR`, `kernelMatrix`, `baseFrequency`...):
+SVG primitive (`stdDeviation`, `dx`, `floodColor`, `funcR`, `kernelMatrix`, `baseFrequency`...). The primitives apply in
+sRGB, except `turbulence`, whose noise is generated in linearRGB as the one of `feTurbulence`:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasFilters;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -288,11 +295,22 @@ using var screenshot = canvas.TakeScreenshot();
 
 ![A blue label with white text, drawn rotated in the middle of a canvas](images/CanvasDrawElementImage.png)
 
-- Each rendering update records a snapshot of each drawable element (its stacking context, without its CSS transform and
-  without its drawable descendants), then fires the `paint` event ([CanvasPaintEvent](cref:Meziantou.Framework.WebPlatform.Dom.CanvasPaintEvent))
+- The children of the box of a canvas whose `content` is `drawable` (also the children of a child that is `display: contents`)
+  are blockified and statically positioned.
+- A canvas whose `content` is `drawable` is a stacking context, as each of its drawable elements, which is also the
+  containing block of all its descendants and establishes an independent formatting context (the margins of its children
+  do not collapse through it). The snapshot of an inline drawable element on several lines draws all its fragments, from
+  the union of their border boxes, with its positioned descendants (also the fixed positioned ones, which it contains).
+- Each rendering update records a snapshot of each drawable element (its stacking context with its CSS transform, in the
+  coordinates of its border box before the transform, without its drawable descendants), then fires the `paint` event ([CanvasPaintEvent](cref:Meziantou.Framework.WebPlatform.Dom.CanvasPaintEvent))
   at the canvases whose drawable elements changed, in reverse tree order. [RequestPaint](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.RequestPaint)
   fires it at the next rendering update even when nothing changed. `DrawElementImage()` draws the last snapshot, and throws
   an `InvalidStateError` before the first one.
+- A snapshot refers to the canvases of the element (as in Chromium): `DrawElementImage()` draws their current bitmap, so the
+  drawings made by the `paint` event of a nested canvas, which fires first, are drawn with the snapshot recorded by the same
+  rendering update, and a change of their bitmap fires the `paint` event of the canvas. An element image
+  ([CaptureElementImage](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.CaptureElementImage)) keeps the bitmaps
+  of the time it was captured. A canvas that is not origin-clean (tainted by cross-origin data) is not drawn.
 - The default size of an element image is the size of its border box scaled by the ratio of the size of the bitmap to the
   size of the canvas ([GetElementImageDefaultSize](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.GetElementImageDefaultSize)).
   The source rectangle of `DrawElementImage()` can extend beyond the border box to include the ink overflow.
@@ -308,7 +326,7 @@ using var screenshot = canvas.TakeScreenshot();
   [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) of the canvas in a worker (it is transferable): the
   geometry updates of an `OffscreenCanvas` are applied in the event loop of the canvas, which fires an `elementgeometryupdate` event.
 - The snapshots paint the cross-origin images and iframes and the colors of the visited links: the proposal excludes them
-  (read-back-allowed rendering), the library does not yet. WebGL and WebGPU are not supported, so `texElementSubImage2D()` and
+  (read-back-allowed rendering), the library does not yet (it only excludes the canvases tainted by cross-origin data). WebGL and WebGPU are not supported, so `texElementSubImage2D()` and
   `drawElementImageToTexture()` are not available.
 - The API is experimental (`WEBPLATEXP0023`, see [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts of the page use
   it without restriction.

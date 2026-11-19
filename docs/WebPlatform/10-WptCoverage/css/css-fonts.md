@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **TEST BUG**: 20
+- **TEST BUG**: 21
 - **NOT IMPLEMENTED**: 5
 - **REQUIRES**: 1
   - `layout`: 1
@@ -540,7 +539,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ric-in-monospace.html`](https://wpt.fyi/results/css/css-fonts/ric-in-monospace.html) | Pass | 1 / 1 |  |  |
 | [`rlh-in-monospace.html`](https://wpt.fyi/results/css/css-fonts/rlh-in-monospace.html) | Pass | 1 / 1 |  |  |
 | [`rtl-glyph-extents.html`](https://wpt.fyi/results/css/css-fonts/rtl-glyph-extents.html) | Pass | 1 / 1 |  |  |
-| [`separators.html`](https://wpt.fyi/results/css/css-fonts/separators.html) | Fail | 0 / 1 | BUG | U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR force a line break and are painted with their glyph (the `L` and `P` boxes of the test font): the test expects them to be rendered as a space, without line break (only Chrome passes), where `css/css-text/line-breaking/line-breaking-022.html` expects the forced line break of UAX #14 (class BK) |
+| [`separators.html`](https://wpt.fyi/results/css/css-fonts/separators.html) | Fail | 0 / 1 | TEST BUG | expects U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR to be rendered as a space, without line break (citing the Unicode FAQ on unsupported characters, only Chrome passes); https://drafts.csswg.org/css-text-3/#line-break-details treats the characters of the UAX #14 classes BK and NL as forced line breaks (checked by WPT css/css-text/line-breaking/line-breaking-022.html, which the library passes): the library breaks the line at them (and paints the `L` and `P` glyphs of the test font for them) |
 | [`size-adjust-01.html`](https://wpt.fyi/results/css/css-fonts/size-adjust-01.html) | Pass | 1 / 1 |  |  |
 | [`size-adjust-02.html`](https://wpt.fyi/results/css/css-fonts/size-adjust-02.html) | Pass | 1 / 1 |  |  |
 | [`size-adjust-03.html`](https://wpt.fyi/results/css/css-fonts/size-adjust-03.html) | Pass | 1 / 1 |  |  |

@@ -2166,12 +2166,7 @@
     "total": 4
   },
   "fetch/h1-parsing/status-code.window.js": {
-    "total": 16,
-    "failures": {
-      "HTTP/1.1 0 OK ": "FAIL",
-      "HTTP/1.1 1 OK ": "FAIL",
-      "HTTP/1.1 99 NOT OK ": "FAIL"
-    }
+    "total": 16
   },
   "fetch/http-cache/304-update.any.js": {
     "total": 5
@@ -2183,7 +2178,7 @@
     "total": 5
   },
   "fetch/http-cache/basic-auth-cache-test.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "fetch/http-cache/cache-mode.any.js": {
     "total": 5

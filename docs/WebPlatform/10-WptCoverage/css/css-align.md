@@ -19,7 +19,8 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
+- **TEST BUG**: 1
 
 ## Stable tests
 
@@ -282,7 +283,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`abspos/align-self-static-position-004.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-004.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-static-position-005.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-005.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-static-position-006.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-006.html) | Pass | 1 / 1 |  |  |
-| [`abspos/align-self-static-position-007.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-007.html) | Fail | 0 / 1 | BUG | an absolutely positioned `display: block` box with `direction: ltr` whose parent is an inline box with `direction: rtl`: its static-position rectangle is on the next line (the line after the content that precedes it, as for the other block-level boxes of an inline box), where Blink uses the line of that content (the box is 25px too low with `align-self: self-start` and `self-end`); only Chrome passes |
+| [`abspos/align-self-static-position-007.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-007.html) | Fail | 0 / 1 | TEST BUG | an absolutely positioned `display: block` box with `direction: ltr` whose parent is an inline box with `direction: rtl`: its static-position rectangle is on the next line (the line after the content that precedes it, as for the other block-level boxes of an inline box), where Blink uses the line of that content (the box is 25px too low with `align-self: self-start` and `self-end`); only Chrome passes. The static position of a block-level box is the one of its hypothetical box with `position: static` (https://drafts.csswg.org/css2/#abs-non-replaced-height), a block-level box that splits the inline box, after the line of the content before it (https://drafts.csswg.org/css2/#anonymous-block-level), as for the other block-level boxes of an inline box: the expected position is a behavior of Blink for an inline parent with `direction: rtl` |
 | [`abspos/align-self-static-position-008.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-static-position-008.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-stretch-auto-margins-aspect-ratio.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-stretch-auto-margins-aspect-ratio.html) | Pass | 1 / 1 |  |  |
 | [`abspos/align-self-stretch-auto-margins.html`](https://wpt.fyi/results/css/css-align/abspos/align-self-stretch-auto-margins.html) | Pass | 1 / 1 |  |  |

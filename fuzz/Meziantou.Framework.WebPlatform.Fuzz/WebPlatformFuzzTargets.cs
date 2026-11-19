@@ -110,6 +110,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-user-scroll", UserScroll) { Seeds = GetUserScrollSeeds, Dictionary = UserScrollTokens },
         new("webplatform-entries-path", data => EntriesPathResolution(FuzzText.Decode(data))) { Seeds = GetEntriesPathSeeds, Dictionary = EntriesPathTokens },
         new("webplatform-drag-and-drop", DragAndDrop) { Seeds = GetDragAndDropSeeds, Dictionary = DragTokens },
+        new("webplatform-speculation-rules", data => SpeculationRules(FuzzText.Decode(data))) { Seeds = GetSpeculationRulesSeeds, Dictionary = SpeculationRulesTokens },
     ];
 
     /// <summary>

@@ -61,6 +61,16 @@ public sealed class CssAnimationsTests : IDisposable
         Assert.Equal("50px", GetComputed(document.GetElementById("target")!, "width"));
     }
 
+    [Theory]
+    [InlineData("from { height: 100px; block-size: 200px } to { block-size: 100px; height: 300px }", "250px")]
+    [InlineData("from { block-size: 200px } to { height: 300px }", "250px")]
+    [InlineData("from { block-size: 0px; height: 200px } to { height: 300px; block-size: 100px }", "150px")]
+    public void LogicalAndPhysicalPropertiesOfAKeyframe_AreResolvedInDeclarationOrder(string keyframes, string expected)
+    {
+        var document = Load($"<style>@keyframes a {{ {keyframes} }} #target {{ animation: a 10s -5s paused linear }}</style><div id=target></div>");
+        Assert.Equal(expected, GetComputed(document.GetElementById("target")!, "height"));
+    }
+
     [Fact]
     public void ImportantDeclarationsInKeyframesAreIgnored()
     {

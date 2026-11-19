@@ -492,15 +492,27 @@ public sealed class GridFormattingContextTests : IDisposable
     }
 
     [Fact]
-    public void FlexibleSpanningItem_MinContentSizeKeepsTheMinimumContribution()
+    public void FlexibleSpanningItem_MinContentSizeUsesTheLimitedMinContentContribution()
     {
-        // WPT css/css-grid/grid-flex-spanning-items-001.html
+        // WPT css/css-grid/grid-flex-spanning-items-001.html: under a min-content constraint, the "For intrinsic minimums" step
+        // uses the limited min-content contribution of the item, which the flexible track accommodates
         var document = Parse("""
             <div id=g style='display: grid; grid-template-columns: 1fr 30px; width: min-content'>
               <div style='grid-column: 1 / span 2'><div style='width: 300px; height: 50px'></div></div>
             </div>
             """);
-        Assert.Equal(30, GetRect(document, "g").Width);
+        Assert.Equal(300, GetRect(document, "g").Width);
+        Assert.Equal("270px 30px", GetComputed(document, "g", "grid-template-columns"));
+    }
+
+    [Fact]
+    public void AutoTracks_UnderMaxContentConstraint_BaseSizeIsTheLimitedMinContentContribution()
+    {
+        // WPT css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html: the base size of the second track is the
+        // min-content contribution of its item (20px), so the spanning item distributes its max-content contribution (80px) to
+        // both tracks (30px and 50px), which then grow to their growth limits (30px and 80px)
+        var document = Parse("<div id=g style='display: grid; grid-template-columns: auto auto; width: max-content'><div style='grid-column: 1 / span 2'>XX XX XX</div><div style='grid-column: 2'>XX XX XX</div></div>");
+        Assert.Equal(110, GetRect(document, "g").Width);
     }
 
     [Fact]

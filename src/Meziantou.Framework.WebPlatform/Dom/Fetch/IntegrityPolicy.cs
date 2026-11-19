@@ -157,11 +157,14 @@ internal sealed class IntegrityPolicy
         return block;
     }
 
-    /// <summary>https://w3c.github.io/webappsec-subresource-integrity/#report-violation: a report for each endpoint of the policies.</summary>
+    /// <summary>
+    /// https://w3c.github.io/webappsec-subresource-integrity/#report-violation: a report for each endpoint of the policies. The
+    /// blocked URL is the URL of the request (the first URL of its URL list), not the target of a redirect.
+    /// </summary>
     private static void ReportViolation(GlobalScope global, Document client, FetchRequest request, IntegrityPolicy? policy, IntegrityPolicy? reportPolicy)
     {
         var documentUrl = ContentSecurityPolicyViolation.StripUrlForUseInReports(client.UrlRecord);
-        var blockedUrl = ContentSecurityPolicyViolation.StripUrlForUseInReports(request.CurrentUrl);
+        var blockedUrl = ContentSecurityPolicyViolation.StripUrlForUseInReports(request.Url);
         var destination = FetchMetadata.GetDestinationName(request.Destination);
         foreach (var (reportedPolicy, reportOnly) in new[] { (policy, false), (reportPolicy, true) })
         {

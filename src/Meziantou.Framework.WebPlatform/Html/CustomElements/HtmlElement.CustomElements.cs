@@ -73,7 +73,7 @@ public partial class HtmlElement
         var data = FormAssociatedCustomElementData;
         if (IsConnected && HasAttributeWithLocalName("form"))
         {
-            NodeDocument.RegisterFormAttributeCustomElement(this);
+            NodeDocument.RegisterFormAttributeElement(this);
         }
 
         var owner = FormOwner;
@@ -209,44 +209,55 @@ public partial class HtmlElement
 
 public partial class Document
 {
-    private List<WeakReference<HtmlElement>>? _formAttributeCustomElements;
+    private List<WeakReference<HtmlElement>>? _formAttributeElements;
 
-    /// <summary>Registers a form-associated custom element with a form attribute, whose form owner depends on the IDs of the tree.</summary>
-    internal void RegisterFormAttributeCustomElement(HtmlElement element)
+    /// <summary>
+    /// Registers a form-associated custom element or an input element with a form attribute, whose form owner depends on the
+    /// IDs of the tree.
+    /// </summary>
+    internal void RegisterFormAttributeElement(HtmlElement element)
     {
-        _formAttributeCustomElements ??= [];
-        foreach (var reference in _formAttributeCustomElements)
+        _formAttributeElements ??= [];
+        foreach (var reference in _formAttributeElements)
         {
             if (reference.TryGetTarget(out var existing) && ReferenceEquals(existing, element))
                 return;
         }
 
-        _formAttributeCustomElements.Add(new WeakReference<HtmlElement>(element));
+        _formAttributeElements.Add(new WeakReference<HtmlElement>(element));
     }
 
     /// <summary>
-    /// Resets the form owner of the form-associated custom elements with a form attribute, when an element with an ID is
-    /// inserted into or removed from the document, or when the ID of an element changes.
+    /// Resets the form owner of the form-associated custom elements and of the input elements with a form attribute, when an
+    /// element with an ID is inserted into or removed from the document, or when the ID of an element changes: the form owner of
+    /// a radio button may change, so the other radio buttons of its new group are unchecked when it is checked.
     /// </summary>
-    internal void OnIdChangedForFormAttributeCustomElements()
+    internal void OnIdChangedForFormAttributeElements()
     {
-        if (_formAttributeCustomElements is null)
+        if (_formAttributeElements is null)
             return;
 
-        foreach (var reference in _formAttributeCustomElements.ToArray())
+        foreach (var reference in _formAttributeElements.ToArray())
         {
             if (!reference.TryGetTarget(out var element))
             {
-                _formAttributeCustomElements.Remove(reference);
+                _formAttributeElements.Remove(reference);
                 continue;
             }
 
-            if (ReferenceEquals(element.NodeDocument, this) && element.IsCustomizedFormAssociatedCustomElement && element.HasAttributeWithLocalName("form"))
+            if (!ReferenceEquals(element.NodeDocument, this) || !element.HasAttributeWithLocalName("form"))
+                continue;
+
+            if (element.IsCustomizedFormAssociatedCustomElement)
             {
                 element.ResetFormOwnerOfFormAssociatedCustomElement();
+            }
+            else if (element is HtmlInputElement input)
+            {
+                input.OnFormOwnerMayHaveChanged();
             }
         }
     }
 
-    internal bool HasFormAttributeCustomElements => _formAttributeCustomElements is { Count: > 0 };
+    internal bool HasFormAttributeElements => _formAttributeElements is { Count: > 0 };
 }

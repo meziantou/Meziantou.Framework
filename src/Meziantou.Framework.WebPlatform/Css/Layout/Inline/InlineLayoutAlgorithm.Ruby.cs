@@ -977,6 +977,24 @@ internal sealed partial class InlineLayoutAlgorithm
         return GetRubySpanWidth(column.FirstBase, baseEnd - 1);
     }
 
+    /// <summary>
+    /// Returns the range of the items of the innermost ruby annotation that contains an item of an annotation (see
+    /// <see cref="InlineItemFlags.RubyAnnotation"/>), or all the items when none is found.
+    /// </summary>
+    private (int Start, int End) GetRubyAnnotationItems(int itemIndex)
+    {
+        var result = (Start: 0, End: Items.Length);
+        foreach (var annotation in _rubyAnnotations)
+        {
+            if (annotation.StartItem <= itemIndex && itemIndex < annotation.EndItem && annotation.EndItem - annotation.StartItem < result.End - result.Start)
+            {
+                result = (annotation.StartItem, annotation.EndItem);
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>The inline size of the slots of a range of bases of a column, with the white space between them.</summary>
     private double GetRubySpanWidth(int firstBase, int lastBase)
     {

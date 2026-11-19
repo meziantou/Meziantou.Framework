@@ -32,6 +32,12 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <c>discard-inner</c>, <see cref="WhiteSpaceDiscard.Collapsible"/> after the end of a box with <c>discard-after</c>.
     /// </summary>
     private WhiteSpaceDiscard _discardLeadingWhiteSpace;
+
+    /// <summary>
+    /// The <see cref="_discardLeadingWhiteSpace"/> before the start of each open box with <c>discard-inner</c>: it applies again
+    /// after the end of a box that only contains white space (the white space after the box is not inside it).
+    /// </summary>
+    private readonly List<WhiteSpaceDiscard> _discardInnerSavedStates = [];
     private UnicodeBidi _blockUnicodeBidi;
 
     /// <summary>
@@ -58,6 +64,12 @@ internal sealed partial class InlineLayoutAlgorithm
         None,
         Collapsible,
         All,
+
+        /// <summary>
+        /// The white space up to and including the last segment break before the first character that is not white space (the
+        /// start of a block container with <c>discard-inner</c>): the white space after that segment break is kept.
+        /// </summary>
+        UpToSegmentBreak,
     }
 
     /// <summary>Flattens the content of the block container into <see cref="_items"/> and prepares the line breaking.</summary>
@@ -65,6 +77,7 @@ internal sealed partial class InlineLayoutAlgorithm
     {
         _items.Clear();
         ClearRuby();
+        _discardInnerSavedStates.Clear();
         _length = 0;
         _phraseSeparators = null;
         _phraseSeparatorsComputed = false;
@@ -78,7 +91,7 @@ internal sealed partial class InlineLayoutAlgorithm
 
         var layout = _block.Style.Layout;
         var discardInner = (layout.Text.WhiteSpaceTrim & WhiteSpaceTrim.DiscardInner) != WhiteSpaceTrim.None;
-        _discardLeadingWhiteSpace = discardInner ? WhiteSpaceDiscard.All : WhiteSpaceDiscard.None;
+        _discardLeadingWhiteSpace = discardInner ? WhiteSpaceDiscard.UpToSegmentBreak : WhiteSpaceDiscard.None;
         var unicodeBidi = GetBlockUnicodeBidi(_block);
         _blockUnicodeBidi = unicodeBidi;
         var isRightToLeft = layout.Direction == Direction.Rtl;
@@ -104,7 +117,7 @@ internal sealed partial class InlineLayoutAlgorithm
         CollectChildren(_block);
         if (discardInner)
         {
-            DiscardTrailingWhiteSpace(collapsibleOnly: false);
+            DiscardTrailingWhiteSpaceFromSegmentBreak();
         }
 
         _discardLeadingWhiteSpace = WhiteSpaceDiscard.None;
@@ -302,6 +315,7 @@ internal sealed partial class InlineLayoutAlgorithm
 
             if ((whiteSpaceTrim & WhiteSpaceTrim.DiscardInner) != WhiteSpaceTrim.None)
             {
+                _discardInnerSavedStates.Add(_discardLeadingWhiteSpace);
                 _discardLeadingWhiteSpace = WhiteSpaceDiscard.All;
             }
         }
@@ -336,7 +350,19 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             if ((whiteSpaceTrim & WhiteSpaceTrim.DiscardInner) != WhiteSpaceTrim.None)
             {
-                DiscardTrailingWhiteSpace(collapsibleOnly: false);
+                // Only the white space inside the box is discarded: the white space before a box that only contains white space
+                // is kept, and the white space after it is not discarded by its discard-inner (WPT
+                // css/css-text/white-space/white-space-trim-discard-inner.html)
+                DiscardTrailingWhiteSpace(collapsibleOnly: false, box);
+                if (_discardInnerSavedStates.Count > 0)
+                {
+                    var saved = _discardInnerSavedStates[^1];
+                    _discardInnerSavedStates.RemoveAt(_discardInnerSavedStates.Count - 1);
+                    if (_discardLeadingWhiteSpace == WhiteSpaceDiscard.All)
+                    {
+                        _discardLeadingWhiteSpace = saved;
+                    }
+                }
             }
 
             // "discard-after: collapse all collapsible whitespace immediately after the end of the element"
@@ -422,17 +448,52 @@ internal sealed partial class InlineLayoutAlgorithm
     }
 
     /// <summary>
+    /// Discards the white space at the end of the content of a block container with <c>discard-inner</c>
+    /// (https://drafts.csswg.org/css-text-4/#valdef-white-space-trim-discard-inner): the white space from the first segment break
+    /// after the last character that is not white space (a preserved segment break, a forced line break item); the white space
+    /// before that segment break is kept, and nothing is discarded without segment break.
+    /// </summary>
+    private void DiscardTrailingWhiteSpaceFromSegmentBreak()
+    {
+        var firstBreak = -1;
+        for (var index = _items.Count - 1; index >= 0; index--)
+        {
+            var item = _items[index];
+            if (item.Kind == InlineItemKind.ForcedBreak && item.Box is TextRun { Kind: TextRunKind.Text })
+            {
+                firstBreak = index;
+            }
+            else if (!(item.Kind is InlineItemKind.OutOfFlow || (item.Kind is InlineItemKind.OpenTag or InlineItemKind.CloseTag && item.InlineSize == 0)
+                || (item.Kind == InlineItemKind.Text && _text.AsSpan(item.Start, item.End - item.Start).TrimEnd(" \t").IsEmpty)))
+            {
+                break;
+            }
+        }
+
+        if (firstBreak >= 0)
+        {
+            DiscardTrailingWhiteSpace(collapsibleOnly: false, stopAt: firstBreak);
+        }
+    }
+
+    /// <summary>
     /// Discards the white space at the end of the text collected so far (<c>white-space-trim</c>): the spaces, the tabs and the
     /// preserved segment breaks (only the collapsible spaces when <paramref name="collapsibleOnly"/>), up to an atomic inline or
     /// the edges of an inline box.
     /// </summary>
-    private void DiscardTrailingWhiteSpace(bool collapsibleOnly)
+    /// <param name="collapsibleOnly">Whether only the collapsible spaces are discarded.</param>
+    /// <param name="box">The inline box whose content ends: the white space before its start is kept, or null.</param>
+    /// <param name="stopAt">The index of the first item that may be discarded (the items before it are kept), or 0.</param>
+    private void DiscardTrailingWhiteSpace(bool collapsibleOnly, ContainerBox? box = null, int stopAt = 0)
     {
-        for (var index = _items.Count - 1; index >= 0; index--)
+        for (var index = _items.Count - 1; index >= stopAt; index--)
         {
             var item = _items[index];
             switch (item.Kind)
             {
+                case InlineItemKind.OpenTag when box is not null && ReferenceEquals(item.Box, box):
+                    return;
+
                 case InlineItemKind.OpenTag or InlineItemKind.CloseTag when item.InlineSize == 0:
                 case InlineItemKind.OutOfFlow:
                     continue;
@@ -706,7 +767,33 @@ internal sealed partial class InlineLayoutAlgorithm
         var itemStart = _length;
         var domStart = baseOffset;
         var first = 0;
-        if (_discardLeadingWhiteSpace != WhiteSpaceDiscard.None)
+        if (_discardLeadingWhiteSpace == WhiteSpaceDiscard.UpToSegmentBreak)
+        {
+            // https://drafts.csswg.org/css-text-4/#valdef-white-space-trim-discard-inner: on a block container, the white space at
+            // the start of the content up to and including the last segment break before the first character that is not white
+            // space is discarded: the white space kept after a segment break of a previous text is before this one
+            var leading = 0;
+            while (leading < text.Length && text[leading] is ' ' or '\t' or '\n' or '\r')
+            {
+                leading++;
+            }
+
+            var lastBreak = text[..leading].LastIndexOfAny('\n', '\r');
+            if (lastBreak >= 0)
+            {
+                DiscardTrailingWhiteSpace(collapsibleOnly: false);
+                itemStart = _length;
+                first = lastBreak + 1;
+            }
+
+            if (leading < text.Length)
+            {
+                _discardLeadingWhiteSpace = WhiteSpaceDiscard.None;
+            }
+
+            domStart = baseOffset + first;
+        }
+        else if (_discardLeadingWhiteSpace != WhiteSpaceDiscard.None)
         {
             // white-space-trim: the white space at the start of a box with discard-inner, or after a box with discard-after
             if (_discardLeadingWhiteSpace == WhiteSpaceDiscard.All || (flags & InlineItemFlags.CollapsesSpaces) != InlineItemFlags.None)

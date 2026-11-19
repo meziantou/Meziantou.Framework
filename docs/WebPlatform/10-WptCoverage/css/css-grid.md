@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-grid, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 733 | 739 | 0 | 99% |
+| [Stable](#stable-tests) | 734 | 739 | 0 | 99% |
 | [Tentative](#tentative-tests) | 32 | 36 | 0 | 89% |
-| [Reftests](#reftests) | 1,755 | 1,789 | 0 | 98% |
+| [Reftests](#reftests) | 1,757 | 1,789 | 0 | 98% |
 | [Crash tests](#crash-tests) | 43 | 43 | 0 | 100% |
-| **All** | **2,563** | **2,607** | **0** | **98%** |
+| **All** | **2,566** | **2,607** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 1
 - **TEST BUG**: 35
 - **NOT IMPLEMENTED**: 4
 - **TEST RUNNER**: 1
@@ -640,7 +640,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`layout-algorithm/grid-intrinsic-size-with-orthogonal-items.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-intrinsic-size-with-orthogonal-items.html) | Pass | 7 / 7 |  |  |
 | [`layout-algorithm/grid-intrinsic-track-sizes-001.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-intrinsic-track-sizes-001.html) | Pass | 31 / 31 |  |  |
 | [`layout-algorithm/grid-intrinsic-tracks-item-with-border-001.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-intrinsic-tracks-item-with-border-001.html) | Pass | 4 / 4 |  |  |
-| [`layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html) | Fail | 34 / 35 | BUG | 1 of 35 subtests: the `auto` minimum of a track of a grid sized under a max-content constraint is the limited max-content contribution of the items that span several tracks (the step "For max-content minimums" applied as in the browsers, `GridLayoutAlgorithm.TrackSizing.cs`), where the specification uses their limited min-content contributions since w3c/csswg-drafts#3565 (https://drafts.csswg.org/css-grid-2/#algo-single-span-items): with `grid-template-columns: auto auto` and `width: max-content`, the grid is 80px wide instead of 110px (the expectation was rebaselined by WebKit) |
+| [`layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-intrinsic-width-minmax-tracks-001.html) | Pass | 35 / 35 |  |  |
 | [`layout-algorithm/grid-item-margin-auto-columns-rows-001.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-001.html) | Pass | 4 / 4 |  |  |
 | [`layout-algorithm/grid-item-margin-auto-columns-rows-vertical-lr-001.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-vertical-lr-001.html) | Pass | 4 / 4 |  |  |
 | [`layout-algorithm/grid-item-margin-auto-columns-rows-vertical-lr-002.html`](https://wpt.fyi/results/css/css-grid/layout-algorithm/grid-item-margin-auto-columns-rows-vertical-lr-002.html) | Pass | 2 / 2 |  |  |
@@ -1195,7 +1195,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-definition/grid-support-named-grid-lines-003.html`](https://wpt.fyi/results/css/css-grid/grid-definition/grid-support-named-grid-lines-003.html) | Pass | 1 / 1 |  |  |
 | [`grid-definition/grid-template-columns-fit-content-001.html`](https://wpt.fyi/results/css/css-grid/grid-definition/grid-template-columns-fit-content-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-definition/grid-template-rows-fit-content-001.html`](https://wpt.fyi/results/css/css-grid/grid-definition/grid-template-rows-fit-content-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-flex-spanning-items-001.html`](https://wpt.fyi/results/css/css-grid/grid-flex-spanning-items-001.html) | Fail | 0 / 1 | BUG | the items that span flexible tracks keep their minimum contributions (0px here) in the "For intrinsic minimums" step when the grid is sized under a min-content constraint (`width: min-content`), an exception made for the former reference (`GridLayoutAlgorithm.TrackSizing.cs`); https://drafts.csswg.org/css-grid-2/#algo-spanning-flex-items uses their limited min-content contribution (the 300px of the item), so the `1fr` track grows to 270px and the grid is 300px wide, as in the updated reference (WebKit rebaselined it, w3c/csswg-drafts#14538): the grid is 30px wide |
+| [`grid-flex-spanning-items-001.html`](https://wpt.fyi/results/css/css-grid/grid-flex-spanning-items-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-flexible-track-fractional-flex-factor.html`](https://wpt.fyi/results/css/css-grid/grid-flexible-track-fractional-flex-factor.html) | Pass | 1 / 1 |  |  |
 | [`grid-flexible-track-free-space-distribution.html`](https://wpt.fyi/results/css/css-grid/grid-flexible-track-free-space-distribution.html) | Pass | 1 / 1 |  |  |
 | [`grid-fragmentation-between-rows-001-print.tentative.html`](https://wpt.fyi/results/css/css-grid/grid-fragmentation-between-rows-001-print.tentative.html) | Pass | 1 / 1 |  |  |
@@ -1821,7 +1821,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/item-placement/row-negative-margin-003.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/row-negative-margin-003.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/item-placement/row-negative-margin-004.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/item-placement/row-negative-margin-004.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/items/column-flex-and-intrinsic-sizes.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/items/column-flex-and-intrinsic-sizes.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/items/column-flex-spanning-items.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/items/column-flex-spanning-items.html) | Fail | 0 / 1 | BUG | the items that span flexible tracks keep their minimum contributions (0px here) in the "For intrinsic minimums" step when the grid is sized under a min-content constraint (`width: min-content`), an exception made for the former reference (`GridLayoutAlgorithm.TrackSizing.cs`); https://drafts.csswg.org/css-grid-2/#algo-spanning-flex-items uses their limited min-content contribution (the 300px of the item), so the `1fr` track grows to 270px and the grid lanes container is 300px wide, as in the updated reference (WebKit rebaselined it, w3c/csswg-drafts#14538): the container is 30px wide |
+| [`grid-lanes/items/column-flex-spanning-items.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/items/column-flex-spanning-items.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/items/column-intrinsic-maximums.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/items/column-intrinsic-maximums.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/items/column-intrinsic-track-sizes-min-size.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/items/column-intrinsic-track-sizes-min-size.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/items/column-item-minmax-img-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/items/column-item-minmax-img-001.html) | Pass | 1 / 1 |  |  |

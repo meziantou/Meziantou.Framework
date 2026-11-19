@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 209 | 214 | 0 | 98% |
+| [Stable](#stable-tests) | 210 | 214 | 0 | 98% |
 | [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
-| [Reftests](#reftests) | 570 | 612 | 0 | 93% |
+| [Reftests](#reftests) | 573 | 612 | 0 | 94% |
 | [Crash tests](#crash-tests) | 8 | 8 | 0 | 100% |
-| **All** | **794** | **841** | **0** | **94%** |
+| **All** | **798** | **841** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 40
 - **REQUIRES**: 1
@@ -237,7 +236,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`svg-intrinsic-size-009.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-009.html) | Pass | 12 / 12 |  |  |
 | [`svg-intrinsic-size-010.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-010.html) | Pass | 12 / 12 |  |  |
 | [`svg-intrinsic-size-011.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-011.html) | Pass | 4 / 4 |  |  |
-| [`svg-intrinsic-size-012.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-012.html) | Fail | 117 / 120 | BUG | 3 of 120 subtests: the `width` and `height` attributes of an outermost `svg` element in `em` or `ex` (`1em`, `1ex`, `0em`) give it a natural size (resolved against a 16px font size in `ImageHeaders.ParseSvgLength`), where only numbers and absolute lengths set a natural size (https://github.com/w3c/csswg-drafts/issues/14117): the box is 16px, 7px or 0px wide instead of the default 300px |
+| [`svg-intrinsic-size-012.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-012.html) | Pass | 120 / 120 |  |  |
 | [`svg-intrinsic-size-zero-img-and-object.html`](https://wpt.fyi/results/css/css-sizing/svg-intrinsic-size-zero-img-and-object.html) | Pass | 14 / 14 |  |  |
 | [`table-cell-definite-height-transferred-size.html`](https://wpt.fyi/results/css/css-sizing/table-cell-definite-height-transferred-size.html) | Pass | 5 / 5 |  |  |
 | [`table-percentage-max-width-beside-float.html`](https://wpt.fyi/results/css/css-sizing/table-percentage-max-width-beside-float.html) | Pass | 1 / 1 |  |  |
@@ -655,9 +654,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fit-content-length-percentage-015.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-015.html) | Pass | 1 / 1 |  |  |
 | [`fit-content-length-percentage-016.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-016.html) | Pass | 1 / 1 |  |  |
 | [`fit-content-length-percentage-abspos-001.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-abspos-001.html) | Pass | 1 / 1 |  |  |
-| [`fit-content-length-percentage-box-sizing-001.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-box-sizing-001.html) | Fail | 0 / 1 | BUG | `fit-content(<length-percentage>)` uses its argument as the size of the box of `box-sizing` (`ToBorderBox`) instead of replacing the available space with `stretch(<argument>)` (https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content), which fits the margin box to the argument regardless of `box-sizing`: the margins (non-auto), and the padding and borders of a `content-box` box, are not subtracted from the argument (`fit-content(100px); padding-right: 20px` gives a 120px wide box instead of 100px) |
-| [`fit-content-length-percentage-contribution-margins-001.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-contribution-margins-001.html) | Fail | 0 / 1 | BUG | `fit-content(<length-percentage>)` uses its argument as the size of the box of `box-sizing` (`ToBorderBox`) instead of replacing the available space with `stretch(<argument>)` (https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content), which fits the margin box to the argument regardless of `box-sizing`: the margins (non-auto), and the padding and borders of a `content-box` box, are not subtracted from the argument (`fit-content(100px); padding-right: 20px` gives a 120px wide box instead of 100px) |
-| [`fit-content-length-percentage-margins-001.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-margins-001.html) | Fail | 0 / 1 | BUG | `fit-content(<length-percentage>)` uses its argument as the size of the box of `box-sizing` (`ToBorderBox`) instead of replacing the available space with `stretch(<argument>)` (https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content), which fits the margin box to the argument regardless of `box-sizing`: the margins (non-auto), and the padding and borders of a `content-box` box, are not subtracted from the argument (`fit-content(100px); padding-right: 20px` gives a 120px wide box instead of 100px) |
+| [`fit-content-length-percentage-box-sizing-001.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-box-sizing-001.html) | Pass | 1 / 1 |  |  |
+| [`fit-content-length-percentage-contribution-margins-001.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-contribution-margins-001.html) | Pass | 1 / 1 |  |  |
+| [`fit-content-length-percentage-margins-001.html`](https://wpt.fyi/results/css/css-sizing/fit-content-length-percentage-margins-001.html) | Pass | 1 / 1 |  |  |
 | [`fit-content-max-inline-size.tentative.html`](https://wpt.fyi/results/css/css-sizing/fit-content-max-inline-size.tentative.html) | Pass | 1 / 1 |  |  |
 | [`fit-content-min-inline-size.html`](https://wpt.fyi/results/css/css-sizing/fit-content-min-inline-size.html) | Pass | 1 / 1 |  |  |
 | [`float-clearance-with-margin-collapse-and-fit-content-and-padding-percentage-001.html`](https://wpt.fyi/results/css/css-sizing/float-clearance-with-margin-collapse-and-fit-content-and-padding-percentage-001.html) | Pass | 1 / 1 |  |  |

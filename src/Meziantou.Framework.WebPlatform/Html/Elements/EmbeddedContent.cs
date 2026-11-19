@@ -230,8 +230,19 @@ public partial class HtmlCanvasElement : ICanvasHost
 
     private Rendering.RenderingBackend? GetRenderingBackend() => (RenderingContext as CanvasRenderingContext2D)?.Bitmap.Backend ?? NodeDocument.RenderingBackend ?? RelevantGlobal?.Options.RenderingBackend;
 
-    /// <summary>The bitmap of the canvas changed: the document is painted again.</summary>
-    internal void OnBitmapChanged() => NodeDocument.LayoutEngineOrNull?.InvalidatePaint();
+    /// <summary>
+    /// The bitmap of the canvas changed: the document is painted again. When the canvas is in the contents of a canvas whose
+    /// content is drawable, the snapshots of its drawable ancestors change: a rendering update fires their paint event
+    /// (https://github.com/WICG/html-in-canvas).
+    /// </summary>
+    internal void OnBitmapChanged()
+    {
+        NodeDocument.LayoutEngineOrNull?.InvalidatePaint();
+        if (NodeDocument.HasRenderedCanvases && GetDrawableCanvas(this) is { IsContentDrawable: true })
+        {
+            NodeDocument.EventLoop?.RequestRenderingUpdate();
+        }
+    }
 
     void ICanvasHost.OnBitmapChanged() => OnBitmapChanged();
 

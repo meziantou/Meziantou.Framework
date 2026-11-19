@@ -309,7 +309,7 @@ internal sealed class ImagingRenderingSurface : RenderingSurface
     }
 
     /// <inheritdoc/>
-    public override RenderingImage CreateSnapshot() => new ImagingRenderingImage(_image is not null ? _image.Clone() : _wideImage is not null ? _wideImage.Clone() : _halfImage!.Clone(), _colorSpace);
+    public override RenderingImage CreateSnapshot() => new ImagingRenderingImage(_image is not null ? _image.Clone() : _wideImage is not null ? _wideImage.Clone() : _halfImage!.Clone(), _colorSpace, isPremultipliedBitmap: _image is not null);
 
     /// <summary>The intersection of a rectangle with the surface.</summary>
     private (int X, int Y, int Width, int Height) Intersect(int x, int y, int width, int height)

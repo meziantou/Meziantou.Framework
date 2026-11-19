@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-writing-modes, an
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 80 | 85 | 0 | 94% |
+| [Stable](#stable-tests) | 82 | 85 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
-| [Reftests](#reftests) | 1,160 | 1,170 | 0 | 99% |
+| [Reftests](#reftests) | 1,161 | 1,170 | 0 | 99% |
 | [Crash tests](#crash-tests) | 13 | 13 | 0 | 100% |
-| **All** | **1,254** | **1,269** | **0** | **99%** |
+| **All** | **1,257** | **1,269** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
+- **BUG**: 2
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 1
 
@@ -39,8 +39,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/select-appearance-native-computed-style.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-appearance-native-computed-style.html) | Pass | 3 / 3 |  |  |
 | [`forms/select-multiple-keyboard-selection.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-keyboard-selection.optional.html) | Pass | 5 / 5 |  |  |
 | [`forms/select-multiple-options-visual-order.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-options-visual-order.html) | Pass | 5 / 5 |  |  |
-| [`forms/select-multiple-scrolling.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-scrolling.optional.html) | Fail | 3 / 5 | BUG | a rounding error of the order of 1e-14px: the layout of the library uses floating-point coordinates where the browsers use fixed-point units (1/64px), and the 13.333px font of the list box (10pt) gives rows whose heights are not exact binary fractions, so the scroll position of a list box in `vertical-rl` and `sideways-rl` is 1.4e-14 instead of 0 after a positive `scrollLeft` (the test compares it exactly) |
-| [`forms/select-size-scrolling-and-sizing.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-size-scrolling-and-sizing.optional.html) | Fail | 8 / 10 | BUG | a rounding error of the order of 1e-14px: the layout of the library uses floating-point coordinates where the browsers use fixed-point units (1/64px), and the 13.333px font of the list box (10pt) gives rows whose heights are not exact binary fractions, so the scroll position of a list box in `vertical-rl` and `sideways-rl` is 1.4e-14 instead of 0 after a positive `scrollLeft` (the test compares it exactly) |
+| [`forms/select-multiple-scrolling.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-multiple-scrolling.optional.html) | Pass | 5 / 5 |  |  |
+| [`forms/select-size-scrolling-and-sizing.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/select-size-scrolling-and-sizing.optional.html) | Pass | 10 / 10 |  |  |
 | [`forms/text-input-baseline.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-baseline.html) | Pass | 21 / 21 |  |  |
 | [`forms/text-input-block-size.optional.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-block-size.optional.html) | Pass | 28 / 28 |  |  |
 | [`forms/text-input-scroll-on-blur.html`](https://wpt.fyi/results/css/css-writing-modes/forms/text-input-scroll-on-blur.html) | Fail | 0 / 10 | NOT IMPLEMENTED | `setSelectionRange()` on a focused text field does not scroll its value to reveal the caret (only the arrow keys, `Home` and `End` do), so `scrollLeft`/`scrollTop` is still 0 before the blur; the scroll back to the start of the value when the field loses the focus is not implemented either |
@@ -909,7 +909,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`orthogonal-cell-001.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-001.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-cell-rowspan-001.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-001.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-cell-rowspan-002.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-002.html) | Pass | 1 / 1 |  |  |
-| [`orthogonal-cell-rowspan-003.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-003.html) | Fail | 0 / 1 | BUG | a table with collapsed borders whose cell with a vertical writing mode (`vertical-rl`, `vertical-lr`, `sideways-lr`) spans several rows: the table is 6px wider and the content of the cell 3px further to the right than with the same borders and padding on a horizontal cell (the reference), so the half collapsed borders of the left and right sides of the orthogonal cell are not resolved as in a horizontal cell (cause not analyzed further) |
+| [`orthogonal-cell-rowspan-003.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-cell-rowspan-003.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-child-with-border.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-child-with-border.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-child-with-padding.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-child-with-padding.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-container-query-in-shrink-to-fit-flex.html`](https://wpt.fyi/results/css/css-writing-modes/orthogonal-container-query-in-shrink-to-fit-flex.html) | Pass | 1 / 1 |  |  |
@@ -1179,10 +1179,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text-combine-upright-shadow.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-shadow.html) | Pass | 1 / 1 |  |  |
 | [`text-combine-upright-sideways-001.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-sideways-001.html) | Pass | 1 / 1 |  |  |
 | [`text-combine-upright-sideways-002.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-sideways-002.html) | Pass | 1 / 1 |  |  |
-| [`text-combine-upright-value-all-001.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-all-001.html) | Fail | 0 / 1 | BUG | the composition and the upright glyph of the reference are 0.4px apart in both axes (603 antialiased pixels on the edges of the 80px glyph): the composition is placed as a horizontal line of 1em with the rounded ascent and descent of the font (70 and 10 for 70.4 and 9.6, like the inline-block of the `text-combine-upright-compression-*` tests), the upright glyph of vertical text is centered on the central baseline with the unrounded metrics; Chrome and Firefox fail the test too |
+| [`text-combine-upright-value-all-001.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-all-001.html) | Fail | 0 / 1 | BUG | the composition and the upright glyph of the reference are 0.4px apart in both axes (592 antialiased pixels on the edges of the 80px glyph, by up to 175): the composition is placed as a horizontal line of 1em with the rounded ascent and descent of the font (70 and 10 for 70.4 and 9.6, like the inline-block of the `text-combine-upright-compression-*` tests), the upright glyph of vertical text is centered on the central baseline with the unrounded metrics; Chrome and Firefox fail the test too |
 | [`text-combine-upright-value-all-002.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-all-002.html) | Pass | 1 / 1 |  |  |
 | [`text-combine-upright-value-all-003.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-all-003.html) | Pass | 1 / 1 |  |  |
-| [`text-combine-upright-value-digits2-001.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-digits2-001.html) | Fail | 0 / 1 | BUG | the composition and the upright glyph of the reference are 0.4px apart in both axes (603 antialiased pixels on the edges of the 80px glyph): the composition is placed as a horizontal line of 1em with the rounded ascent and descent of the font (70 and 10 for 70.4 and 9.6, like the inline-block of the `text-combine-upright-compression-*` tests), the upright glyph of vertical text is centered on the central baseline with the unrounded metrics; Chrome and Firefox fail the test too |
+| [`text-combine-upright-value-digits2-001.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-digits2-001.html) | Fail | 0 / 1 | BUG | the composition and the upright glyph of the reference are 0.4px apart in both axes (592 antialiased pixels on the edges of the 80px glyph, by up to 175): the composition is placed as a horizontal line of 1em with the rounded ascent and descent of the font (70 and 10 for 70.4 and 9.6, like the inline-block of the `text-combine-upright-compression-*` tests), the upright glyph of vertical text is centered on the central baseline with the unrounded metrics; Chrome and Firefox fail the test too |
 | [`text-combine-upright-value-digits2-002.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-digits2-002.html) | Pass | 1 / 1 |  |  |
 | [`text-combine-upright-value-digits2-003.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-digits2-003.html) | Pass | 1 / 1 |  |  |
 | [`text-combine-upright-value-digits3-001.html`](https://wpt.fyi/results/css/css-writing-modes/text-combine-upright-value-digits3-001.html) | Pass | 1 / 1 |  |  |

@@ -846,9 +846,9 @@ public partial class Element : Node
         }
 
         _id = newId;
-        if (IsConnected && NodeDocument.HasFormAttributeCustomElements)
+        if (IsConnected && NodeDocument.HasFormAttributeElements)
         {
-            NodeDocument.OnIdChangedForFormAttributeCustomElements();
+            NodeDocument.OnIdChangedForFormAttributeElements();
         }
     }
 
@@ -1335,6 +1335,15 @@ public partial class Element : Node
             if (_attributes![i].Node is { } attr)
             {
                 attr.NodeDocument = NodeDocument;
+            }
+        }
+
+        // The effects that target the element move to the effect stacks of its new document, so they apply to its style there
+        if (oldDocument.AnimationsOrNull?.GetElementAnimations(this) is { } elementAnimations)
+        {
+            foreach (var effect in elementAnimations.EnumerateEffectLists().SelectMany(effects => effects).ToList())
+            {
+                effect.UpdateRegistration();
             }
         }
     }

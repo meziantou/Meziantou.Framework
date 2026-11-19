@@ -1527,10 +1527,7 @@
     "total": 5
   },
   "css/css-images/parsing/image-function-valid.html": {
-    "total": 14,
-    "failures": {
-      "e.style['background-image'] = \"image(url(foo.png))\" should set the property value": "FAIL"
-    }
+    "total": 14
   },
   "css/css-images/parsing/image-orientation-computed.html": {
     "total": 2
@@ -1556,11 +1553,7 @@
   "css/css-images/parsing/image-resolution-valid.html": {
     "total": 12,
     "failures": {
-      "e.style['image-resolution'] = \"2dpcm from-image\" should set the property value": "FAIL",
-      "e.style['image-resolution'] = \"3dppx from-image snap\" should set the property value": "FAIL",
-      "e.style['image-resolution'] = \"snap 7.5dpi\" should set the property value": "FAIL",
-      "e.style['image-resolution'] = \"snap from-image 0dppx\" should set the property value": "FAIL",
-      "e.style['image-resolution'] = \"snap from-image\" should set the property value": "FAIL"
+      "e.style['image-resolution'] = \"snap -8dpcm from-image\" should set the property value": "FAIL"
     }
   },
   "css/css-images/parsing/object-fit-computed.html": {

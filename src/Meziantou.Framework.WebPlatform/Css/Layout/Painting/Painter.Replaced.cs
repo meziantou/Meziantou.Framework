@@ -153,12 +153,7 @@ internal sealed partial class Painter
             var scaleY = destination.Height / natural.Height;
             if (snapshot.Image is { Width: > 0, Height: > 0 } image)
             {
-                var sampling = fragment.Box.Style.GetComputedValue("image-rendering") switch
-                {
-                    "pixelated" or "crisp-edges" or "optimizespeed" => ImageSampling.Pixelated,
-                    "high-quality" => ImageSampling.HighQuality,
-                    _ => ImageSampling.Smooth,
-                };
+                var sampling = GetImageSampling(fragment.Box.Style);
                 var bounds = snapshot.Bounds.Translate(new PhysicalOffset(-snapshot.Origin.X, -snapshot.Origin.Y));
                 var rect = new PhysicalRect(destination.X + (bounds.X * scaleX), destination.Y + (bounds.Y * scaleY), bounds.Width * scaleX, bounds.Height * scaleY);
                 _builder.Add(new DrawImageItem(image, new PhysicalRect(0, 0, image.Width, image.Height), rect, sampling) { Source = fragment.Box.Element });
@@ -303,6 +298,23 @@ internal sealed partial class Painter
         if (_document.RenderingBackend is not { } backend)
             return;
 
+        // https://github.com/WICG/html-in-canvas: the snapshot of a drawable element refers to the bitmap of a canvas (as in
+        // Chromium): the drawings made after the snapshot was recorded (e.g. by the paint event of a nested canvas, fired before
+        // the one of its drawable ancestor) are drawn with it. The snapshot only records where the bitmap is drawn
+        if (_skipsCanvasDrawables && canvas.RenderingContext is not ImageBitmapRenderingContext)
+        {
+            var target = SnapToDevicePixels((fragment.ReplacedContentRect ?? fragment.ContentBoxRect).Translate(offset));
+            if (target.IsEmpty)
+                return;
+
+            var contentBox = SnapToDevicePixels(fragment.ContentBoxRect.Translate(offset));
+            var clipsContent = ClipsReplacedContent(fragment) && (target.Left < contentBox.Left || target.Top < contentBox.Top || target.Right > contentBox.Right || target.Bottom > contentBox.Bottom);
+            var marker = _builder.Save(canvas);
+            _builder.Restore();
+            (_liveCanvasImages ??= []).Add(new LiveCanvasImage(marker, canvas, target, clipsContent ? contentBox : null, GetImageSampling(fragment.Box.Style)));
+            return;
+        }
+
         PaintImage? image;
         bool opaque;
         switch (canvas.RenderingContext)
@@ -346,6 +358,14 @@ internal sealed partial class Painter
     private static bool ClipsReplacedContent(BoxFragment fragment)
         => !fragment.ClipsOverflow && fragment.Box.Element is not (HtmlImageElement or HtmlVideoElement or HtmlCanvasElement);
 
+    /// <summary>Returns the sampling of the images of a box (https://drafts.csswg.org/css-images-3/#the-image-rendering).</summary>
+    private static ImageSampling GetImageSampling(ComputedStyle style) => style.GetComputedValue("image-rendering") switch
+    {
+        "pixelated" or "crisp-edges" or "optimizespeed" => ImageSampling.Pixelated,
+        "high-quality" => ImageSampling.HighQuality,
+        _ => ImageSampling.Smooth,
+    };
+
     /// <summary>
     /// Paints an image in the rectangle given by <c>object-fit</c> and <c>object-position</c> (<see cref="BoxFragment.ReplacedContentRect"/>),
     /// sampled per <c>image-rendering</c> (https://drafts.csswg.org/css-images-3/#the-image-rendering).
@@ -381,12 +401,7 @@ internal sealed partial class Painter
         // the frame of an animated image displayed now
         image = GetDisplayedFrame(image.WithOrientation(fragment.Box.Style.Layout.Replaced.ImageOrientation.FromImage), fragment.Box.Style);
 
-        var sampling = fragment.Box.Style.GetComputedValue("image-rendering") switch
-        {
-            "pixelated" or "crisp-edges" or "optimizespeed" => ImageSampling.Pixelated,
-            "high-quality" => ImageSampling.HighQuality,
-            _ => ImageSampling.Smooth,
-        };
+        var sampling = GetImageSampling(fragment.Box.Style);
         // https://drafts.csswg.org/css-images-3/#the-object-fit: the parts of the image outside of the content box are clipped
         var content = SnapToDevicePixels(fragment.ContentBoxRect.Translate(offset));
         var clips = ClipsReplacedContent(fragment) && (destination.Left < content.Left || destination.Top < content.Top || destination.Right > content.Right || destination.Bottom > content.Bottom);

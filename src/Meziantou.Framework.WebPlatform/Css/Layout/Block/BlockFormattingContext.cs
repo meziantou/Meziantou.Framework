@@ -78,6 +78,12 @@ internal sealed class BlockFormattingContext : FormattingContext
         if (style.IsRoot)
             return true;
 
+        // https://github.com/WICG/html-in-canvas: a drawable element, whose snapshot starts at its border box, is a containing block
+        // for all its descendants; as in Chromium, it establishes an independent formatting context (the margins of its children
+        // do not collapse through its border box)
+        if (box.IsCanvasDrawable)
+            return true;
+
         var layout = style.Layout;
 
         // https://drafts.csswg.org/css-contain-2/#containment-layout, https://drafts.csswg.org/css-contain-2/#containment-paint:

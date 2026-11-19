@@ -42,6 +42,15 @@ public sealed class TableFormattingContextTests : IDisposable
     }
 
     [Fact]
+    public void CollapsedBorders_OrthogonalCellContributesTheHalvesOfItsBorders()
+    {
+        // WPT css/css-writing-modes/orthogonal-cell-rowspan-003.html: the column of a vertical cell is as wide as its content (one
+        // 10px line), its paddings and the halves of its collapsed left and right borders (4px and 2px), as a horizontal cell
+        var document = Parse("<table style='border-collapse: collapse'><tr><td id=c style='writing-mode: vertical-rl; padding: 0 10px 0 20px; border: solid transparent; border-width: 0 4px 0 8px'>X</td></tr></table>");
+        Assert.Equal(46, GetRect(document, "c").Width);
+    }
+
+    [Fact]
     public void TableWithoutRows_IgnoresItsColumns()
     {
         // https://drafts.csswg.org/css-tables-3/#table-layout-algorithm: a table without slot is empty

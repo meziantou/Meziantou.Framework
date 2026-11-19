@@ -86,6 +86,18 @@ internal sealed class ProcessedKeyframe
     /// <summary>The longhands (and custom properties) of the keyframe, after the expansion of the shorthands.</summary>
     public Dictionary<string, CssLonghandValue> Longhands { get; init; } = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// The position of the declarations of the longhands in the keyframe of an @keyframes rule, or null for the other keyframes:
+    /// a logical property and the physical property it maps to are resolved in the order of their declarations.
+    /// </summary>
+    public Dictionary<string, int>? DeclarationOrder { get; set; }
+
+    /// <summary>
+    /// The longhands of a keyframe given to the Web Animations API that were set by a shorthand, or null: a longhand wins over
+    /// a shorthand when a logical and a physical property conflict (https://drafts.csswg.org/web-animations-1/#calculating-computed-keyframes).
+    /// </summary>
+    public HashSet<string>? LonghandsFromShorthands { get; set; }
+
     /// <summary>The base URL of the values (the style sheet of a @keyframes rule), or null.</summary>
     public Css.Cascade.CascadedValueSource? Source { get; init; }
 
@@ -209,9 +221,9 @@ internal static class KeyframeProcessing
             foreach (var longhand in longhands)
             {
                 // The non-animatable longhands of a shorthand are ignored (e.g. the animation properties of all)
-                if (CssAnimationTypes.Get(longhand.Name) != CssInterpolationKind.NotAnimatable)
+                if (CssAnimationTypes.Get(longhand.Name) != CssInterpolationKind.NotAnimatable && keyframe.Longhands.TryAdd(longhand.Name, longhand))
                 {
-                    keyframe.Longhands.TryAdd(longhand.Name, longhand);
+                    (keyframe.LonghandsFromShorthands ??= new(StringComparer.Ordinal)).Add(longhand.Name);
                 }
             }
         }

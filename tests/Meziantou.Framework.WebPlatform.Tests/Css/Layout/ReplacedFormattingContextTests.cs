@@ -145,6 +145,7 @@ public sealed class ReplacedFormattingContextTests : IDisposable
     [InlineData("<svg xmlns='http://www.w3.org/2000/svg' width='40'></svg>", 40, 150)]
     [InlineData("<svg xmlns='http://www.w3.org/2000/svg' height='20' viewBox='0 0 2 1'></svg>", 40, 20)]
     [InlineData("<svg xmlns='http://www.w3.org/2000/svg'></svg>", 300, 150)]
+    [InlineData("<svg xmlns='http://www.w3.org/2000/svg' width='1in' height='2em'></svg>", 96, 150)] // Only the absolute lengths are natural sizes (https://github.com/w3c/csswg-drafts/issues/14117)
     public void SvgImage_NaturalSize(string svg, double width, double height)
     {
         // An SVG image with only a natural aspect ratio fills its containing block (https://drafts.csswg.org/css2/#inline-replaced-width)

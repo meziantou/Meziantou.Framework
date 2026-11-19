@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
@@ -31,7 +32,8 @@ internal static class StackingContexts
     /// boxes of the top layer (https://drafts.csswg.org/css-position-4/#top-layer), the fixed and sticky positioned boxes, the
     /// boxes whose <c>z-index</c> applies and is not <c>auto</c>, an <c>opacity</c> less than 1, a transform, a filter, a
     /// perspective, <c>transform-style: preserve-3d</c>, layout or paint containment, <c>isolation: isolate</c>, a
-    /// <c>mix-blend-mode</c>, a clip path, a mask, a view transition name, and the <c>will-change</c> values that do the same.
+    /// <c>mix-blend-mode</c>, a clip path, a mask, a view transition name, and the <c>will-change</c> values that do the same; the
+    /// drawable elements of a canvas and the canvases whose content is drawable (https://github.com/WICG/html-in-canvas).
     /// </summary>
     public static bool EstablishesStackingContext(ContainerBox box)
     {
@@ -50,8 +52,9 @@ internal static class StackingContexts
         if (SvgForeignObjectLayout.IsForeignObject(box))
             return true;
 
-        // https://github.com/WICG/html-in-canvas: the drawable attribute "implies isolation: isolate"
-        if (box.IsCanvasDrawable)
+        // https://github.com/WICG/html-in-canvas: the drawable attribute "implies isolation: isolate"; a canvas whose content is
+        // drawable is a stacking context too (as in Chromium: its drawable elements are painted in it)
+        if (box.IsCanvasDrawable || box is { Kind: ContainerBoxKind.Replaced, Element: HtmlCanvasElement { IsContentDrawable: true } })
             return true;
 
         // https://drafts.csswg.org/css-transforms-2/#transform-rendering, https://drafts.fxtf.org/filter-effects/#FilterProperty,

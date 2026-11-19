@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 732 | 752 | 2 | 98% |
+| [Stable](#stable-tests) | 733 | 752 | 2 | 98% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
-| [Reftests](#reftests) | 623 | 693 | 2 | 90% |
+| [Reftests](#reftests) | 625 | 693 | 2 | 90% |
 | [Crash tests](#crash-tests) | 29 | 55 | 26 | 100% |
-| **All** | **1,430** | **1,547** | **30** | **94%** |
+| **All** | **1,433** | **1,547** | **30** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 4
 - **TEST BUG**: 15
 - **NOT IMPLEMENTED**: 60
 - **TEST RUNNER**: 33
@@ -537,7 +537,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`path/interfaces/getPathSegmentAtLength-invalid.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-invalid.html) | Pass | 5 / 5 |  |  |
 | [`path/interfaces/getPathSegmentAtLength-segments.html`](https://wpt.fyi/results/svg/path/interfaces/getPathSegmentAtLength-segments.html) | Pass | 9 / 9 |  |  |
 | [`path/interfaces/setPathData-during-animation.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-during-animation.html) | Pass | 1 / 1 |  |  |
-| [`path/interfaces/setPathData-malformed.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-malformed.html) | Fail | 10 / 22 | BUG | 12 of 22 subtests: `setPathData()` turns a non-zero large-arc or sweep flag of an `A` or `a` segment into 1 (`SvgPathData.FromSegments`); a flag is `0` or `1` (`flag ::= ("0"\|"1")`, https://w3c.github.io/svgwg/specs/paths/#PathDataBNF) and `setPathData()` is equivalent to setting `d` to the serialized segments, whose error handling stops at the invalid arc, so only the `M` segment must remain |
+| [`path/interfaces/setPathData-malformed.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-malformed.html) | Pass | 22 / 22 |  |  |
 | [`path/interfaces/setPathData-mutation-observer.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-mutation-observer.html) | Pass | 2 / 2 |  |  |
 | [`path/interfaces/setPathData-overrides-d.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-overrides-d.html) | Pass | 3 / 3 |  |  |
 | [`path/interfaces/setPathData-plain-object.html`](https://wpt.fyi/results/svg/path/interfaces/setPathData-plain-object.html) | Pass | 4 / 4 |  |  |
@@ -1056,7 +1056,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/marker-002.svg`](https://wpt.fyi/results/svg/painting/marker-002.svg) | Pass | 1 / 1 |  |  |
 | [`painting/marker-003.svg`](https://wpt.fyi/results/svg/painting/marker-003.svg) | Pass | 1 / 1 |  |  |
 | [`painting/marker-004.svg`](https://wpt.fyi/results/svg/painting/marker-004.svg) | Pass | 1 / 1 |  |  |
-| [`painting/marker-005.svg`](https://wpt.fyi/results/svg/painting/marker-005.svg) | Fail | 0 / 1 | BUG | 21 pixels of the antialiased top and left edges of one clipped marker differ by at most 11 levels: the test clips the content of the marker to its viewport, the reference clips the same content with a `clipPath` element, and the edges of the content that coincide with the edges of the clip do not get the same coverage (Chromium and Gecko fail the test too) |
+| [`painting/marker-005.svg`](https://wpt.fyi/results/svg/painting/marker-005.svg) | Fail | 0 / 1 | BUG | 21 pixels of the antialiased top and left edges of one clipped marker differ by at most 8 levels: the test clips the content of the marker to its viewport, the reference clips the same content with a `clipPath` element, and the edges of the content that coincide with the edges of the clip do not get the same coverage (Chromium and Gecko fail the test too) |
 | [`painting/marker-006.svg`](https://wpt.fyi/results/svg/painting/marker-006.svg) | Pass | 1 / 1 |  |  |
 | [`painting/marker-007.svg`](https://wpt.fyi/results/svg/painting/marker-007.svg) | Pass | 1 / 1 |  |  |
 | [`painting/marker-008.svg`](https://wpt.fyi/results/svg/painting/marker-008.svg) | Pass | 1 / 1 |  |  |
@@ -1069,7 +1069,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/reftests/fallback-002.svg`](https://wpt.fyi/results/svg/painting/reftests/fallback-002.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/gradient-external-reference.svg`](https://wpt.fyi/results/svg/painting/reftests/gradient-external-reference.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/large-transform-001.html`](https://wpt.fyi/results/svg/painting/reftests/large-transform-001.html) | Pass | 1 / 1 |  |  |
-| [`painting/reftests/marker-context-fill-transform.html`](https://wpt.fyi/results/svg/painting/reftests/marker-context-fill-transform.html) | Fail | 0 / 1 | BUG | 12 pixels of the antialiased edges of the rotated shapes differ by at most 2 levels in the zoomed iframes: the display list of the nested document is scaled by the zoom of the iframe, where the reference paints the same shapes without zoom |
+| [`painting/reftests/marker-context-fill-transform.html`](https://wpt.fyi/results/svg/painting/reftests/marker-context-fill-transform.html) | Fail | 0 / 1 | BUG | 18 pixels of the antialiased edges of the rotated shapes differ by 1 level in the zoomed iframes: the display list of the nested document is scaled by the zoom of the iframe, where the reference paints the same shapes without zoom |
 | [`painting/reftests/marker-data-uri-reference.svg`](https://wpt.fyi/results/svg/painting/reftests/marker-data-uri-reference.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/marker-external-reference.svg`](https://wpt.fyi/results/svg/painting/reftests/marker-external-reference.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/marker-implicit-subpaths.html`](https://wpt.fyi/results/svg/painting/reftests/marker-implicit-subpaths.html) | Pass | 1 / 1 |  |  |
@@ -1123,7 +1123,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/reftests/paint-fill-attr-oklab.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-oklab.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-oklch.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-oklch.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-prophoto-rgb.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-prophoto-rgb.svg) | Pass | 1 / 1 |  |  |
-| [`painting/reftests/paint-fill-attr-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rec2020.svg) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the reftest now uses the pure 2.4 gamma of the current CSS Color 4 draft (https://drafts.csswg.org/css-color-4/#predefined-rec2020): `color(rec2020 0.4203502 0.5829114 0.5022449)` is painted `rgb(85, 163, 138)` instead of `#339377` (the maximum difference, 34); see `css/css-color/parsing/color-computed-relative-color.html` |
+| [`painting/reftests/paint-fill-attr-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rec2020.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-rgb-legacy-percent.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rgb-legacy-percent.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-rgb-legacy.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rgb-legacy.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-attr-rgb-modern.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-attr-rgb-modern.svg) | Pass | 1 / 1 |  |  |
@@ -1143,7 +1143,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/reftests/paint-fill-oklab.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-oklab.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-oklch.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-oklch.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-prophoto-rgb.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-prophoto-rgb.svg) | Pass | 1 / 1 |  |  |
-| [`painting/reftests/paint-fill-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rec2020.svg) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the reftest now uses the pure 2.4 gamma of the current CSS Color 4 draft (https://drafts.csswg.org/css-color-4/#predefined-rec2020): `color(rec2020 0.4203502 0.5829114 0.5022449)` is painted `rgb(85, 163, 138)` instead of `#339377` (the maximum difference, 34); see `css/css-color/parsing/color-computed-relative-color.html` |
+| [`painting/reftests/paint-fill-rec2020.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rec2020.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-rgb-legacy-percent.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rgb-legacy-percent.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-rgb-legacy.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rgb-legacy.svg) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/paint-fill-rgb-modern.svg`](https://wpt.fyi/results/svg/painting/reftests/paint-fill-rgb-modern.svg) | Pass | 1 / 1 |  |  |
@@ -1168,7 +1168,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/reftests/svg-percent-stroke-dashoffset-path-viewbox-update.html`](https://wpt.fyi/results/svg/painting/reftests/svg-percent-stroke-dashoffset-path-viewbox-update.html) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/svg-percent-stroke-dashoffset-rect-viewbox-update.html`](https://wpt.fyi/results/svg/painting/reftests/svg-percent-stroke-dashoffset-rect-viewbox-update.html) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/symbol-in-mask.html`](https://wpt.fyi/results/svg/painting/reftests/symbol-in-mask.html) | Pass | 1 / 1 |  |  |
-| [`painting/reftests/text-shadow-01.html`](https://wpt.fyi/results/svg/painting/reftests/text-shadow-01.html) | Fail | 0 / 1 | BUG | 444 pixels of the blurred shadow differ, for 400 allowed: the reference is an HTML text whose glyph is 1px to the right of the SVG text (which the fuzziness of the test allows), and its baseline is not at the same fraction of a pixel as the `y` of the SVG text, so the two shadows are not sampled at the same position |
+| [`painting/reftests/text-shadow-01.html`](https://wpt.fyi/results/svg/painting/reftests/text-shadow-01.html) | Fail | 0 / 1 | BUG | 460 pixels of the blurred shadow differ, for 400 allowed: the reference is an HTML text whose glyph is 1px to the right of the SVG text (which the fuzziness of the test allows), and its baseline is not at the same fraction of a pixel as the `y` of the SVG text, so the two shadows are not sampled at the same position |
 | [`painting/reftests/text-shadow-02.html`](https://wpt.fyi/results/svg/painting/reftests/text-shadow-02.html) | Pass | 1 / 1 |  |  |
 | [`painting/reftests/text-shadow-03.html`](https://wpt.fyi/results/svg/painting/reftests/text-shadow-03.html) | Fail | 0 / 1 | BUG | the test expects the shadow of a text that is filled and stroked to be the shadow of the first of the fill and the stroke that is painted (Chromium: the stroke with `paint-order: stroke`); the library paints the shadows of the fill and of the stroke, as `css/css-text-decor/text-shadow/svg-stroke.html` requires (Gecko and WebKit fail this test too) |
 | [`painting/reftests/visibility-collapse-001.html`](https://wpt.fyi/results/svg/painting/reftests/visibility-collapse-001.html) | Pass | 1 / 1 |  |  |

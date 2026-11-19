@@ -984,7 +984,7 @@ public sealed class DrawingFuzzTests
         return ((ProjectiveTransform)plane).Then(new ProjectiveTransform(1, 0, p, 0, 1, q, 0, 0, 1));
     }
 
-    /// <summary>A filter of a few pixels of reach: a blur, a color matrix, a shadow, or a chain of them.</summary>
+    /// <summary>A filter of a few pixels of reach: a blur, a color matrix, a shadow, or a chain of them (possibly ending with a quantization).</summary>
     private static Filter CreateFilter(FuzzRandom random) => random.Next(5) switch
     {
         3 => CreateFilterGraph(random),
@@ -996,7 +996,7 @@ public sealed class DrawingFuzzTests
             _ => ColorMatrix.CreateOpacity(NextDouble(random)),
         }),
         2 => new DropShadowFilter(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), NextDouble(random) * 3) { ShadowOnly = random.Chance(30) },
-        _ => new FilterChain(CreateFilter(random), CreateFilter(random)),
+        _ => random.Chance(25) ? new FilterChain(CreateFilter(random), new QuantizeFilter(1 + random.Next(16))) : new FilterChain(CreateFilter(random), CreateFilter(random)),
     };
 
     private static FilterGraph CreateFilterGraph(FuzzRandom random)

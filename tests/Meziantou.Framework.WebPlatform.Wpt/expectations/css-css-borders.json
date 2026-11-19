@@ -1582,10 +1582,7 @@
     "total": 12
   },
   "css/css-borders/tentative/parsing/border-shape-valid.html": {
-    "total": 12,
-    "failures": {
-      "e.style['border-shape'] = \"circle() border-box circle() content-box\" should set the property value": "FAIL"
-    }
+    "total": 12
   },
   "css/css-borders/tentative/parsing/border-top-radius-computed.html": {
     "total": 6

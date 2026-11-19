@@ -578,16 +578,24 @@ internal static partial class CssPropertyRegistry
         ["paint()"] = "paint( <ident> [ , <declaration-value>? ]? )",
 
         // https://drafts.csswg.org/css-images-5/#image-notation: image( <image-tags>? [ <image-src>? , <color>? ]! ), whose image
-        // source CSS Images 4 moved to Level 5 (WPT css/css-images/css-image-fallbacks-and-annotations.html); the source is a
-        // string only, as in the tests of CSS Images 4 (WPT css/css-images/parsing/image-function-invalid.html: image(url(foo.png))
-        // is invalid)
-        ["image()"] = "image( [ ltr | rtl ]? [ <string> [ , <color> ]? | <color> ] )",
+        // source CSS Images 4 moved to Level 5 (WPT css/css-images/css-image-fallbacks-and-annotations.html); <image-src> is
+        // [ <url> | <string> ] (WPT css/css-images/parsing/image-function-valid.html: image(url(foo.png)) is valid)
+        ["image()"] = "image( [ ltr | rtl ]? [ [ <url> | <string> ] [ , <color> ]? | <color> ] )",
 
         // https://drafts.csswg.org/css-images-4/#image-set-notation: "the image-set() function can not be nested inside of itself,
         // either directly or indirectly", and the resolutions are not negative; -webkit-image-set() is a parse-time alias
         // (https://drafts.csswg.org/css-images-4/#deprecated)
         ["<image-set-option>"] = "[ <url> | <image()> | <cross-fade()> | <-webkit-cross-fade()> | <element()> | <gradient> | <light-dark-image> | <filter()> | <string> ] [ <resolution [0,\u221E]> || type(<string>) ]?",
         ["-webkit-image-set()"] = "-webkit-image-set( <image-set-option># )",
+
+        // https://drafts.fxtf.org/filter-effects/#funcdef-filter-drop-shadow: "Negative values are not allowed" for the blur
+        // radius (the third length; WPT css/filter-effects/parsing/filter-parsing-invalid.html)
+        ["drop-shadow()"] = "drop-shadow( [ <color>? && [ <length>{2} <length [0,\u221E]>? ] ] )",
+
+        // https://drafts.csswg.org/css-images-3/#radial-gradient-syntax: the shape restricts the size, a circle takes one length
+        // and an ellipse two lengths or percentages (the prose of <radial-size>): circle 10px 10px and ellipse 10px are invalid
+        // (WPT css/css-backgrounds/parsing/background-image-invalid.html)
+        ["<radial-gradient-syntax>"] = "[ [ [ [ circle || [ <radial-extent> | <length [0,\u221E]> ] ] | [ ellipse || [ <radial-extent> | <length-percentage [0,\u221E]>{2} ] ] ]? [ at <position> ]? ] || <color-interpolation-method> ]? , <color-stop-list>",
 
         // https://compat.spec.whatwg.org/#css-gradient-functions: the -webkit- prefixed gradients, and -webkit-gradient()
         // (implemented by all the browsers)

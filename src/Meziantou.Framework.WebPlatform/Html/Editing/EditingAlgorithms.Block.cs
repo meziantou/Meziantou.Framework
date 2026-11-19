@@ -301,7 +301,7 @@ internal sealed partial class EditingAlgorithms
         var startOffset = (int)range.StartOffset;
         var endNode = range.EndContainer;
         var endOffset = (int)range.EndOffset;
-        if (GetOutermostListItem(startNode) is { ParentNode: { } startItemParent } startItem)
+        if (GetInnermostListItem(startNode) is { ParentNode: { } startItemParent } startItem)
         {
             startOffset = NodeIndex(startItem);
             startNode = startItemParent;
@@ -333,7 +333,7 @@ internal sealed partial class EditingAlgorithms
             startNode = parent;
         }
 
-        if (GetOutermostListItem(endNode) is { ParentNode: { } endItemParent } endItem)
+        if (GetInnermostListItem(endNode) is { ParentNode: { } endItemParent } endItem)
         {
             endOffset = 1 + NodeIndex(endItem);
             endNode = endItemParent;
@@ -370,19 +370,16 @@ internal sealed partial class EditingAlgorithms
         newRange.SetEnd(endNode, (uint)endOffset);
         return newRange;
 
-        // The li that is the inclusive ancestor of the node the closest to the root
-        static Node? GetOutermostListItem(Node node)
+        // The last li that is an inclusive ancestor of the node in tree order: the closest to the node
+        static Node? GetInnermostListItem(Node node)
         {
-            Node? item = null;
             for (Node? current = node; current is not null; current = current.ParentNode)
             {
                 if (IsHtmlElement(current, "li"))
-                {
-                    item = current;
-                }
+                    return current;
             }
 
-            return item;
+            return null;
         }
     }
 

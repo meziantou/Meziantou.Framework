@@ -110,7 +110,7 @@ public abstract partial class CanvasRenderingContext2DBase
         if (Invert(_state.Transform) is not null)
         {
             var alpha = _state.GlobalAlpha;
-            var content = snapshot.Content;
+            var content = snapshot.GetContent();
             DrawShape(builder =>
             {
                 builder.Save();

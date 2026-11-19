@@ -79,6 +79,25 @@ public sealed class ReportingTests : IDisposable
     }
 
     [Fact]
+    public void IntegrityPolicy_ReportsTheUrlOfTheRequestNotTheTargetOfItsRedirect()
+    {
+        var document = Load("""
+            <script>
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.body.dataset.reports = (document.body.dataset.reports ?? '') + report.body.blockedURL + ';';
+            }).observe();
+            </script>
+            <script src="/redirect.js"></script>
+            """, [new("Integrity-Policy-Report-Only", "blocked-destinations=(script), endpoints=(integrity)"), new("Reporting-Endpoints", "integrity=\"/reports\"")]);
+
+        Assert.Equal("target", document.Title);
+        var reports = document.Body!.GetAttribute("data-reports")!.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        Assert.NotEmpty(reports);
+        Assert.All(reports, url => Assert.Equal("https://example.com/redirect.js", url));
+    }
+
+    [Fact]
     public void IntegrityPolicy_IsInheritedWithThePolicyContainer()
     {
         var hash = "sha256-" + Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData("document.title += ' b'"u8));
@@ -404,6 +423,7 @@ public sealed class ReportingTests : IDisposable
             {
                 _ when path.EndsWith("/frame.html", StringComparison.Ordinal) => new DocumentResource(FrameHtml) { Headers = [new("Content-Type", "text/html")] },
                 RequestDestination.Document => new DocumentResource(html) { Headers = [new("Content-Type", "text/html"), .. headers] },
+                _ when path.EndsWith("/redirect.js", StringComparison.Ordinal) => new DocumentResource("") { StatusCode = 302, Headers = [new("Location", "https://other.example/target.js?secret")] },
                 _ when path.EndsWith(".png", StringComparison.Ordinal) => DocumentResource.Create(Png, "image/png"),
                 _ when path.EndsWith(".js", StringComparison.Ordinal) => DocumentResource.Create($"document.title += ' {name[..^3]}'", "text/javascript"),
                 _ => DocumentResource.Create("data", "text/plain"),

@@ -170,12 +170,8 @@ internal sealed class BlockParser
         var position = HasExtension(MarkdownExtensions.YamlFrontMatter) && !_isCell ? ParseFrontMatter() : 0;
         while (position < text.Length)
         {
-            var lineEnd = position;
-            while (lineEnd < text.Length && text[lineEnd] is not ('\r' or '\n'))
-            {
-                lineEnd++;
-            }
-
+            var lineLength = text.AsSpan(position).IndexOfAny('\r', '\n');
+            var lineEnd = lineLength < 0 ? text.Length : position + lineLength;
             var eolEnd = lineEnd;
             if (eolEnd < text.Length)
             {

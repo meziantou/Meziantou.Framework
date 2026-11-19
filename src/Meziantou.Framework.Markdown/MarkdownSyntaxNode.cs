@@ -142,7 +142,9 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
     /// <summary>Gets the text of the tokens of <paramref name="kind"/>, with the line breaks between them.</summary>
     private protected string GetTokensText(SyntaxKind kind)
     {
-        var builder = new StringBuilder();
+        // Most nodes have one token of the kind, or none: the builder is made for the second part only
+        string? first = null;
+        StringBuilder? builder = null;
         var previousIsKind = false;
         foreach (var child in ChildNodesAndTokens())
         {
@@ -153,21 +155,33 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
 
             if (token.RawKind == (int)kind)
             {
-                builder.Append(GetTokenText(token));
+                Append(GetTokenText(token));
                 previousIsKind = true;
             }
             else
             {
                 if (token.RawKind == (int)SyntaxKind.LineEndingToken && previousIsKind)
                 {
-                    builder.Append('\n');
+                    Append("\n");
                 }
 
                 previousIsKind = false;
             }
         }
 
-        return builder.ToString();
+        return builder?.ToString() ?? first ?? "";
+
+        void Append(string text)
+        {
+            if (first is null)
+            {
+                first = text;
+                return;
+            }
+
+            builder ??= new StringBuilder(first);
+            builder.Append(text);
+        }
     }
 
     /// <summary>Gets the plain text of children: the inlines of a block or of an inline.</summary>

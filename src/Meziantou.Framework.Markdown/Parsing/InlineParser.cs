@@ -16,6 +16,10 @@ internal sealed class InlineParser
 {
     private const int MaximumLinkDestinationParentheses = 32;
 
+    // The characters that a link destination without angle brackets stops at, or reads in a special way: the escapes, the
+    // parentheses, the spaces and the control characters but NUL, which is U+FFFD for CommonMark
+    private static readonly SearchValues<char> LinkDestinationSpecialCharacters = SearchValues.Create("\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F \\()\u007F");
+
     private readonly Dictionary<string, bool> _references;
     private readonly bool _strikethrough;
     private readonly bool _subscript;
@@ -84,6 +88,18 @@ internal sealed class InlineParser
     private MarkdigUrlScan _markdigUrlScan;
     private readonly List<int> _markdigUrlDepths = [];
     private readonly List<int> _markdigUrlLowerDepths = [];
+
+    // The prefixes that a Markdig autolink starts with: the text skips to the next one with a vectorized search instead of
+    // stopping at each of their first letters, which are among the most frequent ones
+    private static readonly SearchValues<string> MarkdigAutolinkPrefixes = SearchValues.Create(["http://", "https://", "www.", "ftp://", "mailto:", "tel:"], StringComparison.Ordinal);
+    private const int MarkdigAutolinkPrefixMaximumLength = 8;
+
+    // The first position of _text, from _markdigAutolinkSearchStart to the end of the subject, where one of these prefixes
+    // starts, or int.MaxValue when there is none
+    private string? _markdigAutolinkSearchText;
+    private int _markdigAutolinkSearchStart;
+    private int _markdigAutolinkSearchEnd;
+    private int _markdigAutolinkCandidate;
 
     // The nodes of the inlines, reused from one leaf block to the next
     private readonly List<InlineNode> _nodes = [];
@@ -221,7 +237,7 @@ internal sealed class InlineParser
         AppendIf(_autolinks || _customContainers, ":");
         AppendIf(_autolinks, "w");
         AppendIf(_jiraLinks, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        AppendIf(_markdigAutolinks is not null, "hfmtw");
+        // The text stops at the prefixes of the Markdig autolinks with another search: see GetNextMarkdigAutolinkCandidate
         AppendIf(_smartyPants, "'\">.");
         AppendIf(_citations, "\"");
         AppendIf(_syntaxExtensions is not null, _syntaxExtensions?.TriggerCharacters ?? "");
@@ -1374,26 +1390,101 @@ internal sealed class InlineParser
     {
         var start = _pos;
         _pos++;
+        if (_markdigAutolinks is not null)
+        {
+            ParseStringWithMarkdigAutolinks();
+        }
+        else
+        {
+            while (_pos < _end)
+            {
+                // Skip the characters that cannot end the text, then check the one found
+                var index = _text.AsSpan(_pos, _end - _pos).IndexOfAny(_textStopCharacters);
+                if (index < 0)
+                {
+                    _pos = _end;
+                    break;
+                }
+
+                _pos += index;
+                if (IsTextStop(_text[_pos]))
+                {
+                    break;
+                }
+
+                _pos++;
+            }
+        }
+
+        AppendText(start, _pos);
+    }
+
+    // The text up to the next special character, or up to the next autolink of Markdig, whose prefixes are found by a
+    // search of their own
+    private void ParseStringWithMarkdigAutolinks()
+    {
+        var candidate = GetNextMarkdigAutolinkCandidate(_pos);
         while (_pos < _end)
         {
-            // Skip the characters that cannot end the text, then check the one found
-            var index = _text.AsSpan(_pos, _end - _pos).IndexOfAny(_textStopCharacters);
-            if (index < 0)
+            var limit = Math.Min(_end, candidate);
+            var index = _text.AsSpan(_pos, limit - _pos).IndexOfAny(_textStopCharacters);
+            if (index >= 0)
             {
-                _pos = _end;
-                break;
+                _pos += index;
+                if (IsTextStop(_text[_pos]))
+                {
+                    break;
+                }
+
+                _pos++;
+                continue;
             }
 
-            _pos += index;
-            if (_text[_pos] is '\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&' || IsExtensionCharacter(_text[_pos]) || ((_scanningPipeTable || _pipeTableCell) && _text[_pos] == '|'))
+            _pos = limit;
+            if (limit == _end || IsMarkdigAutolinkStart(_pos))
             {
                 break;
             }
 
             _pos++;
+            candidate = GetNextMarkdigAutolinkCandidate(_pos);
+        }
+    }
+
+    private bool IsTextStop(char c) => c is '\n' or '\\' or '`' or '*' or '_' or '[' or ']' or '!' or '<' or '&' || IsExtensionCharacter(c) || ((_scanningPipeTable || _pipeTableCell) && c == '|');
+
+    // The first position from position to the end of the subject where a prefix of a Markdig autolink starts, or
+    // int.MaxValue. The text is read forward: the result of the last search is reused until the position passes it.
+    private int GetNextMarkdigAutolinkCandidate(int position)
+    {
+        if (ReferenceEquals(_markdigAutolinkSearchText, _text) && _markdigAutolinkSearchEnd == _textEnd)
+        {
+            if (position >= _markdigAutolinkSearchStart && position <= _markdigAutolinkCandidate)
+            {
+                return _markdigAutolinkCandidate;
+            }
+
+            if (position < _markdigAutolinkSearchStart)
+            {
+                // Back before the last search: only the characters before it are read, with the ones a prefix can overlap
+                var length = Math.Min(_textEnd, _markdigAutolinkSearchStart + MarkdigAutolinkPrefixMaximumLength - 1) - position;
+                var index = _text.AsSpan(position, length).IndexOfAny(MarkdigAutolinkPrefixes);
+                if (index >= 0 && position + index < _markdigAutolinkSearchStart)
+                {
+                    _markdigAutolinkCandidate = position + index;
+                }
+
+                _markdigAutolinkSearchStart = position;
+                return _markdigAutolinkCandidate;
+            }
         }
 
-        AppendText(start, _pos);
+        _markdigAutolinkSearchText = _text;
+        _markdigAutolinkSearchEnd = _textEnd;
+        _markdigAutolinkSearchStart = position;
+        var found = position < _textEnd ? _text.AsSpan(position, _textEnd - position).IndexOfAny(MarkdigAutolinkPrefixes) : -1;
+        _markdigAutolinkCandidate = found < 0 ? int.MaxValue : position + found;
+        return _markdigAutolinkCandidate;
     }
 
     // An autolink of Markdig starts with a scheme or www., after whitespace or a valid previous character
@@ -1970,8 +2061,14 @@ internal sealed class InlineParser
 
     private int Match(System.Text.RegularExpressions.Regex regex)
     {
-        var match = regex.Match(_text, _pos, _end - _pos);
-        return match.Success ? match.Length : 0;
+        // The span API does not allocate a Match. The patterns are anchored by ^, which is the start of the span, as it is the
+        // start of the range of Match(string, int, int).
+        foreach (var match in regex.EnumerateMatches(_text.AsSpan(_pos, _end - _pos)))
+        {
+            return match.Length;
+        }
+
+        return 0;
     }
 
     // The rules of markdown-cjk-friendly, as Markdig applies them: a delimiter next to a CJK character can open or close even
@@ -3296,22 +3393,26 @@ internal sealed class InlineParser
     // Scans a link destination, which can be empty in angle brackets
     private bool ScanLinkDestination()
     {
-        var braces = Match(Scanners.LinkDestinationBracesRegex());
-        if (braces > 0)
-        {
-            _pos += braces;
-            return true;
-        }
-
         if (PeekIs('<'))
         {
-            return false;
+            var braces = Match(Scanners.LinkDestinationBracesRegex());
+            _pos += braces;
+            return braces > 0;
         }
 
         var start = _pos;
         var openParentheses = 0;
         while (_pos < _end)
         {
+            // Skip the characters that do not end the destination and are not escapes or parentheses
+            var index = _text.AsSpan(_pos, _end - _pos).IndexOfAny(LinkDestinationSpecialCharacters);
+            if (index < 0)
+            {
+                _pos = _end;
+                break;
+            }
+
+            _pos += index;
             var c = _text[_pos];
             if (c == '\\' && _pos + 1 < _end && Scanners.IsEscapable(_text[_pos + 1]))
             {

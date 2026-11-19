@@ -16,16 +16,59 @@ internal sealed class MarkdownNode : GreenNode
     private readonly GreenNode? _children;
 
     public MarkdownNode(SyntaxKind kind, ReadOnlySpan<GreenNode?> children)
-        : this(kind, Green.SyntaxList.ListNode(children), diagnostics: null, annotations: null)
+        : this(kind, Green.SyntaxList.ListNode(children), diagnostics: null, annotations: null, GetRareKinds(children))
     {
     }
 
-    private MarkdownNode(SyntaxKind kind, GreenNode? children, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations)
+    private MarkdownNode(SyntaxKind kind, GreenNode? children, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations, MarkdownRareKinds rareKinds)
         : base((int)kind, diagnostics, annotations)
     {
         _children = children;
         SlotCount = 1;
         AdjustFlagsAndWidth(children);
+        RareKinds = rareKinds;
+    }
+
+    /// <summary>Gets the kinds of the nodes below this one that most documents have none of.</summary>
+    /// <remarks>They are known when the node is made, so that a document does not have to be walked to find them.</remarks>
+    public MarkdownRareKinds RareKinds { get; }
+
+    // The children are read from the span the parser gives, rather than from the list, whose slots are virtual calls
+    private static MarkdownRareKinds GetRareKinds(ReadOnlySpan<GreenNode?> children)
+    {
+        var kinds = MarkdownRareKinds.None;
+        foreach (var child in children)
+        {
+            kinds |= GetRareKinds(child);
+        }
+
+        return kinds;
+    }
+
+    private static MarkdownRareKinds GetRareKinds(GreenNode? node)
+    {
+        switch (node)
+        {
+            case MarkdownNode markdownNode:
+                return markdownNode.RareKinds | (SyntaxKind)node.RawKind switch
+                {
+                    SyntaxKind.GenericAttributes => MarkdownRareKinds.GenericAttributes,
+                    SyntaxKind.GridTable => MarkdownRareKinds.GridTable,
+                    _ => MarkdownRareKinds.None,
+                };
+
+            case { IsList: true }:
+                var kinds = MarkdownRareKinds.None;
+                for (var i = 0; i < node.SlotCount; i++)
+                {
+                    kinds |= GetRareKinds(node.GetSlot(i));
+                }
+
+                return kinds;
+
+            default:
+                return MarkdownRareKinds.None;
+        }
     }
 
     public override string KindText => ((SyntaxKind)RawKind).ToString();
@@ -44,12 +87,12 @@ internal sealed class MarkdownNode : GreenNode
             var child => Green.SyntaxList.ListNode([child]),
         };
 
-        return new MarkdownNode((SyntaxKind)RawKind, children, GetDiagnostics(), GetAnnotations());
+        return new MarkdownNode((SyntaxKind)RawKind, children, GetDiagnostics(), GetAnnotations(), GetRareKinds(children));
     }
 
-    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new MarkdownNode((SyntaxKind)RawKind, _children, diagnostics, GetAnnotations());
+    internal override GreenNode SetDiagnostics(SyntaxDiagnosticInfo[]? diagnostics) => new MarkdownNode((SyntaxKind)RawKind, _children, diagnostics, GetAnnotations(), RareKinds);
 
-    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new MarkdownNode((SyntaxKind)RawKind, _children, GetDiagnostics(), annotations);
+    internal override GreenNode SetAnnotations(SyntaxAnnotation[]? annotations) => new MarkdownNode((SyntaxKind)RawKind, _children, GetDiagnostics(), annotations, RareKinds);
 
     internal override bool IsEndOfLineTrivia(GreenNode trivia) => trivia.RawKind == (int)SyntaxKind.EndOfLineTrivia;
 

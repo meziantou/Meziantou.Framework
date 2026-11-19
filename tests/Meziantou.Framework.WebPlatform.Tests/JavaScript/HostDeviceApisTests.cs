@@ -3716,6 +3716,28 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void TrackStats_CountTheFramesOfEachState()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        var track = GetUserMedia(document, new MediaStreamConstraints { Video = true }).GetVideoTracks()[0];
+        var stats = (MediaStreamTrackVideoStats)track.Stats!;
+
+        // 1 s enabled, 1 s disabled, 1 s enabled at 30 frames per second, then the track stops: the stats are read once, after
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Enabled = false;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Enabled = true;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Stop();
+        clock.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(60ul, stats.TotalFrames);
+        Assert.Equal(60ul, stats.DeliveredFrames);
+        Assert.Equal(0ul, stats.DiscardedFrames);
+    }
+
+    [Fact]
     public void GetUserMedia_KeepsTheStateTheSourceHasWhenItStarts()
     {
         var muted = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { MutedOnStart = true }, Permissions = GrantedPermissions("microphone") });

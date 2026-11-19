@@ -30,6 +30,7 @@ public partial class MediaStreamTrack : EventTarget
     private MediaTrackConstraints _constraints;
     private Dictionary<string, object> _settings;
     private string _contentHint = "";
+    private bool _enabled = true;
     private Action? _stateChanged;
 
     internal MediaStreamTrack(GlobalScope global, MediaStreamTrackSource source, MediaTrackConstraints? constraints = null, Dictionary<string, object>? settings = null)
@@ -86,7 +87,18 @@ public partial class MediaStreamTrack : EventTarget
     /// </summary>
     /// <seealso href="https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-enabled"/>
     [IdlMember("enabled", "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-enabled")]
-    public bool Enabled { get; set; } = true;
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (_enabled != value)
+            {
+                OnStateChanging();
+                _enabled = value;
+            }
+        }
+    }
 
     /// <summary>Gets whether the source of the track is muted (it produces no media for now).</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-muted"/>
@@ -191,6 +203,7 @@ public partial class MediaStreamTrack : EventTarget
         if (ReadyState == MediaStreamTrackState.Ended)
             return;
 
+        OnStateChanging();
         ReadyState = MediaStreamTrackState.Ended;
         Source.RemoveTrack(this);
         OnTrackEnded();
@@ -276,6 +289,11 @@ public partial class MediaStreamTrack : EventTarget
         if (ReadyState == MediaStreamTrackState.Live)
         {
             var changed = !SettingsEqual(_settings, settings);
+            if (changed)
+            {
+                OnStateChanging();
+            }
+
             _settings = settings;
             if (changed)
             {
@@ -318,6 +336,7 @@ public partial class MediaStreamTrack : EventTarget
         if (ReadyState == MediaStreamTrackState.Ended)
             return;
 
+        OnStateChanging();
         ReadyState = MediaStreamTrackState.Ended;
         Source.RemoveTrack(this);
         OnTrackEnded();
@@ -333,6 +352,7 @@ public partial class MediaStreamTrack : EventTarget
         if (ReadyState == MediaStreamTrackState.Ended || Muted == muted)
             return;
 
+        OnStateChanging();
         Muted = muted;
         _stateChanged?.Invoke();
         FireEvent(new Event(muted ? "mute" : "unmute"));

@@ -60,8 +60,8 @@ public sealed class MediaStreamTrackVideoStats
     }
 
     /// <summary>
-    /// Counts the frames produced since the last update: none while the track is disabled, muted or ended. The values do not
-    /// change until the next microtask checkpoint, so they are stable while a script runs.
+    /// Counts the frames produced since the last update. The values do not change until the next microtask checkpoint, so
+    /// they are stable while a script runs.
     /// </summary>
     private void Update()
     {
@@ -74,6 +74,15 @@ public sealed class MediaStreamTrackVideoStats
             eventLoop.QueueMicrotask(() => _isStable = false);
         }
 
+        Accumulate();
+    }
+
+    /// <summary>The state of the track is about to change (enabled, muted, ended, frame rate): the frames produced in the previous state are counted.</summary>
+    internal void OnTrackStateChanging() => Accumulate();
+
+    /// <summary>Counts the frames produced since the last count, in the current state of the track: none while it is disabled, muted or ended.</summary>
+    private void Accumulate()
+    {
         var now = _clock.GetTimestamp();
         var elapsed = _clock.GetElapsedTime(_lastTimestamp, now).TotalSeconds;
         _lastTimestamp = now;
@@ -141,4 +150,7 @@ public partial class MediaStreamTrack
     public object? Stats => !Source.IsCaptureDevice ? null : _stats ??= Source.Kind == MediaTrackKinds.Video
         ? new MediaStreamTrackVideoStats(this, RelevantGlobal?.EventLoop.TimeProvider ?? TimeProvider.System)
         : new MediaStreamTrackAudioStats(this);
+
+    /// <summary>The state of the track is about to change: its statistics count the frames of the previous state.</summary>
+    private void OnStateChanging() => (_stats as MediaStreamTrackVideoStats)?.OnTrackStateChanging();
 }

@@ -111,7 +111,7 @@ public static void SaveDdsTextures(string albedoPath, IReadOnlyList<string> skyF
 `Save` with a `.dds` path, or [ImageEncoder.Create](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.Create), gives a
 [DdsEncoder](cref:Meziantou.Framework.Imaging.Formats.DdsEncoder) with its default settings: the uncompressed format that keeps the pixels exactly
 (R8G8B8A8_UNORM for 8-bit pixels, R8 or R16 for gray, R16G16B16A16 for 16-bit pixels, the floating-point formats for
-floating-point pixels). The settings:
+floating-point pixels, whose bits are kept, the payload of a not-a-number included). The settings:
 
 | Setting | Meaning |
 | --- | --- |

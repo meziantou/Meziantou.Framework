@@ -124,6 +124,22 @@ public sealed class Ktx2EncoderTests
     }
 
     [Fact]
+    public void HalvesKeepTheBitsOfNotANumber()
+    {
+        // Signaling and quiet not-a-numbers of both signs, whose payloads a conversion through floats would quiet
+        ushort[] samples = [0x7D0A, 0xFD76, 0x7E01, 0xFC01, 0x7C00, 0x8000, 0x0001, 0x7BFF];
+        byte[] bytes = [.. samples.SelectMany(BitConverter.GetBytes)];
+        using var halves = Image.ImportPixelBytes<RgbaHalf>(bytes, 2, 1);
+        halves.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        var data = Save(halves, new Ktx2Encoder { Supercompression = Ktx2Supercompression.Zlib });
+        Assert.Equal(97u, ReadUInt32(data, 12));
+        using var decoded = Image.Load<RgbaHalf>(data);
+        var actual = new byte[bytes.Length];
+        decoded.Frames[0].CopyPixelBytesTo(actual);
+        Assert.Equal(bytes, actual);
+    }
+
+    [Fact]
     public void MipLevelsAreStoredFromTheSmallest()
     {
         using var image = CreateRgba32(8, 4, seed: 3);

@@ -92,6 +92,22 @@ public sealed class DdsEncoderTests
     }
 
     [Fact]
+    public void HalvesKeepTheBitsOfNotANumber()
+    {
+        // Signaling and quiet not-a-numbers of both signs, whose payloads a conversion through floats would quiet
+        ushort[] samples = [0x7D0A, 0xFD76, 0x7E01, 0xFC01, 0x7C00, 0x8000, 0x0001, 0x7BFF];
+        byte[] bytes = [.. samples.SelectMany(BitConverter.GetBytes)];
+        using var halves = Image.ImportPixelBytes<RgbaHalf>(bytes, 2, 1);
+        halves.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        var data = Save(halves, new DdsEncoder());
+        Assert.Equal(113u, ReadUInt32(data, 84));
+        using var decoded = Image.Load<RgbaHalf>(data);
+        var actual = new byte[bytes.Length];
+        decoded.Frames[0].CopyPixelBytesTo(actual);
+        Assert.Equal(bytes, actual);
+    }
+
+    [Fact]
     public void GrayPixelsAreOneChannel()
     {
         using var gray = new Image<Gray8>(4, 1);

@@ -9,20 +9,14 @@ description: "The results of the web-platform-tests of payment-method-id, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **0** | **0%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 1
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`payment-request-ctor-pmi-handling.https.sub.html`](https://wpt.fyi/results/payment-method-id/payment-request-ctor-pmi-handling.https.sub.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Payment Request API |
+| [`payment-request-ctor-pmi-handling.https.sub.html`](https://wpt.fyi/results/payment-method-id/payment-request-ctor-pmi-handling.https.sub.html) | Pass | 4 / 4 |  |  |

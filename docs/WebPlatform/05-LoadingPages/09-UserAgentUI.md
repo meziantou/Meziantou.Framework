@@ -20,6 +20,12 @@ method that a backend does not override, the prompt behaves as if the user dismi
 | [ChooseCredentialAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ChooseCredentialAsync) | `navigator.credentials.get()` with `password` or `federated` | No credential: the promise resolves with `null` |
 | [StoreCredentialAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.StoreCredentialAsync) | `navigator.credentials.store()` of a `PasswordCredential` or a `FederatedCredential` | The credential is not saved (the page is not told) |
 | [RequestDigitalCredentialAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.RequestDigitalCredentialAsync) | `navigator.credentials.get({ digital })` and `navigator.credentials.create({ digital })` | The user cancels: the promise is rejected with a `NotAllowedError` |
+| [HasPaymentHandlerAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.HasPaymentHandlerAsync) | `PaymentRequest.canMakePayment()` and `PaymentRequest.show()` | No payment method is supported: `canMakePayment()` resolves with `false`, `show()` rejects with a `NotSupportedError` |
+| [ValidatePaymentMethodData](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ValidatePaymentMethodData) | The `PaymentRequest` constructor, for each payment method that has data | Any data is accepted |
+| [ShowPaymentSheetAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowPaymentSheetAsync) | `PaymentRequest.show()` | The user dismisses the payment sheet: the promise rejects with an `AbortError` |
+| [RetryPaymentAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.RetryPaymentAsync) | `PaymentResponse.retry()` | The user dismisses the payment sheet: the promise rejects with an `AbortError` |
+| [CompletePaymentAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.CompletePaymentAsync) | `PaymentResponse.complete()` | The payment sheet closes at once |
+| [IngestPaymentMethodManifestAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.IngestPaymentMethodManifestAsync) | `PaymentRequest.canMakePayment()` and `PaymentRequest.show()` with a URL-based payment method identifier | The payment method manifest is not fetched |
 
 The methods are called on the thread of the event loop. The task they return can complete later, on any thread: the
 library settles the promise of the page on its event loop, and the event loop is not idle while a prompt is open. The
@@ -131,3 +137,118 @@ internal sealed class SingleResponseWallet : UserAgentUIBackend
 `NotAllowedError`, as when the user cancels. The request is aborted, and the cancellation token canceled, when its signal
 is aborted or its document is destroyed.
 
+## Payments
+
+The [Payment Request API](https://w3c.github.io/payment-request/) lets a page ask the browser to pay: the page lists the
+payment methods it accepts and the details of the payment (`new PaymentRequest(methods, details, options)`), and
+`request.show()` opens the payment sheet of the browser. The payment handlers and the payment sheet are the ones of the
+backend:
+
+- [HasPaymentHandlerAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.HasPaymentHandlerAsync) tells
+  whether the browser can pay with a payment method (its identifier, such as `https://pay.example/pay`, and its data as
+  JSON). `canMakePayment()` resolves with `true` when one method is supported; `show()` offers the supported methods and
+  rejects with a `NotSupportedError` when there is none.
+- [ShowPaymentSheetAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowPaymentSheetAsync) shows the
+  sheet and returns the [PaymentSheetResponse](cref:Meziantou.Framework.WebPlatform.Dom.PaymentSheetResponse) of the user
+  who accepts the payment (the selected method, the response of the payment handler as JSON, the payer details), or
+  `null` when the user dismisses the sheet.
+- [RetryPaymentAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.RetryPaymentAsync) shows the sheet again
+  when the page calls `response.retry(errors)`, and
+  [CompletePaymentAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.CompletePaymentAsync) closes it when
+  the page calls `response.complete(result)`.
+
+A payment sheet that accepts the payment with the first supported method:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UserAgentUIBackend_Payments;format=md-fenced-code-block;dedent=true -->
+```csharp
+/// <summary>
+/// A payment sheet whose user accepts the payment with the first supported payment method, once the page updated the
+/// details: the user agent has a payment handler for https://pay.example/pay.
+/// </summary>
+internal sealed class AcceptingPaymentSheet : UserAgentUIBackend
+{
+    public PaymentSheetPrompt? LastPrompt { get; private set; }
+
+    public PaymentComplete? Result { get; private set; }
+
+    public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(query.Method.Identifier == "https://pay.example/pay");
+
+    public override async ValueTask<PaymentSheetResponse?> ShowPaymentSheetAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        var details = await prompt.WaitForUpdateAsync(cancellationToken);
+        return new PaymentSheetResponse
+        {
+            MethodName = prompt.Methods[0].Identifier,
+            Details = $$"""{"token": "tok_{{details.Total.Amount.Value}}"}""",
+            PayerName = "John Doe",
+        };
+    }
+
+    // The user fixes the errors shown by the sheet (prompt.Errors)
+    public override ValueTask<PaymentSheetResponse?> RetryPaymentAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+        => ValueTask.FromResult<PaymentSheetResponse?>(new PaymentSheetResponse { MethodName = prompt.Response!.MethodName, PayerName = "Jane Doe" });
+
+    public override ValueTask CompletePaymentAsync(PaymentSheetPrompt prompt, PaymentComplete result, string serializedData, CancellationToken cancellationToken)
+    {
+        Result = result;
+        return ValueTask.CompletedTask;
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UserAgentUI_Payments;format=md-fenced-code-block;dedent=true -->
+```csharp
+var paymentSheet = new AcceptingPaymentSheet();
+var options = new BrowsingContextOptions
+{
+    // The payment handlers and the payment sheet of the Payment Request API are the ones of the backend
+    UserAgentUI = paymentSheet,
+};
+```
+<!-- endref -->
+
+The [PaymentSheetPrompt](cref:Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt) describes the request: the
+supported methods (`Methods`), the information to collect (`Options`: payer name, email and phone, shipping address) and
+the current details (`Details`: the total, the line items, the shipping options and the modifiers, whose amounts are
+validated and whose currency codes are in upper case). The same prompt is given to the three methods of a request.
+
+While the sheet is shown, the backend reports what the user changes, and the page can update the details:
+
+- [ChangeShippingAddressAsync](cref:Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt.ChangeShippingAddressAsync)
+  fires `shippingaddresschange`: the page sees the address without the recipient, the organization, the phone number and
+  the address lines, and usually updates the shipping options for it.
+- [ChangeShippingOptionAsync](cref:Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt.ChangeShippingOptionAsync)
+  fires `shippingoptionchange`.
+- [ChangePaymentMethodAsync](cref:Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt.ChangePaymentMethodAsync) fires
+  `paymentmethodchange` (for example with the billing address of a card, to compute the taxes).
+- [ChangePayerDetailsAsync](cref:Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt.ChangePayerDetailsAsync) fires
+  `payerdetailchange` at the `PaymentResponse` while a payment is retried.
+
+Each method completes with the details once the page updated them (`event.updateWith(promise)`), or at once when the page
+does not update them. [WaitForUpdateAsync](cref:Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt.WaitForUpdateAsync)
+waits for the promise given to `show(detailsPromise)`; a payment accepted during an update is accepted once the update
+completes. `Errors` holds the errors to show to the user (`error`, `shippingAddressErrors` and `payerErrors` of the last
+update, or the errors given to `retry()`). An update whose promise rejects, or whose details are not valid, aborts the
+request, and the cancellation token of the sheet is canceled.
+
+The library implements the rest of the specification: the validation of the payment method identifiers (a standardized
+identifier such as `secure-payment-confirmation`, or an `https:` URL), of the amounts and of the shipping options, the
+`payment` permissions policy (allowed in the same-origin frames, and in the frames whose `allow` attribute lists
+`payment`), the transient activation that `show()` consumes, the single payment sheet of a tab (a second `show()` rejects
+with an `AbortError`), `abort()`, and the closing of the sheet when its document is unloaded.
+[ValidatePaymentMethodData](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ValidatePaymentMethodData) checks
+the data of the payment methods that define a type for it, when the request is constructed.
+
+The owner of a URL-based payment method describes it with a
+[payment method manifest](https://w3c.github.io/payment-method-manifest/): the web app manifests of its default payment
+applications, and the origins whose payment handlers can handle it. When a page asks whether it can pay with the method,
+[IngestPaymentMethodManifestAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.IngestPaymentMethodManifestAsync)
+receives the identifier. As fetching the manifest tells the owner of the method that the user visits the page, the default
+implementation fetches nothing. A backend that installs payment handlers calls
+[FetchAsync](cref:Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifestRequest.FetchAsync), which sends a `HEAD`
+request to the identifier, follows its `Link: <...>; rel="payment-method-manifest"` header, fetches and validates the
+manifest ([PaymentMethodManifest](cref:Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifest)), then fetches the web
+app manifests of its default applications. The requests carry no credentials, and the manifests cannot be redirected.

@@ -407,6 +407,13 @@ internal sealed partial class FetchRequest
     public bool IsPrefetch { get; set; }
 
     /// <summary>
+    /// Whether the request is fetched by the user agent for itself and its internal responses are read by the user agent
+    /// (e.g. the payment method manifests, which Chromium fetches without CORS): a no-cors request can then use the
+    /// "manual" and "error" redirect modes.
+    /// </summary>
+    public bool IsUserAgentRequest { get; set; }
+
+    /// <summary>
     /// The value of the <c>Sec-Purpose</c> header of a prefetch (<see cref="IsPrefetch"/>): <c>prefetch</c> by default,
     /// <c>prefetch;anonymous-client-ip</c> for a navigational prefetch that hides the IP address of the client
     /// (https://wicg.github.io/nav-speculation/prefetch.html), or <c>prefetch;prerender</c> for the requests of a prerendering

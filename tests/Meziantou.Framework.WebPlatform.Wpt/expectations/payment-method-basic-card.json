@@ -4,16 +4,11 @@
     "total": 0
   },
   "payment-method-basic-card/historical.https.html": {
-    "total": 1,
-    "failures": {
-      "supportedTypes and BasicCardType enum were removed from the spec": "FAIL"
-    }
+    "total": 1
   },
   "payment-method-basic-card/payment-request-canmakepayment-method.https.html": {
     "total": 3,
     "failures": {
-      "If basic-card is supported, then return a promise that resolves to true.": "FAIL",
-      "Must return false when the PMI is not supported at by the user agent.": "FAIL",
       "Must return true when basic-card is amongst unsupported PMIs.": "FAIL"
     }
   },

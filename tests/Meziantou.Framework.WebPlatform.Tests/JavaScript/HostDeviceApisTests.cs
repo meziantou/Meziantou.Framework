@@ -1734,6 +1734,255 @@ public sealed class HostDeviceApisTests : IDisposable
         }
     }
 
+    // Payment Request
+
+    private const string PaymentScript = """
+        window.log = [];
+        window.go = p => p.then(r => document.title = String(r), e => document.title = e.name);
+        window.methods = [{ supportedMethods: 'https://pay.example/pay', data: { merchant: 'shop' } }];
+        window.details = { total: { label: 'Total', amount: { currency: 'eur', value: '10.00' } } };
+        window.construct = (m, d, o) => { try { new PaymentRequest(m, d, o); return 'ok'; } catch (e) { return e.name; } };
+        """;
+
+    [Fact]
+    public void PaymentRequest_WithoutBackend_NoPaymentMethodIsSupported()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>");
+
+        Assert.Equal("false", Run(document, "go(new PaymentRequest(methods, details).canMakePayment())"));
+        Assert.Equal("SecurityError", Run(document, "go(new PaymentRequest(methods, details).show())"));
+        Activate(document);
+        Assert.Equal("NotSupportedError", Run(document, "go(new PaymentRequest(methods, details).show())"));
+    }
+
+    [Fact]
+    public void PaymentRequest_Constructor_ValidatesTheArguments()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>");
+
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'basic-card' }, { supportedMethods: 'https://pay.example/pay?v=1' }], details)"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([], details)"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'Basic-Card' }], details)"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'http://pay.example/' }], details)"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'https://pay.example/' }, { supportedMethods: 'https://pay.example' }], details)"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'basic-card', data: 'text' }], details)"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct(methods, { total: { label: '', amount: { currency: 'USD', value: '-1' } } })"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct(methods, { total: { label: '', amount: { currency: 'USD', value: '1.' } } })"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct(methods, { total: { label: '', amount: { currency: 'US', value: '1' } } })"));
+        Assert.Equal("ok", Run(document, "document.title = construct(methods, { ...details, displayItems: [{ label: 'Discount', amount: { currency: 'EUR', value: '-1.50' } }] })"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct(methods, { ...details, shippingOptions: [{ id: 'a', label: '', amount: details.total.amount }, { id: 'a', label: '', amount: details.total.amount }] }, { requestShipping: true })"));
+        Assert.Equal("b|delivery|null|null|order-1|true", Run(document, """
+            const r = new PaymentRequest(methods, { ...details, id: 'order-1', shippingOptions: [{ id: 'a', label: '', amount: details.total.amount, selected: true }, { id: 'b', label: '', amount: details.total.amount, selected: true }] }, { requestShipping: true, shippingType: 'delivery' });
+            const other = new PaymentRequest(methods, details);
+            document.title = [r.shippingOption, r.shippingType, String(other.shippingType), String(other.shippingAddress), r.id, other.id.length > 0 && other.id !== new PaymentRequest(methods, details).id].join('|');
+            """));
+    }
+
+    [Fact]
+    public async Task PaymentRequest_Show_TheUserAcceptsThePayment()
+    {
+        #region WebPlatform_UserAgentUI_Payments
+        var paymentSheet = new AcceptingPaymentSheet();
+        var options = new BrowsingContextOptions
+        {
+            // The payment handlers and the payment sheet of the Payment Request API are the ones of the backend
+            UserAgentUI = paymentSheet,
+        };
+        #endregion
+
+        var document = Load("<script>" + PaymentScript + "</script>", options);
+        Assert.Equal("true", await RunAsync(document, "go(new PaymentRequest([{ supportedMethods: 'basic-card' }, ...methods], details).canMakePayment())"));
+
+        Activate(document);
+        Assert.Equal("https://pay.example/pay|tok_12.00|John Doe|null|undefined", await RunAsync(document, """
+            const r = new PaymentRequest(methods, details, { requestPayerName: true });
+            go(r.show(Promise.resolve({ total: { label: 'Total', amount: { currency: 'eur', value: '12.00' } } }))
+                .then(response => response.complete('success').then(result => [response.methodName, response.details.token, response.payerName, String(response.payerEmail), String(result)].join('|'))));
+            """));
+        Assert.Equal(PaymentComplete.Success, paymentSheet.Result);
+        Assert.Equal("EUR", paymentSheet.LastPrompt!.Details.Total.Amount.Currency);
+        Assert.Equal("{\"merchant\":\"shop\"}", paymentSheet.LastPrompt.Methods[0].Data);
+    }
+
+    [Fact]
+    public async Task PaymentRequest_Show_TheSheetWaitsForTheUpdatesOfThePage()
+    {
+        var backend = new ShippingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Activate(document);
+
+        Assert.Equal("John|express|FR|address Paris//0,option express", await RunAsync(document, """
+            const r = new PaymentRequest(methods, details, { requestShipping: true });
+            r.onshippingaddresschange = e => {
+                log.push('address ' + [r.shippingAddress.city, r.shippingAddress.recipient, r.shippingAddress.addressLine.length].join('/'));
+                e.updateWith(new Promise(resolve => setTimeout(() => resolve({ shippingOptions: [
+                    { id: 'standard', label: 'Standard', amount: { currency: 'EUR', value: '0' }, selected: true },
+                    { id: 'express', label: 'Express', amount: { currency: 'EUR', value: '5' } }] }), 0)));
+            };
+            r.onshippingoptionchange = () => log.push('option ' + r.shippingOption);
+            go(r.show().then(response => [response.shippingAddress.recipient, response.shippingOption, response.shippingAddress.country, log.join()].join('|')));
+            """));
+        Assert.Equal(["standard", "express"], backend.ShippingOptions);
+    }
+
+    [Fact]
+    public void PaymentRequest_Show_InvalidUpdate_AbortsTheRequest()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = new PendingPaymentSheet() });
+
+        Activate(document);
+        Assert.Equal("AbortError", Run(document, "go(new PaymentRequest(methods, details).show(Promise.reject(new Error('rejected'))))"));
+        Activate(document);
+        Assert.Equal("TypeError", Run(document, "go(new PaymentRequest(methods, details).show(Promise.resolve({ total: { label: '', amount: { currency: 'EUR', value: '-1' } } })))"));
+        Activate(document);
+        Assert.Equal("RangeError", Run(document, "go(new PaymentRequest(methods, details).show(Promise.resolve({ displayItems: [{ label: '', amount: { currency: '€', value: '1' } }] })))"));
+    }
+
+    [Fact]
+    public void PaymentRequest_Abort_ClosesTheSheet()
+    {
+        var backend = new PendingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Assert.Equal("InvalidStateError", Run(document, "window.r = new PaymentRequest(methods, details); go(r.abort())"));
+        Activate(document);
+        Run(document, "go(r.show())");
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
+
+        // Another payment sheet cannot be shown in the tab
+        Activate(document);
+        Assert.Equal("AbortError", Run(document, "go(new PaymentRequest(methods, details).show())"));
+        Assert.Equal("InvalidStateError", Run(document, "go(r.canMakePayment())"));
+
+        Assert.Equal("AbortError", Run(document, "r.abort()"));
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+        Activate(document);
+        Assert.Equal("InvalidStateError", Run(document, "go(r.show())"));
+    }
+
+    [Fact]
+    public async Task PaymentResponse_Retry_ShowsTheErrorsToTheUser()
+    {
+        var backend = new AcceptingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Activate(document);
+
+        Assert.Equal("Jane Doe|InvalidStateError", await RunAsync(document, """
+            const r = new PaymentRequest(methods, details, { requestPayerName: true });
+            go(r.show().then(response => response.retry({ error: 'Card declined', payer: { name: 'Unknown name' } }).then(() => {
+                const name = response.payerName;
+                return response.complete().then(() => response.retry()).catch(e => name + '|' + e.name);
+            })));
+            """));
+        Assert.Equal("Card declined", backend.LastPrompt!.Errors!.Error);
+        Assert.Equal("Unknown name", backend.LastPrompt.Errors.Payer!.Name);
+    }
+
+    [Fact]
+    public void PaymentRequestUpdateEvent_UntrustedEvent_CannotUpdate()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>");
+
+        Assert.Equal("InvalidStateError|test|paymentmethodchange|null", Run(document, """
+            const r = new PaymentRequest(methods, details);
+            const e = new PaymentMethodChangeEvent('paymentmethodchange', { methodName: 'test' });
+            r.onpaymentmethodchange = event => log.push(event.type);
+            r.dispatchEvent(e);
+            try { e.updateWith(Promise.resolve({})); } catch (error) { log.unshift(error.name); }
+            document.title = [log[0], e.methodName, log[1], String(new PaymentMethodChangeEvent('x').methodDetails)].join('|');
+            """));
+    }
+
+    [Theory]
+    [InlineData("https://example.com/pay", true)]
+    [InlineData(" \thttps://example.com/pay\n", true)]
+    [InlineData("https://:@example.com/pay", true)]
+    [InlineData("secure-payment-confirmation", true)]
+    [InlineData("a-b0-c", true)]
+    [InlineData("https://user@example.com/pay", false)]
+    [InlineData("http://example.com/pay", false)]
+    [InlineData("Basic-Card", false)]
+    [InlineData("a--b", false)]
+    [InlineData("a-0", false)]
+    [InlineData("a-", false)]
+    [InlineData("", false)]
+    public void PaymentMethodIdentifier_IsValid(string identifier, bool expected)
+    {
+        Assert.Equal(expected, PaymentMethodIdentifier.IsValid(identifier));
+    }
+
+    [Theory]
+    [InlineData("""{"default_applications": ["app.json", "https://pay.example/pay/app.json"], "supported_origins": ["https://bob.example", "https://bob.example/"], "other": 1}""", "https://pay.example/pay/app.json", "https://bob.example")]
+    [InlineData("""{"supported_origins": ["https://bob.example:8443"]}""", "", "https://bob.example:8443")]
+    [InlineData("""{"default_applications": ["first.json"], "default_applications": ["last.json"]}""", "https://pay.example/pay/last.json", "")]
+    [InlineData("\uFEFF{}", "", "")]
+    [InlineData("""{"default_applications": []}""", null, null)]
+    [InlineData("""{"default_applications": "app.json"}""", null, null)]
+    [InlineData("""{"default_applications": ["app.json", 1]}""", null, null)]
+    [InlineData("""{"default_applications": ["http://pay.example/app.json"]}""", null, null)]
+    [InlineData("""{"default_applications": ["https://"]}""", null, null)]
+    [InlineData("""{"supported_origins": "*"}""", null, null)]
+    [InlineData("""{"supported_origins": null}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://bob.example/pay"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://bob.example/?q"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://bob.example/#f"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://user:pass@bob.example"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["/relative"]}""", null, null)]
+    [InlineData("[]", null, null)]
+    [InlineData("not json", null, null)]
+    public void PaymentMethodManifest_Parse(string content, string? defaultApplications, string? supportedOrigins)
+    {
+        var manifest = PaymentMethodManifest.Parse(System.Text.Encoding.UTF8.GetBytes(content), "https://pay.example/pay/manifest.json");
+
+        Assert.Equal(defaultApplications, manifest is null ? null : string.Join(' ', manifest.DefaultApplications));
+        Assert.Equal(supportedOrigins, manifest is null ? null : string.Join(' ', manifest.SupportedOrigins));
+    }
+
+    [Theory]
+    [InlineData("<https://pay.example/manifest.json>; rel=\"payment-method-manifest\"", "https://pay.example/manifest.json")]
+    [InlineData("<manifest.json>; rel=payment-method-manifest", "manifest.json")]
+    [InlineData("<manifest.json>; rel=\"PAYMENT-METHOD-MANIFEST\"", "manifest.json")]
+    [InlineData("<manifest.json>; rel=\"other payment-method-manifest\"; foo=bar", "manifest.json")]
+    [InlineData("<other.json>; rel=\"other\"\n<first.json>; rel=\"payment-method-manifest\"\n<second.json>; rel=\"payment-method-manifest\"", "first.json")]
+    [InlineData("<manifest.json>; rel=\"stylesheet\"", null)]
+    [InlineData("<manifest.json>; rel=\"stylesheet\"; rel=\"payment-method-manifest\"", null)]
+    [InlineData("manifest.json; rel=\"payment-method-manifest\"", null)]
+    [InlineData("<manifest.json>; rel=\"payment-method-manifest", null)]
+    [InlineData("<manifest.json> rel=\"payment-method-manifest\"", null)]
+    public void LinkHeader_FindPaymentMethodManifest(string values, string? expected)
+    {
+        Assert.Equal(expected, LinkHeader.FindPaymentMethodManifest(values.Split('\n')));
+    }
+
+    private sealed class PendingPaymentSheet : UserAgentUIBackend
+    {
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(true);
+
+        public override ValueTask<PaymentSheetResponse?> ShowPaymentSheetAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            return new(new TaskCompletionSource<PaymentSheetResponse?>().Task);
+        }
+    }
+
+    /// <summary>A payment sheet whose user chooses a shipping address, then the last shipping option offered by the page.</summary>
+    private sealed class ShippingPaymentSheet : UserAgentUIBackend
+    {
+        public List<string> ShippingOptions { get; } = [];
+
+        public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(true);
+
+        public override async ValueTask<PaymentSheetResponse?> ShowPaymentSheetAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+        {
+            var details = await prompt.ChangeShippingAddressAsync(new ContactAddress { Country = "FR", City = "Paris", Recipient = "John", AddressLine = ["1 rue de Rivoli"] }, cancellationToken);
+            ShippingOptions.AddRange(details.ShippingOptions.Select(option => option.Id));
+            await prompt.ChangeShippingOptionAsync(details.ShippingOptions[^1].Id, cancellationToken);
+            return new PaymentSheetResponse { MethodName = prompt.Methods[0].Identifier };
+        }
+    }
+
     // Screen Orientation
 
     private const string OrientationScript = """
@@ -2586,6 +2835,44 @@ internal sealed class SingleResponseWallet : UserAgentUIBackend
         var request = prompt.Requests[0];
         var response = $$"""{"protocol":"{{request.Protocol}}","request":{{request.Data}}}""";
         return ValueTask.FromResult<DigitalCredentialResponse?>(new DigitalCredentialResponse(request.Protocol, response));
+    }
+}
+#endregion
+
+#region WebPlatform_UserAgentUIBackend_Payments
+/// <summary>
+/// A payment sheet whose user accepts the payment with the first supported payment method, once the page updated the
+/// details: the user agent has a payment handler for https://pay.example/pay.
+/// </summary>
+internal sealed class AcceptingPaymentSheet : UserAgentUIBackend
+{
+    public PaymentSheetPrompt? LastPrompt { get; private set; }
+
+    public PaymentComplete? Result { get; private set; }
+
+    public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(query.Method.Identifier == "https://pay.example/pay");
+
+    public override async ValueTask<PaymentSheetResponse?> ShowPaymentSheetAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        var details = await prompt.WaitForUpdateAsync(cancellationToken);
+        return new PaymentSheetResponse
+        {
+            MethodName = prompt.Methods[0].Identifier,
+            Details = $$"""{"token": "tok_{{details.Total.Amount.Value}}"}""",
+            PayerName = "John Doe",
+        };
+    }
+
+    // The user fixes the errors shown by the sheet (prompt.Errors)
+    public override ValueTask<PaymentSheetResponse?> RetryPaymentAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+        => ValueTask.FromResult<PaymentSheetResponse?>(new PaymentSheetResponse { MethodName = prompt.Response!.MethodName, PayerName = "Jane Doe" });
+
+    public override ValueTask CompletePaymentAsync(PaymentSheetPrompt prompt, PaymentComplete result, string serializedData, CancellationToken cancellationToken)
+    {
+        Result = result;
+        return ValueTask.CompletedTask;
     }
 }
 #endregion

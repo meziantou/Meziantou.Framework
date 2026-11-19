@@ -22,7 +22,6 @@
       "If CanMakePaymentEvent.respondWith(Promise.resolve(true)) is called, then canMakePayment() returns true and the app can be invoked.": "FAIL",
       "If CanMakePaymentEvent.respondWith(false) is called, then canMakePayment() still returns true and the app can still be invoked.": "FAIL",
       "If CanMakePaymentEvent.respondWith(true) is called, then canMakePayment() returns true and the app can be invoked.": "FAIL",
-      "If a payment handler is not installed and cannot be installed just-in-time, then the payment method is not supported.": "FAIL",
       "If a payment handler is not installed, but can be installed just-in-time, then the payment method is supported.": "FAIL"
     }
   },

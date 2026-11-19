@@ -288,7 +288,7 @@ internal static class Fetching
         }
         else if (request.Mode == RequestMode.NoCors)
         {
-            if (request.RedirectMode != FetchRedirectMode.Follow)
+            if (request.RedirectMode != FetchRedirectMode.Follow && !request.IsUserAgentRequest)
                 return FetchResponse.NetworkError();
 
             request.ResponseTainting = FetchResponseTainting.Opaque;

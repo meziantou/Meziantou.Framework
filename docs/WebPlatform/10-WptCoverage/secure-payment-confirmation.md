@@ -39,8 +39,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`authentication-optout.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-optout.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
 | [`authentication-rejected.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-rejected.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Secure Payment Confirmation |
 | [`authentication-requires-user-activation.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-requires-user-activation.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`constructor-validate-payment-method-data.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor-validate-payment-method-data.https.html) | Fail | 0 / 22 | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`constructor.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor.https.html) | Fail | 0 / 10 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`constructor-validate-payment-method-data.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor-validate-payment-method-data.https.html) | Fail | 4 / 22 | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`constructor.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor.https.html) | Fail | 2 / 10 | NOT IMPLEMENTED | Secure Payment Confirmation |
 | [`enrollment-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk-per-passkey.https.html) | Pass | 1 / 1 |  |  |
 | [`enrollment-bbk.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk.https.html) | Error | 3 / 3 | NOT IMPLEMENTED | Secure Payment Confirmation |
 | [`enrollment-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-in-iframe.sub.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | Secure Payment Confirmation |

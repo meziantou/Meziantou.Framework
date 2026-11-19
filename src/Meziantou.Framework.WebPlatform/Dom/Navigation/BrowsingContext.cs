@@ -3569,6 +3569,7 @@ public sealed partial class BrowsingContext : IDisposable
             PointerLockModel.OnDocumentUnloaded(document);
             ReleaseDeviceLocks(document);
             ModelContext.RunUnloadingDocumentCleanupSteps(document);
+            PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
             if (persisted)
                 return;
 
@@ -3614,6 +3615,7 @@ public sealed partial class BrowsingContext : IDisposable
     {
         // https://webmachinelearning.github.io/webmcp/#unloading-document-cleanup-steps (the documents that are destroyed without being unloaded, e.g. an initial about:blank document)
         ModelContext.RunUnloadingDocumentCleanupSteps(document);
+        PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
 
         // The pointer lock of an element of the document is exited (https://w3c.github.io/pointerlock/#requirements), and
         // the locks of its window are released (https://w3c.github.io/web-locks/#lock-termination)

@@ -113,6 +113,8 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-entries-path", data => EntriesPathResolution(FuzzText.Decode(data))) { Seeds = GetEntriesPathSeeds, Dictionary = EntriesPathTokens },
         new("webplatform-drag-and-drop", DragAndDrop) { Seeds = GetDragAndDropSeeds, Dictionary = DragTokens },
         new("webplatform-speculation-rules", data => SpeculationRules(FuzzText.Decode(data))) { Seeds = GetSpeculationRulesSeeds, Dictionary = SpeculationRulesTokens },
+        new("webplatform-payment-method-manifest", PaymentMethodManifestTarget) { Seeds = GetPaymentMethodManifestSeeds, Dictionary = PaymentMethodManifestTokens },
+        new("webplatform-link-header", data => LinkHeaderTarget(FuzzText.Decode(data))) { Seeds = GetLinkHeaderSeeds, Dictionary = LinkHeaderTokens },
     ];
 
     /// <summary>

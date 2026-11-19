@@ -104,19 +104,15 @@
       "Empty logo field in a PaymentEntityLogo throws exception.": "FAIL",
       "Empty payee name throws exception.": "FAIL",
       "Empty payee origin throws exception.": "FAIL",
-      "Empty paymentEntitiesLogo field is valid.": "FAIL",
       "Empty url field in a PaymentEntityLogo throws exception.": "FAIL",
       "Invalid instrument.icon URL throws exception.": "FAIL",
       "Invalid rpId field throws exception.": "FAIL",
       "Invalid url field in a PaymentEntityLogo throws exception.": "FAIL",
       "Large challenge value throws exception.": "FAIL",
       "Large credentialIds value throws exception.": "FAIL",
-      "Multiple IDs in credentialIds is valid.": "FAIL",
       "Non-HTTPS payee origin throws exception.": "FAIL",
       "Null challenge field throws exception.": "FAIL",
-      "Omitting both payee origin and payee name throws exception.": "FAIL",
-      "Payee name without payee origin is valid.": "FAIL",
-      "Providing both payee name and payee origin is valid.": "FAIL"
+      "Omitting both payee origin and payee name throws exception.": "FAIL"
     }
   },
   "secure-payment-confirmation/constructor.https.html": {
@@ -129,8 +125,6 @@
       "Instrument icon is required.": "FAIL",
       "The challenge field is required.": "FAIL",
       "The credentialIds field is required.": "FAIL",
-      "The timeout field is optional.": "FAIL",
-      "Valid payment method data does not throw exceptions.": "FAIL",
       "rpId is required.": "FAIL"
     }
   },

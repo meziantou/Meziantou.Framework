@@ -1,11 +1,5 @@
 {
   "payment-method-id/payment-request-ctor-pmi-handling.https.sub.html": {
-    "total": 4,
-    "failures": {
-      "Constructor MUST throw if given an invalid URL-based payment method identifier": "FAIL",
-      "Must not throw on syntactically valid standardized payment method identifiers, even if they are not supported": "FAIL",
-      "Must support valid standard URL PMIs": "FAIL",
-      "Must throw on syntactically invalid standardized payment method identifiers": "FAIL"
-    }
+    "total": 4
   }
 }

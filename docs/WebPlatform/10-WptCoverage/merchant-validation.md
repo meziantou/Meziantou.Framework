@@ -19,18 +19,18 @@ description: "The results of the web-platform-tests of merchant-validation, and 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 3
+- **OUT OF SCOPE**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`onmerchantvalidation-attribute.https.html`](https://wpt.fyi/results/merchant-validation/onmerchantvalidation-attribute.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Payment Request API (merchant validation) |
+| [`onmerchantvalidation-attribute.https.html`](https://wpt.fyi/results/merchant-validation/onmerchantvalidation-attribute.https.html) | Fail | 0 / 4 | OUT OF SCOPE | `MerchantValidationEvent` and `PaymentRequest.onmerchantvalidation` were removed from the Payment Request API (https://github.com/w3c/payment-request/pull/884): they are not in its IDL, and no browser implements them |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`complete-method.tentative.https.html`](https://wpt.fyi/results/merchant-validation/complete-method.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Payment Request API (merchant validation) |
+| [`complete-method.tentative.https.html`](https://wpt.fyi/results/merchant-validation/complete-method.tentative.https.html) | Fail | 0 / 1 | OUT OF SCOPE | `MerchantValidationEvent` and `PaymentRequest.onmerchantvalidation` were removed from the Payment Request API (https://github.com/w3c/payment-request/pull/884): they are not in its IDL, and no browser implements them |
 | [`constructor.tentative.http.html`](https://wpt.fyi/results/merchant-validation/constructor.tentative.http.html) | Pass | 1 / 1 |  |  |
-| [`constructor.tentative.https.html`](https://wpt.fyi/results/merchant-validation/constructor.tentative.https.html) | Fail | 0 / 11 | NOT IMPLEMENTED | Payment Request API (merchant validation) |
+| [`constructor.tentative.https.html`](https://wpt.fyi/results/merchant-validation/constructor.tentative.https.html) | Fail | 0 / 11 | OUT OF SCOPE | `MerchantValidationEvent` and `PaymentRequest.onmerchantvalidation` were removed from the Payment Request API (https://github.com/w3c/payment-request/pull/884): they are not in its IDL, and no browser implements them |

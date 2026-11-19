@@ -28,7 +28,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`can-make-payment-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.html) | Pass | 1 / 1 |  |  |
 | [`can-make-payment-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.serviceworker.html) | Fail | 1 / 5 | NOT IMPLEMENTED | Payment Handler API |
 | [`can-make-payment-event-constructor.https.worker.js`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event-constructor.https.worker.js) | Pass | 1 / 1 |  |  |
-| [`can-make-payment-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event.https.html) | Fail | 0 / 7 | NOT IMPLEMENTED | Payment Handler API |
+| [`can-make-payment-event.https.html`](https://wpt.fyi/results/web-based-payment-handler/can-make-payment-event.https.html) | Fail | 1 / 7 | NOT IMPLEMENTED | Payment Handler API |
 | [`idlharness.https.any.js`](https://wpt.fyi/results/web-based-payment-handler/idlharness.https.any.js) | Fail | 35 / 52 | NOT IMPLEMENTED | Payment Handler API |
 | [`payment-request-event-constructor.https.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.html) | Pass | 1 / 1 |  |  |
 | [`payment-request-event-constructor.https.serviceworker.html`](https://wpt.fyi/results/web-based-payment-handler/payment-request-event-constructor.https.serviceworker.html) | Fail | 1 / 5 | NOT IMPLEMENTED | Payment Handler API |

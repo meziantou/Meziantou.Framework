@@ -84,6 +84,9 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
+    /// <summary>https://w3c.github.io/payment-request/#permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Payment { get; } = new("payment", isAllowedForAllByDefault: false);
+
     /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature PublicKeyCredentialsCreate { get; } = new("publickey-credentials-create", isAllowedForAllByDefault: false);
 
@@ -150,7 +153,7 @@ internal sealed partial class PolicyControlledFeature
         MediaPlaybackWhileNotVisible,
         new("microphone", isAllowedForAllByDefault: false),
         new("midi", isAllowedForAllByDefault: false),
-        new("payment", isAllowedForAllByDefault: false),
+        Payment,
         new("picture-in-picture", isAllowedForAllByDefault: true),
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
         new("private-state-token-redemption", isAllowedForAllByDefault: false),

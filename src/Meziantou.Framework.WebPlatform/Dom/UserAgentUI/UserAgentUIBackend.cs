@@ -107,7 +107,7 @@ internal static class UserAgentUI
         private readonly CancellationToken _callerToken;
         private readonly CancellationTokenSource _source;
         private readonly CancellationTokenRegistration _callerRegistration;
-        private DomEventLoop? _eventLoop;
+        private readonly DomEventLoop _eventLoop;
         private int _settled;
         private int _released;
 
@@ -122,6 +122,11 @@ internal static class UserAgentUI
             _complete = complete;
             _callerToken = cancellationToken;
             _source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            // The event loop is not idle until the prompt is released. The operation starts before the backend is called: the
+            // backend can release the prompt before it returns (e.g. it closes the tab, which closes the prompts of the document)
+            _eventLoop = window.EventLoop;
+            _eventLoop.BeginOperation();
             _document.AddPromptCloser(OnDocumentClosed);
 
             // The caller settles its promise itself when it cancels the prompt (e.g. the request is aborted)
@@ -131,11 +136,9 @@ internal static class UserAgentUI
         /// <summary>Gets the token given to the backend: canceled by the caller, or when the document is no longer fully active.</summary>
         public CancellationToken Token => _source.Token;
 
-        /// <summary>Waits for the answer of the backend: the event loop is not idle meanwhile.</summary>
+        /// <summary>Waits for the answer of the backend (the prompt may already be released).</summary>
         public void Track(Task<T> answer)
         {
-            _eventLoop = _window.EventLoop;
-            _eventLoop.BeginOperation();
             _ = answer.ContinueWith(
                 completed =>
                 {
@@ -184,7 +187,7 @@ internal static class UserAgentUI
 
             _callerRegistration.Dispose();
             _document.RemovePromptCloser(OnDocumentClosed);
-            _eventLoop?.EndOperation();
+            _eventLoop.EndOperation();
             ReleaseSource();
         }
 

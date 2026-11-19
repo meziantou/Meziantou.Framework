@@ -1751,6 +1751,36 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.True(backend.CancellationToken.IsCancellationRequested);
     }
 
+    [Fact]
+    public void Credentials_Get_BackendClosesTheTab_TheEventLoopBecomesIdle()
+    {
+        // The backend closes the tab of the request (which closes its prompts), then returns a pending task
+        var backend = new TabClosingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        backend.BrowsingContext = document.BrowsingContext;
+
+        Run(document, "navigator.credentials.get({ password: true })");
+        Assert.True(backend.Closed);
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    private sealed class TabClosingCredentialChooser : UserAgentUIBackend
+    {
+        public BrowsingContext? BrowsingContext { get; set; }
+
+        public bool Closed { get; private set; }
+
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<Credential?> ChooseCredentialAsync(CredentialChooserPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            Closed = BrowsingContext!.TryClose();
+            return new(new TaskCompletionSource<Credential?>().Task);
+        }
+    }
+
     private sealed class PendingCredentialChooser : UserAgentUIBackend
     {
         public TaskCompletionSource<Credential?> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -2089,8 +2089,9 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownFootnoteReferenceSyntax reference:
                 {
-                    // The references of the content of a grid table cell are numbered with the ones of the document of the table
-                    _footnotes ??= new MarkdownFootnotes(GetOutermostDocument(reference));
+                    // The references of the content of a grid table cell are numbered with the ones of the document of the table. The
+                    // content of a cell rendered alone can be a tree made from an edit of it, whose references are not in the document.
+                    _footnotes ??= new MarkdownFootnotes(GetOutermostDocument(reference), reference.FirstAncestorOrSelf<MarkdownDocumentSyntax>());
                     if (reference.Definition is { } footnote && _footnotes.Contains(footnote))
                     {
                         var number = _footnotes.GetNumber(footnote);

@@ -10,8 +10,14 @@ internal sealed class MarkdownFootnotes
 {
     private readonly Dictionary<MarkdownFootnoteDefinitionSyntax, (int Number, List<MarkdownFootnoteReferenceSyntax> References)> _footnotes = [];
     private readonly Dictionary<MarkdownFootnoteReferenceSyntax, int> _referenceNumbers = [];
+    private readonly HashSet<MarkdownFootnoteReferenceSyntax> _references = [];
 
-    public MarkdownFootnotes(MarkdownDocumentSyntax document)
+    /// <param name="document">The document whose footnotes the references are to.</param>
+    /// <param name="rendered">
+    /// The document being rendered, when it is the content of a grid table cell: its references are numbered after the ones of
+    /// <paramref name="document"/>, unless they are in it, as the tree made from an edit of the content of a cell is not.
+    /// </param>
+    public MarkdownFootnotes(MarkdownDocumentSyntax document, MarkdownDocumentSyntax? rendered = null)
     {
         var footnotesRead = false;
         foreach (var block in document.Blocks)
@@ -32,6 +38,11 @@ internal sealed class MarkdownFootnotes
             }
 
             AddReferences(block);
+        }
+
+        if (rendered is not null && rendered != document)
+        {
+            AddReferences(rendered);
         }
 
         Footnotes = [.. _footnotes.OrderBy(footnote => footnote.Value.Number).Select(footnote => footnote.Key)];
@@ -61,7 +72,7 @@ internal sealed class MarkdownFootnotes
     {
         foreach (var reference in MarkdownGridTableSyntax.DescendantNodesAndSelfAndCellNodes(node).OfType<MarkdownFootnoteReferenceSyntax>())
         {
-            if (reference.Definition is not { } footnote)
+            if (reference.Definition is not { } footnote || !_references.Add(reference))
             {
                 continue;
             }

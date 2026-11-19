@@ -589,6 +589,17 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void RendersTheFootnoteReferencesOfAnEditedGridTableCell()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("+-------+\n| a[^1] |\n+-------+\n\n[^1]: note\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes | MarkdownExtensions.GridTables });
+        var content = Assert.IsType<MarkdownGridTableSyntax>(tree.GetRoot().Blocks[0]).Rows[0].Cells[0].Content;
+        var edited = (MarkdownSyntaxTree)content.WithChangedText(SourceText.From("b[^1] c[^1]"));
+
+        Assert.Equal("<p>b<a id=\"fnref:2\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a> c<a id=\"fnref:3\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n", MarkdownHtmlRenderer.ToHtml(edited));
+        Assert.Equal("<p>a<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n", MarkdownHtmlRenderer.ToHtml(content));
+    }
+
+    [Fact]
     public void FootnoteReferenceHasItsDefinition()
     {
         var root = MarkdownSyntaxTree.ParseText("See[^Note].\n\n[^note]: The *note*.\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes }).GetRoot();

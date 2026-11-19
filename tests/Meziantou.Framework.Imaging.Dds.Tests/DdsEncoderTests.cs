@@ -108,38 +108,49 @@ public sealed class DdsEncoderTests
     }
 
     [Fact]
-    public void FloatingPointGrayPixelsUseTheFloatingPointFormats()
+    public void FloatingPointGrayPixelsKeepTheirBits()
     {
-        // Values outside [0, 1], an infinity and a not-a-number, which a 16-bit UNORM format would clamp or lose
-        ushort[] halves = [0xC100, 0x3400, 0x63D0, 0x7C00, 0x7E01, 0x3800];
-        float[] floats = [-2.5f, 0.25f, 1e6f, float.PositiveInfinity, float.NaN, 0.5f];
+        // Values outside [0, 1], an infinity, and quiet and signaling not-a-numbers, which a 16-bit UNORM format would clamp or
+        // lose and a conversion through doubles would quiet
+        ushort[] halves = [0xC100, 0x3400, 0x63D0, 0x7C00, 0x7E01, 0x7D0A, 0xFD76, 0x3800];
+        uint[] floats = [0xC0200000, 0x3E800000, 0x49742400, 0x7F800000, 0x7FC01234, 0x7F812345, 0xFF87C52B, 0x3F000000];
         byte[] halfBytes = [.. halves.SelectMany(BitConverter.GetBytes)];
         byte[] floatBytes = [.. floats.SelectMany(BitConverter.GetBytes)];
-        AssertKept(Image.ImportPixelBytes<GrayHalf>(halfBytes, 6, 1), 113u);
-        AssertKept(Image.ImportPixelBytes<LaHalf>(halfBytes, 3, 1), 113u);
-        AssertKept(Image.ImportPixelBytes<GrayFloat>(floatBytes, 6, 1), 116u);
-        AssertKept(Image.ImportPixelBytes<LaFloat>(floatBytes, 3, 1), 116u);
+        AssertKept<GrayHalf, RgbaHalf>(halfBytes, 2, hasAlpha: false, BitConverter.GetBytes((ushort)0x3C00), 113u);
+        AssertKept<LaHalf, RgbaHalf>(halfBytes, 2, hasAlpha: true, BitConverter.GetBytes((ushort)0x3C00), 113u);
+        AssertKept<GrayFloat, RgbaFloat>(floatBytes, 4, hasAlpha: false, BitConverter.GetBytes(1f), 116u);
+        AssertKept<LaFloat, RgbaFloat>(floatBytes, 4, hasAlpha: true, BitConverter.GetBytes(1f), 116u);
 
-        static void AssertKept<TPixel>(Image<TPixel> image, uint fourCC)
-            where TPixel : unmanaged
+        static void AssertKept<TGray, TRgba>(byte[] samples, int sampleSize, bool hasAlpha, byte[] opaque, uint format)
+            where TGray : unmanaged
+            where TRgba : unmanaged
         {
-            using (image)
+            // An image and the surfaces of a collection are both widened to RGBA of the same precision: the gray replicated,
+            // the alpha copied or opaque, every bit kept
+            var channels = hasAlpha ? 2 : 1;
+            var width = samples.Length / (sampleSize * channels);
+            var expected = new byte[width * 4 * sampleSize];
+            for (var i = 0; i < width; i++)
             {
-                // An image and the surfaces of a collection are both widened to RGBA floats or halves, which keep the values
-                image.Metadata.TransferFunction = ColorTransferFunction.Linear;
-                using var expected = image.CloneAs<RgbaFloat>();
-                var expectedBytes = new byte[expected.Width * expected.Height * 16];
-                expected.Frames[0].CopyPixelBytesTo(expectedBytes);
-                using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
-                collection.Add(image, new TextureSurface(0));
-                foreach (var data in new[] { Save(image, new DdsEncoder()), SaveCollection(collection, new DdsEncoder()) })
+                for (var c = 0; c < 3; c++)
                 {
-                    Assert.Equal(fourCC, ReadUInt32(data, 84));
-                    using var decoded = Image.Load<RgbaFloat>(data);
-                    var actualBytes = new byte[expectedBytes.Length];
-                    decoded.Frames[0].CopyPixelBytesTo(actualBytes);
-                    Assert.Equal(expectedBytes, actualBytes);
+                    samples.AsSpan(i * channels * sampleSize, sampleSize).CopyTo(expected.AsSpan(((i * 4) + c) * sampleSize));
                 }
+
+                (hasAlpha ? samples.AsSpan(((i * 2) + 1) * sampleSize, sampleSize) : opaque.AsSpan()).CopyTo(expected.AsSpan(((i * 4) + 3) * sampleSize));
+            }
+
+            using var image = Image.ImportPixelBytes<TGray>(samples, width, 1);
+            image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+            using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+            collection.Add(image, new TextureSurface(0));
+            foreach (var data in new[] { Save(image, new DdsEncoder()), SaveCollection(collection, new DdsEncoder()) })
+            {
+                Assert.Equal(format, ReadUInt32(data, 84));
+                using var decoded = Image.Load<TRgba>(data);
+                var actual = new byte[expected.Length];
+                decoded.Frames[0].CopyPixelBytesTo(actual);
+                Assert.Equal(expected, actual);
             }
         }
     }

@@ -190,7 +190,7 @@ internal sealed class MediaStreamTrackAudioReader(MediaStreamTrack track, float 
     public void Read(AudioBus output, int length)
     {
         var source = track.Source;
-        var channels = Math.Clamp(source.AudioChannelCount, 1, 32);
+        var channels = track.AudioChannelCount;
         var step = source.AudioSampleRate / (double)contextSampleRate;
         if (_position < 0)
         {

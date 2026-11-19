@@ -164,7 +164,7 @@ internal sealed class MediaElementCaptureTrackSource : MediaStreamTrackSource
     public override MediaVideoFrame? GetVideoFrame() => _element.GetCurrentVideoFrame();
 
     // The audio of a media stream played by the element is captured (the audio of the other resources is not decoded)
-    public override int AudioChannelCount => _element.GetStreamAudioTrack()?.Source.AudioChannelCount ?? 1;
+    public override int AudioChannelCount => _element.GetStreamAudioTrack()?.AudioChannelCount ?? 1;
 
     public override int AudioSampleRate => _element.GetStreamAudioTrack()?.Source.AudioSampleRate ?? 48000;
 

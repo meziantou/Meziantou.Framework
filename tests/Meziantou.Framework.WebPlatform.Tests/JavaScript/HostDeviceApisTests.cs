@@ -3580,6 +3580,43 @@ public sealed class HostDeviceApisTests : IDisposable
     }
     #endregion
 
+    // A microphone that plays a ramp on every channel: the value of a frame is its position, divided by 1000
+    private sealed class RampMicrophone : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Microphone = new()
+        {
+            Id = "microphone-1",
+            Kind = MediaDeviceKind.AudioInput,
+            Capabilities = new MediaTrackCapabilities { SampleRate = new ULongRange { Min = 48000, Max = 48000 }, ChannelCount = new ULongRange { Min = 1, Max = 2 } },
+            DefaultSettings = new MediaTrackSettings { SampleRate = 48000, ChannelCount = 1 },
+        };
+
+        public MediaCaptureSource? LastSource { get; private set; }
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Microphone];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request);
+
+        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        {
+            public override void ReadAudio(long position, Span<float> destination)
+            {
+                var channels = (int)Settings.ChannelCount!.Value;
+                for (var i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (position + (i / channels)) / 1000f;
+                }
+            }
+        }
+    }
+
+    private MediaStream GetUserMedia(Document document, MediaStreamConstraints constraints)
+    {
+        var request = document.DefaultView!.Navigator.MediaDevices.GetUserMedia(constraints);
+        _contexts.EventLoop.RunUntilIdle();
+        return request.Result;
+    }
+
     // The media elements play the streams once a media backend enables their processing model
     private sealed class NoMediaBackend : MediaBackend
     {
@@ -3657,6 +3694,30 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.True(result.Succeeded);
         Assert.True((double)result.Settings!["width"] >= 100);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"SelectSettings took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void ApplyConstraints_OfACloneDoesNotChangeTheMediaOfTheOtherTracks()
+    {
+        var backend = new RampMicrophone();
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = backend, Permissions = GrantedPermissions("microphone") });
+        var original = GetUserMedia(document, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        var clone = original.Clone();
+
+        var apply = clone.ApplyConstraints(new MediaTrackConstraints { ChannelCount = 2u });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(apply.IsCompletedSuccessfully);
+
+        // The device delivers stereo for the clone; the original track keeps its mono settings and its mono audio
+        Assert.Equal(2u, backend.LastSource!.Settings.ChannelCount);
+        Assert.Equal(1u, original.GetSettings().ChannelCount);
+        Assert.Equal(2u, clone.GetSettings().ChannelCount);
+        var mono = new float[4];
+        original.ReadAudio(10, mono);
+        Assert.Equal([0.010f, 0.011f, 0.012f, 0.013f], mono);
+        var stereo = new float[4];
+        clone.ReadAudio(10, stereo);
+        Assert.Equal([0.010f, 0.010f, 0.011f, 0.011f], stereo);
     }
 
     [Fact]

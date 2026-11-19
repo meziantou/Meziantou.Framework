@@ -178,10 +178,33 @@ internal sealed class CaptureDeviceTrackSource : MediaStreamTrackSource
 
     public override Dictionary<string, object> GetInitialSettings() => new(_settings, StringComparer.Ordinal);
 
+    /// <summary>
+    /// The settings of a track changed: the device is configured with settings that all its live tracks can use (the largest
+    /// size, frame rate and number of channels of the tracks; the other values of the track whose constraints changed).
+    /// Each track adapts the media to its own settings: the frames are scaled to its size, and the audio is mixed to its
+    /// number of channels (see <see cref="MediaStreamTrack.GetVideoFrame"/> and <see cref="MediaStreamTrack.ReadAudio"/>).
+    /// </summary>
     public override void ApplySettings(MediaStreamTrack track, IReadOnlyDictionary<string, object> settings)
     {
-        _settings = new Dictionary<string, object>(settings, StringComparer.Ordinal);
-        _capture.ApplySettings(MediaTrackConstrainableProperty.CreateSettings(settings));
+        var combined = new Dictionary<string, object>(settings, StringComparer.Ordinal);
+        foreach (var other in Tracks)
+        {
+            foreach (var name in (ReadOnlySpan<string>)["width", "height", "frameRate", "channelCount"])
+            {
+                if (other.Settings.GetValueOrDefault(name) is double value && (!combined.TryGetValue(name, out var current) || current is not double currentValue || value > currentValue))
+                {
+                    combined[name] = value;
+                }
+            }
+        }
+
+        if (combined.GetValueOrDefault("width") is double width && combined.GetValueOrDefault("height") is double height && height > 0)
+        {
+            combined["aspectRatio"] = width / height;
+        }
+
+        _settings = combined;
+        _capture.ApplySettings(MediaTrackConstrainableProperty.CreateSettings(combined));
     }
 
     public override MediaVideoFrame? GetVideoFrame() => IsStopped ? null : _capture.GetVideoFrame(_clock.GetElapsedTime(_startTimestamp));

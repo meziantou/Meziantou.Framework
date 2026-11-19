@@ -361,6 +361,14 @@ public partial class MediaStreamTrack : EventTarget
     }
 
     /// <summary>Reads the audio samples of the track (silence when it is disabled, muted or ended).</summary>
+    /// <summary>The number of channels of the audio of the track: the one of its settings, else the one of its source.</summary>
+    internal int AudioChannelCount => _settings.GetValueOrDefault("channelCount") is double channels && channels >= 1 ? Math.Min((int)channels, 32) : Math.Clamp(Source.AudioChannelCount, 1, 32);
+
+    /// <summary>
+    /// Reads the interleaved audio samples of the track (<see cref="AudioChannelCount"/> per frame; silence when it is
+    /// disabled, muted or ended). The audio of a source with another number of channels is mixed: the channels are averaged
+    /// for a mono track, and a mono source is copied to each channel.
+    /// </summary>
     internal void ReadAudio(long position, Span<float> destination)
     {
         if (ReadyState == MediaStreamTrackState.Ended || Muted || !Enabled || Source.Kind != MediaTrackKinds.Audio)
@@ -369,7 +377,39 @@ public partial class MediaStreamTrack : EventTarget
             return;
         }
 
-        Source.ReadAudio(position, destination);
+        var trackChannels = AudioChannelCount;
+        var sourceChannels = Math.Clamp(Source.AudioChannelCount, 1, 32);
+        if (trackChannels == sourceChannels)
+        {
+            Source.ReadAudio(position, destination);
+            return;
+        }
+
+        var frames = destination.Length / trackChannels;
+        var buffer = new float[frames * sourceChannels];
+        Source.ReadAudio(position, buffer);
+        for (var frame = 0; frame < frames; frame++)
+        {
+            var input = buffer.AsSpan(frame * sourceChannels, sourceChannels);
+            var output = destination.Slice(frame * trackChannels, trackChannels);
+            if (trackChannels == 1)
+            {
+                var sum = 0f;
+                foreach (var sample in input)
+                {
+                    sum += sample;
+                }
+
+                output[0] = sum / sourceChannels;
+            }
+            else
+            {
+                for (var channel = 0; channel < trackChannels; channel++)
+                {
+                    output[channel] = sourceChannels == 1 ? input[0] : channel < sourceChannels ? input[channel] : 0;
+                }
+            }
+        }
     }
 }
 

@@ -78,6 +78,8 @@ primaries of BT.709.
   writes them from the most significant bit.
 - 64-bit components load in single precision when it holds them exactly; a file whose values need double precision is
   rejected rather than rounded.
+- A floating-point component that is a signaling NaN loads as the quiet NaN of the same sign and payload, as converting
+  it to another floating-point format would make it.
 - The orientation is reported in [ImageMetadata.Orientation](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Orientation) and never applied. Call
   [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) to turn the pixels upright.
 - Only the first image element is decoded: an alpha element stored after the color element is ignored, and

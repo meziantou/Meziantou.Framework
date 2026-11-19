@@ -163,7 +163,7 @@ internal sealed class LocatorEvaluator
             if (_labels.TryGetValue(element, out var labels))
             {
                 foreach (var label in labels)
-                    yield return GetText(label);
+                    yield return GetLabelText(label, element);
             }
         }
 
@@ -188,6 +188,56 @@ internal sealed class LocatorEvaluator
 
             return result;
         }
+    }
+
+    /// <summary>
+    /// Gets the text of the <c>label</c> element of a control as the accessible name computation does
+    /// (https://w3c.github.io/accname/#comp_embedded_control): the labeled control is not part of its label, and the other
+    /// controls of the label contribute their value instead of their content (e.g. the options of a <c>select</c>).
+    /// </summary>
+    private string GetLabelText(HtmlLabelElement label, Element control)
+    {
+        var builder = new StringBuilder();
+        AppendChildrenText(label, builder);
+        return builder.ToString();
+
+        void AppendChildrenText(Node parent, StringBuilder builder)
+        {
+            for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
+            {
+                switch (child)
+                {
+                    case Text textNode:
+                        builder.Append(textNode.Data);
+                        break;
+
+                    case Element childElement when ReferenceEquals(childElement, control) || IsSkippedForText(childElement):
+                        break;
+
+                    case Element childElement when GetEmbeddedControlValue(childElement) is { } value:
+                        builder.Append(value);
+                        break;
+
+                    case Element childElement:
+                        AppendChildrenText(childElement, builder);
+                        if (childElement.ShadowRoot is { } shadowRoot)
+                        {
+                            AppendChildrenText(shadowRoot, builder);
+                        }
+
+                        break;
+                }
+            }
+        }
+
+        string? GetEmbeddedControlValue(Element element) => element switch
+        {
+            HtmlInputElement { Type: "button" or "submit" or "reset" } => GetText(element),
+            HtmlInputElement { Type: "text" or "search" or "email" or "tel" or "url" or "number" or "range" } input => input.Value,
+            HtmlTextAreaElement textArea => textArea.Value,
+            HtmlSelectElement select => string.Join(' ', select.SelectedOptions.OfType<HtmlOptionElement>().Select(option => option.Text)),
+            _ => null,
+        };
     }
 
     /// <summary>Sorts elements in document order, and removes the duplicates.</summary>

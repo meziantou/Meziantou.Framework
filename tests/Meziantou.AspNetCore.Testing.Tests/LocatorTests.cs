@@ -146,6 +146,40 @@ public sealed class LocatorTests
     }
 
     [Fact]
+    public async Task GetByLabel_TheControlsNestedInTheLabelContributeTheirValue()
+    {
+        await using var host = new ComponentTestHost();
+        var page = await RenderMarkupAsync(host, """
+            <label>Name <input type="text" value="Ada" /></label>
+            <label>Currency <select><option></option><option>USD</option><option selected>EUR</option></select></label>
+            <label>Account <button type="button">Checking ▼</button></label>
+            <label>Notes <textarea>Some notes</textarea></label>
+            <label><input type="checkbox" /> Flash every <input type="number" value="3" /> seconds</label>
+            <label>Color <select id="color"><option>Red</option></select><span>(required)</span></label>
+            """);
+
+        Assert.Equal("text", page.GetByLabel("Name", exact: true).GetAttribute("type"));
+        Assert.Equal("select", page.GetByLabel("Currency", exact: true).GetElement().LocalName);
+        Assert.Equal("select", page.GetByLabel(new Regex(@"^Currency\s*$", RegexOptions.NonBacktracking)).GetElement().LocalName);
+        Assert.Equal("button", page.GetByLabel("Account", exact: true).GetElement().LocalName);
+        Assert.Equal("button", page.GetByLabel("Account").GetElement().LocalName);
+        Assert.Equal("textarea", page.GetByLabel("Notes", exact: true).GetElement().LocalName);
+        Assert.Equal(0, page.GetByLabel("USD").Count);
+        Assert.Equal(0, page.GetByLabel("Checking").Count);
+        Assert.Equal(0, page.GetByLabel("Some notes").Count);
+
+        // Another control of the label contributes its value
+        Assert.Equal("checkbox", page.GetByLabel("Flash every 3 seconds", exact: true).GetAttribute("type"));
+        Assert.Equal("color", page.GetByLabel("Color (required)", exact: true).GetAttribute("id"));
+
+        // The value is the current value of the control
+        await page.GetByRole("combobox", "Currency").SelectOptionAsync("USD");
+        Assert.Equal(0, page.GetByLabel("EUR").Count);
+        await page.GetByRole("spinbutton").FillAsync("5");
+        Assert.Equal("checkbox", page.GetByLabel("Flash every 5 seconds", exact: true).GetAttribute("type"));
+    }
+
+    [Fact]
     public async Task Locator_ChainsFiltersAndCombines()
     {
         await using var host = new ComponentTestHost();

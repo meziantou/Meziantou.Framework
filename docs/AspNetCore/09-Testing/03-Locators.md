@@ -60,6 +60,9 @@ changes, and they check that the page is accessible.
 - A text matches a substring, ignoring the case and collapsing the white space. Pass `exact: true` (or
   [GetByRoleOptions.Exact](cref:Meziantou.AspNetCore.Testing.GetByRoleOptions.Exact)) to match the whole text, with the
   case, or a `Regex`. The test identifier is always compared as is.
+- The text of a `label` element follows the accessible name computation: the control it labels is not part of it, and
+  the other controls it contains contribute their value instead of their content. `<label>Currency <select>...</select></label>`
+  is found by `GetByLabel("Currency", exact: true)`, whatever the options of the `select`.
 - [GetByRole](cref:Meziantou.AspNetCore.Testing.LocatorScope.GetByRole) ignores the elements hidden from the
   accessibility tree (`aria-hidden="true"`, `visibility: hidden`), unless
   [IncludeHidden](cref:Meziantou.AspNetCore.Testing.GetByRoleOptions.IncludeHidden) is true. The role of an element that

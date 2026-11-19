@@ -442,6 +442,34 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void SuspendedAsyncFunctionsDoNotKeepTheValuesTheyDropped()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.Execute("""
+                var cleaned = false;
+                var registry = new FinalizationRegistry(() => { cleaned = true; });
+                var resume;
+                (async () => {
+                    { let target = {}; registry.register(target, 0); target = null; }
+                    await new Promise(resolve => resume = resolve);
+                })();
+                """);
+        }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        using (engine.Enter())
+        {
+            engine.RunJobs();
+            Assert.True(realm.Execute("cleaned").AsBoolean());
+        }
+    }
+
+    [Fact]
     public void HostObjectsCanBeExoticForArrayIndicesOnly()
     {
         using var engine = new JsEngine();

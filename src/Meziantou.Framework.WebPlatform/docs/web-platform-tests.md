@@ -261,6 +261,9 @@
   `Thread.Sleep(1)` and `SpinWait`: on Windows, the runner sets the period of the system timer to 1 ms (`timeBeginPeriod`),
   so that these waits last as long as on Linux and macOS (15.6 ms by default, which made a delay of 1 s outlast the
   maximum duration of a test).
+- `TestUtils.gc()` (https://testutils.spec.whatwg.org/#dom-testutils-gc) is defined in every realm, so `/common/gc.js`
+  does not fall back to allocating garbage: it runs a full blocking collection of .NET and waits for the finalizers, in a
+  task once the calling script has returned, so the `FinalizationRegistry` cleanups of the collected targets are queued.
 - Content Security Policy is partially implemented: the library applies the fetch, navigation and document directives (see
   [Content security policy](browsing-context.md#content-security-policy)), the `upgrade-insecure-requests` directive, the
   required policies of CSP Embedded Enforcement (see [CSP Embedded Enforcement](browsing-context.md#csp-embedded-enforcement))

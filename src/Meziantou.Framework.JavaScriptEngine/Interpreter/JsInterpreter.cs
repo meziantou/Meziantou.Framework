@@ -973,10 +973,13 @@ internal static partial class JsInterpreter
                     break;
 
                 // ---- Generators and async functions ---------------------------------------------------------------
+                // A suspended frame keeps its values until it is resumed: the slots above the operand stack are cleared, so
+                // that the values the code dropped (e.g. the arguments of the last calls) can be collected meanwhile
                 case OpCode.GeneratorStart:
                     frame.Pc = pc;
                     frame.Sp = sp;
                     frame.State = FrameState.SuspendedYield;
+                    values.AsSpan(sp).Clear();
                     return default;
                 case OpCode.Yield:
                     {
@@ -984,6 +987,7 @@ internal static partial class JsInterpreter
                         frame.Pc = pc;
                         frame.Sp = sp;
                         frame.State = FrameState.SuspendedYield;
+                        values.AsSpan(sp).Clear();
                         return value;
                     }
 
@@ -993,6 +997,7 @@ internal static partial class JsInterpreter
                         frame.Pc = pc;
                         frame.Sp = sp;
                         frame.State = FrameState.SuspendedAwait;
+                        values.AsSpan(sp).Clear();
                         return value;
                     }
 

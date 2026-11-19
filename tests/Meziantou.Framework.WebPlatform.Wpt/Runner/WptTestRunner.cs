@@ -1726,16 +1726,36 @@ internal sealed partial class WptTestRunner
         where TAdapter : struct, IJsAdapter<TValue>
         where TValue : class
     {
-        // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)
-        if (realm.Window is null)
-            return;
-
         var adapter = realm.Adapter;
 
         // The functions are not enumerable: the tests that enumerate the properties of a window (e.g. to call each method
         // with another this value) must not see them
         void Define(string name, int length, JsHostFunction<TValue> function)
             => adapter.DefineOwnProperty(realm.Global, adapter.FromString(name), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction(name, length, function), writable: true, enumerable: false, configurable: true));
+
+        // TestUtils.gc() (https://testutils.spec.whatwg.org/#dom-testutils-gc), which /common/gc.js uses when it exists: a full
+        // blocking collection, after which the finalizers ran, so the FinalizationRegistry cleanups of the collected targets
+        // are queued. Without it, gc.js only allocates garbage, and whether .NET collects anything depends on the timing. The
+        // collection runs in a task, once the script that called gc() has returned: the frames of the running script may
+        // still reference the objects it dropped.
+        var testUtils = realm.CreateObject();
+        adapter.DefineOwnProperty(testUtils, adapter.FromString("gc"), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction("gc", 0, (_, _) =>
+        {
+            var collected = new TaskCompletionSource();
+            realm.GlobalScope.QueueGlobalTask(() =>
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                collected.SetResult();
+            });
+            return realm.ToPromise(collected.Task);
+        }), writable: true, enumerable: true, configurable: true));
+        adapter.DefineOwnProperty(realm.Global, adapter.FromString("TestUtils"), JsPropertyDescriptor<TValue>.Data(testUtils, writable: true, enumerable: false, configurable: true));
+
+        // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)
+        if (realm.Window is null)
+            return;
 
         Define("__wpt_report", 1, (_, args) =>
         {

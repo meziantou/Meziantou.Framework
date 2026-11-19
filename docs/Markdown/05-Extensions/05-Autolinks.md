@@ -6,7 +6,9 @@ description: Turn web addresses and email addresses of the text into links, with
 CommonMark only makes a link of an address between angle brackets, such as `<https://example.com>`.
 [Autolinks](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Autolinks) adds the extended autolinks of GitHub
 Flavored Markdown, so that the addresses people type are links: an address that starts with `www.`, `http://` or
-`https://`, and an email address. An address that starts with `www.` links to `http://`.
+`https://`, and an email address. An address that starts with `www.` links to `http://`. An email address can start
+with `mailto:`, and a Jabber address with `xmpp:`, which can be followed by a resource after a `/`, as in
+`xmpp:me@example.com/home`: the scheme is part of the link, and the address is its own destination.
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_Autolinks;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -2331,8 +2331,8 @@ public static class MarkdownHtmlRenderer
                 }
                 else
                 {
-                    // A lone surrogate is encoded as the replacement character
-                    if (Rune.DecodeFromUtf16(uri.AsSpan(i), out var rune, out var consumed) != System.Buffers.OperationStatus.Done)
+                    // A lone surrogate, and NUL as CommonMark says, are encoded as the replacement character
+                    if (Rune.DecodeFromUtf16(uri.AsSpan(i), out var rune, out var consumed) != System.Buffers.OperationStatus.Done || c == '\0')
                     {
                         rune = Rune.ReplacementChar;
                         consumed = 1;

@@ -363,9 +363,47 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[a](\t<b)c>)\n", "<p><a href=\"b)c\">a</a></p>\n")]
     [InlineData("[a](<')~>)\n", "<p><a href=\"')~\">a</a></p>\n")]
     [InlineData("<div>a\0\r\nb</div>\r\n", "<div>a\uFFFD\nb</div>\n")]
+    // The comments, processing instructions, CDATA sections and declarations end at their first terminator
+    [InlineData("x <!--> <!---> <? a ?> <![CDATA[ b ]]> <!X c> <!-- d -->\n", "<p>x <!--> <!---> <? a ?> <![CDATA[ b ]]> <!X c> <!-- d --></p>\n")]
+    [InlineData("x <? a <? b ?> <!-- c <!-- d -->\n", "<p>x <? a <? b ?> <!-- c <!-- d --></p>\n")]
+    [InlineData("a <!-- b <? c <![CDATA[ d <!X e\n", "<p>a &lt;!-- b &lt;? c &lt;![CDATA[ d &lt;!X e</p>\n")]
+    // NUL is U+FFFD in the destinations and the titles
+    [InlineData("[a](\0) [b](<\0>) [c](u \"\0\")\n", "<p><a href=\"%EF%BF%BD\">a</a> <a href=\"%EF%BF%BD\">b</a> <a href=\"u\" title=\"\uFFFD\">c</a></p>\n")]
+    [InlineData("<http://a\0b> [d]\n\n[d]: \0\n", "<p><a href=\"http://a%EF%BF%BDb\">http://a\uFFFDb</a> <a href=\"%EF%BF%BD\">d</a></p>\n")]
+    // A link deactivates the brackets before it, which another link does not need to deactivate again
+    [InlineData("[a [b [c](d) e](f) g](h)\n", "<p>[a [b <a href=\"d\">c</a> e](f) g](h)</p>\n")]
+    [InlineData("[a ![b [c](d) e](f) g](h)\n", "<p>[a <img src=\"f\" alt=\"b c e\" /> g](h)</p>\n")]
+    [InlineData("[a [b](c) [d](e) f](g)\n", "<p>[a <a href=\"c\">b</a> <a href=\"e\">d</a> f](g)</p>\n")]
+    // An opener without closer does not hide the code spans after it
+    [InlineData("``a` `b`` `c`\n", "<p><code>a` `b</code> <code>c</code></p>\n")]
+    [InlineData("``x `a` `b`\n", "<p>``x <code>a</code> <code>b</code></p>\n")]
     public void RendersHtml(string text, string expected)
     {
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text)));
+    }
+
+    // The pathological inputs of cmark, and the ones of the extensions, are parsed in linear time
+    [Theory]
+    [InlineData("a <!--", MarkdownExtensions.None)]
+    [InlineData("x<?", MarkdownExtensions.None)]
+    [InlineData("x<![CDATA[", MarkdownExtensions.None)]
+    [InlineData("x<!A", MarkdownExtensions.None)]
+    [InlineData("[a](b) [", MarkdownExtensions.None)]
+    [InlineData("e`", MarkdownExtensions.None)]
+    [InlineData("(www.a", MarkdownExtensions.MarkdigAutolinks)]
+    [InlineData("<b> http://a.b~", MarkdownExtensions.MarkdigAutolinks)]
+    [InlineData("[a](b) [H] ", MarkdownExtensions.AutoIdentifiers)]
+    public void ParsesPathologicalInlines(string pattern, MarkdownExtensions extensions)
+    {
+        // The backticks are runs of every length, as in cmark
+        var text = pattern == "e`"
+            ? string.Concat(Enumerable.Range(1, 1000).Select(length => "e" + new string('`', length)))
+            : "# H\n\n" + string.Concat(Enumerable.Repeat(pattern, 20000));
+
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = extensions });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.NotEmpty(MarkdownHtmlRenderer.ToHtml(tree));
     }
 
     [Theory]
@@ -394,6 +432,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[a@b.com](/u)\n", "<p><a href=\"/u\">a@b.com</a></p>\n")]
     [InlineData("*a@b.com* a\\_b@c.com\n", "<p><em><a href=\"mailto:a@b.com\">a@b.com</a></em> <a href=\"mailto:a_b@c.com\">a_b@c.com</a></p>\n")]
     [InlineData("a@b.c1 a@b@c.d\n", "<p>a@b.c1 a@<a href=\"mailto:b@c.d\">b@c.d</a></p>\n")]
+    [InlineData("mailto:a@b.c/mailto:d@e.f. mmmailto:g@h.i\n", "<p><a href=\"mailto:a@b.c\">mailto:a@b.c</a>/<a href=\"mailto:d@e.f\">mailto:d@e.f</a>. mmmailto:<a href=\"mailto:g@h.i\">g@h.i</a></p>\n")]
+    [InlineData("xmpp:a@b.c xmpp:d@e.f/g. xmpp:h@i.j/k/l at:m@n.o\n", "<p><a href=\"xmpp:a@b.c\">xmpp:a@b.c</a> <a href=\"xmpp:d@e.f/g\">xmpp:d@e.f/g</a>. <a href=\"xmpp:h@i.j/k/l\">xmpp:h@i.j/k/l</a> at:<a href=\"mailto:m@n.o\">m@n.o</a></p>\n")]
     [InlineData("<title>a</title>\n", "&lt;title>a&lt;/title>\n")]
     [InlineData("<div>\n<script\nx\n", "<div>\n&lt;script\nx\n")]
     [InlineData("<div>\n</STYLE\nx\n", "<div>\n&lt;/STYLE\nx\n")]
@@ -510,6 +550,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("*[A]: x\n\n[A](u) ![A](u) `A` A, A.b A.\n", "<p><a href=\"u\"><abbr title=\"x\">A</abbr></a> <img src=\"u\" alt=\"A\" /> <code>A</code> <abbr title=\"x\">A</abbr>, A.b <abbr title=\"x\">A</abbr>.</p>\n")]
     [InlineData("*[A]: x\n*[A]: y\n\nA\n", "<p><abbr title=\"y\">A</abbr></p>\n")]
     [InlineData("*[A]: \u00A0x\u00A0 \n\nA\n", "<p><abbr title=\"\u00A0x\u00A0\">A</abbr></p>\n")]
+    [InlineData("*[A]: x\n*[A B]: y\n*[B]: z\n*[AB]: w\n\nA B A BB B AB A, AB.\n", "<p><abbr title=\"y\">A B</abbr> A BB <abbr title=\"z\">B</abbr> <abbr title=\"w\">AB</abbr> <abbr title=\"x\">A</abbr>, <abbr title=\"w\">AB</abbr>.</p>\n")]
     public void RendersAbbreviations(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Abbreviations });
@@ -664,6 +705,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("![alt][Heading]\n# Heading\n", "<p><img src=\"#heading\" alt=\"alt\" /></p>")]
     [InlineData("[Heading]\n# Heading\n[heading]: /url\n", "<p><a href=\"/url\">Heading</a></p>")]
     [InlineData("[outer [Heading]](/u)\n# Heading\n", "<p><a href=\"/u\">outer [Heading]</a></p>")]
+    [InlineData("[[a](b) [Heading]](c)\n# Heading\n", "<p>[<a href=\"b\">a</a> <a href=\"#heading\">Heading</a>](c)</p>")]
     [InlineData("[]\n#\n", "<p>[]</p>")]
     [InlineData("[x y]\n\nx {.c} y\n===\n", "<p><a href=\"#x-y\">x y</a></p>")]
     [InlineData("[x]\n# x {#i}\n", "<p><a href=\"#i\">x</a></p>")]
@@ -758,6 +800,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("* Dogs*?--in *my* house?", "-dogs--in-my-house")]
     [InlineData("3. Applications", "3-applications")]
     [InlineData("33", "33")]
+    [InlineData("हिन्दी भाषा", "हिन्दी-भाषा")]
+    [InlineData("\U0001D400bc \U00020000", "\U0001D400bc-\U00020000")]
+    [InlineData("a\u00B2b\u203Fc\u00BD", "ab\u203Fc")]
     public void IdentifierIsMadeAsGitHubMakesIt(string text, string expected)
     {
         Assert.Equal(expected, HeadingIdentifier.Create(text, MarkdownAutoIdentifierOptions.GitHub));
@@ -1039,6 +1084,15 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(new KeyValuePair<string, string>("(y)", ":ok:"), Assert.Single(mapping.Smileys));
         Assert.IsNotType<Dictionary<string, string>>(mapping.Shortcodes);
         Assert.IsNotType<Dictionary<string, string>>(mapping.Smileys);
+    }
+
+    [Theory]
+    [InlineData(":a\nb:", ":)")]
+    [InlineData(":a:", ":\r)")]
+    public void EmojiMappingRejectsKeysWithLineEndings(string shortcode, string smiley)
+    {
+        // The inlines of a block are its lines without the markers of its containers: a key would match across them
+        Assert.Throws<ArgumentException>(() => new MarkdownEmojiMapping(new Dictionary<string, string> { [shortcode] = "x", [":a:"] = "y" }, new Dictionary<string, string> { [smiley] = ":a:" }));
     }
 
     [Fact]
@@ -1597,6 +1651,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[http://a.com/ link](http://b.com)", "<p><a href=\"http://b.com\">http://a.com/ link</a></p>\n")]
     [InlineData("<a href=\"x\">http://a.com</a>", "<p><a href=\"x\">http://a.com</a></p>\n")]
     [InlineData("(http://a.com/b_(c))", "<p>(<a href=\"http://a.com/b_(c)\">http://a.com/b_(c)</a>)</p>\n")]
+    [InlineData("(www.a.b (www.c.d) www.e.f(g) (www.h.i", "<p>(<a href=\"http://www.a.b\">www.a.b</a> (<a href=\"http://www.c.d\">www.c.d</a>) www.e.f(g) (<a href=\"http://www.h.i\">www.h.i</a></p>\n")]
+    [InlineData("((www.a.b) www.c.d)) <a>http://e.f</a> http://g.h <a href=\"x\"> http://i.j", "<p>((<a href=\"http://www.a.b\">www.a.b</a>) <a href=\"http://www.c.d\">www.c.d</a>)) <a>http://e.f</a> <a href=\"http://g.h\">http://g.h</a> <a href=\"x\"> http://i.j</p>\n")]
+    [InlineData("*a ~b http://c.d* http://e.f~ http://g.h~", "<p><em>a ~b <a href=\"http://c.d\">http://c.d</a></em> <a href=\"http://e.f\">http://e.f</a>~ <a href=\"http://g.h\">http://g.h</a>~</p>\n")]
     [InlineData("xhttp://a.com http://localhost ftp:// mailto:@a.com", "<p>xhttp://a.com http://localhost ftp:// mailto:@a.com</p>\n")]
     public void RendersMarkdigAutolinks(string text, string expected)
     {
@@ -2869,6 +2926,33 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.NotNull(link.Definition);
         Assert.Equal("/url", link.Destination);
+    }
+
+    // The labels are matched with the Unicode full case folding, as cmark does
+    [Theory]
+    [InlineData("[ﬀ]\n\n[FF]: /url", "<p><a href=\"/url\">ﬀ</a></p>\n")]
+    [InlineData("[ẞ]\n\n[SS]: /url", "<p><a href=\"/url\">ẞ</a></p>\n")]
+    [InlineData("[ss]\n\n[ẞ]: /url", "<p><a href=\"/url\">ss</a></p>\n")]
+    [InlineData("[Straße]\n\n[STRASSE]: /url", "<p><a href=\"/url\">Straße</a></p>\n")]
+    [InlineData("[STRASSE]\n\n[straße]: /url", "<p><a href=\"/url\">STRASSE</a></p>\n")]
+    [InlineData("[\U00010400]\n\n[\U00010428]: /u", "<p><a href=\"/u\">\U00010400</a></p>\n")]
+    [InlineData("[a \n ﬀ\tb]\n\n[A  FF B]: /u", "<p><a href=\"/u\">a\nﬀ\tb</a></p>\n")]
+    [InlineData("[ı]\n\n[I]: /u", "<p>[ı]</p>\n")]
+    public void LinkLabelMatchesItsDefinitionWithTheFullCaseFolding(string text, string expected)
+    {
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text)));
+    }
+
+    [Theory]
+    [InlineData(" \t Foo \r\n\t Bar\n", "foo bar")]
+    [InlineData("ﬀ ẞ", "ff ss")]
+    [InlineData("İ", "i̇")]
+    [InlineData("\U00010400\U0001E900", "\U00010428\U0001E922")]
+    [InlineData("A\uD800B\uDC00", "a\uD800b\uDC00")]
+    [InlineData("\uDBFF", "\uDBFF")]
+    public void LinkLabelIsNormalizedWithTheFullCaseFolding(string label, string expected)
+    {
+        Assert.Equal(expected, Scanners.NormalizeLabel(label));
     }
 
     [Theory]

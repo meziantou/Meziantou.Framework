@@ -33,3 +33,8 @@ Assert.Equal("<p>See <a href=\"#getting-started-1\">Getting started</a>.</p>", M
 [AutoIdentifierOptions](cref:Meziantou.Framework.Markdown.MarkdownParseOptions.AutoIdentifierOptions) chooses whether
 these links are made, whether the identifier only has ASCII characters (`Ærø` becomes `aeroe`), and whether it is made
 as GitHub makes it.
+
+[GitHub](cref:Meziantou.Framework.Markdown.MarkdownAutoIdentifierOptions.GitHub) keeps the characters that GitHub keeps,
+so that the anchors copied from GitHub resolve: the letters, the combining marks, the decimal digits, the connector
+punctuation such as `_`, and `-`, in lower case, and each space becomes `-`. `# हिन्दी भाषा` has the identifier
+`हिन्दी-भाषा`, with its vowel signs, and the letters outside the Basic Multilingual Plane are kept.

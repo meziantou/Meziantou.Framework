@@ -3108,10 +3108,7 @@
     "total": 35
   },
   "fetch/range/cache-revalidate-construct-range-response.html": {
-    "total": 1,
-    "failures": {
-      "Range request after cache revalidation with 200 OK response should succeed": "FAIL"
-    }
+    "total": 1
   },
   "fetch/range/data.any.js": {
     "total": 2

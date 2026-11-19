@@ -9661,16 +9661,10 @@
     "total": 5
   },
   "html/semantics/scripting-1/the-script-element/script-text-modifications-csp.html": {
-    "total": 1,
-    "failures": {
-      "Modify inline script element's text after prepare-a-script before evaluation (CSP)": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/scripting-1/the-script-element/script-text-modifications.html": {
-    "total": 1,
-    "failures": {
-      "Modify inline script element's text after prepare-a-script before evaluation": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/scripting-1/the-script-element/script-text-xhtml.xhtml": {
     "total": 1

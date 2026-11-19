@@ -267,11 +267,7 @@
     "total": 2
   },
   "html/browsers/browsing-the-web/history-traversal/unset_context_name.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Window.name is reset after navigating to a different origin": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/window-name-after-cross-origin-aux-frame-navigation.sub.html": {
     "total": 1

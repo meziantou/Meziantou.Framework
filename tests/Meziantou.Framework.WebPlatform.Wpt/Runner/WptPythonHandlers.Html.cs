@@ -123,12 +123,21 @@ internal static partial class WptPythonHandlers
             }
         },
 
-        // history-traversal/resources/unset_context_name_stash.py: the stashed value of the id parameter, or NONE (the
-        // handler compares the method, a byte string, with a string: it never stores the value)
+        // history-traversal/resources/unset_context_name_stash.py: a POST request stores the value parameter for the id
+        // parameter, another request takes the stashed value (NONE when there is none)
         ["/html/browsers/browsing-the-web/history-traversal/resources/unset_context_name_stash.py"] = (request, response, stash) =>
         {
+            var key = request.Get("id") ?? "";
             response.Set("Content-Type", "text/html");
-            response.Content = stash.TakeValue(request.Get("id") ?? "", request.Path) as string ?? "NONE";
+            if (request.Method == "POST")
+            {
+                stash.TakeValue(key, request.Path);
+                stash.Put(key, request.Get("value") ?? "", request.Path);
+                response.Content = "OK";
+                return;
+            }
+
+            response.Content = stash.TakeValue(key, request.Path) as string ?? "NONE";
         },
 
         // FileAPI/file/resources/echo-content-escaped.py: the request body with the controls, the non-ASCII bytes and the
@@ -199,6 +208,41 @@ internal static partial class WptPythonHandlers
 
         // html/semantics/scripting-1/the-script-element/serve-with-content-type.py: a file of the directory (fn) with a Content-Type
         // (ct), or a 400 response when a parameter is missing
+        // resources/controlled-stylesheet.py: a style sheet that stays pending until a POST request with the same token releases
+        // it (wptserve sends its headers, then writes line breaks until then: the style sheet completes once released)
+        ["/html/semantics/scripting-1/the-script-element/resources/controlled-stylesheet.py"] = (request, response, stash) =>
+        {
+            var token = request.Get("token") ?? "";
+            response.Set("Cache-Control", "no-store");
+            if (request.Method == "POST")
+            {
+                stash.Put(token, true);
+                return;
+            }
+
+            response.Set("Content-Type", "text/css");
+            response.HeadersCondition = () => stash.TakeValue(token) is not null;
+        },
+
+        // html/semantics/resources/controlled-response.py: a response (the type and body parameters) that waits until a request
+        // with action=release and the same key releases it
+        ["/html/semantics/resources/controlled-response.py"] = (request, response, stash) =>
+        {
+            var key = request.Get("key") ?? "";
+            const string Path = "/html/semantics/resources/controlled-response.py";
+            if (request.Get("action") == "release")
+            {
+                stash.Put(key, true, Path);
+                response.Content = "released";
+                return;
+            }
+
+            response.Set("Content-Type", request.Get("type"));
+            response.Set("Cache-Control", "no-store");
+            response.HeadersCondition = () => stash.TakeValue(key, Path) is not null;
+            response.Content = request.Get("body") ?? "";
+        },
+
         ["/html/semantics/scripting-1/the-script-element/serve-with-content-type.py"] = (request, response, _) =>
         {
             var file = Path.Combine(WptPaths.Wpt, "html", "semantics", "scripting-1", "the-script-element", (request.Get("fn") ?? "").Replace('/', Path.DirectorySeparatorChar));

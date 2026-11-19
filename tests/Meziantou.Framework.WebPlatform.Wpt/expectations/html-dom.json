@@ -2375,11 +2375,7 @@
     "total": 1
   },
   "html/dom/render-blocking/expect-parser-associated-form.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "A parser-inserted flag must not skip internal resource link processing on insertion": "FAIL"
-    }
+    "total": 1
   },
   "html/dom/render-blocking/link-rel-expect-supported.html": {
     "total": 1

@@ -17,7 +17,7 @@ texture). [ImageCollection.Load](cref:Meziantou.Framework.Imaging.ImageCollectio
 | --- | --- |
 | Block-compressed | BC1 (DXT1, with 1-bit alpha), BC2 (DXT3), BC3 (DXT5), BC4 and BC5 unsigned and signed (`ATI1`, `ATI2`, `BC4U`, `BC4S`, `BC5U`, `BC5S`), BC6H unsigned and signed, BC7 (the eight modes); their `_SRGB` and `_TYPELESS` forms |
 | Uncompressed | R8G8B8A8 and B8G8R8A8 (UNORM and SRGB), B8G8R8X8, B5G6R5, B5G5R5A1, B4G4R4A4, R10G10B10A2, R16G16B16A16 (UNORM and FLOAT), R32G32B32A32_FLOAT and the formats of fewer channels, R8, R8G8, R16, R16G16, A8, R11G11B10_FLOAT, R9G9B9E5_SHAREDEXP |
-| Legacy headers | Every bit-mask layout of 8 to 32 bits (RGB, luminance, alpha), the DXT FourCCs and the numeric codes of the Direct3D 9 floating-point formats |
+| Legacy headers | Every bit-mask layout of 8 to 32 bits (RGB, luminance, alpha; a layout of alpha alone has at most 8 bits of alpha), the DXT FourCCs and the numeric codes of the Direct3D 9 floating-point formats |
 | Structure | Mipmaps, cube maps (and the partial cube maps of Direct3D 9), texture arrays, arrays of cube maps, volume textures, 1D textures |
 
 The image of a format is the lossless form of what it stores:

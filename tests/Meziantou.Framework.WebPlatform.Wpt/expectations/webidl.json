@@ -1,4 +1,20 @@
 {
+  "webidl/current-realm.html": {
+    "total": 33,
+    "failures": {
+      "cloneRange": "FAIL",
+      "createEvent": "FAIL",
+      "createImageData": "FAIL",
+      "createNodeIterator": "FAIL",
+      "createRange": "FAIL",
+      "createTreeWalker": "FAIL",
+      "getElementsByClassName": "FAIL",
+      "getElementsByTagName": "FAIL",
+      "getElementsByTagNameNS": "FAIL",
+      "getImageData": "FAIL",
+      "querySelectorAll": "FAIL"
+    }
+  },
   "webidl/ecmascript-binding/allow-resizable.html": {
     "total": 2
   },
@@ -181,5 +197,11 @@
   },
   "webidl/ecmascript-binding/window-named-properties-object.html": {
     "total": 13
+  },
+  "webidl/idlharness.any.js": {
+    "total": 159
+  },
+  "webidl/idlharness.any.js#dedicatedworker": {
+    "total": 159
   }
 }

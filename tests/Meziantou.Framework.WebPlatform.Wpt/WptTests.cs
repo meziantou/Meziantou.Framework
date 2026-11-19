@@ -99,7 +99,7 @@ public sealed class WptTests
 
     public static TheoryData<string> HtmlDynamicMarkupInsertionTests => GetTests("html/webappapis/dynamic-markup-insertion");
 
-    public static TheoryData<string> WebIdlTests => GetTests("webidl/ecmascript-binding");
+    public static TheoryData<string> WebIdlTests => GetTests("webidl");
 
     public static TheoryData<string> FileApiTests => GetTests("FileAPI");
 
@@ -935,7 +935,7 @@ public sealed class WptTests
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebIdlTests))]
-    public void WebIdl(string test) => Run("webidl/ecmascript-binding", test);
+    public void WebIdl(string test) => Run("webidl", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(FileApiTests))]

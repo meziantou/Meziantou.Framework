@@ -1125,6 +1125,84 @@
   "svg/coordinate-systems/viewBox-zero-disables-rendering-symbol.svg": {
     "reftest": "PASS"
   },
+  "svg/crashtests/chrome-bug-1172059.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-1205852.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-1207590.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-1238412.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-1345806.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-1371700.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-1474157.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-333487749.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-452651700.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-485819134.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-517309206.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/chrome-bug-565674533.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/deep-nesting.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1688293.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1703592.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1719483.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1723249.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1724237.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1753105.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1883804.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1966754.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-1980267.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/firefox-bug-2018671.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/image-dispatch-event-on-destruct.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/negative-viewbox.html": {
+    "crashtest": "PASS"
+  },
+  "svg/crashtests/svg-zero-width-img-crash.html": {
+    "crashtest": "PASS"
+  },
   "svg/embedded/attr-image-fetchpriority.optional.html": {
     "total": 2,
     "failures": {
@@ -1593,6 +1671,18 @@
   },
   "svg/historical.html": {
     "total": 68
+  },
+  "svg/idlharness.window.js": {
+    "total": 1685,
+    "failures": {
+      "ShadowAnimation interface object length": "FAIL",
+      "ShadowAnimation interface object name": "FAIL",
+      "ShadowAnimation interface: attribute sourceAnimation": "FAIL",
+      "ShadowAnimation interface: existence and properties of interface object": "FAIL",
+      "ShadowAnimation interface: existence and properties of interface prototype object": "FAIL",
+      "ShadowAnimation interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "ShadowAnimation interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+    }
   },
   "svg/interact/focus-inside-hidden-svg-containers-01.html": {
     "total": 1
@@ -3221,6 +3311,9 @@
     "total": 3
   },
   "svg/shapes/scripted/stroke-dashes-hit-at-high-scale.svg": {
+    "total": 1
+  },
+  "svg/sniffing-content-type.html": {
     "total": 1
   },
   "svg/struct/SVGSVGElement-currentTranslate-SameObject.html": {

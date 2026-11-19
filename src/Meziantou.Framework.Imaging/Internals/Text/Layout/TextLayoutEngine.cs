@@ -980,18 +980,34 @@ internal sealed partial class TextLayoutEngine
     }
 
     /// <summary>Puts the characters of an item in the buffer of the shaper, with what a line adds after its last character.</summary>
+    /// <remarks>
+    /// The control characters are left out. A control character ends a cluster: a zero width joiner before one joins
+    /// nothing, so a zero width non-joiner takes the place of the control character. Without it, the shaper would give
+    /// an emoji after the control character the cluster of the one before the joiner, and the advance of both would be
+    /// measured before the line break the control character allows.
+    /// </remarks>
     private void FillBuffer(Item item, string? suffix)
     {
+        const int ZeroWidthJoiner = 0x200D;
+        const int ZeroWidthNonJoiner = 0x200C;
         _buffer.Clear();
         var text = _text.AsSpan(item.Start, item.End - item.Start);
         var lastCluster = item.Start;
+        var last = -1;
         for (var i = 0; i < text.Length;)
         {
             Rune.DecodeFromUtf16(text[i..], out var rune, out var consumed);
             if (!IsControl(rune.Value))
             {
                 lastCluster = item.Start + i;
-                _buffer.Add(rune.Value, lastCluster);
+                last = rune.Value;
+                _buffer.Add(last, lastCluster);
+            }
+            else if (last == ZeroWidthJoiner)
+            {
+                lastCluster = item.Start + i;
+                last = ZeroWidthNonJoiner;
+                _buffer.Add(last, lastCluster);
             }
 
             i += consumed;

@@ -37,6 +37,15 @@ public sealed class AccessibilityTests : IDisposable
     [InlineData("<select id=target><option>x</select>", "combobox")]
     [InlineData("<select id=target multiple><option>x</select>", "listbox")]
     [InlineData("<input id=target type=search>", "searchbox")]
+    [InlineData("<input id=target type=date>", "textbox")]
+    [InlineData("<input id=target type=datetime-local list=l><datalist id=l></datalist>", "textbox")]
+    [InlineData("<input id=target type=month>", "textbox")]
+    [InlineData("<input id=target type=week>", "textbox")]
+    [InlineData("<input id=target type=time>", "textbox")]
+    [InlineData("<input id=target type=color>", "textbox")]
+    [InlineData("<input id=target type=password>", "textbox")]
+    [InlineData("<input id=target type=file>", "button")]
+    [InlineData("<input id=target type=hidden>", "none")]
     [InlineData("<button id=target role=none>x</button>", "button")]
     [InlineData("<img id=target alt='' src='data:,'>", "none")]
     [InlineData("<div id=target popover style='display:block'>x</div>", "group")]
@@ -232,6 +241,8 @@ public sealed class AccessibilityTests : IDisposable
     [InlineData("<button aria-pressed=true>Bold</button><button aria-pressed=mixed>Mixed</button><button aria-pressed=false>Off</button>", "- button \"Bold\" [pressed]\n- button \"Mixed\" [pressed=mixed]\n- button \"Off\"")]
     [InlineData("<a href='/docs'>Docs</a>", "- link \"Docs\":\n  - /url: /docs")]
     [InlineData("<input placeholder='Search here'>", "- textbox \"Search here\"")]
+    [InlineData("<label>Name <input type=text></label><label>Start date <input type=date value=2026-01-14></label><label>Amount <input type=number></label>", "- text: Name\n- textbox \"Name\"\n- text: Start date\n- textbox \"Start date\": 2026-01-14\n- text: Amount\n- spinbutton \"Amount\"")]
+    [InlineData("<input type=password aria-label=Password value=secret><input type=file aria-label=Upload>", "- textbox \"Password\": secret\n- button \"Upload\"")]
     [InlineData("<div hidden>x</div><span aria-hidden=true>y</span><span style='display:none'>z</span><p style='visibility:hidden'>v<span style='visibility:visible'>w</span></p>", "")]
     [InlineData("<nav aria-label=Main><a href='#a'>A</a></nav>", "- navigation \"Main\":\n  - link \"A\":\n    - /url: \"#a\"")]
     [InlineData("<select aria-label=Pick><option>One<option selected>Two</select>", "- combobox \"Pick\":\n  - option \"One\"\n  - option \"Two\" [selected]")]
@@ -303,6 +314,12 @@ public sealed class AccessibilityTests : IDisposable
         var body = GetBody("<nav id=target aria-label=Main><a href=/>Home</a></nav>");
         Assert.Equal("- navigation \"Main\":\n  - link \"Home\":\n    - /url: /", body.QuerySelector("#target")!.CaptureAccessibilityTree()!.ToAriaSnapshot());
     }
+
+    // The expected values are the aria snapshots of #target written by Playwright 1.64.1 in Chromium
+    [Theory]
+    [InlineData("<input id=target type=date aria-label='Start date' value=2026-01-14>", "- textbox \"Start date\": 2026-01-14")]
+    [InlineData("<textarea id=target aria-label=Notes>hello</textarea>", "- textbox \"Notes\": hello")]
+    public void CaptureAccessibilityTree_RootFieldHasItsValue(string html, string expected) => Assert.Equal(expected, GetBody(html).QuerySelector("#target")!.CaptureAccessibilityTree()!.ToAriaSnapshot());
 
     [Fact]
     public void CaptureAccessibilityTree_IsASnapshot()

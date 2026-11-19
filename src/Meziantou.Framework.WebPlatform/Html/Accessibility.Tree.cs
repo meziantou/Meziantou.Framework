@@ -32,6 +32,7 @@ internal static partial class Accessibility
             _visited.Add(root);
             var rootNode = new PendingNode(root, GetProperties(root, GetRole(root), cache, isHidden: false));
             Enter(root, rootNode, parent: null, ownsTarget: true);
+            AddValue(root, rootNode);
 
             // The traversal uses an explicit stack: a deep document does not overflow the call stack
             AccessibilityNode? result = null;
@@ -99,8 +100,12 @@ internal static partial class Accessibility
 
             var node = new PendingNode(element, GetProperties(element, role, cache, isHidden: false));
             Enter(element, node, parent, ownsTarget: true);
+            AddValue(element, node);
+        }
 
-            // The value of a text field, as Playwright exposes it
+        /// <summary>Adds the value of a text field, as Playwright exposes it.</summary>
+        private static void AddValue(Element element, PendingNode node)
+        {
             switch (element)
             {
                 case HtmlInputElement { InputType: not (InputType.Checkbox or InputType.Radio or InputType.File) } input:

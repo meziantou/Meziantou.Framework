@@ -845,6 +845,18 @@ namespace Meziantou.Framework.Markdown
         protected override Meziantou.Framework.Language.SyntaxTree WithRootCore(Meziantou.Framework.Language.SyntaxNode root) => throw null;
     }
 
+    public sealed class MarkdownSyntaxTreeEditor
+    {
+        public Meziantou.Framework.Markdown.MarkdownSyntaxTree OriginalTree { get => throw null; }
+        public MarkdownSyntaxTreeEditor(Meziantou.Framework.Markdown.MarkdownSyntaxTree tree) { }
+        public Meziantou.Framework.Markdown.MarkdownSyntaxTree GetChangedTree() => throw null;
+        public void InsertBlocksAfter(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, string markdown) { }
+        public void InsertBlocksBefore(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, string markdown) { }
+        public void RemoveBlock(Meziantou.Framework.Markdown.MarkdownBlockSyntax block) { }
+        public void ReplaceBlock(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, string markdown) { }
+        public void SetGenericAttributes(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, Meziantou.Framework.Markdown.MarkdownGenericAttributes? attributes) { }
+    }
+
     public abstract class MarkdownSyntaxVisitor
     {
         public virtual void DefaultVisit(Meziantou.Framework.Markdown.MarkdownSyntaxNode node) { }

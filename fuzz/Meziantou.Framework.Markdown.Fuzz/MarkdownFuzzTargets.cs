@@ -86,6 +86,7 @@ public static class MarkdownFuzzTargets
         new("markdown-gfm", data => Parse(data, MarkdownParseOptions.GitHubFlavored)) { Seeds = GetGfmSeeds, Dictionary = GfmTokens },
         new("markdown-extensions", data => Parse(data, (data.Length % 4) switch { 0 => AllExtensions, 2 => AllExtensionsWithPipeTableOptions, _ => AllExtensionsWithoutHtml })) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
         new("markdown-url-filter", FilterUrls) { Seeds = GetUrlFilterSeeds, Dictionary = UrlFilterTokens },
+        new("markdown-edits", Edit) { Seeds = GetEditSeeds, Dictionary = ExtensionTokens },
         new("markdown-escaper", Escape) { Seeds = GetEscaperSeeds, Dictionary = EscaperTokens },
         new("markdown-formatter", Format) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
         new("markdown-syntax-extensions", ParseWithSyntaxExtensions) { Seeds = GetSyntaxExtensionSeeds, Dictionary = SyntaxExtensionTokens },
@@ -528,6 +529,155 @@ public static class MarkdownFuzzTargets
         }
     }
 
+    private const string EditHeading = "fzq";
+
+    // The inputs of the unit tests of the edits, then the examples of the extensions
+    private static readonly string[] EditSeeds =
+    [
+        "p\n\n    code\n    more\n", "^^ footer text\n", "> ^^ footer text\n", "[^longlabel]: text\n\n    more\n", "Term\n:   text\n", "para1\n# h\npara2\n", "a\n***\n---\n",
+        "> a\n> # h\nb\n", "- a\n- b\n- c\n", "- a\n\n  b\n", "- a\n\n      code\n", "> - # a\n>   b\n", "```\ncode\n", "> - ~~~\n>   code\n", ">- a\n", " 1.  a\n", ">\t\tcode\n",
+        "> a  \n> *b\n> c*\n> ---", "a #\n===\n", "# a\n\nb\n\n- c\n- d\n\ne\n", "- a\n\n  b\n\n  c\n\n  d\n", "[^1]: ```\n    code\n", "::: x\na\n", "-\ta\n\n\tb\n",
+        "para1\r\n# h\r\npara2\r\n", "> a\n# h\n> b\n", "- \n  a\n\n  b\n", "- a\n  - -\n", "> [a]: /u\nb\n", "* a\n  > b\n  >\n* c\n", "::: a\n::: b\n```\nc\n",
+        "::: a\n::: b\nc\n:::\n", "> [!NOTE]\n> text\n>\n> more\n", "> -     code\n",
+    ];
+
+    private static IEnumerable<FuzzSeed> GetEditSeeds() => EditSeeds.Select((text, index) => FuzzSeed.FromText($"edit-{index + 1}", text)).Concat(GetExtensionSeeds());
+
+    // A heading that replaces a block, or that is inserted before or after it, is in the containers of the block: the markers of the
+    // containers are written on its lines, and the indentation of an indented code block or a fenced block that is not closed do not
+    // take it. Removing a block keeps the blocks around it apart. Several changes of an editor are read as each of them, and every tree
+    // renders as its text parsed again.
+    private static void Edit(ReadOnlySpan<byte> data)
+    {
+        var text = FuzzText.Decode(data);
+        if (text.Length > 2048)
+            return;
+
+        var options = data.Length % 2 == 0 ? AllExtensions : MarkdownParseOptions.GitHubFlavored;
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        var blocks = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Where(IsEditableBlock).Take(6).ToList();
+        foreach (var block in blocks)
+        {
+            var removed = tree.RemoveBlock(block);
+            CheckReparse(removed, text);
+            var replaced = tree.ReplaceBlock(block, "# " + EditHeading + "\n\n");
+            var before = tree.InsertBlocksBefore(block, "# " + EditHeading + "\n\n");
+            var after = tree.InsertBlocksAfter(block, "\n# " + EditHeading + "\n");
+            CheckReparse(replaced, text);
+            CheckReparse(before, text);
+            CheckReparse(after, text);
+            if (HasMarkdigPlacement(block))
+                continue;
+
+            CheckRemoval(block, removed, text);
+            CheckHeading(tree, block, replaced, "replacing", text);
+            CheckHeading(tree, block, before, "inserting before", text);
+
+            // An HTML block or a block of an extension that is not closed reads the lines after it. In a custom container or a figure that
+            // is not closed, the fence that would close a custom container or a figure in it closes the outer one first.
+            var lastBlocks = block.DescendantNodesAndSelf().OfType<MarkdownBlockSyntax>().Where(node => node.Span.End == block.Span.End);
+            if (!lastBlocks.Any(node => node is MarkdownHtmlBlockSyntax or MarkdownExtensionBlockSyntax) && !(IsInFencedContainer(block) && lastBlocks.Any(node => node is MarkdownCustomContainerSyntax or MarkdownFigureSyntax)))
+            {
+                CheckHeading(tree, block, after, "inserting after", text);
+            }
+        }
+
+        // The leaf blocks, none of which contains another, replaced together
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        var leaves = blocks.Where(block => !block.DescendantNodes().OfType<MarkdownBlockSyntax>().Any() && !HasMarkdigPlacement(block)).ToList();
+        foreach (var leaf in leaves)
+        {
+            editor.ReplaceBlock(leaf, "# " + EditHeading + "\n\n");
+        }
+
+        var edited = editor.GetChangedTree();
+        CheckReparse(edited, text);
+        foreach (var leaf in leaves)
+        {
+            var chain = GetContainerChain(leaf);
+            FuzzAssert.True(edited.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Count(heading => heading.GetPlainText() == EditHeading && GetContainerChain(heading) == chain) >= leaves.Count(other => GetContainerChain(other) == chain), $"The editor does not replace the block at {leaf.Span} with a heading in its containers: {FuzzAssert.Format(text)}");
+        }
+    }
+
+    // The blocks around a removed block keep their kinds: the lines around it are not read as one block, such as two paragraphs or a
+    // paragraph and a thematic break that would make it a setext heading. The check is for a block between two blocks whose lines can
+    // only be read as such blocks: the first line of a block after a table or a link reference definition, or a lazy continuation
+    // line, can depend on the lines before it. A paragraph that starts with : or ~ can be the definition of the paragraph before it.
+    private static void CheckRemoval(MarkdownBlockSyntax block, MarkdownSyntaxTree removed, string text)
+    {
+        var parent = block.Parent!;
+        if (parent is not (MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownListItemSyntax) || block is MarkdownLinkReferenceDefinitionSyntax or MarkdownAbbreviationDefinitionSyntax || block.DescendantNodes().OfType<MarkdownBlockSyntax>().Any() || text.Contains('\t', StringComparison.Ordinal) || text.Contains('|', StringComparison.Ordinal))
+            return;
+
+        var siblings = parent.ChildNodes().OfType<MarkdownBlockSyntax>().ToList();
+        var index = siblings.IndexOf(block);
+        if (index == 0 || index == siblings.Count - 1 || !IsSimpleBlock(siblings[index - 1]) || !IsSimpleBlock(siblings[index + 1]) || siblings[index + 1].ToString().TrimStart().StartsWith(':', StringComparison.Ordinal) || siblings[index + 1].ToString().TrimStart().StartsWith('~', StringComparison.Ordinal))
+            return;
+
+        // The container in the new tree, at the same place in its ancestors
+        SyntaxNode? updated = removed.GetRoot();
+        foreach (var ancestor in parent.AncestorsAndSelf().Reverse().Skip(1))
+        {
+            var position = ancestor.Parent!.ChildNodes().ToList().IndexOf(ancestor);
+            updated = updated?.ChildNodes().ElementAtOrDefault(position);
+        }
+
+        var expected = siblings.Where(sibling => sibling != block).Select(sibling => sibling.RawKind);
+        FuzzAssert.True(updated is not null && updated.RawKind == parent.RawKind && updated.ChildNodes().OfType<MarkdownBlockSyntax>().Select(child => child.RawKind).SequenceEqual(expected), $"Removing the block at {block.Span} changes the other blocks of its container: {FuzzAssert.Format(text)} gives {FuzzAssert.Format(removed.GetRoot().ToFullString())}");
+
+        static bool IsSimpleBlock(MarkdownBlockSyntax block) => block is MarkdownParagraphSyntax or MarkdownHeadingSyntax or MarkdownThematicBreakSyntax or MarkdownCodeBlockSyntax { IsFenced: true };
+    }
+
+    // Whether Markdig places the blocks around the block by rules that the edits do not follow: a definition reads the lines that are
+    // not indented after it, and the blocks they start are after the definition list or in it. A line that is not indented after a
+    // footnote continues it, and a blank line closes the blocks of a footnote, such as a list. The lines after a definition list, at the
+    // indentation of a definition, continue it, and a grid table reads the lines after it as Markdig does.
+    private static bool HasMarkdigPlacement(MarkdownBlockSyntax block)
+    {
+        // The lines of a grid table that is not one are the paragraph they continue, and the lines after it continue the blocks of its
+        // cells as Markdig reads them
+        var text = block.SyntaxTree!.GetText().ToString();
+        var extensions = ((MarkdownSyntaxTree)block.SyntaxTree).Options.Extensions;
+        if (extensions.HasFlag(MarkdownExtensions.GridTables) && (text.StartsWith('+', StringComparison.Ordinal) || text.Contains("\n+", StringComparison.Ordinal)))
+            return true;
+
+        // A --- that starts the text is front matter when a line closes it, which an inserted line can be
+        if (extensions.HasFlag(MarkdownExtensions.YamlFrontMatter) && text.StartsWith("---", StringComparison.Ordinal))
+            return true;
+
+        if (block is MarkdownDefinitionListSyntax or MarkdownGridTableSyntax || block.Ancestors().Any(ancestor => ancestor is MarkdownDefinitionItemSyntax or MarkdownFootnoteDefinitionSyntax))
+            return true;
+
+        var siblings = block.Parent!.ChildNodes().OfType<MarkdownBlockSyntax>().ToList();
+        var index = siblings.IndexOf(block);
+        return index > 0 && siblings[index - 1] is MarkdownDefinitionListSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownGridTableSyntax;
+    }
+
+    private static bool IsInFencedContainer(MarkdownBlockSyntax block) => block.Ancestors().Any(ancestor => ancestor is MarkdownCustomContainerSyntax or MarkdownFigureSyntax);
+
+    // A block in a container that is not a list or a table, which can have any block next to it, except the paragraph that starts a task
+    // list item, after its [ ]
+    private static bool IsEditableBlock(MarkdownBlockSyntax block)
+        => block is not (MarkdownDefinitionTermSyntax or MarkdownFigureCaptionSyntax)
+            && !(block.Parent is MarkdownListItemSyntax { IsTask: true } item && item.Blocks[0] == block)
+            && block.Parent is MarkdownDocumentSyntax or MarkdownBlockQuoteSyntax or MarkdownAlertSyntax or MarkdownListItemSyntax or MarkdownFootnoteDefinitionSyntax or MarkdownDefinitionItemSyntax or MarkdownFooterSyntax or MarkdownCustomContainerSyntax or MarkdownFigureSyntax;
+
+    private static void CheckHeading(MarkdownSyntaxTree tree, MarkdownBlockSyntax block, MarkdownSyntaxTree updated, string edit, string text)
+    {
+        CheckReparse(updated, text);
+        var chain = GetContainerChain(block);
+        FuzzAssert.True(updated.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Count(heading => heading.GetPlainText() == EditHeading && GetContainerChain(heading) == chain) > tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Count(heading => heading.GetPlainText() == EditHeading && GetContainerChain(heading) == chain), $"After {edit} the block at {block.Span}, the heading is not in the containers of the block: {FuzzAssert.Format(text)} gives {FuzzAssert.Format(updated.GetRoot().ToFullString())}");
+    }
+
+    // The tree of an edit is the one of its text
+    private static void CheckReparse(MarkdownSyntaxTree tree, string text)
+    {
+        var reparsed = MarkdownSyntaxTree.ParseText(tree.GetRoot().ToFullString(), tree.Options);
+        FuzzAssert.True(MarkdownHtmlRenderer.ToHtml(reparsed) == MarkdownHtmlRenderer.ToHtml(tree), $"The tree of an edit does not render as its text: {FuzzAssert.Format(text)}");
+    }
+
+    private static string GetContainerChain(SyntaxNode node) => string.Join('/', node.Ancestors().Select(ancestor => ancestor.RawKind));
+
     // The nodes that the With methods return are read back with the values they were given. A node is read alone, when it is read
     // alone as it is in the tree: in the tree, the new text can change how the text around it is read, as any Markdown text, such as
     // a title removed from a definition that lets the next line be its title. The tree with the node replaced is parsed again.
@@ -547,6 +697,19 @@ public static class MarkdownFuzzTargets
             if (ParseAlone<MarkdownHeadingSyntax>(heading, options) is { } alone && alone.Level == heading.Level && alone.IsSetext == heading.IsSetext)
             {
                 FuzzAssert.True(ParseAlone<MarkdownHeadingSyntax>(leveled, options)?.Level == level, $"The heading at {heading.Span} is not of level {level} once changed: {FuzzAssert.Format(text)}");
+            }
+
+            // A setext heading of level 3 to 6 becomes an ATX heading, on one line
+            if (heading.IsSetext)
+            {
+                var atxLevel = heading.Level + 4;
+                var atx = heading.WithLevel(atxLevel);
+                Replace(tree, heading, atx);
+                FuzzAssert.True(!atx.IsSetext && !atx.ToString().AsSpan().ContainsAny('\r', '\n'), $"The heading at {heading.Span} is not an ATX heading on one line once of level {atxLevel}: {FuzzAssert.Format(text)}");
+                if (ParseAlone<MarkdownHeadingSyntax>(heading, options) is { IsSetext: true } setext && setext.Level == heading.Level)
+                {
+                    FuzzAssert.True(ParseAlone<MarkdownHeadingSyntax>(atx, options)?.Level == atxLevel, $"The heading at {heading.Span} is not of level {atxLevel} once changed: {FuzzAssert.Format(text)}");
+                }
             }
         }
 

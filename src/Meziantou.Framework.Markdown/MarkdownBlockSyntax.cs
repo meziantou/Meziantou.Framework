@@ -24,17 +24,27 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
         if (FirstAncestorOrSelf<MarkdownDocumentSyntax>() is not { HasGenericAttributes: true } document)
             return MarkdownGenericAttributes.Empty;
 
+        var found = new List<MarkdownGenericAttributesSyntax>();
+        _ = MarkdownGenericAttributesSyntax.FindTargets(document, (attributes, target) =>
+        {
+            if (target == this)
+            {
+                found.Add(attributes);
+            }
+        });
+
+        return MergeGenericAttributes(found);
+    }
+
+    // The attributes of a block, from the {...} that are for it, in the order of the text
+    internal static MarkdownGenericAttributes MergeGenericAttributes(List<MarkdownGenericAttributesSyntax> found)
+    {
         string? id = null;
         List<string>? blockLineClasses = null;
         var classes = new List<string>();
         var properties = new List<KeyValuePair<string, string?>>();
-        _ = MarkdownGenericAttributesSyntax.FindTargets(document, (attributes, target) =>
+        foreach (var attributes in found)
         {
-            if (target != this)
-            {
-                return;
-            }
-
             id = attributes.Id ?? id;
             if (attributes.IsBlockLine)
             {
@@ -53,7 +63,7 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
                     properties.Add(property);
                 }
             }
-        });
+        }
 
         // The classes of the first line of a block come first, as the renderer writes them
         if (blockLineClasses is not null)

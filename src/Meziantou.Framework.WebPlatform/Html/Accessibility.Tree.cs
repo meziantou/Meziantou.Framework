@@ -30,9 +30,15 @@ internal static partial class Accessibility
         public AccessibilityNode Build()
         {
             _visited.Add(root);
-            var rootNode = new PendingNode(root, GetProperties(root, GetRole(root), cache, isHidden: false));
+            var rootRole = GetRole(root);
+            var rootNode = new PendingNode(root, GetProperties(root, rootRole, cache, isHidden: false));
             Enter(root, rootNode, parent: null, ownsTarget: true);
-            AddValue(root, rootNode);
+
+            // As in Visit, an element without a role has no value (a hidden input of a document without browsing context)
+            if (rootRole is not ("" or "none" or "generic"))
+            {
+                AddValue(root, rootNode);
+            }
 
             // The traversal uses an explicit stack: a deep document does not overflow the call stack
             AccessibilityNode? result = null;

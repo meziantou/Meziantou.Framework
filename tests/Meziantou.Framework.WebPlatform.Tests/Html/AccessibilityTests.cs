@@ -322,6 +322,15 @@ public sealed class AccessibilityTests : IDisposable
     public void CaptureAccessibilityTree_RootFieldHasItsValue(string html, string expected) => Assert.Equal(expected, GetBody(html).QuerySelector("#target")!.CaptureAccessibilityTree()!.ToAriaSnapshot());
 
     [Fact]
+    public void CaptureAccessibilityTree_RootWithoutRoleHasNoValue()
+    {
+        // Without a browsing context, a hidden input is not hidden by the style: its empty role keeps its value out
+        var document = new DomParser().ParseFromString("<input id=target type=hidden value=token>", DomParserSupportedType.TextHtml);
+        Assert.Equal("", document.QuerySelector("#target")!.CaptureAccessibilityTree()!.ToAriaSnapshot());
+        Assert.Equal("", document.Body!.CaptureAccessibilityTree()!.ToAriaSnapshot());
+    }
+
+    [Fact]
     public void CaptureAccessibilityTree_IsASnapshot()
     {
         var body = GetBody("<button>Before</button>");

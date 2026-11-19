@@ -32,6 +32,35 @@ public sealed class XmlParserTests
     }
 
     [Theory]
+    [InlineData("1.1", true)]
+    [InlineData("1.7", true)]
+    [InlineData("1.1075", true)]
+    [InlineData("2.0", false)]
+    [InlineData("10.0", false)]
+    [InlineData("1.", false)]
+    public void XmlDeclaration_AcceptsTheVersions1x(string version, bool accepted)
+    {
+        var document = new DomParser().ParseFromString($"<?xml version='{version}'?><root/>", DomParserSupportedType.ApplicationXml);
+        Assert.Equal(accepted ? "root" : "parsererror", document.DocumentElement!.LocalName);
+    }
+
+    [Fact]
+    public void DomParser_IgnoresAByteOrderMark()
+    {
+        var document = new DomParser().ParseFromString("\uFEFF<?xml version='1.0'?><root/>", DomParserSupportedType.TextXml);
+        Assert.Equal("root", document.DocumentElement!.LocalName);
+    }
+
+    [Fact]
+    public void InnerHtml_LoneSurrogateIsNotWellFormed()
+    {
+        var document = new DomParser().ParseFromString("<html xmlns='http://www.w3.org/1999/xhtml'></html>", DomParserSupportedType.ApplicationXhtmlXml);
+        Assert.Equal("SyntaxError", Assert.Throws<DomException>(() => document.DocumentElement!.InnerHtml = "\uD800").Name);
+        document.DocumentElement!.InnerHtml = "\uD83D\uDD25";
+        Assert.Equal("\uD83D\uDD25", document.DocumentElement.TextContent);
+    }
+
+    [Theory]
     [InlineData("utf-8")]
     [InlineData("utf-16")]
     [InlineData("utf-16BE")]

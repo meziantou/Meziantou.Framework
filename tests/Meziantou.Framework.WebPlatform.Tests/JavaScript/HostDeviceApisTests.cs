@@ -3837,6 +3837,23 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task MediaStreamAudioDestinationNode_TrackFollowsTheChannelCountOfTheNode()
+    {
+        var document = Load("""
+            <script>
+              const ac = new AudioContext();
+              const dest = new MediaStreamAudioDestinationNode(ac, { channelCount: 1 });
+              const track = dest.stream.getAudioTracks()[0];
+              const before = track.getSettings().channelCount;
+              dest.channelCount = 4;
+              document.title = [before, track.getSettings().channelCount, dest.channelCount].join();
+            </script>
+            """);
+
+        Assert.Equal("1,4,4", await RunAsync(document));
+    }
+
+    [Fact]
     public void CanvasCaptureStream_FollowsTheSizeOfTheCanvas()
     {
         var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");

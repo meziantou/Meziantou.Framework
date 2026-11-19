@@ -159,8 +159,8 @@ public sealed class MediaStreamAudioDestinationNode : AudioNode
     public MediaStreamAudioDestinationNode(AudioContext context, AudioNodeOptions? options = null)
         : base(context, numberOfInputs: 1, numberOfOutputs: 0, channelCount: 2, ChannelCountMode.Explicit, ChannelInterpretation.Speakers)
     {
-        ApplyOptions(options);
         _source = new WebAudioTrackSource((int)context.SampleRate, (int)ChannelCount);
+        ApplyOptions(options);
         var global = context.Window ?? GlobalScope.Current ?? throw DomException.InvalidState("The context has no window");
         Stream = new MediaStream(global, [new MediaStreamTrack(global, _source)]);
     }
@@ -171,6 +171,8 @@ public sealed class MediaStreamAudioDestinationNode : AudioNode
     public MediaStream Stream { get; }
 
     private protected override bool IsSourceActive(long startFrame, int length) => true;
+
+    private protected override void OnChannelPropertiesChanged() => _source.SetChannelCount((int)ChannelCount);
 
     private protected override void Process(long startFrame, int length) => _source.Write(GetInputBus(0), length);
 }
@@ -244,9 +246,9 @@ internal sealed class MediaStreamTrackAudioReader(MediaStreamTrack track, float 
 /// <summary>The source of the track of a <see cref="MediaStreamAudioDestinationNode"/>: the frames rendered by the node, kept for one second.</summary>
 internal sealed class WebAudioTrackSource : MediaStreamTrackSource
 {
-    private readonly float[] _frames;
     private readonly int _capacity;
-    private readonly int _channelCount;
+    private float[] _frames;
+    private int _channelCount;
     private long _written;
 
     public WebAudioTrackSource(int sampleRate, int channelCount)
@@ -264,11 +266,31 @@ internal sealed class WebAudioTrackSource : MediaStreamTrackSource
 
     public override long AudioPosition => _written;
 
-    public override Dictionary<string, object> GetInitialSettings() => new(StringComparer.Ordinal)
+    public override Dictionary<string, object> GetInitialSettings()
     {
-        ["sampleRate"] = (double)AudioSampleRate,
-        ["channelCount"] = (double)_channelCount,
-    };
+        var settings = new Dictionary<string, object>(StringComparer.Ordinal) { ["sampleRate"] = (double)AudioSampleRate };
+        UpdateSettings(settings);
+        return settings;
+    }
+
+    /// <summary>The number of channels of the track follows the channel count of the node.</summary>
+    public override void UpdateSettings(Dictionary<string, object> settings) => settings["channelCount"] = (double)_channelCount;
+
+    /// <summary>
+    /// The channel count of the node changed: the track has the same number of channels as the node
+    /// (https://webaudio.github.io/web-audio-api/#dom-mediastreamaudiodestinationnode-stream). The frames kept for the
+    /// readers are dropped: the next ones have the new number of channels.
+    /// </summary>
+    public void SetChannelCount(int channelCount)
+    {
+        channelCount = Math.Clamp(channelCount, 1, 32);
+        if (channelCount == _channelCount)
+            return;
+
+        _channelCount = channelCount;
+        _frames = new float[_capacity * channelCount];
+        NotifyTracksChanged();
+    }
 
     public void Write(AudioBus input, int length)
     {

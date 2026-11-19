@@ -362,7 +362,7 @@ public partial class MediaStreamTrack : EventTarget
 
     /// <summary>Reads the audio samples of the track (silence when it is disabled, muted or ended).</summary>
     /// <summary>The number of channels of the audio of the track: the one of its settings, else the one of its source.</summary>
-    internal int AudioChannelCount => _settings.GetValueOrDefault("channelCount") is double channels && channels >= 1 ? Math.Min((int)channels, 32) : Math.Clamp(Source.AudioChannelCount, 1, 32);
+    internal int AudioChannelCount => LiveSettings.GetValueOrDefault("channelCount") is double channels && channels >= 1 ? Math.Min((int)channels, 32) : Math.Clamp(Source.AudioChannelCount, 1, 32);
 
     /// <summary>
     /// Reads the interleaved audio samples of the track (<see cref="AudioChannelCount"/> per frame; silence when it is

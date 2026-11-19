@@ -237,6 +237,7 @@ public partial class HtmlCanvasElement : ICanvasHost
     /// </summary>
     internal void OnBitmapChanged()
     {
+        NotifyCaptureSources();
         NodeDocument.LayoutEngineOrNull?.InvalidatePaint();
         if (NodeDocument.HasRenderedCanvases && GetDrawableCanvas(this) is { IsContentDrawable: true })
         {

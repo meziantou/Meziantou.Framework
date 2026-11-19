@@ -226,8 +226,9 @@ internal sealed partial class WptTestRunner
                 Permissions = _permissionStore,
                 ClipboardPermission = (_, access) => !_permissions.TryGetValue(access == ClipboardAccess.Read ? "clipboard-read" : "clipboard-write", out var state) || state != "denied",
 
-                // As in Chromium, the screen wake lock is granted without asking the user; the other prompts are dismissed
-                RequestPermission = (_, name) => name == "screen-wake-lock" ? PermissionState.Granted : PermissionState.Prompt,
+                // As in Chromium, the screen wake lock is granted without asking the user, and the prompts of the capture
+                // devices are accepted (--use-fake-ui-for-media-stream); the other prompts are dismissed
+                RequestPermission = (_, name) => name is "screen-wake-lock" or "camera" or "microphone" ? PermissionState.Granted : PermissionState.Prompt,
 
                 // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
                 Geolocation = _geolocation,
@@ -266,6 +267,9 @@ internal sealed partial class WptTestRunner
 
                 // The media files are not decoded: their metadata is read and they are played with the virtual clock
                 MediaBackend = WptMediaBackend.Instance,
+
+                // The fake capture devices: a camera, a microphone and the display surfaces of getDisplayMedia()
+                MediaCapture = new WptMediaCaptureBackend(),
 
                 // The values of the client hints: a desktop user agent on Linux, with the memory and the network of a
                 // recent machine (the library sends no device memory nor network hint by default)

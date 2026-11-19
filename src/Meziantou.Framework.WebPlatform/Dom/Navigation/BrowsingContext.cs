@@ -3602,6 +3602,9 @@ public sealed partial class BrowsingContext : IDisposable
             {
                 navigator.WakeLockOrNull?.ReleaseAll();
                 navigator.KeyboardOrNull?.OnDocumentUnloaded();
+
+                // https://w3c.github.io/mediacapture-main/#life-cycle-and-media-flow: the capture of the devices stops
+                navigator.MediaDevicesOrNull?.OnDocumentUnloaded();
             }
 
             PressureObserverRegistry.OnUnloaded(window);

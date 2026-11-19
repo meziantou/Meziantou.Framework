@@ -122,8 +122,10 @@ a task of the event loop.
 
 ## Not implemented
 
-- `MediaElementAudioSourceNode`, the `MediaStream` nodes (`MediaStreamAudioSourceNode`, `MediaStreamTrackAudioSourceNode`,
-  `MediaStreamAudioDestinationNode`) and the factories of `AudioContext` that create them.
+- The audio of `MediaElementAudioSourceNode`: the media backend does not decode the audio of the resources, so the node
+  outputs silence. The `MediaStream` nodes (`MediaStreamAudioSourceNode`, `MediaStreamTrackAudioSourceNode`,
+  `MediaStreamAudioDestinationNode`) are implemented: a source reads the frames of its track that follow the ones of the
+  previous render quantum, resampled linearly when the sample rate of the track is not the one of the context.
 - The `interrupted` state (e.g. a context whose document is hidden when `media-playback-while-not-visible` is disallowed).
 
 The results of the web-platform-tests are in [the WPT coverage of webaudio](../../../docs/WebPlatform/10-WptCoverage/webaudio.md).

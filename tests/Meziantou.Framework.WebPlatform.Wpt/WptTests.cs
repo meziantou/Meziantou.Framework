@@ -366,6 +366,22 @@ public sealed class WptTests
 
     public static TheoryData<string> MediaCaptureFromElementTests => GetTests("mediacapture-fromelement");
 
+    public static TheoryData<string> MediaCaptureStreamsTests => GetTests("mediacapture-streams");
+
+    public static TheoryData<string> MediaCaptureImageTests => GetTests("mediacapture-image");
+
+    public static TheoryData<string> MediaCaptureInsertableStreamsTests => GetTests("mediacapture-insertable-streams");
+
+    public static TheoryData<string> MediaCaptureExtensionsTests => GetTests("mediacapture-extensions");
+
+    public static TheoryData<string> MediaCaptureHandleTests => GetTests("mediacapture-handle");
+
+    public static TheoryData<string> MediaCaptureRegionTests => GetTests("mediacapture-region");
+
+    public static TheoryData<string> ScreenCaptureTests => GetTests("screen-capture");
+
+    public static TheoryData<string> MstContentHintTests => GetTests("mst-content-hint");
+
     public static TheoryData<string> ShapeDetectionTests => GetTests("shape-detection");
 
     public static TheoryData<string> WebGLTests => GetTests("webgl");
@@ -1486,6 +1502,38 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MediaCaptureFromElementTests))]
     public void MediaCaptureFromElement(string test) => Run("mediacapture-fromelement", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureStreamsTests))]
+    public void MediaCaptureStreams(string test) => Run("mediacapture-streams", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureImageTests))]
+    public void MediaCaptureImage(string test) => Run("mediacapture-image", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureInsertableStreamsTests))]
+    public void MediaCaptureInsertableStreams(string test) => Run("mediacapture-insertable-streams", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureExtensionsTests))]
+    public void MediaCaptureExtensions(string test) => Run("mediacapture-extensions", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureHandleTests))]
+    public void MediaCaptureHandle(string test) => Run("mediacapture-handle", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureRegionTests))]
+    public void MediaCaptureRegion(string test) => Run("mediacapture-region", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ScreenCaptureTests))]
+    public void ScreenCapture(string test) => Run("screen-capture", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MstContentHintTests))]
+    public void MstContentHint(string test) => Run("mst-content-hint", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ShapeDetectionTests))]

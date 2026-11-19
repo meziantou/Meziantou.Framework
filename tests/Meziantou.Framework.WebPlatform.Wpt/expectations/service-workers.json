@@ -412,10 +412,7 @@
     "total": 6
   },
   "service-workers/service-worker/fetch-audio-tainting.https.html": {
-    "total": 1,
-    "failures": {
-      "Verify CORS XHR of fetch() in a Service Worker": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/fetch-canvas-tainting-double-write.https.html": {
     "total": 1

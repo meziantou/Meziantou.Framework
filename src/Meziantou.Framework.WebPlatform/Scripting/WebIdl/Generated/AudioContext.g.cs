@@ -55,6 +55,32 @@ internal static class Binding_AudioContext<TAdapter, TValue> where TAdapter : st
         var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_f97845cc(r, a[0]);
         var result = o.SetSinkId(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_WebAudio_StringOrAudioSinkOptions(r, a0)); return r.ToPromise(result);
     }
+    private static TValue Op_createMediaElementSource(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioContext>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("createMediaElementSource", 1, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(a[0], "HTMLMediaElement");
+        var result = o.CreateMediaElementSource(a0); return r.Wrap(result);
+    }
+    private static TValue Op_createMediaStreamSource(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioContext>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("createMediaStreamSource", 1, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.MediaStream>(a[0], "MediaStream");
+        var result = o.CreateMediaStreamSource(a0); return r.Wrap(result);
+    }
+    private static TValue Op_createMediaStreamTrackSource(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioContext>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("createMediaStreamTrackSource", 1, a.Length);
+        var a0 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack>(a[0], "MediaStreamTrack");
+        var result = o.CreateMediaStreamTrackSource(a0); return r.Wrap(result);
+    }
+    private static TValue Op_createMediaStreamDestination(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.AudioContext>(t, Binding);
+        var result = o.CreateMediaStreamDestination(); return r.Wrap(result);
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "baseLatency", Get_baseLatency, null);
@@ -68,6 +94,10 @@ internal static class Binding_AudioContext<TAdapter, TValue> where TAdapter : st
         r.DefineOperation(instanceTarget, "suspend", 0, Op_suspend, returnsPromise: true);
         r.DefineOperation(instanceTarget, "close", 0, Op_close, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setSinkId", 1, Op_setSinkId, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "createMediaElementSource", 1, Op_createMediaElementSource);
+        r.DefineOperation(instanceTarget, "createMediaStreamSource", 1, Op_createMediaStreamSource);
+        r.DefineOperation(instanceTarget, "createMediaStreamTrackSource", 1, Op_createMediaStreamTrackSource);
+        r.DefineOperation(instanceTarget, "createMediaStreamDestination", 0, Op_createMediaStreamDestination);
     }
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)

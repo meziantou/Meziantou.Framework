@@ -3144,6 +3144,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Value { get => throw null; set { } }
     }
 
+    public enum AudioSelectionPreference
+    {
+        Preferred = 0,
+    }
+
     public sealed class AudioTrack
     {
         public bool Enabled { get => throw null; set { } }
@@ -3437,6 +3442,25 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Region = 3,
     }
 
+    public readonly struct BooleanOrConstrainDouble : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble>
+    {
+        public double? Bare { get => throw null; }
+        public bool? Flag { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDoubleRange? Range { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble FromBoolean(bool value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble FromConstrainDoubleRange(Meziantou.Framework.WebPlatform.Dom.ConstrainDoubleRange value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble FromDouble(double value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble left, Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble left, Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble(Meziantou.Framework.WebPlatform.Dom.ConstrainDoubleRange value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble(bool value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble(double value) => throw null;
+    }
+
     public readonly struct BooleanOrDoubleOrString : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BooleanOrDoubleOrString>
     {
         public object Value { get => throw null; }
@@ -3452,6 +3476,38 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrDoubleOrString(bool value) => throw null;
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrDoubleOrString(double value) => throw null;
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrDoubleOrString(string value) => throw null;
+    }
+
+    public readonly struct BooleanOrMediaTrackConstraints : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints>
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraints? Constraints { get => throw null; }
+        public bool? Flag { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints FromBoolean(bool value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints FromMediaTrackConstraints(Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraints value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints left, Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints left, Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints(Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraints value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints(bool value) => throw null;
+    }
+
+    public readonly struct BooleanOrString : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BooleanOrString>
+    {
+        public bool? Flag { get => throw null; }
+        public string? Text { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.BooleanOrString other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BooleanOrString FromBoolean(bool value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BooleanOrString FromString(string value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.BooleanOrString left, Meziantou.Framework.WebPlatform.Dom.BooleanOrString right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.BooleanOrString left, Meziantou.Framework.WebPlatform.Dom.BooleanOrString right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrString(bool value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BooleanOrString(string value) => throw null;
     }
 
     public sealed class BoxQuadOptions
@@ -3577,6 +3633,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.StorageShed? LocalStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaAutoplayPolicy MediaAutoplayPolicy { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend? MediaCapture { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.MediaSessionOptions? MediaSession { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformationOptions? NetworkInformation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PendingInputOptions? PendingInput { get => throw null; init { } }
@@ -3699,6 +3756,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public CanMakePaymentEvent(string type) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit)) { }
         public void RespondWith(System.Threading.Tasks.Task<bool> canMakePaymentResponse) { }
+    }
+
+    public sealed class CanvasCaptureMediaStreamTrack : Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack
+    {
+        public Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement Canvas { get => throw null; }
+        public void RequestFrame() { }
     }
 
     public enum CanvasColorType
@@ -3977,6 +4040,31 @@ namespace Meziantou.Framework.WebPlatform.Dom
         OptimizeSpeed = 1,
         OptimizeLegibility = 2,
         GeometricPrecision = 3,
+    }
+
+    public sealed class CaptureController : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public void SetFocusBehavior(Meziantou.Framework.WebPlatform.Dom.CaptureStartFocusBehavior focusBehavior) { }
+    }
+
+    public sealed class CaptureHandle
+    {
+        public string? Handle { get => throw null; init { } }
+        public string? Origin { get => throw null; init { } }
+    }
+
+    public sealed class CaptureHandleConfig
+    {
+        public bool ExposeOrigin { get => throw null; init { } }
+        public string Handle { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> PermittedOrigins { get => throw null; init { } }
+    }
+
+    public enum CaptureStartFocusBehavior
+    {
+        FocusCapturingApplication = 0,
+        FocusCapturedSurface = 1,
+        NoFocusChange = 2,
     }
 
     public sealed class CaretPosition
@@ -4271,6 +4359,144 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Wimax = 8,
     }
 
+    public readonly struct ConstrainBoolean : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean>
+    {
+        public bool? Bare { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanParameters? Parameters { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean FromBoolean(bool value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean FromConstrainBooleanParameters(Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanParameters value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean left, Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean left, Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean(Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanParameters value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean(bool value) => throw null;
+    }
+
+    public readonly struct ConstrainBooleanOrDomString : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString>
+    {
+        public bool? BareFlag { get => throw null; }
+        public string? BareText { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomStringParameters? Parameters { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString FromBoolean(bool value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString FromConstrainBooleanOrDomStringParameters(Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomStringParameters value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString FromString(string value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString left, Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString left, Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString(Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomStringParameters value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString(bool value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString(string value) => throw null;
+    }
+
+    public sealed class ConstrainBooleanOrDomStringParameters
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrString? Exact { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrString? Ideal { get => throw null; init { } }
+    }
+
+    public sealed class ConstrainBooleanParameters
+    {
+        public bool? Exact { get => throw null; init { } }
+        public bool? Ideal { get => throw null; init { } }
+    }
+
+    public readonly struct ConstrainDomString : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.ConstrainDomString>
+    {
+        public string? Bare { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string>? BareList { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomStringParameters? Parameters { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.ConstrainDomString other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainDomString FromConstrainDomStringParameters(Meziantou.Framework.WebPlatform.Dom.ConstrainDomStringParameters value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainDomString FromString(string value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainDomString FromStrings(string[] value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.ConstrainDomString left, Meziantou.Framework.WebPlatform.Dom.ConstrainDomString right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ConstrainDomString left, Meziantou.Framework.WebPlatform.Dom.ConstrainDomString right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainDomString(Meziantou.Framework.WebPlatform.Dom.ConstrainDomStringParameters value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainDomString(string value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainDomString(string[] value) => throw null;
+    }
+
+    public sealed class ConstrainDomStringParameters
+    {
+        public Meziantou.Framework.WebPlatform.Dom.StringOrStringList? Exact { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.StringOrStringList? Ideal { get => throw null; init { } }
+    }
+
+    public readonly struct ConstrainDouble : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.ConstrainDouble>
+    {
+        public double? Bare { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDoubleRange? Range { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.ConstrainDouble other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainDouble FromConstrainDoubleRange(Meziantou.Framework.WebPlatform.Dom.ConstrainDoubleRange value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainDouble FromDouble(double value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.ConstrainDouble left, Meziantou.Framework.WebPlatform.Dom.ConstrainDouble right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ConstrainDouble left, Meziantou.Framework.WebPlatform.Dom.ConstrainDouble right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainDouble(Meziantou.Framework.WebPlatform.Dom.ConstrainDoubleRange value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainDouble(double value) => throw null;
+    }
+
+    public sealed class ConstrainDoubleRange : Meziantou.Framework.WebPlatform.Dom.DoubleRange
+    {
+        public double? Exact { get => throw null; init { } }
+        public double? Ideal { get => throw null; init { } }
+    }
+
+    public readonly struct ConstrainPoint2D : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D>
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Point2D>? Bare { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2DParameters? Parameters { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D FromConstrainPoint2DParameters(Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2DParameters value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D FromPoints(Meziantou.Framework.WebPlatform.Dom.Point2D[] value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D left, Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D left, Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D(Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2DParameters value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D(Meziantou.Framework.WebPlatform.Dom.Point2D[] value) => throw null;
+    }
+
+    public sealed class ConstrainPoint2DParameters
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Point2D>? Exact { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Point2D>? Ideal { get => throw null; init { } }
+    }
+
+    public readonly struct ConstrainULong : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.ConstrainULong>
+    {
+        public uint? Bare { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainULongRange? Range { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.ConstrainULong other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainULong FromConstrainULongRange(Meziantou.Framework.WebPlatform.Dom.ConstrainULongRange value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.ConstrainULong FromUInt32(uint value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.ConstrainULong left, Meziantou.Framework.WebPlatform.Dom.ConstrainULong right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.ConstrainULong left, Meziantou.Framework.WebPlatform.Dom.ConstrainULong right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainULong(Meziantou.Framework.WebPlatform.Dom.ConstrainULongRange value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.ConstrainULong(uint value) => throw null;
+    }
+
+    public sealed class ConstrainULongRange : Meziantou.Framework.WebPlatform.Dom.ULongRange
+    {
+        public uint? Exact { get => throw null; init { } }
+        public uint? Ideal { get => throw null; init { } }
+    }
+
     public sealed class ContactAddress
     {
         public System.Collections.Generic.IReadOnlyList<string> AddressLine { get => throw null; init { } }
@@ -4501,6 +4727,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Threading.Tasks.Task Store(Meziantou.Framework.WebPlatform.Dom.Credential credential) => throw null;
     }
 
+    public sealed class CropTarget
+    {
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.CropTarget> FromElement(Meziantou.Framework.WebPlatform.Dom.Element element) => throw null;
+    }
+
     public sealed class CspViolationReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
     {
         public string? BlockedUrl { get => throw null; init { } }
@@ -4652,6 +4883,18 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int? LineNumber { get => throw null; init { } }
         public string Message { get => throw null; init { } }
         public string? SourceFile { get => throw null; init { } }
+    }
+
+    public sealed class DeviceChangeEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaDeviceInfo> Devices { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaDeviceInfo> UserInsertedDevices { get => throw null; }
+        public DeviceChangeEvent(string type, Meziantou.Framework.WebPlatform.Dom.DeviceChangeEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class DeviceChangeEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaDeviceInfo> Devices { get => throw null; init { } }
     }
 
     public sealed class DeviceDescriptor : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor>
@@ -4930,6 +5173,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public event System.EventHandler? DisplayFeaturesChanged;
         public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DisplayFeature> GetDisplayFeatures() => throw null;
         protected void OnDisplayFeaturesChanged() { }
+    }
+
+    public sealed class DisplayMediaStreamOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints Audio { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AudioSelectionPreference? AudioSelection { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.CaptureController? Controller { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MonitorTypeSurfaces? MonitorTypeSurfaces { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.SelfCapturePreference? SelfBrowserSurface { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.SurfaceSwitchingPreference? SurfaceSwitching { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.SystemAudioPreference? SystemAudio { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints Video { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.WindowAudioPreference? WindowAudio { get => throw null; init { } }
     }
 
     public class Document : Meziantou.Framework.WebPlatform.Dom.Node, Meziantou.Framework.WebPlatform.Dom.INonElementParentNode, Meziantou.Framework.WebPlatform.Dom.IParentNode
@@ -5646,6 +5902,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
         public bool Toggle(string token, bool? force = null) => throw null;
         string System.Collections.Generic.IReadOnlyList<System.String>.get_Item(int index) => throw null;
+    }
+
+    public class DoubleRange
+    {
+        public double? Max { get => throw null; init { } }
+        public double? Min { get => throw null; init { } }
     }
 
     public sealed class Download
@@ -6451,6 +6713,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Write(System.ReadOnlySpan<byte> data, long? position = null) { }
     }
 
+    public enum FillLightMode
+    {
+        Auto = 0,
+        Off = 1,
+        Flash = 2,
+    }
+
     public sealed class FocusEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
     {
         public Meziantou.Framework.WebPlatform.Dom.EventTarget? RelatedTarget { get => throw null; }
@@ -6717,6 +6986,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Composed { get => throw null; init { } }
     }
 
+    public enum GetUserMediaSemantics
+    {
+        BrowserChooses = 0,
+        UserChooses = 1,
+    }
+
     public sealed class GlobalPrivacyControlOptions
     {
         public bool Enabled { get => throw null; init { } }
@@ -6964,6 +7239,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint Width { get => throw null; set { } }
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public Meziantou.Framework.WebPlatform.Dom.ElementImage CaptureElementImage(Meziantou.Framework.WebPlatform.Dom.Element element) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaStream CaptureStream(double? frameRequestRate = null) => throw null;
         [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0023", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public void ClearElementGeometry(object? element) { }
         public object? GetContext(string contextId, Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DSettings? options = null) => throw null;
@@ -7566,6 +7842,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double Volume { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.TextTrack AddTextTrack(Meziantou.Framework.WebPlatform.Dom.TextTrackKind kind, string label = "", string language = "") => throw null;
         public string CanPlayType(string type) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaStream CaptureStream() => throw null;
         public void FastSeek(double time) { }
         public System.DateTime? GetStartDate() => throw null;
         public void Load() { }
@@ -8490,6 +8767,16 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Alpha { get => throw null; init { } }
     }
 
+    public sealed class ImageCapture
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack Track { get => throw null; }
+        public ImageCapture(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack videoTrack) { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PhotoCapabilities> GetPhotoCapabilities() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PhotoSettings> GetPhotoSettings() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.ImageBitmap> GrabFrame() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.FileApi.Blob> TakePhoto(Meziantou.Framework.WebPlatform.Dom.PhotoSettings? photoSettings = null) => throw null;
+    }
+
     public sealed class ImageData
     {
         public Meziantou.Framework.WebPlatform.Dom.PredefinedColorSpace ColorSpace { get => throw null; }
@@ -8779,6 +9066,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public required string Color { get => throw null; init { } }
         public required double Diameter { get => throw null; init { } }
+    }
+
+    public sealed class InputDeviceInfo : Meziantou.Framework.WebPlatform.Dom.MediaDeviceInfo
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackCapabilities GetCapabilities() => throw null;
     }
 
     public sealed class InputEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
@@ -9364,6 +9656,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Focus(Meziantou.Framework.WebPlatform.Dom.FocusOptions? options = null) { }
     }
 
+    public class MediaDeviceInfo
+    {
+        public string DeviceId { get => throw null; }
+        public string GroupId { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind Kind { get => throw null; }
+        public string Label { get => throw null; }
+    }
+
+    public enum MediaDeviceKind
+    {
+        AudioInput = 0,
+        AudioOutput = 1,
+        VideoInput = 2,
+    }
+
+    public sealed class MediaDevices : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.GetUserMediaSemantics DefaultSemantics { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDeviceChange { get => throw null; set { } }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaDeviceInfo>> EnumerateDevices() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaStream> GetDisplayMedia(Meziantou.Framework.WebPlatform.Dom.DisplayMediaStreamOptions? options = null) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackSupportedConstraints GetSupportedConstraints() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaStream> GetUserMedia(Meziantou.Framework.WebPlatform.Dom.MediaStreamConstraints? constraints = null) => throw null;
+        public void SetCaptureHandleConfig(Meziantou.Framework.WebPlatform.Dom.CaptureHandleConfig? config = null) { }
+    }
+
     public sealed class MediaError
     {
         public const ushort MediaErrAborted = 1;
@@ -9478,6 +9796,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Playing = 2,
     }
 
+    public sealed class MediaSettingsRange
+    {
+        public double? Max { get => throw null; init { } }
+        public double? Min { get => throw null; init { } }
+        public double? Step { get => throw null; init { } }
+    }
+
     public class MediaSource : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public Meziantou.Framework.WebPlatform.Dom.SourceBufferList ActiveSourceBuffers { get => throw null; }
@@ -9506,6 +9831,288 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Closed = 0,
         Open = 1,
         Ended = 2,
+    }
+
+    public sealed class MediaStream : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public bool Active { get => throw null; }
+        public string Id { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAddTrack { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnRemoveTrack { get => throw null; set { } }
+        public MediaStream(Meziantou.Framework.WebPlatform.Dom.MediaStream stream) { }
+        public MediaStream(System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack> tracks) { }
+        public void AddTrack(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack track) { }
+        public Meziantou.Framework.WebPlatform.Dom.MediaStream Clone() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack> GetAudioTracks() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack? GetTrackById(string trackId) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack> GetTracks() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack> GetVideoTracks() => throw null;
+        public void RemoveTrack(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack track) { }
+    }
+
+    public sealed class MediaStreamConstraints
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints Audio { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.GetUserMediaSemantics? Semantics { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrMediaTrackConstraints Video { get => throw null; init { } }
+    }
+
+    public class MediaStreamTrack : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public string ContentHint { get => throw null; set { } }
+        public bool Enabled { get => throw null; set { } }
+        public string Id { get => throw null; }
+        public string Kind { get => throw null; }
+        public string Label { get => throw null; }
+        public bool Muted { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCaptureHandleChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConfigurationChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEnded { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMute { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnUnmute { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackState ReadyState { get => throw null; }
+        public object? Stats { get => throw null; }
+        public System.Threading.Tasks.Task ApplyConstraints(Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraints? constraints = null) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack Clone() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackCapabilities GetCapabilities() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.CaptureHandle? GetCaptureHandle() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraints GetConstraints() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackSettings GetSettings() => throw null;
+        public void Stop() { }
+    }
+
+    public sealed class MediaStreamTrackAudioStats
+    {
+        public double AverageLatency { get => throw null; }
+        public double Latency { get => throw null; }
+        public double MaximumLatency { get => throw null; }
+        public double MinimumLatency { get => throw null; }
+        public void ResetLatency() { }
+    }
+
+    public sealed class MediaStreamTrackEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack Track { get => throw null; }
+        public MediaStreamTrackEvent(string type, Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class MediaStreamTrackEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack Track { get => throw null; init { } }
+    }
+
+    public enum MediaStreamTrackState
+    {
+        Live = 0,
+        Ended = 1,
+    }
+
+    public sealed class MediaStreamTrackVideoStats
+    {
+        public ulong DeliveredFrames { get => throw null; }
+        public ulong DiscardedFrames { get => throw null; }
+        public ulong TotalFrames { get => throw null; }
+    }
+
+    public sealed class MediaTrackCapabilities
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DoubleRange? AspectRatio { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? AutoGainControl { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? BackgroundBlur { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? BackgroundSegmentationMask { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Brightness { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ULongRange? ChannelCount { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? ColorTemperature { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Contrast { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Cursor { get => throw null; init { } }
+        public string? DeviceId { get => throw null; init { } }
+        public string? DisplaySurface { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BooleanOrString>? EchoCancellation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? ExposureCompensation { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? ExposureMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? ExposureTime { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? EyeGazeCorrection { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? FaceFraming { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? FacingMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? FocusDistance { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? FocusMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DoubleRange? FrameRate { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? GestureReactions { get => throw null; init { } }
+        public string? GroupId { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ULongRange? Height { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? HumanFaceDetectionMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Iso { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DoubleRange? Latency { get => throw null; init { } }
+        public bool? LogicalSurface { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? NoiseSuppression { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Pan { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? PowerEfficient { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? PowerEfficientPixelFormat { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? ResizeMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ULongRange? SampleRate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ULongRange? SampleSize { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Saturation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Sharpness { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Tilt { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? Torch { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<bool>? VoiceIsolation { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? WhiteBalanceMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ULongRange? Width { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? Zoom { get => throw null; init { } }
+    }
+
+    public class MediaTrackConstraintSet
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? AspectRatio { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? AutoGainControl { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? BackgroundBlur { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? BackgroundSegmentationMask { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? Brightness { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainULong? ChannelCount { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? ColorTemperature { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? Contrast { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? Cursor { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? DeviceId { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? DisplaySurface { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBooleanOrDomString? EchoCancellation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? ExposureCompensation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? ExposureMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? ExposureTime { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? EyeGazeCorrection { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? FaceFraming { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? FacingMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? FocusDistance { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? FocusMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? FrameRate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? GestureReactions { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? GroupId { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainULong? Height { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? HumanFaceDetectionMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? Iso { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? Latency { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? LogicalSurface { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? NoiseSuppression { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble? Pan { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2D? PointsOfInterest { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? ResizeMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? RestrictOwnAudio { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainULong? SampleRate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainULong? SampleSize { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? Saturation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDouble? Sharpness { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? SuppressLocalAudioPlayback { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble? Tilt { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? Torch { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainBoolean? VoiceIsolation { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainDomString? WhiteBalanceMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ConstrainULong? Width { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble? Zoom { get => throw null; init { } }
+    }
+
+    public sealed class MediaTrackConstraints : Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraintSet
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraintSet>? Advanced { get => throw null; init { } }
+    }
+
+    public sealed class MediaTrackSettings
+    {
+        public double? AspectRatio { get => throw null; init { } }
+        public bool? AutoGainControl { get => throw null; init { } }
+        public bool? BackgroundBlur { get => throw null; init { } }
+        public bool? BackgroundSegmentationMask { get => throw null; init { } }
+        public double? Brightness { get => throw null; init { } }
+        public uint? ChannelCount { get => throw null; init { } }
+        public double? ColorTemperature { get => throw null; init { } }
+        public double? Contrast { get => throw null; init { } }
+        public string? Cursor { get => throw null; init { } }
+        public string? DeviceId { get => throw null; init { } }
+        public string? DisplaySurface { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BooleanOrString? EchoCancellation { get => throw null; init { } }
+        public double? ExposureCompensation { get => throw null; init { } }
+        public string? ExposureMode { get => throw null; init { } }
+        public double? ExposureTime { get => throw null; init { } }
+        public bool? EyeGazeCorrection { get => throw null; init { } }
+        public bool? FaceFraming { get => throw null; init { } }
+        public string? FacingMode { get => throw null; init { } }
+        public double? FocusDistance { get => throw null; init { } }
+        public string? FocusMode { get => throw null; init { } }
+        public double? FrameRate { get => throw null; init { } }
+        public bool? GestureReactions { get => throw null; init { } }
+        public string? GroupId { get => throw null; init { } }
+        public uint? Height { get => throw null; init { } }
+        public string? HumanFaceDetectionMode { get => throw null; init { } }
+        public double? Iso { get => throw null; init { } }
+        public double? Latency { get => throw null; init { } }
+        public bool? LogicalSurface { get => throw null; init { } }
+        public bool? NoiseSuppression { get => throw null; init { } }
+        public double? Pan { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Point2D>? PointsOfInterest { get => throw null; init { } }
+        public bool? PowerEfficient { get => throw null; init { } }
+        public bool? PowerEfficientPixelFormat { get => throw null; init { } }
+        public string? ResizeMode { get => throw null; init { } }
+        public bool? RestrictOwnAudio { get => throw null; init { } }
+        public uint? SampleRate { get => throw null; init { } }
+        public uint? SampleSize { get => throw null; init { } }
+        public double? Saturation { get => throw null; init { } }
+        public double? ScreenPixelRatio { get => throw null; init { } }
+        public double? Sharpness { get => throw null; init { } }
+        public bool? SuppressLocalAudioPlayback { get => throw null; init { } }
+        public double? Tilt { get => throw null; init { } }
+        public bool? Torch { get => throw null; init { } }
+        public bool? VoiceIsolation { get => throw null; init { } }
+        public string? WhiteBalanceMode { get => throw null; init { } }
+        public uint? Width { get => throw null; init { } }
+        public double? Zoom { get => throw null; init { } }
+    }
+
+    public sealed class MediaTrackSupportedConstraints
+    {
+        public bool AspectRatio { get => throw null; init { } }
+        public bool AutoGainControl { get => throw null; init { } }
+        public bool BackgroundBlur { get => throw null; init { } }
+        public bool BackgroundSegmentationMask { get => throw null; init { } }
+        public bool Brightness { get => throw null; init { } }
+        public bool ChannelCount { get => throw null; init { } }
+        public bool ColorTemperature { get => throw null; init { } }
+        public bool Contrast { get => throw null; init { } }
+        public bool Cursor { get => throw null; init { } }
+        public bool DeviceId { get => throw null; init { } }
+        public bool DisplaySurface { get => throw null; init { } }
+        public bool EchoCancellation { get => throw null; init { } }
+        public bool ExposureCompensation { get => throw null; init { } }
+        public bool ExposureMode { get => throw null; init { } }
+        public bool ExposureTime { get => throw null; init { } }
+        public bool EyeGazeCorrection { get => throw null; init { } }
+        public bool FaceFraming { get => throw null; init { } }
+        public bool FacingMode { get => throw null; init { } }
+        public bool FocusDistance { get => throw null; init { } }
+        public bool FocusMode { get => throw null; init { } }
+        public bool FrameRate { get => throw null; init { } }
+        public bool GestureReactions { get => throw null; init { } }
+        public bool GroupId { get => throw null; init { } }
+        public bool Height { get => throw null; init { } }
+        public bool HumanFaceDetectionMode { get => throw null; init { } }
+        public bool Iso { get => throw null; init { } }
+        public bool Latency { get => throw null; init { } }
+        public bool LogicalSurface { get => throw null; init { } }
+        public bool NoiseSuppression { get => throw null; init { } }
+        public bool Pan { get => throw null; init { } }
+        public bool PointsOfInterest { get => throw null; init { } }
+        public bool PowerEfficient { get => throw null; init { } }
+        public bool PowerEfficientPixelFormat { get => throw null; init { } }
+        public bool ResizeMode { get => throw null; init { } }
+        public bool RestrictOwnAudio { get => throw null; init { } }
+        public bool SampleRate { get => throw null; init { } }
+        public bool SampleSize { get => throw null; init { } }
+        public bool Saturation { get => throw null; init { } }
+        public bool Sharpness { get => throw null; init { } }
+        public bool SuppressLocalAudioPlayback { get => throw null; init { } }
+        public bool Tilt { get => throw null; init { } }
+        public bool Torch { get => throw null; init { } }
+        public bool VoiceIsolation { get => throw null; init { } }
+        public bool WhiteBalanceMode { get => throw null; init { } }
+        public bool Width { get => throw null; init { } }
+        public bool Zoom { get => throw null; init { } }
     }
 
     public sealed class MessageChannel
@@ -9583,6 +10190,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public required string Name { get => throw null; init { } }
         public object? OutputSchema { get => throw null; init { } }
         public string? Title { get => throw null; init { } }
+    }
+
+    public enum MonitorTypeSurfaces
+    {
+        Include = 0,
+        Exclude = 1,
     }
 
     public class MouseEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
@@ -9897,6 +10510,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorLogin Login { get => throw null; }
         public int MaxTouchPoints { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaDevices MediaDevices { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.MediaSession MediaSession { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PluginMimeTypeArray MimeTypes { get => throw null; }
         public bool OnLine { get => throw null; }
@@ -10289,6 +10903,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool IsSameOrigin(Meziantou.Framework.WebPlatform.Dom.Origin other) => throw null;
         public bool IsSameSite(Meziantou.Framework.WebPlatform.Dom.Origin other) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class OverconstrainedError : Meziantou.Framework.WebPlatform.Dom.DomException
+    {
+        public string Constraint { get => throw null; }
+        public OverconstrainedError(string constraint, string message = "") { }
+        public OverconstrainedError(string? message, System.Exception? innerException) { }
     }
 
     public sealed class PageRevealEvent : Meziantou.Framework.WebPlatform.Dom.Event
@@ -11106,6 +11727,22 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? SrcAttribute { get => throw null; init { } }
     }
 
+    public sealed class PhotoCapabilities
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.FillLightMode>? FillLightMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? ImageHeight { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaSettingsRange? ImageWidth { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.RedEyeReduction? RedEyeReduction { get => throw null; init { } }
+    }
+
+    public sealed class PhotoSettings
+    {
+        public Meziantou.Framework.WebPlatform.Dom.FillLightMode? FillLightMode { get => throw null; init { } }
+        public double? ImageHeight { get => throw null; init { } }
+        public double? ImageWidth { get => throw null; init { } }
+        public bool? RedEyeReduction { get => throw null; init { } }
+    }
+
     public sealed class Plugin
     {
         public string Description { get => throw null; }
@@ -11143,6 +11780,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint Length { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PluginMimeType? Item(uint index) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.PluginMimeType? NamedItem(string name) => throw null;
+    }
+
+    public sealed class Point2D
+    {
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
     }
 
     public sealed class PointerEvent : Meziantou.Framework.WebPlatform.Dom.MouseEvent
@@ -11660,6 +12303,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public RangeErrorException(string? message) { }
         public RangeErrorException(string? message, System.Exception? innerException) { }
+    }
+
+    public enum RedEyeReduction
+    {
+        Never = 0,
+        Always = 1,
+        Controllable = 2,
     }
 
     public sealed class RegistrationOptions
@@ -12262,6 +12912,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
     }
 
+    public enum SelfCapturePreference
+    {
+        Include = 0,
+        Exclude = 1,
+    }
+
     public abstract class Sensor : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public bool Activated { get => throw null; }
@@ -12755,6 +13411,22 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static implicit operator Meziantou.Framework.WebPlatform.Dom.StringOrBlob(string value) => throw null;
     }
 
+    public readonly struct StringOrStringList : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.StringOrStringList>
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? Many { get => throw null; }
+        public string? One { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.StringOrStringList other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.StringOrStringList FromString(string value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.StringOrStringList FromStrings(string[] value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.StringOrStringList left, Meziantou.Framework.WebPlatform.Dom.StringOrStringList right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.StringOrStringList left, Meziantou.Framework.WebPlatform.Dom.StringOrStringList right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.StringOrStringList(string value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.StringOrStringList(string[] value) => throw null;
+    }
+
     public class StructuredSerializeOptions
     {
         public System.Collections.Generic.IReadOnlyList<object> Transfer { get => throw null; init { } }
@@ -12769,6 +13441,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class SubmitEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
     {
         public Meziantou.Framework.WebPlatform.Dom.HtmlElement? Submitter { get => throw null; init { } }
+    }
+
+    public enum SurfaceSwitchingPreference
+    {
+        Include = 0,
+        Exclude = 1,
     }
 
     public sealed class SvgAElement : Meziantou.Framework.WebPlatform.Dom.SvgGraphicsElement
@@ -13866,6 +14544,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.SvgAnimatedRect ViewBox { get => throw null; }
     }
 
+    public enum SystemAudioPreference
+    {
+        Include = 0,
+        Exclude = 1,
+    }
+
     public class SystemClipboard
     {
         public const string WebCustomFormatMapName = "application/web;type=\"custom/formatmap\"";
@@ -14467,6 +15151,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Css.Om.CssPseudoElement? PseudoTarget { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.EventTarget? View { get => throw null; init { } }
         public uint Which { get => throw null; init { } }
+    }
+
+    public class ULongRange
+    {
+        public uint? Max { get => throw null; init { } }
+        public uint? Min { get => throw null; init { } }
     }
 
     public sealed class UncalibratedMagnetometer : Meziantou.Framework.WebPlatform.Dom.Sensor
@@ -15410,6 +16100,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Stop() { }
     }
 
+    public enum WindowAudioPreference
+    {
+        System = 0,
+        Window = 1,
+        Exclude = 2,
+    }
+
     public sealed class WindowClient : Meziantou.Framework.WebPlatform.Dom.Client
     {
         public System.Collections.Generic.IReadOnlyList<string> AncestorOrigins { get => throw null; }
@@ -15906,6 +16603,27 @@ namespace Meziantou.Framework.WebPlatform.Formatting
 }
 namespace Meziantou.Framework.WebPlatform.Media
 {
+    public sealed class DisplayCaptureRequest
+    {
+        public bool Audio { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DisplayMediaStreamOptions Options { get => throw null; }
+    }
+
+    public sealed class DisplayCaptureSelection : System.IEquatable<Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection>
+    {
+        public Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice? Audio { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice Video { get => throw null; init { } }
+        public DisplayCaptureSelection(Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice Video, Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice? Audio = null) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice Video, out Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice? Audio) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? left, Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? left, Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? right) => throw null;
+    }
+
     public enum MediaAutoplayPolicy
     {
         Allowed = 0,
@@ -15917,6 +16635,64 @@ namespace Meziantou.Framework.WebPlatform.Media
         public abstract Meziantou.Framework.WebPlatform.Media.MediaTypeSupport CanPlayType(string mimeType, System.Collections.Generic.IReadOnlyList<string> codecs);
         public abstract Meziantou.Framework.WebPlatform.Media.MediaPlayer? CreatePlayer(Meziantou.Framework.WebPlatform.Media.MediaResource resource);
         public virtual Meziantou.Framework.WebPlatform.Media.MediaSegmentParser? CreateSegmentParser(string mimeType, System.Collections.Generic.IReadOnlyList<string> codecs) => throw null;
+    }
+
+    public abstract class MediaCaptureBackend
+    {
+        public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice> GetDevices();
+        protected void NotifyDevicesChanged() { }
+        public virtual Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? SelectDisplaySurface(Meziantou.Framework.WebPlatform.Media.DisplayCaptureRequest request) => throw null;
+        public abstract Meziantou.Framework.WebPlatform.Media.MediaCaptureSource StartCapture(Meziantou.Framework.WebPlatform.Media.MediaCaptureRequest request);
+    }
+
+    public sealed class MediaCaptureDevice
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackCapabilities Capabilities { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackSettings DefaultSettings { get => throw null; init { } }
+        public string GroupId { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind Kind { get => throw null; init { } }
+        public string Label { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode> VideoModes { get => throw null; init { } }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class MediaCaptureRequest
+    {
+        public Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice Device { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackSettings Settings { get => throw null; }
+        public System.TimeProvider TimeProvider { get => throw null; }
+    }
+
+    public abstract class MediaCaptureSource : System.IDisposable
+    {
+        public Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice Device { get => throw null; }
+        public bool IsEnded { get => throw null; }
+        public bool IsMuted { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaTrackSettings Settings { get => throw null; }
+        protected MediaCaptureSource(Meziantou.Framework.WebPlatform.Media.MediaCaptureRequest request) { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        protected void End() { }
+        public virtual Meziantou.Framework.WebPlatform.Media.MediaVideoFrame? GetVideoFrame(System.TimeSpan timestamp) => throw null;
+        protected virtual void OnSettingsChanged(Meziantou.Framework.WebPlatform.Dom.MediaTrackSettings settings) { }
+        public virtual void ReadAudio(long position, System.Span<float> destination) { }
+        protected void SetMuted(bool muted) { }
+    }
+
+    public sealed class MediaCaptureVideoMode : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode>
+    {
+        public double FrameRate { get => throw null; init { } }
+        public int Height { get => throw null; init { } }
+        public int Width { get => throw null; init { } }
+        public MediaCaptureVideoMode(int Width, int Height, double FrameRate) { }
+        public void Deconstruct(out int Width, out int Height, out double FrameRate) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode? left, Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode? left, Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode? right) => throw null;
     }
 
     public readonly struct MediaCodedFrame : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaCodedFrame>
@@ -16727,6 +17503,10 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo SinkId { get => throw null; }
         public AudioContext(Meziantou.Framework.WebPlatform.WebAudio.AudioContextOptions? contextOptions = null) { }
         public System.Threading.Tasks.Task Close() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.MediaElementAudioSourceNode CreateMediaElementSource(Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement mediaElement) => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.MediaStreamAudioDestinationNode CreateMediaStreamDestination() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.MediaStreamAudioSourceNode CreateMediaStreamSource(Meziantou.Framework.WebPlatform.Dom.MediaStream mediaStream) => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.MediaStreamTrackAudioSourceNode CreateMediaStreamTrackSource(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack mediaStreamTrack) => throw null;
         public Meziantou.Framework.WebPlatform.WebAudio.AudioTimestamp GetOutputTimestamp() => throw null;
         public System.Threading.Tasks.Task Resume() => throw null;
         public System.Threading.Tasks.Task SetSinkId(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions sinkId) => throw null;
@@ -17156,6 +17936,44 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     {
         public required System.Collections.Generic.IReadOnlyList<double> Feedback { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<double> Feedforward { get => throw null; init { } }
+    }
+
+    public sealed class MediaElementAudioSourceNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement MediaElement { get => throw null; }
+        public MediaElementAudioSourceNode(Meziantou.Framework.WebPlatform.WebAudio.AudioContext context, Meziantou.Framework.WebPlatform.WebAudio.MediaElementAudioSourceOptions options) { }
+    }
+
+    public sealed class MediaElementAudioSourceOptions
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement MediaElement { get => throw null; init { } }
+    }
+
+    public sealed class MediaStreamAudioDestinationNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaStream Stream { get => throw null; }
+        public MediaStreamAudioDestinationNode(Meziantou.Framework.WebPlatform.WebAudio.AudioContext context, Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions? options = null) { }
+    }
+
+    public sealed class MediaStreamAudioSourceNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaStream MediaStream { get => throw null; }
+        public MediaStreamAudioSourceNode(Meziantou.Framework.WebPlatform.WebAudio.AudioContext context, Meziantou.Framework.WebPlatform.WebAudio.MediaStreamAudioSourceOptions options) { }
+    }
+
+    public sealed class MediaStreamAudioSourceOptions
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.MediaStream MediaStream { get => throw null; init { } }
+    }
+
+    public sealed class MediaStreamTrackAudioSourceNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public MediaStreamTrackAudioSourceNode(Meziantou.Framework.WebPlatform.WebAudio.AudioContext context, Meziantou.Framework.WebPlatform.WebAudio.MediaStreamTrackAudioSourceOptions options) { }
+    }
+
+    public sealed class MediaStreamTrackAudioSourceOptions
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack MediaStreamTrack { get => throw null; init { } }
     }
 
     public sealed class OfflineAudioCompletionEvent : Meziantou.Framework.WebPlatform.Dom.Event

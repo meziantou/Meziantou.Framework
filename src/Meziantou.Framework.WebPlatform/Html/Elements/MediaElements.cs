@@ -132,6 +132,10 @@ public partial class HtmlMediaElement
     private MediaError? _error;
     private string _currentSrc = "";
     private object? _srcObject;
+    private bool _mediaStreamEnded;
+
+    /// <summary>The <c>MediaElementAudioSourceNode</c> whose source is the element, or null (an element is the source of at most one node).</summary>
+    internal WebAudio.MediaElementAudioSourceNode? AudioSourceNode { get; set; }
     private double _defaultPlaybackRate = 1;
     private double _playbackRate = 1;
     private double _volume = 1;
@@ -245,10 +249,10 @@ public partial class HtmlMediaElement
 
     /// <summary>
     /// Gets or sets the assigned media provider object (https://html.spec.whatwg.org/multipage/media.html#dom-media-srcobject):
-    /// a <see cref="Blob"/> that contains the media resource, a <see cref="MediaSource"/>, or the
-    /// <see cref="MediaSourceHandle"/> of a media source constructed in a dedicated worker (<c>MediaStream</c> is not
-    /// implemented). It takes priority over the <c>src</c> attribute and the <c>source</c> elements. Setting it runs the
-    /// media element load algorithm.
+    /// a <see cref="MediaStream"/> played live (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements), a
+    /// <see cref="Blob"/> that contains the media resource, a <see cref="MediaSource"/>, or the
+    /// <see cref="MediaSourceHandle"/> of a media source constructed in a dedicated worker. It takes priority over the
+    /// <c>src</c> attribute and the <c>source</c> elements. Setting it runs the media element load algorithm.
     /// </summary>
     /// <exception cref="ArgumentException">The value is not a media provider object.</exception>
     /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-srcobject"/>
@@ -258,8 +262,8 @@ public partial class HtmlMediaElement
         get => _srcObject;
         set
         {
-            if (value is not (null or Blob or MediaSource or MediaSourceHandle))
-                throw new ArgumentException("The value must be a Blob, a MediaSource or a MediaSourceHandle", nameof(value));
+            if (value is not (null or MediaStream or Blob or MediaSource or MediaSourceHandle))
+                throw new ArgumentException("The value must be a MediaStream, a Blob, a MediaSource or a MediaSourceHandle", nameof(value));
 
             // A handle that was assigned to srcObject cannot be transferred anymore
             if (value is MediaSourceHandle handle)
@@ -279,6 +283,30 @@ public partial class HtmlMediaElement
     /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-networkstate"/>
     [IdlMember("networkState", "https://html.spec.whatwg.org/multipage/media.html#dom-media-networkstate")]
     public ushort NetworkState => _networkState;
+
+    /// <summary>
+    /// Gets or sets the value of the <c>preload</c> content attribute, limited to the known values
+    /// (https://html.spec.whatwg.org/multipage/media.html#dom-media-preload). A media stream cannot be preloaded: while one is
+    /// assigned to <see cref="SrcObject"/>, the attribute returns <c>none</c> and setting it is ignored
+    /// (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements).
+    /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-preload"/>
+    [IdlMember("preload", "https://html.spec.whatwg.org/multipage/media.html#dom-media-preload")]
+    public string Preload
+    {
+        get => HasMediaStreamProvider ? "none" : Reflection.GetEnumerated(this, "preload", EnumeratedAttributes.Preload);
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (!HasMediaStreamProvider)
+            {
+                Reflection.SetString(this, "preload", value);
+            }
+        }
+    }
+
+    /// <summary>Whether the assigned media provider object is a media stream, which changes the behavior of the attributes of the playback (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements).</summary>
+    private bool HasMediaStreamProvider => _srcObject is MediaStream;
 
     private void SetNetworkState(ushort value)
     {
@@ -355,10 +383,11 @@ public partial class HtmlMediaElement
     [IdlMember("defaultPlaybackRate", "https://html.spec.whatwg.org/multipage/media.html#dom-media-defaultplaybackrate")]
     public double DefaultPlaybackRate
     {
-        get => _defaultPlaybackRate;
+        // The rate of a media stream is always 1, and setting it is ignored (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements)
+        get => HasMediaStreamProvider ? 1 : _defaultPlaybackRate;
         set
         {
-            if (_defaultPlaybackRate == value)
+            if (HasMediaStreamProvider || _defaultPlaybackRate == value)
                 return;
 
             _defaultPlaybackRate = value;
@@ -375,9 +404,12 @@ public partial class HtmlMediaElement
     [IdlMember("playbackRate", "https://html.spec.whatwg.org/multipage/media.html#dom-media-playbackrate")]
     public double PlaybackRate
     {
-        get => _playbackRate;
+        get => HasMediaStreamProvider ? 1 : _playbackRate;
         set
         {
+            if (HasMediaStreamProvider)
+                return;
+
             if (_player is { } player && !player.SupportsPlaybackRate(value))
                 throw DomException.NotSupported("The playback rate is not supported");
 
@@ -509,6 +541,7 @@ public partial class HtmlMediaElement
     /// </summary>
     private void ForgetMediaResourceSpecificTracks()
     {
+        ScheduleCaptureUpdate();
         AudioTracks.Clear();
         VideoTracks.Clear();
         ForgetMediaResourceSpecificTextTracks();

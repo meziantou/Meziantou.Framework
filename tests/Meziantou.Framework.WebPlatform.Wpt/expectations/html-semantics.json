@@ -990,11 +990,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-currentSrc.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Test currentSrc behaviour in various playback scenarios": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-encoding-parse.html": {
     "total": 2
@@ -1615,7 +1611,6 @@
   "html/semantics/embedded-content/media-elements/preserves-pitch.html": {
     "total": 9,
     "failures": {
-      "Setup Audio element and AudioContext": "FAIL",
       "Slow-downs should change the pitch when preservesPitch=false": "FAIL",
       "Slow-downs should not change the pitch when preservesPitch=true": "FAIL",
       "Speed-ups should change the pitch when preservesPitch=false": "FAIL",

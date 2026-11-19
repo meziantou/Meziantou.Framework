@@ -9,24 +9,23 @@ description: "The results of the web-platform-tests of mst-content-hint, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 2 | 4 | 0 | 50% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **2** | **4** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 4
-  - `hardware`: 4
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`MediaStreamTrack-contentHint.html`](https://wpt.fyi/results/mst-content-hint/MediaStreamTrack-contentHint.html) | Disabled | – | REQUIRES(hardware) | MediaStreamTrack content hints, needs media capture |
-| [`RTCRtpSendParameters-degradationEffect.html`](https://wpt.fyi/results/mst-content-hint/RTCRtpSendParameters-degradationEffect.html) | Disabled | – | REQUIRES(hardware) | MediaStreamTrack content hints, needs media capture |
-| [`RTCRtpSendParameters-degradationPreference.html`](https://wpt.fyi/results/mst-content-hint/RTCRtpSendParameters-degradationPreference.html) | Disabled | – | REQUIRES(hardware) | MediaStreamTrack content hints, needs media capture |
-| [`idlharness.window.js`](https://wpt.fyi/results/mst-content-hint/idlharness.window.js) | Disabled | – | REQUIRES(hardware) | MediaStreamTrack content hints, needs media capture |
+| [`MediaStreamTrack-contentHint.html`](https://wpt.fyi/results/mst-content-hint/MediaStreamTrack-contentHint.html) | Pass | 7 / 7 |  |  |
+| [`RTCRtpSendParameters-degradationEffect.html`](https://wpt.fyi/results/mst-content-hint/RTCRtpSendParameters-degradationEffect.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC (`RTCPeerConnection`, `RTCRtpSender.setParameters()`) |
+| [`RTCRtpSendParameters-degradationPreference.html`](https://wpt.fyi/results/mst-content-hint/RTCRtpSendParameters-degradationPreference.html) | Fail | 0 / 6 | NOT IMPLEMENTED | WebRTC (`RTCPeerConnection`, `RTCRtpSender.setParameters()`) |
+| [`idlharness.window.js`](https://wpt.fyi/results/mst-content-hint/idlharness.window.js) | Pass | 9 / 9 |  |  |

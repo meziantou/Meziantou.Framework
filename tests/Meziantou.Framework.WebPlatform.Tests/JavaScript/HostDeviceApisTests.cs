@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Media;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
@@ -46,6 +47,8 @@ public sealed class HostDeviceApisTests : IDisposable
             Share = options.Share,
             Vibrate = options.Vibrate,
             Geolocation = options.Geolocation,
+            MediaCapture = options.MediaCapture,
+            MediaBackend = options.MediaBackend,
             ShowNotification = options.ShowNotification,
             CloseNotification = options.CloseNotification,
             Badging = options.Badging,
@@ -3534,6 +3537,484 @@ public sealed class HostDeviceApisTests : IDisposable
             new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, KeyboardMapEnabled = false, ScreenOrientationEnabled = false, VirtualKeyboardEnabled = false, InputPendingEnabled = false, SensorsEnabled = false, DeviceOrientationEnabled = false } });
 
         Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,undefined,false", Run(document));
+    }
+
+    // Media Capture and Streams
+
+    #region WebPlatform_MediaCaptureBackend
+    // A camera whose frames are filled with a color, for the tests of a page that uses getUserMedia()
+    private sealed class SolidColorCamera : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Camera = new()
+        {
+            Id = "camera-1",
+            Kind = MediaDeviceKind.VideoInput,
+            Label = "Test camera",
+            Capabilities = new MediaTrackCapabilities { FacingMode = ["user"] },
+            DefaultSettings = new MediaTrackSettings { Width = 640, Height = 480, FacingMode = "user" },
+
+            // The native modes; smaller sizes and frame rates are cropped and scaled down from them
+            VideoModes = [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 30)],
+        };
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Camera];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => new Source(request);
+
+        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        {
+            public override MediaVideoFrame? GetVideoFrame(TimeSpan timestamp)
+            {
+                var width = (int)Settings.Width!.Value;
+                var height = (int)Settings.Height!.Value;
+                var pixels = new byte[width * height * 4];
+                for (var i = 0; i < pixels.Length; i += 4)
+                {
+                    pixels[i + 1] = 128; // green
+                    pixels[i + 3] = 255;
+                }
+
+                return new MediaVideoFrame(width, height, pixels);
+            }
+        }
+    }
+    #endregion
+
+    // A camera with a large mode and a fast mode, which records the settings of its last source
+    private sealed class TwoModeCamera : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Camera = new()
+        {
+            Id = "camera-1",
+            Kind = MediaDeviceKind.VideoInput,
+            Label = "Two-mode camera",
+            DefaultSettings = new MediaTrackSettings { Width = 1920, Height = 1080, FrameRate = 30 },
+            VideoModes = [new MediaCaptureVideoMode(1920, 1080, 30), new MediaCaptureVideoMode(1280, 720, 60)],
+        };
+
+        public MediaCaptureSource? LastSource { get; private set; }
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Camera];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request);
+
+        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        {
+        }
+    }
+
+    // A microphone that plays a ramp on every channel: the value of a frame is its position, divided by 1000
+    private sealed class RampMicrophone : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Microphone = new()
+        {
+            Id = "microphone-1",
+            Kind = MediaDeviceKind.AudioInput,
+            Capabilities = new MediaTrackCapabilities { SampleRate = new ULongRange { Min = 48000, Max = 48000 }, ChannelCount = new ULongRange { Min = 1, Max = 2 } },
+            DefaultSettings = new MediaTrackSettings { SampleRate = 48000, ChannelCount = 1 },
+        };
+
+        public MediaCaptureSource? LastSource { get; private set; }
+
+        // The state of the device when it starts (e.g. the operating system already took it)
+        public bool MutedOnStart { get; init; }
+
+        public bool EndedOnStart { get; init; }
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Microphone];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request, MutedOnStart, EndedOnStart);
+
+        private sealed class Source : MediaCaptureSource
+        {
+            public Source(MediaCaptureRequest request, bool muted, bool ended)
+                : base(request)
+            {
+                if (muted)
+                {
+                    SetMuted(muted: true);
+                }
+
+                if (ended)
+                {
+                    End();
+                }
+            }
+
+            public override void ReadAudio(long position, Span<float> destination)
+            {
+                var channels = (int)Settings.ChannelCount!.Value;
+                for (var i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (position + (i / channels)) / 1000f;
+                }
+            }
+        }
+    }
+
+    private MediaStream GetUserMedia(Document document, MediaStreamConstraints constraints)
+    {
+        var request = document.DefaultView!.Navigator.MediaDevices.GetUserMedia(constraints);
+        _contexts.EventLoop.RunUntilIdle();
+        return request.Result;
+    }
+
+    // The media elements play the streams once a media backend enables their processing model
+    private sealed class NoMediaBackend : MediaBackend
+    {
+        public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => MediaTypeSupport.NotSupported;
+
+        public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
+    }
+
+    private const string GetUserMediaScript = "window.go = c => navigator.mediaDevices.getUserMedia(c).then(s => { window.stream = s; const t = s.getTracks()[0]; const st = t.getSettings(); document.title = [t.kind, t.label, st.width, st.height, st.resizeMode, st.deviceId.length].join(); }, e => document.title = e.name + ':' + (e.constraint ?? ''));";
+
+    [Fact]
+    public async Task GetUserMedia_StartsTheCameraOfTheBackend()
+    {
+        #region WebPlatform_MediaCapture
+        var options = new BrowsingContextOptions
+        {
+            MediaCapture = new SolidColorCamera(),
+
+            // Plays the role of the permission prompt: the user allows the camera
+            RequestPermission = (callbackContext, name) => name == "camera" ? PermissionState.Granted : PermissionState.Denied,
+        };
+        #endregion
+
+        var document = Load("<script>" + GetUserMediaScript + "</script>", options);
+
+        Assert.Equal("video,Test camera,640,480,none,64", await RunAsync(document, "go({ video: true })"));
+    }
+
+    [Fact]
+    public async Task GetUserMedia_ConstraintsSelectTheVideoMode()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+
+        Assert.Equal("video,Test camera,1280,720,none,64", await RunAsync(document, "go({ video: { width: { min: 1000 } } })"));
+        Assert.Equal("video,Test camera,320,240,crop-and-scale,64", await RunAsync(document, "go({ video: { width: 320 } })"));
+        Assert.Equal("OverconstrainedError:width", await RunAsync(document, "go({ video: { width: { min: 4000 } } })"));
+        Assert.Equal("OverconstrainedError:width", await RunAsync(document, "go({ video: { width: { exact: 639 }, resizeMode: { exact: 'none' } } })"));
+    }
+
+    [Fact]
+    public async Task GetUserMedia_Errors()
+    {
+        var withoutBackend = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { Permissions = GrantedPermissions("camera") });
+        Assert.Equal("NotFoundError:", await RunAsync(withoutBackend, "go({ video: true })"));
+
+        var denied = new PermissionStore();
+        denied.SetState("camera", PermissionState.Denied);
+        var deniedDocument = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = denied });
+        Assert.Equal("NotAllowedError:", await RunAsync(deniedDocument, "go({ video: true })"));
+
+        var noRequest = Load("<script>navigator.mediaDevices.getUserMedia({}).catch(e => document.title = e.name);</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera() });
+        Assert.Equal("TypeError", await RunAsync(noRequest));
+
+        var insecure = Load("<script>document.title = 'mediaDevices' in navigator;</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera() }, url: "http://example.com/");
+        Assert.Equal("false", Run(insecure));
+    }
+
+    [Fact]
+    public void SelectSettings_ManyAdvancedConstraintSetsStayBounded()
+    {
+        // Hundreds of advanced sets with distinct sizes, aspect ratios and frame rates: the candidates of the video modes
+        // must not be the Cartesian product of all their values
+        var advanced = Enumerable.Range(1, 400).Select(i => (MediaTrackConstraintSet)new MediaTrackConstraints
+        {
+            Width = new ConstrainULongRange { Min = (uint)i, Ideal = (uint)(i * 3) },
+            Height = new ConstrainULongRange { Max = (uint)(2000 - i), Ideal = (uint)(i * 2) },
+            AspectRatio = new ConstrainDoubleRange { Ideal = 1 + (i / 400d) },
+            FrameRate = new ConstrainDoubleRange { Min = 1, Ideal = i % 60 },
+        }).ToList();
+        var model = MediaTrackSourceModel.Create(MediaTrackKinds.Video, new MediaTrackCapabilities(), new MediaTrackSettings { Width = 640, Height = 480, FrameRate = 30 }, [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 60), new MediaCaptureVideoMode(1920, 1080, 30)]);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = MediaTrackConstraintProcessing.SelectSettings(model, new MediaTrackConstraints { Width = new ConstrainULongRange { Min = 100 }, Advanced = advanced });
+
+        Assert.True(result.Succeeded);
+        Assert.True((double)result.Settings!["width"] >= 100);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"SelectSettings took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void SelectSettings_TheAdvancedConstraintSetsDoNotTakeTheCandidatesOfTheBasicOnes()
+    {
+        // The heights derived from the aspect ratios of the advanced sets must not fill the candidates before the height of the basic set
+        var advanced = Enumerable.Range(0, 16).Select(i => (MediaTrackConstraintSet)new MediaTrackConstraints
+        {
+            AspectRatio = new ConstrainDoubleRange { Ideal = 1.10 + (i * 0.01) },
+        }).ToList();
+        var model = MediaTrackSourceModel.Create(MediaTrackKinds.Video, new MediaTrackCapabilities(), new MediaTrackSettings { Width = 1920, Height = 1080, FrameRate = 30 }, [new MediaCaptureVideoMode(1920, 1080, 30)]);
+
+        var result = MediaTrackConstraintProcessing.SelectSettings(model, new MediaTrackConstraints
+        {
+            Width = new ConstrainULongRange { Exact = 640 },
+            Height = new ConstrainULongRange { Exact = 400 },
+            FrameRate = new ConstrainDoubleRange { Exact = 15 },
+            Advanced = advanced,
+        });
+
+        Assert.True(result.Succeeded, result.FailedConstraint);
+        Assert.Equal(640d, result.Settings!["width"]);
+        Assert.Equal(400d, result.Settings["height"]);
+        Assert.Equal(15d, result.Settings["frameRate"]);
+    }
+
+    [Fact]
+    public void TrackStats_CountTheFramesOfEachState()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        var track = GetUserMedia(document, new MediaStreamConstraints { Video = true }).GetVideoTracks()[0];
+        var stats = (MediaStreamTrackVideoStats)track.Stats!;
+
+        // 1 s enabled, 1 s disabled, 1 s enabled at 30 frames per second, then the track stops: the stats are read once, after
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Enabled = false;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Enabled = true;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Stop();
+        clock.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(60ul, stats.TotalFrames);
+        Assert.Equal(60ul, stats.DeliveredFrames);
+        Assert.Equal(0ul, stats.DiscardedFrames);
+    }
+
+    [Fact]
+    public void MediaStreamPlayer_StopsObservingTheRemovedTracks()
+    {
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        var stream = GetUserMedia(document, new MediaStreamConstraints { Video = true });
+        var track = stream.GetVideoTracks()[0];
+        using var player = new MediaStreamPlayer(stream, TimeProvider.System, isVideoElement: true);
+        Assert.True(track.HasStateChangedCallbacks);
+
+        stream.RemoveTrack(track);
+        Assert.False(track.HasStateChangedCallbacks);
+    }
+
+    [Fact]
+    public void GetUserMedia_KeepsTheStateTheSourceHasWhenItStarts()
+    {
+        var muted = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { MutedOnStart = true }, Permissions = GrantedPermissions("microphone") });
+        var mutedTrack = GetUserMedia(muted, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        Assert.True(mutedTrack.Muted);
+        Assert.Equal(MediaStreamTrackState.Live, mutedTrack.ReadyState);
+
+        var ended = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { EndedOnStart = true }, Permissions = GrantedPermissions("microphone") });
+        var endedTrack = GetUserMedia(ended, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        Assert.Equal(MediaStreamTrackState.Ended, endedTrack.ReadyState);
+    }
+
+    [Fact]
+    public void ApplyConstraints_OfACloneDoesNotChangeTheMediaOfTheOtherTracks()
+    {
+        var backend = new RampMicrophone();
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = backend, Permissions = GrantedPermissions("microphone") });
+        var original = GetUserMedia(document, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        var clone = original.Clone();
+
+        var apply = clone.ApplyConstraints(new MediaTrackConstraints { ChannelCount = 2u });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(apply.IsCompletedSuccessfully);
+
+        // The device delivers stereo for the clone; the original track keeps its mono settings and its mono audio
+        Assert.Equal(2u, backend.LastSource!.Settings.ChannelCount);
+        Assert.Equal(1u, original.GetSettings().ChannelCount);
+        Assert.Equal(2u, clone.GetSettings().ChannelCount);
+        var mono = new float[4];
+        original.ReadAudio(10, mono);
+        Assert.Equal([0.010f, 0.011f, 0.012f, 0.013f], mono);
+        var stereo = new float[4];
+        clone.ReadAudio(10, stereo);
+        Assert.Equal([0.010f, 0.010f, 0.011f, 0.011f], stereo);
+    }
+
+    [Fact]
+    public void ApplyConstraints_OfACloneKeepsTheDeviceInANativeModeThatCoversEveryTrack()
+    {
+        var backend = new TwoModeCamera();
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = backend, Permissions = GrantedPermissions("camera") });
+        var original = GetUserMedia(document, new MediaStreamConstraints { Video = true }).GetVideoTracks()[0];
+        var clone = original.Clone();
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+
+        // Only the fast mode gives 60 frames per second, but it cannot give the size of the original track: the call is
+        // rejected, and neither the clone nor the device change
+        var conflict = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Exact = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("frameRate", Assert.IsType<OverconstrainedError>(conflict.Exception?.InnerException).Constraint);
+        Assert.Equal(30d, clone.GetSettings().FrameRate);
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+
+        // An ideal frame rate falls back to the modes that cover the original track
+        var ideal = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Ideal = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(ideal.IsCompletedSuccessfully);
+        Assert.Equal(30d, clone.GetSettings().FrameRate);
+
+        // A smaller size: the device stays in the smallest native mode that covers both tracks
+        var smaller = clone.ApplyConstraints(new MediaTrackConstraints { Width = new ConstrainULongRange { Exact = 640 }, Height = new ConstrainULongRange { Exact = 360 }, FrameRate = new ConstrainDoubleRange { Exact = 15 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(smaller.IsCompletedSuccessfully);
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+        Assert.Equal(1920u, original.GetSettings().Width);
+
+        // Once the original track stopped, the clone can use the fast mode; a track of each size runs the device in the fast mode
+        original.Stop();
+        var fast = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Exact = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(fast.IsCompletedSuccessfully);
+        Assert.Equal(60d, clone.GetSettings().FrameRate);
+        var second = clone.Clone();
+        var slow = clone.ApplyConstraints(new MediaTrackConstraints { Width = new ConstrainULongRange { Exact = 640 }, Height = new ConstrainULongRange { Exact = 360 }, FrameRate = new ConstrainDoubleRange { Exact = 15 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(slow.IsCompletedSuccessfully);
+        Assert.Equal(("1280x720", 60d), DeviceMode());
+        Assert.Equal(60d, second.GetSettings().FrameRate);
+
+        (string Size, double FrameRate) DeviceMode()
+        {
+            var settings = backend.LastSource!.Settings;
+            return ($"{settings.Width}x{settings.Height}", settings.FrameRate!.Value);
+        }
+    }
+
+    [Fact]
+    public async Task EnumerateDevices_ExposesTheDetailsOnceADeviceWasCaptured()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "window.list = () => navigator.mediaDevices.enumerateDevices().then(d => document.title = d.map(x => [x.kind, x.label, x.deviceId.length, x instanceof InputDeviceInfo].join()).join(';'));</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+
+        Assert.Equal("videoinput,,0,true", await RunAsync(document, "list()"));
+        await RunAsync(document, "go({ video: true })");
+        Assert.Equal("videoinput,Test camera,64,true", await RunAsync(document, "list()"));
+    }
+
+    [Fact]
+    public async Task ApplyConstraints_ChangesTheSettings()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("1280x720 none 1280", await RunAsync(document, "const t = stream.getVideoTracks()[0]; t.applyConstraints({ width: { exact: 1280 } }).then(() => document.title = `${t.getSettings().width}x${t.getSettings().height} ${t.getSettings().resizeMode} ${t.getConstraints().width.exact}`)"));
+        Assert.Equal("OverconstrainedError height 1280", await RunAsync(document, "const t2 = stream.getVideoTracks()[0]; t2.applyConstraints({ height: { min: 2000 } }).catch(e => document.title = `${e.name} ${e.constraint} ${t2.getSettings().width}`)"));
+        Assert.Equal("ended,live,false", await RunAsync(document, "const t3 = stream.getVideoTracks()[0]; const c = t3.clone(); t3.stop(); document.title = [t3.readyState, c.readyState, stream.active].join()"));
+    }
+
+    [Fact]
+    public async Task MediaStream_ConstructorsAndClone()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("1,1,true,false,0", Run(document, """
+            const copy = new MediaStream(stream);
+            const clone = stream.clone();
+            const empty = new MediaStream();
+            document.title = [copy.getTracks().length, clone.getTracks().length, copy.getTracks()[0] === stream.getTracks()[0], clone.getTracks()[0] === stream.getTracks()[0], empty.getTracks().length].join();
+            """));
+    }
+
+    [Fact]
+    public async Task MediaStreamAudioDestinationNode_StreamHasAnAudioTrack()
+    {
+        var document = Load("<script>const ac = new AudioContext(); const dest = ac.createMediaStreamDestination(); const src = ac.createMediaStreamSource(dest.stream); document.title = [dest.stream.getAudioTracks().length, src.mediaStream === dest.stream, src.numberOfInputs, dest.numberOfOutputs].join();</script>");
+
+        Assert.Equal("1,true,0,0", await RunAsync(document));
+    }
+
+    [Fact]
+    public async Task MediaElement_PlaysAStream()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<video></video><script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), MediaBackend = new NoMediaBackend(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("canplay,4,640x480,Infinity,0", await RunAsync(document, """
+            window.v = document.querySelector('video');
+            v.srcObject = stream;
+            v.oncanplay = () => document.title = ['canplay', v.readyState, v.videoWidth + 'x' + v.videoHeight, v.duration, v.seekable.length].join();
+            """));
+        await RunAsync(document, "v.ontimeupdate = () => { v.ontimeupdate = null; document.title = ['timeupdate', v.currentTime > 0, v.played.length, v.played.end(0) === v.currentTime].join(); }; v.play();");
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal("timeupdate,true,1,true", await RunAsync(document));
+        Assert.Equal("ended,true,durationchange", await RunAsync(document, "v.ondurationchange = () => document.title += ',durationchange'; v.onended = () => document.title = ['ended', v.ended].join(); stream.getTracks()[0].stop();"));
+    }
+
+    [Fact]
+    public async Task CanvasCaptureStream_DoesNotCaptureATaintedCanvas()
+    {
+        var document = Load("<canvas width=2 height=2></canvas>");
+        var canvas = (HtmlCanvasElement)document.QuerySelector("canvas")!;
+        var context = (ImageBitmapRenderingContext)canvas.GetContext("bitmaprenderer")!;
+        var track = canvas.CaptureStream().GetVideoTracks()[0];
+
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(2, 2, new byte[16])));
+        Assert.NotNull(track.GetVideoFrame());
+
+        // A cross-origin image drawn on the canvas: its pixels are never captured, and the track is muted
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(2, 2, [.. Enumerable.Repeat((byte)255, 16)], originClean: false)));
+        Assert.Null(track.GetVideoFrame());
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(track.Muted);
+        Assert.Null(track.GetVideoFrame());
+        var grabFrame = await Assert.ThrowsAsync<DomException>(() => new ImageCapture(track).GrabFrame());
+        Assert.Equal("InvalidStateError", grabFrame.Name);
+        var takePhoto = await Assert.ThrowsAsync<DomException>(() => new ImageCapture(track).TakePhoto());
+        Assert.Equal("UnknownError", takePhoto.Name);
+    }
+
+    [Fact]
+    public async Task MediaStreamAudioDestinationNode_TrackFollowsTheChannelCountOfTheNode()
+    {
+        var document = Load("""
+            <script>
+              const ac = new AudioContext();
+              const dest = new MediaStreamAudioDestinationNode(ac, { channelCount: 1 });
+              const track = dest.stream.getAudioTracks()[0];
+              const before = track.getSettings().channelCount;
+              dest.channelCount = 4;
+              document.title = [before, track.getSettings().channelCount, dest.channelCount].join();
+            </script>
+            """);
+
+        Assert.Equal("1,4,4", await RunAsync(document));
+    }
+
+    [Fact]
+    public void CanvasCaptureStream_RespectsTheFrameRate()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=1 height=1></canvas>", new BrowsingContextOptions { TimeProvider = clock });
+        var canvas = (HtmlCanvasElement)document.QuerySelector("canvas")!;
+        var context = (ImageBitmapRenderingContext)canvas.GetContext("bitmaprenderer")!;
+        var track = (CanvasCaptureMediaStreamTrack)canvas.CaptureStream(frameRequestRate: 1).GetVideoTracks()[0];
+
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [1, 0, 0, 255])));
+        Assert.Equal(1, track.GetVideoFrame()!.Pixels.Span[0]);
+
+        // A second change within the second of the frame rate is captured once the second elapsed
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [2, 0, 0, 255])));
+        Assert.Equal(1, track.GetVideoFrame()!.Pixels.Span[0]);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(2, track.GetVideoFrame()!.Pixels.Span[0]);
+
+        // requestFrame() captures the canvas at once
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [3, 0, 0, 255])));
+        track.RequestFrame();
+        Assert.Equal(3, track.GetVideoFrame()!.Pixels.Span[0]);
+    }
+
+    [Fact]
+    public void CanvasCaptureStream_FollowsTheSizeOfTheCanvas()
+    {
+        var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");
+
+        Assert.Equal("true,true,80,30,10", Run(document));
     }
 }
 

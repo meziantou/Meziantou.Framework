@@ -676,6 +676,12 @@ internal sealed partial class WebIdlBindingsGenerator
             }
 
             code.Append($"    {TypeName(type)} v => v,\n");
+
+            // A sequence (e.g. string[] for a sequence<DOMString> member of the union): its natural value is a list
+            if (type.IsArray && type != typeof(byte[]))
+            {
+                code.Append($"    global::System.Collections.Generic.List<{TypeName(type.GetElementType()!)}> v => v.ToArray(),\n");
+            }
         }
 
         // A buffer source (e.g. AllowSharedBufferSource for a ReadOnlySpan<byte> parameter)

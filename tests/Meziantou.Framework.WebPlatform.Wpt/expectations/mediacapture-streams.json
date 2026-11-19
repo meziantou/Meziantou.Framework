@@ -1,0 +1,221 @@
+{
+  "mediacapture-streams/BrowserCaptureMediaStreamTrack-cropTo.https.html": {
+    "total": 3,
+    "failures": {
+      "Tests that cloning cropped tracks preserves target and allows independent cropTo": "FAIL",
+      "Tests that cropping MediaStreamTrack objects works as expected": "FAIL",
+      "Tests that cropping cloned MediaStreamTrack objects works independently": "FAIL"
+    }
+  },
+  "mediacapture-streams/BrowserCaptureMediaStreamTrack-restrictTo.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Tests that restricting MediaStreamTrack objects works as expected (FlattenedIn3D).": "NOTRUN",
+      "Tests that restricting MediaStreamTrack objects works as expected (OnlyOneBoxFragment).": "NOTRUN",
+      "Tests that restricting MediaStreamTrack objects works as expected (StackingContext).": "FAIL"
+    }
+  },
+  "mediacapture-streams/GUM-api.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-deny.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-echoCancellation-all.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-echoCancellation-boolean.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/GUM-echoCancellation-remote-only.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-empty-option-param.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-impossible-constraint.https.html": {
+    "total": 10
+  },
+  "mediacapture-streams/GUM-invalid-facing-mode.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-non-applicable-constraint.https.html": {
+    "total": 4
+  },
+  "mediacapture-streams/GUM-optional-constraint.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-permissions-query.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/GUM-required-constraint-with-ideal-value.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-trivial-constraint.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/GUM-unknownkey-option-param.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaDevices-SecureContext.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaDevices-after-discard.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/MediaDevices-enumerateDevices-not-allowed-camera.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaDevices-enumerateDevices-not-allowed-mic.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaDevices-enumerateDevices-per-origin-ids.sub.https.html": {
+    "total": 3,
+    "failures": {
+      "enumerateDevices rotates deviceId after clearing site data": "FAIL"
+    }
+  },
+  "mediacapture-streams/MediaDevices-enumerateDevices-persistent-permission.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaDevices-enumerateDevices-returned-objects.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/MediaDevices-enumerateDevices.https.html": {
+    "total": 4,
+    "failures": {
+      "mediaDevices.enumerateDevices() is working - after video capture": "FAIL"
+    }
+  },
+  "mediacapture-streams/MediaDevices-getSupportedConstraints.https.html": {
+    "total": 17
+  },
+  "mediacapture-streams/MediaDevices-getUserMedia.https.html": {
+    "total": 8
+  },
+  "mediacapture-streams/MediaStream-MediaElement-firstframe.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/MediaStream-MediaElement-preload-none.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/MediaStream-MediaElement-srcObject.https.html": {
+    "total": 17
+  },
+  "mediacapture-streams/MediaStream-add-audio-track.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStream-audio-only.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStream-clone.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/MediaStream-default-permissions-policy.https.html": {
+    "total": 15
+  },
+  "mediacapture-streams/MediaStream-finished-add.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStream-gettrackid.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStream-id.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStream-idl.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStream-removetrack.https.html": {
+    "total": 3
+  },
+  "mediacapture-streams/MediaStream-supported-by-permissions-policy.html": {
+    "total": 2
+  },
+  "mediacapture-streams/MediaStream-video-only.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStreamTrack-MediaElement-disabled-audio-is-silence.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStreamTrack-MediaElement-disabled-video-is-black.https.html": {
+    "total": 3
+  },
+  "mediacapture-streams/MediaStreamTrack-applyConstraints.https.html": {
+    "total": 17
+  },
+  "mediacapture-streams/MediaStreamTrack-getCapabilities.https.html": {
+    "total": 112
+  },
+  "mediacapture-streams/MediaStreamTrack-getSettings.https.html": {
+    "total": 18
+  },
+  "mediacapture-streams/MediaStreamTrack-id.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStreamTrack-iframe-audio-transfer.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "MediaStreamTrack transfer to iframe": "TIMEOUT"
+    }
+  },
+  "mediacapture-streams/MediaStreamTrack-iframe-transfer.https.html": {
+    "total": 1,
+    "failures": {
+      "MediaStreamTrack transfer to iframe": "FAIL"
+    }
+  },
+  "mediacapture-streams/MediaStreamTrack-init.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/MediaStreamTrack-transfer-cross-agent-cluster.https.html": {
+    "total": 3,
+    "failures": {
+      "MediaStreamTrack can be transferred to a same-origin iframe": "FAIL",
+      "MediaStreamTrack cannot be transferred to a cross-site iframe": "FAIL"
+    }
+  },
+  "mediacapture-streams/MediaStreamTrack-transfer-to-shared-and-service-workers.https.html": {
+    "total": 4,
+    "failures": {
+      "MediaStreamTrack cannot be transferred to a service worker": "FAIL",
+      "MediaStreamTrack cannot be transferred to a shared worker": "FAIL"
+    }
+  },
+  "mediacapture-streams/MediaStreamTrack-transfer-video.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "MediaStreamTrack transfer to iframe": "TIMEOUT"
+    }
+  },
+  "mediacapture-streams/MediaStreamTrack-transfer.https.html": {
+    "total": 1,
+    "failures": {
+      "MediaStreamTrack transfer to Worker": "FAIL"
+    }
+  },
+  "mediacapture-streams/MediaStreamTrackEvent-constructor.https.html": {
+    "total": 3
+  },
+  "mediacapture-streams/crashtests/enumerateDevices-after-discard-1.https.html": {
+    "crashtest": "PASS"
+  },
+  "mediacapture-streams/enumerateDevices-with-navigation.https.html": {
+    "total": 1
+  },
+  "mediacapture-streams/historical.https.html": {
+    "total": 7
+  },
+  "mediacapture-streams/idlharness.https.window.js": {
+    "total": 186
+  },
+  "mediacapture-streams/overconstrained_error.https.html": {
+    "total": 2
+  },
+  "mediacapture-streams/parallel-capture-requests.https.html": {
+    "total": 2
+  }
+}

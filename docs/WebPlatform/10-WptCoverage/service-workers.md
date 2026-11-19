@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 251 | 283 | 5 | 90% |
+| [Stable](#stable-tests) | 252 | 283 | 5 | 91% |
 | [Tentative](#tentative-tests) | 7 | 11 | 0 | 64% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 3 | 0 | 67% |
-| **All** | **261** | **298** | **5** | **89%** |
+| **All** | **262** | **298** | **5** | **89%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **TEST BUG**: 14
-- **NOT IMPLEMENTED**: 15
+- **NOT IMPLEMENTED**: 14
 - **TEST RUNNER**: 2
 - **FLAKY**: 4
 
@@ -103,7 +103,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/embed-and-object-are-not-intercepted.https.html`](https://wpt.fyi/results/service-workers/service-worker/embed-and-object-are-not-intercepted.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/extendable-event-async-waituntil.https.html`](https://wpt.fyi/results/service-workers/service-worker/extendable-event-async-waituntil.https.html) | Pass | 14 / 14 |  |  |
 | [`service-worker/extendable-event-waituntil.https.html`](https://wpt.fyi/results/service-workers/service-worker/extendable-event-waituntil.https.html) | Pass | 6 / 6 |  |  |
-| [`service-worker/fetch-audio-tainting.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-audio-tainting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `MediaElementAudioSourceNode` (`createMediaElementSource()`), which the test uses to check that the audio of the element is tainted |
+| [`service-worker/fetch-audio-tainting.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-audio-tainting.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-canvas-tainting-double-write.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-double-write.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-canvas-tainting-image-cache.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-image-cache.https.html) | Pass | 40 / 40 |  |  |
 | [`service-worker/fetch-canvas-tainting-image.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-image.https.html) | Pass | 40 / 40 |  |  |

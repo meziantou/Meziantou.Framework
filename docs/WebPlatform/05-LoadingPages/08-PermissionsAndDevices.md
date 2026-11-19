@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -16,6 +16,7 @@ the device in a test, or to connect the API to your application.
 | [Share](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Share) | `navigator.share()` | There is no share target: the promise is rejected with an `AbortError` |
 | [Vibrate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Vibrate) | `navigator.vibrate()` | Nothing vibrates |
 | [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation) | `navigator.geolocation` | The position is unavailable |
+| [MediaCapture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCapture) | `navigator.mediaDevices.getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()` | There is no camera, microphone nor screen: `getUserMedia()` fails with a `NotFoundError` |
 | [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()`, `registration.showNotification()` | The notifications are displayed nowhere |
 | [Badging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Badging) | `navigator.setAppBadge()`, `navigator.clearAppBadge()` | The badge is shown nowhere |
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
@@ -135,6 +136,107 @@ moves. The library handles the `timeout` and `maximumAge` options of the pages: 
 `GetPositionAsync` is canceled when the timeout elapses. Once it elapsed, the page gets a `TIMEOUT` error, even when
 the provider fails because of the canceled token, or before it started. Other failures of the provider are reported as
 `POSITION_UNAVAILABLE`.
+
+## Camera, microphone and screen capture
+
+`navigator.mediaDevices` (Media Capture and Streams) captures the devices of a
+[MediaCaptureBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend). The backend lists the devices and
+produces their media; the library implements the rest: the `camera` and `microphone` permissions and permissions
+policies, the identifiers of the devices (different for each origin), the constraints (`getUserMedia({ video: { width:
+320 } })`, `applyConstraints()`), the tracks and the streams. Plug a backend and answer the permission prompt:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCapture;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new BrowsingContextOptions
+{
+    MediaCapture = new SolidColorCamera(),
+
+    // Plays the role of the permission prompt: the user allows the camera
+    RequestPermission = (callbackContext, name) => name == "camera" ? PermissionState.Granted : PermissionState.Denied,
+};
+```
+<!-- endref -->
+
+A backend describes each device with a
+[MediaCaptureDevice](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice): its kind, its label, its
+capabilities (the values of its constrainable properties, such as `facingMode` or `echoCancellation`), its default
+settings, and for a camera or a screen, its native video modes. The library selects the settings that satisfy the
+constraints of the page best (the SelectSettings algorithm), offering the smaller sizes and frame rates that can be
+cropped and scaled down from a native mode, then calls
+[StartCapture](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend.StartCapture). The
+[MediaCaptureSource](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureSource) it returns produces the frames
+([GetVideoFrame](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureSource.GetVideoFrame)) and the audio samples
+([ReadAudio](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureSource.ReadAudio)) when a sink needs them: a `video`
+element whose `srcObject` is the stream, `ImageCapture.grabFrame()`, a Web Audio graph. A frame of another size is
+scaled to the size of the settings.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCaptureBackend;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A camera whose frames are filled with a color, for the tests of a page that uses getUserMedia()
+private sealed class SolidColorCamera : MediaCaptureBackend
+{
+    private static readonly MediaCaptureDevice Camera = new()
+    {
+        Id = "camera-1",
+        Kind = MediaDeviceKind.VideoInput,
+        Label = "Test camera",
+        Capabilities = new MediaTrackCapabilities { FacingMode = ["user"] },
+        DefaultSettings = new MediaTrackSettings { Width = 640, Height = 480, FacingMode = "user" },
+
+        // The native modes; smaller sizes and frame rates are cropped and scaled down from them
+        VideoModes = [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 30)],
+    };
+
+    public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Camera];
+
+    public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => new Source(request);
+
+    private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+    {
+        public override MediaVideoFrame? GetVideoFrame(TimeSpan timestamp)
+        {
+            var width = (int)Settings.Width!.Value;
+            var height = (int)Settings.Height!.Value;
+            var pixels = new byte[width * height * 4];
+            for (var i = 0; i < pixels.Length; i += 4)
+            {
+                pixels[i + 1] = 128; // green
+                pixels[i + 3] = 255;
+            }
+
+            return new MediaVideoFrame(width, height, pixels);
+        }
+    }
+}
+```
+<!-- endref -->
+
+- The first device of each kind is the default device. Until a page captured a device of a kind, `enumerateDevices()`
+  lists at most one device of the kind, without its identifier and its label.
+- Override [SelectDisplaySurface](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend.SelectDisplaySurface)
+  to support `getDisplayMedia()`: it plays the role of the picker of the browser, and returns the device of the screen,
+  the window or the tab to capture (and its audio), or null when the user cancels. The page needs a user activation.
+- Call [NotifyDevicesChanged](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend.NotifyDevicesChanged) when
+  a device is plugged in or removed: the pages that can see the change get a `devicechange` event. A source calls
+  `SetMuted` while it cannot produce media, and `End` when its device is removed: its tracks fire `mute`, `unmute` and
+  `ended`. A source that is already muted or ended when `StartCapture` returns gives muted or ended tracks.
+- The clones of a track share its device, and each one gets the media at its own settings. When the tracks have
+  different sizes or frame rates, the device runs in the smallest native mode that covers all of them (the source gets
+  the new settings in `OnSettingsChanged`). `applyConstraints()` on a track only selects settings that a native mode
+  can give together with the other live tracks of the device: constraints that only another mode satisfies reject the
+  call with an `OverconstrainedError`, and neither the track nor the device change.
+- The capture stops when the last track of a device stops, or when the document is unloaded: the source is disposed.
+
+The streams also come from the page itself: `canvas.captureStream()` captures a canvas when it changes, at most
+`frameRate` times per second when the page gives a frame rate (only on `requestFrame()` for a rate of 0). Once the
+canvas is not origin-clean (a cross-origin image was drawn on it), its tracks are muted and get no frame, until
+`reset()` or a new size clears the bitmap: the tracks are unmuted and capture the canvas again. `video.captureStream()`
+captures the frames of a media element, and `AudioContext.createMediaStreamDestination()` captures a Web Audio graph,
+with the channel count of the node. `createMediaStreamSource()` and `createMediaStreamTrackSource()` play the audio of a
+track in a Web Audio graph. The media elements play a stream assigned to `srcObject` as a live timeline that cannot be
+seeked, once a [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) enables their processing model.
+`MediaRecorder` is not implemented, and the audio of the media elements is not decoded (the media backend gives no
+audio), so `createMediaElementSource()` outputs silence.
 
 ## Notifications
 

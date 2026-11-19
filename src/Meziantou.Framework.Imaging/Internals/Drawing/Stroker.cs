@@ -162,15 +162,28 @@ internal sealed class Stroker : PathSink
     private bool _bottomRightInside;
 
     /// <summary>
-    /// Sets whether the strokes drawn on the current thread keep every piece as it is made, as when they are widened into a
-    /// path, instead of cancelling the halves of sides they share and leaving out the joins their bodies contain. The
-    /// pixels must be the same either way: a fuzz test compares them.
+    /// Sets whether the strokes drawn on the current thread keep every piece as it is made, instead of cancelling the halves
+    /// of sides they share and leaving out the joins their bodies contain. The pixels must be the same either way: a fuzz
+    /// test compares them.
     /// </summary>
+    /// <remarks>
+    /// The sides of the pieces are still cut where the pieces around a vertex meet (see <see cref="SplitsSides"/>): the
+    /// pieces kept apart then share the same halves of sides, which the rasterizer crosses at the same points. Without the
+    /// cuts, a side and the half of it that the next piece shares are crossed at points a few units of the last place
+    /// apart, and a pixel whose center is on both is in neither (fuzz regression).
+    /// </remarks>
     internal static bool KeepsPiecesApartOnCurrentThread
     {
         get => s_keepsPiecesApart;
         set => s_keepsPiecesApart = value;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the sides of the pieces that go to edges are cut where the pieces around a vertex
+    /// meet: at the ends of a chord across its body, and at the center of the diameter of a half disk. The pieces given to
+    /// a path or a sink are not cut.
+    /// </summary>
+    private bool SplitsSides => _edges is not null;
 
     public Stroker(EdgeBuilder edges)
     {
@@ -564,8 +577,8 @@ internal sealed class Stroker : PathSink
 
         // The sides of the body across the ends of the chord are cut at those ends, so that the halves that the pieces
         // around a vertex share cancel (see EdgeBuilder.CancelOpposites); an end with nothing beyond it is not cut
-        var splitStart = _mergesPieces && !_isStartBare;
-        var splitEnd = _mergesPieces && !_isEndBare;
+        var splitStart = SplitsSides && !_isStartBare;
+        var splitEnd = SplitsSides && !_isEndBare;
         _bodyContainsJoins = false;
         var dx = chord.DirectionX;
         var dy = chord.DirectionY;
@@ -935,7 +948,7 @@ internal sealed class Stroker : PathSink
                 break;
 
             case LineCap.Square:
-                AddBody(x, y, x + (_halfWidth * directionX), y + (_halfWidth * directionY), directionX, directionY, splitStart: _mergesPieces);
+                AddBody(x, y, x + (_halfWidth * directionX), y + (_halfWidth * directionY), directionX, directionY, splitStart: SplitsSides);
                 break;
         }
     }
@@ -992,7 +1005,7 @@ internal sealed class Stroker : PathSink
         BeginPiece(x - (_halfWidth * nx), y - (_halfWidth * ny));
         AddArc(x, y, -nx, -ny, directionX, directionY, depth: 0);
         AddArc(x, y, directionX, directionY, nx, ny, depth: 0);
-        if (_mergesPieces)
+        if (SplitsSides)
         {
             // The diameter is cut at the center, as the side of the body it shares is (see AddBody)
             PieceLineTo(x, y);

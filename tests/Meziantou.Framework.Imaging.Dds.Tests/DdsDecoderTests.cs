@@ -283,6 +283,21 @@ public sealed class DdsDecoderTests
     }
 
     [Fact]
+    public void AlphaOnlyMasksWiderThan8BitsAreUnsupportedWhateverTheFlags()
+    {
+        // An RGB or luminance layout whose only mask is alpha is an alpha mask, as DDPF_ALPHA is
+        foreach (var flags in new[] { DdsFileBuilder.PixelAlpha, DdsFileBuilder.PixelRgb | DdsFileBuilder.PixelAlphaPixels, DdsFileBuilder.PixelLuminance | DdsFileBuilder.PixelAlphaPixels })
+        {
+            var wide = DdsFileBuilder.Masks(1, 1, flags, 32, 0, 0, 0, 0x0FFE0000, new byte[4]).Build();
+            Assert.Equal("Alpha-only format wider than 8 bits", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(wide)).Feature);
+            Assert.Equal("Alpha-only format wider than 8 bits", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(wide)).Feature);
+
+            using var image = Image.Load<A8>(DdsFileBuilder.Masks(1, 1, flags, 16, 0, 0, 0, 0xFF00, new byte[] { 0, 200 }).Build());
+            Assert.Equal(new A8(200), image.Frames[0][0, 0]);
+        }
+    }
+
+    [Fact]
     public void TypelessFormatsWithAnUnormReadingAreRead()
     {
         // R8G8B8A8_TYPELESS reads as R8G8B8A8_UNORM; BC6H_TYPELESS (unsigned or signed) is rejected

@@ -350,8 +350,8 @@ its `trak` table at the size of the text (see [Shaping](../../Fonts/06-Shaping.m
   `tnum`, `ss01`) or turns default ones off (`new FontFeature("liga", 0)`).
 - A character typed as one code point or as a letter and a combining mark gives the same result: the text is put in
   the form the font has glyphs for.
-- Control characters are not drawn, and format characters (joiners, variation selectors, a soft hyphen where the line
-  is not broken) are invisible.
+- Control characters are not drawn, and end the emoji sequence that a zero width joiner before them would continue.
+  Format characters (joiners, variation selectors, a soft hyphen where the line is not broken) are invisible.
 - The glyphs and positions are compared with those of HarfBuzz, a reference shaper, on the fonts of every script that
   has a model.
 

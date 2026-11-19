@@ -72,13 +72,10 @@ internal sealed class DngDocument
             if (entry + 2 > prefix.Length)
                 return false;
 
-            var tag = TiffHeader.ReadUInt16(prefix[(int)entry..], bigEndian);
-            if (tag == DngFormat.DngVersionTag)
+            // The entries should be sorted by tag, but a reader finds a tag anywhere in the directory (TiffDirectory.Find):
+            // a larger tag does not mean that the directory has none
+            if (TiffHeader.ReadUInt16(prefix[(int)entry..], bigEndian) == DngFormat.DngVersionTag)
                 return true;
-
-            // The entries are sorted by tag: a larger tag means that the directory has none
-            if (tag > DngFormat.DngVersionTag)
-                return false;
         }
 
         return false;

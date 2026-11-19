@@ -150,12 +150,7 @@ internal sealed class DdsPixelLayout
             return FromMasks("legacy luminance masks", bitCount, redMask, 0, 0, hasAlpha ? alphaMask : 0, isGray: true, isSrgb: false);
 
         if ((flags & DdsFormat.PixelAlpha) != 0)
-        {
-            if (BitOperations.PopCount(alphaMask) > 8)
-                throw DdsFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The DDS alpha-only pixel format has an alpha mask of {BitOperations.PopCount(alphaMask)} bits; alpha masks of more than 8 bits are not supported."), "Alpha-only format wider than 8 bits");
-
             return FromMasks("legacy alpha mask", bitCount, 0, 0, 0, alphaMask, isGray: false, isSrgb: false);
-        }
 
         if ((flags & DdsFormat.PixelYuv) != 0)
             throw DdsFormat.Unsupported("The DDS pixel format stores YUV samples (DDPF_YUV): video formats are not supported.", "YUV pixel format");
@@ -330,6 +325,10 @@ internal sealed class DdsPixelLayout
 
         if (used == 0)
             throw DdsFormat.Invalid($"The DDS pixel format ({name}) has no channel: every mask is 0.");
+
+        // A layout without color decodes to A8, so its alpha cannot be wider than 8 bits, whichever flags describe it
+        if (red == 0 && green == 0 && blue == 0 && BitOperations.PopCount(alpha) > 8)
+            throw DdsFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The DDS pixel format ({name}) stores only alpha, with a mask of {BitOperations.PopCount(alpha)} bits; alpha-only formats wider than 8 bits are not supported."), "Alpha-only format wider than 8 bits");
 
         var channels = (red != 0 ? 1 : 0) + (green != 0 ? 1 : 0) + (blue != 0 ? 1 : 0) + (alpha != 0 ? 1 : 0);
         return new DdsPixelLayout(name, DdsEncoding.Masks, channels, isGray && red != 0, alpha != 0, isSrgb, (int)(bitCount / 8))

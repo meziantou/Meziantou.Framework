@@ -258,8 +258,10 @@ internal static partial class PixelConverter
 
         // Every check runs before anything is written, so that a rejected conversion leaves the destination as it was
         ValidateFloatRowCore(source, sourceFormat, destinationFormat, background, format, floats, useVectors);
+        if (TryWidenFloatGray(source, destination))
+            return;
 
-        var (bgR, bgG, bgB) = background is { } bg ? (bg.R / (double)Max16, bg.G / (double)Max16, bg.B / (double)Max16) : (0d, 0d, 0d);
+        var (bgR, bgG, bgB) = background is { } bg ?(bg.R / (double)Max16, bg.G / (double)Max16, bg.B / (double)Max16) : (0d, 0d, 0d);
         ref var src = ref unsafe(MemoryMarshal.GetReference(source));
         ref var dst = ref unsafe(MemoryMarshal.GetReference(destination));
 
@@ -310,6 +312,46 @@ internal static partial class PixelConverter
 
                 WriteFloat(ref unsafe(Unsafe.Add(ref dst, i)), r, g, b, a);
             }
+        }
+    }
+
+    /// <summary>
+    /// Widens a floating-point gray format to RGBA of the same precision bit for bit: the gray replicated in the three colors,
+    /// the alpha copied or opaque. The conversion through doubles gives the same values but quiets the signaling
+    /// not-a-numbers, which the widening of the formats that encoders do not store (<see cref="PixelFormatWidening"/>) keeps.
+    /// </summary>
+    /// <returns><see langword="true"/> when the formats are such a widening and the row is converted.</returns>
+    private static bool TryWidenFloatGray<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination)
+        where TSource : unmanaged
+        where TDestination : unmanaged
+    {
+        if (typeof(TDestination) == typeof(RgbaHalf) && (typeof(TSource) == typeof(GrayHalf) || typeof(TSource) == typeof(LaHalf)))
+        {
+            WidenGray(unsafe(MemoryMarshal.Cast<TSource, ushort>(source)), unsafe(MemoryMarshal.Cast<TDestination, ushort>(destination)), hasAlpha: typeof(TSource) == typeof(LaHalf), BitConverter.HalfToUInt16Bits(Half.One));
+            return true;
+        }
+
+        if (typeof(TDestination) == typeof(RgbaFloat) && (typeof(TSource) == typeof(GrayFloat) || typeof(TSource) == typeof(LaFloat)))
+        {
+            WidenGray(unsafe(MemoryMarshal.Cast<TSource, uint>(source)), unsafe(MemoryMarshal.Cast<TDestination, uint>(destination)), hasAlpha: typeof(TSource) == typeof(LaFloat), BitConverter.SingleToUInt32Bits(1f));
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void WidenGray<T>(ReadOnlySpan<T> source, Span<T> destination, bool hasAlpha, T opaque)
+        where T : unmanaged
+    {
+        var channels = hasAlpha ? 2 : 1;
+        var count = source.Length / channels;
+        for (var i = 0; i < count; i++)
+        {
+            var gray = source[i * channels];
+            destination[i * 4] = gray;
+            destination[(i * 4) + 1] = gray;
+            destination[(i * 4) + 2] = gray;
+            destination[(i * 4) + 3] = hasAlpha ? source[(i * 2) + 1] : opaque;
         }
     }
 

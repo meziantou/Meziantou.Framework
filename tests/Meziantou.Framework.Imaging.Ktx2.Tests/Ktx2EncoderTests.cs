@@ -124,6 +124,70 @@ public sealed class Ktx2EncoderTests
     }
 
     [Fact]
+    public void HalvesKeepTheBitsOfNotANumber()
+    {
+        // Signaling and quiet not-a-numbers of both signs, whose payloads a conversion through floats would quiet
+        ushort[] samples = [0x7D0A, 0xFD76, 0x7E01, 0xFC01, 0x7C00, 0x8000, 0x0001, 0x7BFF];
+        byte[] bytes = [.. samples.SelectMany(BitConverter.GetBytes)];
+        using var halves = Image.ImportPixelBytes<RgbaHalf>(bytes, 2, 1);
+        halves.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        var data = Save(halves, new Ktx2Encoder { Supercompression = Ktx2Supercompression.Zlib });
+        Assert.Equal(97u, ReadUInt32(data, 12));
+        using var decoded = Image.Load<RgbaHalf>(data);
+        var actual = new byte[bytes.Length];
+        decoded.Frames[0].CopyPixelBytesTo(actual);
+        Assert.Equal(bytes, actual);
+    }
+
+    [Fact]
+    public void FloatingPointGrayPixelsKeepTheirBits()
+    {
+        // Values outside [0, 1], an infinity, and quiet and signaling not-a-numbers, which a 16-bit UNORM format would clamp or
+        // lose and a conversion through doubles would quiet
+        ushort[] halves = [0xC100, 0x3400, 0x63D0, 0x7C00, 0x7E01, 0x7D0A, 0xFD76, 0x3800];
+        uint[] floats = [0xC0200000, 0x3E800000, 0x49742400, 0x7F800000, 0x7FC01234, 0x7F812345, 0xFF87C52B, 0x3F000000];
+        byte[] halfBytes = [.. halves.SelectMany(BitConverter.GetBytes)];
+        byte[] floatBytes = [.. floats.SelectMany(BitConverter.GetBytes)];
+        AssertKept<GrayHalf, RgbaHalf>(halfBytes, 2, hasAlpha: false, BitConverter.GetBytes((ushort)0x3C00), 97u);
+        AssertKept<LaHalf, RgbaHalf>(halfBytes, 2, hasAlpha: true, BitConverter.GetBytes((ushort)0x3C00), 97u);
+        AssertKept<GrayFloat, RgbaFloat>(floatBytes, 4, hasAlpha: false, BitConverter.GetBytes(1f), 109u);
+        AssertKept<LaFloat, RgbaFloat>(floatBytes, 4, hasAlpha: true, BitConverter.GetBytes(1f), 109u);
+
+        static void AssertKept<TGray, TRgba>(byte[] samples, int sampleSize, bool hasAlpha, byte[] opaque, uint format)
+            where TGray : unmanaged
+            where TRgba : unmanaged
+        {
+            // An image and the surfaces of a collection are both widened to RGBA of the same precision: the gray replicated,
+            // the alpha copied or opaque, every bit kept
+            var channels = hasAlpha ? 2 : 1;
+            var width = samples.Length / (sampleSize * channels);
+            var expected = new byte[width * 4 * sampleSize];
+            for (var i = 0; i < width; i++)
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    samples.AsSpan(i * channels * sampleSize, sampleSize).CopyTo(expected.AsSpan(((i * 4) + c) * sampleSize));
+                }
+
+                (hasAlpha ? samples.AsSpan(((i * 2) + 1) * sampleSize, sampleSize) : opaque.AsSpan()).CopyTo(expected.AsSpan(((i * 4) + 3) * sampleSize));
+            }
+
+            using var image = Image.ImportPixelBytes<TGray>(samples, width, 1);
+            image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+            using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+            collection.Add(image, new TextureSurface(0));
+            foreach (var data in new[] { Save(image, new Ktx2Encoder()), SaveCollection(collection, new Ktx2Encoder()) })
+            {
+                Assert.Equal(format, ReadUInt32(data, 12));
+                using var decoded = Image.Load<TRgba>(data);
+                var actual = new byte[expected.Length];
+                decoded.Frames[0].CopyPixelBytesTo(actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
     public void MipLevelsAreStoredFromTheSmallest()
     {
         using var image = CreateRgba32(8, 4, seed: 3);

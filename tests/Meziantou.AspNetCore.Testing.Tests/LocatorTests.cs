@@ -343,6 +343,34 @@ public sealed class LocatorTests
     }
 
     [Fact]
+    public async Task Locator_ActionsScrollTheElementIntoTheViewportWithScrollSnap()
+    {
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            DefaultTimeout = TimeSpan.FromMilliseconds(500),
+            Viewport = new ViewportOptions { Width = 400, Height = 300 },
+            StyleSheets =
+            {
+                """
+                html { scroll-snap-type: y mandatory }
+                body { margin: 0 }
+                section { height: 300px; scroll-snap-align: start }
+                input { position: absolute; top: 500px; left: 10px; margin: 0; width: 20px; height: 20px }
+                """,
+            },
+        });
+        var page = await RenderMarkupAsync(host, """
+            <section></section><section></section><section></section><section></section>
+            <input type="checkbox" aria-label="Snapped">
+            """);
+
+        // The requested point is visible once the element is scrolled to its snap position: the page does not scroll further
+        await page.GetByLabel("Snapped").ClickAsync(new ClickOptions { Position = new ElementPosition(10, 10) });
+        Assert.True(page.GetByLabel("Snapped").IsChecked);
+        Assert.Equal(300, host.BrowsingContext.Window.ScrollY);
+    }
+
+    [Fact]
     public async Task Locator_ActionsWaitUntilTheElementIsStable()
     {
         await using var host = new ComponentTestHost(new ComponentTestHostOptions

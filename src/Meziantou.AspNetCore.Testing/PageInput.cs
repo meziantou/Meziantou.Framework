@@ -619,9 +619,14 @@ public sealed partial class PageInput
             return rect;
 
         // Centering the element can move the requested point out of the viewport when the element is larger than the
-        // viewport, so the viewport is scrolled to center the point instead
+        // viewport, so the viewport is scrolled to center the point instead. The scroll is absolute: a relative scroll
+        // would snap to the next snap position in its direction (https://drafts.csswg.org/css-scroll-snap-1/#relative-scroll),
+        // which can move the point out of the viewport again.
         var point = GetActionPoint(rect, position);
-        _ = viewport.ScrollBy(point.X - (viewport.InnerWidth / 2d), point.Y - (viewport.InnerHeight / 2d));
+        if (IsInViewport(viewport, point))
+            return rect;
+
+        _ = viewport.ScrollTo(viewport.ScrollX + point.X - (viewport.InnerWidth / 2d), viewport.ScrollY + point.Y - (viewport.InnerHeight / 2d));
         return element.GetBoundingClientRect();
     }
 

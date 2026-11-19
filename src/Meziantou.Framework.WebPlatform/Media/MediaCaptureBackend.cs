@@ -186,6 +186,8 @@ public abstract class MediaCaptureSource : IDisposable
 {
     private Action<bool>? _mutedChanged;
     private Action? _ended;
+    private volatile bool _isMuted;
+    private volatile bool _isEnded;
 
     /// <summary>Initializes the source of a device.</summary>
     /// <param name="request">The request of <see cref="MediaCaptureBackend.StartCapture"/>.</param>
@@ -203,10 +205,10 @@ public abstract class MediaCaptureSource : IDisposable
     public MediaTrackSettings Settings { get; private set; }
 
     /// <summary>Gets a value indicating whether the source is muted (it produces no media for now, e.g. the camera is covered or the operating system took the device).</summary>
-    public bool IsMuted { get; private set; }
+    public bool IsMuted => _isMuted;
 
     /// <summary>Gets a value indicating whether the source ended (the device was removed): its tracks end.</summary>
-    public bool IsEnded { get; private set; }
+    public bool IsEnded => _isEnded;
 
     /// <summary>
     /// Changes the settings of the device: the constraints of a track changed (<c>applyConstraints()</c>). The default
@@ -246,20 +248,20 @@ public abstract class MediaCaptureSource : IDisposable
     /// <param name="muted">Whether the source is muted.</param>
     protected void SetMuted(bool muted)
     {
-        if (IsMuted == muted)
+        if (_isMuted == muted)
             return;
 
-        IsMuted = muted;
+        _isMuted = muted;
         Volatile.Read(ref _mutedChanged)?.Invoke(muted);
     }
 
     /// <summary>Ends the source (e.g. the device was removed): its tracks end and get an <c>ended</c> event. Can be called from any thread.</summary>
     protected void End()
     {
-        if (IsEnded)
+        if (_isEnded)
             return;
 
-        IsEnded = true;
+        _isEnded = true;
         Volatile.Read(ref _ended)?.Invoke();
     }
 

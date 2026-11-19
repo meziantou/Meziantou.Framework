@@ -3593,12 +3593,31 @@ public sealed class HostDeviceApisTests : IDisposable
 
         public MediaCaptureSource? LastSource { get; private set; }
 
+        // The state of the device when it starts (e.g. the operating system already took it)
+        public bool MutedOnStart { get; init; }
+
+        public bool EndedOnStart { get; init; }
+
         public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Microphone];
 
-        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request);
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request, MutedOnStart, EndedOnStart);
 
-        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        private sealed class Source : MediaCaptureSource
         {
+            public Source(MediaCaptureRequest request, bool muted, bool ended)
+                : base(request)
+            {
+                if (muted)
+                {
+                    SetMuted(muted: true);
+                }
+
+                if (ended)
+                {
+                    End();
+                }
+            }
+
             public override void ReadAudio(long position, Span<float> destination)
             {
                 var channels = (int)Settings.ChannelCount!.Value;
@@ -3694,6 +3713,19 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.True(result.Succeeded);
         Assert.True((double)result.Settings!["width"] >= 100);
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"SelectSettings took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void GetUserMedia_KeepsTheStateTheSourceHasWhenItStarts()
+    {
+        var muted = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { MutedOnStart = true }, Permissions = GrantedPermissions("microphone") });
+        var mutedTrack = GetUserMedia(muted, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        Assert.True(mutedTrack.Muted);
+        Assert.Equal(MediaStreamTrackState.Live, mutedTrack.ReadyState);
+
+        var ended = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { EndedOnStart = true }, Permissions = GrantedPermissions("microphone") });
+        var endedTrack = GetUserMedia(ended, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        Assert.Equal(MediaStreamTrackState.Ended, endedTrack.ReadyState);
     }
 
     [Fact]

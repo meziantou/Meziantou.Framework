@@ -166,8 +166,21 @@ internal sealed class CaptureDeviceTrackSource : MediaStreamTrackSource
         _clock = clock;
         _startTimestamp = clock.GetTimestamp();
         capture.SetCallbacks(
-            muted => mediaDevices.QueueTask(() => SetMuted(muted)),
+            muted => mediaDevices.QueueTask(() => SetMuted(capture.IsMuted)),
             () => mediaDevices.QueueTask(EndAllTracks));
+
+        // The state the backend set before the callbacks were registered (e.g. during StartCapture()): a change that races
+        // with the registration is reported by a callback too, whose task reads the state again
+        if (capture.IsMuted)
+        {
+            SetMuted(muted: true);
+        }
+
+        if (capture.IsEnded)
+        {
+            // The tracks of the source are created after it: they end by a task
+            mediaDevices.QueueTask(EndAllTracks);
+        }
     }
 
     public override MediaCaptureDevice Device { get; }

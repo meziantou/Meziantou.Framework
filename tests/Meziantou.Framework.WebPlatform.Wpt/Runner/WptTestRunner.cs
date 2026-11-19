@@ -2401,6 +2401,7 @@ internal sealed partial class WptTestRunner
         "cpu" => PressureSource.Cpu,
         _ => null,
     };
+
     /// <summary>
     /// Parses the display features of the Set Display Features command (https://drafts.csswg.org/css-viewport/#set-display-features),
     /// or returns null with the error.

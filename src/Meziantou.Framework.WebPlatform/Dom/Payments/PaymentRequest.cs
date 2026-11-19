@@ -47,6 +47,7 @@ public sealed partial class PaymentRequest : EventTarget
     private CancellationTokenSource? _ui;
     private BrowsingContext? _showingContext;
     private Document? _showingDocument;
+
     /// <summary>The ingestion of the payment method manifests (null until the page asks whether it can make a payment).</summary>
     private Task? _manifestIngestion;
 

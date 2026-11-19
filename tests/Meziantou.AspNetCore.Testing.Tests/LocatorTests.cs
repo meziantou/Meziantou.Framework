@@ -295,6 +295,82 @@ public sealed class LocatorTests
     }
 
     [Fact]
+    public async Task Locator_ActionsScrollTheElementIntoTheViewport()
+    {
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            DefaultTimeout = TimeSpan.FromMilliseconds(500),
+            Viewport = new ViewportOptions { Width = 400, Height = 300 },
+            StyleSheets =
+            {
+                """
+                body { margin: 0; height: 2000px }
+                input { margin: 0; width: 20px; height: 20px }
+                #partial { position: absolute; top: 295px; left: 10px }
+                #scroller { position: absolute; top: 0; left: 100px; width: 100px; height: 100px; overflow: auto }
+                #clipped { margin-top: 95px }
+                #fixed { position: fixed; top: 400px; left: 10px }
+                #tall { position: absolute; top: 0; left: 250px; width: 100px; height: 2000px; display: block }
+                #tall-target { position: absolute; top: 50px; left: 10px }
+                """,
+            },
+        });
+        var page = await RenderMarkupAsync(host, """
+            <input type="checkbox" id="partial" aria-label="Partial">
+            <div id="scroller"><input type="checkbox" id="clipped" aria-label="Clipped"><div style="height: 300px"></div></div>
+            <input type="checkbox" id="fixed" aria-label="Fixed">
+            <label id="tall" for="tall-target">Tall label</label>
+            <input type="checkbox" id="tall-target" aria-label="Tall target">
+            """);
+
+        // The center of the element is in the viewport, but the scroll container clips it
+        var clipped = host.Document.GetElementById("clipped")!.GetBoundingClientRect();
+        Assert.True(clipped.Y + (clipped.Height / 2) is > 100 and < 300);
+        await page.GetByLabel("Clipped").CheckAsync();
+        Assert.True(page.GetByLabel("Clipped").IsChecked);
+
+        // The center of the element is below the viewport, but its top is visible
+        await page.GetByLabel("Partial").CheckAsync();
+        Assert.True(page.GetByLabel("Partial").IsChecked);
+
+        // The requested point is scrolled into the viewport, not the center of the element
+        await page.GetByText("Tall label").ClickAsync(new ClickOptions { Position = new ElementPosition(10, 1800) });
+        Assert.True(page.GetByLabel("Tall target").IsChecked);
+
+        // Scrolling cannot bring a fixed element into the viewport
+        var exception = await Assert.ThrowsAsync<ElementNotInteractableException>(() => page.GetByLabel("Fixed").ClickAsync());
+        Assert.Equal("The element <input id=\"fixed\"> cannot receive the input: the point (20, 410) is outside of the viewport (400x300)", exception.Message);
+    }
+
+    [Fact]
+    public async Task Locator_ActionsScrollTheElementIntoTheViewportWithScrollSnap()
+    {
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            DefaultTimeout = TimeSpan.FromMilliseconds(500),
+            Viewport = new ViewportOptions { Width = 400, Height = 300 },
+            StyleSheets =
+            {
+                """
+                html { scroll-snap-type: y mandatory }
+                body { margin: 0 }
+                section { height: 300px; scroll-snap-align: start }
+                input { position: absolute; top: 500px; left: 10px; margin: 0; width: 20px; height: 20px }
+                """,
+            },
+        });
+        var page = await RenderMarkupAsync(host, """
+            <section></section><section></section><section></section><section></section>
+            <input type="checkbox" aria-label="Snapped">
+            """);
+
+        // The requested point is visible once the element is scrolled to its snap position: the page does not scroll further
+        await page.GetByLabel("Snapped").ClickAsync(new ClickOptions { Position = new ElementPosition(10, 10) });
+        Assert.True(page.GetByLabel("Snapped").IsChecked);
+        Assert.Equal(300, host.BrowsingContext.Window.ScrollY);
+    }
+
+    [Fact]
     public async Task Locator_ActionsWaitUntilTheElementIsStable()
     {
         await using var host = new ComponentTestHost(new ComponentTestHostOptions

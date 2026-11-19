@@ -56,7 +56,6 @@ public sealed class MediaStreamAudioSourceNode : AudioNode
     public MediaStreamAudioSourceNode(AudioContext context, MediaStreamAudioSourceOptions options)
         : base(context, numberOfInputs: 0, numberOfOutputs: 1, channelCount: 2, ChannelCountMode.Max, ChannelInterpretation.Speakers)
     {
-        ArgumentNullException.ThrowIfNull(options);
         var tracks = options.MediaStream.GetAudioTracks();
         if (tracks.Count == 0)
             throw DomException.InvalidState("The stream has no audio track");
@@ -93,7 +92,6 @@ public sealed class MediaStreamTrackAudioSourceNode : AudioNode
     public MediaStreamTrackAudioSourceNode(AudioContext context, MediaStreamTrackAudioSourceOptions options)
         : base(context, numberOfInputs: 0, numberOfOutputs: 1, channelCount: 2, ChannelCountMode.Max, ChannelInterpretation.Speakers)
     {
-        ArgumentNullException.ThrowIfNull(options);
         var track = options.MediaStreamTrack;
         if (track.Source.Kind != MediaTrackKinds.Audio)
             throw DomException.InvalidState("The track is not an audio track");
@@ -125,7 +123,6 @@ public sealed class MediaElementAudioSourceNode : AudioNode
     public MediaElementAudioSourceNode(AudioContext context, MediaElementAudioSourceOptions options)
         : base(context, numberOfInputs: 0, numberOfOutputs: 1, channelCount: 2, ChannelCountMode.Max, ChannelInterpretation.Speakers)
     {
-        ArgumentNullException.ThrowIfNull(options);
         if (options.MediaElement.AudioSourceNode is not null)
             throw DomException.InvalidState("The media element is already the source of a MediaElementAudioSourceNode");
 

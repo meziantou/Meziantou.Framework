@@ -42,6 +42,25 @@ public sealed record MarkdownHtmlRendererOptions
     /// <summary>Gets the <c>rel</c> attribute of the links, such as <c>nofollow noopener</c>, or <see langword="null"/> for none. The autolinks of email addresses between <c>&lt;</c> and <c>&gt;</c> have none.</summary>
     public string? LinkRel { get; init; }
 
+    /// <summary>
+    /// Gets the schemes that the URLs of the links and of the images can have, such as <c>http</c>, <c>https</c> and
+    /// <c>mailto</c>, or <see langword="null"/> to write every URL, as CommonMark does. A URL with another scheme, such as
+    /// <c>javascript:</c> or <c>data:</c>, is written empty. A relative URL has no scheme and is always written.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The scheme is compared ignoring case, and read from the URL that is written, after <see cref="BaseUrl"/> and
+    /// <see cref="LinkRewriter"/>, as a browser reads it: the spaces and the control characters at the start of the URL, and
+    /// its tabs and line endings, are ignored.
+    /// </para>
+    /// <para>
+    /// The filter applies to the URLs that the renderer writes, including the ones of <see cref="MarkdownHtmlWriter.WriteUrl"/>.
+    /// It does not apply to raw HTML, nor to the generic attributes that <see cref="AttributeFilter"/> allows: it complements an
+    /// HTML sanitizer, it does not replace one.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyCollection<string>? AllowedUrlSchemes { get; init; }
+
     /// <summary>Gets the URL that the relative URLs of the links and of the images are relative to, or <see langword="null"/> to keep them relative.</summary>
     public Uri? BaseUrl { get; init; }
 

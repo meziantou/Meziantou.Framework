@@ -57,7 +57,7 @@ internal static partial class Scanners
     private static partial Regex HtmlBlockClose1();
 
     /// <summary>Gets the type (1 to 7) of the HTML block that the line starts, or 0.</summary>
-    public static int GetHtmlBlockStart(string line, bool canInterruptParagraph)
+    public static int GetHtmlBlockStart(ReadOnlySpan<char> line, bool canInterruptParagraph)
     {
         if (HtmlBlockOpen1().IsMatch(line))
         {
@@ -98,12 +98,12 @@ internal static partial class Scanners
     }
 
     /// <summary>Whether the line ends an HTML block of the type, which only the types 1 to 5 have.</summary>
-    public static bool IsHtmlBlockEnd(int type, string line) => type switch
+    public static bool IsHtmlBlockEnd(int type, ReadOnlySpan<char> line) => type switch
     {
         1 => HtmlBlockClose1().IsMatch(line),
         2 => line.Contains("-->", StringComparison.Ordinal),
         3 => line.Contains("?>", StringComparison.Ordinal),
-        4 => line.Contains('>', StringComparison.Ordinal),
+        4 => line.Contains('>'),
         5 => line.Contains("]]>", StringComparison.Ordinal),
         _ => false,
     };

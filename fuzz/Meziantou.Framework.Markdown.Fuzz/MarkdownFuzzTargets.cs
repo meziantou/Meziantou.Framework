@@ -28,7 +28,7 @@ public static class MarkdownFuzzTargets
 
     private static readonly string[] ExtensionTokens =
     [
-        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"", "+---+", "+===+", "ABC-12", "(X-1)", "![](a.mp4)", "![](https://youtu.be/x)", "+:-:+", "+---+---+\n", "| a | b |\n", "||", "|-|", "| :--: |", "\\-", "\\:", "|{.c}", "-|-\n", " | ", "\u0645", "\u05D0", "\u3002", "\u30C6", "\uFF01",
+        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"", "+---+", "+===+", "ABC-12", "(X-1)", "![](a.mp4)", "![](https://youtu.be/x)", "+:-:+", "+---+---+\n", "| a | b |\n", "||", "|-|", "| :--: |", "\\-", "\\:", "|{.c}", "-|-\n", " | ", "\u0645", "\u05D0", "\u3002", "\u30C6", "\uFF01", "| [^1] |\n", "| # a |\n", "| > [!NOTE] |\n", "| --- |\n",
     ];
 
     // Every extension, with the pipe tables and the autolinks of Markdig. A text of odd length has the tables and the autolinks
@@ -45,6 +45,7 @@ public static class MarkdownFuzzTargets
         LinkRewriter = url => url + "#x",
         LinkRel = "nofollow",
         EscapeNonAsciiUrlCharacters = false,
+        IdPrefix = "u-",
     };
 
     // Inline extensions whose content is text, markers or inlines, and a delimiter extension, with GFM or with every extension
@@ -261,6 +262,16 @@ public static class MarkdownFuzzTargets
             var html = MarkdownHtmlRenderer.ToHtml(tree, RendererOptions);
             var ids = System.Text.RegularExpressions.Regex.Matches(html, "id=\"(?<id>pragma-line-[0-9]+)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)).Select(match => match.Groups["id"].Value).ToList();
             FuzzAssert.True(ids.Count == ids.Distinct(StringComparer.Ordinal).Count(), $"A pragma line is the id of two elements: {FuzzAssert.Format(text)}");
+            if (options.DisableHtml)
+            {
+                // The HTML of the text is text, so every id is one the renderer writes: the ids of the document have the prefix, and
+                // so do the links to the footnotes and back
+                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(html, "(?: id=\"|href=\"#)(?<id>[^\"]*)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
+                {
+                    var id = match.Groups["id"].Value;
+                    FuzzAssert.True(id.StartsWith("u-", StringComparison.Ordinal) || (match.Value.StartsWith(" id", StringComparison.Ordinal) && id.StartsWith("pragma-line-", StringComparison.Ordinal)) || (match.Value.StartsWith("href", StringComparison.Ordinal) && !id.StartsWith("fn", StringComparison.Ordinal)), $"The id {FuzzAssert.Format(id)} of {FuzzAssert.Format(match.Value)} has no prefix: {FuzzAssert.Format(text)}");
+                }
+            }
             _ = tree.GetRoot().FindClosestLine(text.Length % 7);
 
             // Node renderers that decline every node, or that write the built-in rendering of every node, change nothing
@@ -349,6 +360,7 @@ public static class MarkdownFuzzTargets
                     {
                         FuzzAssert.True(cell.ColumnIndex >= 0 && cell.ColumnSpan > 0 && cell.ColumnIndex + cell.ColumnSpan <= grid.Columns.Count && cell.RowSpan > 0, $"The cell of the grid table at {grid.Span} has the columns {cell.ColumnIndex} to {cell.ColumnIndex + cell.ColumnSpan} and {cell.RowSpan} rows: {FuzzAssert.Format(text)}");
                         FuzzAssert.True(cell.Content.GetRoot().ToFullString() == cell.Text, $"The content of the cell of the grid table at {grid.Span} does not reproduce its text: {FuzzAssert.Format(text)}");
+                        CheckCellContent(tree, grid, cell, text);
                     }
 
                     break;
@@ -391,6 +403,18 @@ public static class MarkdownFuzzTargets
         var walker = new CountingWalker();
         walker.Visit(root);
         FuzzAssert.True(walker.Count == count, $"The walker visits {walker.Count} nodes of {count}: {FuzzAssert.Format(text)}");
+
+        // With the cells of the grid tables, the walker also visits the document of each cell, and the nodes in it
+        var cellWalker = new CountingWalker(visitGridTableCells: true);
+        cellWalker.Visit(root);
+        var cellCount = CountNodesWithCells(root);
+        FuzzAssert.True(cellWalker.Count == cellCount, $"The walker of the grid table cells visits {cellWalker.Count} nodes of {cellCount}: {FuzzAssert.Format(text)}");
+        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers))
+        {
+            // The identifiers that are not ids of generic attributes are unique, the ones of the headings of the cells included
+            var identifiers = cellWalker.Headings.Select(heading => heading.Identifier!).Where(identifier => !cellWalker.Ids.Contains(identifier)).ToList();
+            FuzzAssert.True(identifiers.Count == identifiers.Distinct(StringComparer.Ordinal).Count(), $"Two headings have the same identifier: {FuzzAssert.Format(string.Join(", ", identifiers))}: {FuzzAssert.Format(text)}");
+        }
         FuzzAssert.True(ReferenceEquals(new MarkdownSyntaxRewriter().Visit(root), root), $"A rewrite that changes nothing changes the tree: {FuzzAssert.Format(text)}");
 
         if (text.Length < 4096 && root.DescendantNodes().OfType<MarkdownBlockSyntax>().LastOrDefault() is { } block)
@@ -404,6 +428,43 @@ public static class MarkdownFuzzTargets
         if (text.Length < 4096)
         {
             CheckEdits(tree, text);
+        }
+    }
+
+    private static int CountNodesWithCells(MarkdownSyntaxNode node)
+    {
+        var count = 0;
+        foreach (var descendant in node.DescendantNodesAndSelf())
+        {
+            count++;
+            if (descendant is MarkdownGridTableSyntax grid)
+            {
+                count += grid.Rows.SelectMany(row => row.Cells).Sum(cell => CountNodesWithCells(cell.Content.GetRoot()));
+            }
+        }
+
+        return count;
+    }
+
+    // The spans of the content of a cell map to the text of the table, where the text of a line of the cell is the same, and the
+    // footnotes of the cell are the ones of the document
+    private static void CheckCellContent(MarkdownSyntaxTree tree, MarkdownGridTableSyntax grid, MarkdownGridTableCell cell, string text)
+    {
+        var content = cell.Content;
+        foreach (var token in content.GetRoot().DescendantTokens())
+        {
+            var span = cell.MapSpan(token.Span);
+            FuzzAssert.True(span.Start >= grid.Span.Start && span.End <= grid.Span.End, $"The token at {token.Span} of a cell maps to {span}, out of the grid table at {grid.Span}: {FuzzAssert.Format(text)}");
+            if (!token.Text.Contains('\n', StringComparison.Ordinal))
+            {
+                FuzzAssert.True(string.Equals(text.Substring(span.Start, span.Length), token.Text, StringComparison.Ordinal), $"The token {FuzzAssert.Format(token.Text)} at {token.Span} of a cell maps to {FuzzAssert.Format(text.Substring(span.Start, span.Length))}: {FuzzAssert.Format(text)}");
+            }
+        }
+
+        FuzzAssert.True(!content.GetRoot().Blocks.OfType<MarkdownFootnoteDefinitionSyntax>().Any() && !content.GetRoot().Blocks.OfType<MarkdownFrontMatterSyntax>().Any(), $"A cell of the grid table at {grid.Span} has a footnote or a front matter: {FuzzAssert.Format(text)}");
+        foreach (var reference in content.GetRoot().DescendantNodes().OfType<MarkdownFootnoteReferenceSyntax>())
+        {
+            FuzzAssert.True(reference.Definition is null || ReferenceEquals(reference.Definition.SyntaxTree, tree), $"The footnote reference at {reference.Span} of a cell has a definition out of the document: {FuzzAssert.Format(text)}");
         }
     }
 
@@ -523,13 +584,28 @@ public static class MarkdownFuzzTargets
         return MarkdownSyntaxTree.ParseText(text, options).GetRoot().DescendantNodes().OfType<TNode>().FirstOrDefault(other => other.Span.End == text.Length && text.AsSpan(0, other.SpanStart).IsWhiteSpace());
     }
 
-    private sealed class CountingWalker : MarkdownSyntaxWalker
+    private sealed class CountingWalker(bool visitGridTableCells = false) : MarkdownSyntaxWalker(SyntaxWalkerDepth.Node, visitGridTableCells)
     {
         public int Count { get; private set; }
+
+        public List<MarkdownHeadingSyntax> Headings { get; } = [];
+
+        // The ids of the generic attributes
+        public HashSet<string> Ids { get; } = new(StringComparer.Ordinal);
 
         public override void DefaultVisit(MarkdownSyntaxNode node)
         {
             Count++;
+            switch (node)
+            {
+                case MarkdownHeadingSyntax heading:
+                    Headings.Add(heading);
+                    break;
+                case MarkdownGenericAttributesSyntax { Id: { } id }:
+                    Ids.Add(id);
+                    break;
+            }
+
             base.DefaultVisit(node);
         }
     }
@@ -541,9 +617,27 @@ public static class MarkdownFuzzTargets
     private static IEnumerable<FuzzSeed> GetGfmSeeds() => GetSeeds("markdown.CommonMark.md", "commonmark").Concat(GetSeeds("markdown.GfmExtensions.md", "gfm"));
 
     // The examples of the GFM extensions and of the extensions of the 1.x library
+    // The inputs of the unit tests of the content of the grid table cells: footnotes, headings, front matter and alerts
+    private static readonly string[] GridTableCellSeeds =
+    [
+        "+-------+\n| a[^1] |\n+-------+\n\n[^1]: note\n",
+        "+---------+\n| y[^b]   |\n+---------+\n\nz[^a] w[^b]\n\n[^a]: A\n[^b]: B\n",
+        "+-----------+\n| [^1]: a   |\n|           |\n| b         |\n+-----------+\n",
+        "+-------------+\n| [^1]: a     |\n|             |\n| b [^1]      |\n+-------------+\n\nc [^2]\n\n[^2]: z\n",
+        "+---------+\n| ---     |\n| secret  |\n| ---     |\n| visible |\n+---------+\n",
+        "+-----------+\n| > [!NOTE] |\n| > a       |\n+-----------+\n",
+        "# h\n\n+-----+\n| # h |\n+-----+\n\n# h\n",
+        "+-----------+\n| # h {#x}  |\n+-----------+\n\n# x\n",
+        "# a {#b}\n# b\n# b\n",
+        "Intro\n\n+---------------+\n| See [a](/u)   |\n| and [b](/v)   |\n+---------------+\n",
+        "+---+\n| a |\n+===+\n| b |\n+===+\n| c |\n+---+\n",
+        "+---+---+---+\n| a\n+---+---+---+\n| b | c\n+---+---+---+\n",
+        "-\0a\n",
+    ];
+
     private static IEnumerable<FuzzSeed> GetExtensionSeeds()
     {
-        var seeds = GetGfmSeeds();
+        var seeds = GetGfmSeeds().Concat(GridTableCellSeeds.Select((text, i) => FuzzSeed.FromText($"grid-cells-{i + 1}", text)));
         foreach (var name in typeof(MarkdownFuzzTargets).Assembly.GetManifestResourceNames().Where(name => name.StartsWith("markdown.extensions.", StringComparison.Ordinal)).Order(StringComparer.Ordinal))
         {
             seeds = seeds.Concat(GetSeeds(name, name["markdown.extensions.".Length..^".md".Length]));

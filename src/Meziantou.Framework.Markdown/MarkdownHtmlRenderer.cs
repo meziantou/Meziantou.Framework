@@ -673,15 +673,17 @@ public static class MarkdownHtmlRenderer
         private void AppendAttributes(SyntaxNode node, ParsedAttributes? attributes, string? leadingClasses = null, string? trailingClasses = null, string? id = null)
         {
             id ??= attributes?.Id;
-            if (id is null && _pragmaIds is not null)
-            {
-                id = _pragmaIds.GetValueOrDefault(node);
-            }
-
             if (id is not null)
             {
                 Markup.Append(" id=\"");
-                AppendAttributeEscaped(id);
+                AppendPrefixedId(id);
+                Markup.Append('"');
+            }
+            else if (_pragmaIds?.GetValueOrDefault(node) is { } pragmaId)
+            {
+                // The pragma lines are for the editor of the document, without the prefix of the ids
+                Markup.Append(" id=\"");
+                AppendAttributeEscaped(pragmaId);
                 Markup.Append('"');
             }
 
@@ -1366,17 +1368,21 @@ public static class MarkdownHtmlRenderer
                 return;
             }
 
-            _footnotes = new MarkdownFootnotes(document);
+            _footnotes ??= new MarkdownFootnotes(document);
 
             Cr();
             Markup.Append("<div class=\"footnotes\">\n<hr />\n<ol>\n");
+            // The links back are written after the content of the footnote: the prefix of their ids is escaped as AppendAttributeEscaped does
+            var idPrefix = (rendererOptions.IdPrefix ?? "").Replace("&", "&amp;", StringComparison.Ordinal).Replace("<", "&lt;", StringComparison.Ordinal).Replace(">", "&gt;", StringComparison.Ordinal).Replace("\"", "&quot;", StringComparison.Ordinal).Replace('\0', '\uFFFD');
             foreach (var footnote in _footnotes.Footnotes)
             {
-                Markup.Append("<li id=\"fn:").Append(_footnotes.GetNumber(footnote)).Append("\">\n");
+                Markup.Append("<li id=\"");
+                AppendPrefixedId("fn:" + _footnotes.GetNumber(footnote).ToString(CultureInfo.InvariantCulture));
+                Markup.Append("\">\n");
                 var backLinks = new StringBuilder();
                 foreach (var reference in _footnotes.GetReferences(footnote))
                 {
-                    backLinks.Append("<a href=\"#fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" class=\"footnote-back-ref\">&#8617;</a>");
+                    backLinks.Append("<a href=\"#").Append(idPrefix).Append("fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" class=\"footnote-back-ref\">&#8617;</a>");
                 }
 
                 // The links end the last paragraph, or a paragraph of their own
@@ -1394,6 +1400,30 @@ public static class MarkdownHtmlRenderer
             }
 
             Markup.Append("</ol>\n</div>\n");
+        }
+
+        // The document whose footnotes a node refers to: for the content of a grid table cell, the document of the table
+        private static MarkdownDocumentSyntax GetOutermostDocument(SyntaxNode node)
+        {
+            var tree = node.SyntaxTree as MarkdownSyntaxTree;
+            while (tree?.Container is { } container)
+            {
+                tree = container;
+            }
+
+            return tree?.GetRoot() ?? node.FirstAncestorOrSelf<MarkdownDocumentSyntax>()!;
+        }
+
+        // An id that the document sets, of an element or of a footnote, after the prefix of the options, which the links to the
+        // element have too
+        private void AppendPrefixedId(string id)
+        {
+            if (rendererOptions.IdPrefix is { Length: > 0 } prefix)
+            {
+                AppendAttributeEscaped(prefix);
+            }
+
+            AppendAttributeEscaped(id);
         }
 
         // A paragraph of attributes only, whose last attributes are for the next block, is not written
@@ -1671,7 +1701,20 @@ public static class MarkdownHtmlRenderer
 
         private string RenderCell(MarkdownSyntaxTree content)
         {
-            using var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
+            // The footnotes of the document, which the references of the cell are numbered with, are found once for all the cells
+            using var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText, _footnotes = _footnotes };
+            try
+            {
+                return RenderCell(writer, content);
+            }
+            finally
+            {
+                _footnotes ??= writer._footnotes;
+            }
+        }
+
+        private static string RenderCell(Writer writer, MarkdownSyntaxTree content)
+        {
             writer.CollectAllAttributes(content);
             if (content.GetRoot().Blocks is [MarkdownParagraphSyntax paragraph] && !(writer._attributes is not null && writer.IsAttributesParagraph(paragraph)))
             {
@@ -2046,11 +2089,16 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownFootnoteReferenceSyntax reference:
                 {
-                    _footnotes ??= new MarkdownFootnotes(reference.FirstAncestorOrSelf<MarkdownDocumentSyntax>()!);
-                    if (reference.Definition is { } footnote && _footnotes.Footnotes.Contains(footnote))
+                    // The references of the content of a grid table cell are numbered with the ones of the document of the table
+                    _footnotes ??= new MarkdownFootnotes(GetOutermostDocument(reference));
+                    if (reference.Definition is { } footnote && _footnotes.Contains(footnote))
                     {
                         var number = _footnotes.GetNumber(footnote);
-                        Markup.Append("<a id=\"fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" href=\"#fn:").Append(number).Append("\" class=\"footnote-ref\"><sup>");
+                        Markup.Append("<a id=\"");
+                        AppendPrefixedId("fnref:" + _footnotes.GetReferenceNumber(reference).ToString(CultureInfo.InvariantCulture));
+                        Markup.Append("\" href=\"#");
+                        AppendPrefixedId("fn:" + number.ToString(CultureInfo.InvariantCulture));
+                        Markup.Append("\" class=\"footnote-ref\"><sup>");
                         _output.Append(number);
                         Markup.Append("</sup></a>");
                     }
@@ -2083,7 +2131,7 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownLinkSyntax link:
                     Markup.Append("<a href=\"");
-                    AppendAttributeEscaped(NormalizeUrl(link.Destination));
+                    AppendAttributeEscaped(NormalizeUrl(rendererOptions.IdPrefix is { Length: > 0 } idPrefix && link.Heading is { Identifier: { } headingId } ? "#" + idPrefix + headingId : link.Destination));
                     Markup.Append('"');
                     AppendAttributes(link);
                     AppendTitle(link.Title);

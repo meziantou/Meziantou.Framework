@@ -12,7 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 // algorithm
 public static partial class WebPlatformFuzzTargets
 {
-    private const int MediaConstraintsMaxLength = 4096;
+    private const int MediaConstraintsMaxLength = 65536;
 
     private static readonly MediaCaptureDevice FuzzCamera = new()
     {
@@ -247,5 +247,9 @@ public static partial class WebPlatformFuzzTargets
         {
             yield return new FuzzSeed("media-constraints-" + i.ToString(CultureInfo.InvariantCulture), Encoding.UTF8.GetBytes(seeds[i]));
         }
+
+        // Hundreds of advanced constraint sets with distinct values: the candidate settings stay bounded
+        var advanced = string.Join(",", Enumerable.Range(1, 300).Select(i => string.Create(CultureInfo.InvariantCulture, $$"""{"width":{"min":{{i}},"ideal":{{i * 3}}},"height":{"ideal":{{i * 2}}},"aspectRatio":{{1 + (i / 300d)}},"frameRate":{{i % 60}},"zoom":{{1 + (i % 18 / 2d)}}}""")));
+        yield return new FuzzSeed("media-constraints-many-advanced-sets", Encoding.UTF8.GetBytes("""{"width":{"min":100},"advanced":[""" + advanced + "]}"));
     }
 }

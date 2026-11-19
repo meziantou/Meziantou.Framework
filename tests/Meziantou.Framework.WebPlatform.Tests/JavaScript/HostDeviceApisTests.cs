@@ -3638,6 +3638,28 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void SelectSettings_ManyAdvancedConstraintSetsStayBounded()
+    {
+        // Hundreds of advanced sets with distinct sizes, aspect ratios and frame rates: the candidates of the video modes
+        // must not be the Cartesian product of all their values
+        var advanced = Enumerable.Range(1, 400).Select(i => (MediaTrackConstraintSet)new MediaTrackConstraints
+        {
+            Width = new ConstrainULongRange { Min = (uint)i, Ideal = (uint)(i * 3) },
+            Height = new ConstrainULongRange { Max = (uint)(2000 - i), Ideal = (uint)(i * 2) },
+            AspectRatio = new ConstrainDoubleRange { Ideal = 1 + (i / 400d) },
+            FrameRate = new ConstrainDoubleRange { Min = 1, Ideal = i % 60 },
+        }).ToList();
+        var model = MediaTrackSourceModel.Create(MediaTrackKinds.Video, new MediaTrackCapabilities(), new MediaTrackSettings { Width = 640, Height = 480, FrameRate = 30 }, [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 60), new MediaCaptureVideoMode(1920, 1080, 30)]);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = MediaTrackConstraintProcessing.SelectSettings(model, new MediaTrackConstraints { Width = new ConstrainULongRange { Min = 100 }, Advanced = advanced });
+
+        Assert.True(result.Succeeded);
+        Assert.True((double)result.Settings!["width"] >= 100);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"SelectSettings took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
     public async Task EnumerateDevices_ExposesTheDetailsOnceADeviceWasCaptured()
     {
         var document = Load("<script>" + GetUserMediaScript + "window.list = () => navigator.mediaDevices.enumerateDevices().then(d => document.title = d.map(x => [x.kind, x.label, x.deviceId.length, x instanceof InputDeviceInfo].join()).join(';'));</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });

@@ -119,6 +119,18 @@ internal static class MediaTrackConstraintProcessing
     /// <summary>The maximum length of the value of a <c>deviceId</c> or <c>groupId</c> constraint (as in the browsers).</summary>
     private const int MaxIdentifierLength = 500;
 
+    /// <summary>
+    /// The maximum number of distinct values of the constraints on a property that make candidate values (the ones of the
+    /// basic constraint set first, then the ones of the advanced constraint sets in order): the number of candidate settings
+    /// dictionaries stays bounded whatever the number of constraint sets of a page.
+    /// </summary>
+    private const int MaxConstraintValuesPerProperty = 16;
+
+    /// <summary>The maximum number of candidate widths, heights and frame rates of a native video mode.</summary>
+    private const int MaxVideoModeSizes = 24;
+
+    private const int MaxVideoModeFrameRates = 8;
+
     /// <summary>The result of <see cref="SelectSettings"/>: the settings, or the name of a constraint that cannot be satisfied.</summary>
     internal readonly record struct SelectionResult(Dictionary<string, object>? Settings, double FitnessDistance, string FailedConstraint)
     {
@@ -743,7 +755,7 @@ internal static class MediaTrackConstraintProcessing
             {
                 foreach (var (name, constraint) in set)
                 {
-                    if (name == property.Name)
+                    if (name == property.Name && values.Count < MaxConstraintValuesPerProperty)
                     {
                         values.AddRange(constraint.ExactValues ?? []);
                         values.AddRange(constraint.IdealValues ?? []);
@@ -759,6 +771,7 @@ internal static class MediaTrackConstraintProcessing
 
             values.Add(min);
             values.Add(max);
+            var added = 0;
             foreach (var set in sets)
             {
                 foreach (var (name, constraint) in set)
@@ -768,8 +781,9 @@ internal static class MediaTrackConstraintProcessing
 
                     foreach (var value in (ReadOnlySpan<double?>)[constraint.Exact, constraint.Min, constraint.Max, constraint.Ideal])
                     {
-                        if (value is { } number)
+                        if (value is { } number && added < MaxConstraintValuesPerProperty)
                         {
+                            added++;
                             AddNumber(number);
                         }
                     }
@@ -830,7 +844,7 @@ internal static class MediaTrackConstraintProcessing
 
                 foreach (var value in (ReadOnlySpan<double?>)[constraint.Exact, constraint.Min, constraint.Max, constraint.Ideal])
                 {
-                    if (value is { } number && double.IsFinite(number) && number > 0)
+                    if (value is { } number && double.IsFinite(number) && number > 0 && target.Count < MaxConstraintValuesPerProperty && !target.Contains(number))
                     {
                         target.Add(number);
                     }
@@ -847,8 +861,12 @@ internal static class MediaTrackConstraintProcessing
                 continue;
 
             var nativeAspectRatio = (double)mode.Width / mode.Height;
-            var modeWidths = new HashSet<double> { mode.Width, Math.Min(mode.Width, defaultWidth) };
-            var modeHeights = new HashSet<double> { mode.Height, Math.Min(mode.Height, defaultHeight) };
+            var modeWidths = new List<double>();
+            var modeHeights = new List<double>();
+            AddSize(modeWidths, mode.Width, mode.Width);
+            AddSize(modeWidths, defaultWidth, mode.Width);
+            AddSize(modeHeights, mode.Height, mode.Height);
+            AddSize(modeHeights, defaultHeight, mode.Height);
             foreach (var width in widths)
             {
                 AddSize(modeWidths, width, mode.Width);
@@ -876,15 +894,19 @@ internal static class MediaTrackConstraintProcessing
                 AddSize(modeHeights, Math.Min(mode.Height, mode.Width / aspectRatio), mode.Height);
             }
 
-            var modeFrameRates = new HashSet<double> { mode.FrameRate };
-            foreach (var frameRate in frameRates)
-            {
-                modeFrameRates.Add(Math.Clamp(frameRate, 1, mode.FrameRate));
-            }
-
+            var modeFrameRates = new List<double> { mode.FrameRate };
             if (defaultFrameRate < mode.FrameRate)
             {
                 modeFrameRates.Add(defaultFrameRate);
+            }
+
+            foreach (var frameRate in frameRates)
+            {
+                var value = Math.Clamp(frameRate, 1, mode.FrameRate);
+                if (modeFrameRates.Count < MaxVideoModeFrameRates && !modeFrameRates.Contains(value))
+                {
+                    modeFrameRates.Add(value);
+                }
             }
 
             foreach (var width in modeWidths)
@@ -923,13 +945,14 @@ internal static class MediaTrackConstraintProcessing
             return defaultAspectRatio;
         }
 
-        static void AddSize(HashSet<double> sizes, double size, double max)
+        static void AddSize(List<double> sizes, double size, double max)
         {
             foreach (var rounded in (ReadOnlySpan<double>)[Math.Floor(size), Math.Ceiling(size)])
             {
-                if (rounded >= 1)
+                var value = Math.Min(rounded, max);
+                if (rounded >= 1 && sizes.Count < MaxVideoModeSizes && !sizes.Contains(value))
                 {
-                    sizes.Add(Math.Min(rounded, max));
+                    sizes.Add(value);
                 }
             }
         }

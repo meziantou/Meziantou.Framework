@@ -370,30 +370,35 @@ internal sealed class StorageBucketRegistry
         lock (_lock)
         {
             var buckets = GetBuckets(storageKey);
-            foreach (var (name, record) in buckets.ToArray())
+            if (backends.HasBackend)
             {
-                if (backends.HasBackend && backends.GetIdentity(name) != record.Identity)
+                var existing = backends.List((name, identity) => buckets.TryGetValue(name, out var record) && record.Identity == identity && IsExpired(global, record), deleted);
+                foreach (var (name, record) in buckets.ToArray())
                 {
-                    // Deleted (and possibly created again) by another browsing context group that shares the backends
-                    record.IsDeleted = true;
-                    buckets.Remove(name);
-                }
-                else if (IsExpired(global, record))
-                {
-                    record.IsDeleted = true;
-                    buckets.Remove(name);
-                    if (backends.HasBackend)
+                    // Expired, or deleted (and possibly created again) by another browsing context group that shares the backends
+                    if (!existing.TryGetValue(name, out var identity) || identity != record.Identity)
                     {
-                        backends.Delete(name, record.Identity, deleted);
+                        record.IsDeleted = true;
+                        buckets.Remove(name);
                     }
-                    else
+                }
+
+                names = [.. existing.Keys];
+            }
+            else
+            {
+                foreach (var (name, record) in buckets.ToArray())
+                {
+                    if (IsExpired(global, record))
                     {
+                        record.IsDeleted = true;
+                        buckets.Remove(name);
                         deleted.Add(record.Identity);
                     }
                 }
-            }
 
-            names = backends.HasBackend ? backends.GetNames() : [.. buckets.Keys];
+                names = [.. buckets.Keys];
+            }
         }
 
         backends.Clear(deleted);
@@ -565,22 +570,31 @@ internal sealed class StorageBucketBackends
     /// <summary>Creates the identity of a bucket that no backend stores.</summary>
     public static string CreateIdentity(string name) => new Marker(name, 0, Guid.NewGuid(), IsTombstone: false).Identity;
 
-    /// <summary>Returns the identity of a bucket, or null when it does not exist (or is deleted).</summary>
-    public string? GetIdentity(string name)
+    /// <summary>
+    /// Returns the identities of the buckets that exist, by name in lexicographic order, after deleting the expired ones.
+    /// </summary>
+    /// <param name="isExpired">Returns whether the bucket of a name and an identity is expired (it is then deleted).</param>
+    /// <param name="deleted">The identities whose storage is to be removed (see <see cref="Clear"/>).</param>
+    public SortedDictionary<string, string> List(Func<string, string, bool> isExpired, List<string> deleted)
     {
+        var buckets = new SortedDictionary<string, string>(StringComparer.Ordinal);
         lock (IdentitiesLock)
         {
-            return GetState(name).Identity?.Identity;
+            foreach (var (name, markers) in ReadMarkers())
+            {
+                var state = GetState(markers);
+                if (state.Identity is { } identity && isExpired(name, identity.Identity))
+                {
+                    Store(markers, state with { Identity = null, Tombstone = identity with { IsTombstone = true } }, deleted);
+                }
+                else if (state.Identity is { } existing)
+                {
+                    buckets.Add(name, existing.Identity);
+                }
+            }
         }
-    }
 
-    /// <summary>Returns the names of the buckets that exist, in lexicographic order.</summary>
-    public IReadOnlyList<string> GetNames()
-    {
-        lock (IdentitiesLock)
-        {
-            return [.. GetMarkers().Select(marker => marker.Name).Distinct(StringComparer.Ordinal).Where(name => GetState(name).Identity is not null).Order(StringComparer.Ordinal)];
-        }
+        return buckets;
     }
 
     /// <summary>
@@ -594,7 +608,8 @@ internal sealed class StorageBucketBackends
     {
         lock (IdentitiesLock)
         {
-            var state = GetState(name);
+            var markers = ReadMarkers().GetValueOrDefault(name);
+            var state = GetState(markers);
             LookedUp?.Invoke(name);
             if (state.Identity is { } identity && identity.Identity == expired)
             {
@@ -606,7 +621,7 @@ internal sealed class StorageBucketBackends
                 state = state with { Identity = new Marker(name, state.MaxOrder + 1, Guid.NewGuid(), IsTombstone: false) };
             }
 
-            Store(name, state, deleted);
+            Store(markers, state, deleted);
             return state.Identity.Value.Identity;
         }
     }
@@ -622,7 +637,7 @@ internal sealed class StorageBucketBackends
     {
         lock (IdentitiesLock)
         {
-            DeleteCore(name, identity, deleted);
+            DeleteCore(ReadMarkers().GetValueOrDefault(name), identity, deleted);
         }
     }
 
@@ -631,9 +646,9 @@ internal sealed class StorageBucketBackends
     {
         lock (IdentitiesLock)
         {
-            foreach (var name in GetMarkers().Select(marker => marker.Name).Distinct(StringComparer.Ordinal).ToArray())
+            foreach (var markers in ReadMarkers().Values)
             {
-                DeleteCore(name, identity: null, deleted);
+                DeleteCore(markers, identity: null, deleted);
             }
         }
     }
@@ -654,40 +669,52 @@ internal sealed class StorageBucketBackends
         }
     }
 
-    private void DeleteCore(string name, string? identity, List<string> deleted)
+    private void DeleteCore(List<StoredMarker>? markers, string? identity, List<string> deleted)
     {
-        var state = GetState(name);
+        var state = GetState(markers);
         if (state.Identity is { } current && (identity is null || current.Identity == identity))
         {
             state = state with { Identity = null, Tombstone = current with { IsTombstone = true } };
         }
 
-        Store(name, state, deleted);
+        Store(markers, state, deleted);
     }
 
-    private IEnumerable<Marker> GetMarkers()
+    /// <summary>Reads the markers of the backends (once each), by bucket name.</summary>
+    private Dictionary<string, List<StoredMarker>> ReadMarkers()
     {
-        foreach (var store in _stores)
+        var markers = new Dictionary<string, List<StoredMarker>>(StringComparer.Ordinal);
+        for (var i = 0; i < _stores.Length; i++)
         {
-            foreach (var value in store.GetMarkers())
+            foreach (var value in _stores[i].GetMarkers())
             {
-                if (Marker.Parse(value) is { } marker)
-                    yield return marker;
+                if (Marker.Parse(value) is not { } marker)
+                    continue;
+
+                if (!markers.TryGetValue(marker.Name, out var list))
+                {
+                    list = [];
+                    markers.Add(marker.Name, list);
+                }
+
+                list.Add(new StoredMarker(i, value, marker));
             }
         }
+
+        return markers;
     }
 
-    /// <summary>The state of a bucket in the backends: its latest tombstone, and its latest identity if it is greater than the tombstone.</summary>
-    private BucketState GetState(string name)
+    /// <summary>
+    /// The state of a bucket in the backends (from its markers, see <see cref="ReadMarkers"/>): its latest tombstone, and its
+    /// latest identity if it is greater than the tombstone.
+    /// </summary>
+    private static BucketState GetState(List<StoredMarker>? markers)
     {
         Marker? identity = null;
         Marker? tombstone = null;
         long maxOrder = 0;
-        foreach (var marker in GetMarkers())
+        foreach (var (_, _, marker) in markers ?? [])
         {
-            if (marker.Name != name)
-                continue;
-
             maxOrder = Math.Max(maxOrder, marker.Order);
             if (marker.IsTombstone)
             {
@@ -711,21 +738,23 @@ internal sealed class StorageBucketBackends
     }
 
     /// <summary>
-    /// Stores the state of a bucket in all the backends: its identity and its tombstone replace the other ones. The other
+    /// Stores the state of a bucket in all the backends (whose markers of the bucket are <paramref name="markers"/>, read by
+    /// <see cref="ReadMarkers"/> in the same lock): its identity and its tombstone replace the other ones. The other
     /// identities that the tombstone deletes (not greater than it) are added to <paramref name="deleted"/>; the storage of
     /// the other ones is kept.
     /// </summary>
-    private void Store(string name, BucketState state, List<string> deleted)
+    private void Store(List<StoredMarker>? markers, BucketState state, List<string> deleted)
     {
         var identity = state.Identity?.Value;
         var tombstone = state.Tombstone?.Value;
-        foreach (var store in _stores)
+        for (var i = 0; i < _stores.Length; i++)
         {
+            var store = _stores[i];
             var hasIdentity = false;
             var hasTombstone = false;
-            foreach (var value in store.GetMarkers())
+            foreach (var (storeIndex, value, marker) in markers ?? [])
             {
-                if (Marker.Parse(value) is not { } marker || marker.Name != name)
+                if (storeIndex != i)
                     continue;
 
                 if (value == identity)
@@ -760,6 +789,9 @@ internal sealed class StorageBucketBackends
     }
 
     private readonly record struct BucketState(Marker? Identity, Marker? Tombstone, long MaxOrder);
+
+    /// <summary>A marker read from a backend: the index of the backend, the stored value and the parsed marker.</summary>
+    private readonly record struct StoredMarker(int Store, string Value, Marker Marker);
 
     /// <summary>An identity of a bucket, or the tombstone of a deleted identity, stored in a backend.</summary>
     private readonly record struct Marker(string Name, long Order, Guid Guid, bool IsTombstone)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
@@ -349,6 +350,48 @@ public sealed class IndexedDBTests : IDisposable
     }
 
     [Fact]
+    public void StorageBuckets_TheIdentitiesOfABackendAreReadOncePerOperation()
+    {
+        var caches = new CountingCacheStorageBackend();
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = _loader, CacheStorage = caches });
+        context.Navigate("https://example.com/", _ => "");
+        _contexts.EventLoop.RunUntilIdle();
+        var window = context.Window;
+        var storageKey = new StorageKey("https://example.com", PartitionNonce: null);
+        var registry = context.StorageBuckets;
+        static string Name(int index) => "bucket-" + index.ToString("D3", CultureInfo.InvariantCulture);
+
+        // 200 buckets: 20 expired, 80 deleted (their tombstones stay in the backends) and 100 that exist
+        for (var i = 0; i < 200; i++)
+        {
+            registry.Open(window, context, storageKey, Name(i), new StorageBucketOptions { Expires = i < 20 ? 1 : null });
+        }
+
+        for (var i = 20; i < 100; i++)
+        {
+            registry.Delete(context, storageKey, Name(i));
+        }
+
+        caches.MarkerReads = 0;
+        var names = registry.Keys(window, context, storageKey);
+        Assert.Equal(100, names.Count);
+        Assert.Equal(1, caches.MarkerReads);
+
+        caches.MarkerReads = 0;
+        registry.Open(window, context, storageKey, Name(150), new StorageBucketOptions());
+        Assert.Equal(1, caches.MarkerReads);
+
+        caches.MarkerReads = 0;
+        registry.Delete(context, storageKey, Name(150));
+        Assert.Equal(1, caches.MarkerReads);
+
+        caches.MarkerReads = 0;
+        registry.DeleteAll(context, storageKey);
+        Assert.Equal(1, caches.MarkerReads);
+        Assert.Empty(registry.Keys(window, context, storageKey));
+    }
+
+    [Fact]
     public void StorageBuckets_TheBlockedRequestOfARemovedIframeIsCanceled()
     {
         var document = Load("""
@@ -546,5 +589,31 @@ public sealed class IndexedDBTests : IDisposable
         var document = Load("<script>try { indexedDB.open('db'); } catch (e) { document.title = e.name; }</script>", url: "data:text/html,");
 
         Assert.Equal("SecurityError", document.Title);
+    }
+
+    /// <summary>A cache storage backend that counts the reads of the identities of the storage buckets.</summary>
+    private sealed class CountingCacheStorageBackend : CacheStorageBackend
+    {
+        private readonly InMemoryCacheStorageBackend _storage = new();
+
+        public int MarkerReads { get; set; }
+
+        public override IReadOnlyList<string> GetCacheNames(string origin)
+        {
+            if (origin.StartsWith("storage-buckets ", StringComparison.Ordinal))
+            {
+                MarkerReads++;
+            }
+
+            return _storage.GetCacheNames(origin);
+        }
+
+        public override bool CreateCache(string origin, string name) => _storage.CreateCache(origin, name);
+
+        public override bool DeleteCache(string origin, string name) => _storage.DeleteCache(origin, name);
+
+        public override IReadOnlyList<CacheEntry> GetEntries(string origin, string name, string? urlWithoutQuery) => _storage.GetEntries(origin, name, urlWithoutQuery);
+
+        public override void ApplyBatch(string origin, string name, IReadOnlyList<long> removedEntryIds, IReadOnlyList<CacheEntry> addedEntries) => _storage.ApplyBatch(origin, name, removedEntryIds, addedEntries);
     }
 }

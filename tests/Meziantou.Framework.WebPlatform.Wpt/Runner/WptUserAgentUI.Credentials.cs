@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
@@ -35,11 +34,4 @@ internal sealed partial class WptUserAgentUI
         FederatedCredential federated => federated.Origin,
         _ => null,
     };
-
-    // The Credential Management API has no command
-    private static bool TryExecuteCredentialCommand(string command, JsonArray arguments, out string? result)
-    {
-        result = null;
-        return false;
-    }
 }

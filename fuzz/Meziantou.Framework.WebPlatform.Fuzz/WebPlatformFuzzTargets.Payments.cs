@@ -61,7 +61,7 @@ public static partial class WebPlatformFuzzTargets
 
             var reparsed = PaymentMethodManifest.Parse(Encoding.UTF8.GetBytes(json.ToJsonString()), PaymentMethodManifestUrl);
             FuzzAssert.True(reparsed is not null, $"The manifest {FuzzAssert.Format(json.ToJsonString())} written back from {FuzzAssert.Format(FuzzText.Decode(data))} is not valid");
-            FuzzAssert.Equal(string.Join('\n', manifest.DefaultApplications), string.Join('\n', reparsed!.DefaultApplications), "The default applications of the manifest written back");
+            FuzzAssert.Equal(string.Join('\n', manifest.DefaultApplications), string.Join('\n', reparsed.DefaultApplications), "The default applications of the manifest written back");
             FuzzAssert.Equal(string.Join('\n', manifest.SupportedOrigins), string.Join('\n', reparsed.SupportedOrigins), "The supported origins of the manifest written back");
         }
 

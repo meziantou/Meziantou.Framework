@@ -20,8 +20,8 @@ internal sealed partial class WptUserAgentUI : UserAgentUIBackend
     /// </summary>
     public string? Execute(string command, JsonArray arguments)
     {
-        if (TryExecuteCredentialCommand(command, arguments, out var result)
-            || TryExecutePaymentCommand(command, arguments, out result)
+        // The Credential Management API has no command
+        if (TryExecutePaymentCommand(command, arguments, out var result)
             || TryExecuteFedCmCommand(command, arguments, out result)
             || TryExecuteDigitalCredentialCommand(command, arguments, out result))
         {

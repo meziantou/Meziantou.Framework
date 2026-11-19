@@ -15,7 +15,7 @@ public sealed partial class PaymentRequest
     internal const string SecurePaymentConfirmationMethod = "secure-payment-confirmation";
 
     /// <summary>The validated data of the secure-payment-confirmation payment method, or null when the request does not use it.</summary>
-    private SecurePaymentConfirmationRequest? _securePaymentConfirmation;
+    private readonly SecurePaymentConfirmationRequest? _securePaymentConfirmation;
 
     /// <summary>The data after the steps to check if a payment can be made (the icons that cannot be fetched and the unavailable credentials are removed).</summary>
     private SecurePaymentConfirmationRequest? _checkedSecurePaymentConfirmation;

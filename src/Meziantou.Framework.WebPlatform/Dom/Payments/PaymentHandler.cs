@@ -356,6 +356,7 @@ public sealed class PaymentRequestEvent : ExtendableEvent
     /// </summary>
     /// <param name="url">The URL of the window.</param>
     /// <seealso href="https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-openwindow"/>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The user agent never fires the event: the operation is rejected whatever its arguments")]
     [IdlMember("openWindow", "https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-openwindow")]
     public Task<WindowClient?> OpenWindow(string url) => Task.FromException<WindowClient?>(NotHandlingAPaymentRequest());
 
@@ -367,6 +368,7 @@ public sealed class PaymentRequestEvent : ExtendableEvent
     /// <param name="methodName">The payment method.</param>
     /// <param name="methodDetails">The details of the payment method.</param>
     /// <seealso href="https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-changepaymentmethod"/>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The user agent never fires the event: the operation is rejected whatever its arguments")]
     [IdlMember("changePaymentMethod", "https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-changepaymentmethod")]
     public Task<PaymentRequestDetailsUpdate?> ChangePaymentMethod(string methodName, object? methodDetails = null) => Task.FromException<PaymentRequestDetailsUpdate?>(NotHandlingAPaymentRequest());
 
@@ -377,6 +379,7 @@ public sealed class PaymentRequestEvent : ExtendableEvent
     /// </summary>
     /// <param name="shippingAddress">The shipping address.</param>
     /// <seealso href="https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-changeshippingaddress"/>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The user agent never fires the event: the operation is rejected whatever its arguments")]
     [IdlMember("changeShippingAddress", "https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-changeshippingaddress")]
     public Task<PaymentRequestDetailsUpdate?> ChangeShippingAddress(AddressInit? shippingAddress = null) => Task.FromException<PaymentRequestDetailsUpdate?>(NotHandlingAPaymentRequest());
 
@@ -387,6 +390,7 @@ public sealed class PaymentRequestEvent : ExtendableEvent
     /// </summary>
     /// <param name="shippingOption">The identifier of the shipping option.</param>
     /// <seealso href="https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-changeshippingoption"/>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The user agent never fires the event: the operation is rejected whatever its arguments")]
     [IdlMember("changeShippingOption", "https://w3c.github.io/web-based-payment-handler/#dom-paymentrequestevent-changeshippingoption")]
     public Task<PaymentRequestDetailsUpdate?> ChangeShippingOption(string shippingOption) => Task.FromException<PaymentRequestDetailsUpdate?>(NotHandlingAPaymentRequest());
 

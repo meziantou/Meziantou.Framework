@@ -30,7 +30,7 @@ public static partial class JavaScriptEngineFuzzTargets
         "'use strict';", "import './a.js';", "import x from './a.js';", "import * as ns from './a.js';", "export * from './a.js';", "export { x } from './a.js';", "export default ", "export const x = 1;",
         "defer ", "import defer * as ns from './barrel.js';", "export defer { x } from './a.js';", "export defer * as ns from './b.js';", "import { x, y } as ns from './barrel.js';", "export { y } as ns from './b.js';",
         "import { x } from './barrel.js';", "import * as ns from './proxy.js';", "{ exports: ['x'] }",
-        "import { value, count, read, late } from './host.js';", "import * as host from './host.js';", "host.uninitialized", "export { count } from './host.js';",
+        "import { value, count, read, late } from './host.js';", "import * as host from './host.js';", "host.uninitialized", "export { count } from './host.js';", "import { value } from './host-missing.js';", "import './host-missing.js';",
     ];
 
     private static readonly string[] RegExpTokens =
@@ -684,11 +684,11 @@ public static partial class JavaScriptEngineFuzzTargets
         protected internal override void LoadImportedModule(JsModuleLoadRequest request)
         {
             var name = request.Specifier.StartsWith("./", StringComparison.Ordinal) ? request.Specifier[2..] : request.Specifier;
-            if (name == "host.js")
+            if (name is "host.js" or "host-missing.js")
             {
                 if (!_modules.TryGetValue(name, out var hostModule))
                 {
-                    hostModule = CreateHostModule(request.Realm);
+                    hostModule = name == "host.js" ? CreateHostModule(request.Realm) : CreateHostModuleWithAMissingImport(request.Realm);
                     _modules[name] = hostModule;
                 }
 
@@ -725,7 +725,14 @@ public static partial class JavaScriptEngineFuzzTargets
                 FuzzAssert.Equal(late.BindingName, "late", "The binding of an import is not the exported binding");
                 module.SetExport("late", late.TryGetValue(out var lateValue) ? lateValue : JsValue.Null);
                 module.SetExportGetter("count", () => ++count);
-            }, "host.js");
+            }, "host.js", importedNames: [new("./a.js", "x"), new("./host-user.js", "read"), new("./host-user.js", "late")]);
+        }
+
+        // A host-defined module that declares an import that its module does not export: linking its graph is a
+        // SyntaxError, so no module of the graph runs, and it is never evaluated
+        private static JsHostDefinedModule CreateHostModuleWithAMissingImport(JsRealm realm)
+        {
+            return realm.CreateHostDefinedModule(["./b.js"], ["value"], _ => FuzzAssert.Fail("A host-defined module whose import is missing was evaluated"), "host-missing.js", importedNames: [new("./b.js", "y"), new("./b.js", "missing")]);
         }
     }
 }

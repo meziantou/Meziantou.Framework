@@ -1064,6 +1064,15 @@ public sealed class InterpreterTests
                     return;
                 }
 
+                if (request.Specifier == "host-imports")
+                {
+                    // A host-defined module that declares the names it imports from host-imports-dep: they are validated when it is linked
+                    module = request.Realm.CreateHostDefinedModule(["host-imports-dep"], ["value"], m => m.SetExport("value", m.GetImport("host-imports-dep", "x").GetValue()), request.Specifier, importedNames: [new("host-imports-dep", "x"), new("host-imports-dep", "y")]);
+                    _modules[request.Specifier] = module;
+                    request.Complete(module);
+                    return;
+                }
+
                 if (!files.TryGetValue(request.Specifier, out var code))
                 {
                     request.Fail("Cannot find the module '" + request.Specifier + "'");
@@ -1391,6 +1400,51 @@ public sealed class InterpreterTests
         });
 
         Assert.Equal("False,x,True,SyntaxError: The requested module 'tdz-dep' does not provide an export named 'missing'", result);
+    }
+
+    [Fact]
+    public void Module_HostDefinedModule_ImportedNamesAreResolvedWhenItIsLinked()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import { value } from 'host-imports'; globalThis.result = value;",
+            ["host-imports-dep"] = "export const x = 'x'; export { x as y };",
+        });
+
+        Assert.Equal("x", result);
+    }
+
+    [Fact]
+    public void Module_HostDefinedModule_MissingImportedNameIsALinkSyntaxError()
+    {
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main"] = "import 'side-effect'; import 'host-imports';",
+            ["side-effect"] = "globalThis.sideEffect = true;",
+            ["host-imports-dep"] = "export const x = 1;",
+        };
+
+        var loader = new InMemoryModuleLoader(files);
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = loader });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule(files["main"], "main");
+        loader.Register("main", module);
+        var loading = module.LoadRequestedModules();
+        engine.RunJobs();
+        AssertFulfilled(loading);
+
+        var exception = Assert.Throws<JsException>(() => module.Link());
+        Assert.Equal("SyntaxError: The requested module 'host-imports-dep' does not provide an export named 'y'", exception.Message);
+        Assert.Equal(JsModuleStatus.Unlinked, module.Status);
+        Assert.Equal("undefined", realm.Execute("typeof sideEffect").AsString());
+    }
+
+    [Fact]
+    public void Module_HostDefinedModule_ImportedNameOfAModuleThatIsNotRequestedIsInvalid()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        Assert.Throws<ArgumentException>("importedNames", () => realm.CreateHostDefinedModule(["a"], [], _ => { }, importedNames: [new("b", "x")]));
     }
 
     [Fact]

@@ -38,7 +38,8 @@ public sealed class CounterModuleLoader(IReadOnlyDictionary<string, string> file
     {
         var count = 0.0;
 
-        // The modules it requests are evaluated before it: the evaluation steps read their exports
+        // The modules it requests are evaluated before it: the evaluation steps read their exports. The imported names
+        // are checked when the module graph is linked: a missing export is a SyntaxError, and no module runs
         return realm.CreateHostDefinedModule(["./config.js"], ["count", "increment"], module =>
         {
             var step = module.GetImport("./config.js", "step").GetValue().AsNumber();
@@ -48,7 +49,7 @@ public sealed class CounterModuleLoader(IReadOnlyDictionary<string, string> file
                 count += step;
                 return JsValue.Undefined;
             }));
-        }, "app:counter");
+        }, "app:counter", importedNames: [new("./config.js", "step")]);
     }
 }
 #endregion

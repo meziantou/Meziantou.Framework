@@ -232,12 +232,19 @@ public sealed partial class JsRealm
     /// <param name="evaluate">The evaluation steps of the module. A <see cref="JsException"/> is the error of the evaluation.</param>
     /// <param name="url">The URL of the module, used to resolve the specifiers by the module loader.</param>
     /// <param name="hostDefined">The data of the host associated with the module.</param>
-    public JsHostDefinedModule CreateHostDefinedModule(IEnumerable<string> requestedModules, IEnumerable<string> exportNames, Action<JsHostDefinedModule> evaluate, string? url = null, object? hostDefined = null)
+    /// <param name="importedNames">
+    /// The names that the module imports: the specifier of a module of <paramref name="requestedModules"/> (the key) and
+    /// the name of the export it imports (the value). They are validated when the module is linked, as the imports of a
+    /// JavaScript module: a name that the requested module does not export is a SyntaxError, and no module of the graph
+    /// is evaluated.
+    /// </param>
+    /// <exception cref="ArgumentException">A specifier of <paramref name="importedNames"/> is not in <paramref name="requestedModules"/>.</exception>
+    public JsHostDefinedModule CreateHostDefinedModule(IEnumerable<string> requestedModules, IEnumerable<string> exportNames, Action<JsHostDefinedModule> evaluate, string? url = null, object? hostDefined = null, IEnumerable<KeyValuePair<string, string>>? importedNames = null)
     {
         ArgumentNullException.ThrowIfNull(requestedModules);
         ArgumentNullException.ThrowIfNull(exportNames);
         ArgumentNullException.ThrowIfNull(evaluate);
-        return new JsHostDefinedModule(this, url, hostDefined, requestedModules, exportNames, evaluate);
+        return new JsHostDefinedModule(this, url, hostDefined, requestedModules, exportNames, importedNames, evaluate);
     }
 
     /// <summary>Evaluates code in this realm as an indirect <c>eval</c> and returns its completion value.</summary>

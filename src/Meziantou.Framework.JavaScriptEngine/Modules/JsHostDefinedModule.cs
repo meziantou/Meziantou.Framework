@@ -11,28 +11,39 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// exports are uninitialized bindings until the host sets them, when the module is evaluated.
 /// </summary>
 /// <remarks>
-/// The module is created by <see cref="JsRealm.CreateHostDefinedModule"/>. When it is evaluated, after the modules it
-/// requests, the evaluation steps read the values of its imports with <see cref="GetImport"/> and set its exports with
-/// <see cref="SetExport"/> or <see cref="SetExportGetter"/>. An export that is not set stays uninitialized: reading it
-/// throws a ReferenceError.
+/// The module is created by <see cref="JsRealm.CreateHostDefinedModule"/>. When it is linked, the names it declares to
+/// import must be exported by the modules it requests (a SyntaxError otherwise, before any module of the graph runs, as
+/// for a JavaScript module). When it is evaluated, after the modules it requests, the evaluation steps read the values of
+/// its imports with <see cref="GetImport"/> and set its exports with <see cref="SetExport"/> or
+/// <see cref="SetExportGetter"/>. An export that is not set stays uninitialized: reading it throws a ReferenceError.
 /// </remarks>
 public sealed class JsHostDefinedModule : JsCyclicModule
 {
     private readonly string[] _exportNames;
     private readonly string[] _requestedModules;
+    private readonly KeyValuePair<string, string>[] _importedNames;
     private readonly ScopeInfo _environmentInfo;
     private readonly Action<JsHostDefinedModule> _evaluationSteps;
 
-    internal JsHostDefinedModule(JsRealm realm, string? url, object? hostDefined, IEnumerable<string> requestedModules, IEnumerable<string> exportNames, Action<JsHostDefinedModule> evaluationSteps)
+    internal JsHostDefinedModule(JsRealm realm, string? url, object? hostDefined, IEnumerable<string> requestedModules, IEnumerable<string> exportNames, IEnumerable<KeyValuePair<string, string>>? importedNames, Action<JsHostDefinedModule> evaluationSteps)
         : base(realm, url, hostDefined)
     {
         _requestedModules = [.. requestedModules.Distinct(StringComparer.Ordinal)];
         _exportNames = [.. exportNames.Distinct(StringComparer.Ordinal)];
+        _importedNames = importedNames is null ? [] : [.. importedNames.Distinct()];
+        foreach (var (specifier, importName) in _importedNames)
+        {
+            ArgumentNullException.ThrowIfNull(specifier, nameof(importedNames));
+            ArgumentNullException.ThrowIfNull(importName, nameof(importedNames));
+            if (!_requestedModules.Contains(specifier, StringComparer.Ordinal))
+                throw new ArgumentException("The module does not request the module '" + specifier + "' of an imported name", nameof(importedNames));
+        }
+
         _environmentInfo = new ScopeInfo(ScopeKind.Module, [.. _exportNames], Enumerable.Repeat(ScopeSlotFlags.Immutable | ScopeSlotFlags.Uninitialized, _exportNames.Length).ToArray(), isVarScope: true);
         _evaluationSteps = evaluationSteps;
         foreach (var specifier in _requestedModules)
         {
-            // The names imported from the module are not known: all of them may be used
+            // The evaluation steps can read any name of the module: all of them may be used
             RequestedModules.Add(ModuleRequest.Create(specifier, [], ModulePhase.Evaluation, new ImportedNames(direct: null, [])));
         }
     }
@@ -42,6 +53,13 @@ public sealed class JsHostDefinedModule : JsCyclicModule
 
     /// <summary>Gets the specifiers of the modules the module imports, in order and without duplicates.</summary>
     public IReadOnlyList<string> RequestedModuleSpecifiers => _requestedModules;
+
+    /// <summary>
+    /// Gets the names that the module declares to import, validated when the module is linked: the specifier of a module of
+    /// <see cref="RequestedModuleSpecifiers"/> (the key) and the name of the export it imports (the value), in order and
+    /// without duplicates.
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, string>> ImportedNames => _importedNames;
 
     /// <summary>Initializes or sets the value of an export of the module. The module must be linked.</summary>
     /// <exception cref="ArgumentException">The module does not export <paramref name="name"/>.</exception>
@@ -78,16 +96,9 @@ public sealed class JsHostDefinedModule : JsCyclicModule
     {
         ArgumentNullException.ThrowIfNull(specifier);
         ArgumentNullException.ThrowIfNull(importName);
-        var request = RequestedModules.Find(r => string.Equals(r.Specifier, specifier, StringComparison.Ordinal))
-            ?? throw new ArgumentException("The module does not request the module '" + specifier + "'", nameof(specifier));
-
+        var request = FindRequest(specifier);
         using var scope = Realm.Engine.Enter();
-        var imported = GetImportedModule(request);
-        var resolution = imported.ResolveExport(importName, []);
-        if (resolution is null || resolution == ResolvedBinding.Ambiguous)
-            ThrowHelper.ThrowSyntaxError(ModuleOperations.GetResolutionError(importName, resolution, imported));
-
-        return new JsModuleBinding(resolution!);
+        return new JsModuleBinding(ResolveImport(request, importName));
     }
 
     /// <summary>Gets the module that the module imports with <paramref name="specifier"/>. The module must be loaded.</summary>
@@ -95,10 +106,22 @@ public sealed class JsHostDefinedModule : JsCyclicModule
     public JsModule GetRequestedModule(string specifier)
     {
         ArgumentNullException.ThrowIfNull(specifier);
-        var request = RequestedModules.Find(r => string.Equals(r.Specifier, specifier, StringComparison.Ordinal))
+        return GetImportedModule(FindRequest(specifier));
+    }
+
+    private ModuleRequest FindRequest(string specifier)
+        => RequestedModules.Find(r => string.Equals(r.Specifier, specifier, StringComparison.Ordinal))
             ?? throw new ArgumentException("The module does not request the module '" + specifier + "'", nameof(specifier));
 
-        return GetImportedModule(request);
+    /// <summary>ResolveExport of an imported name: a SyntaxError when the requested module does not export it, or exports it ambiguously.</summary>
+    private ResolvedBinding ResolveImport(ModuleRequest request, string importName)
+    {
+        var imported = GetImportedModule(request);
+        var resolution = imported.ResolveExport(importName, []);
+        if (resolution is null || resolution == ResolvedBinding.Ambiguous)
+            ThrowHelper.ThrowSyntaxError(ModuleOperations.GetResolutionError(importName, resolution, imported));
+
+        return resolution!;
     }
 
     private DeclarativeEnvironment GetEnvironment() => Environment ?? throw new InvalidOperationException("The module is not linked");
@@ -112,9 +135,19 @@ public sealed class JsHostDefinedModule : JsCyclicModule
         return slot;
     }
 
-    /// <summary>InitializeEnvironment(): the exports are uninitialized bindings.</summary>
+    /// <summary>
+    /// InitializeEnvironment(): the imported names must be resolvable, as the imports of a source text module (e.g. the
+    /// imports of a WebAssembly module, https://webassembly.github.io/esm-integration/js-api/index.html#module-execution
+    /// asserts that they were "validated during environment initialization"), so that no module of the graph runs when
+    /// one is missing. The exports are uninitialized bindings.
+    /// </summary>
     internal void InitializeEnvironment()
     {
+        foreach (var (specifier, importName) in _importedNames)
+        {
+            ResolveImport(FindRequest(specifier), importName);
+        }
+
         Environment = new DeclarativeEnvironment(_environmentInfo, Realm.GlobalEnvironment);
     }
 

@@ -333,7 +333,8 @@ public sealed class CounterModuleLoader(IReadOnlyDictionary<string, string> file
     {
         var count = 0.0;
 
-        // The modules it requests are evaluated before it: the evaluation steps read their exports
+        // The modules it requests are evaluated before it: the evaluation steps read their exports. The imported names
+        // are checked when the module graph is linked: a missing export is a SyntaxError, and no module runs
         return realm.CreateHostDefinedModule(["./config.js"], ["count", "increment"], module =>
         {
             var step = module.GetImport("./config.js", "step").GetValue().AsNumber();
@@ -343,7 +344,7 @@ public sealed class CounterModuleLoader(IReadOnlyDictionary<string, string> file
                 count += step;
                 return JsValue.Undefined;
             }));
-        }, "app:counter");
+        }, "app:counter", importedNames: [new("./config.js", "step")]);
     }
 }
 ```
@@ -380,6 +381,10 @@ using (engine.Enter())
 ```
 <!-- endref -->
 
+- The `importedNames` argument declares the names that the module imports, each with the specifier of its module. They
+  are checked when the module graph is linked, as the imports of a JavaScript module: a name that the requested module
+  does not export throws a `SyntaxError` from `Link`, before any module of the graph runs. Without them, a missing
+  export is only found by `GetImport`, during the evaluation, after the other modules of the graph ran.
 - The evaluation steps run when the module is evaluated, after the modules it requests (except in a cycle: a module
   that imports this one, directly or not, may be evaluated after it).
 - [GetImport](cref:Meziantou.Framework.JavaScriptEngine.JsHostDefinedModule.GetImport) resolves an export of a requested module, through its re-exports, and throws a `SyntaxError` when the

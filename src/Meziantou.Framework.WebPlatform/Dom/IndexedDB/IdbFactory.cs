@@ -176,11 +176,18 @@ public sealed class IdbFactory
         }
     }
 
+    /// <summary>
+    /// Tracks a pending open or delete request under the lifetime of the global object: the requests of every factory of the
+    /// global object (its own, and the ones of its storage buckets and of its storage access handles) are tracked by the
+    /// factory of the global object, which removes them when they complete and cancels them when the global object is
+    /// destroyed (<see cref="CloseConnections"/>).
+    /// </summary>
     private void Track(IndexedDBConnectionRequest request)
     {
-        lock (_lock)
+        var owner = Global.IndexedDB;
+        lock (owner._lock)
         {
-            _requests.Add(request);
+            owner._requests.Add(request);
         }
     }
 

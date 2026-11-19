@@ -144,6 +144,35 @@ public sealed class IndexedDBTests : IDisposable
     }
 
     [Fact]
+    public void StorageBuckets_TheBlockedRequestOfARemovedIframeIsCanceled()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const bucket = await navigator.storageBuckets.open('b');
+                const db = await new Promise(resolve => { const request = bucket.indexedDB.open('db', 1); request.onsuccess = () => resolve(request.result); });
+                const iframe = document.createElement('iframe');
+                window.onBlocked = () => setTimeout(() => {
+                  iframe.remove();
+                  db.close();
+                  const request = bucket.indexedDB.deleteDatabase('db');
+                  request.onsuccess = () => document.title = 'deleted';
+                  request.onerror = () => document.title = 'error';
+                }, 0);
+                iframe.srcdoc = `<script>(async () => {
+                  const request = (await navigator.storageBuckets.open('b')).indexedDB.open('db', 2);
+                  request.onblocked = () => parent.onBlocked();
+                })();<\/script>`;
+                document.body.appendChild(iframe);
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("deleted", document.Title);
+    }
+
+    [Fact]
     public void Key_AProxyOfAnArrayIsNotAValidKey()
     {
         var document = Load("""

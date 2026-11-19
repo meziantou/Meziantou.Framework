@@ -571,6 +571,9 @@
   "css/css-backgrounds/background-clip/clip-text-text-emphasis.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/background-clip/clip-text-transform.html": {
+    "reftest": "PASS"
+  },
   "css/css-backgrounds/background-clip_padding-box.html": {
     "reftest": "PASS"
   },

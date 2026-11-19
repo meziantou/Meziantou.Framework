@@ -1171,6 +1171,9 @@
   "css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-fonts/math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html": {
+    "reftest": "FAIL"
+  },
   "css/css-fonts/math-script-level-and-math-style/math-style-001.tentative.html": {
     "total": 3
   },

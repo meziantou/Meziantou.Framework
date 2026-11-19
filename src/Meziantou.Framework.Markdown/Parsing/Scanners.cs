@@ -34,13 +34,14 @@ internal static partial class Scanners
     [GeneratedRegex("^<[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*>", Options)]
     public static partial Regex EmailAutolinkRegex();
 
-    [GeneratedRegex("^<[A-Za-z][A-Za-z0-9.+-]{1,31}:[^<>\\x00-\\x20]*>", Options)]
+    // NUL is U+FFFD for CommonMark, which the patterns accept as any other character
+    [GeneratedRegex("^<[A-Za-z][A-Za-z0-9.+-]{1,31}:[^<>\\x01-\\x20]*>", Options)]
     public static partial Regex AutolinkRegex();
 
-    [GeneratedRegex("^(?:\"(?:\\\\[\\s\\S]|[^\\\\\"\\x00])*\"|'(?:\\\\[\\s\\S]|[^\\\\'\\x00])*'|\\((?:\\\\[\\s\\S]|[^\\\\()\\x00])*\\))", Options)]
+    [GeneratedRegex("^(?:\"(?:\\\\[\\s\\S]|[^\\\\\"])*\"|'(?:\\\\[\\s\\S]|[^\\\\'])*'|\\((?:\\\\[\\s\\S]|[^\\\\()])*\\))", Options)]
     public static partial Regex LinkTitleRegex();
 
-    [GeneratedRegex("^<(?:[^<>\\n\\\\\\x00]|\\\\.)*>", Options)]
+    [GeneratedRegex("^<(?:[^<>\\n\\\\]|\\\\.)*>", Options)]
     public static partial Regex LinkDestinationBracesRegex();
 
     // The start conditions of the HTML blocks, by type
@@ -151,29 +152,27 @@ internal static partial class Scanners
         return builder.ToString();
     }
 
+    // The key that matches the labels: the runs of whitespace are one space, and the text is case folded with the Unicode full
+    // case folding, as cmark does, so that [ﬀ] matches [FF] and [ẞ] matches [SS]
     public static string NormalizeLabel(string label)
     {
+        const string Whitespaces = " \t\r\n";
         var builder = new StringBuilder(label.Length);
-        var inWhitespace = false;
-        foreach (var c in label.AsSpan().Trim(" \t\r\n"))
+        var span = label.AsSpan().Trim(Whitespaces);
+        while (true)
         {
-            if (c is ' ' or '\t' or '\r' or '\n')
+            var index = span.IndexOfAny(Whitespaces);
+            if (index < 0)
             {
-                inWhitespace = true;
-                continue;
+                CaseFolding.AppendFolded(builder, span);
+                break;
             }
 
-            if (inWhitespace)
-            {
-                builder.Append(' ');
-                inWhitespace = false;
-            }
-
-            builder.Append(c);
+            CaseFolding.AppendFolded(builder, span[..index]);
+            builder.Append(' ');
+            span = span[index..].TrimStart(Whitespaces);
         }
 
-        // Case folding, as the reference implementation does with the uppercase of the lowercase. .NET maps a character to one
-        // character, so the ß that folds to ss is done here.
-        return builder.ToString().ToLowerInvariant().Replace("ß", "ss", StringComparison.Ordinal).ToUpperInvariant();
+        return builder.ToString();
     }
 }

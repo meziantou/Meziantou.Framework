@@ -1,6 +1,8 @@
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Meziantou.Framework.Markdown.Parsing;
@@ -39,6 +41,11 @@ internal sealed class InlineParser
     private byte[]? _attributesOutcomes;
     private int _attributesOutcomesStart;
     private long _abbreviationExpansion;
+
+    // The labels of the abbreviations, made again when a definition is added
+    private AbbreviationMatcher? _abbreviationMatcher;
+    private int _abbreviationMatcherLabelCount;
+    private string?[] _abbreviationLabels = [];
     private readonly bool _autolinks;
     private readonly MarkdownAutolinkOptions? _markdigAutolinks;
     private readonly MarkdownPipeTableOptions _pipeTableOptions;
@@ -54,6 +61,29 @@ internal sealed class InlineParser
     private int _pos;
     private int _end;
     private InlineNode _root = null!;
+
+    // The next terminator of the processing instructions, the comments, the CDATA sections and the declarations: see FindHtmlTerminator
+    private readonly HtmlTerminator[] _htmlTerminators = new HtmlTerminator[4];
+
+    // The last start of each length of backtick runs seen while looking for the end of a code span, and the end of the subject
+    // when a search reached it: an opener whose length has no run after it is text at once, as in cmark
+    private readonly Dictionary<int, int> _backtickRuns = [];
+    private int _backtickRunsScannedEnd = -1;
+
+    // The number of brackets of _brackets that are active
+    private int _activeBrackets;
+
+    // The number of delimiters of _delimiters by ASCII character
+    private readonly int[] _pendingDelimiters = new int[128];
+
+    // The last inline of the container that the search for a raw <a> read, and whether one was open there: see IsInRawHtmlAnchor
+    private InlineNode? _anchorScanNode;
+    private bool _anchorScanIsOpen;
+
+    // The last search for the end of the URL of a Markdig autolink that found unbalanced parentheses: see GetMarkdigUrlEnd
+    private MarkdigUrlScan _markdigUrlScan;
+    private readonly List<int> _markdigUrlDepths = [];
+    private readonly List<int> _markdigUrlLowerDepths = [];
 
     // The nodes of the inlines, reused from one leaf block to the next
     private readonly List<InlineNode> _nodes = [];
@@ -1021,6 +1051,13 @@ internal sealed class InlineParser
         _root = NewNode(SyntaxKind.Paragraph, _pos, _pos);
         _delimiters = null;
         _brackets = null;
+        _activeBrackets = 0;
+        Array.Clear(_pendingDelimiters);
+        _backtickRuns.Clear();
+        _backtickRunsScannedEnd = -1;
+        _anchorScanNode = null;
+        _anchorScanIsOpen = false;
+        _markdigUrlScan = default;
     }
 
     // Parses a link reference definition at the start of the subject. Returns where it ends, or -1 when there is none.
@@ -1386,58 +1423,12 @@ internal sealed class InlineParser
         var start = _pos;
 
         // Not in a link, or after an <a> that is not closed
-        for (var bracket = _brackets; bracket is not null; bracket = bracket.Previous)
+        if (_activeBrackets > 0 || IsInRawHtmlAnchor())
         {
-            if (bracket.Active)
-            {
-                return false;
-            }
+            return false;
         }
 
-        for (var previous = _root.LastChild; previous is not null; previous = previous.Previous)
-        {
-            if (previous.Kind == SyntaxKind.RawHtml)
-            {
-                var html = _text.AsSpan(previous.Start, previous.End - previous.Start);
-                if (html.StartsWith("</a", StringComparison.OrdinalIgnoreCase))
-                {
-                    break;
-                }
-
-                if (html.StartsWith("<a", StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-            }
-        }
-
-        var position = start;
-        var depth = 0;
-        var closing = -1;
-        while (true)
-        {
-            var c = position < _end ? _text[position] : '\0';
-            if (c == '(')
-            {
-                depth++;
-            }
-            else if (c == ')')
-            {
-                depth--;
-                if (depth < 0 && closing < 0)
-                {
-                    closing = position;
-                }
-            }
-            else if (IsMarkdigUrlEnd(position, c))
-            {
-                break;
-            }
-
-            position++;
-        }
-
-        var urlEnd = closing >= 0 ? closing : depth == 0 ? position : -1;
+        var urlEnd = GetMarkdigUrlEnd(start);
         if (urlEnd < 0)
         {
             return false;
@@ -1510,6 +1501,11 @@ internal sealed class InlineParser
 
         bool IsPendingDelimiter(char c)
         {
+            if (c < _pendingDelimiters.Length)
+            {
+                return _pendingDelimiters[c] > 0;
+            }
+
             for (var delimiter = _delimiters; delimiter is not null; delimiter = delimiter.Previous)
             {
                 if (delimiter.Character == c)
@@ -1520,6 +1516,125 @@ internal sealed class InlineParser
 
             return false;
         }
+    }
+
+    // Whether a raw <a> that is not closed is before the position, in the inlines of the container. The inlines read before are
+    // not read again: a node of the container can only move into a link, which needs an active bracket before it, and no
+    // autolink is read while one is open.
+    private bool IsInRawHtmlAnchor()
+    {
+        var stop = _anchorScanNode?.Parent == _root ? _anchorScanNode : null;
+        var isOpen = stop is not null && _anchorScanIsOpen;
+        for (var previous = _root.LastChild; previous is not null && previous != stop; previous = previous.Previous)
+        {
+            if (previous.Kind == SyntaxKind.RawHtml)
+            {
+                var html = _text.AsSpan(previous.Start, previous.End - previous.Start);
+                if (html.StartsWith("</a", StringComparison.OrdinalIgnoreCase))
+                {
+                    isOpen = false;
+                    break;
+                }
+
+                if (html.StartsWith("<a", StringComparison.OrdinalIgnoreCase))
+                {
+                    isOpen = true;
+                    break;
+                }
+            }
+        }
+
+        _anchorScanNode = _root.LastChild;
+        _anchorScanIsOpen = isOpen;
+        return isOpen;
+    }
+
+    // Where the URL of a Markdig autolink ends: at the first ) that closes no parenthesis, or at the end of the URL when its
+    // parentheses are balanced. Returns -1 when they are not. When they are not, the depths of the parentheses up to the end of
+    // the URL are kept, for the autolinks that start in it.
+    private int GetMarkdigUrlEnd(int start)
+    {
+        var scan = _markdigUrlScan;
+        if (ReferenceEquals(scan.Text, _text) && scan.TextEnd == _end && start > scan.Start && start < scan.End)
+        {
+            // The depth before the start is the one of the scan at start - 1: the first position whose depth is lower closes no
+            // parenthesis, else the parentheses are balanced when the depth at the end is the same
+            var index = start - 1 - scan.Start;
+            var closing = _markdigUrlLowerDepths[index];
+            if (closing >= 0)
+            {
+                return scan.Start + closing;
+            }
+
+            return _markdigUrlDepths[^1] == _markdigUrlDepths[index] ? scan.End : -1;
+        }
+
+        var position = start;
+        var depth = 0;
+        while (true)
+        {
+            var c = position < _end ? _text[position] : '\0';
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')')
+            {
+                depth--;
+                if (depth < 0)
+                {
+                    return position;
+                }
+            }
+            else if (IsMarkdigUrlEnd(position, c))
+            {
+                break;
+            }
+
+            position++;
+        }
+
+        if (depth == 0)
+        {
+            return position;
+        }
+
+        // The depth after each character, and the first character after it whose depth is lower
+        _markdigUrlDepths.Clear();
+        depth = 0;
+        for (var i = start; i < position; i++)
+        {
+            depth += _text[i] switch
+            {
+                '(' => 1,
+                ')' => -1,
+                _ => 0,
+            };
+            _markdigUrlDepths.Add(depth);
+        }
+
+        _markdigUrlLowerDepths.Clear();
+        CollectionsMarshal.SetCount(_markdigUrlLowerDepths, _markdigUrlDepths.Count);
+        var lowerDepths = CollectionsMarshal.AsSpan(_markdigUrlLowerDepths);
+        var depths = CollectionsMarshal.AsSpan(_markdigUrlDepths);
+        var pending = new Stack<int>();
+        for (var i = 0; i < depths.Length; i++)
+        {
+            while (pending.Count > 0 && depths[pending.Peek()] > depths[i])
+            {
+                lowerDepths[pending.Pop()] = i;
+            }
+
+            pending.Push(i);
+        }
+
+        foreach (var i in pending)
+        {
+            lowerDepths[i] = -1;
+        }
+
+        _markdigUrlScan = new MarkdigUrlScan(_text, _end, start, position);
+        return -1;
     }
 
     private bool IsMarkdigUrlEnd(int position, char c)
@@ -1717,8 +1832,18 @@ internal sealed class InlineParser
         var tickCount = _pos - start;
         var afterOpenTicks = _pos;
         var position = _pos;
-        while (position < _end)
+
+        // A search reached the end of the range: the last run of each length after it is known. The content of an extension has
+        // its own end, which can split a run, so it has its own state (see ParseExtensionContent).
+        var hasCloser = _end != _backtickRunsScannedEnd || (_backtickRuns.TryGetValue(tickCount, out var lastRun) && lastRun >= afterOpenTicks);
+        while (hasCloser)
         {
+            if (position >= _end)
+            {
+                _backtickRunsScannedEnd = _end;
+                break;
+            }
+
             if (_text[position] != '`')
             {
                 // As in Markdig, a code span does not continue on a line that starts with a pipe after a column delimiter of the
@@ -1738,6 +1863,8 @@ internal sealed class InlineParser
                 position++;
             }
 
+            ref var lastStart = ref CollectionsMarshal.GetValueRefOrAddDefault(_backtickRuns, position - runStart, out _);
+            lastStart = Math.Max(lastStart, runStart);
             if (position - runStart == tickCount)
             {
                 var code = NewNode(SyntaxKind.CodeSpan, start, position);
@@ -1776,7 +1903,7 @@ internal sealed class InlineParser
 
     private bool ParseHtmlTag()
     {
-        var length = Match(Scanners.HtmlTagRegex());
+        var length = CharAt(_pos + 1) is '!' or '?' ? GetHtmlTagLengthWithTerminator() : Match(Scanners.HtmlTagRegex());
         if (length == 0)
         {
             return false;
@@ -1787,6 +1914,45 @@ internal sealed class InlineParser
         _root.Append(html);
         _pos += length;
         return true;
+    }
+
+    // A comment, a processing instruction, a CDATA section or a declaration ends at the first terminator after its start: the
+    // regex would look for it up to the end of the subject at each opener. The position of the next terminator of each kind is
+    // remembered instead, as cmark does, so that the openers that have none are text at once.
+    private int GetHtmlTagLengthWithTerminator()
+    {
+        var text = _text.AsSpan(_pos, _end - _pos);
+        var (kind, terminator, searchStart) = text switch
+        {
+            ['<', '?', ..] => (0, "?>", 2),
+            ['<', '!', '-', '-', ..] => (1, "-->", 2),
+            ['<', '!', '[', 'C', 'D', 'A', 'T', 'A', '[', ..] => (2, "]]>", 9),
+            ['<', '!', var c, ..] when char.IsAsciiLetter(c) => (3, ">", 3),
+            _ => (-1, "", 0),
+        };
+
+        if (kind < 0)
+        {
+            return 0;
+        }
+
+        // <!--> and <!---> are comments: the terminator starts in the opener
+        var terminatorStart = FindHtmlTerminator(kind, terminator, _pos + searchStart);
+        return terminatorStart < 0 ? 0 : terminatorStart + terminator.Length - _pos;
+    }
+
+    // Where the first terminator at or after the position starts, before the end of the subject, or -1
+    private int FindHtmlTerminator(int kind, string terminator, int from)
+    {
+        ref var cache = ref _htmlTerminators[kind];
+        var isValid = ReferenceEquals(cache.Text, _text) && from >= cache.From && (cache.Position < 0 ? _end <= cache.End : cache.Position >= from);
+        if (!isValid)
+        {
+            var index = _text.AsSpan(from, _end - from).IndexOf(terminator, StringComparison.Ordinal);
+            cache = new HtmlTerminator(_text, from, _end, index < 0 ? -1 : from + index);
+        }
+
+        return cache.Position >= 0 && cache.Position + terminator.Length <= _end ? cache.Position : -1;
     }
 
     private bool ParseEntity()
@@ -1977,6 +2143,10 @@ internal sealed class InlineParser
             }
 
             _delimiters = delimiter;
+            if (c < _pendingDelimiters.Length)
+            {
+                _pendingDelimiters[c]++;
+            }
         }
     }
 
@@ -2048,6 +2218,21 @@ internal sealed class InlineParser
         var after = run[^1].End < _textEnd ? _text[run[^1].End] : '\0';
         var ranges = new List<(int Start, int End)>();
         var start = 0;
+
+        // The longest label at each position
+        if (_abbreviationMatcher is null || _abbreviationMatcherLabelCount != Abbreviations.Count)
+        {
+            _abbreviationMatcher = new AbbreviationMatcher(Abbreviations.Keys);
+            _abbreviationMatcherLabelCount = Abbreviations.Count;
+        }
+
+        if (_abbreviationLabels.Length < text.Length)
+        {
+            _abbreviationLabels = new string?[Math.Max(text.Length, _abbreviationLabels.Length * 2)];
+        }
+
+        var labels = _abbreviationLabels;
+        _abbreviationMatcher.FindLongestLabels(text, labels.AsSpan(0, text.Length));
         for (var i = 0; i < text.Length; i++)
         {
             // An abbreviation starts at the start of the literal or after whitespace
@@ -2067,11 +2252,14 @@ internal sealed class InlineParser
                 i = whitespace + 1;
             }
 
-            var (length, titleLength) = MatchLongestAbbreviation(text, i);
-            if (length == 0 || !IsValidAbbreviationEnding(text, i + length, after))
+            var label = labels[i];
+            if (label is null || !IsValidAbbreviationEnding(text, i + label.Length, after))
             {
                 continue;
             }
+
+            var length = label.Length;
+            var titleLength = Abbreviations[label];
 
             // Each abbreviation writes its title
             if (_abbreviationExpansion + titleLength > MaximumAbbreviationExpansion)
@@ -2099,20 +2287,6 @@ internal sealed class InlineParser
         }
 
         return true;
-    }
-
-    private (int Length, int TitleLength) MatchLongestAbbreviation(string text, int start)
-    {
-        (int Length, int TitleLength) longest = default;
-        foreach (var (label, titleLength) in Abbreviations)
-        {
-            if (label.Length > longest.Length && text.AsSpan(start).StartsWith(label, StringComparison.Ordinal))
-            {
-                longest = (label.Length, titleLength);
-            }
-        }
-
-        return longest;
     }
 
     // After the abbreviation, ASCII punctuation up to whitespace, the end of the text, or the character after the literal
@@ -2251,6 +2425,10 @@ internal sealed class InlineParser
         var root = _root;
         var previousEnd = _end;
         var brackets = _brackets;
+        var activeBrackets = _activeBrackets;
+        var backtickRunsScannedEnd = _backtickRunsScannedEnd;
+        var anchorScanNode = _anchorScanNode;
+        var anchorScanIsOpen = _anchorScanIsOpen;
         var stackBottom = _delimiters;
         var scanningPipeTable = _scanningPipeTable;
         var pipeTableCell = _pipeTableCell;
@@ -2258,6 +2436,13 @@ internal sealed class InlineParser
         _pos = start;
         _end = end;
         _brackets = null;
+        _activeBrackets = 0;
+
+        // The runs that the outer searches recorded are kept: they only make a search run, which reads the runs as the content
+        // ends them
+        _backtickRunsScannedEnd = -1;
+        _anchorScanNode = null;
+        _anchorScanIsOpen = false;
         _scanningPipeTable = false;
         _pipeTableCell = false;
         _extensionDepth++;
@@ -2276,6 +2461,10 @@ internal sealed class InlineParser
             _root = root;
             _end = previousEnd;
             _brackets = brackets;
+            _activeBrackets = activeBrackets;
+            _backtickRunsScannedEnd = backtickRunsScannedEnd;
+            _anchorScanNode = anchorScanNode;
+            _anchorScanIsOpen = anchorScanIsOpen;
             _scanningPipeTable = scanningPipeTable;
             _pipeTableCell = pipeTableCell;
         }
@@ -2888,6 +3077,7 @@ internal sealed class InlineParser
         }
 
         _brackets = new Bracket(node, _brackets, _delimiters, _pos, image);
+        _activeBrackets++;
     }
 
     private void ParseCloseBracket()
@@ -2985,7 +3175,7 @@ internal sealed class InlineParser
 
             // A label of a footnote makes a reference to the footnote, as in Markdig, an image included
             var normalized = label is null ? null : Scanners.NormalizeLabel(label);
-            if (normalized is not null && (_references.ContainsKey(normalized) || (footnote = Footnotes.Contains(normalized)) || (HeadingLabels.Contains(normalized) && !HasActiveBracket(opener.Previous))))
+            if (normalized is not null && (_references.ContainsKey(normalized) || (footnote = Footnotes.Contains(normalized)) || (HeadingLabels.Contains(normalized) && !HasActiveBracketBelow(opener))))
             {
                 matched = true;
                 if (labelLength >= 2)
@@ -3038,14 +3228,20 @@ internal sealed class InlineParser
             link.Append(node);
         }
 
-        // There are no links in links
+        // There are no links in links. A link deactivated the brackets below an inactive one already, as in cmark.
         if (!opener.Image)
         {
             for (var bracket = _brackets; bracket is not null; bracket = bracket.Previous)
             {
                 if (!bracket.Image)
                 {
+                    if (!bracket.Active)
+                    {
+                        break;
+                    }
+
                     bracket.Active = false;
+                    _activeBrackets--;
                 }
             }
         }
@@ -3062,20 +3258,21 @@ internal sealed class InlineParser
         }
     }
 
-    private void RemoveBracket() => _brackets = _brackets?.Previous;
-
-    // As in Markdig, a heading is not linked to inside a bracket that can still be a link or an image, as in [text [Heading]](url)
-    private static bool HasActiveBracket(Bracket? bracket)
+    private void RemoveBracket()
     {
-        for (; bracket is not null; bracket = bracket.Previous)
+        if (_brackets is { Active: true })
         {
-            if (bracket.Active)
-            {
-                return true;
-            }
+            _activeBrackets--;
         }
 
-        return false;
+        _brackets = _brackets?.Previous;
+    }
+
+    // As in Markdig, a heading is not linked to inside a bracket that can still be a link or an image, as in [text [Heading]](url)
+    private bool HasActiveBracketBelow(Bracket opener)
+    {
+        Debug.Assert(opener == _brackets);
+        return _activeBrackets > (opener.Active ? 1 : 0);
     }
 
     // Optional spaces or tabs, including up to one line ending
@@ -3139,7 +3336,8 @@ internal sealed class InlineParser
                 _pos++;
                 openParentheses--;
             }
-            else if (c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r' || c < ' ' || c == '\x7f')
+            // NUL is U+FFFD for CommonMark: it is not a control character
+            else if (c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r' || (c < ' ' && c != '\0') || c == '\x7f')
             {
                 break;
             }
@@ -3733,7 +3931,9 @@ internal sealed class InlineParser
     }
 
     // The email addresses of a text, as cmark-gfm finds them: letters, digits, ., +, - and _ before an @, and segments of letters,
-    // digits, - and _ separated by dots after it, which end with a letter
+    // digits, - and _ separated by dots after it, which end with a letter. The address can start with mailto: or xmpp:, which
+    // are not after a letter or a digit, and an xmpp: address can have a resource after a /. The link starts at the scheme:
+    // cmark-gfm reads on before it, so that .mailto:a@b.c would link to .mailto:a@b.c.
     private static List<(int Start, int End)> FindEmailAddresses(string text)
     {
         var result = new List<(int Start, int End)>();
@@ -3742,9 +3942,29 @@ internal sealed class InlineParser
         while (at >= 0)
         {
             var start = at;
-            while (start > lower && (char.IsAsciiLetterOrDigit(text[start - 1]) || text[start - 1] is '.' or '+' or '-' or '_'))
+            var isXmpp = false;
+            while (start > lower)
             {
-                start--;
+                var c = text[start - 1];
+                if (char.IsAsciiLetterOrDigit(c) || c is '.' or '+' or '-' or '_')
+                {
+                    start--;
+                }
+                else if (c == ':' && IsScheme(text, lower, start, "mailto:"))
+                {
+                    start -= "mailto:".Length;
+                    break;
+                }
+                else if (c == ':' && IsScheme(text, lower, start, "xmpp:"))
+                {
+                    isXmpp = true;
+                    start -= "xmpp:".Length;
+                    break;
+                }
+                else
+                {
+                    break;
+                }
             }
 
             if (start == at)
@@ -3775,7 +3995,7 @@ internal sealed class InlineParser
                 {
                     dots++;
                 }
-                else if (c is not ('-' or '_'))
+                else if (c is not ('-' or '_') && !(c == '/' && isXmpp))
                 {
                     break;
                 }
@@ -3811,10 +4031,25 @@ internal sealed class InlineParser
         }
 
         return result;
+
+        // The scheme ends at the colon before the position, and is at the lower bound or after a character that is not a letter
+        // or a digit
+        static bool IsScheme(string text, int lower, int position, string scheme)
+        {
+            var schemeStart = position - scheme.Length;
+            return schemeStart >= lower
+                && text.AsSpan(schemeStart, scheme.Length).SequenceEqual(scheme)
+                && (schemeStart == lower || !char.IsAsciiLetterOrDigit(text[schemeStart - 1]));
+        }
     }
 
     private void RemoveDelimiter(Delimiter delimiter)
     {
+        if (delimiter.Character < _pendingDelimiters.Length)
+        {
+            _pendingDelimiters[delimiter.Character]--;
+        }
+
         if (delimiter.Previous is not null)
         {
             delimiter.Previous.Next = delimiter.Next;
@@ -3998,6 +4233,20 @@ internal sealed class InlineParser
 
         public Delimiter? Next { get; set; }
     }
+
+    /// <param name="Text">The text that was searched.</param>
+    /// <param name="From">Where the search started.</param>
+    /// <param name="End">Where the search ended.</param>
+    /// <param name="Position">Where the first terminator after <paramref name="From"/> starts, or -1 when there is none before <paramref name="End"/>.</param>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct HtmlTerminator(string? Text, int From, int End, int Position);
+
+    /// <param name="Text">The text that was searched.</param>
+    /// <param name="TextEnd">The end of the subject.</param>
+    /// <param name="Start">Where the URL starts.</param>
+    /// <param name="End">Where the URL ends.</param>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct MarkdigUrlScan(string? Text, int TextEnd, int Start, int End);
 
     private sealed class Bracket(InlineNode node, Bracket? previous, Delimiter? previousDelimiter, int index, bool image)
     {

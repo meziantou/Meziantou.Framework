@@ -20,12 +20,13 @@ public static class MarkdownFuzzTargets
         "\n", "\r\n", "\r", "\t", "    ", " ", "  \n", "\\\n", "> ", ">", "- ", "* ", "+ ", "1. ", "2) ", "#", "# ", "###### ", "=", "---", "***", "___",
         "```", "~~~", "`", "``", "*", "**", "_", "__", "[", "]", "](", ")", "![", "[a]: /url", "\"title\"", "'t'", "(t)", "<", ">", "<a>", "</a>", "<!-- -->",
         "<?x?>", "<!X>", "<![CDATA[x]]>", "<div>", "<script>", "</script>", "<http://a.b>", "<a@b.c>", "&amp;", "&#35;", "&#x22;", "&nbsp;", "\\*", "\\[", "\u00A0",
+        "\u1E9E", "\uFB00", "\U00010400",
     ];
 
     private static readonly string[] GfmTokens =
     [
         .. Tokens, "|", "| ", " |", "\\|", "| --- |", "|:-|", ":-:", "-:", "~", "~~", "~~~", "[ ] ", "[x] ", "[X] ", "www.", "www.a.b", "http://", "https://a.b",
-        "ftp://", "@", "a@b.c", ".", "_", "(", "&hl;", "<title>", "</style>", "<xmp/>", "<scripT", "\v", "\f",
+        "ftp://", "@", "a@b.c", ".", "_", "(", "&hl;", "<title>", "</style>", "<xmp/>", "<scripT", "\v", "\f", "mailto:", "xmpp:", "/",
     ];
 
     private static readonly string[] ExtensionTokens =
@@ -82,6 +83,8 @@ public static class MarkdownFuzzTargets
         SyntaxExtensions = [new MentionExtension(), new SpanExtension(), new WikiLinkExtension(), new MarkdownDelimiterExtension("highlight", '%'), new MentionExtension("section", "\u00A7"), new MentionExtension("tag", "T"), new FenceExtension("pilcrow", "\u00B6\u00B6\u00B6", MarkdownFencedBlockContent.Blocks)],
     };
 
+    private static readonly string[] AbbreviationMatcherTokens = ["\n", "\n\n", " ", "A", "B", "AB", "A B", "ABA", "\u00E9", "\U0001F600"];
+
     // With AllowedUrlSchemes, the HTML is the one without it, where the href and the src of each tag whose URL has a scheme that
     // is not allowed are empty: a URL with such a scheme never comes out, and the other URLs are kept. The scheme is read as a
     // browser reads it, independently of the renderer. Raw HTML is disabled: the filter does not apply to it.
@@ -103,6 +106,32 @@ public static class MarkdownFuzzTargets
         new("markdown-escaper", Escape) { Seeds = GetEscaperSeeds, Dictionary = EscaperTokens },
         new("markdown-formatter", Format) { Seeds = GetFormatterSeeds, Dictionary = FormatterTokens },
         new("markdown-syntax-extensions", ParseWithSyntaxExtensions) { Seeds = GetSyntaxExtensionSeeds, Dictionary = SyntaxExtensionTokens },
+        new("markdown-abbreviation-matcher", MatchAbbreviations) { Seeds = GetAbbreviationMatcherSeeds, Dictionary = AbbreviationMatcherTokens },
+    ];
+
+    // The labels, one by line, then an empty line and the text: the matcher finds the longest label that starts at each
+    // position of the text, as a search of every label there does
+    private static void MatchAbbreviations(ReadOnlySpan<byte> data)
+    {
+        var input = FuzzText.Decode(data);
+        var separator = input.IndexOf("\n\n", StringComparison.Ordinal);
+        var labels = (separator < 0 ? "" : input[..separator]).Split('\n').Where(label => label.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
+        var text = separator < 0 ? input : input[(separator + 2)..];
+
+        var found = new string?[text.Length];
+        new Parsing.AbbreviationMatcher(labels).FindLongestLabels(text, found);
+        for (var i = 0; i < text.Length; i++)
+        {
+            var expected = labels.Where(label => text.AsSpan(i).StartsWith(label, StringComparison.Ordinal)).MaxBy(label => label.Length);
+            FuzzAssert.True(found[i] == expected, $"The longest label at {i} is {FuzzAssert.Format(expected ?? "none")}, not {FuzzAssert.Format(found[i] ?? "none")}: {FuzzAssert.Format(input)}");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetAbbreviationMatcherSeeds() =>
+    [
+        FuzzSeed.FromText("abbreviation-matcher-overlapping", "A\nA B\nB\nAB\n\nA B A BB B AB A, AB.\n"),
+        FuzzSeed.FromText("abbreviation-matcher-suffixes", "ABA\nBA\nA\nBAB\n\nABABABA BAB\n"),
+        FuzzSeed.FromText("abbreviation-matcher-no-labels", "\n\nA B\n"),
     ];
 
     private static readonly MarkdownParseOptions[] FormatterParseOptions = [MarkdownParseOptions.Default, MarkdownParseOptions.GitHubFlavored, AllExtensions, AllExtensionsWithPipeTableOptions, AllExtensionsWithoutHtml];
@@ -722,11 +751,24 @@ public static class MarkdownFuzzTargets
         }
     }
 
-    // The examples of the CommonMark specification
-    private static IEnumerable<FuzzSeed> GetSeeds() => GetSeeds("markdown.CommonMark.md", "commonmark");
+    // The examples of the CommonMark specification, labels matched with the full case folding, NUL in links, and the
+    // pathological inputs of cmark
+    private static IEnumerable<FuzzSeed> GetSeeds() => GetSeeds("markdown.CommonMark.md", "commonmark").Concat(
+    [
+        FuzzSeed.FromText("label-case-folding", "[\uFB00] [\u1E9E][Stra\u00DFe]\n\n[FF]: /a\n[SS]: /b\n[STRASSE]: /c\n"),
+        FuzzSeed.FromText("label-case-folding-supplementary", "[x][\U00010400 a]\n\n[\U00010428\n  A]: /u\n"),
+        FuzzSeed.FromText("nul-in-links", "[a](\0) [b](<\0>) [c](u \"\0\") <http://a\0b> [d]\n\n[d]: \0\n"),
+        FuzzSeed.FromText("pathological-unclosed-html", string.Concat(Enumerable.Repeat("a <!-- <? <![CDATA[ <!A ", 50)) + "-->\n"),
+        FuzzSeed.FromText("pathological-brackets", new string('[', 50) + string.Concat(Enumerable.Repeat("[a](b) ", 50)) + "\n"),
+        FuzzSeed.FromText("pathological-backticks", string.Concat(Enumerable.Range(1, 30).Select(length => "e" + new string('`', length))) + "\n"),
+    ]);
 
-    // The examples of the CommonMark specification and of the extensions of GitHub Flavored Markdown
-    private static IEnumerable<FuzzSeed> GetGfmSeeds() => GetSeeds("markdown.CommonMark.md", "commonmark").Concat(GetSeeds("markdown.GfmExtensions.md", "gfm"));
+    // The examples of the CommonMark specification and of the extensions of GitHub Flavored Markdown, and the email
+    // addresses with a scheme
+    private static IEnumerable<FuzzSeed> GetGfmSeeds() => GetSeeds("markdown.CommonMark.md", "commonmark").Concat(GetSeeds("markdown.GfmExtensions.md", "gfm")).Concat(
+    [
+        FuzzSeed.FromText("gfm-email-schemes", "mailto:a@b.c/mailto:d@e.f. mmmailto:g@h.i xmpp:j@k.l/m/n. at:o@p.q\n"),
+    ]);
 
     // The examples of the GFM extensions and of the extensions of the 1.x library
     // The inputs of the unit tests of the content of the grid table cells: footnotes, headings, front matter and alerts
@@ -755,7 +797,12 @@ public static class MarkdownFuzzTargets
             seeds = seeds.Concat(GetSeeds(name, name["markdown.extensions.".Length..^".md".Length]));
         }
 
-        return seeds;
+        // The pathological inputs of the autolinks of Markdig and of the abbreviations
+        return seeds.Concat(
+        [
+            FuzzSeed.FromText("pathological-markdig-autolinks", string.Concat(Enumerable.Repeat("(www.a <a> http://a.b~ ", 50)) + "\n"),
+            FuzzSeed.FromText("pathological-abbreviations", string.Concat(Enumerable.Range(0, 50).Select(i => $"*[A{i}]: x\n")) + "\n" + string.Concat(Enumerable.Repeat("A A1 A12 ", 50)) + "\n"),
+        ]);
     }
 
     private static IEnumerable<FuzzSeed> GetSeeds(string resourceName, string prefix)

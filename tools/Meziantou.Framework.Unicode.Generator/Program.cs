@@ -82,10 +82,16 @@ if (frameworkUpdated)
 var asciiDecompositionFilePath = root / "src" / "Meziantou.Framework.Markdown" / "Parsing" / "CharNormalizer.g.cs";
 var asciiDecompositionExisted = File.Exists(asciiDecompositionFilePath);
 var markdownUpdated = await AsciiDecompositionWriter.WriteAsync(asciiDecompositionFilePath);
-if (markdownUpdated && asciiDecompositionExisted)
+// The labels of the links are matched with the full case folding: the table belongs to Meziantou.Framework.Markdown too
+var caseFoldingFilePath = root / "src" / "Meziantou.Framework.Markdown" / "Parsing" / "CaseFolding.g.cs";
+var caseFoldingExisted = File.Exists(caseFoldingFilePath);
+var caseFoldingUpdated = await CaseFoldingWriter.WriteAsync(caseFoldingFilePath);
+if ((markdownUpdated && asciiDecompositionExisted) || (caseFoldingUpdated && caseFoldingExisted))
 {
     await IncrementPatchVersion(markdownCsprojPath);
 }
+
+markdownUpdated |= caseFoldingUpdated;
 
 // The conformance files only change the tests: they are reported as an update, but they do not change the version
 // of the package.

@@ -73,8 +73,12 @@ Where GitHub Flavored Markdown defines a construct, 2.0 writes the HTML of its s
 - A line of whitespace ends an HTML block of type 6 or 7.
 - A hard line break in a setext heading is written as `<br />`.
 - `> a` followed by `>-` is a setext heading.
-- The labels of the links are compared as CommonMark says, with case folding and whitespace only: `[Itém]` does not
-  match `[Item]`. This also applies to the links to headings of the auto-identifiers.
+- The labels of the links are compared as CommonMark says, with the Unicode full case folding and whitespace only:
+  `[ﬀ]` matches `[FF]`, but `[Itém]` does not match `[Item]`. This also applies to the links to headings of the
+  auto-identifiers.
+- The identifiers made as GitHub makes them keep the combining marks and the letters outside the Basic Multilingual
+  Plane, as GitHub does: `# हिन्दी` has the identifier `हिन्दी`, not `हनद`.
+- A GFM extended email autolink can start with `mailto:` or `xmpp:`, which is part of the link.
 - In URLs, `~` and `'` are kept, the hosts that are not ASCII are percent-encoded instead of converted to punycode,
   and a `%` that is not followed by two hexadecimal digits is encoded as `%25`.
 - The text of an image whose description ends with a line ending keeps it.

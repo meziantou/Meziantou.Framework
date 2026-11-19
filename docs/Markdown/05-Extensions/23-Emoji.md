@@ -33,4 +33,5 @@ shortcodes, so that `:)` stays as it is, and a mapping can be made from dictiona
 [Shortcodes](cref:Meziantou.Framework.Markdown.MarkdownEmojiMapping.Shortcodes) and
 [Smileys](cref:Meziantou.Framework.Markdown.MarkdownEmojiMapping.Smileys) give the dictionaries of a mapping, to make
 another one from it: the default shortcodes with a few of its smileys, so that arrows such as `->` stay as they are in
-text about code.
+text about code. A shortcode or a smiley cannot contain a line ending: the constructor throws an `ArgumentException`,
+because a key that spans lines would match across the markers of the containers, such as the `>` of a block quote.

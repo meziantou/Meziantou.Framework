@@ -84,23 +84,33 @@ internal static class HeadingIdentifier
         ? CreateAsGitHub(text)
         : Create(text, options.HasFlag(MarkdownAutoIdentifierOptions.AllowOnlyAscii));
 
-    // Following https://github.com/jch/html-pipeline/blob/master/lib/html/pipeline/toc_filter.rb
+    // Following https://github.com/jch/html-pipeline/blob/master/lib/html/pipeline/toc_filter.rb, which keeps the word characters
+    // of Ruby (letters, marks, decimal and letter numbers, connector punctuation), the hyphens and the spaces, as github-slugger
+    // does. The characters are code points, so that a letter outside the BMP is kept, and a lone surrogate is removed.
     private static string CreateAsGitHub(string text)
     {
         var builder = new StringBuilder(text.Length);
-        foreach (var c in text)
+        Span<char> buffer = stackalloc char[2];
+        foreach (var rune in text.EnumerateRunes())
         {
-            if (char.IsLetterOrDigit(c) || c is '-' or '_')
-            {
-                builder.Append(char.ToLowerInvariant(c));
-            }
-            else if (c == ' ')
+            if (rune.Value == ' ')
             {
                 builder.Append('-');
+            }
+            else if (rune.Value == '-' || IsWordCharacter(rune))
+            {
+                var length = Rune.ToLowerInvariant(rune).EncodeToUtf16(buffer);
+                builder.Append(buffer[..length]);
             }
         }
 
         return builder.ToString();
+
+        // EnumerateRunes reads a lone surrogate as U+FFFD, which is a symbol
+        static bool IsWordCharacter(Rune rune) => Rune.GetUnicodeCategory(rune) is UnicodeCategory.UppercaseLetter or UnicodeCategory.LowercaseLetter or UnicodeCategory.TitlecaseLetter or UnicodeCategory.ModifierLetter or UnicodeCategory.OtherLetter
+            or UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark
+            or UnicodeCategory.DecimalDigitNumber or UnicodeCategory.LetterNumber
+            or UnicodeCategory.ConnectorPunctuation;
     }
 
     // The identifier starts at the first letter, keeps the letters and the digits, and writes a run of whitespace as a hyphen. The

@@ -28,7 +28,7 @@ public sealed class MarkdownEmojiMapping
     /// <param name="shortcodes">The emoji of the shortcodes, such as <c>:smile:</c>.</param>
     /// <param name="smileys">The shortcode of the smileys, such as <c>:)</c>, which must be a shortcode of <paramref name="shortcodes"/>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="shortcodes"/> or <paramref name="smileys"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentException">A key or a value is empty, a smiley is not for a shortcode, or a smiley is a shortcode.</exception>
+    /// <exception cref="ArgumentException">A key or a value is empty, a key contains a line ending, a smiley is not for a shortcode, or a smiley is a shortcode.</exception>
     public MarkdownEmojiMapping(IReadOnlyDictionary<string, string> shortcodes, IReadOnlyDictionary<string, string> smileys)
     {
         ArgumentNullException.ThrowIfNull(shortcodes);
@@ -41,6 +41,12 @@ public sealed class MarkdownEmojiMapping
                 throw new ArgumentException("The shortcodes and their emoji cannot be empty.", nameof(shortcodes));
             }
 
+            // The inlines of a block span its lines without the markers of its containers, which a key would match across
+            if (shortcode.AsSpan().ContainsAny('\r', '\n'))
+            {
+                throw new ArgumentException($"The shortcode '{shortcode}' contains a line ending.", nameof(shortcodes));
+            }
+
             _shortcodes[shortcode] = emoji;
             _emojis[shortcode] = emoji;
         }
@@ -50,6 +56,11 @@ public sealed class MarkdownEmojiMapping
             if (string.IsNullOrEmpty(smiley) || string.IsNullOrEmpty(shortcode))
             {
                 throw new ArgumentException("The smileys and their shortcodes cannot be empty.", nameof(smileys));
+            }
+
+            if (smiley.AsSpan().ContainsAny('\r', '\n'))
+            {
+                throw new ArgumentException($"The smiley '{smiley}' contains a line ending.", nameof(smileys));
             }
 
             if (!shortcodes.TryGetValue(shortcode, out var emoji))

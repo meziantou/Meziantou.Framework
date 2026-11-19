@@ -30,6 +30,7 @@ public static partial class JavaScriptEngineFuzzTargets
         "'use strict';", "import './a.js';", "import x from './a.js';", "import * as ns from './a.js';", "export * from './a.js';", "export { x } from './a.js';", "export default ", "export const x = 1;",
         "defer ", "import defer * as ns from './barrel.js';", "export defer { x } from './a.js';", "export defer * as ns from './b.js';", "import { x, y } as ns from './barrel.js';", "export { y } as ns from './b.js';",
         "import { x } from './barrel.js';", "import * as ns from './proxy.js';", "{ exports: ['x'] }",
+        "import { value, count, read, late } from './host.js';", "import * as host from './host.js';", "host.uninitialized", "export { count } from './host.js';",
     ];
 
     private static readonly string[] RegExpTokens =
@@ -59,6 +60,9 @@ public static partial class JavaScriptEngineFuzzTargets
         ["b.js"] = "export let y = 2; export function g() { return y; }",
         ["barrel.js"] = "export defer { x } from './a.js'; export defer { y as z } from './b.js'; export defer * as all from './b.js'; export defer { g } as some from './b.js'; export { x as eager } from './a.js'; export { y } as filtered from './b.js';",
         ["proxy.js"] = "export * from './barrel.js'; export defer { x as again } from './barrel.js';",
+
+        // Imports host.js (a host-defined module, see DictionaryModuleLoader), which imports it back: a cycle
+        ["host-user.js"] = "import { value } from './host.js'; export function read() { return value; } export let late = 3;",
         ["json.json"] = "{\"a\":[1,2,3]}",
     };
 
@@ -680,6 +684,18 @@ public static partial class JavaScriptEngineFuzzTargets
         protected internal override void LoadImportedModule(JsModuleLoadRequest request)
         {
             var name = request.Specifier.StartsWith("./", StringComparison.Ordinal) ? request.Specifier[2..] : request.Specifier;
+            if (name == "host.js")
+            {
+                if (!_modules.TryGetValue(name, out var hostModule))
+                {
+                    hostModule = CreateHostModule(request.Realm);
+                    _modules[name] = hostModule;
+                }
+
+                request.Complete(hostModule);
+                return;
+            }
+
             if (!ModuleSources.TryGetValue(name, out var source))
             {
                 request.Fail("Cannot find the module '" + request.Specifier + "'");
@@ -693,6 +709,23 @@ public static partial class JavaScriptEngineFuzzTargets
             }
 
             request.Complete(module);
+        }
+
+        // A host-defined cyclic module: it reads the exports of the modules it imports (host-user.js imports it back, so
+        // its let binding may not be initialized yet), and exports a value, a live binding, the imported bindings, and a
+        // binding that it never initializes
+        private static JsHostDefinedModule CreateHostModule(JsRealm realm)
+        {
+            var count = 0;
+            return realm.CreateHostDefinedModule(["./a.js", "./host-user.js"], ["value", "count", "read", "late", "uninitialized"], module =>
+            {
+                module.SetExport("value", module.GetImport("./a.js", "x").GetValue());
+                module.SetExport("read", module.GetImport("./host-user.js", "read").GetValue());
+                var late = module.GetImport("./host-user.js", "late");
+                FuzzAssert.Equal(late.BindingName, "late", "The binding of an import is not the exported binding");
+                module.SetExport("late", late.TryGetValue(out var lateValue) ? lateValue : JsValue.Null);
+                module.SetExportGetter("count", () => ++count);
+            }, "host.js");
         }
     }
 }

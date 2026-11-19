@@ -67,6 +67,8 @@ internal static class JavaScriptSeeds
         ("top-level-await", "await Promise.resolve(1); export const v = await 2;"),
         ("export-forms", "export var v = 1; export let l = 2; export const c = 3; export function fn() {} export class K {} export { v as w, l as default };"),
         ("cycle", "import './a.js'; import './b.js'; export const self = 1;"),
+        ("host-defined-module", "import { value, count, read, late } from './host.js'; import * as host from './host.js'; globalThis.r = [value, count, count, read(), late]; try { host.uninitialized; } catch {} export { count } from './host.js';"),
+        ("host-defined-module-first", "import { late } from './host-user.js'; import * as host from './host.js'; Reflect.ownKeys(host); host.count;"),
         ("missing", "import './missing.js';"),
         ("bad-export", "export { notDefined };"),
         ("duplicate-export", "export const a = 1; export { a };"),

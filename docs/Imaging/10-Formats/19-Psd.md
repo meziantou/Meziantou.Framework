@@ -24,7 +24,8 @@ reader.
 An image loads in the smallest pixel format that holds its samples: [Gray8](cref:Meziantou.Framework.Imaging.Gray8) for a
 bitmap (a sample of 1 is black), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [La16](cref:Meziantou.Framework.Imaging.La16), [La32](cref:Meziantou.Framework.Imaging.La32), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) for an indexed
 image ([Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) when an index is transparent), [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64). A 32-bit document loads as
-[RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), or [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) ([LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) with transparency) for a grayscale one, labeled linear light unless an ICC profile describes it.
+[RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), or [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat) ([LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) with transparency) for a grayscale one, labeled linear light unless an ICC profile describes it. A NaN sample is read quiet, with its sign
+and payload, so that every pixel format gives the same bits.
 
 ## CMYK and Lab documents
 

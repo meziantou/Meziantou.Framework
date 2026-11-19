@@ -227,6 +227,38 @@ public sealed class PsdDecoderTests
         Assert.Equal(ReferencePsd.Read(data).GetRgbaFloat(), GetFloats(image));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void SignalingNaNsAreReadQuietInEveryPixelFormat(int channels)
+    {
+        // A conversion through a double sets the quiet bit of a signaling NaN. 0.75 at alpha 0.5 is unmatted to 0.5
+        var nan = BitConverter.Int32BitsToSingle(unchecked((int)0xFF87C52B));
+        float[] stored = channels == 1 ? [nan, 0.25f, 7.5f] : [nan, 1f, 0.75f, 0.5f, 7.5f, 1f];
+        var builder = new PsdFileBuilder(3, 1, 32, Grayscale, PsdFileBuilder.Planes32(stored, channels));
+        if (channels == 2)
+        {
+            builder.LayerCount = -1;
+            builder.LayerBlockKey = "Lr32";
+        }
+
+        var data = builder.Build();
+        using var image = Image.Load(data);
+        Assert.Equal(channels == 1 ? PixelFormat.GrayFloat : PixelFormat.LaFloat, image.PixelFormat);
+        float[] unmatted = channels == 1 ? [nan, 0.25f, 7.5f] : [nan, 1f, 0.5f, 0.5f, 7.5f, 1f];
+        var floats = GetFloats(image);
+        Assert.Equal(unchecked((int)0xFFC7C52B), BitConverter.SingleToInt32Bits(floats[0]));
+        Assert.Equal(unmatted, floats);
+
+        using var expected = image.CloneAs<RgbaFloat>();
+        using var loaded = Image.Load<RgbaFloat>(data);
+        Assert.Equal(GetBytes(expected), GetBytes(loaded));
+        using var reader = Image.OpenReader<RgbaFloat>(new MemoryStream(data));
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.Equal(GetBytes(expected), GetBytes(frame));
+    }
+
     [Fact]
     public void LargeDocumentsHaveWiderLengths()
     {

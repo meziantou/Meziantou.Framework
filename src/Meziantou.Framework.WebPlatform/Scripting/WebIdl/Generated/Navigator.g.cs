@@ -54,6 +54,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static TValue Get_pdfViewerEnabled(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromBoolean(o.PdfViewerEnabled); }
     private static TValue Get_hardwareConcurrency(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.HardwareConcurrency); }
     private static TValue Get_connection(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Connection); }
+    private static TValue Get_storageBuckets(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.StorageBuckets); }
     private static TValue Get_storage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Storage); }
     private static TValue Get_userAgentData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserAgentData); }
     private static TValue Get_locks(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Locks); }
@@ -166,6 +167,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         r.DefineAttribute(instanceTarget, "pdfViewerEnabled", Get_pdfViewerEnabled, null);
         r.DefineAttribute(instanceTarget, "hardwareConcurrency", Get_hardwareConcurrency, null);
         r.DefineAttribute(instanceTarget, "connection", Get_connection, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "storageBuckets", Get_storageBuckets, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "storage", Get_storage, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "userAgentData", Get_userAgentData, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "locks", Get_locks, null);

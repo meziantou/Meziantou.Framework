@@ -18,28 +18,13 @@
     "total": 6
   },
   "fs/FileSystemBaseHandle-buckets.https.any.js": {
-    "total": 3,
-    "failures": {
-      "Bucket quota restricts the size of a file that can be created": "FAIL",
-      "getDirectory promise rejects if bucket has been deleted": "FAIL",
-      "isSameEntry works as expected with buckets": "FAIL"
-    }
+    "total": 3
   },
   "fs/FileSystemBaseHandle-buckets.https.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Bucket quota restricts the size of a file that can be created": "FAIL",
-      "getDirectory promise rejects if bucket has been deleted": "FAIL",
-      "isSameEntry works as expected with buckets": "FAIL"
-    }
+    "total": 3
   },
   "fs/FileSystemBaseHandle-buckets.https.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "Bucket quota restricts the size of a file that can be created": "FAIL",
-      "getDirectory promise rejects if bucket has been deleted": "FAIL",
-      "isSameEntry works as expected with buckets": "FAIL"
-    }
+    "total": 3
   },
   "fs/FileSystemBaseHandle-getUniqueId.https.any.js": {
     "total": 11,

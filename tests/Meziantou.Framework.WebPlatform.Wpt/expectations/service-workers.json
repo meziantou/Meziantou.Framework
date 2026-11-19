@@ -102,32 +102,16 @@
     "total": 27
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js#serviceworker": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-keys.https.any.js": {
     "total": 1

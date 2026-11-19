@@ -10526,6 +10526,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Scheduling Scheduling { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.UserActivation UserActivation { get => throw null; }
         public string UserAgent { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
@@ -13276,6 +13277,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool RevokeObjectUrl { get => throw null; init { } }
         public bool SessionStorage { get => throw null; init { } }
         public bool SharedWorker { get => throw null; init { } }
+    }
+
+    public sealed class StorageBucket
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdbFactory IndexedDB { get => throw null; }
+        public string Name { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageEstimate> Estimate() => throw null;
+        public System.Threading.Tasks.Task<double?> Expires() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.FileSystemDirectoryHandle> GetDirectory() => throw null;
+        public System.Threading.Tasks.Task<bool> Persist() => throw null;
+        public System.Threading.Tasks.Task<bool> Persisted() => throw null;
+        public System.Threading.Tasks.Task SetExpires(double expires) => throw null;
+    }
+
+    public sealed class StorageBucketManager
+    {
+        public System.Threading.Tasks.Task Delete(string name) => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string>> Keys() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageBucket> Open(string name, Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions? options = null) => throw null;
+    }
+
+    public sealed class StorageBucketOptions
+    {
+        public double? Expires { get => throw null; init { } }
+        public bool Persisted { get => throw null; init { } }
+        public ulong? Quota { get => throw null; init { } }
     }
 
     public sealed class StorageEstimate
@@ -16223,6 +16250,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string ProductSub { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
         public string UserAgent { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
         public string Vendor { get => throw null; }

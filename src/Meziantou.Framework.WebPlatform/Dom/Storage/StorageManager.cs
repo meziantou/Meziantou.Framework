@@ -151,7 +151,7 @@ public sealed class StorageManager
     }
 
     // The documents without browsing context have no persistent storage
-    private static readonly StoragePersistenceState DetachedPersistence = new(readOnly: true);
+    internal static readonly StoragePersistenceState DetachedPersistence = new(readOnly: true);
 
     internal static (FileSystemBackend Backend, string Origin)? ResolveFileSystem(GlobalScope global, StorageKey? storageKey = null)
         => StorageEndpoints.Resolve(global, global.Options.FileSystem, static context => context.FileSystemBackend, static () => new InMemoryFileSystemBackend(), storageKey);
@@ -230,10 +230,12 @@ public sealed class StorageManager
     /// </summary>
     internal static void CheckQuota(GlobalScope global, FileSystemBackend backend, string origin, long additionalBytes)
     {
-        var quota = (global.Options.Storage ?? StorageOptions.Default).Quota;
+        // The file system of a storage bucket created with a quota is limited by the quota of the bucket
+        var quota = global.EnvironmentDocument.EnvironmentBrowsingContext?.StorageBuckets.GetQuota(origin) ?? (global.Options.Storage ?? StorageOptions.Default).Quota;
         var usage = FileSystemHandle.Run(() => backend.GetUsage(origin));
+        // As in Chromium, the error does not report the quota and the requested size
         if (usage + additionalBytes > quota)
-            throw new QuotaExceededError("The quota of the storage is exceeded", quota, usage + additionalBytes);
+            throw new QuotaExceededError("The quota of the storage is exceeded", quota: null, requested: null);
     }
 }
 

@@ -207,6 +207,40 @@ The other storage APIs of the browsers keep their data in backends that you can 
 
 These stores are used by the scripts of the pages: they need a [script engine](../06-Scripting/01-Overview.md).
 
+### Storage buckets
+
+`navigator.storageBuckets` ([Storage Buckets](https://wicg.github.io/storage-buckets/), [Navigator.StorageBuckets](cref:Meziantou.Framework.WebPlatform.Dom.Navigator.StorageBuckets)
+from .NET) creates named buckets of the origin. A [StorageBucket](cref:Meziantou.Framework.WebPlatform.Dom.StorageBucket) has its own IndexedDB databases, caches and origin private
+file system, kept in the same stores as the ones of the origin, but apart from them:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/FileSystemTests.cs;region=WebPlatform_StorageBuckets;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A bucket has its own databases, caches and file system, apart from the ones of the origin
+var drafts = await Run(buckets.Open("drafts", new StorageBucketOptions { Quota = 1_000_000 }));
+var root = await Run(drafts.GetDirectory());
+await Run(root.GetFileHandle("draft.txt", new FileSystemGetFileOptions { Create = true }));
+var originRoot = await Run(document.DefaultView!.Navigator.Storage.GetDirectory());
+await Assert.ThrowsAsync<DomException>(() => Run(originRoot.GetFileHandle("draft.txt")));
+
+Assert.Equal(1_000_000ul, (await Run(drafts.Estimate())).Quota);
+Assert.Equal(["drafts"], await Run(buckets.Keys()));
+
+// Deleting the bucket deletes its storage: its objects then fail with an UnknownError
+await Run(buckets.Delete("drafts"));
+Assert.Empty(await Run(buckets.Keys()));
+Assert.Equal("UnknownError", (await Assert.ThrowsAsync<DomException>(() => Run(drafts.Persisted()))).Name);
+```
+<!-- endref -->
+
+- A bucket name has 1 to 64 lowercase ASCII letters, digits, `-` and `_`, and starts with a letter or a digit.
+- The buckets of an origin are shared by the pages and the workers of a browser tab and the tabs it opens, in the
+  partition of the page (the buckets of a frame of another site are not the ones of its site as a top-level page).
+- `persist()` asks [StorageOptions.RequestPersistentStorage](cref:Meziantou.Framework.WebPlatform.Dom.StorageOptions.RequestPersistentStorage), as `navigator.storage.persist()`. `estimate()` reports
+  the usage of the bucket and its quota (the `quota` option, or the quota of the origin). The quota of a bucket limits
+  its file system, not its databases nor its caches.
+- A bucket whose `expires` time is past is deleted the next time the buckets are opened or listed. Deleting a bucket
+  deletes its caches, its file system and its databases that no page keeps open.
+
 ## Clear-Site-Data
 
 A site clears the data that the browser keeps for it with the `Clear-Site-Data` header of a response. The header is
@@ -216,7 +250,7 @@ honored on the responses of the secure URLs (`https`, and `http://localhost`), w
 | --- | --- |
 | `"cache"` | The responses of its URLs in the HTTP cache and its pages in the back/forward cache (for the tab's site only, as the browsers partition their caches), and its prefetched and prerendered pages |
 | `"cookies"` | The cookies of its registrable domain (`"cookies"` for `https://www.example.com` removes the cookies of `example.com` and of its subdomains) |
-| `"storage"` | Its local storage, its session storage, its IndexedDB databases, its caches of the Cache API, and its service worker registrations |
+| `"storage"` | Its local storage, its session storage, its IndexedDB databases, its caches of the Cache API, its storage buckets, and its service worker registrations |
 | `"executionContexts"` | Its pages are reloaded |
 | `"clientHints"` | The client hints it opted into (also cleared by `"cache"` and `"cookies"`) |
 | `"*"` | All of the above |

@@ -540,7 +540,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         {
             DefineTemplatePatchingMembers(prototype);
         }
-        else if (binding.Name is "StorageAccessHandle" && Features.CacheStorageEnabled && Features.FetchEnabled)
+        else if (binding.Name is "StorageAccessHandle" or "StorageBucket" && Features.CacheStorageEnabled && Features.FetchEnabled)
         {
             DefinePartitionedCacheStorageAttribute(prototype, binding.Name);
         }

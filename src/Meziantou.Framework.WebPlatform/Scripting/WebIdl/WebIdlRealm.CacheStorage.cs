@@ -168,7 +168,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (Adapter.IsUndefined(partition))
             return ObtainCacheStorage(storageKey: null);
 
-        return ObtainCacheStorage(_cacheStoragePartitions[Adapter.ToString(partition)].Key);
+        var (storageKey, _, bucket) = _cacheStoragePartitions[Adapter.ToString(partition)];
+        if (bucket is { IsDeleted: true })
+            throw StorageBucket.Deleted();
+
+        return ObtainCacheStorage(storageKey);
     }
 
     private (CacheStorageCoordinator Coordinator, string Origin) ObtainCacheStorage(StorageKey? storageKey)
@@ -183,7 +187,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <see cref="StorageAccessHandle"/>, the storage buckets), by token (the serialized storage key): the
     /// <c>caches</c> attribute of these objects returns the same object for a storage key ([SameObject]).
     /// </summary>
-    private readonly Dictionary<string, (StorageKey Key, TValue CacheStorage)> _cacheStoragePartitions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (StorageKey Key, TValue CacheStorage, StorageBucket? Bucket)> _cacheStoragePartitions = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Defines the <c>caches</c> attribute of <c>StorageAccessHandle</c> (https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-caches)
@@ -196,19 +200,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         DefineAttribute(prototype, "caches", (realm, thisValue) =>
         {
             var target = realm.This<object>(thisValue, binding);
-            var storageKey = target switch
+            var (storageKey, token, bucket) = target switch
             {
-                StorageAccessHandle handle => handle.GetCachesStorageKey(),
+                StorageAccessHandle handle => (handle.GetCachesStorageKey(), handle.GetCachesStorageKey().Serialize(), (StorageBucket?)null),
+                StorageBucket storageBucket => (storageBucket.StorageKey, storageBucket.CacheStorageToken, storageBucket),
                 _ => throw realm.CreateTypeError("Illegal invocation"),
             };
-
-            var token = storageKey.Serialize();
 
             if (realm._cacheStoragePartitions.TryGetValue(token, out var existing))
                 return existing.CacheStorage;
 
             var cacheStorage = realm.Adapter.Call(realm.Adapter.Get(realm.GetCacheStorage(), realm.Key("createCacheStorage")), realm.Adapter.Undefined, [realm.Adapter.FromString(token)]);
-            realm._cacheStoragePartitions[token] = (storageKey, cacheStorage);
+            realm._cacheStoragePartitions[token] = (storageKey, cacheStorage, bucket);
             return cacheStorage;
         }, setter: null);
     }

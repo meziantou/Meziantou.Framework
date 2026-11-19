@@ -8,11 +8,15 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [IdlInterface("IDBFactory", "https://w3c.github.io/IndexedDB/#idbfactory")]
 public sealed class IdbFactory
 {
-    internal IdbFactory(GlobalScope global, StorageKey? storageKey = null)
+    internal IdbFactory(GlobalScope global, StorageKey? storageKey = null, StorageBucketRecord? bucket = null)
     {
         Global = global;
         StorageKey = storageKey;
+        _bucket = bucket;
     }
+
+    // The bucket of the databases: the requests of a deleted bucket fail with an UnknownError
+    private readonly StorageBucketRecord? _bucket;
 
     internal GlobalScope Global { get; }
 
@@ -39,6 +43,9 @@ public sealed class IdbFactory
 
         var (backend, origin) = ObtainStorage();
         var request = new IdbOpenDBRequest(Global, IndexedDBStorage.GetOperations(Global));
+        if (_bucket is { IsDeleted: true })
+            return FailDeletedBucketRequest(request);
+
         var state = backend.Coordinator.GetDatabase(origin, name);
         var connectionRequest = new IndexedDBOpenRequest(state, request, version);
         Track(connectionRequest);
@@ -56,6 +63,9 @@ public sealed class IdbFactory
         ArgumentNullException.ThrowIfNull(name);
         var (backend, origin) = ObtainStorage();
         var request = new IdbOpenDBRequest(Global, IndexedDBStorage.GetOperations(Global));
+        if (_bucket is { IsDeleted: true })
+            return FailDeletedBucketRequest(request);
+
         var state = backend.Coordinator.GetDatabase(origin, name);
         var connectionRequest = new IndexedDBDeleteRequest(state, request);
         Track(connectionRequest);
@@ -172,6 +182,17 @@ public sealed class IdbFactory
         {
             _requests.Add(request);
         }
+    }
+
+    /// <summary>The request of a deleted bucket fails with an <c>UnknownError</c>, from a task (https://wicg.github.io/storage-buckets/#storagebucket-indexeddb).</summary>
+    private IdbOpenDBRequest FailDeletedBucketRequest(IdbOpenDBRequest request)
+    {
+        Global.QueueGlobalTask(() =>
+        {
+            request.SetError(StorageBucket.Deleted());
+            request.FireEvent(new Event("error", new EventInit { Bubbles = true, Cancelable = true }));
+        });
+        return request;
     }
 
     private (IndexedDBBackend Backend, string Origin) ObtainStorage()

@@ -125,16 +125,21 @@ public sealed class ImageCapture
 
     /// <summary>
     /// Takes a photo (https://w3c.github.io/mediacapture-image/#dom-imagecapture-takephoto): the current frame of the track,
-    /// as a PNG image. The task fails with an <c>InvalidStateError</c> when the track is not live, and with an
-    /// <c>UnknownError</c> when the track has no frame.
+    /// as a PNG image. The task fails with an <c>InvalidStateError</c> when the track is not live, with an
+    /// <see cref="OverconstrainedError"/> when the settings are not in the photo capabilities (the size of the photos is the
+    /// size of the track, there is no flash and no red-eye reduction), and with an <c>UnknownError</c> when the track has no
+    /// frame.
     /// </summary>
-    /// <param name="photoSettings">The settings of the photo (ignored).</param>
+    /// <param name="photoSettings">The settings of the photo.</param>
     /// <seealso href="https://w3c.github.io/mediacapture-image/#dom-imagecapture-takephoto"/>
     [IdlMember("takePhoto", "https://w3c.github.io/mediacapture-image/#dom-imagecapture-takephoto")]
     public Task<Blob> TakePhoto(PhotoSettings? photoSettings = null)
     {
         if (Track.ReadyState != MediaStreamTrackState.Live)
             return Task.FromException<Blob>(DomException.InvalidState("The track is not live"));
+
+        if (photoSettings is not null && GetUnsupportedPhotoSetting(photoSettings) is { } setting)
+            return Task.FromException<Blob>(new OverconstrainedError(setting, "The photo setting is not in the photo capabilities"));
 
         if (Track.GetVideoFrame() is not { } frame)
             return Task.FromException<Blob>(new DomException("The track has no frame", "UnknownError"));
@@ -192,6 +197,22 @@ public sealed class ImageCapture
             return Task.FromException<ImageBitmap>(new DomException("The track has no frame", "UnknownError"));
 
         return Task.FromResult(new ImageBitmap(new BitmapPixels(frame.Width, frame.Height, frame.Pixels.ToArray())));
+    }
+
+    /// <summary>The name of a setting that the photo capabilities do not allow, or null.</summary>
+    private string? GetUnsupportedPhotoSetting(PhotoSettings photoSettings)
+    {
+        var (width, height) = GetSize();
+        if (photoSettings.ImageWidth is { } imageWidth && imageWidth != width)
+            return "imageWidth";
+
+        if (photoSettings.ImageHeight is { } imageHeight && imageHeight != height)
+            return "imageHeight";
+
+        if (photoSettings.FillLightMode is not null)
+            return "fillLightMode";
+
+        return photoSettings.RedEyeReduction is true ? "redEyeReduction" : null;
     }
 
     private (double Width, double Height) GetSize()

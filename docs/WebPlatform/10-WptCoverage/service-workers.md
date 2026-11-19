@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 251 | 283 | 5 | 90% |
+| [Stable](#stable-tests) | 252 | 283 | 5 | 91% |
 | [Tentative](#tentative-tests) | 7 | 11 | 0 | 64% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 3 | 0 | 67% |
-| **All** | **261** | **298** | **5** | **89%** |
+| **All** | **262** | **298** | **5** | **89%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **TEST BUG**: 14
-- **NOT IMPLEMENTED**: 15
+- **NOT IMPLEMENTED**: 14
 - **TEST RUNNER**: 2
 - **FLAKY**: 4
 

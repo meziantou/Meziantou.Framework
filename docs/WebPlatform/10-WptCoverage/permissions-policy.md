@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 50 | 94 | 0 | 53% |
+| [Stable](#stable-tests) | 59 | 94 | 0 | 63% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **64** | **118** | **0** | **54%** |
+| **All** | **73** | **118** | **0** | **62%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 41
+- **NOT IMPLEMENTED**: 32
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`permissions-policy-frame-policy-allowed-for-some-override.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-allowed-for-some-override.https.sub.html) | Pass | 32 / 32 |  |  |
 | [`permissions-policy-frame-policy-allowed-for-some.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-allowed-for-some.https.sub.html) | Pass | 76 / 76 |  |  |
 | [`permissions-policy-frame-policy-disallowed-for-all.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-disallowed-for-all.https.sub.html) | Pass | 78 / 78 |  |  |
-| [`permissions-policy-frame-policy-timing.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-timing.https.sub.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Media Capture and Streams: the iframes report the state of the `camera` feature with `navigator.mediaDevices.getUserMedia()` |
+| [`permissions-policy-frame-policy-timing.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-timing.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`permissions-policy-header-policy-allowed-for-all.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-header-policy-allowed-for-all.https.sub.html) | Pass | 7 / 7 |  |  |
 | [`permissions-policy-header-policy-allowed-for-malformed-wildcard.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-header-policy-allowed-for-malformed-wildcard.https.sub.html) | Pass | 7 / 7 |  |  |
 | [`permissions-policy-header-policy-allowed-for-self.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-header-policy-allowed-for-self.https.sub.html) | Pass | 5 / 5 |  |  |
@@ -89,8 +89,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/bluetooth-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-reporting.https.html) | Error | 0 / 0 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`; the helper `/bluetooth/resources/bluetooth-test.js` is not fetched) |
 | [`reporting/camera-potential-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-report-only.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-potential-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/camera-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
-| [`reporting/camera-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-reporting.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
+| [`reporting/camera-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/camera-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/encrypted-media-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`) |
 | [`reporting/encrypted-media-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`) |
 | [`reporting/fullscreen-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-report-only.html) | Pass | 1 / 1 |  |  |
@@ -99,18 +99,18 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/generic-sensor-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/geolocation-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-report-only.https.html) | Fail | 0 / 1 | TEST BUG | the test expects a position but does not grant the `geolocation` permission (`test_driver.set_permission()`): the report is checked, then `getCurrentPosition()` fails with `PERMISSION_DENIED` |
 | [`reporting/geolocation-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/microphone-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
-| [`reporting/microphone-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-reporting.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
+| [`reporting/microphone-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/microphone-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/midi-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-report-only.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |
 | [`reporting/midi-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |
 | [`reporting/payment-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-report-only.https.html) | Fail | 0 / 1 | TEST BUG | the test rethrows the rejection of `show()` after checking the report, so it passes only when the user accepts a payment with `https://example.com/pay`, a payment method that the user agent does not support (`NotSupportedError`, https://w3c.github.io/payment-request/#show-method); Chromium fails it too |
 | [`reporting/payment-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/picture-in-picture-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-report-only.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
 | [`reporting/picture-in-picture-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-reporting.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
-| [`reporting/report-only-and-enforce.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-only-and-enforce.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
-| [`reporting/report-only-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-only-single-endpoint.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
-| [`reporting/report-to-multiple-endpoints.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
-| [`reporting/report-to-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-single-endpoint.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Media Capture and Streams: the test uses the `camera`/`microphone` features with `navigator.mediaDevices.getUserMedia()` (and `/mediacapture-streams/permission-helper.js`, which is not fetched); the reports of the features that the library implements are tested by `reporting/sync-xhr-report-only.html` |
+| [`reporting/report-only-and-enforce.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-only-and-enforce.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`reporting/report-only-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-only-single-endpoint.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`reporting/report-to-multiple-endpoints.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`reporting/report-to-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-single-endpoint.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/screen-wake-lock-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/screen-wake-lock-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/serial-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-report-only.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
 | [`reporting/serial-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-reporting.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |

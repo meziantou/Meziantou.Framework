@@ -2027,6 +2027,13 @@ public sealed partial class BrowsingContext : IDisposable
             parameters.EmbedderPolicy = sourceDocument?.EmbedderPolicy;
             parameters.DocumentIsolationPolicy = sourceDocument?.DocumentIsolationPolicy ?? EmbedderPolicyValue.UnsafeNone;
         }
+        else if (url.Scheme is not ("http" or "https" or "file") && Options.ProtocolHandlers?.Registry.Translate(url) is { } handlerUrl)
+        {
+            // https://html.spec.whatwg.org/multipage/system-state.html#protocol-handler-invocation: a registered handler of
+            // the scheme handles the URL: the navigable is navigated to the URL of the handler
+            Navigate(handlerUrl, sourceDocument, historyHandling, referrerPolicy: referrerPolicy, hasTransientActivation: sourceHasTransientActivation, userInvolvement: userInvolvement);
+            return;
+        }
         else if (url.Scheme is not ("http" or "https" or "file"))
         {
             // https://html.spec.whatwg.org/multipage/browsing-the-web.html#attempt-to-create-a-non-fetch-scheme-document:

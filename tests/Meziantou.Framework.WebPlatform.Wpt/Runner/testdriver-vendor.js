@@ -83,6 +83,13 @@
 
   // The Page Lifecycle of the top-level browsing context (BrowsingContext.IsFrozen of the library): the documents are frozen
   // from a task, which fires their freeze events; the promise of the frozen document is resolved once it is resumed
+  // Set RPH Registration Mode (https://html.spec.whatwg.org/multipage/system-state.html#set-rph-registration-mode): the
+  // registerProtocolHandler() automation mode of the active document of the browsing context
+  internal.set_rph_registration_mode = function (mode, context) {
+    const target = context === null || context === undefined ? window : context;
+    return new Promise((resolve, reject) => __wpt_set_rph_registration_mode(target, String(mode), resolve, (message) => reject(new Error(message))));
+  };
+
   internal.freeze = function (context) {
     const target = (context === null || context === undefined ? window : context).top;
     return new Promise(resolve => __wpt_freeze(target, resolve));
@@ -206,6 +213,17 @@
       coordinates ? optional(coordinates.heading) : NaN,
       coordinates ? optional(coordinates.speed) : NaN,
       !!(params && params.error),
+      resolve));
+  };
+
+  // emulation.setScreenOrientationOverride (https://w3c.github.io/webdriver-bidi/#command-emulation-setScreenOrientationOverride):
+  // the orientation of the ScreenOrientationProvider of the runner (no screenOrientation removes the override)
+  internal.bidi.emulation.set_screen_orientation_override = function (params) {
+    const orientation = params && params.screenOrientation;
+    return new Promise(resolve => __wpt_set_screen_orientation_override(
+      !!orientation,
+      orientation ? String(orientation.natural) : '',
+      orientation ? String(orientation.type) : '',
       resolve));
   };
 

@@ -101,6 +101,12 @@ internal sealed partial class WptTestRunner
     /// <summary>The position of the device, overridden by test_driver.bidi.emulation.set_geolocation_override().</summary>
     private readonly GeolocationProvider _geolocation = new() { Position = DefaultGeolocationPosition };
 
+    /// <summary>The screen, whose orientation can be locked, and overridden by test_driver.bidi.emulation.set_screen_orientation_override().</summary>
+    private readonly ScreenOrientationProvider _screenOrientation = new();
+
+    /// <summary>The protocol handlers registered by the pages of the test.</summary>
+    private readonly ProtocolHandlerOptions _protocolHandlers = new();
+
     /// <summary>The preference of Global Privacy Control, set by test_driver.set_global_privacy_control().</summary>
     private volatile bool _globalPrivacyControl;
 
@@ -238,7 +244,11 @@ internal sealed partial class WptTestRunner
 
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
-                ScreenOrientation = new ScreenOrientationOptions { Provider = new ScreenOrientationProvider() },
+                ScreenOrientation = new ScreenOrientationOptions { Provider = _screenOrientation },
+
+                // The handlers of navigator.registerProtocolHandler(), registered when the test sets the automation mode of the
+                // document with test_driver.set_rph_registration_mode()
+                ProtocolHandlers = _protocolHandlers,
                 ViewportSegments = new ViewportSegmentsOptions { Provider = _displayFeatures },
 
                 // The pages of the reftests are rasterized; the images of all the tests are decoded by the backend
@@ -1800,6 +1810,61 @@ internal sealed partial class WptTestRunner
             {
                 _geolocation.Position = position;
                 completion(null);
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_set_rph_registration_mode", 4, (_, args) =>
+        {
+            // Set RPH Registration Mode: as a WebDriver command, the mode is set after the tasks that are already queued
+            var window = realm.ToInterface<Window>(args[0], "Window");
+            ProtocolHandlerAutomationMode? mode = adapter.ToString(args[1]) switch
+            {
+                "none" => ProtocolHandlerAutomationMode.None,
+                "autoAccept" => ProtocolHandlerAutomationMode.AutoAccept,
+                "autoReject" => ProtocolHandlerAutomationMode.AutoReject,
+                _ => null,
+            };
+            var completion = CreateCompletion(args[2], args[3]);
+            QueueTask(() =>
+            {
+                if (mode is not { } value)
+                {
+                    completion("invalid argument: the mode must be none, autoAccept or autoReject");
+                    return;
+                }
+
+                window.Document.ProtocolHandlerAutomationMode = value;
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_set_screen_orientation_override", 4, (_, args) =>
+        {
+            // emulation.setScreenOrientationOverride: as a WebDriver command, the override is set after the tasks that are already
+            // queued, and the command completes once the documents ran their screen orientation change steps (queued by the provider)
+            var hasOverride = adapter.ToBoolean(args[0]);
+            var natural = adapter.ToString(args[1]) == "portrait" ? OrientationType.PortraitPrimary : OrientationType.LandscapePrimary;
+            OrientationType? type = adapter.ToString(args[2]) switch
+            {
+                "portrait-primary" => OrientationType.PortraitPrimary,
+                "portrait-secondary" => OrientationType.PortraitSecondary,
+                "landscape-primary" => OrientationType.LandscapePrimary,
+                "landscape-secondary" => OrientationType.LandscapeSecondary,
+                _ => null,
+            };
+            var completion = CreateCompletion(args[3], args[3]);
+            QueueTask(() =>
+            {
+                if (hasOverride && type is { } overrideType)
+                {
+                    _screenOrientation.SetOrientationOverride(natural, overrideType);
+                }
+                else
+                {
+                    _screenOrientation.ClearOrientationOverride();
+                }
+
+                QueueTask(() => completion(null));
             });
             return adapter.Undefined;
         });

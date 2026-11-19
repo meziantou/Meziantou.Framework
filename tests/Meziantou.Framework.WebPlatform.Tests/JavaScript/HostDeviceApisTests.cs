@@ -66,6 +66,7 @@ public sealed class HostDeviceApisTests : IDisposable
             MediaSession = options.MediaSession,
             DocumentLoader = options.DocumentLoader,
             PendingInput = options.PendingInput,
+            ProtocolHandlers = options.ProtocolHandlers,
             TimeProvider = options.TimeProvider,
             Features = options.Features,
         });
@@ -1662,6 +1663,26 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void ScreenOrientation_Override_EmulatesTheNaturalOrientationAndTheType()
+    {
+        var screen = new ScreenOrientationProvider();
+        var document = LoadWithScreen(screen);
+
+        screen.SetOrientationOverride(OrientationType.PortraitPrimary, OrientationType.LandscapeSecondary);
+        Run(document);
+
+        Assert.Equal(OrientationType.PortraitPrimary, screen.NaturalOrientation);
+        Assert.Equal(270, screen.CurrentAngle);
+        Assert.Equal("change landscape-secondary 270", Run(document, "done()"));
+
+        screen.ClearOrientationOverride();
+        Run(document);
+
+        Assert.Equal(OrientationType.LandscapePrimary, screen.NaturalOrientation);
+        Assert.Equal("change landscape-secondary 270|change landscape-primary 0", Run(document, "done()"));
+    }
+
+    [Fact]
     public void ScreenOrientation_SecondLock_AbortsThePendingOne()
     {
         var document = LoadWithScreen(new ScreenOrientationProvider());
@@ -1957,6 +1978,49 @@ public sealed class HostDeviceApisTests : IDisposable
         document.BrowsingContext.IsFrozen = false;
         Run(document);
         Assert.Equal("freeze,resume,message", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void ProtocolHandlers_RegisteredHandlerHandlesTheNavigation()
+    {
+        #region WebPlatform_ProtocolHandlers
+        // The handlers registered by navigator.registerProtocolHandler() when the user accepts them
+        var protocolHandlers = new ProtocolHandlerOptions
+        {
+            RequestRegistration = registration => registration.Scheme == "web+soup",
+        };
+        var options = new BrowsingContextOptions { ProtocolHandlers = protocolHandlers };
+        #endregion
+
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/soup?url=web%2Bsoup%3Achicken-kiwi"] = new DocumentResource("<title>soup</title>");
+        var document = Load("", new BrowsingContextOptions { ProtocolHandlers = options.ProtocolHandlers, DocumentLoader = loader });
+
+        Run(document, "navigator.registerProtocolHandler('web+soup', 'soup?url=%s'); navigator.registerProtocolHandler('web+other', 'other?url=%s')");
+        Assert.Equal([KeyValuePair.Create("web+soup", "https://example.com/soup?url=%s")], protocolHandlers.Registry.Handlers);
+
+        var browsingContext = document.BrowsingContext!;
+        Run(document, "location.href = 'web+soup:chicken-kiwi'");
+        Assert.Equal("https://example.com/soup?url=web%2Bsoup%3Achicken-kiwi", browsingContext.Document.Url);
+        Assert.Equal("soup", browsingContext.Document.Title);
+
+        Run(browsingContext.Document, "navigator.unregisterProtocolHandler('web+soup', 'soup?url=%s')");
+        Assert.Empty(protocolHandlers.Registry.Handlers);
+    }
+
+    [Fact]
+    public void ProtocolHandlers_AutomationModeAcceptsOrRejectsTheRegistrations()
+    {
+        var protocolHandlers = new ProtocolHandlerOptions();
+        var document = Load("", new BrowsingContextOptions { ProtocolHandlers = protocolHandlers });
+
+        Run(document, "navigator.registerProtocolHandler('web+none', 'none?url=%s')");
+        document.ProtocolHandlerAutomationMode = ProtocolHandlerAutomationMode.AutoReject;
+        Run(document, "navigator.registerProtocolHandler('web+rejected', 'rejected?url=%s')");
+        document.ProtocolHandlerAutomationMode = ProtocolHandlerAutomationMode.AutoAccept;
+        Run(document, "navigator.registerProtocolHandler('web+accepted', 'accepted?url=%s')");
+
+        Assert.Equal([KeyValuePair.Create("web+accepted", "https://example.com/accepted?url=%s")], protocolHandlers.Registry.Handlers);
     }
 
     [Fact]

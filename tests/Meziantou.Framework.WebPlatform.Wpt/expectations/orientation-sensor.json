@@ -18,10 +18,7 @@
     "total": 4
   },
   "orientation-sensor/AbsoluteOrientationSensor.https.html": {
-    "total": 22,
-    "failures": {
-      "AbsoluteOrientationSensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
-    }
+    "total": 22
   },
   "orientation-sensor/OrientationSensor_insecure_context.html": {
     "total": 2
@@ -45,10 +42,7 @@
     "total": 4
   },
   "orientation-sensor/RelativeOrientationSensor.https.html": {
-    "total": 22,
-    "failures": {
-      "RelativeOrientationSensor: sensor reading is correct when options.referenceFrame is 'screen'.": "FAIL"
-    }
+    "total": 22
   },
   "orientation-sensor/idlharness.https.window.js": {
     "total": 29

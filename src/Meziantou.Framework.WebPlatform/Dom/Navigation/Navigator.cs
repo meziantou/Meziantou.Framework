@@ -118,20 +118,45 @@ public sealed partial class Navigator
     // NavigatorContentUtils (https://html.spec.whatwg.org/multipage/system-state.html#navigatorcontentutils)
 
     /// <summary>
-    /// Validates the parameters; the handlers are not registered as there is no user to accept them
-    /// (https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler).
+    /// Validates the parameters, then registers the handler in <see cref="ProtocolHandlerOptions.Registry"/> when the
+    /// <c>registerProtocolHandler()</c> automation mode of the document (<see cref="Document.ProtocolHandlerAutomationMode"/>)
+    /// or the user (<see cref="ProtocolHandlerOptions.RequestRegistration"/>) accepts it
+    /// (https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler). Without
+    /// <see cref="BrowsingContextOptions.ProtocolHandlers"/>, the handlers are not registered.
     /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler"/>
     [IdlMember("registerProtocolHandler", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler")]
-    public void RegisterProtocolHandler(string scheme, string url) => NormalizeProtocolHandlerParameters(scheme, url);
+    public void RegisterProtocolHandler(string scheme, string url)
+    {
+        var (normalizedScheme, normalizedUrl) = NormalizeProtocolHandlerParameters(scheme, url);
+        if (_window.Options.ProtocolHandlers is not { } options)
+            return;
 
-    /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler</summary>
+        var document = _window.Document;
+        var accepted = document.ProtocolHandlerAutomationMode switch
+        {
+            ProtocolHandlerAutomationMode.AutoAccept => true,
+            ProtocolHandlerAutomationMode.AutoReject => false,
+            _ => options.RequestRegistration?.Invoke(new ProtocolHandlerRegistration(document, normalizedScheme, normalizedUrl)) is true,
+        };
+
+        if (accepted)
+        {
+            options.Registry.Register(normalizedScheme, normalizedUrl);
+        }
+    }
+
+    /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler: removes the handler from <see cref="ProtocolHandlerOptions.Registry"/>.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler"/>
     [IdlMember("unregisterProtocolHandler", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler")]
-    public void UnregisterProtocolHandler(string scheme, string url) => NormalizeProtocolHandlerParameters(scheme, url);
+    public void UnregisterProtocolHandler(string scheme, string url)
+    {
+        var (normalizedScheme, normalizedUrl) = NormalizeProtocolHandlerParameters(scheme, url);
+        _window.Options.ProtocolHandlers?.Registry.Unregister(normalizedScheme, normalizedUrl);
+    }
 
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#normalize-protocol-handler-parameters</summary>
-    private void NormalizeProtocolHandlerParameters(string scheme, string url)
+    private (string Scheme, string Url) NormalizeProtocolHandlerParameters(string scheme, string url)
     {
         scheme = Infra.InfraAscii.ToAsciiLowercase(scheme);
         if (!IsSafelistedScheme(scheme) && !(scheme.StartsWith("web+", StringComparison.Ordinal) && scheme.Length > 4 && scheme.AsSpan(4).IndexOfAnyExceptInRange('a', 'z') < 0))
@@ -143,6 +168,8 @@ public sealed partial class Navigator
         var urlRecord = Reflection.EncodingParseUrl(_window.Document, url) ?? throw new DomException("The URL is not valid", "SyntaxError");
         if (urlRecord.Scheme is not ("http" or "https") || !OriginRecord.IsSameOrigin(OriginRecord.FromUrl(urlRecord), _window.Document.Origin) || !ReferrerPolicies.IsPotentiallyTrustworthy(urlRecord))
             throw new DomException("The URL is not allowed", "SecurityError");
+
+        return (scheme, urlRecord.Serialize());
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#safelisted-scheme</summary>

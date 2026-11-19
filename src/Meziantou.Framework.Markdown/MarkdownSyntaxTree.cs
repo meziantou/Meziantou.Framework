@@ -252,7 +252,11 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// their containers. A blank line separates this line from the paragraph before it, or from a thematic break that would make it a setext
     /// heading.
     /// </para>
-    /// <para>The text is parsed again, and checked to give the attributes to the block and to keep its text.</para>
+    /// <para>
+    /// The text is parsed again, and checked to give the attributes to the block and to keep its text. To change the attributes of
+    /// many blocks, such as every heading, <see cref="MarkdownBlockSyntax.WithGenericAttributes(MarkdownGenericAttributes?)"/>
+    /// changes a block without parsing the document again, for the blocks whose attributes are written in them.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">

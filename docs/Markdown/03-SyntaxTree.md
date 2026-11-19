@@ -168,24 +168,40 @@ Assert.Equal("steps", tree.GetRoot().DescendantNodes().OfType<MarkdownListSyntax
 <!-- endref -->
 
 [MarkdownGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownGenericAttributes) is a record: `with` changes
-one part, such as the id. Each change parses the text again, so find the next block in the new tree. Here, every
-heading gets the identifier it has, so the links to it keep working when its text changes:
+one part, such as the id.
 
-<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_HeadingIdentifiers;format=md-fenced-code-block;dedent=true -->
+Each call to `MarkdownSyntaxTree.WithGenericAttributes` parses the text again. To change the attributes of many blocks,
+[MarkdownBlockSyntax.WithGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownBlockSyntax.WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownGenericAttributes))
+returns a copy of the block with the attributes, without parsing the document again: return it from a
+[MarkdownSyntaxRewriter](cref:Meziantou.Framework.Markdown.MarkdownSyntaxRewriter), or pass it to `ReplaceNode` or
+`ReplaceNodes`. It writes the attributes in the block, so it works for the blocks whose attributes are written in them:
+headings, paragraphs, fenced code blocks, math blocks and custom containers. Call it on a block of the tree, whose
+attributes are known, rather than on a copy. It throws an `InvalidOperationException` when the attributes cannot be
+written in the block, for example when they are on a line before it: use `MarkdownSyntaxTree.WithGenericAttributes` then.
+
+Here, every heading gets the identifier it has as its id, so that the links to it keep working when its text changes:
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_HeadingIdentifiers;format=md-fenced-code-block;dedent=true -->
+```csharp
+private sealed class HeadingIdentifiers : MarkdownSyntaxRewriter
+{
+    // The heading is the one of the tree, whose identifier and attributes are known
+    public override SyntaxNode? VisitMarkdownHeading(MarkdownHeadingSyntax node)
+        => node.Identifier is { } identifier ? node.WithGenericAttributes(node.GetGenericAttributes() with { Id = identifier }) : node;
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownBlockSyntax_WithGenericAttributes;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
-var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n", options);
+var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n\n> ## Introduction\n", options);
 
-// Write the identifier of every heading as its id, so that the links to it keep working when its text changes. Each edit
-// parses the text again: the headings are found again in the new tree.
-var count = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Count();
-for (var i = 0; i < count; i++)
-{
-    var heading = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().ElementAt(i);
-    tree = tree.WithGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
-}
+// Write the identifier of every heading as its id, so that the links to it keep working when its text changes. The
+// rewriter changes all the headings in one pass, without parsing the document again.
+var root = new HeadingIdentifiers().Visit(tree.GetRoot())!;
 
-Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n", tree.GetRoot().ToFullString());
+Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n\n> ## Introduction {#introduction-1}\n", root.ToFullString());
 ```
 <!-- endref -->
 

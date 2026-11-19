@@ -18,6 +18,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     private Dictionary<string, MarkdownAbbreviationDefinitionSyntax>? _abbreviations;
     private Dictionary<string, MarkdownFootnoteDefinitionSyntax>? _footnotes;
     private Dictionary<MarkdownHeadingSyntax, string>? _headingIdentifiers;
+    private Dictionary<MarkdownSyntaxNode, TargetAttributes>? _genericAttributes;
 
     // Whether the document has generic attributes: 0 when not computed yet, 1 when it has none, 2 when it has some
     private int _hasGenericAttributes;
@@ -177,6 +178,33 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
 
             return _hasGenericAttributes == 2;
         }
+    }
+
+    /// <summary>Gets the generic attributes of a node of the document, merged from every <c>{...}</c> that is for it, and these <c>{...}</c>.</summary>
+    /// <remarks>The targets of all the attributes are found once, in one pass over the document.</remarks>
+    internal (MarkdownGenericAttributes Attributes, IReadOnlyList<MarkdownGenericAttributesSyntax> Nodes) GetGenericAttributes(MarkdownSyntaxNode target)
+    {
+        if (!HasGenericAttributes)
+            return (MarkdownGenericAttributes.Empty, []);
+
+        if (_genericAttributes is null)
+        {
+            var targets = new Dictionary<MarkdownSyntaxNode, TargetAttributes>();
+            _ = MarkdownGenericAttributesSyntax.FindTargets(this, (attributes, target) =>
+            {
+                if (!targets.TryGetValue(target, out var targetAttributes))
+                {
+                    targetAttributes = new TargetAttributes();
+                    targets.Add(target, targetAttributes);
+                }
+
+                targetAttributes.Nodes.Add(attributes);
+            });
+
+            _genericAttributes = targets;
+        }
+
+        return _genericAttributes.TryGetValue(target, out var result) ? (result.GetAttributes(), result.Nodes) : (MarkdownGenericAttributes.Empty, []);
     }
 
     /// <summary>Gets the identifier of a heading of the document: the id of its generic attributes, or the one of auto-identifiers.</summary>
@@ -360,5 +388,56 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         }
 
         return false;
+    }
+
+    // The attributes that are for a node, in the order Markdig applies them
+    private sealed class TargetAttributes
+    {
+        private MarkdownGenericAttributes? _attributes;
+
+        public List<MarkdownGenericAttributesSyntax> Nodes { get; } = [];
+
+        // As in the HTML renderer, the id of the last attributes wins, the classes are added, and a property is kept from the first
+        // attributes that have it
+        public MarkdownGenericAttributes GetAttributes()
+        {
+            if (_attributes is not null)
+                return _attributes;
+
+            string? id = null;
+            List<string>? blockLineClasses = null;
+            var classes = new List<string>();
+            var properties = new List<KeyValuePair<string, string?>>();
+            foreach (var attributes in Nodes)
+            {
+                id = attributes.Id ?? id;
+                if (attributes.IsBlockLine)
+                {
+                    blockLineClasses = [.. attributes.Classes];
+                }
+                else
+                {
+                    classes.AddRange(attributes.Classes);
+                }
+
+                var existingCount = properties.Count;
+                foreach (var property in attributes.Properties)
+                {
+                    if (properties.FindIndex(0, existingCount, existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)) < 0)
+                    {
+                        properties.Add(property);
+                    }
+                }
+            }
+
+            // The classes of the first line of a block come first, as the renderer writes them
+            if (blockLineClasses is not null)
+            {
+                classes.InsertRange(0, blockLineClasses);
+            }
+
+            _attributes = id is null && classes.Count == 0 && properties.Count == 0 ? MarkdownGenericAttributes.Empty : new MarkdownGenericAttributes(id, classes, properties);
+            return _attributes;
+        }
     }
 }

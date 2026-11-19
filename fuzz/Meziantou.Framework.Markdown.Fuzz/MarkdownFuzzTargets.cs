@@ -437,18 +437,33 @@ public static class MarkdownFuzzTargets
             {
                 foreach (var attributes in (MarkdownGenericAttributes?[])[FuzzAttributes, null])
                 {
-                    MarkdownSyntaxTree updated;
+                    var expected = attributes ?? MarkdownGenericAttributes.Empty;
                     try
                     {
-                        updated = tree.WithGenericAttributes(block, attributes);
+                        var updated = tree.WithGenericAttributes(block, attributes);
+                        FuzzAssert.True(updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Any(node => node.RawKind == block.RawKind && node.GetGenericAttributes().Equals(expected)), $"The block at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+
+                    // The copy of the block is written without parsing the document: the block has the attributes once the text of the
+                    // document with the copy is parsed again, and the copy is the block that parsing the text gives
+                    MarkdownBlockSyntax copy;
+                    try
+                    {
+                        copy = block.WithGenericAttributes(attributes);
                     }
                     catch (InvalidOperationException)
                     {
                         continue;
                     }
 
-                    var expected = attributes ?? MarkdownGenericAttributes.Empty;
-                    FuzzAssert.True(updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Any(node => node.RawKind == block.RawKind && node.GetGenericAttributes().Equals(expected)), $"The block at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
+                    Replace(tree, block, copy);
+                    var reparsed = MarkdownSyntaxTree.ParseText(root.ReplaceNode(block, copy).ToFullString(), options).GetRoot();
+                    var parsedBlock = reparsed.DescendantNodes().OfType<MarkdownBlockSyntax>().FirstOrDefault(node => node.RawKind == block.RawKind && node.SpanStart == block.SpanStart);
+                    FuzzAssert.True(parsedBlock is not null && parsedBlock.GetGenericAttributes().Equals(expected), $"The copy of the {block.Kind()} at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(parsedBlock!.IsEquivalentTo(copy) && parsedBlock.DescendantTokens().Select(GetIntValue).SequenceEqual(copy.DescendantTokens().Select(GetIntValue)), $"The copy of the {block.Kind()} at {block.Span} is not the block parsed from its text: {FuzzAssert.Format(text)}");
                 }
             }
         }
@@ -503,6 +518,9 @@ public static class MarkdownFuzzTargets
     }
 
     private static readonly MarkdownGenericAttributes FuzzAttributes = new("fz-id", ["fz"], [new("data-fz", "a b'"), new("fz", null)]);
+
+    // The value of a token that is not its text, such as where generic attributes are
+    private static int? GetIntValue(SyntaxToken token) => token.Value is int value ? value : null;
 
     // The text of the tree with the node replaced reproduces the text around the node, and is parsed again
     private static void Replace(MarkdownSyntaxTree tree, MarkdownSyntaxNode node, MarkdownSyntaxNode replacement)

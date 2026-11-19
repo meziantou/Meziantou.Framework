@@ -109,6 +109,7 @@ public static class LocatorFuzzTargets
     {
         yield return FuzzSeed.FromText("role", "r:button:Delete\n" + UsersMarkup);
         yield return FuzzSeed.FromText("role-exact-hidden", "reh:heading:Hidden heading\n" + UsersMarkup);
+        yield return FuzzSeed.FromText("role-input-types", "r:textbox:Start date\n<label>Start date <input type=date value=2026-01-14></label><input type=password aria-label=Password><input type=color><input type=file aria-label=Upload><input type=hidden>");
         yield return FuzzSeed.FromText("text", "t:ada\n" + UsersMarkup);
         yield return FuzzSeed.FromText("text-exact", "te:Send now\n" + UsersMarkup);
         yield return FuzzSeed.FromText("label", "l:Search\n" + UsersMarkup);

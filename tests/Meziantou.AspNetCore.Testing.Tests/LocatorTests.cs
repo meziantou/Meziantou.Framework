@@ -378,6 +378,19 @@ public sealed class LocatorTests
 
         var exception = await Assert.ThrowsAsync<ElementNotInteractableException>(() => form.GetByLabel("Birth date").FillAsync("not a date"));
         Assert.Equal("The value \"not a date\" is not a valid value for the input <input> of type \"date\"", exception.Message);
+
+        // The date, time and color fields are text fields, as in Playwright
+        await form.GetByLabel("Birth date").FillAsync("1815-12-10");
+        await Expect(form.GetByRole("textbox", "Birth date")).ToHaveValueAsync("1815-12-10");
+        await Expect(form.GetByLabel("Meeting")).ToHaveRoleAsync("textbox");
+        Assert.Equal("""
+            - textbox "Birth date": 1815-12-10
+            - textbox "Alarm": 07:30:00
+            - slider "Volume": "3"
+            - textbox "Meeting": 2026-07-01T12:30
+            - textbox "Color": "#ff0000"
+            - paragraph: 1815-12-10 07:30 3
+            """, form.GetAccessibilitySnapshot());
     }
 
     [Fact]

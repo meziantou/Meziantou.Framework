@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of measure-memory, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 12 | 15 | 0 | 80% |
+| [Stable](#stable-tests) | 11 | 15 | 0 | 73% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **12** | **15** | **0** | **80%** |
+| **All** | **11** | **15** | **0** | **73%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 2
+- **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 2
 
 ## Stable tests
@@ -27,7 +27,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`detached.https.window.js`](https://wpt.fyi/results/measure-memory/detached.https.window.js) | Timeout | 0 / 1 | TEST BUG, NOT IMPLEMENTED | the test waits for the messages of the same-origin popups opened by the cross-site and cross-origin frames (`same-origin-11`, `same-origin-13`), whose `Cross-Origin-Opener-Policy: same-origin` response switches them to another browsing context group, which removes their opener (as `window-open.mix.https.window.js`): the test times out; the realms of the detached frames and of the replaced documents that the scripts keep alive: the measurement only lists the documents of the navigables of the browsing context group |
-| [`idlharness.window.js`](https://wpt.fyi/results/measure-memory/idlharness.window.js) | Pass | 5 / 5 |  |  |
+| [`idlharness.window.js`](https://wpt.fyi/results/measure-memory/idlharness.window.js) | Fail | 4 / 5 | TEST BUG | 1 subtest: `measureUserAgentSpecificMemory()` is declared `[CrossOriginIsolated]`, so it is only exposed when the global object is cross-origin isolated (https://webidl.spec.whatwg.org/#CrossOriginIsolated); the test page has no `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers, and idlharness.js does not implement `[CrossOriginIsolated]`: it expects the operation on the prototype of `Performance`, which Chromium hides too |
 | [`iframe.cross-origin.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.cross-origin.https.window.js) | Pass | 1 / 1 |  |  |
 | [`iframe.cross-site.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.cross-site.https.window.js) | Pass | 1 / 1 |  |  |
 | [`iframe.same-origin.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.same-origin.https.window.js) | Pass | 1 / 1 |  |  |

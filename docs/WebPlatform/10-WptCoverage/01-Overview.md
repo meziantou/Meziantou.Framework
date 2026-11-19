@@ -49,18 +49,18 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,342 | 30,012 | 1,559 | 96% |
+| [Stable](#stable-tests) | 27,341 | 30,012 | 1,559 | 96% |
 | [Tentative](#tentative-tests) | 1,610 | 3,031 | 634 | 67% |
 | [Reftests](#reftests) | 28,672 | 29,567 | 145 | 97% |
 | [Crash tests](#crash-tests) | 2,098 | 2,124 | 16 | 99.5% |
-| **All** | **59,722** | **64,734** | **2,354** | **96%** |
+| **All** | **59,721** | **64,734** | **2,354** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 109
-- **TEST BUG**: 1,127
+- **TEST BUG**: 1,128
 - **NOT IMPLEMENTED**: 2,999
 - **REQUIRES**: 629
   - `hardware`: 441
@@ -284,7 +284,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`magnetometer`](magnetometer.md) | 8 | 10 | 0 | 80% |
 | [`managed`](managed.md) | 0 | 2 | 2 | – |
 | [`mathml`](mathml.md) | 202 | 210 | 0 | 96% |
-| [`measure-memory`](measure-memory.md) | 12 | 15 | 0 | 80% |
+| [`measure-memory`](measure-memory.md) | 11 | 15 | 0 | 73% |
 | [`media-capabilities`](media-capabilities.md) | 0 | 7 | 7 | – |
 | [`media-playback-quality`](media-playback-quality.md) | 1 | 1 | 0 | 100% |
 | [`media-source`](media-source.md) | 85 | 93 | 0 | 91% |
@@ -420,7 +420,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (343 sections)** | **27,342** | **30,012** | **1,559** | **96%** |
+| **Total (343 sections)** | **27,341** | **30,012** | **1,559** | **96%** |
 
 ## Tentative tests
 

@@ -2890,28 +2890,13 @@
     "total": 20
   },
   "fetch/metadata/trailing-dot.https.sub.any.js": {
-    "total": 3,
-    "failures": {
-      "Fetching a resource from a cross-site host, spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same origin, but spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same site, but spelled with a trailing dot.": "FAIL"
-    }
+    "total": 15
   },
   "fetch/metadata/trailing-dot.https.sub.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Fetching a resource from a cross-site host, spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same origin, but spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same site, but spelled with a trailing dot.": "FAIL"
-    }
+    "total": 15
   },
   "fetch/metadata/trailing-dot.https.sub.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "Fetching a resource from a cross-site host, spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same origin, but spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same site, but spelled with a trailing dot.": "FAIL"
-    }
+    "total": 15
   },
   "fetch/metadata/unload.https.sub.html": {
     "total": 5

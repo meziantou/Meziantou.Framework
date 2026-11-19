@@ -297,7 +297,11 @@ internal sealed partial class WptTestRunner
                 }
                 catch (System.Xml.XmlException ex)
                 {
-                    return new WptResult("ERROR", "The test page is not well-formed XML: " + ex.Message, [], LogSnapshot);
+                    // A page that is not well-formed is displayed as by a browser: the response of a navigation, whose document
+                    // shows the parsing error (the scripts before the error run)
+                    Log("The test page is not well-formed XML: " + ex.Message);
+                    var bytes = File.ReadAllBytes(_test.FilePath);
+                    browsingContext.Navigate(_test.Url, _ => new DocumentResource(bytes) { Headers = [new("Content-Type", GetXmlContentType(_test.RelativePath))] });
                 }
             }
             else
@@ -755,6 +759,9 @@ internal sealed partial class WptTestRunner
 
         var path = Uri.UnescapeDataString(parsed.Pathname);
         var file = Path.Combine(WptPaths.Wpt, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(file) && GetGeneratedWindowPage(path, parsed) is { } generatedPage)
+            return generatedPage;
+
         if (!File.Exists(file))
         {
             Log("Document not found: " + path);
@@ -1161,6 +1168,11 @@ internal sealed partial class WptTestRunner
                 var body = Encoding.UTF8.GetBytes(GetTestHtml());
                 resource = new DocumentResource(body) { Headers = [new("Content-Type", "text/html; charset=utf-8"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
             }
+            else if (GetGeneratedWindowPage(path, url) is { } generatedPage)
+            {
+                // The page that wptserve generates for another .window.js or .any.js file
+                resource = generatedPage;
+            }
             else
             {
                 // wptserve returns a 404 page
@@ -1503,6 +1515,9 @@ internal sealed partial class WptTestRunner
         if (_test.Kind == WptTestKind.Html)
             return File.ReadAllText(_test.FilePath);
 
+        if (!_test.IsWorker)
+            return GetWindowWrapperHtml(_test.FilePath, _test.RelativePath, _test.Kind == WptTestKind.AnyJs);
+
         // https://web-platform-tests.org/writing-tests/testharness.html#multi-global-tests
         var meta = WptTestDiscovery.ParseMeta(File.ReadAllText(_test.FilePath));
         var html = new StringBuilder();
@@ -1517,35 +1532,53 @@ internal sealed partial class WptTestRunner
             html.Append("<meta name=timeout content=long>\n");
         }
 
-        if (_test.Kind == WptTestKind.AnyJs)
-        {
-            html.Append("<script>self.GLOBAL = { isWindow: function() { return true; }, isWorker: function() { return false; }, isShadowRealm: function() { return false; } };</script>\n");
-        }
-
         // The tests of a worker are run by the worker, and their results are sent to the page (the wrappers of wptserve,
         // https://github.com/web-platform-tests/wpt/blob/master/tools/serve/serve.py)
-        if (_test.IsWorker)
+        var workerUrl = JavaScriptString("/" + GetWorkerScriptPath() + _test.Variant);
+        var worker = _test.Kind switch
         {
-            var workerUrl = JavaScriptString("/" + GetWorkerScriptPath() + _test.Variant);
-            var worker = _test.Kind switch
-            {
-                WptTestKind.AnyJsDedicatedWorkerModule => $"new Worker({workerUrl}, {{ type: 'module' }})",
-                WptTestKind.AnyJsSharedWorker => $"new SharedWorker({workerUrl})",
-                WptTestKind.AnyJsSharedWorkerModule => $"new SharedWorker({workerUrl}, {{ type: 'module' }})",
-                _ => $"new Worker({workerUrl})",
-            };
-            html.Append("<script src=\"/resources/testharness.js\"></script>\n<script src=\"/resources/testharnessreport.js\"></script>\n<div id=log></div>\n");
-            if (_test.Kind is WptTestKind.AnyJsServiceWorker or WptTestKind.AnyJsServiceWorkerModule)
-            {
-                // The service worker is registered for a scope without clients, after the registration of a previous run is removed
-                var options = _test.Kind == WptTestKind.AnyJsServiceWorkerModule ? "{ scope, type: 'module' }" : "{ scope }";
-                html.Append("<script>\n(async function() {\n  const scope = 'does/not/exist';\n  let reg = await navigator.serviceWorker.getRegistration(scope);\n  if (reg) await reg.unregister();\n");
-                html.Append("  reg = await navigator.serviceWorker.register(").Append(workerUrl).Append(", ").Append(options).Append(");\n  fetch_tests_from_worker(reg.installing);\n})();\n</script>\n");
-                return html.ToString();
-            }
-
-            html.Append("<script>\nfetch_tests_from_worker(").Append(worker).Append(");\n</script>\n");
+            WptTestKind.AnyJsDedicatedWorkerModule => $"new Worker({workerUrl}, {{ type: 'module' }})",
+            WptTestKind.AnyJsSharedWorker => $"new SharedWorker({workerUrl})",
+            WptTestKind.AnyJsSharedWorkerModule => $"new SharedWorker({workerUrl}, {{ type: 'module' }})",
+            _ => $"new Worker({workerUrl})",
+        };
+        html.Append("<script src=\"/resources/testharness.js\"></script>\n<script src=\"/resources/testharnessreport.js\"></script>\n<div id=log></div>\n");
+        if (_test.Kind is WptTestKind.AnyJsServiceWorker or WptTestKind.AnyJsServiceWorkerModule)
+        {
+            // The service worker is registered for a scope without clients, after the registration of a previous run is removed
+            var options = _test.Kind == WptTestKind.AnyJsServiceWorkerModule ? "{ scope, type: 'module' }" : "{ scope }";
+            html.Append("<script>\n(async function() {\n  const scope = 'does/not/exist';\n  let reg = await navigator.serviceWorker.getRegistration(scope);\n  if (reg) await reg.unregister();\n");
+            html.Append("  reg = await navigator.serviceWorker.register(").Append(workerUrl).Append(", ").Append(options).Append(");\n  fetch_tests_from_worker(reg.installing);\n})();\n</script>\n");
             return html.ToString();
+        }
+
+        html.Append("<script>\nfetch_tests_from_worker(").Append(worker).Append(");\n</script>\n");
+        return html.ToString();
+    }
+
+    /// <summary>
+    /// The page that wptserve generates for a <c>.window.js</c> file, or for the window variant of a <c>.any.js</c> file
+    /// (https://web-platform-tests.org/writing-tests/testharness.html#multi-global-tests): its <c>META</c> title, timeout and
+    /// scripts, then the file.
+    /// </summary>
+    private static string GetWindowWrapperHtml(string filePath, string relativePath, bool isAnyJs)
+    {
+        var meta = WptTestDiscovery.ParseMeta(File.ReadAllText(filePath));
+        var html = new StringBuilder();
+        html.Append("<!doctype html>\n<meta charset=utf-8>\n");
+        if (meta.Find(m => m.Key == "title") is { Value: { } title })
+        {
+            html.Append("<title>").Append(System.Net.WebUtility.HtmlEncode(title)).Append("</title>\n");
+        }
+
+        if (meta.Exists(m => m.Key == "timeout" && m.Value == "long"))
+        {
+            html.Append("<meta name=timeout content=long>\n");
+        }
+
+        if (isAnyJs)
+        {
+            html.Append("<script>self.GLOBAL = { isWindow: function() { return true; }, isWorker: function() { return false; }, isShadowRealm: function() { return false; } };</script>\n");
         }
 
         html.Append("<script src=\"/resources/testharness.js\"></script>\n<script src=\"/resources/testharnessreport.js\"></script>\n");
@@ -1554,8 +1587,27 @@ internal sealed partial class WptTestRunner
             html.Append("<script src=\"").Append(script.Value).Append("\"></script>\n");
         }
 
-        html.Append("<div id=log></div>\n<script src=\"/").Append(_test.RelativePath).Append("\"></script>\n");
+        html.Append("<div id=log></div>\n<script src=\"/").Append(relativePath).Append("\"></script>\n");
         return html.ToString();
+    }
+
+    /// <summary>
+    /// The page that wptserve generates for the <c>.window.html</c> or <c>.any.html</c> URL of a <c>.window.js</c> or
+    /// <c>.any.js</c> file that exists (a test, or a resource of a test), with the headers of the <c>.headers</c> files of the
+    /// file, or null.
+    /// </summary>
+    private DocumentResource? GetGeneratedWindowPage(string path, Url url)
+    {
+        if (!path.EndsWith(".window.html", StringComparison.Ordinal) && !path.EndsWith(".any.html", StringComparison.Ordinal))
+            return null;
+
+        var relativePath = path.TrimStart('/')[..^".html".Length] + ".js";
+        var file = Path.Combine(WptPaths.Wpt, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(file))
+            return null;
+
+        var body = Encoding.UTF8.GetBytes(GetWindowWrapperHtml(file, relativePath, isAnyJs: path.EndsWith(".any.html", StringComparison.Ordinal)));
+        return new DocumentResource(body) { Headers = [new("Content-Type", "text/html; charset=utf-8"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)), .. GetHeaders(file, url)] };
     }
 
     /// <summary>The path of the script of the worker of the test: the <c>.worker.js</c> file, or the wrapper of the <c>.any.js</c> file.</summary>

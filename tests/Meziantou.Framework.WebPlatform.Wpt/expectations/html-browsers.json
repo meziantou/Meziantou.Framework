@@ -387,7 +387,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/grandparent_location_aboutsrcdoc.sub.window.js": {
-    "harness": "TIMEOUT",
+    "harness": "ERROR",
     "total": 6,
     "failures": {
       "cross-origin grandparent sets location in same-doc navigation": "NOTRUN",

@@ -81,7 +81,7 @@
     "crashtest": "PASS"
   },
   "mathml/crashtests/mozilla/289180-1.xml": {
-    "crashtest": "ERROR"
+    "crashtest": "PASS"
   },
   "mathml/crashtests/mozilla/306902-1.xml": {
     "crashtest": "PASS"

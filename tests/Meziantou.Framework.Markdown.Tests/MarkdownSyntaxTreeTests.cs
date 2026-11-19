@@ -2820,6 +2820,18 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Theory]
+    [InlineData("a \U0001F600", "a &#128512;")]
+    [InlineData("a \uD83D", "a \uD83D")]
+    [InlineData("\uDE00 \uD83D\uD83D\uDE00", "\uDE00 \uD83D&#128512;")]
+    public void EscapeWritesATriggerCharacterOutsideTheBasicMultilingualPlaneAsOneEntity(string text, string expected)
+    {
+        // An entity cannot write a lone surrogate, which the parser would decode to U+FFFD
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new MentionExtension("smile", "\U0001F600")] };
+
+        Assert.Equal(expected, MarkdownEscaper.Escape(text, options));
+    }
+
+    [Theory]
     [InlineData("test")]
     [InlineData("te`st")]
     [InlineData("`test")]

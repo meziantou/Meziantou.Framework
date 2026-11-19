@@ -361,12 +361,24 @@ public static class MarkdownEscaper
                 continue;
             }
 
-            if (c is ' ' or '\t' || (char.IsLowSurrogate(c) && i > 0 && char.IsHighSurrogate(text[i - 1])))
+            if (c is ' ' or '\t')
             {
                 continue;
             }
 
-            var lowSurrogate = char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]) ? text[i + 1] : '\0';
+            // A pair of surrogates is one entity, written at its high surrogate. A lone surrogate is not escaped: the parser would
+            // decode its entity to U+FFFD.
+            var lowSurrogate = '\0';
+            if (char.IsSurrogate(c))
+            {
+                if (!char.IsHighSurrogate(c) || i + 1 == text.Length || !char.IsLowSurrogate(text[i + 1]))
+                {
+                    continue;
+                }
+
+                lowSurrogate = text[i + 1];
+            }
+
             var lineStart = i == 0 || text[i - 1] is '\r' or '\n';
             if (IsTrigger(inlineTriggers, c, lowSurrogate) || (lineStart && IsTrigger(fencedBlockTriggers, c, lowSurrogate)) || emoji?.MatchLongest(text.AsSpan(i, end - i)) is not null)
             {

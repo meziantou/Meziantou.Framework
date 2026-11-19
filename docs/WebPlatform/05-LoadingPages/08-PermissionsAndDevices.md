@@ -219,16 +219,19 @@ private sealed class SolidColorCamera : MediaCaptureBackend
 - Call [NotifyDevicesChanged](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend.NotifyDevicesChanged) when
   a device is plugged in or removed: the pages that can see the change get a `devicechange` event. A source calls
   `SetMuted` while it cannot produce media, and `End` when its device is removed: its tracks fire `mute`, `unmute` and
-  `ended`.
+  `ended`. A source that is already muted or ended when `StartCapture` returns gives muted or ended tracks.
 - The capture stops when the last track of a device stops, or when the document is unloaded: the source is disposed.
 
-The streams also come from the page itself: `canvas.captureStream()` captures a canvas when it changes,
+The streams also come from the page itself: `canvas.captureStream()` captures a canvas when it changes, at most
+`frameRate` times per second when the page gives a frame rate (only on `requestFrame()` for a rate of 0). Once the
+canvas is not origin-clean (a cross-origin image was drawn on it), its tracks are muted and get no frame.
 `video.captureStream()` captures the frames of a media element, and `AudioContext.createMediaStreamDestination()`
-captures a Web Audio graph. `createMediaStreamSource()` and `createMediaStreamTrackSource()` play the audio of a track in
-a Web Audio graph. The media elements play a stream assigned to `srcObject` as a live timeline that cannot be seeked, once a
-[MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) enables their processing model.
-`MediaRecorder` is not implemented, and the audio of the media elements is not decoded (the media backend gives no
-audio), so `createMediaElementSource()` outputs silence.
+captures a Web Audio graph, with the channel count of the node. `createMediaStreamSource()` and
+`createMediaStreamTrackSource()` play the audio of a track in a Web Audio graph. The media elements play a stream
+assigned to `srcObject` as a live timeline that cannot be seeked, once a
+[MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) enables their processing model. `MediaRecorder`
+is not implemented, and the audio of the media elements is not decoded (the media backend gives no audio), so
+`createMediaElementSource()` outputs silence.
 
 ## Notifications
 

@@ -49,28 +49,29 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,990 | 30,012 | 1,903 | 96% |
+| [Stable](#stable-tests) | 26,982 | 30,012 | 1,912 | 96% |
 | [Tentative](#tentative-tests) | 1,508 | 3,031 | 661 | 64% |
 | [Reftests](#reftests) | 28,620 | 29,567 | 140 | 97% |
 | [Crash tests](#crash-tests) | 2,084 | 2,124 | 30 | 99.5% |
-| **All** | **59,202** | **64,734** | **2,734** | **95%** |
+| **All** | **59,194** | **64,734** | **2,743** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 105
-- **TEST BUG**: 1,096
-- **NOT IMPLEMENTED**: 3,482
+- **BUG**: 104
+- **TEST BUG**: 1,097
+- **NOT IMPLEMENTED**: 3,481
 - **REQUIRES**: 765
   - `hardware`: 579
   - `layout`: 23
   - `media`: 23
   - `user-input`: 149
   - `workers`: 1
-- **TEST RUNNER**: 93
+- **TEST RUNNER**: 96
 - **OUT OF SCOPE**: 210
 - **FLAKY**: 1
+- **PERFORMANCE**: 6
 
 ## Stable tests
 
@@ -205,7 +206,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`direct-sockets`](direct-sockets.md) | 0 | 4 | 4 | – |
 | [`document-picture-in-picture`](document-picture-in-picture.md) | 0 | 22 | 22 | – |
 | [`document-policy`](document-policy.md) | 6 | 7 | 0 | 86% |
-| [`dom`](dom.md) | 679 | 690 | 0 | 98% |
+| [`dom`](dom.md) | 673 | 690 | 6 | 98% |
 | [`domparsing`](domparsing.md) | 87 | 94 | 0 | 93% |
 | [`domxpath`](domxpath.md) | 29 | 29 | 0 | 100% |
 | [`dpub-aam`](dpub-aam.md) | 0 | 1 | 1 | – |
@@ -352,7 +353,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selection`](selection.md) | 93 | 98 | 0 | 95% |
 | [`serial`](serial.md) | 0 | 8 | 8 | – |
 | [`server-timing`](server-timing.md) | 9 | 9 | 0 | 100% |
-| [`service-workers`](service-workers.md) | 253 | 283 | 1 | 90% |
+| [`service-workers`](service-workers.md) | 251 | 283 | 4 | 90% |
 | [`shadow-dom`](shadow-dom.md) | 234 | 242 | 0 | 97% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
@@ -419,7 +420,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,990** | **30,012** | **1,903** | **96%** |
+| **Total (343 sections)** | **26,982** | **30,012** | **1,912** | **96%** |
 
 ## Tentative tests
 

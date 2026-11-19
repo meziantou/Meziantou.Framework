@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 679 | 690 | 0 | 98% |
+| [Stable](#stable-tests) | 673 | 690 | 6 | 98% |
 | [Tentative](#tentative-tests) | 32 | 55 | 0 | 58% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
 | [Crash tests](#crash-tests) | 45 | 46 | 0 | 98% |
-| **All** | **760** | **795** | **0** | **96%** |
+| **All** | **754** | **795** | **6** | **96%** |
 
 ## Failure reasons
 
@@ -23,6 +23,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 25
 - **OUT OF SCOPE**: 1
+- **PERFORMANCE**: 6
 
 ## Stable tests
 
@@ -433,12 +434,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/Node-textContent.html`](https://wpt.fyi/results/dom/nodes/Node-textContent.html) | Pass | 81 / 81 |  |  |
 | [`nodes/NodeList-Iterable.html`](https://wpt.fyi/results/dom/nodes/NodeList-Iterable.html) | Pass | 8 / 8 |  |  |
 | [`nodes/NodeList-live-mutations.window.js`](https://wpt.fyi/results/dom/nodes/NodeList-live-mutations.window.js) | Pass | 4 / 4 |  |  |
-| [`nodes/NodeList-static-length-getter-tampered-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-1.html) | Pass | 1 / 1 |  |  |
-| [`nodes/NodeList-static-length-getter-tampered-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-2.html) | Pass | 1 / 1 |  |  |
-| [`nodes/NodeList-static-length-getter-tampered-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-3.html) | Pass | 1 / 1 |  |  |
-| [`nodes/NodeList-static-length-getter-tampered-indexOf-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-1.html) | Pass | 1 / 1 |  |  |
-| [`nodes/NodeList-static-length-getter-tampered-indexOf-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-2.html) | Pass | 1 / 1 |  |  |
-| [`nodes/NodeList-static-length-getter-tampered-indexOf-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-3.html) | Pass | 1 / 1 |  |  |
+| [`nodes/NodeList-static-length-getter-tampered-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-1.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of `nodeList.length` and `nodeList[i]` reads in a loop, or 50 × 100,000 calls of `Array.prototype.indexOf` on the list): ~100 G instructions per test in a Release build (2.6 times fewer since 2026-11-19, a few seconds alone on a Mac), but each one took more than the 60 s limit of the runner when the whole suite ran on a loaded machine: too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-2.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of `nodeList.length` and `nodeList[i]` reads in a loop, or 50 × 100,000 calls of `Array.prototype.indexOf` on the list): ~100 G instructions per test in a Release build (2.6 times fewer since 2026-11-19, a few seconds alone on a Mac), but each one took more than the 60 s limit of the runner when the whole suite ran on a loaded machine: too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-3.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of `nodeList.length` and `nodeList[i]` reads in a loop, or 50 × 100,000 calls of `Array.prototype.indexOf` on the list): ~100 G instructions per test in a Release build (2.6 times fewer since 2026-11-19, a few seconds alone on a Mac), but each one took more than the 60 s limit of the runner when the whole suite ran on a loaded machine: too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-indexOf-1.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-1.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of `nodeList.length` and `nodeList[i]` reads in a loop, or 50 × 100,000 calls of `Array.prototype.indexOf` on the list): ~100 G instructions per test in a Release build (2.6 times fewer since 2026-11-19, a few seconds alone on a Mac), but each one took more than the 60 s limit of the runner when the whole suite ran on a loaded machine: too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-indexOf-2.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-2.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of `nodeList.length` and `nodeList[i]` reads in a loop, or 50 × 100,000 calls of `Array.prototype.indexOf` on the list): ~100 G instructions per test in a Release build (2.6 times fewer since 2026-11-19, a few seconds alone on a Mac), but each one took more than the 60 s limit of the runner when the whole suite ran on a loaded machine: too slow for every run, and it does not test the DOM |
+| [`nodes/NodeList-static-length-getter-tampered-indexOf-3.html`](https://wpt.fyi/results/dom/nodes/NodeList-static-length-getter-tampered-indexOf-3.html) | Disabled | – | PERFORMANCE | JavaScript engine stress test (millions of `nodeList.length` and `nodeList[i]` reads in a loop, or 50 × 100,000 calls of `Array.prototype.indexOf` on the list): ~100 G instructions per test in a Release build (2.6 times fewer since 2026-11-19, a few seconds alone on a Mac), but each one took more than the 60 s limit of the runner when the whole suite ran on a loaded machine: too slow for every run, and it does not test the DOM |
 | [`nodes/NonDocumentTypeChildNode-sibling-element.html`](https://wpt.fyi/results/dom/nodes/NonDocumentTypeChildNode-sibling-element.html) | Pass | 6 / 6 |  |  |
 | [`nodes/ParentNode-append.html`](https://wpt.fyi/results/dom/nodes/ParentNode-append.html) | Pass | 25 / 25 |  |  |
 | [`nodes/ParentNode-children.html`](https://wpt.fyi/results/dom/nodes/ParentNode-children.html) | Pass | 1 / 1 |  |  |

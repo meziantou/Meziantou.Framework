@@ -193,8 +193,9 @@ top-level page are kept. So are they for a response loaded by a frame of the top
 another site: it clears the stores of that frame's partition.
 
 As in Chromium, the service worker registrations of the origin are cleared at once, without waiting for their pages to
-unload: their workers are terminated (their state becomes `redundant`), and the pages they control lose their
-controller (`navigator.serviceWorker.controller` is null after a `controllerchange` event). A registration that
+unload: their workers are terminated (their state becomes `redundant`), the requests whose `fetch` event waits for
+its `respondWith()` promise fail, and the pages they control lose their controller (`navigator.serviceWorker.controller`
+is null after a `controllerchange` event). A registration that
 `unregister()` already removed, but that still controls a page, is cleared too.
 
 Some data is always kept:

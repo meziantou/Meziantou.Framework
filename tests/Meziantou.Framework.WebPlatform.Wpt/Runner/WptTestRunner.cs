@@ -1721,23 +1721,12 @@ internal sealed partial class WptTestRunner
     // Global object
     // ----------------------------------------------------------------------------------------------------------------
 
-    /// <summary>Initializes the global object of a realm with the functions the test runner provides (it runs in the realm).</summary>
-    internal void SetupGlobals<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm)
+    /// <summary>Defines <c>TestUtils.gc()</c> in a realm (see <see cref="SetupGlobals"/>).</summary>
+    private static void DefineTestUtils<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm)
         where TAdapter : struct, IJsAdapter<TValue>
         where TValue : class
     {
         var adapter = realm.Adapter;
-
-        // The functions are not enumerable: the tests that enumerate the properties of a window (e.g. to call each method
-        // with another this value) must not see them
-        void Define(string name, int length, JsHostFunction<TValue> function)
-            => adapter.DefineOwnProperty(realm.Global, adapter.FromString(name), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction(name, length, function), writable: true, enumerable: false, configurable: true));
-
-        // TestUtils.gc() (https://testutils.spec.whatwg.org/#dom-testutils-gc), which /common/gc.js uses when it exists: a full
-        // blocking collection, after which the finalizers ran, so the FinalizationRegistry cleanups of the collected targets
-        // are queued. Without it, gc.js only allocates garbage, and whether .NET collects anything depends on the timing. The
-        // collection runs in a task, once the script that called gc() has returned: the frames of the running script may
-        // still reference the objects it dropped.
         var testUtils = realm.CreateObject();
         adapter.DefineOwnProperty(testUtils, adapter.FromString("gc"), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction("gc", 0, (_, _) =>
         {
@@ -1752,10 +1741,35 @@ internal sealed partial class WptTestRunner
             return realm.ToPromise(collected.Task);
         }), writable: true, enumerable: true, configurable: true));
         adapter.DefineOwnProperty(realm.Global, adapter.FromString("TestUtils"), JsPropertyDescriptor<TValue>.Data(testUtils, writable: true, enumerable: false, configurable: true));
+    }
+
+    /// <summary>Initializes the global object of a realm with the functions the test runner provides (it runs in the realm).</summary>
+    internal void SetupGlobals<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm)
+        where TAdapter : struct, IJsAdapter<TValue>
+        where TValue : class
+    {
+        // TestUtils.gc() (https://testutils.spec.whatwg.org/#dom-testutils-gc), which /common/gc.js uses when it exists: a full
+        // blocking collection, after which the finalizers ran, so the FinalizationRegistry cleanups of the collected targets
+        // are queued. Without it, gc.js only allocates garbage, and whether .NET collects anything depends on the timing. The
+        // collection runs in a task, once the script that called gc() has returned: the frames of the running script may
+        // still reference the objects it dropped. It is only defined for the tests of the weak references, which depend on
+        // it: a full collection of the process that runs the whole suite (gigabytes of heap) is slow, and other tests call
+        // gc() many times (e.g. 100 times in media-elements/crashtests/no-blocking-loads-gc-crash.html)
+        if (_test.RelativePath.StartsWith("js/builtins/weakrefs/", StringComparison.Ordinal))
+        {
+            DefineTestUtils(realm);
+        }
 
         // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)
         if (realm.Window is null)
             return;
+
+        var adapter = realm.Adapter;
+
+        // The functions are not enumerable: the tests that enumerate the properties of a window (e.g. to call each method
+        // with another this value) must not see them
+        void Define(string name, int length, JsHostFunction<TValue> function)
+            => adapter.DefineOwnProperty(realm.Global, adapter.FromString(name), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction(name, length, function), writable: true, enumerable: false, configurable: true));
 
         Define("__wpt_report", 1, (_, args) =>
         {

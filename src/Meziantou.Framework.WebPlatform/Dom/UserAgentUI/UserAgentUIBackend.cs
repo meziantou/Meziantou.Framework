@@ -56,7 +56,8 @@ internal static class UserAgentUI
     /// <summary>
     /// Shows a prompt with the backend of the window, then calls <paramref name="complete"/> from a task of the event loop of
     /// the window with the answer of the user: <paramref name="dismissed"/> when there is no backend, the backend throws, or the
-    /// prompt is canceled. The prompt belongs to the document of the window: when the document is no longer fully active (it is
+    /// prompt is canceled. When the document of the window is not fully active, <paramref name="complete"/> is called at once
+    /// with <paramref name="dismissed"/> and the backend is not called. The prompt belongs to the document of the window: when the document is no longer fully active (it is
     /// destroyed, or it enters the back/forward cache), the token given to the backend is canceled and
     /// <paramref name="complete"/> is called at once with <paramref name="dismissed"/>. While the prompt is shown, the event
     /// loop is not idle (until the backend answers, the document is no longer fully active, or
@@ -64,6 +65,14 @@ internal static class UserAgentUI
     /// </summary>
     internal static void Show<T>(Window window, Func<UserAgentUIBackend, CancellationToken, ValueTask<T>> prompt, T dismissed, Action<T> complete, CancellationToken cancellationToken = default)
     {
+        // A document that is no longer fully active (e.g. a removed iframe whose function was saved) cannot show a prompt: its
+        // tasks are no longer run and its prompts were already closed, so the prompt is dismissed at once, without operation
+        if (!window.Document.IsFullyActive)
+        {
+            complete(dismissed);
+            return;
+        }
+
         var session = new PromptSession<T>(window, dismissed, complete, cancellationToken);
         if (window.Options.UserAgentUI is not { } backend)
         {

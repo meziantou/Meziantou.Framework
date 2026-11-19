@@ -24,13 +24,15 @@ public sealed partial class PaymentRequest
     /// Returns whether Secure Payment Confirmation is available in the current document
     /// (https://w3c.github.io/secure-payment-confirmation/#sctn-secure-payment-confirmation-available-api): it is not enabled when
     /// the backend has no payment handler for <c>secure-payment-confirmation</c> (<see cref="UserAgentUIBackend.HasPaymentHandlerAsync"/>),
-    /// and it needs the <c>payment</c> feature and a user-verifying platform authenticator.
+    /// and it needs the <c>payment</c> feature and a user-verifying platform authenticator. The availability is unknown in a
+    /// document that is not fully active.
     /// </summary>
     /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-paymentrequest-securepaymentconfirmationavailability"/>
     [IdlMember("securePaymentConfirmationAvailability", "https://w3c.github.io/secure-payment-confirmation/#dom-paymentrequest-securepaymentconfirmationavailability")]
     public static Task<Availability> SecurePaymentConfirmationAvailability()
     {
-        if (GlobalScope.Current is not Window window)
+        // The function of a document that is no longer fully active (e.g. saved from a removed iframe)
+        if (GlobalScope.Current is not Window window || !window.Document.IsFullyActive)
             return Task.FromResult(Availability.UnavailableUnknownReason);
 
         var result = new TaskCompletionSource<Availability>();

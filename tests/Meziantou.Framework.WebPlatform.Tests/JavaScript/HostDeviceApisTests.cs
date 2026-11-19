@@ -2252,6 +2252,44 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task SecurePaymentConfirmation_Availability_DetachedDocument_Settles()
+    {
+        // The functions of a removed iframe settle their promises, and the event loop becomes idle
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Accept),
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", options);
+        Run(document, """
+            window.availability = frame.contentWindow.PaymentRequest.securePaymentConfirmationAvailability;
+            window.credentials = frame.contentWindow.navigator.credentials;
+            frame.remove();
+            """);
+
+        Assert.Equal("unavailable-unknown-reason|InvalidStateError", await RunAsync(document, """
+            Promise.all([availability(), credentials.get({ password: true }).then(() => 'resolved', e => e.name)]).then(r => document.title = r.join('|'));
+            """));
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    [Fact]
+    public void UserAgentUI_Show_DetachedDocument_IsDismissedAtOnce()
+    {
+        // A prompt of a document that is no longer fully active is dismissed without calling the backend nor keeping the event loop busy
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        var frameWindow = ((HtmlIFrameElement)document.QuerySelector("iframe")!).ContentWindow!;
+        Run(document, "frame.remove()");
+
+        var answer = "pending";
+        UserAgentUI.Show(frameWindow, (b, token) => new ValueTask<string>(b.ChooseCredentialAsync(null!, token).AsTask().ContinueWith(_ => "answered", TaskScheduler.Default)), dismissed: "dismissed", value => answer = value);
+        Assert.Equal("dismissed", answer);
+        Assert.False(backend.CancellationToken.CanBeCanceled);
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    [Fact]
     public async Task SecurePaymentConfirmation_Retry_IsNotSupported()
     {
         // The transaction dialog cannot be shown again: retry() is rejected without changing the state of the request, so the

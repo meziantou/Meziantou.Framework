@@ -263,6 +263,23 @@ Assert.Equal(@"a \| b c", MarkdownEscaper.EscapeTableCell("a | b\nc"));
 ````
 <!-- endref -->
 
-The whitespace at the start and at the end of a line of escaped text is not kept, and a blank line starts a new paragraph.
-The line endings of a title are written as entities, as a line could start a block, and the ones of a table cell are spaces.
+The spaces and the tabs at the start and at the end of a line of escaped text are written as entities, such as `&#32;`:
+the parser would strip them, and they would start an indented code block or end the line with a hard line break. An empty
+line still starts a new paragraph. A line of a code span, of a link label or of a link title could start a block, such as
+`# a`, so the line endings of a code span and of a label are written as spaces, which the parser makes of them anyway, and
+the ones of a title as entities. The ones of a table cell are spaces too. A label that starts with `^` is escaped, as it
+would be a footnote, and so is a `{` of the info string of a fenced code block, which would start generic attributes.
+
+[Escape](cref:Meziantou.Framework.Markdown.MarkdownEscaper.Escape(System.String)) only knows CommonMark. When the text is
+parsed with extensions,
+[Escape(string, MarkdownParseOptions)](cref:Meziantou.Framework.Markdown.MarkdownEscaper.Escape(System.String,Meziantou.Framework.Markdown.MarkdownParseOptions))
+also writes as entities the characters where they would start a construct and that a backslash cannot escape: the trigger
+characters of the inline extensions of
+[SyntaxExtensions](cref:Meziantou.Framework.Markdown.MarkdownParseOptions.SyntaxExtensions), such as `§`, the ones of the
+fenced block extensions at the start of a line, and the first character of the shortcodes and of the smileys of the
+[Emoji](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Emoji) extension, such as a smiley made of letters. The
+other extensions start with ASCII punctuation, which is escaped. What the escaper cannot know is not covered: the
+abbreviations, whose definitions are elsewhere in the document and match the words of the text, the paragraph extensions,
+which read the lines of the paragraph, and an inline extension whose trigger character is `&`, which is offered the
+entities.
 

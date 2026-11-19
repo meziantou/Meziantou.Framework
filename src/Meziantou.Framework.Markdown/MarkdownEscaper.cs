@@ -47,30 +47,47 @@ public static class MarkdownEscaper
     /// <param name="text">The text to escape.</param>
     /// <returns>The escaped text.</returns>
     /// <remarks>
-    /// The whitespace at the start and at the end of a line is not preserved, and a blank line starts a new paragraph.
+    /// <para>
+    /// The spaces and the tabs that start or end a line are written as entities, such as <c>&amp;#32;</c>: the parser would
+    /// strip them, and they would start an indented code block or end the line with a hard line break. So the text stays text
+    /// whatever its whitespace, and the parser decodes the entities to the same text. An empty line still ends the paragraph,
+    /// and the parser replaces U+0000 with U+FFFD.
+    /// </para>
+    /// <para>
+    /// The extensions and the syntax extensions of the parse options are not taken into account: use
+    /// <see cref="Escape(string, MarkdownParseOptions)"/> when the text is parsed with them.
+    /// </para>
     /// </remarks>
-    public static string Escape(string text)
+    public static string Escape(string text) => EscapeText(text, options: null);
+
+    /// <summary>
+    /// Escapes the text, as <see cref="Escape(string)"/> does, and the characters where the extensions of the parse options
+    /// would start a construct, so that the text is displayed as is when it is parsed with these options.
+    /// </summary>
+    /// <param name="text">The text to escape.</param>
+    /// <param name="options">The options that parse the Markdown the text is written into.</param>
+    /// <returns>The escaped text.</returns>
+    /// <remarks>
+    /// <para>
+    /// In addition to what <see cref="Escape(string)"/> escapes, the trigger characters of the inline extensions of
+    /// <see cref="MarkdownParseOptions.SyntaxExtensions"/>, the trigger characters of the fenced block extensions that start a
+    /// line, and the first character of the shortcodes and the smileys of <see cref="MarkdownParseOptions.EmojiMapping"/> that
+    /// the text contains when <see cref="MarkdownExtensions.Emoji"/> is enabled, are written as entities, such as
+    /// <c>&amp;#167;</c>, when they are not ASCII punctuation, which is escaped with a backslash.
+    /// </para>
+    /// <para>
+    /// The text is not protected from what the escaper cannot know or change: the abbreviations of
+    /// <see cref="MarkdownExtensions.Abbreviations"/> are defined elsewhere in the document and match the words of the text,
+    /// the paragraph extensions read the lines of the paragraph that contains the text, and an inline extension whose trigger
+    /// character is <c>&amp;</c> is tried on the entities.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
+    public static string Escape(string text, MarkdownParseOptions options)
     {
-        var index = IndexOfAsciiPunctuation(text);
-        if (index < 0)
-        {
-            return text;
-        }
+        ArgumentNullException.ThrowIfNull(options);
 
-        var builder = new StringBuilder(text.Length + 8);
-        builder.Append(text, 0, index);
-        for (var i = index; i < text.Length; i++)
-        {
-            var c = text[i];
-            if (Scanners.IsEscapable(c))
-            {
-                builder.Append('\\');
-            }
-
-            builder.Append(c);
-        }
-
-        return builder.ToString();
+        return EscapeText(text, options);
     }
 
     /// <summary>
@@ -79,20 +96,22 @@ public static class MarkdownEscaper
     /// <param name="content">The content of the code span.</param>
     /// <returns>The code span, including its backtick delimiters.</returns>
     /// <remarks>
-    /// The delimiters are one backtick longer than the longest run of backticks of the content. The parser converts the line
-    /// endings of a code span to spaces, and a blank line ends the paragraph.
+    /// The delimiters are one backtick longer than the longest run of backticks of the content. The line endings of the
+    /// content are replaced with spaces, as the parser converts them: a line of the code span could start a block, such as
+    /// <c># a</c>, and a blank line would end the paragraph.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="content"/> is empty: a code span cannot be empty.</exception>
     public static string CreateCodeSpan(string content)
     {
         ArgumentException.ThrowIfNullOrEmpty(content);
 
+        content = ReplaceLineEndingsWithSpaces(content);
         var delimiterCount = GetLongestRun(content, '`') + 1;
 
         // A backtick next to the delimiter would lengthen it, and the parser strips one space on each side when both are present
         var pad = content[0] == '`'
             || content[^1] == '`'
-            || (IsSpaceOrLineEnding(content[0]) && IsSpaceOrLineEnding(content[^1]) && content.AsSpan().ContainsAnyExcept(" \r\n"));
+            || (content[0] == ' ' && content[^1] == ' ' && content.AsSpan().ContainsAnyExcept(' '));
 
         var builder = new StringBuilder(content.Length + (delimiterCount * 2) + 2);
         builder.Append('`', delimiterCount);
@@ -180,13 +199,26 @@ public static class MarkdownEscaper
     /// </summary>
     /// <param name="label">The label.</param>
     /// <returns>The escaped label, without the brackets.</returns>
-    /// <remarks>The parser matches the labels case-insensitively, and collapses consecutive whitespace.</remarks>
+    /// <remarks>
+    /// The parser matches the labels case-insensitively, and collapses consecutive whitespace, so the line endings of the label
+    /// are replaced with spaces: a line of the label could start a block, such as <c># a</c>, and a label cannot contain a
+    /// blank line. A <c>^</c> that starts the label, after its spaces, is escaped, as <c>[^label]</c> is a footnote when
+    /// <see cref="MarkdownExtensions.Footnotes"/> is enabled.
+    /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="label"/> is blank, or longer than 999 characters once escaped.</exception>
     public static string EscapeLinkLabel(string label)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
 
-        var escaped = Escape(label, "[]\\", decodedEntities: false);
+        var escaped = Escape(ReplaceLineEndingsWithSpaces(label), "[]\\", decodedEntities: false);
+
+        // The label of a footnote starts with ^ once its spaces and tabs are trimmed
+        var start = escaped.AsSpan().IndexOfAnyExcept(' ', '\t');
+        if (escaped[start] == '^')
+        {
+            escaped = escaped.Insert(start, "\\");
+        }
+
         if (escaped.Length > MaximumLinkLabelLength)
         {
             throw new ArgumentException($"A link label cannot be longer than {MaximumLinkLabelLength} characters.", nameof(label));
@@ -201,21 +233,11 @@ public static class MarkdownEscaper
     /// <param name="text">The text of the cell.</param>
     /// <returns>The escaped text.</returns>
     /// <remarks>
-    /// The text is escaped as with <see cref="Escape(string)"/>, which also escapes the pipes. A row of a pipe table cannot span
-    /// several lines, so the line endings are replaced by spaces. To write a code span in a cell, replace the pipes of the
+    /// A row of a pipe table cannot span several lines, so the line endings are replaced by spaces. Then the text is escaped as
+    /// with <see cref="Escape(string)"/>, which also escapes the pipes. To write a code span in a cell, replace the pipes of the
     /// result of <see cref="CreateCodeSpan(string)"/> with <c>\|</c>.
     /// </remarks>
-    public static string EscapeTableCell(string text)
-    {
-        var escaped = Escape(text);
-        if (escaped.AsSpan().IndexOfAny('\r', '\n') < 0)
-        {
-            return escaped;
-        }
-
-        // Only the line endings of Markdown: U+0085, U+2028 and U+2029 are text
-        return escaped.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' ');
-    }
+    public static string EscapeTableCell(string text) => Escape(ReplaceLineEndingsWithSpaces(text));
 
     // The info string of a fenced code block, whose fence is not written
     internal static string EscapeInfoString(string infoString)
@@ -227,7 +249,8 @@ public static class MarkdownEscaper
 
     private static void AppendInfoString(StringBuilder builder, string infoString)
     {
-        // The info string cannot contain a backtick after a backtick fence; it is unescaped and its entities are decoded
+        // The info string cannot contain a backtick after a backtick fence, and a { would start generic attributes; it is
+        // unescaped and its entities are decoded
         for (var i = 0; i < infoString.Length; i++)
         {
             var c = infoString[i];
@@ -239,6 +262,10 @@ public static class MarkdownEscaper
             if (c == '`')
             {
                 builder.Append("&#96;");
+            }
+            else if (c == '{')
+            {
+                builder.Append("&#123;");
             }
             else if (c == '&' && IsEntityStart(infoString.AsSpan(i + 1)))
             {
@@ -255,17 +282,117 @@ public static class MarkdownEscaper
         }
     }
 
-    private static int IndexOfAsciiPunctuation(string text)
+    private static string EscapeText(string text, MarkdownParseOptions? options)
     {
+        // The characters that an extension would read, which are written as entities
+        var entities = options is null ? null : GetExtensionCharacters(text, options);
+
+        StringBuilder? builder = null;
         for (var i = 0; i < text.Length; i++)
         {
-            if (Scanners.IsEscapable(text[i]))
+            var c = text[i];
+            if (c is ' ' or '\t')
             {
-                return i;
+                // The parser strips the spaces and the tabs around the lines of a paragraph: at the start of a line, they could
+                // start an indented code block, and two spaces at the end of a line are a hard line break
+                if (i == 0 || text[i - 1] is '\r' or '\n' || i + 1 == text.Length || text[i + 1] is '\r' or '\n')
+                {
+                    builder ??= new StringBuilder(text, 0, i, text.Length + 16);
+                    builder.Append(c == ' ' ? "&#32;" : "&#9;");
+                    continue;
+                }
+            }
+            else if (Scanners.IsEscapable(c))
+            {
+                builder ??= new StringBuilder(text, 0, i, text.Length + 16);
+                builder.Append('\\');
+            }
+            else if (entities is not null && entities[i])
+            {
+                builder ??= new StringBuilder(text, 0, i, text.Length + 16);
+                builder.Append("&#").Append(char.ConvertToUtf32(text, i).ToString(CultureInfo.InvariantCulture)).Append(';');
+                i += char.IsHighSurrogate(c) ? 1 : 0;
+                continue;
+            }
+
+            builder?.Append(c);
+        }
+
+        return builder?.ToString() ?? text;
+    }
+
+    // The characters, which a backslash cannot escape, where an extension would start a construct: the trigger characters of the
+    // inline extensions, the ones of the fenced block extensions that start a line, and the first character of a shortcode or of
+    // a smiley. It is null when there is none.
+    private static bool[]? GetExtensionCharacters(string text, MarkdownParseOptions options)
+    {
+        string? inlineTriggers = null;
+        string? fencedBlockTriggers = null;
+        foreach (var extension in options.SyntaxExtensions)
+        {
+            switch (extension)
+            {
+                case MarkdownInlineExtension inline:
+                    inlineTriggers += inline.TriggerCharacters;
+                    break;
+
+                case MarkdownFencedBlockExtension fencedBlock:
+                    fencedBlockTriggers += fencedBlock.TriggerCharacters;
+                    break;
             }
         }
 
-        return -1;
+        var emoji = (options.Extensions & MarkdownExtensions.Emoji) != MarkdownExtensions.None ? options.EmojiMapping : null;
+        if (inlineTriggers is null && fencedBlockTriggers is null && emoji is null)
+        {
+            return null;
+        }
+
+        // From the end, so that a smiley is read with the characters after it as they are written: an escaped character, a line
+        // ending or an entity is not part of its text, and is not a letter that it would end before
+        bool[]? entities = null;
+        var end = text.Length;
+        for (var i = text.Length - 1; i >= 0; i--)
+        {
+            var c = text[i];
+            if (c is '\r' or '\n' || Scanners.IsEscapable(c))
+            {
+                end = i;
+                continue;
+            }
+
+            if (c is ' ' or '\t')
+            {
+                continue;
+            }
+
+            // A pair of surrogates is one entity, written at its high surrogate. A lone surrogate is not escaped: the parser would
+            // decode its entity to U+FFFD.
+            var lowSurrogate = '\0';
+            if (char.IsSurrogate(c))
+            {
+                if (!char.IsHighSurrogate(c) || i + 1 == text.Length || !char.IsLowSurrogate(text[i + 1]))
+                {
+                    continue;
+                }
+
+                lowSurrogate = text[i + 1];
+            }
+
+            var lineStart = i == 0 || text[i - 1] is '\r' or '\n';
+            if (IsTrigger(inlineTriggers, c, lowSurrogate) || (lineStart && IsTrigger(fencedBlockTriggers, c, lowSurrogate)) || emoji?.MatchLongest(text.AsSpan(i, end - i)) is not null)
+            {
+                (entities ??= new bool[text.Length])[i] = true;
+                end = i;
+            }
+        }
+
+        return entities;
+    }
+
+    private static bool IsTrigger(string? triggers, char c, char lowSurrogate)
+    {
+        return triggers is not null && (triggers.Contains(c, StringComparison.Ordinal) || (lowSurrogate != '\0' && triggers.Contains(lowSurrogate, StringComparison.Ordinal)));
     }
 
     private static int GetLongestRun(string text, char c)
@@ -281,7 +408,16 @@ public static class MarkdownEscaper
         return longest;
     }
 
-    private static bool IsSpaceOrLineEnding(char c) => c is ' ' or '\r' or '\n';
+    // Only the line endings of Markdown: U+0085, U+2028 and U+2029 are text
+    private static string ReplaceLineEndingsWithSpaces(string text)
+    {
+        if (text.AsSpan().IndexOfAny('\r', '\n') < 0)
+        {
+            return text;
+        }
+
+        return text.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' ');
+    }
 
     private static string EscapeDestination(string url)
     {

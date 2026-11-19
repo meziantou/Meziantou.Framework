@@ -55,8 +55,9 @@ public sealed record MarkdownFormattingOptions
     public char ThematicBreakCharacter { get; init; } = '-';
 
     /// <summary>
-    /// Gets a value indicating whether the cells of the tables are padded so that their pipes are aligned. The default is
-    /// <see langword="true"/>. The pipe tables whose delimiter row gives the widths of the columns, with
+    /// Gets a value indicating whether the cells of the tables are padded so that their pipes are aligned in a monospace
+    /// editor, where a wide character, such as a CJK ideograph or an emoji, uses two columns, and a combining mark none. The
+    /// default is <see langword="true"/>. The pipe tables whose delimiter row gives the widths of the columns, with
     /// <see cref="MarkdownPipeTableOptions.InferColumnWidthsFromSeparator"/>, and the tables without a delimiter row are kept.
     /// </summary>
     public bool AlignTables { get; init; } = true;

@@ -55,7 +55,6 @@ public sealed class StorageBucketManager
     [IdlMember("open", "https://wicg.github.io/storage-buckets/#dom-storagebucketmanager-open")]
     public Task<StorageBucket> Open(string name, StorageBucketOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(name);
         options ??= new StorageBucketOptions();
         if (GetRegistry(out var registry, out var storageKey) is { } error)
             return Task.FromException<StorageBucket>(error);
@@ -99,7 +98,6 @@ public sealed class StorageBucketManager
     [IdlMember("delete", "https://wicg.github.io/storage-buckets/#dom-storagebucketmanager-delete")]
     public Task Delete(string name)
     {
-        ArgumentNullException.ThrowIfNull(name);
         if (GetRegistry(out var registry, out var storageKey) is { } error)
             return Task.FromException(error);
 

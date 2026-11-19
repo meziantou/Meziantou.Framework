@@ -178,13 +178,10 @@ public sealed partial class Performance
     /// </summary>
     private static MemoryAttributionContainer? GetContainer(BrowsingContext navigable, OriginRecord origin)
     {
-        for (var current = navigable; current.Container is { } element; current = current.Parent!)
+        for (BrowsingContext? current = navigable; current?.Container is { } element; current = current.Parent)
         {
             if (OriginRecord.IsSameOrigin(element.NodeDocument.Origin, origin))
                 return new MemoryAttributionContainer { Id = element.GetAttributeValue("id") ?? "", Src = Html.Reflection.GetUrl(element, "src") };
-
-            if (current.Parent is null)
-                break;
         }
 
         return null;

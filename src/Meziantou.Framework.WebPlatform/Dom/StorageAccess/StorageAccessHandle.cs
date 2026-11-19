@@ -269,7 +269,6 @@ public sealed class StorageAccessHandle
     [IdlMember("SharedWorker", "https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-sharedworker")]
     public SharedWorker CreateSharedWorker(string scriptUrl, SharedWorkerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(scriptUrl);
         CheckType(_types.SharedWorker, "SharedWorker");
         return new SharedWorker(_window, scriptUrl, options, firstParty: true);
     }
@@ -330,7 +329,6 @@ public partial class Document
     [IdlMember("requestStorageAccess", "https://privacycg.github.io/saa-non-cookie-storage/#dom-document-requeststorageaccess-types")]
     public Task<StorageAccessHandle> RequestStorageAccess(StorageAccessTypes types)
     {
-        ArgumentNullException.ThrowIfNull(types);
         if (types.IsEmpty)
             return Task.FromException<StorageAccessHandle>(DomException.InvalidState("No storage is requested"));
 

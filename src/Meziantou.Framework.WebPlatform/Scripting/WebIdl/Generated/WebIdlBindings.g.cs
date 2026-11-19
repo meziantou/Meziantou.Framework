@@ -211,6 +211,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["DeviceMotionEventRotationRate"] = Binding_DeviceMotionEventRotationRate<TAdapter, TValue>.Binding,
             ["DeviceOrientationEvent"] = Binding_DeviceOrientationEvent<TAdapter, TValue>.Binding,
             ["DevicePosture"] = Binding_DevicePosture<TAdapter, TValue>.Binding,
+            ["DigitalCredential"] = Binding_DigitalCredential<TAdapter, TValue>.Binding,
             ["Document"] = Binding_Document<TAdapter, TValue>.Binding,
             ["DocumentFragment"] = Binding_DocumentFragment<TAdapter, TValue>.Binding,
             ["DocumentTimeline"] = Binding_DocumentTimeline<TAdapter, TValue>.Binding,
@@ -1207,6 +1208,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventRotationRateInit dictionaryDom_DeviceMotionEventRotationRateInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventRotationRateInit(r, dictionaryDom_DeviceMotionEventRotationRateInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DigitalCredentialCreateRequest dictionaryDom_DigitalCredentialCreateRequest:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DigitalCredentialCreateRequest(r, dictionaryDom_DigitalCredentialCreateRequest);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DigitalCredentialCreationOptions dictionaryDom_DigitalCredentialCreationOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DigitalCredentialCreationOptions(r, dictionaryDom_DigitalCredentialCreationOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DigitalCredentialGetRequest dictionaryDom_DigitalCredentialGetRequest:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DigitalCredentialGetRequest(r, dictionaryDom_DigitalCredentialGetRequest);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DigitalCredentialRequestOptions dictionaryDom_DigitalCredentialRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DigitalCredentialRequestOptions(r, dictionaryDom_DigitalCredentialRequestOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DomMatrix2DInit dictionaryDom_DomMatrix2DInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomMatrix2DInit(r, dictionaryDom_DomMatrix2DInit);

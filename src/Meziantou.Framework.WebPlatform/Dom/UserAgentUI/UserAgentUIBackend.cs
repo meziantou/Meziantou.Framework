@@ -122,3 +122,28 @@ internal static class UserAgentUI
 
     private static T GetAnswer<T>(Task<T> task, T dismissed) => task.IsCompletedSuccessfully ? task.Result : dismissed;
 }
+
+// The prompts of the user agent shown by a document
+public partial class Document
+{
+    private List<Action>? _promptClosers;
+
+    /// <summary>Registers the steps that close a prompt of the user agent when the document is destroyed (it is no longer fully active).</summary>
+    internal void AddPromptCloser(Action close) => (_promptClosers ??= []).Add(close);
+
+    /// <summary>Unregisters the steps of <see cref="AddPromptCloser"/>, once the prompt is closed.</summary>
+    internal void RemovePromptCloser(Action close) => _promptClosers?.Remove(close);
+
+    /// <summary>Closes the prompts of the user agent shown by the document, when it is destroyed.</summary>
+    internal void ClosePrompts()
+    {
+        if (_promptClosers is not { Count: > 0 } closers)
+            return;
+
+        _promptClosers = null;
+        foreach (var close in closers)
+        {
+            close();
+        }
+    }
+}

@@ -3682,6 +3682,9 @@ public sealed partial class BrowsingContext : IDisposable
         // The realtime audio contexts of the document are closed
         document.CloseAudioContexts();
 
+        // The prompts of the user agent that the document shows are closed (e.g. a pending digital credential request is aborted)
+        document.ClosePrompts();
+
         // https://w3c.github.io/FileAPI/#lifeTime: the blob URLs created by the document are revoked
         document.BrowsingContext?.BlobUrls.RemoveEntries(document);
 

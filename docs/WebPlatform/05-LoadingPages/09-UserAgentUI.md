@@ -1,6 +1,6 @@
 ---
 title: User agent UI
-description: Answer the prompts that the web APIs show to the user, such as the credential chooser of the Credential Management API.
+description: Answer the prompts that the web APIs show to the user, such as the credential chooser of the Credential Management API and the wallet of the Digital Credentials API.
 ---
 
 Some web APIs show a prompt of the browser and wait for the user: a browser asks which saved password to use, or whether
@@ -19,6 +19,7 @@ method that a backend does not override, the prompt behaves as if the user dismi
 |---|---|---|
 | [ChooseCredentialAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ChooseCredentialAsync) | `navigator.credentials.get()` with `password` or `federated` | No credential: the promise resolves with `null` |
 | [StoreCredentialAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.StoreCredentialAsync) | `navigator.credentials.store()` of a `PasswordCredential` or a `FederatedCredential` | The credential is not saved (the page is not told) |
+| [RequestDigitalCredentialAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.RequestDigitalCredentialAsync) | `navigator.credentials.get({ digital })` and `navigator.credentials.create({ digital })` | The user cancels: the promise is rejected with a `NotAllowedError` |
 
 The methods are called on the thread of the event loop. The task they return can complete later, on any thread: the
 library settles the promise of the page on its event loop, and the event loop is not idle while a prompt is open. The
@@ -93,3 +94,40 @@ of a form (their autofill field names: `username`, `current-password`, `new-pass
 without storing it. As in the specification, the `origin` member of the data of a credential is required; the `origin` of
 a `FederatedCredential` created by `navigator.credentials.create()` is the origin of the document. The public key
 credentials of Web Authentication do not use the backend: see [Web Authentication](08-PermissionsAndDevices.md#web-authentication).
+
+## Digital credentials
+
+The [Digital Credentials API](https://w3c-fedid.github.io/digital-credentials/) asks a wallet to present a credential
+(`navigator.credentials.get({ digital })`, for instance an identity document) or to store a new one
+(`navigator.credentials.create({ digital })`). The library filters the requests (the protocols that the user agent does not
+allow are skipped: `openid4vp-v1-unsigned`, `openid4vp-v1-signed`, `openid4vp-v1-multisigned` and `org-iso-mdoc` for the
+presentations, `openid4vci-v1` for the issuance, which `DigitalCredential.userAgentAllowsProtocol()` reports), checks the
+permissions policies (`digital-credentials-get`, `digital-credentials-create`), consumes the transient activation that
+both methods require, rejects a request while another one of the window is pending, serializes the data of the requests to
+JSON, then calls [RequestDigitalCredentialAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.RequestDigitalCredentialAsync),
+the digital credential chooser. The backend returns the response of the wallet: the protocol of the request it answered,
+and its response as a JSON object, which becomes the `data` of the `DigitalCredential`:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_DigitalCredentialWallet;format=md-fenced-code-block;dedent=true -->
+```csharp
+/// <summary>A wallet that answers the first request of a digital credential request with the request itself.</summary>
+internal sealed class SingleResponseWallet : UserAgentUIBackend
+{
+    public DigitalCredentialPrompt? LastPrompt { get; private set; }
+
+    public override ValueTask<DigitalCredentialResponse?> RequestDigitalCredentialAsync(DigitalCredentialPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        var request = prompt.Requests[0];
+        var response = $$"""{"protocol":"{{request.Protocol}}","request":{{request.Data}}}""";
+        return ValueTask.FromResult<DigitalCredentialResponse?>(new DigitalCredentialResponse(request.Protocol, response));
+    }
+}
+```
+<!-- endref -->
+
+[DigitalCredentialPrompt](cref:Meziantou.Framework.WebPlatform.Dom.DigitalCredentialPrompt) gives the kind of request
+(a presentation or an issuance) and the requests, in the order of the page. Returning null rejects the promise with a
+`NotAllowedError`, as when the user cancels. The request is aborted, and the cancellation token canceled, when its signal
+is aborted or its document is destroyed.
+

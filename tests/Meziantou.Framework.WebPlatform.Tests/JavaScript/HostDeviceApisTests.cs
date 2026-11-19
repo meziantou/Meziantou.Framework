@@ -1668,6 +1668,59 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("password|jane|pass", await RunAsync(document));
     }
 
+    private const string DigitalCredentialsScript = """
+        window.request = (protocol, data) => ({ digital: { requests: [{ protocol, data }] } });
+        window.go = p => p.then(c => document.title = [c.type, c.protocol, JSON.stringify(c.data)].join('|'), e => document.title = e.name);
+        """;
+
+    [Fact]
+    public void DigitalCredential_WalletResponds()
+    {
+        var wallet = new SingleResponseWallet();
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = wallet });
+        Activate(document);
+
+        Assert.Equal("digital|org-iso-mdoc|{\"protocol\":\"org-iso-mdoc\",\"request\":{\"a\":1}}", Run(document, "go(navigator.credentials.get(request('org-iso-mdoc', { a: 1 })))"));
+        var prompt = Assert.IsType<DigitalCredentialPrompt>(wallet.LastPrompt);
+        Assert.Equal(DigitalCredentialRequestKind.Presentation, prompt.Kind);
+        Assert.Equal("https://example.com", prompt.Origin);
+        Assert.Equal(new DigitalCredentialRequest("org-iso-mdoc", "{\"a\":1}"), Assert.Single(prompt.Requests));
+    }
+
+    [Fact]
+    public void DigitalCredential_WithoutWallet_IsNotAllowed()
+    {
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>");
+
+        // Without user activation, then without wallet (the user cancels)
+        Assert.Equal("NotAllowedError", Run(document, "go(navigator.credentials.get(request('openid4vp-v1-unsigned', {})))"));
+        Activate(document);
+        Assert.Equal("NotAllowedError", Run(document, "go(navigator.credentials.get(request('openid4vp-v1-unsigned', {})))"));
+    }
+
+    [Fact]
+    public void DigitalCredential_ValidatesTheRequests()
+    {
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = new SingleResponseWallet() });
+        Activate(document);
+
+        // The protocols that the user agent does not allow are filtered out, and the data must be serializable to JSON
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get(request('unknown', {})))"));
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get(request('org-iso-mdoc', { n: 1n })))"));
+        Assert.Equal("true|false|true", Run(document, "document.title = [DigitalCredential.userAgentAllowsProtocol('org-iso-mdoc'), DigitalCredential.userAgentAllowsProtocol('unknown'), DigitalCredential.userAgentAllowsProtocol('openid4vci-v1')].join('|')"));
+    }
+
+    [Fact]
+    public void DigitalCredential_Create_IsAnIssuance()
+    {
+        var wallet = new SingleResponseWallet();
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = wallet });
+        Activate(document);
+
+        Assert.Equal("digital|openid4vci-v1|{\"protocol\":\"openid4vci-v1\",\"request\":{}}", Run(document, "go(navigator.credentials.create(request('openid4vci-v1', {})))"));
+        Assert.Equal(DigitalCredentialRequestKind.Issuance, wallet.LastPrompt!.Kind);
+    }
+
     private sealed class PendingCredentialChooser : UserAgentUIBackend
     {
         public TaskCompletionSource<Credential?> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -2517,6 +2570,22 @@ internal sealed class InMemoryCredentialStore : UserAgentUIBackend
         ChooserPrompts++;
         LastPrompt = prompt;
         return ValueTask.FromResult(_credentials.Find(prompt.Matches));
+    }
+}
+#endregion
+
+#region WebPlatform_DigitalCredentialWallet
+/// <summary>A wallet that answers the first request of a digital credential request with the request itself.</summary>
+internal sealed class SingleResponseWallet : UserAgentUIBackend
+{
+    public DigitalCredentialPrompt? LastPrompt { get; private set; }
+
+    public override ValueTask<DigitalCredentialResponse?> RequestDigitalCredentialAsync(DigitalCredentialPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        var request = prompt.Requests[0];
+        var response = $$"""{"protocol":"{{request.Protocol}}","request":{{request.Data}}}""";
+        return ValueTask.FromResult<DigitalCredentialResponse?>(new DigitalCredentialResponse(request.Protocol, response));
     }
 }
 #endregion

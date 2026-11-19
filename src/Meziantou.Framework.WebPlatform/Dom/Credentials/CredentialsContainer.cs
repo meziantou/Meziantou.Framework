@@ -62,6 +62,11 @@ public sealed class CredentialRequestOptions
     /// <seealso href="https://w3c.github.io/webappsec-credential-management/#dom-credentialrequestoptions-federated"/>
     [IdlMember("federated", "https://w3c.github.io/webappsec-credential-management/#dom-credentialrequestoptions-federated")]
     public FederatedCredentialRequestOptions? Federated { get; init; }
+
+    /// <summary>Gets the digital credential presentation requests, or null.</summary>
+    /// <seealso href="https://w3c-fedid.github.io/digital-credentials/#dom-credentialrequestoptions-digital"/>
+    [IdlMember("digital", "https://w3c-fedid.github.io/digital-credentials/#dom-credentialrequestoptions-digital")]
+    public DigitalCredentialRequestOptions? Digital { get; init; }
 }
 
 /// <summary>The options of <see cref="CredentialsContainer.Create"/> (https://w3c.github.io/webappsec-credential-management/#dictdef-credentialcreationoptions).</summary>
@@ -96,6 +101,11 @@ public sealed class CredentialCreationOptions
     /// <seealso href="https://w3c.github.io/webappsec-credential-management/#dom-credentialcreationoptions-federated"/>
     [IdlMember("federated", "https://w3c.github.io/webappsec-credential-management/#dom-credentialcreationoptions-federated")]
     public FederatedCredentialInit? Federated { get; init; }
+
+    /// <summary>Gets the digital credential issuance requests, or null.</summary>
+    /// <seealso href="https://w3c-fedid.github.io/digital-credentials/#dom-credentialcreationoptions-digital"/>
+    [IdlMember("digital", "https://w3c-fedid.github.io/digital-credentials/#dom-credentialcreationoptions-digital")]
+    public DigitalCredentialCreationOptions? Digital { get; init; }
 }
 
 /// <summary>
@@ -140,11 +150,15 @@ public sealed class CredentialsContainer
     private const string PasswordType = "password";
     private const string FederatedType = "federated";
     private const string PublicKeyType = "public-key";
+    private const string DigitalType = "digital-credential";
 
     private readonly Window _window;
 
     /// <summary>https://w3c.github.io/webappsec-credential-management/#environment-settings-object-active-credential-types</summary>
     private readonly HashSet<string> _activeCredentialTypes = new(StringComparer.Ordinal);
+
+    /// <summary>https://w3c-fedid.github.io/digital-credentials/#dfn-request-coordinator</summary>
+    private readonly DigitalCredential.Coordinator _digitalCredentials = new();
 
     internal CredentialsContainer(Window window)
     {
@@ -193,6 +207,9 @@ public sealed class CredentialsContainer
         if (types[0] is PasswordType or FederatedType)
             return GetStoredCredential(options);
 
+        if (types[0] is DigitalType)
+            return GetDigitalCredential(options);
+
         // https://w3c.github.io/webauthn/#sctn-conditional-mediation: PublicKeyCredential supports the conditional mediation,
         // not the immediate UI mode (which no specification defines for it)
         if (options.UiMode == "immediate")
@@ -208,6 +225,21 @@ public sealed class CredentialsContainer
         }
 
         return WhenSettled(WebAuthenticationClient.DiscoverFromExternalSource(_window, options, IsSameOriginWithAncestors(document)), PublicKeyType);
+    }
+
+    /// <summary>
+    /// The digital credentials (https://w3c-fedid.github.io/digital-credentials/#sctn-discoverfromexternalsource): the mediation is
+    /// implicitly <c>required</c>, the document must be allowed to use the <c>digital-credentials-get</c> feature.
+    /// </summary>
+    private Task<Credential?> GetDigitalCredential(CredentialRequestOptions options)
+    {
+        // The concurrent requests are rejected by the request coordinator, from a task (https://w3c-fedid.github.io/digital-credentials/#dfn-prepare-credential-requests):
+        // the type is not added to the active credential types
+        if (!PermissionsPolicyAlgorithms.IsAllowedToUse(_window.Document, PolicyControlledFeature.DigitalCredentialsGet))
+            return Task.FromException<Credential?>(DomException.NotAllowed("The document is not allowed to use the digital-credentials-get feature"));
+
+        var requests = options.Digital!.Requests.Select(request => (request.Protocol, request.Data));
+        return DigitalCredential.Request(_window, _digitalCredentials, DigitalCredentialRequestKind.Presentation, requests, options.Signal);
     }
 
     /// <summary>The [[type]] of the relevant credential interface objects of the options, in the order of the options.</summary>
@@ -227,6 +259,11 @@ public sealed class CredentialsContainer
         if (options.PublicKey is not null)
         {
             types.Add(PublicKeyType);
+        }
+
+        if (options.Digital is not null)
+        {
+            types.Add(DigitalType);
         }
 
         return types;
@@ -424,12 +461,15 @@ public sealed class CredentialsContainer
             return Task.FromException<Credential?>(DomException.InvalidState("The document is not fully active"));
 
         var sameOriginWithAncestors = IsSameOriginWithAncestors(document);
-        var count = (options.Password is not null ? 1 : 0) + (options.Federated is not null ? 1 : 0) + (options.PublicKey is not null ? 1 : 0);
+        var count = (options.Password is not null ? 1 : 0) + (options.Federated is not null ? 1 : 0) + (options.PublicKey is not null ? 1 : 0) + (options.Digital is not null ? 1 : 0);
         if (count > 1)
             return Task.FromException<Credential?>(DomException.NotSupported("Only one type of credential can be created"));
 
         if (options.PublicKey is not null && !PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.PublicKeyCredentialsCreate))
             return Task.FromException<Credential?>(DomException.NotAllowed("The document is not allowed to use the publickey-credentials-create feature"));
+
+        if (options.Digital is not null && !PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.DigitalCredentialsCreate))
+            return Task.FromException<Credential?>(DomException.NotAllowed("The document is not allowed to use the digital-credentials-create feature"));
 
         if (options.Signal is { Aborted: true } signal)
             return Task.FromException<Credential?>(WebAuthenticationClient.ToException(signal.Reason));
@@ -441,6 +481,12 @@ public sealed class CredentialsContainer
 
         if (document.Origin.IsOpaque)
             return Task.FromException<Credential?>(new DomException("The origin of the document is opaque", "SecurityError"));
+
+        if (options.Digital is { } digital)
+        {
+            var requests = digital.Requests.Select(request => (request.Protocol, request.Data));
+            return DigitalCredential.Request(_window, _digitalCredentials, DigitalCredentialRequestKind.Issuance, requests, options.Signal);
+        }
 
         if (options.PublicKey is null)
             return CreateLocalCredential(options);

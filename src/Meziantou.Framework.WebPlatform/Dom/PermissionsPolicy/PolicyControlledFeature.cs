@@ -76,6 +76,12 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://wicg.github.io/keyboard-map/#permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature KeyboardMap { get; } = new("keyboard-map", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c-fedid.github.io/digital-credentials/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature DigitalCredentialsCreate { get; } = new("digital-credentials-create", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c-fedid.github.io/digital-credentials/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature DigitalCredentialsGet { get; } = new("digital-credentials-get", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
     /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
@@ -128,6 +134,8 @@ internal sealed partial class PolicyControlledFeature
         CrossOriginIsolated,
         DeferredFetch,
         DeferredFetchMinimal,
+        DigitalCredentialsCreate,
+        DigitalCredentialsGet,
         new("encrypted-media", isAllowedForAllByDefault: false),
         ExecutionWhileNotRendered,
         ExecutionWhileOutOfViewport,

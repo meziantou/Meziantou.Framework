@@ -412,7 +412,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
 
     // The blocks of a kind, in the order of the text, as DescendantNodes(IsBlockContainer).OfType<T>() finds them, without its
     // iterators and without enumerating the tokens of the containers
-    private List<T> GetBlocks<T>()
+    internal List<T> GetBlocks<T>()
         where T : MarkdownSyntaxNode
     {
         var blocks = new List<T>();

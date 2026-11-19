@@ -107,8 +107,9 @@ internal sealed class BlockParser
     }
 
     /// <param name="cell">For the content of a cell of a grid table, the context of the table.</param>
+    /// <param name="definitions">For a part of the text of a document, the definitions of the document.</param>
     /// <summary>Adds the nodes and tokens of the text to <paramref name="tree"/>, the document first. Returns the trivia that is not whitespace.</summary>
-    public static List<TriviaSpan> Parse(string text, MarkdownParseOptions options, TreeBuffer tree, CellContext? cell = null)
+    public static List<TriviaSpan> Parse(string text, MarkdownParseOptions options, TreeBuffer tree, CellContext? cell = null, DocumentDefinitions? definitions = null)
     {
         var parser = new BlockParser(text, options, tree) { _keepsGridTable = cell?.KeepsGridTable ?? false, _baseDepth = cell?.Depth ?? 0, _isCell = cell is not null };
         foreach (var label in cell?.References ?? [])
@@ -120,6 +121,21 @@ internal sealed class BlockParser
         foreach (var label in cell?.Footnotes ?? [])
         {
             parser._inlineParser.Footnotes.Add(label);
+        }
+
+        if (definitions is not null)
+        {
+            foreach (var label in definitions.References)
+            {
+                parser._references.TryAdd(label, value: true);
+            }
+
+            parser._inlineParser.Footnotes.UnionWith(definitions.Footnotes);
+            parser._inlineParser.HeadingLabels.UnionWith(definitions.HeadingLabels);
+            foreach (var (label, length) in definitions.Abbreviations)
+            {
+                parser._inlineParser.Abbreviations[label] = length;
+            }
         }
 
         parser.ParseBlocks();

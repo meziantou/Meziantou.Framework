@@ -205,11 +205,14 @@ Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-starte
 To change the attributes in a [MarkdownSyntaxRewriter](cref:Meziantou.Framework.Markdown.MarkdownSyntaxRewriter),
 [MarkdownBlockSyntax.WithGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownBlockSyntax.WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownGenericAttributes))
 returns a copy of the block with the attributes, without parsing the document again: return it from the rewriter, or
-pass it to `ReplaceNode` or `ReplaceNodes`. It writes the attributes in the block, so it works for the blocks whose
-attributes are written in them: headings, paragraphs, fenced code blocks, math blocks and custom containers. Call it on a
-block of the tree, whose attributes are known, rather than on a copy. It throws an `InvalidOperationException` when the
-attributes cannot be written in the block, for example when they are on a line before it: use
-`MarkdownSyntaxTree.WithGenericAttributes` or a `MarkdownSyntaxTreeEditor` then.
+pass it to [ReplaceNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNode) or
+[ReplaceNodes](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNodes). It writes the attributes in the
+block, so it works for the blocks whose attributes are written in them: headings, paragraphs, fenced code blocks, math
+blocks and custom containers. Call it on a block of the tree, whose attributes are known, rather than on a copy. It
+throws an `InvalidOperationException` when the attributes cannot be written in the block, for example when they are on a
+line before it: use
+[MarkdownSyntaxTree.WithGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree.WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownBlockSyntax,Meziantou.Framework.Markdown.MarkdownGenericAttributes))
+or a [MarkdownSyntaxTreeEditor](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor) then.
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_HeadingIdentifiers;format=md-fenced-code-block;dedent=true -->
 ```csharp

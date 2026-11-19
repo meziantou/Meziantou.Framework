@@ -146,15 +146,20 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
 
         // The lines of the block can change how the blocks around it are read, such as a paragraph that the first line of a block
         // interrupts, or a block quote that is an alert. The block at the top of the document that contains the block is parsed with the
-        // blocks before and after it, with the block and with the copy: everything is read the same way except the attributes, the
-        // block has the attributes, and they are read as they are written in the copy.
-        var (start, end) = GetEnclosingBlocksSpan(document);
+        // blocks before and after it, and the definitions of the document, with the block and with the copy: everything is read the
+        // same way except the attributes, the block has the attributes, and they are read as they are written in the copy. The
+        // blocks parsed without the text before them are read as they are in the document, such as the lines of a paragraph that
+        // continues a block before it, which are not read as an indented code block.
+        var blocks = GetEnclosingBlocks(document, tree);
+        var (start, end) = (blocks[0].FullSpan.Start, blocks[^1].FullSpan.End);
         var text = tree.GetText().Text;
         var prefix = start > 0 ? "\n" : "";
         var offset = SpanStart - start + prefix.Length;
-        var originalRoot = tree.Reparse(SourceText.From(string.Concat(prefix, text.AsSpan(start, end - start)))).GetRoot();
-        var updatedRoot = tree.Reparse(SourceText.From(string.Concat(prefix, text.AsSpan(start, FullSpan.Start - start), updated.ToFullString(), text.AsSpan(FullSpan.End, end - FullSpan.End)))).GetRoot();
+        var originalRoot = tree.ParsePart(string.Concat(prefix, text.AsSpan(start, end - start)));
+        var updatedRoot = tree.ParsePart(string.Concat(prefix, text.AsSpan(start, FullSpan.Start - start), updated.ToFullString(), text.AsSpan(FullSpan.End, end - FullSpan.End)));
         if (FindBlock(originalRoot, offset, RawKind) is not { } original || FindBlock(updatedRoot, offset, RawKind) is not { } parsed
+            || !GetShape(blocks, attributes: false).SequenceEqual(GetShape(originalRoot.ChildNodes().Cast<MarkdownSyntaxNode>(), attributes: false))
+            || !GetShape(blocks, attributes: true).SequenceEqual(GetShape(originalRoot.ChildNodes().Cast<MarkdownSyntaxNode>(), attributes: true))
             || !original.GetGenericAttributes().Equals(current)
             || !parsed.GetGenericAttributes().Equals(attributes)
             || !GetShape(originalRoot, attributes: false).SequenceEqual(GetShape(updatedRoot, attributes: false))
@@ -191,9 +196,13 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
         return index >= 0 && index + 1 < children.Count && children[index + 1] is { IsToken: true, RawKind: (int)SyntaxKind.InfoStringToken } ? index + 1 : index;
     }
 
-    // The span of the block at the top of the document that contains this block, with the blocks before and after it
-    private (int Start, int End) GetEnclosingBlocksSpan(MarkdownDocumentSyntax document)
+    // The block at the top of the document that contains this block, with the blocks before and after it. A YAML front matter that
+    // is not closed is read as the blocks it is made of, until a line closes it: the line of the attributes, once they are removed,
+    // can close it, so the blocks from the start of the document are parsed.
+    private List<MarkdownBlockSyntax> GetEnclosingBlocks(MarkdownDocumentSyntax document, MarkdownSyntaxTree tree)
     {
+        var fromStart = tree.Options.Extensions.HasFlag(MarkdownExtensions.YamlFrontMatter) && !tree.IsCell && tree.GetText().Text.StartsWith("---", StringComparison.Ordinal) && document.Blocks is not [MarkdownFrontMatterSyntax, ..];
+
         SyntaxNode top = this;
         while (top.Parent is { } parent && parent != document)
         {
@@ -217,32 +226,54 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
             }
         }
 
-        var start = top.FullSpan.Start;
+        var blocks = new List<MarkdownBlockSyntax>(3);
         for (var i = low - 1; i >= 0; i--)
         {
             if (children[i].AsNode() is MarkdownBlockSyntax previous)
             {
-                start = previous.FullSpan.Start;
-                break;
+                blocks.Add(previous);
+                if (!fromStart)
+                {
+                    break;
+                }
             }
         }
 
-        var end = top.FullSpan.End;
+        blocks.Reverse();
+
+        blocks.Add((MarkdownBlockSyntax)top);
         for (var i = low + 1; i < children.Count; i++)
         {
             if (children[i].AsNode() is MarkdownBlockSyntax next)
             {
-                end = next.FullSpan.End;
+                blocks.Add(next);
                 break;
             }
         }
 
-        return (start, end);
+        return blocks;
     }
 
     // The outermost block of the kind that starts at the position
     private static MarkdownBlockSyntax? FindBlock(MarkdownDocumentSyntax root, int position, int rawKind)
         => root.DescendantNodes(node => node.FullSpan.Start <= position && position <= node.FullSpan.End).OfType<MarkdownBlockSyntax>().FirstOrDefault(block => block.SpanStart == position && block.RawKind == rawKind);
+
+    // The shape of the nodes, one after the other, with the nodes themselves
+    private static IEnumerable<(int Kind, int Count, string? Text, object? Value)> GetShape(IEnumerable<MarkdownSyntaxNode> nodes, bool attributes)
+    {
+        foreach (var node in nodes)
+        {
+            if (!attributes)
+            {
+                yield return (node.RawKind, node.ChildNodesAndTokens().Count(item => item.AsNode() is not MarkdownGenericAttributesSyntax), null, null);
+            }
+
+            foreach (var item in GetShape(node, attributes))
+            {
+                yield return item;
+            }
+        }
+    }
 
     // The nodes and the tokens of a node, without their trivia, in the order of the text: a node with the number of its children,
     // which gives the structure, and a token with its text and its value. Either the generic attributes, or everything else.

@@ -4198,6 +4198,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("text\r\nmore\r\n", "text\r\nmore {#x .c data-a=1}\r\n")]
     [InlineData("- a\n  *b*\n", "- a\n  *b* {#x .c data-a=1}\n")]
     [InlineData("text\n\n| a |\n|---|\n", "text {#x .c data-a=1}\n\n| a |\n|---|\n")]
+    [InlineData("[docs]{.link}\n\nmiddle\n\nend\n\n[docs]: /docs\n", "[docs]{.link} {#x .c data-a=1}\n\nmiddle\n\nend\n\n[docs]: /docs\n")]
+    [InlineData("a[^1]{.n}\n\nmiddle\n\nend\n\n[^1]: note\n", "a[^1]{.n} {#x .c data-a=1}\n\nmiddle\n\nend\n\n[^1]: note\n")]
     public void BlockWithGenericAttributes(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
@@ -4261,6 +4263,16 @@ public sealed class MarkdownSyntaxTreeTests
         var block = tree.GetRoot().Blocks[blockIndex];
 
         Assert.Throws<InvalidOperationException>(() => block.WithGenericAttributes(new MarkdownGenericAttributes("x", [], [])));
+    }
+
+    [Fact]
+    public void BlockWithGenericAttributesThatWouldCloseTheFrontMatterThrows()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("---\ntitle\n\n... {.x}\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.YamlFrontMatter });
+        var paragraph = tree.GetRoot().Blocks.OfType<MarkdownParagraphSyntax>().Last();
+
+        // Without its attributes, the line is ..., which would close a front matter that the --- of the first line opens
+        Assert.Throws<InvalidOperationException>(() => paragraph.WithGenericAttributes(attributes: null));
     }
 
     [Fact]

@@ -9,17 +9,11 @@ description: "The results of the web-platform-tests of accelerometer, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 9 | 12 | 0 | 75% |
+| [Stable](#stable-tests) | 12 | 12 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **9** | **12** | **0** | **75%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **TEST RUNNER**: 3
+| **All** | **12** | **12** | **0** | **100%** |
 
 ## Stable tests
 
@@ -32,8 +26,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`Accelerometer-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 9 / 9 |  |  |
 | [`Accelerometer-iframe-access.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer-iframe-access.https.html) | Pass | 12 / 12 |  |  |
 | [`Accelerometer-supported-by-permissions-policy.html`](https://wpt.fyi/results/accelerometer/Accelerometer-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
-| [`Accelerometer.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`Accelerometer.https.html`](https://wpt.fyi/results/accelerometer/Accelerometer.https.html) | Pass | 20 / 20 |  |  |
 | [`Accelerometer_insecure_context.html`](https://wpt.fyi/results/accelerometer/Accelerometer_insecure_context.html) | Pass | 3 / 3 |  |  |
-| [`GravitySensor.https.html`](https://wpt.fyi/results/accelerometer/GravitySensor.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
-| [`LinearAccelerationSensor.https.html`](https://wpt.fyi/results/accelerometer/LinearAccelerationSensor.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`GravitySensor.https.html`](https://wpt.fyi/results/accelerometer/GravitySensor.https.html) | Pass | 20 / 20 |  |  |
+| [`LinearAccelerationSensor.https.html`](https://wpt.fyi/results/accelerometer/LinearAccelerationSensor.https.html) | Pass | 20 / 20 |  |  |
 | [`idlharness.https.window.js`](https://wpt.fyi/results/accelerometer/idlharness.https.window.js) | Pass | 38 / 38 |  |  |

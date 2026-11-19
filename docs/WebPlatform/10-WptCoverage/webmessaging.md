@@ -10,19 +10,16 @@ description: "The results of the web-platform-tests of webmessaging, and why the
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 134 | 134 | 0 | 100% |
-| [Tentative](#tentative-tests) | 1 | 7 | 0 | 14% |
+| [Tentative](#tentative-tests) | 1 | 3 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **135** | **141** | **0** | **96%** |
+| **All** | **135** | **137** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 3
-- **REQUIRES**: 1
-  - `workers`: 1
-- **TEST RUNNER**: 2
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -168,9 +165,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`broadcastchannel/cross-partition.https.tentative.html`](https://wpt.fyi/results/webmessaging/broadcastchannel/cross-partition.https.tentative.html) | Pass | 5 / 5 |  |  |
-| [`message-channels/close-event/document-destroyed.tentative.window.js`](https://wpt.fyi/results/webmessaging/message-channels/close-event/document-destroyed.tentative.window.js) | Error | 0 / 3 | TEST RUNNER | the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty (the helper then calls an undefined `reject`) |
-| [`message-channels/close-event/entangled-after-back-forward-cache-restore.https.tentative.window.js`](https://wpt.fyi/results/webmessaging/message-channels/close-event/entangled-after-back-forward-cache-restore.https.tentative.window.js) | Fail | 0 / 1 | REQUIRES(workers) | service workers (`navigator.serviceWorker` is undefined) |
-| [`message-channels/close-event/explicitly-closed.tentative.window.js`](https://wpt.fyi/results/webmessaging/message-channels/close-event/explicitly-closed.tentative.window.js) | Error | 2 / 4 | TEST RUNNER | the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty (the helper then calls an undefined `reject`) |
-| [`message-channels/close-event/garbage-collected.tentative.any.js`](https://wpt.fyi/results/webmessaging/message-channels/close-event/garbage-collected.tentative.any.js) | Timeout | 0 / 2 | NOT IMPLEMENTED | firing `close` at a port whose entangled port is garbage collected (and no `garbageCollect()` hook) |
 | [`message-channels/user-activation.tentative.any.js`](https://wpt.fyi/results/webmessaging/message-channels/user-activation.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | `MessageEvent.userActivation` (`includeUserActivation`) |
 | [`worker_postMessage_user_activation.tentative.html`](https://wpt.fyi/results/webmessaging/worker_postMessage_user_activation.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `MessageEvent.userActivation` (`includeUserActivation`) |

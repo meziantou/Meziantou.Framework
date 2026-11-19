@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,121 | 2,214 | 31 | 97% |
+| [Stable](#stable-tests) | 2,123 | 2,214 | 31 | 97% |
 | [Tentative](#tentative-tests) | 65 | 226 | 32 | 34% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,657** | **3,017** | **132** | **92%** |
+| **All** | **2,659** | **3,017** | **132** | **92%** |
 
 ## Failure reasons
 
@@ -21,11 +21,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 57
-- **NOT IMPLEMENTED**: 294
+- **NOT IMPLEMENTED**: 295
 - **REQUIRES**: 2
   - `layout`: 1
   - `media`: 1
-- **TEST RUNNER**: 5
+- **TEST RUNNER**: 2
 - **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 1
 
@@ -861,7 +861,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`embedded-content/the-video-element/video-tabindex.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-video-element/video-tabindex.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-video-element/video_crash_empty_src.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-video-element/video_crash_empty_src.html) | Pass | 2 / 2 |  |  |
 | [`embedded-content/the-video-element/video_size_preserved_after_ended.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-video-element/video_size_preserved_after_ended.html) | Pass | 1 / 1 |  |  |
-| [`embedded-content/the-video-element/video_timeupdate_on_seek.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-video-element/video_timeupdate_on_seek.html) | Timeout | 0 / 2 | TEST RUNNER | `timeout_on_seek.py` is not emulated: it closes the connection in the middle of the resource and never answers the range requests of the second half (the test times out in Chromium, Gecko and WebKit too) |
+| [`embedded-content/the-video-element/video_timeupdate_on_seek.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-video-element/video_timeupdate_on_seek.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | the media element does not play a resource whose body is incomplete: `timeout_on_seek.py` sends the first half of the video, then closes the connection (it never sends the bytes from 50% to 95% of the file), and the element fires `loadedmetadata` then `error` (`MEDIA_ERR_NETWORK`) with `readyState` at `HAVE_METADATA`, so `canplay` never fires and the test times out (it times out in Chromium, Gecko and WebKit too, after the seek, whose range request gets no data) |
 | [`forms/attributes-common-to-form-controls/dirname-ltr.html`](https://wpt.fyi/results/html/semantics/forms/attributes-common-to-form-controls/dirname-ltr.html) | Pass | 2 / 2 |  |  |
 | [`forms/attributes-common-to-form-controls/dirname-only-if-applies.html`](https://wpt.fyi/results/html/semantics/forms/attributes-common-to-form-controls/dirname-only-if-applies.html) | Pass | 4 / 4 |  |  |
 | [`forms/attributes-common-to-form-controls/dirname-rtl-auto.html`](https://wpt.fyi/results/html/semantics/forms/attributes-common-to-form-controls/dirname-rtl-auto.html) | Pass | 2 / 2 |  |  |
@@ -2050,8 +2050,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting-1/the-script-element/script-onload-string.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-onload-string.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/script-referrerpolicy-idl.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-referrerpolicy-idl.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/script-supports.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-supports.html) | Pass | 5 / 5 |  |  |
-| [`scripting-1/the-script-element/script-text-modifications-csp.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-text-modifications-csp.html) | Fail | 0 / 1 | TEST RUNNER | `resources/controlled-stylesheet.py` is not emulated: the style sheet that must block the script until the test releases it (a POST) fails at once, so `script0` runs before its text is modified |
-| [`scripting-1/the-script-element/script-text-modifications.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-text-modifications.html) | Fail | 0 / 1 | TEST RUNNER | `resources/controlled-stylesheet.py` is not emulated: the style sheet that must block the script until the test releases it (a POST) fails at once, so `script0` runs before its text is modified |
+| [`scripting-1/the-script-element/script-text-modifications-csp.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-text-modifications-csp.html) | Pass | 1 / 1 |  |  |
+| [`scripting-1/the-script-element/script-text-modifications.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-text-modifications.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/script-text-xhtml.xhtml`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-text-xhtml.xhtml) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/script-text.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-text.html) | Pass | 6 / 6 |  |  |
 | [`scripting-1/the-script-element/script-type-and-language-empty.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/script-type-and-language-empty.html) | Pass | 4 / 4 |  |  |

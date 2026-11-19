@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/dom, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 212 | 217 | 0 | 98% |
+| [Stable](#stable-tests) | 213 | 217 | 0 | 98% |
 | [Tentative](#tentative-tests) | 25 | 39 | 0 | 64% |
 | [Reftests](#reftests) | 127 | 127 | 0 | 100% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **368** | **387** | **0** | **95%** |
+| **All** | **369** | **387** | **0** | **95%** |
 
 ## Failure reasons
 
@@ -23,7 +23,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **NOT IMPLEMENTED**: 11
 - **REQUIRES**: 1
   - `layout`: 1
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -220,7 +219,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`render-blocking/element-render-blocking-form-stack-removal.html`](https://wpt.fyi/results/html/dom/render-blocking/element-render-blocking-form-stack-removal.html) | Pass | 2 / 2 |  |  |
 | [`render-blocking/element-render-blocking-insert-named-anchor.html`](https://wpt.fyi/results/html/dom/render-blocking/element-render-blocking-insert-named-anchor.html) | Pass | 2 / 2 |  |  |
 | [`render-blocking/element-render-blocking-top-of-document.html`](https://wpt.fyi/results/html/dom/render-blocking/element-render-blocking-top-of-document.html) | Pass | 2 / 2 |  |  |
-| [`render-blocking/expect-parser-associated-form.html`](https://wpt.fyi/results/html/dom/render-blocking/expect-parser-associated-form.html) | Error | 0 / 1 | TEST RUNNER | `/html/semantics/resources/controlled-response.py` is not emulated: the script that must keep the parser of the iframes blocked until the test releases it fails at once, so parsing finishes and the documents are no longer render-blocked by their `rel=expect` link |
+| [`render-blocking/expect-parser-associated-form.html`](https://wpt.fyi/results/html/dom/render-blocking/expect-parser-associated-form.html) | Pass | 1 / 1 |  |  |
 | [`render-blocking/link-rel-expect-supported.html`](https://wpt.fyi/results/html/dom/render-blocking/link-rel-expect-supported.html) | Pass | 1 / 1 |  |  |
 | [`render-blocking/non-render-blocking-scripts.optional.html`](https://wpt.fyi/results/html/dom/render-blocking/non-render-blocking-scripts.optional.html) | Pass | 14 / 14 |  |  |
 | [`render-blocking/parser-blocking-script.html`](https://wpt.fyi/results/html/dom/render-blocking/parser-blocking-script.html) | Pass | 2 / 2 |  |  |

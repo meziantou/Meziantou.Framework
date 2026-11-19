@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 66 | 69 | 0 | 96% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 1 | 1 | – |
+| [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **66** | **70** | **1** | **96%** |
+| **All** | **67** | **70** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 2
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -101,4 +100,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`common-microsyntaxes/colours/parsing-legacy-colour-value-ascii-case-insensitive.html`](https://wpt.fyi/results/html/infrastructure/common-microsyntaxes/colours/parsing-legacy-colour-value-ascii-case-insensitive.html) | Disabled | – | TEST RUNNER | not fetched: the reftests of the legacy color parsing (the parsing is tested by the testharness.js tests of `html/dom`) |
+| [`common-microsyntaxes/colours/parsing-legacy-colour-value-ascii-case-insensitive.html`](https://wpt.fyi/results/html/infrastructure/common-microsyntaxes/colours/parsing-legacy-colour-value-ascii-case-insensitive.html) | Pass | 1 / 1 |  |  |

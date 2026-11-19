@@ -19,9 +19,8 @@ description: "The results of the web-platform-tests of css/css-typed-om, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 31
+- **TEST BUG**: 32
 - **NOT IMPLEMENTED**: 1
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -35,7 +34,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`factory-font-relative-length.html`](https://wpt.fyi/results/css/css-typed-om/factory-font-relative-length.html) | Pass | 12 / 12 |  |  |
 | [`factory-frequency.html`](https://wpt.fyi/results/css/css-typed-om/factory-frequency.html) | Pass | 2 / 2 |  |  |
 | [`historical.html`](https://wpt.fyi/results/css/css-typed-om/historical.html) | Pass | 11 / 11 |  |  |
-| [`idlharness.html`](https://wpt.fyi/results/css/css-typed-om/idlharness.html) | Fail | 536 / 544 | TEST RUNNER | idlharness checks `parse()`/`parseAll()` as own properties of `obj.constructor` (`CSSUnitValue`, `CSSMathSum`, `CSSTransformValue`), which only inherit these static operations (fails in browsers too) |
+| [`idlharness.html`](https://wpt.fyi/results/css/css-typed-om/idlharness.html) | Fail | 536 / 544 | TEST BUG | idlharness checks the static operations `parse()`/`parseAll()` of `CSSStyleValue` as own properties of `obj.constructor` (`CSSUnitValue`, `CSSMathSum`, `CSSTransformValue`), while Web IDL defines them on the interface object of `CSSStyleValue` only: the constructors of the subclasses inherit them (fails in browsers too) |
 | [`parse-calc-expressions.html`](https://wpt.fyi/results/css/css-typed-om/parse-calc-expressions.html) | Pass | 2 / 2 |  |  |
 | [`set-var-reference-thcrash.html`](https://wpt.fyi/results/css/css-typed-om/set-var-reference-thcrash.html) | Pass | 1 / 1 |  |  |
 | [`stylevalue-normalization/normalize-image.html`](https://wpt.fyi/results/css/css-typed-om/stylevalue-normalization/normalize-image.html) | Pass | 3 / 3 |  |  |

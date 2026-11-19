@@ -23,7 +23,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **NOT IMPLEMENTED**: 5
 - **REQUIRES**: 1
   - `layout`: 1
-- **TEST RUNNER**: 7
+- **TEST RUNNER**: 6
 - **FLAKY**: 1
 
 ## Stable tests
@@ -53,7 +53,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fallback-remote-to-data-url.html`](https://wpt.fyi/results/css/css-fonts/fallback-remote-to-data-url.html) | Pass | 1 / 1 |  |  |
 | [`fallback-url-to-local.html`](https://wpt.fyi/results/css/css-fonts/fallback-url-to-local.html) | Fail | 0 / 1 | REQUIRES(layout) | the width of the text shaped with the font is measured (fallback to a `local()` font while the remote one loads) |
 | [`font-display/font-display-failure-fallback.html`](https://wpt.fyi/results/css/css-fonts/font-display/font-display-failure-fallback.html) | Pass | 1 / 1 |  |  |
-| [`font-display/font-display-optional-stylesheet-change.html`](https://wpt.fyi/results/css/css-fonts/font-display/font-display-optional-stylesheet-change.html) | Fail | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | `font-display` (the block, swap and failure periods of the font display timeline): a font face is used whenever it is loaded, so the `font-display: optional` face that arrives after the first paint would replace the fallback font; `support/optional-font-stylesheet-change.py` is not emulated: it holds the font until a `POST` releases it, and the `POST` fails |
+| [`font-display/font-display-optional-stylesheet-change.html`](https://wpt.fyi/results/css/css-fonts/font-display/font-display-optional-stylesheet-change.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `font-display` (the block, swap and failure periods of the font display timeline): a font face is used whenever it is loaded, so the `font-display: optional` face that arrives after the first paint would replace the fallback font |
 | [`font-face-range-order.html`](https://wpt.fyi/results/css/css-fonts/font-face-range-order.html) | Pass | 1 / 1 |  |  |
 | [`font-face-style-normal.html`](https://wpt.fyi/results/css/css-fonts/font-face-style-normal.html) | Pass | 4 / 4 |  |  |
 | [`font-face-unicode-range-no-match-no-download.html`](https://wpt.fyi/results/css/css-fonts/font-face-unicode-range-no-match-no-download.html) | Pass | 1 / 1 |  |  |

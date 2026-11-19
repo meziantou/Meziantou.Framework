@@ -9,22 +9,22 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 362 | 409 | 1 | 89% |
-| [Tentative](#tentative-tests) | 45 | 78 | 1 | 58% |
+| [Stable](#stable-tests) | 364 | 409 | 1 | 89% |
+| [Tentative](#tentative-tests) | 47 | 78 | 1 | 61% |
 | [Reftests](#reftests) | 10 | 11 | 0 | 91% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **421** | **502** | **2** | **84%** |
+| **All** | **425** | **502** | **2** | **85%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 29
-- **NOT IMPLEMENTED**: 52
+- **TEST BUG**: 30
+- **NOT IMPLEMENTED**: 48
 - **REQUIRES**: 3
   - `layout`: 2
   - `workers`: 1
-- **TEST RUNNER**: 16
+- **TEST RUNNER**: 3
 - **FLAKY**: 2
 
 ## Stable tests
@@ -400,7 +400,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`metadata/style.https.sub.html`](https://wpt.fyi/results/fetch/metadata/style.https.sub.html) | Pass | 20 / 20 |  |  |
 | [`metadata/text.https.html`](https://wpt.fyi/results/fetch/metadata/text.https.html) | Pass | 5 / 5 |  |  |
 | [`metadata/track.https.sub.html`](https://wpt.fyi/results/fetch/metadata/track.https.sub.html) | Pass | 20 / 20 |  |  |
-| [`metadata/trailing-dot.https.sub.any.js`](https://wpt.fyi/results/fetch/metadata/trailing-dot.https.sub.any.js) | Fail | 0 / 9 | TEST RUNNER | the hosts spelled with a trailing dot (`web-platform.test.`) are not served |
+| [`metadata/trailing-dot.https.sub.any.js`](https://wpt.fyi/results/fetch/metadata/trailing-dot.https.sub.any.js) | Pass | 45 / 45 |  |  |
 | [`metadata/unload.https.sub.html`](https://wpt.fyi/results/fetch/metadata/unload.https.sub.html) | Pass | 5 / 5 |  |  |
 | [`metadata/window-open.https.sub.html`](https://wpt.fyi/results/fetch/metadata/window-open.https.sub.html) | Pass | 45 / 45 |  |  |
 | [`metadata/worker.https.sub.html`](https://wpt.fyi/results/fetch/metadata/worker.https.sub.html) | Pass | 5 / 5 |  |  |
@@ -413,7 +413,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nosniff/worker.html`](https://wpt.fyi/results/fetch/nosniff/worker.html) | Pass | 9 / 9 |  |  |
 | [`origin/assorted.window.js`](https://wpt.fyi/results/fetch/origin/assorted.window.js) | Pass | 43 / 43 |  |  |
 | [`range/blob.any.js`](https://wpt.fyi/results/fetch/range/blob.any.js) | Pass | 70 / 70 |  |  |
-| [`range/cache-revalidate-construct-range-response.html`](https://wpt.fyi/results/fetch/range/cache-revalidate-construct-range-response.html) | Fail | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the partial responses (`206`) are not stored by the HTTP cache; `video-with-aged-proxy-cache.py` is not emulated |
+| [`range/cache-revalidate-construct-range-response.html`](https://wpt.fyi/results/fetch/range/cache-revalidate-construct-range-response.html) | Pass | 1 / 1 |  |  |
 | [`range/data.any.js`](https://wpt.fyi/results/fetch/range/data.any.js) | Pass | 4 / 4 |  |  |
 | [`range/general.any.js`](https://wpt.fyi/results/fetch/range/general.any.js) | Pass | 21 / 21 |  |  |
 | [`range/general.window.js`](https://wpt.fyi/results/fetch/range/general.window.js) | Pass | 2 / 2 |  |  |
@@ -489,17 +489,17 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`h1-parsing/h1-parsing.tentative.html`](https://wpt.fyi/results/fetch/h1-parsing/h1-parsing.tentative.html) | Fail | 138 / 204 | TEST RUNNER | the `.asis` raw responses are parsed leniently (invalid status lines and headers containing CR/LF/NUL are not network errors, as an HTTP/1.1 client would make them) |
 | [`http-cache/credentials.tentative.any.js`](https://wpt.fyi/results/fetch/http-cache/credentials.tentative.any.js) | Pass | 6 / 6 |  |  |
 | [`http-cache/no-vary-search.tentative.any.js`](https://wpt.fyi/results/fetch/http-cache/no-vary-search.tentative.any.js) | Fail | 21 / 39 | NOT IMPLEMENTED | the `No-Vary-Search` header of the responses: the HTTP cache matches the stored responses by their complete URL |
-| [`local-network-access/dedicated-worker.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/dedicated-worker.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/fetch.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/fetch.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/iframe-opener.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/iframe-opener.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/iframe.tentative.https.window.js`](https://wpt.fyi/results/fetch/local-network-access/iframe.tentative.https.window.js) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/navigate.tentative.https.window.js`](https://wpt.fyi/results/fetch/local-network-access/navigate.tentative.https.window.js) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/navigate.tentative.window.js`](https://wpt.fyi/results/fetch/local-network-access/navigate.tentative.window.js) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/service-worker-background-fetch.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/service-worker-background-fetch.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/service-worker.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/service-worker.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/shared-worker.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/shared-worker.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/websocket.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/websocket.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
-| [`local-network-access/webtransport.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/webtransport.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
+| [`local-network-access/dedicated-worker.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/dedicated-worker.tentative.https.html) | Timeout | 1 / 6 | NOT IMPLEMENTED | Local Network Access (https://wicg.github.io/local-network-access/): the requests of a public or local document to a more private address space (the `-local` and `-public` servers of wptserve) are not checked against the `local-network` and `loopback-network` permissions, so the subtests without the permission (or with the permission denied) get a response instead of a failure, and the `targetAddressSpace` option of `fetch()` that lets an `https:` document fetch an `http:` local resource is ignored (the request is blocked as mixed content); WebTransport: the WebTransport subtest times out and the next subtests are not run |
+| [`local-network-access/fetch.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/fetch.tentative.https.html) | Fail | 2 / 4 | NOT IMPLEMENTED | Local Network Access (https://wicg.github.io/local-network-access/): the requests of a public or local document to a more private address space (the `-local` and `-public` servers of wptserve) are not checked against the `local-network` and `loopback-network` permissions, so the subtests without the permission (or with the permission denied) get a response instead of a failure, and the `targetAddressSpace` option of `fetch()` that lets an `https:` document fetch an `http:` local resource is ignored (the request is blocked as mixed content) |
+| [`local-network-access/iframe-opener.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/iframe-opener.tentative.https.html) | Timeout | 0 / 2 | TEST BUG | the iframe (`https:`) of an `http:` page is navigated to an `http:` URL by a window whose document is `https:` (`opener.location.href = ...`): Mixed Content checks the client of the navigation request, the settings of the initiator, which prohibit mixed security contexts (https://w3c.github.io/webappsec-mixed-content/#should-block-fetch), so the navigation is blocked; the test expects the check of the embedding document (`http:`), as in Chrome |
+| [`local-network-access/iframe.tentative.https.window.js`](https://wpt.fyi/results/fetch/local-network-access/iframe.tentative.https.window.js) | Fail | 9 / 11 | NOT IMPLEMENTED | Local Network Access (https://wicg.github.io/local-network-access/): the requests of a public or local document to a more private address space (the `-local` and `-public` servers of wptserve) are not checked against the `local-network` and `loopback-network` permissions, so the subtests without the permission (or with the permission denied) get a response instead of a failure, and the `targetAddressSpace` option of `fetch()` that lets an `https:` document fetch an `http:` local resource is ignored (the request is blocked as mixed content) |
+| [`local-network-access/navigate.tentative.https.window.js`](https://wpt.fyi/results/fetch/local-network-access/navigate.tentative.https.window.js) | Pass | 9 / 9 |  |  |
+| [`local-network-access/navigate.tentative.window.js`](https://wpt.fyi/results/fetch/local-network-access/navigate.tentative.window.js) | Pass | 9 / 9 |  |  |
+| [`local-network-access/service-worker-background-fetch.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/service-worker-background-fetch.tentative.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | Local Network Access (https://wicg.github.io/local-network-access/): the requests of a public or local document to a more private address space (the `-local` and `-public` servers of wptserve) are not checked against the `local-network` and `loopback-network` permissions, so the subtests without the permission (or with the permission denied) get a response instead of a failure, and the `targetAddressSpace` option of `fetch()` that lets an `https:` document fetch an `http:` local resource is ignored (the request is blocked as mixed content); Background Fetch (`registration.backgroundFetch` is undefined) |
+| [`local-network-access/service-worker.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/service-worker.tentative.https.html) | Timeout | 1 / 9 | NOT IMPLEMENTED | Local Network Access (https://wicg.github.io/local-network-access/): the requests of a public or local document to a more private address space (the `-local` and `-public` servers of wptserve) are not checked against the `local-network` and `loopback-network` permissions, so the subtests without the permission (or with the permission denied) get a response instead of a failure, and the `targetAddressSpace` option of `fetch()` that lets an `https:` document fetch an `http:` local resource is ignored (the request is blocked as mixed content); WebTransport: the WebTransport subtest times out and the next subtests are not run |
+| [`local-network-access/shared-worker.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/shared-worker.tentative.https.html) | Timeout | 1 / 6 | NOT IMPLEMENTED | Local Network Access (https://wicg.github.io/local-network-access/): the requests of a public or local document to a more private address space (the `-local` and `-public` servers of wptserve) are not checked against the `local-network` and `loopback-network` permissions, so the subtests without the permission (or with the permission denied) get a response instead of a failure, and the `targetAddressSpace` option of `fetch()` that lets an `https:` document fetch an `http:` local resource is ignored (the request is blocked as mixed content); WebTransport: the WebTransport subtest times out and the next subtests are not run |
+| [`local-network-access/websocket.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/websocket.tentative.https.html) | Fail | 3 / 4 | NOT IMPLEMENTED | Local Network Access (https://wicg.github.io/local-network-access/): the requests of a public or local document to a more private address space (the `-local` and `-public` servers of wptserve) are not checked against the `local-network` and `loopback-network` permissions, so the subtests without the permission (or with the permission denied) get a response instead of a failure, and the `targetAddressSpace` option of `fetch()` that lets an `https:` document fetch an `http:` local resource is ignored (the request is blocked as mixed content) |
+| [`local-network-access/webtransport.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/webtransport.tentative.https.html) | Timeout | 0 / 4 | NOT IMPLEMENTED | WebTransport: the WebTransport subtest times out and the next subtests are not run |
 | [`metadata/embed.https.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/embed.https.sub.tentative.html) | Pass | 30 / 30 |  |  |
 | [`metadata/generated/css-font-face.https.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/generated/css-font-face.https.sub.tentative.html) | Pass | 19 / 19 |  |  |
 | [`metadata/generated/css-font-face.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/generated/css-font-face.sub.tentative.html) | Pass | 18 / 18 |  |  |

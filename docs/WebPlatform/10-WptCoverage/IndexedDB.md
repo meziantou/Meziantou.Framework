@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of IndexedDB, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 227 | 229 | 0 | 99% |
+| [Stable](#stable-tests) | 228 | 229 | 0 | 99.5% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **227** | **230** | **0** | **99%** |
+| **All** | **228** | **230** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **NOT IMPLEMENTED**: 2
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -46,7 +45,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`delete-request-queue.any.js`](https://wpt.fyi/results/IndexedDB/delete-request-queue.any.js) | Pass | 3 / 3 |  |  |
 | [`error-attributes.any.js`](https://wpt.fyi/results/IndexedDB/error-attributes.any.js) | Pass | 3 / 3 |  |  |
 | [`event-dispatch-active-flag.any.js`](https://wpt.fyi/results/IndexedDB/event-dispatch-active-flag.any.js) | Pass | 12 / 12 |  |  |
-| [`file_support.sub.html`](https://wpt.fyi/results/IndexedDB/file_support.sub.html) | Fail | 0 / 3 | TEST RUNNER | `test_driver.send_keys()` cannot select a file of a file input |
+| [`file_support.sub.html`](https://wpt.fyi/results/IndexedDB/file_support.sub.html) | Pass | 3 / 3 |  |  |
 | [`fire-error-event-exception.any.js`](https://wpt.fyi/results/IndexedDB/fire-error-event-exception.any.js) | Pass | 51 / 51 |  |  |
 | [`fire-success-event-exception.any.js`](https://wpt.fyi/results/IndexedDB/fire-success-event-exception.any.js) | Pass | 18 / 18 |  |  |
 | [`fire-upgradeneeded-event-exception.any.js`](https://wpt.fyi/results/IndexedDB/fire-upgradeneeded-event-exception.any.js) | Pass | 18 / 18 |  |  |

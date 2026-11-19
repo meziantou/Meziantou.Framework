@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 733 | 752 | 2 | 98% |
+| [Stable](#stable-tests) | 734 | 752 | 0 | 98% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
 | [Reftests](#reftests) | 625 | 693 | 2 | 90% |
-| [Crash tests](#crash-tests) | 29 | 55 | 26 | 100% |
-| **All** | **1,433** | **1,547** | **30** | **94%** |
+| [Crash tests](#crash-tests) | 55 | 55 | 0 | 100% |
+| **All** | **1,460** | **1,547** | **2** | **94%** |
 
 ## Failure reasons
 
@@ -21,8 +21,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 4
 - **TEST BUG**: 15
-- **NOT IMPLEMENTED**: 60
-- **TEST RUNNER**: 33
+- **NOT IMPLEMENTED**: 61
+- **TEST RUNNER**: 5
 - **FLAKY**: 2
 
 ## Stable tests
@@ -379,7 +379,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`geometry/svg-image-intrinsic-size-with-cssstyle-auto.html`](https://wpt.fyi/results/svg/geometry/svg-image-intrinsic-size-with-cssstyle-auto.html) | Pass | 32 / 32 |  |  |
 | [`geometry/svg-length-convert-to-percentage-precision.html`](https://wpt.fyi/results/svg/geometry/svg-length-convert-to-percentage-precision.html) | Pass | 4 / 4 |  |  |
 | [`historical.html`](https://wpt.fyi/results/svg/historical.html) | Pass | 68 / 68 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/svg/idlharness.window.js) | Disabled | – | TEST RUNNER | the files of the `svg` directory root are not fetched (except `historical.html`) |
+| [`idlharness.window.js`](https://wpt.fyi/results/svg/idlharness.window.js) | Fail | 1,678 / 1,685 | NOT IMPLEMENTED | the `ShadowAnimation` interface of SVG 2 (the animations of the elements referenced by a `use` element, mirrored on their instances) is not exposed: the 7 subtests of the interface fail |
 | [`interact/focus-inside-hidden-svg-containers-01.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-01.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-02.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-02.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-03.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-03.html) | Pass | 1 / 1 |  |  |
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shapes/scripted/ellipse-auto-radii.svg`](https://wpt.fyi/results/svg/shapes/scripted/ellipse-auto-radii.svg) | Pass | 7 / 7 |  |  |
 | [`shapes/scripted/shapes-clip-path.svg`](https://wpt.fyi/results/svg/shapes/scripted/shapes-clip-path.svg) | Pass | 3 / 3 |  |  |
 | [`shapes/scripted/stroke-dashes-hit-at-high-scale.svg`](https://wpt.fyi/results/svg/shapes/scripted/stroke-dashes-hit-at-high-scale.svg) | Pass | 1 / 1 |  |  |
-| [`sniffing-content-type.html`](https://wpt.fyi/results/svg/sniffing-content-type.html) | Disabled | – | TEST RUNNER | the files of the `svg` directory root are not fetched (except `historical.html`) |
+| [`sniffing-content-type.html`](https://wpt.fyi/results/svg/sniffing-content-type.html) | Pass | 1 / 1 |  |  |
 | [`struct/SVGSVGElement-currentTranslate-SameObject.html`](https://wpt.fyi/results/svg/struct/SVGSVGElement-currentTranslate-SameObject.html) | Pass | 4 / 4 |  |  |
 | [`struct/SVGSVGElement-deselectAll.html`](https://wpt.fyi/results/svg/struct/SVGSVGElement-deselectAll.html) | Pass | 7 / 7 |  |  |
 | [`struct/scripted/SVGSVGElement-currentTranslate.html`](https://wpt.fyi/results/svg/struct/scripted/SVGSVGElement-currentTranslate.html) | Pass | 7 / 7 |  |  |
@@ -1546,32 +1546,32 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animations/end-of-time-002-crash.html`](https://wpt.fyi/results/svg/animations/end-of-time-002-crash.html) | Pass | 1 / 1 |  |  |
 | [`animations/mpath-zero-radius-crash.html`](https://wpt.fyi/results/svg/animations/mpath-zero-radius-crash.html) | Pass | 1 / 1 |  |  |
 | [`animations/svg-style-animate-crash.html`](https://wpt.fyi/results/svg/animations/svg-style-animate-crash.html) | Pass | 1 / 1 |  |  |
-| [`crashtests/chrome-bug-1172059.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1172059.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1205852.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1205852.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1207590.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1207590.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1238412.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1238412.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1345806.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1345806.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1371700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1371700.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1474157.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1474157.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-333487749.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-333487749.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-452651700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-452651700.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-485819134.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-485819134.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-517309206.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-517309206.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-565674533.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-565674533.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/deep-nesting.html`](https://wpt.fyi/results/svg/crashtests/deep-nesting.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1688293.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1688293.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1703592.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1703592.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1719483.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1719483.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1723249.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1723249.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1724237.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1724237.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1753105.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1753105.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1883804.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1883804.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1966754.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1966754.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1980267.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1980267.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-2018671.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-2018671.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/image-dispatch-event-on-destruct.html`](https://wpt.fyi/results/svg/crashtests/image-dispatch-event-on-destruct.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/negative-viewbox.html`](https://wpt.fyi/results/svg/crashtests/negative-viewbox.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/svg-zero-width-img-crash.html`](https://wpt.fyi/results/svg/crashtests/svg-zero-width-img-crash.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
+| [`crashtests/chrome-bug-1172059.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1172059.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1205852.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1205852.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1207590.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1207590.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1238412.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1238412.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1345806.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1345806.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1371700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1371700.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1474157.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1474157.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-333487749.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-333487749.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-452651700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-452651700.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-485819134.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-485819134.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-517309206.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-517309206.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-565674533.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-565674533.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/deep-nesting.html`](https://wpt.fyi/results/svg/crashtests/deep-nesting.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1688293.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1688293.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1703592.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1703592.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1719483.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1719483.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1723249.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1723249.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1724237.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1724237.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1753105.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1753105.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1883804.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1883804.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1966754.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1966754.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1980267.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1980267.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-2018671.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-2018671.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/image-dispatch-event-on-destruct.html`](https://wpt.fyi/results/svg/crashtests/image-dispatch-event-on-destruct.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/negative-viewbox.html`](https://wpt.fyi/results/svg/crashtests/negative-viewbox.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/svg-zero-width-img-crash.html`](https://wpt.fyi/results/svg/crashtests/svg-zero-width-img-crash.html) | Pass | 1 / 1 |  |  |
 | [`embedded/svg-zero-size-crash.html`](https://wpt.fyi/results/svg/embedded/svg-zero-size-crash.html) | Pass | 1 / 1 |  |  |
 | [`extensibility/foreignObject/foreign-object-circular-filter-reference-crash.html`](https://wpt.fyi/results/svg/extensibility/foreignObject/foreign-object-circular-filter-reference-crash.html) | Pass | 1 / 1 |  |  |
 | [`extensibility/foreignObject/foreign-object-under-clip-path-crash.html`](https://wpt.fyi/results/svg/extensibility/foreignObject/foreign-object-under-clip-path-crash.html) | Pass | 1 / 1 |  |  |

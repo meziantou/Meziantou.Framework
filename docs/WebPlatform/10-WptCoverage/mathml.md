@@ -12,8 +12,8 @@ description: "The results of the web-platform-tests of mathml, and why the tests
 | [Stable](#stable-tests) | 202 | 210 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
 | [Reftests](#reftests) | 270 | 282 | 1 | 96% |
-| [Crash tests](#crash-tests) | 125 | 126 | 0 | 99% |
-| **All** | **598** | **620** | **1** | **97%** |
+| [Crash tests](#crash-tests) | 126 | 126 | 0 | 100% |
+| **All** | **599** | **620** | **1** | **97%** |
 
 ## Failure reasons
 
@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 15
 - **NOT IMPLEMENTED**: 5
-- **TEST RUNNER**: 1
 - **FLAKY**: 1
 
 ## Stable tests
@@ -564,7 +563,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`crashtests/mozilla/1701975-1.html`](https://wpt.fyi/results/mathml/crashtests/mozilla/1701975-1.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/mozilla/1993534-1.html`](https://wpt.fyi/results/mathml/crashtests/mozilla/1993534-1.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/mozilla/243159-2.xhtml`](https://wpt.fyi/results/mathml/crashtests/mozilla/243159-2.xhtml) | Pass | 1 / 1 |  |  |
-| [`crashtests/mozilla/289180-1.xml`](https://wpt.fyi/results/mathml/crashtests/mozilla/289180-1.xml) | Error | 0 / 1 | TEST RUNNER | the page is not well-formed XML (multiple root elements): the runner fails to load it instead of displaying the XML parsing error document of a browser |
+| [`crashtests/mozilla/289180-1.xml`](https://wpt.fyi/results/mathml/crashtests/mozilla/289180-1.xml) | Pass | 1 / 1 |  |  |
 | [`crashtests/mozilla/306902-1.xml`](https://wpt.fyi/results/mathml/crashtests/mozilla/306902-1.xml) | Pass | 1 / 1 |  |  |
 | [`crashtests/mozilla/307826-1.xhtml`](https://wpt.fyi/results/mathml/crashtests/mozilla/307826-1.xhtml) | Pass | 1 / 1 |  |  |
 | [`crashtests/mozilla/307839-1.xhtml`](https://wpt.fyi/results/mathml/crashtests/mozilla/307839-1.xhtml) | Pass | 1 / 1 |  |  |

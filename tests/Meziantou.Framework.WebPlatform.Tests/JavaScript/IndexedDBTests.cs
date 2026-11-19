@@ -68,6 +68,59 @@ public sealed class IndexedDBTests : IDisposable
     }
 
     [Fact]
+    public void StorageBuckets_DeletingABucketOfACredentiallessIframeKeepsTheBucketOfThePage()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const root = await (await navigator.storageBuckets.open('drafts')).getDirectory();
+                await root.getFileHandle('top.txt', { create: true });
+                window.onFrameDone = async frameResult => {
+                  const kept = await root.getFileHandle('top.txt').then(() => 'kept', e => e.name);
+                  document.title = kept + ',' + frameResult;
+                };
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('credentialless', '');
+                iframe.srcdoc = `<script>(async () => {
+                  const root = await (await navigator.storageBuckets.open('drafts')).getDirectory();
+                  await root.getFileHandle('frame.txt', { create: true });
+                  await navigator.storageBuckets.delete('drafts');
+                  const again = await (await navigator.storageBuckets.open('drafts')).getDirectory();
+                  parent.onFrameDone(await again.getFileHandle('frame.txt').then(() => 'leftover', () => 'empty'));
+                })();<\/script>`;
+                document.body.appendChild(iframe);
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("kept,empty", document.Title);
+    }
+
+    [Fact]
+    public void ClearSiteData_OfACredentiallessIframeKeepsTheDatabasesOfThePage()
+    {
+        _loader.Resources["https://example.com/clear"] = new DocumentResource("") { Headers = [new("Content-Type", "text/plain"), new("Clear-Site-Data", "\"storage\"")] };
+        var document = Load("""
+            <script>
+              (async () => {
+                await new Promise(resolve => { const request = indexedDB.open('page'); request.onsuccess = () => { request.result.close(); resolve(); }; });
+                window.onFrameDone = async () => {
+                  document.title = (await indexedDB.databases()).map(database => database.name).join() || 'none';
+                };
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('credentialless', '');
+                iframe.srcdoc = `<script>fetch('/clear').then(() => parent.onFrameDone());<\/script>`;
+                document.body.appendChild(iframe);
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("page", document.Title);
+    }
+
+    [Fact]
     public void Key_AProxyOfAnArrayIsNotAValidKey()
     {
         var document = Load("""

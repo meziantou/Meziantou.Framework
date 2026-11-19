@@ -216,25 +216,20 @@ internal static class ClearSiteData
             topLevel.SessionStorageShed.ObtainArea(storageKey).Clear(persist: false);
         }
 
-        // The databases without open connection are deleted (an open connection keeps its database)
-        var indexedDB = browsingContext.IndexedDBBackend;
-        foreach (var database in indexedDB.GetDatabases(origin))
+        // The databases without open connection are deleted (an open connection keeps its database), in the backends of the
+        // partition of the storage key: a credentialless iframe clears its own storage, not the storage of its origin
+        if (StorageEndpoints.GetBackend(browsingContext, storageKey, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend()) is { } indexedDB)
         {
-            var state = indexedDB.Coordinator.GetDatabase(origin, database.Name);
-            if (state.GetOpenConnections(except: null).Count > 0)
-                continue;
-
-            state.CallBackend(backend =>
-            {
-                backend.DeleteDatabase(origin, database.Name);
-                return true;
-            });
+            StorageBucketRegistry.ClearIndexedDB(indexedDB, origin);
         }
 
-        var cacheStorage = browsingContext.CacheStorageBackend.Coordinator;
-        foreach (var name in cacheStorage.Keys(origin).ToArray())
+        if (StorageEndpoints.GetBackend(browsingContext, storageKey, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend()) is { } cacheStorageBackend)
         {
-            cacheStorage.Delete(origin, name);
+            var cacheStorage = cacheStorageBackend.Coordinator;
+            foreach (var name in cacheStorage.Keys(origin).ToArray())
+            {
+                cacheStorage.Delete(origin, name);
+            }
         }
 
         // The storage buckets (https://wicg.github.io/storage-buckets/) are deleted with their storage

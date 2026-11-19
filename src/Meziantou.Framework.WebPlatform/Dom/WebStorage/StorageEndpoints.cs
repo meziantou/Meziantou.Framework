@@ -48,6 +48,25 @@ internal static class StorageEndpoints
         return (backend, key.Serialize());
     }
 
+    /// <summary>
+    /// Returns the backend that stores the data of a storage key in a browsing context group, or null when the data is in no
+    /// backend of the group: the in-memory backend of the credentialless iframes of the top-level window whose page
+    /// credentialless nonce is the partition nonce of the key (see <see cref="Resolve{TBackend}"/>), else the backend of the
+    /// browsing context. The serialization of a storage key does not contain its partition nonce: the data of a
+    /// credentialless iframe must be read and cleared in its own backend, not in the backend of the same origin.
+    /// </summary>
+    public static TBackend? GetBackend<TBackend>(BrowsingContext browsingContext, StorageKey storageKey, Func<BrowsingContext, TBackend> fromBrowsingContext, Func<TBackend> createInMemory)
+        where TBackend : class
+    {
+        if (storageKey.PartitionNonce is not { } nonce)
+            return fromBrowsingContext(browsingContext);
+
+        if (browsingContext.Top.Window is not { } topLevelWindow || topLevelWindow.PageCredentiallessNonce != nonce)
+            return null;
+
+        return GetOrCreate(PartitionedBackends.GetValue(topLevelWindow, static _ => []), createInMemory);
+    }
+
     private static TBackend GetOrCreate<TBackend>(Dictionary<Type, object> backends, Func<TBackend> createInMemory)
         where TBackend : class
     {

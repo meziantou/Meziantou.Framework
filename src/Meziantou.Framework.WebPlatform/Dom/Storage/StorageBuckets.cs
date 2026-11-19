@@ -440,12 +440,42 @@ internal sealed class StorageBucketRegistry
         }
     }
 
-    /// <summary>Marks a removed bucket as deleted and removes its databases (except the ones with an open connection), its caches and its file system.</summary>
+    /// <summary>
+    /// Marks a removed bucket as deleted and removes its databases (except the ones with an open connection), its caches and
+    /// its file system, in the backends that store them: the backends of the partition of the bucket (a bucket of a
+    /// credentialless iframe is stored in the in-memory backends of its page, see <see cref="StorageEndpoints.GetBackend"/>).
+    /// </summary>
     private static void ClearStorage(BrowsingContext browsingContext, StorageBucketRecord record)
     {
         record.IsDeleted = true;
         var origin = record.Key.Serialize();
-        var indexedDB = browsingContext.IndexedDBBackend;
+        if (StorageEndpoints.GetBackend(browsingContext, record.Key, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend()) is { } indexedDB)
+        {
+            ClearIndexedDB(indexedDB, origin);
+        }
+
+        if (StorageEndpoints.GetBackend(browsingContext, record.Key, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend()) is { } cacheStorage)
+        {
+            var caches = cacheStorage.Coordinator;
+            foreach (var name in caches.Keys(origin).ToArray())
+            {
+                caches.Delete(origin, name);
+            }
+        }
+
+        if (StorageEndpoints.GetBackend(browsingContext, record.Key, static context => context.FileSystemBackend, static () => new InMemoryFileSystemBackend()) is { } fileSystem
+            && fileSystem.GetEntries(origin, []) is { } entries)
+        {
+            foreach (var entry in entries)
+            {
+                fileSystem.RemoveEntry(origin, [entry.Name]);
+            }
+        }
+    }
+
+    /// <summary>Deletes the databases of a serialized storage key that have no open connection.</summary>
+    internal static void ClearIndexedDB(IndexedDBBackend indexedDB, string origin)
+    {
         foreach (var database in indexedDB.GetDatabases(origin))
         {
             var state = indexedDB.Coordinator.GetDatabase(origin, database.Name);
@@ -457,21 +487,6 @@ internal sealed class StorageBucketRegistry
                 backend.DeleteDatabase(origin, database.Name);
                 return true;
             });
-        }
-
-        var caches = browsingContext.CacheStorageBackend.Coordinator;
-        foreach (var name in caches.Keys(origin).ToArray())
-        {
-            caches.Delete(origin, name);
-        }
-
-        var fileSystem = browsingContext.FileSystemBackend;
-        if (fileSystem.GetEntries(origin, []) is { } entries)
-        {
-            foreach (var entry in entries)
-            {
-                fileSystem.RemoveEntry(origin, [entry.Name]);
-            }
         }
     }
 }

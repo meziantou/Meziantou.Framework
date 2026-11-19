@@ -87,6 +87,10 @@ private sealed class RemoveHtml : MarkdownSyntaxRewriter
 ```
 <!-- endref -->
 
+A node that replaces another can change how the text around it is read, such as a token without the blank line that
+separated two paragraphs. [WithRoot](cref:Meziantou.Framework.Language.SyntaxTree.WithRoot(Meziantou.Framework.Language.SyntaxNode)) on a [MarkdownSyntaxTree](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree)
+parses the text of the root again, so that the tree it returns is the one of its text.
+
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = MarkdownSyntaxTree.ParseText("<div>\nhidden\n</div>\n\nText with <b>tags</b>.\n");
@@ -109,6 +113,10 @@ keep the rest of the node as it was. The copy is in no tree: put it in the place
 | [MarkdownLinkSyntax](cref:Meziantou.Framework.Markdown.MarkdownLinkSyntax) | [WithDestination](cref:Meziantou.Framework.Markdown.MarkdownLinkSyntax.WithDestination(System.String)), [WithTitle](cref:Meziantou.Framework.Markdown.MarkdownLinkSyntax.WithTitle(System.String)) |
 | [MarkdownLinkReferenceDefinitionSyntax](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax) | [WithDestination](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax.WithDestination(System.String)), [WithTitle](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax.WithTitle(System.String)) |
 | [MarkdownCodeBlockSyntax](cref:Meziantou.Framework.Markdown.MarkdownCodeBlockSyntax) | [WithInfo](cref:Meziantou.Framework.Markdown.MarkdownCodeBlockSyntax.WithInfo(System.String)) |
+
+[WithLevel](cref:Meziantou.Framework.Markdown.MarkdownHeadingSyntax.WithLevel(System.Int32)) changes the number of `#` of an ATX heading, and the underline of a setext heading for the levels 1 and 2. A
+setext heading of level 3 to 6 becomes an ATX heading, which has one line: its lines are joined with spaces, and a hard
+line break becomes a space.
 
 The destination and the title of a reference link are the ones of its definition: change the definition. Removing a
 title passes `null`:
@@ -168,22 +176,27 @@ Assert.Equal("steps", tree.GetRoot().DescendantNodes().OfType<MarkdownListSyntax
 <!-- endref -->
 
 [MarkdownGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownGenericAttributes) is a record: `with` changes
-one part, such as the id. Each change parses the text again, so find the next block in the new tree. Here, every
-heading gets the identifier it has, so the links to it keep working when its text changes:
+one part, such as the id. Each call of
+[WithGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree.WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownBlockSyntax,Meziantou.Framework.Markdown.MarkdownGenericAttributes)) parses the whole text again. To change many blocks, use a
+[MarkdownSyntaxTreeEditor](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor): it records the changes to the
+blocks of a tree, and [GetChangedTree](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor.GetChangedTree)
+writes them and parses the text once. Here, every heading gets the identifier it has, so the links to it keep working
+when its text changes:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_HeadingIdentifiers;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
 var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n", options);
 
-// Write the identifier of every heading as its id, so that the links to it keep working when its text changes. Each edit
-// parses the text again: the headings are found again in the new tree.
-var count = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Count();
-for (var i = 0; i < count; i++)
+// Write the identifier of every heading as its id, so that the links to it keep working when its text changes. The editor
+// parses the text once, after all the changes: the headings are the ones of the original tree.
+var editor = new MarkdownSyntaxTreeEditor(tree);
+foreach (var heading in tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>())
 {
-    var heading = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().ElementAt(i);
-    tree = tree.WithGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
+    editor.SetGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
 }
+
+tree = editor.GetChangedTree();
 
 Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n", tree.GetRoot().ToFullString());
 ```
@@ -224,9 +237,22 @@ Assert.Equal("> - Paragraph\n>\n>   ```\n>   code\n>   ```\n> - second\n", updat
 ````
 <!-- endref -->
 
+The markers of the containers are the `>` of a block quote, the `^^` of a footer, and the indentation of the content
+of a list item, of a footnote and of a definition: 4 spaces for a footnote, whatever the length of its label. The edits
+of an indented code block start before its indentation, and inserting blocks after a fenced block that is not closed,
+such as a code block that ends the document, writes its closing fence first, so that the new blocks are not in the code. The
+kind of an alert, such as `[!NOTE]`, stays on its line when its first paragraph is replaced or removed.
+
 The text is inserted as it is: separate the new blocks from the others with a blank line when they would otherwise be
-read as one, such as two paragraphs. Removing the first block of a list item keeps the marker of the item. These methods
-parse the whole text again, as a block can change how the blocks after it are read.
+read as one, such as two paragraphs. Removing a block writes a blank line in place of its lines when the lines around
+them are not blank, so that the blocks around it stay apart: a paragraph before a thematic break would otherwise become
+a setext heading. Removing the first block of a list item keeps the marker of the item, and moves the next block of the
+item to the line of the marker.
+
+Each of these methods parses the whole text again, as a block can change how the blocks after it are read.
+[MarkdownSyntaxTreeEditor](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor) has the same methods, and
+parses the text once for all the changes. Its changes are given with the blocks of the original tree, and cannot
+overlap: changing a block and a block it contains throws.
 
 ## Write Markdown
 

@@ -3743,6 +3743,22 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal("new\nnew", ((MarkdownDocumentSyntax)rewritten).GetPlainText());
     }
 
+    [Fact]
+    public void WithRootParsesTheTextAgain()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("a\n\nb\n");
+        var blankLine = tree.GetRoot().DescendantTokens().Last(token => token.Text == "b");
+
+        // Without the blank line, the two paragraphs are one
+        var root = tree.GetRoot().ReplaceToken(blankLine, blankLine.WithLeadingTrivia());
+        var updated = (MarkdownSyntaxTree)tree.WithRoot(root);
+
+        Assert.Equal("a\nb\n", updated.GetRoot().ToFullString());
+        Assert.Single(updated.GetRoot().Blocks);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("a\nb\n")), MarkdownHtmlRenderer.ToHtml(updated));
+        Assert.Same(tree, tree.WithRoot(tree.GetRoot()));
+    }
+
     [Theory]
     [InlineData("- a\n- b\n", true, 1, "- c\n", "- a\n- c\n- b\n")]
     [InlineData("- a\n\n  b\n", false, 0, "c\n\n", "- c\n\n  a\n\n  b\n")]
@@ -3760,6 +3776,11 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a", "\nb\n", "a\n\nb")]
     [InlineData("```\ncode\n```\nc\n", "# t", "```\ncode\n```\n# t\nc\n")]
     [InlineData("> - a\n>   b\n", "\n  c", ">   b\n>\n>     c\n")]
+    [InlineData("```\ncode\n", "# t", "```\ncode\n```\n# t\n")]
+    [InlineData("````md\ncode", "# t", "````md\ncode\n````\n# t")]
+    [InlineData("> - ~~~\n>   code\n", "# t", ">   code\n>   ~~~\n>   # t\n")]
+    [InlineData(">- a\n", "\nb", ">- a\n>\n>   b\n")]
+    [InlineData(" 1.  a\n", "\nb", " 1.  a\n\n     b\n")]
     public void InsertsBlocksAfter(string text, string markdown, string expectedEnd)
     {
         var tree = MarkdownSyntaxTree.ParseText(text);
@@ -3774,6 +3795,19 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("- a\n- b\n", 0, "- b\n")]
     [InlineData("1. a\n", 1, "1. \n")]
     [InlineData("a\r\n\r\nb", 1, "a\r\n\r\n")]
+    [InlineData("para1\n# h\npara2\n", 1, "para1\n\npara2\n")]
+    [InlineData("a\n***\n---\n", 1, "a\n\n---\n")]
+    [InlineData("> a\n> # h\nb\n", 1, "> a\n>\nb\n")]
+    [InlineData("- a\n- b\n- c\n", 2, "- a\n- c\n")]
+    [InlineData("- a\n\n  b\n", 1, "- b\n")]
+    [InlineData("- a\n\n      code\n", 1, "-     code\n")]
+    [InlineData("> - # a\n>   b\n", 1, "> - b\n")]
+    [InlineData("para1\r\n# h\r\npara2\r\n", 1, "para1\r\n\r\npara2\r\n")]
+    [InlineData("> a\n# h\n> b\n", 1, "> a\n\n> b\n")]
+    [InlineData("- \n  a\n\n  b\n", 1, "- \n  b\n")]
+    [InlineData("- a\n  - -\n", 1, "- \n  - -\n")]
+    [InlineData("> [a]: /u\nb\n", 0, "> b\n")]
+    [InlineData("* a\n  > b\n  >\n* c\n", 0, "* c\n")]
     public void RemovesBlocks(string text, int blockIndex, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text);
@@ -3802,12 +3836,175 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a\r\nb\r\n\r\nc", 0, "x\ny", "x\r\ny\r\n\r\nc")]
     [InlineData("```\ncode\n```\nafter\n", 0, "# t", "# t\nafter\n")]
     [InlineData("- a\n- b\n", 0, "x\n\ny", "- x\n\n  y\n- b\n")]
+    [InlineData("p\n\n    code\n    more\n", 1, "X\n\nY", "p\n\nX\n\nY\n")]
+    [InlineData("> -     code\n", 0, "X\n\nY", "> - X\n>\n>   Y\n")]
+    [InlineData(">\t\tcode\n", 0, "X", "> X\n")]
+    [InlineData("> [a]: /u\nb\n", 0, "# x", "> [a]: /u\n> # x\n")]
     public void ReplacesBlocks(string text, int blockIndex, string markdown, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text);
         var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Where(node => node is MarkdownParagraphSyntax or MarkdownCodeBlockSyntax).ToList()[blockIndex];
 
         Assert.Equal(expected, tree.ReplaceBlock(block, markdown).GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditsOfAnIndentedCodeBlockAreNotInTheCode()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("p\n\n    code\n    more\n");
+        var code = tree.GetRoot().Blocks.OfType<MarkdownCodeBlockSyntax>().Single();
+
+        var replaced = tree.ReplaceBlock(code, "X\n\nY");
+        var before = tree.InsertBlocksBefore(code, "X\n\nY\n");
+        var after = tree.InsertBlocksAfter(code, "\nX\n\nY");
+
+        Assert.Equal("<p>p</p>\n<p>X</p>\n<p>Y</p>\n", MarkdownHtmlRenderer.ToHtml(replaced));
+        Assert.Equal("p\n\nX\n\nY\n    code\n    more\n", before.GetRoot().ToFullString());
+        Assert.Equal("p\n\n    code\n    more\n\nX\n\nY\n", after.GetRoot().ToFullString());
+        Assert.Equal(["Paragraph", "IndentedCodeBlock", "Paragraph", "Paragraph"], after.GetRoot().Blocks.Select(block => block.Kind().ToString()));
+    }
+
+    [Theory]
+    [InlineData("^^ footer text\n", "^^ line1\n^^\n^^ line2\n")]
+    [InlineData("> ^^ footer text\n", "> ^^ line1\n> ^^\n> ^^ line2\n")]
+    [InlineData("[^1]: text\n", "[^1]: line1\n\n    line2\n")]
+    [InlineData("[^longlabel]: text\n", "[^longlabel]: line1\n\n    line2\n")]
+    [InlineData("Term\n:   text\n", "Term\n:   line1\n\n    line2\n")]
+    public void EditsInAContainerWriteItsMarkersOnEachLine(string text, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footers | MarkdownExtensions.Footnotes | MarkdownExtensions.DefinitionLists };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        var paragraph = tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().Last();
+        var container = paragraph.Parent!;
+
+        var updated = tree.ReplaceBlock(paragraph, "line1\n\nline2");
+
+        Assert.Equal(expected, updated.GetRoot().ToFullString());
+        var updatedContainer = updated.GetRoot().DescendantNodes().Single(node => node.RawKind == container.RawKind);
+        Assert.HasCount(2, updatedContainer.ChildNodes().OfType<MarkdownParagraphSyntax>());
+    }
+
+    [Theory]
+    [InlineData("[^1]: ```\n    code\n", "[^1]: ```\n    code\n    ```\n\n# t\n")]
+    [InlineData("::: a\nc\n", "::: a\nc\n:::\n\n# t\n")]
+    [InlineData("::: a\n::: b\n```\nc\n", "::: a\n::: b\n```\nc\n:::\n\n# t\n")]
+    [InlineData("::: a\n::: b\nc\n:::\n", "::: a\n::: b\nc\n:::\n\n# t\n")]
+    public void InsertsBlocksAfterTheBlocksThatAreNotClosed(string text, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes | MarkdownExtensions.CustomContainers };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        var updated = tree.InsertBlocksAfter(tree.GetRoot().Blocks[0], "\n# t");
+
+        Assert.Equal(expected, updated.GetRoot().ToFullString());
+        Assert.IsType<MarkdownHeadingSyntax>(updated.GetRoot().Blocks[^1]);
+    }
+
+    [Fact]
+    public void EditsOfTheFirstParagraphOfAnAlertKeepItsKind()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts };
+        var tree = MarkdownSyntaxTree.ParseText("> [!NOTE]\n> text\n>\n> more\n", options);
+        var paragraph = tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().First();
+
+        var replaced = tree.ReplaceBlock(paragraph, "# t");
+        var before = tree.InsertBlocksBefore(paragraph, "# t\n");
+        var removed = tree.RemoveBlock(paragraph);
+
+        Assert.Equal("> [!NOTE]\n> # t\n>\n> more\n", replaced.GetRoot().ToFullString());
+        Assert.Equal("> [!NOTE]\n> # t\n> text\n>\n> more\n", before.GetRoot().ToFullString());
+        Assert.Equal("> [!NOTE]\n> more\n", removed.GetRoot().ToFullString());
+        Assert.All([replaced, before, removed], updated => Assert.IsType<MarkdownAlertSyntax>(updated.GetRoot().Blocks.Single()));
+    }
+
+    [Fact]
+    public void EditorParsesTheTextOnce()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n\nb\n\n- c\n- d\n\ne\n");
+        var blocks = tree.GetRoot().Blocks;
+        var items = tree.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().ToList();
+
+        // The blocks are the ones of the original tree, whatever the changes before
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.ReplaceBlock(blocks[0], "## A");
+        editor.InsertBlocksAfter(blocks[0], "\nx");
+        editor.RemoveBlock(blocks[1]);
+        editor.RemoveBlock(items[0]);
+        editor.InsertBlocksBefore(items[1], "- y");
+        editor.InsertBlocksAfter(blocks[3], "\nz");
+
+        Assert.Equal("# a\n\nb\n\n- c\n- d\n\ne\n", tree.GetRoot().ToFullString());
+        Assert.Equal("## A\n\nx\n\n\n- y\n- d\n\ne\n\nz\n", editor.GetChangedTree().GetRoot().ToFullString());
+        Assert.Same(tree, new MarkdownSyntaxTreeEditor(tree).GetChangedTree());
+    }
+
+    [Fact]
+    public void EditorRemovesTheBlocksThatFollowEachOther()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("- a\n\n  b\n\n  c\n\n  d\n");
+        var paragraphs = tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().ToList();
+
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.RemoveBlock(paragraphs[0]);
+        editor.RemoveBlock(paragraphs[1]);
+        editor.RemoveBlock(paragraphs[2]);
+
+        Assert.Equal("- d\n", editor.GetChangedTree().GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditorChangesTheBlocksAroundARemovedBlock()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("> [a]: /u\nb\n");
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.RemoveBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownLinkReferenceDefinitionSyntax>().Single());
+        editor.ReplaceBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().Single(), "# x");
+
+        Assert.Equal("> # x\n", editor.GetChangedTree().GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditorKeepsTheLineEndingsApart()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n# b\r# c\n", AttributeOptions);
+        var headings = tree.GetRoot().Blocks;
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.InsertBlocksAfter(headings[1], "\n# x");
+        editor.SetGenericAttributes(headings[2], new MarkdownGenericAttributes("id", [], []));
+
+        var updated = editor.GetChangedTree();
+
+        Assert.Equal("# a\n# b\r\n\n# x\n# c {#id}\n", updated.GetRoot().ToFullString());
+        Assert.Equal("id", updated.GetRoot().Blocks[^1].GetGenericAttributes().Id);
+    }
+
+    [Fact]
+    public void EditorThrowsWhenChangesOverlap()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("- a\n- b\n");
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.ReplaceBlock(tree.GetRoot().Blocks[0], "x");
+        editor.ReplaceBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().First(), "y");
+
+        Assert.Throws<InvalidOperationException>(() => editor.GetChangedTree());
+        Assert.Throws<ArgumentException>("block", () => editor.RemoveBlock(MarkdownSyntaxTree.ParseText("a").GetRoot().Blocks[0]));
+    }
+
+    [Fact]
+    public void EditorSetsTheAttributesOfSeveralBlocks()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n\nb\n\n- c\n", AttributeOptions);
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        foreach (var block in tree.GetRoot().Blocks)
+        {
+            editor.SetGenericAttributes(block, new MarkdownGenericAttributes(null, ["old"], []));
+            editor.SetGenericAttributes(block, new MarkdownGenericAttributes(block.Kind().ToString(), [], []));
+        }
+
+        var updated = editor.GetChangedTree();
+
+        Assert.Equal("# a {#AtxHeading}\n\nb {#Paragraph}\n\n{#List}\n- c\n", updated.GetRoot().ToFullString());
+        Assert.Equal(["AtxHeading", "Paragraph", null, "List"], updated.GetRoot().Blocks.Select(block => block.GetGenericAttributes().Id));
     }
 
     [Fact]
@@ -3838,14 +4035,15 @@ public sealed class MarkdownSyntaxTreeTests
         var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
         var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n", options);
 
-        // Write the identifier of every heading as its id, so that the links to it keep working when its text changes. Each edit
-        // parses the text again: the headings are found again in the new tree.
-        var count = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Count();
-        for (var i = 0; i < count; i++)
+        // Write the identifier of every heading as its id, so that the links to it keep working when its text changes. The editor
+        // parses the text once, after all the changes: the headings are the ones of the original tree.
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        foreach (var heading in tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>())
         {
-            var heading = tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().ElementAt(i);
-            tree = tree.WithGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
+            editor.SetGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
         }
+
+        tree = editor.GetChangedTree();
 
         Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n", tree.GetRoot().ToFullString());
         #endregion
@@ -3969,6 +4167,13 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("> ###### a\n", 1, "> # a\n")]
     [InlineData("a\n===\n", 2, "a\n---\n")]
     [InlineData("> a\n> -\n", 1, "> a\n> =\n")]
+    [InlineData("a\n===\n", 3, "### a\n")]
+    [InlineData("\n  a {#x}\n===\n\nb\n", 6, "\n  ###### a {#x}\n\nb\n")]
+    [InlineData("> a  \n> *b\n> c*\n> ---", 4, "> #### a *b c*")]
+    [InlineData("a [b](\n/u\n\"t\") `c\nd`\n===\n", 5, "##### a [b]( /u \"t\") `c d`\n")]
+    [InlineData("a #\n===\n", 3, "### a # #\n")]
+    [InlineData("a\\#\n===\n", 3, "### a\\#\n")]
+    [InlineData("a\nb  c \n---\n", 3, "### a b  c\n")]
     public void HeadingWithLevel(string text, int level, string expected)
     {
         var root = MarkdownSyntaxTree.ParseText(text).GetRoot();
@@ -3980,10 +4185,35 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(level, MarkdownSyntaxTree.ParseText(updated).GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Single().Level);
     }
 
+    [Fact]
+    public void SetextHeadingWithLevelIsTheAtxHeadingOfItsText()
+    {
+        var heading = MarkdownSyntaxTree.ParseText("a\nb  c \n---\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();
+
+        var atx = heading.WithLevel(3);
+
+        Assert.False(atx.IsSetext);
+        Assert.Equal(3, atx.Level);
+        Assert.Equal("### a b  c", atx.ToString());
+        Assert.Equal("a b  c", atx.GetPlainText());
+
+        // The line ending of a title is a space of the title
+        var link = MarkdownSyntaxTree.ParseText("[x](/u \"a\nb\")\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3).DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+        Assert.Equal("a b", link.Title);
+
+        // A space between two escaped characters is text
+        var escaped = MarkdownSyntaxTree.ParseText("\\*\n\\*\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
+        Assert.Equal("* *", escaped.GetPlainText());
+
+        // A line ending in generic attributes is a space of the attributes
+        var withAttributes = MarkdownSyntaxTree.ParseText("text {title=\"a\nb\"}\n===\n", AttributeOptions).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
+        Assert.Equal("a b", withAttributes.DescendantNodes().OfType<MarkdownGenericAttributesSyntax>().Single().Properties.Single().Value);
+    }
+
     [Theory]
     [InlineData("# a\n", 0)]
     [InlineData("# a\n", 7)]
-    [InlineData("a\n===\n", 3)]
+    [InlineData("a\n===\n", 7)]
     public void HeadingWithInvalidLevelThrows(string text, int level)
     {
         var heading = MarkdownSyntaxTree.ParseText(text).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();

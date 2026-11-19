@@ -18,6 +18,8 @@
     <ProjectReference Include="../Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
     <!-- The syntax tree the Markdown nodes are built on -->
     <Using Include="Meziantou.Framework.Language" />
+    <!-- The display width of the text of the table cells that the formatter aligns -->
+    <ProjectReference Include="../Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
   </ItemGroup>
 
   <ItemGroup>

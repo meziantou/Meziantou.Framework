@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meziantou.Framework.Markdown.Parsing;
 using Meziantou.Xunit;
 
@@ -153,6 +154,18 @@ public sealed class MarkdownSyntaxTreeTests
 
         // The < of the filtered tags is escaped, the other tags are written as they are
         Assert.Equal("&lt;script>alert(1)&lt;/script>\n<p>Some <b>bold</b> text</p>\n", MarkdownHtmlRenderer.ToHtml(tree));
+        #endregion
+    }
+
+    [Fact]
+    public void TagFilterIsNotASanitizer()
+    {
+        #region MarkdownHtmlRenderer_TagFilterBypass
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.TagFilter };
+        var tree = MarkdownSyntaxTree.ParseText("<div>\n<script/src=https://example.com/x.js></script>\n</div>\n", options);
+
+        // As in GitHub, a / after the name is not filtered: browsers read <script/src=...> as a script
+        Assert.Equal("<div>\n<script/src=https://example.com/x.js>&lt;/script>\n</div>\n", MarkdownHtmlRenderer.ToHtml(tree));
         #endregion
     }
 
@@ -363,9 +376,51 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[a](\t<b)c>)\n", "<p><a href=\"b)c\">a</a></p>\n")]
     [InlineData("[a](<')~>)\n", "<p><a href=\"')~\">a</a></p>\n")]
     [InlineData("<div>a\0\r\nb</div>\r\n", "<div>a\uFFFD\nb</div>\n")]
+    [InlineData("-\0a\n", "<p>-\uFFFDa</p>\n")]
+    [InlineData("1.\0a\n", "<p>1.\uFFFDa</p>\n")]
+    [InlineData("- \0a\n", "<ul>\n<li>\uFFFDa</li>\n</ul>\n")]
+    [InlineData("<div>\n-->\n</div>\n\n<!-- a\n-->\nb\n", "<div>\n-->\n</div>\n<!-- a\n-->\n<p>b</p>\n")]
+    // The comments, processing instructions, CDATA sections and declarations end at their first terminator
+    [InlineData("x <!--> <!---> <? a ?> <![CDATA[ b ]]> <!X c> <!-- d -->\n", "<p>x <!--> <!---> <? a ?> <![CDATA[ b ]]> <!X c> <!-- d --></p>\n")]
+    [InlineData("x <? a <? b ?> <!-- c <!-- d -->\n", "<p>x <? a <? b ?> <!-- c <!-- d --></p>\n")]
+    [InlineData("a <!-- b <? c <![CDATA[ d <!X e\n", "<p>a &lt;!-- b &lt;? c &lt;![CDATA[ d &lt;!X e</p>\n")]
+    // NUL is U+FFFD in the destinations and the titles
+    [InlineData("[a](\0) [b](<\0>) [c](u \"\0\")\n", "<p><a href=\"%EF%BF%BD\">a</a> <a href=\"%EF%BF%BD\">b</a> <a href=\"u\" title=\"\uFFFD\">c</a></p>\n")]
+    [InlineData("<http://a\0b> [d]\n\n[d]: \0\n", "<p><a href=\"http://a%EF%BF%BDb\">http://a\uFFFDb</a> <a href=\"%EF%BF%BD\">d</a></p>\n")]
+    // A link deactivates the brackets before it, which another link does not need to deactivate again
+    [InlineData("[a [b [c](d) e](f) g](h)\n", "<p>[a [b <a href=\"d\">c</a> e](f) g](h)</p>\n")]
+    [InlineData("[a ![b [c](d) e](f) g](h)\n", "<p>[a <img src=\"f\" alt=\"b c e\" /> g](h)</p>\n")]
+    [InlineData("[a [b](c) [d](e) f](g)\n", "<p>[a <a href=\"c\">b</a> <a href=\"e\">d</a> f](g)</p>\n")]
+    // An opener without closer does not hide the code spans after it
+    [InlineData("``a` `b`` `c`\n", "<p><code>a` `b</code> <code>c</code></p>\n")]
+    [InlineData("``x `a` `b`\n", "<p>``x <code>a</code> <code>b</code></p>\n")]
     public void RendersHtml(string text, string expected)
     {
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text)));
+    }
+
+    // The pathological inputs of cmark, and the ones of the extensions, are parsed in linear time
+    [Theory]
+    [InlineData("a <!--", MarkdownExtensions.None)]
+    [InlineData("x<?", MarkdownExtensions.None)]
+    [InlineData("x<![CDATA[", MarkdownExtensions.None)]
+    [InlineData("x<!A", MarkdownExtensions.None)]
+    [InlineData("[a](b) [", MarkdownExtensions.None)]
+    [InlineData("e`", MarkdownExtensions.None)]
+    [InlineData("(www.a", MarkdownExtensions.MarkdigAutolinks)]
+    [InlineData("<b> http://a.b~", MarkdownExtensions.MarkdigAutolinks)]
+    [InlineData("[a](b) [H] ", MarkdownExtensions.AutoIdentifiers)]
+    public void ParsesPathologicalInlines(string pattern, MarkdownExtensions extensions)
+    {
+        // The backticks are runs of every length, as in cmark
+        var text = pattern == "e`"
+            ? string.Concat(Enumerable.Range(1, 1000).Select(length => "e" + new string('`', length)))
+            : "# H\n\n" + string.Concat(Enumerable.Repeat(pattern, 20000));
+
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = extensions });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.NotEmpty(MarkdownHtmlRenderer.ToHtml(tree));
     }
 
     [Theory]
@@ -394,6 +449,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[a@b.com](/u)\n", "<p><a href=\"/u\">a@b.com</a></p>\n")]
     [InlineData("*a@b.com* a\\_b@c.com\n", "<p><em><a href=\"mailto:a@b.com\">a@b.com</a></em> <a href=\"mailto:a_b@c.com\">a_b@c.com</a></p>\n")]
     [InlineData("a@b.c1 a@b@c.d\n", "<p>a@b.c1 a@<a href=\"mailto:b@c.d\">b@c.d</a></p>\n")]
+    [InlineData("mailto:a@b.c/mailto:d@e.f. mmmailto:g@h.i\n", "<p><a href=\"mailto:a@b.c\">mailto:a@b.c</a>/<a href=\"mailto:d@e.f\">mailto:d@e.f</a>. mmmailto:<a href=\"mailto:g@h.i\">g@h.i</a></p>\n")]
+    [InlineData(".mailto:a@b.c mailto:mailto:d@e.f\n", "<p>.<a href=\"mailto:a@b.c\">mailto:a@b.c</a> mailto:<a href=\"mailto:d@e.f\">mailto:d@e.f</a></p>\n")]
+    [InlineData("xmpp:a@b.c xmpp:d@e.f/g. xmpp:h@i.j/k/l at:m@n.o\n", "<p><a href=\"xmpp:a@b.c\">xmpp:a@b.c</a> <a href=\"xmpp:d@e.f/g\">xmpp:d@e.f/g</a>. <a href=\"xmpp:h@i.j/k/l\">xmpp:h@i.j/k/l</a> at:<a href=\"mailto:m@n.o\">m@n.o</a></p>\n")]
     [InlineData("<title>a</title>\n", "&lt;title>a&lt;/title>\n")]
     [InlineData("<div>\n<script\nx\n", "<div>\n&lt;script\nx\n")]
     [InlineData("<div>\n</STYLE\nx\n", "<div>\n&lt;/STYLE\nx\n")]
@@ -487,6 +545,16 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Theory]
+    [InlineData("```mermaid {#d .big title=t}\na\n```\n", "<pre id=\"d\" class=\"big mermaid\" title=\"t\">a\n</pre>\n")]
+    [InlineData("{.p}\n```nomnoml\n[a]\n```\n", "<div class=\"nomnoml p\">[a]\n</div>\n")]
+    public void RendersTheGenericAttributesOfDiagrams(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Diagrams | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree));
+    }
+
+    [Theory]
     [InlineData(false, "> [!Custom]\n> a\n", "<div class=\"markdown-alert markdown-alert-custom\">\n<p>a</p>\n</div>\n")]
     [InlineData(false, "> [!NOTE]\n", "<div class=\"markdown-alert markdown-alert-note\">\n<p class=\"markdown-alert-title\">")]
     [InlineData(false, "- > [!NOTE]\n", "<ul>\n<li>\n<blockquote>\n<p>[!NOTE]</p>\n</blockquote>\n</li>\n</ul>\n")]
@@ -501,6 +569,17 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
     }
 
+    // The block quotes of a grid table cell are in the table, not in the document
+    [Theory]
+    [InlineData(false, "<td>\n<blockquote>\n<p>[!NOTE]\na</p>\n</blockquote>\n</td>")]
+    [InlineData(true, "<td>\n<div class=\"markdown-alert markdown-alert-note\">\n")]
+    public void GridTableCellBlockQuotesAreAlertsOnlyWhenNestedAlertsAreAllowed(bool allowNested, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText("+-----------+\n| > [!NOTE] |\n| > a       |\n+-----------+\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts | MarkdownExtensions.GridTables, AllowNestedAlerts = allowNested });
+
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
     // The occurrences are found in the literals of Markdig: an escaped character starts one, and a run of delimiters ends one
     [Theory]
     [InlineData("*[A  B]: x\n\nA B and A  B\n", "<p><abbr title=\"x\">A B</abbr> and A  B</p>\n")]
@@ -510,6 +589,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("*[A]: x\n\n[A](u) ![A](u) `A` A, A.b A.\n", "<p><a href=\"u\"><abbr title=\"x\">A</abbr></a> <img src=\"u\" alt=\"A\" /> <code>A</code> <abbr title=\"x\">A</abbr>, A.b <abbr title=\"x\">A</abbr>.</p>\n")]
     [InlineData("*[A]: x\n*[A]: y\n\nA\n", "<p><abbr title=\"y\">A</abbr></p>\n")]
     [InlineData("*[A]: \u00A0x\u00A0 \n\nA\n", "<p><abbr title=\"\u00A0x\u00A0\">A</abbr></p>\n")]
+    [InlineData("*[A]: x\n*[A B]: y\n*[B]: z\n*[AB]: w\n\nA B A BB B AB A, AB.\n", "<p><abbr title=\"y\">A B</abbr> A BB <abbr title=\"z\">B</abbr> <abbr title=\"w\">AB</abbr> <abbr title=\"x\">A</abbr>, <abbr title=\"w\">AB</abbr>.</p>\n")]
     public void RendersAbbreviations(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Abbreviations });
@@ -549,6 +629,41 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
     }
 
+    // A grid table cell has no footnote definition: its references are to the footnotes of the document, numbered where the table is
+    [Theory]
+    [InlineData("+-------+\n| a[^1] |\n+-------+\n\n[^1]: note\n", "<td>a<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></td>\n</tr>\n</tbody>\n</table>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p>note<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    [InlineData("+---------+\n| y[^b]   |\n+---------+\n\nz[^a] w[^b]\n\n[^a]: A\n[^b]: B\n", "<td>y<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></td>\n</tr>\n</tbody>\n</table>\n<p>z<a id=\"fnref:3\" href=\"#fn:2\" class=\"footnote-ref\"><sup>2</sup></a> w<a id=\"fnref:2\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p>B<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a><a href=\"#fnref:2\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n<li id=\"fn:2\">\n<p>A<a href=\"#fnref:3\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    [InlineData("+-----------+\n| [^1]: a   |\n|           |\n| b         |\n+-----------+\n", "<td>\n<p>b</p>\n</td>")]
+    [InlineData("+-------------+\n| [^1]: a     |\n|             |\n| b [^1]      |\n+-------------+\n\nc [^2]\n\n[^2]: z\n", "<td>\n<p>b <a href=\"a\">^1</a></p>\n</td>\n</tr>\n</tbody>\n</table>\n<p>c <a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"fn:1\">\n<p>z<a href=\"#fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    public void RendersFootnotesOfGridTableCells(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes | MarkdownExtensions.GridTables });
+
+        Assert.Contains(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GridTableCellFootnoteReferenceHasTheDefinitionOfTheDocument()
+    {
+        var root = MarkdownSyntaxTree.ParseText("+-------+\n| a[^1] |\n+-------+\n\n[^1]: note\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes | MarkdownExtensions.GridTables }).GetRoot();
+        var content = Assert.IsType<MarkdownGridTableSyntax>(root.Blocks[0]).Rows[0].Cells[0].Content.GetRoot();
+        var reference = content.DescendantNodes().OfType<MarkdownFootnoteReferenceSyntax>().Single();
+
+        Assert.Same(root.Blocks[1], reference.Definition);
+        Assert.Same(root.Blocks[1], content.GetFootnoteDefinition("^1"));
+    }
+
+    [Fact]
+    public void RendersTheFootnoteReferencesOfAnEditedGridTableCell()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("+-------+\n| a[^1] |\n+-------+\n\n[^1]: note\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes | MarkdownExtensions.GridTables });
+        var content = Assert.IsType<MarkdownGridTableSyntax>(tree.GetRoot().Blocks[0]).Rows[0].Cells[0].Content;
+        var edited = (MarkdownSyntaxTree)content.WithChangedText(SourceText.From("b[^1] c[^1]"));
+
+        Assert.Equal("<p>b<a id=\"fnref:2\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a> c<a id=\"fnref:3\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n", MarkdownHtmlRenderer.ToHtml(edited));
+        Assert.Equal("<p>a<a id=\"fnref:1\" href=\"#fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n", MarkdownHtmlRenderer.ToHtml(content));
+    }
+
     [Fact]
     public void FootnoteReferenceHasItsDefinition()
     {
@@ -574,9 +689,13 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[a{.x}](u)\n", "<p class=\"x\"><a href=\"u\">a</a></p>\n")]
     [InlineData("*{.c}\nA\n", "<p>*A</p>\n")]
     [InlineData("[l](u) {title=t}\n", "<p title=\"t\"><a href=\"u\">l</a></p>\n")]
-    [InlineData("[l](u \"md\"){#i title=t onclick=x data-x=1 hidden}\n", "<p><a href=\"u\" id=\"i\" title=\"t\" hidden=\"\" title=\"md\">l</a></p>\n")]
+    [InlineData("[l](u \"md\"){#i title=t onclick=x data-x=1 hidden}\n", "<p><a href=\"u\" id=\"i\" hidden=\"\" title=\"md\">l</a></p>\n")]
+    [InlineData("[l](u){title=t}\n", "<p><a href=\"u\" title=\"t\">l</a></p>\n")]
+    [InlineData("![real](x.png){alt=fake}\n", "<p><img src=\"x.png\" alt=\"real\" /></p>\n")]
+    [InlineData("![real](x.png \"t\"){ALT=fake Title=u lang=fr}\n", "<p><img src=\"x.png\" lang=\"fr\" alt=\"real\" title=\"t\" /></p>\n")]
     [InlineData("a{#x .b lang=de}{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"b c\" lang=\"de\">a</p>\n")]
-    [InlineData("a{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"c\" lang=\"en\" lang=\"fr\">a</p>\n")]
+    [InlineData("a{#y .c lang=en lang=fr}\n", "<p id=\"y\" class=\"c\" lang=\"en\">a</p>\n")]
+    [InlineData("a{lang=en LANG=fr title=a title=b title=c title=d title=e title=f title=g title=h title=i}\n", "<p lang=\"en\" title=\"a\">a</p>\n")]
     [InlineData("$$ {.e}\nx\n$$\n", "<div class=\"math e\">")]
     [InlineData("a\n{#t}\n", "<p>a</p>\n")]
     [InlineData("Title\n{#t}\n---\n", "<h2 id=\"t\">Title\n</h2>\n")]
@@ -639,12 +758,25 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("Title\n{#t}\n---\n", "t")]
     [InlineData("# $x$ y[^1] *[A]\n\n[^1]: # z\n\n# w\n", "y-a,z,w")]
     [InlineData("> # Quoted\n- # Listed\n", "quoted,listed")]
+    [InlineData("# a {#b}\n# b\n# b\n", "b,b-1,b-2")]
+    [InlineData("{#a}\nP\n\n# a\n", "a-1")]
     public void HeadingsHaveIdentifiers(string text, string expected)
     {
         var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.GenericAttributes | MarkdownExtensions.Mathematics | MarkdownExtensions.Footnotes | MarkdownExtensions.Abbreviations };
         var root = MarkdownSyntaxTree.ParseText(text, options).GetRoot();
 
         Assert.Equal(expected, string.Join(',', root.DescendantNodes().OfType<MarkdownHeadingSyntax>().Select(heading => heading.Identifier)));
+    }
+
+    // The headings of the grid table cells get their identifiers in the order of the text, with the ones of the document
+    [Theory]
+    [InlineData("# h\n\n+-----+\n| # h |\n+-----+\n\n# h\n", "<h1 id=\"h\">h</h1>\n<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td><h1 id=\"h-1\">h</h1>\n</td>\n</tr>\n</tbody>\n</table>\n<h1 id=\"h-2\">h</h1>\n")]
+    [InlineData("+-----------+\n| # h {#x}  |\n+-----------+\n\n# x\n", "<h1 id=\"x\">h</h1>\n</td>\n</tr>\n</tbody>\n</table>\n<h1 id=\"x-1\">x</h1>\n")]
+    public void GridTableCellHeadingIdentifiersAreUniqueInTheDocument(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.GenericAttributes | MarkdownExtensions.GridTables });
+
+        Assert.EndsWith(expected, MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -664,6 +796,7 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("![alt][Heading]\n# Heading\n", "<p><img src=\"#heading\" alt=\"alt\" /></p>")]
     [InlineData("[Heading]\n# Heading\n[heading]: /url\n", "<p><a href=\"/url\">Heading</a></p>")]
     [InlineData("[outer [Heading]](/u)\n# Heading\n", "<p><a href=\"/u\">outer [Heading]</a></p>")]
+    [InlineData("[[a](b) [Heading]](c)\n# Heading\n", "<p>[<a href=\"b\">a</a> <a href=\"#heading\">Heading</a>](c)</p>")]
     [InlineData("[]\n#\n", "<p>[]</p>")]
     [InlineData("[x y]\n\nx {.c} y\n===\n", "<p><a href=\"#x-y\">x y</a></p>")]
     [InlineData("[x]\n# x {#i}\n", "<p><a href=\"#i\">x</a></p>")]
@@ -758,6 +891,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("* Dogs*?--in *my* house?", "-dogs--in-my-house")]
     [InlineData("3. Applications", "3-applications")]
     [InlineData("33", "33")]
+    [InlineData("हिन्दी भाषा", "हिन्दी-भाषा")]
+    [InlineData("\U0001D400bc \U00020000", "\U0001D400bc-\U00020000")]
+    [InlineData("a\u00B2b\u203Fc\u00BD", "ab\u203Fc")]
     public void IdentifierIsMadeAsGitHubMakesIt(string text, string expected)
     {
         Assert.Equal(expected, HeadingIdentifier.Create(text, MarkdownAutoIdentifierOptions.GitHub));
@@ -1039,6 +1175,15 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(new KeyValuePair<string, string>("(y)", ":ok:"), Assert.Single(mapping.Smileys));
         Assert.IsNotType<Dictionary<string, string>>(mapping.Shortcodes);
         Assert.IsNotType<Dictionary<string, string>>(mapping.Smileys);
+    }
+
+    [Theory]
+    [InlineData(":a\nb:", ":)")]
+    [InlineData(":a:", ":\r)")]
+    public void EmojiMappingRejectsKeysWithLineEndings(string shortcode, string smiley)
+    {
+        // The inlines of a block are its lines without the markers of its containers: a key would match across them
+        Assert.Throws<ArgumentException>(() => new MarkdownEmojiMapping(new Dictionary<string, string> { [shortcode] = "x", [":a:"] = "y" }, new Dictionary<string, string> { [smiley] = ":a:" }));
     }
 
     [Fact]
@@ -1364,6 +1509,41 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal("<p><a href=\"/url\">x</a></p>\n", MarkdownHtmlRenderer.ToHtml(formatted));
     }
 
+    [Fact]
+    public void GridTableCellsHaveNoFrontMatter()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("+---------+\n| ---     |\n| secret  |\n| ---     |\n| visible |\n+---------+\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables | MarkdownExtensions.YamlFrontMatter });
+
+        Assert.Contains("<td><hr />\n<h2>secret</h2>\n<p>visible</p>\n</td>", MarkdownHtmlRenderer.ToHtml(tree), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GridTableCellSpansMapToTheTextOfTheTable()
+    {
+        #region MarkdownGridTableCell_MapSpan
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables };
+        var text = "Intro\n\n+---------------+\n| See [a](/u)   |\n| and [b](/v)   |\n+---------------+\n";
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        var cell = tree.GetRoot().Blocks.OfType<MarkdownGridTableSyntax>().Single().Rows[0].Cells[0];
+
+        // The nodes of the content of the cell are not in the tree, and their spans are in the text of the cell
+        Assert.Empty(tree.GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>());
+        var link = cell.Content.GetRoot().DescendantNodes().OfType<MarkdownLinkSyntax>().Last();
+        Assert.Equal("[b](/v)", cell.Text.Substring(link.Span.Start, link.Span.Length));
+
+        // MapSpan gives the span of the link in the text of the tree
+        var span = cell.MapSpan(link.Span);
+        Assert.Equal("[b](/v)", text.Substring(span.Start, span.Length));
+        #endregion
+
+        Assert.Equal(cell.Text.Length, cell.Content.GetText().Length);
+        Assert.Equal(text.IndexOf("| See", StringComparison.Ordinal) + 1, cell.MapPosition(0));
+        Assert.Equal(text.IndexOf("   |\n| and", StringComparison.Ordinal), cell.MapPosition(cell.Text.IndexOf('\n', StringComparison.Ordinal)));
+        Assert.Equal(text.IndexOf("| and", StringComparison.Ordinal) + 1, cell.MapPosition(cell.Text.IndexOf('\n', StringComparison.Ordinal) + 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => cell.MapPosition(cell.Text.Length + 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => cell.MapPosition(-1));
+    }
+
     [Theory]
     [InlineData("+-------+-------+\n| Name  | Price |\n+=======+=======+\n| Apple | 1     |\n+-------+-------+\n", "<table>\n<col style=\"width:50%\" />\n<col style=\"width:50%\" />\n<thead>\n<tr>\n<th>Name</th>\n<th>Price</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Apple</td>\n<td>1</td>\n</tr>\n</tbody>\n</table>\n")]
     [InlineData("+---+---+---+\n| AAAAA | B |\n+---+---+ B +\n| D | E | B |\n+ D +---+---+\n| D | CCCCC |\n+---+---+---+\n", "<table>\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<tbody>\n<tr>\n<td colspan=\"2\">AAAAA</td>\n<td rowspan=\"2\">B\nB\nB</td>\n</tr>\n<tr>\n<td rowspan=\"2\">D\nD\nD</td>\n<td>E</td>\n</tr>\n<tr>\n<td colspan=\"2\">CCCCC</td>\n</tr>\n</tbody>\n</table>\n")]
@@ -1375,6 +1555,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("+---+\n| a | b |\n| c | d | e |\n+---+---+\n", "<table>\n<col style=\"width:100%\" />\n<tbody>\n<tr>\n<td>a\nc</td>\n</tr>\n</tbody>\n</table>\n")]
     [InlineData("+---+---+---+\n| AAAAA | B |\n+ A +---+ B +\n| A | C | B |\n+---+---+---+\n| DDDDD | E |\n+---+---+---+\n", "<p>+---+---+---+\n| AAAAA | B |\n+ A +---+ B +\n| A | C | B |\n+---+---+---+\n| DDDDD | E |\n+---+---+---+</p>\n")]
     [InlineData("+----+\n=\n", "<h1>+----+</h1>\n")]
+    [InlineData("+---+\n| a |\n+===+\n| b |\n+===+\n| c |\n+---+\n", "<table>\n<col style=\"width:100%\" />\n<thead>\n<tr>\n<th>a</th>\n</tr>\n<tr>\n<th>b</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>c</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("+---+---+---+\n| a\n+---+---+---+\n| b | c\n+---+---+---+\n", "<table>\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<col style=\"width:33.33%\" />\n<tbody>\n<tr>\n<td colspan=\"3\">a</td>\n</tr>\n<tr>\n<td>b</td>\n<td colspan=\"2\">c</td>\n</tr>\n</tbody>\n</table>\n")]
+    [InlineData("+---+---+---+\n| a |\n| b |\n+---+\n", "<p>+---+---+---+\n| a |\n| b |\n+---+</p>\n")]
     public void RendersGridTables(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables });
@@ -1498,6 +1681,78 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void EscapesTheRelOfLinks()
+    {
+        var options = new MarkdownHtmlRendererOptions { LinkRel = "a\" onclick=\"alert(1)" };
+
+        Assert.Equal("<p><a href=\"u\" rel=\"a&quot; onclick=&quot;alert(1)\">x</a></p>\n", MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("[x](u)\n"), options));
+    }
+
+    // The rel of the options and the target of the autolinks are the ones of the renderer: generic attributes cannot write them again
+    [Theory]
+    [InlineData("[x](u){target=_blank rel=opener}\n", "<p><a href=\"u\" target=\"_blank\" rel=\"noopener noreferrer\">x</a></p>\n")]
+    [InlineData("<https://a.b>{REL=opener}\n", "<p><a href=\"https://a.b\" rel=\"noopener noreferrer\">https://a.b</a></p>\n")]
+    [InlineData("<a@b.c>{rel=me}\n", "<p><a href=\"mailto:a@b.c\" rel=\"me\">a@b.c</a></p>\n")]
+    public void GenericAttributesDoNotReplaceTheAttributesOfTheRenderer(string text, string expected)
+    {
+        var parseOptions = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.MarkdigAutolinks, AutolinkOptions = new MarkdownAutolinkOptions { OpenInNewWindow = true } };
+        var options = new MarkdownHtmlRendererOptions { LinkRel = "noopener noreferrer" };
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, parseOptions), options));
+    }
+
+    [Fact]
+    public void FiltersTheSchemesOfTheUrls()
+    {
+        #region MarkdownHtmlRendererOptions_AllowedUrlSchemes
+        var tree = MarkdownSyntaxTree.ParseText("[a](javascript:alert(1)) [b](https://example.com) [c](/relative) ![d](data:image/png;base64,AA==) <vbscript:x>\n");
+        var options = new MarkdownHtmlRendererOptions { AllowedUrlSchemes = ["http", "https", "mailto"] };
+
+        // The URLs whose scheme is not allowed are written empty, the relative URLs are kept
+        Assert.Equal("<p><a href=\"\">a</a> <a href=\"https://example.com\">b</a> <a href=\"/relative\">c</a> <img src=\"\" alt=\"d\" /> <a href=\"\">vbscript:x</a></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("[a](JavaScript:x)\n", "<p><a href=\"\">a</a></p>\n")]
+    [InlineData("[a](<java\tscript:x>)\n", "<p><a href=\"java%09script:x\">a</a></p>\n")]
+    [InlineData("[a](HTTPS://a.b)\n", "<p><a href=\"HTTPS://a.b\">a</a></p>\n")]
+    [InlineData("[a](./javascript:x) [b](#javascript:x) [c](?javascript:x) [d](//a.b/c)\n", "<p><a href=\"./javascript:x\">a</a> <a href=\"#javascript:x\">b</a> <a href=\"?javascript:x\">c</a> <a href=\"//a.b/c\">d</a></p>\n")]
+    [InlineData("[a](c:/x) [b](1a:x)\n", "<p><a href=\"\">a</a> <a href=\"1a:x\">b</a></p>\n")]
+    [InlineData("<mailto:a@b.c> <a@b.c>\n", "<p><a href=\"mailto:a@b.c\">mailto:a@b.c</a> <a href=\"mailto:a@b.c\">a@b.c</a></p>\n")]
+    public void FiltersTheSchemesOfTheUrlsAsBrowsersReadThem(string text, string expected)
+    {
+        var options = new MarkdownHtmlRendererOptions { AllowedUrlSchemes = ["https", "mailto"] };
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text), options));
+    }
+
+    [Theory]
+    [InlineData("javascript:x", "javascript")]
+    [InlineData(" \u0001javascript:x", "javascript")]
+    [InlineData("java\tscr\nipt\r:x", "javascript")]
+    [InlineData("a+b-c.d:x", "a+b-c.d")]
+    [InlineData("/a:b", null)]
+    [InlineData("1a:b", null)]
+    [InlineData(":b", null)]
+    [InlineData("a b:c", null)]
+    [InlineData("a", null)]
+    [InlineData("", null)]
+    public void ReadsTheSchemeOfAUrlAsBrowsersReadIt(string url, string? expected)
+    {
+        Assert.Equal(expected, MarkdownHtmlRenderer.Writer.TryGetUrlScheme(url, out var scheme) ? scheme.ToString() : null);
+    }
+
+    [Fact]
+    public void FiltersTheUrlsOfMediaLinks()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("![](https://youtu.be/x) ![](javascript:a.mp4)\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.MediaLinks });
+        var options = new MarkdownHtmlRendererOptions { AllowedUrlSchemes = ["http"] };
+
+        Assert.Equal("<p><iframe src=\"\" class=\"youtube\" width=\"500\" height=\"281\" frameborder=\"0\" allowfullscreen=\"\"></iframe> <video width=\"500\" height=\"281\" controls=\"\"><source type=\"video/mp4\" src=\"\"></source></video></p>\n", MarkdownHtmlRenderer.ToHtml(tree, options));
+    }
+
+    [Fact]
     public void WritesThePragmaLines()
     {
         #region MarkdownHtmlRenderer_PragmaLines
@@ -1523,6 +1778,30 @@ public sealed class MarkdownSyntaxTreeTests
         var tree = MarkdownSyntaxTree.ParseText(markdown, new MarkdownParseOptions { Extensions = MarkdownExtensions.PipeTables | MarkdownExtensions.Footnotes | MarkdownExtensions.GenericAttributes });
 
         Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { PragmaLines = true }));
+    }
+
+    [Fact]
+    public void WritesTheIdPrefix()
+    {
+        #region MarkdownHtmlRendererOptions_IdPrefix
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.Footnotes };
+        var tree = MarkdownSyntaxTree.ParseText("# Notes\n\nSee[^1].\n\n[^1]: A note.\n", options);
+
+        // Several documents rendered on one page, such as comments, have different ids
+        var html = MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { IdPrefix = "comment-1-" });
+        Assert.Equal("<h1 id=\"comment-1-notes\">Notes</h1>\n<p>See<a id=\"comment-1-fnref:1\" href=\"#comment-1-fn:1\" class=\"footnote-ref\"><sup>1</sup></a>.</p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"comment-1-fn:1\">\n<p>A note.<a href=\"#comment-1-fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n", html);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("# Title {#custom}\n\n[Title]\n\n[x](#custom)\n", "<h1 id=\"p&quot;-custom\"><a id=\"pragma-line-0\"></a>Title</h1>\n<p id=\"pragma-line-2\"><a href=\"#p%22-custom\">Title</a></p>\n<p id=\"pragma-line-4\"><a href=\"#custom\">x</a></p>\n")]
+    [InlineData("# Title\n\n[Title]\n\nText {#t}\n", "<h1 id=\"p&quot;-title\"><a id=\"pragma-line-0\"></a>Title</h1>\n<p id=\"pragma-line-2\"><a href=\"#p%22-title\">Title</a></p>\n<a id=\"pragma-line-4\"></a>\n<p id=\"p&quot;-t\">Text</p>\n")]
+    [InlineData("x[^1]\n\n[^1]: note\n", "<p id=\"pragma-line-0\">x<a id=\"p&quot;-fnref:1\" href=\"#p&quot;-fn:1\" class=\"footnote-ref\"><sup>1</sup></a></p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"p&quot;-fn:1\">\n<p id=\"pragma-line-2\">note<a href=\"#p&quot;-fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n")]
+    public void WritesTheIdPrefixOfTheIdsThatTheDocumentSets(string markdown, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(markdown, new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.Footnotes | MarkdownExtensions.GenericAttributes });
+
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { PragmaLines = true, IdPrefix = "p\"-" }));
     }
 
     [Fact]
@@ -1597,6 +1876,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("[http://a.com/ link](http://b.com)", "<p><a href=\"http://b.com\">http://a.com/ link</a></p>\n")]
     [InlineData("<a href=\"x\">http://a.com</a>", "<p><a href=\"x\">http://a.com</a></p>\n")]
     [InlineData("(http://a.com/b_(c))", "<p>(<a href=\"http://a.com/b_(c)\">http://a.com/b_(c)</a>)</p>\n")]
+    [InlineData("(www.a.b (www.c.d) www.e.f(g) (www.h.i", "<p>(<a href=\"http://www.a.b\">www.a.b</a> (<a href=\"http://www.c.d\">www.c.d</a>) www.e.f(g) (<a href=\"http://www.h.i\">www.h.i</a></p>\n")]
+    [InlineData("((www.a.b) www.c.d)) <a>http://e.f</a> http://g.h <a href=\"x\"> http://i.j", "<p>((<a href=\"http://www.a.b\">www.a.b</a>) <a href=\"http://www.c.d\">www.c.d</a>)) <a>http://e.f</a> <a href=\"http://g.h\">http://g.h</a> <a href=\"x\"> http://i.j</p>\n")]
+    [InlineData("*a ~b http://c.d* http://e.f~ http://g.h~", "<p><em>a ~b <a href=\"http://c.d\">http://c.d</a></em> <a href=\"http://e.f\">http://e.f</a>~ <a href=\"http://g.h\">http://g.h</a>~</p>\n")]
     [InlineData("xhttp://a.com http://localhost ftp:// mailto:@a.com", "<p>xhttp://a.com http://localhost ftp:// mailto:@a.com</p>\n")]
     public void RendersMarkdigAutolinks(string text, string expected)
     {
@@ -1662,6 +1944,19 @@ public sealed class MarkdownSyntaxTreeTests
         var html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options));
 
         Assert.Equal(isRightToLeft, html.Contains("<p dir=\"rtl\">", StringComparison.Ordinal), html);
+    }
+
+    // Finding whether a bracket is closed was quadratic in the number of brackets: 160 KB of [ took 40 seconds
+    [Fact]
+    public void TheDirectionOfManyBracketsIsLinear()
+    {
+        var tree = MarkdownSyntaxTree.ParseText(new string('[', 200_000) + "مرحبا", new MarkdownParseOptions { Extensions = MarkdownExtensions.Globalization });
+
+        var stopwatch = Stopwatch.StartNew();
+        var html = MarkdownHtmlRenderer.ToHtml(tree);
+
+        Assert.StartsWith("<p dir=\"rtl\">[[", html, StringComparison.Ordinal);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
     [Fact]
@@ -1778,6 +2073,38 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.Equal(expected, formatted);
         Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted)));
+    }
+
+    [Fact]
+    public void FormatterParsesTheFirstBlockOfTheItemsOfNestedLists()
+    {
+        // The marker of a list is checked with the first block of each item, not with the lists nested in it
+        var calls = 0;
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new ParseHandlerExtension("count", "\u00A7", (ref MarkdownInlineParseContext context) =>
+        {
+            calls++;
+            return false;
+        })] };
+        var text = string.Concat(Enumerable.Range(0, 50).Select(i => new string(' ', 2 * i) + "- \u00A7\n"));
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        calls = 0;
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal(text, formatted);
+        Assert.InRange(calls, 0, 500, "The formatter parses the trigger characters of the text a few times each");
+    }
+
+    [Fact]
+    public void FormatterAlignsTheTablesWithTheDisplayWidthOfTheCells()
+    {
+        // A wide character, an emoji and a flag use two columns of a monospace editor, and a combining mark none
+        var tree = MarkdownSyntaxTree.ParseText("| a | b |\n|-|-|\n| \u6F22\u5B57 | x |\n| e\u0301 | \U0001F600 |\n| \U0001F1EB\U0001F1F7 | \u2764\uFE0F |\n| a\u200Bb | \uFF21 |\n", MarkdownParseOptions.GitHubFlavored);
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal("| a    | b   |\n| ---- | --- |\n| \u6F22\u5B57 | x   |\n| e\u0301    | \U0001F600  |\n| \U0001F1EB\U0001F1F7   | \u2764\uFE0F  |\n| a\u200Bb   | \uFF21  |\n", formatted);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted, MarkdownParseOptions.GitHubFlavored)));
     }
 
     [Theory]
@@ -2198,6 +2525,17 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void InlineExtensionsEndTheBacktickRunsOfTheirContent()
+    {
+        // The search of the unclosed ``` reads `` at the end, which the content of the extension ends after one backtick
+        var text = "a ``` @`x``";
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { SyntaxExtensions = [new LastCharacterSpanExtension()] });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal("<p>a ``` <span><code>x</code></span></p>\n", MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { NodeRenderers = [new SpanRenderer()] }));
+    }
+
+    [Fact]
     public void InlineExtensionsAreTriedBeforeTheBuiltInSyntaxes()
     {
         var options = new MarkdownParseOptions { SyntaxExtensions = [new WikiLinkExtension()] };
@@ -2317,6 +2655,29 @@ public sealed class MarkdownSyntaxTreeTests
     public void MaximumNestingDepthMustBePositive()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new MarkdownParseOptions { MaximumNestingDepth = 0 });
+    }
+
+    [Fact]
+    public void MaximumNestingDepthIsAtMost256()
+    {
+        Assert.Equal(256, new MarkdownParseOptions { MaximumNestingDepth = int.MaxValue }.MaximumNestingDepth);
+        Assert.Equal(256, new MarkdownParseOptions { MaximumNestingDepth = 257 }.MaximumNestingDepth);
+        Assert.Equal(200, new MarkdownParseOptions { MaximumNestingDepth = 200 }.MaximumNestingDepth);
+    }
+
+    // The largest limit keeps the stack within 1 MB in a release build: the stack of a debug build is larger
+    [Fact]
+    public void LargestMaximumNestingDepthDoesNotOverflowTheStack()
+    {
+        var text = new string('>', 10_000) + " " + new string('*', 10_000) + "a" + new string('*', 10_000) + "\n";
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes | MarkdownExtensions.CustomContainers, MaximumNestingDepth = int.MaxValue };
+        string? html = null;
+        var thread = new Thread(() => html = MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text, options)), maxStackSize: 4 * 1024 * 1024);
+        thread.Start();
+        thread.Join();
+
+        // 257 block quotes: the ones nested in more than 256 are text
+        Assert.HasCount(258, html!.Split("<blockquote>"));
     }
 
     [Fact]
@@ -2654,8 +3015,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData(":::\nfoo\n:::", "foo\n", MarkdownExtensions.CustomContainers)]
     [InlineData(":::bar\nfoo\n:::", "foo\n", MarkdownExtensions.CustomContainers | MarkdownExtensions.GenericAttributes)]
     [InlineData("```mermaid\nA --> B & C <x> \"q\"\n```", "A --> B & C <x> \"q\"\n", MarkdownExtensions.Diagrams)]
-    [InlineData("| Header1 | Header2 | Header3 |\n|--|--|--|\nt**es**t|value2|value3", "Header1 Header2 Header3 test value2 value3 \n", MarkdownExtensions.PipeTables)]
-    [InlineData("| a | b |\n|---|---|\n| c | d |\n\ne", "a b c d \ne\n", MarkdownExtensions.Tables)]
+    [InlineData("| Header1 | Header2 | Header3 |\n|--|--|--|\nt**es**t|value2|value3", "Header1 Header2 Header3 \ntest value2 value3 \n", MarkdownExtensions.PipeTables)]
+    [InlineData("| a | b |\n|---|---|\n| c | d |\n\ne", "a b \nc d \ne\n", MarkdownExtensions.Tables)]
+    [InlineData("+---+---+\n| a | b |\n+===+===+\n| c | d |\n+---+---+\n\ne", "a b \nc d \ne\n", MarkdownExtensions.GridTables)]
     [InlineData("Term 1\nTerm 2\n:   Definition 1\n:   Definition 2\n\n    More", "Term 1\nTerm 2\nDefinition 1\nDefinition 2\nMore\n", MarkdownExtensions.DefinitionLists)]
     [InlineData("^^^\n![alt](a.png)\n^^^ The *caption*", "alt\nThe caption\n", MarkdownExtensions.Figures)]
     [InlineData("a\n\n^^ The *footer*\n^^ on two lines", "a\nThe footer\non two lines\n", MarkdownExtensions.Footers)]
@@ -2718,6 +3080,13 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("https://example.com www.example.com")]
     [InlineData("a\n# b\n- c\n> d")]
     [InlineData("é ✓ 😀")]
+    [InlineData("    indented text")]
+    [InlineData("\ttab")]
+    [InlineData("a  \nb")]
+    [InlineData("a\t\n  b  ")]
+    [InlineData(" a ")]
+    [InlineData("a\n \nb")]
+    [InlineData("  ")]
     public void EscapedTextIsParsedBackToTheText(string text)
     {
         var escaped = MarkdownEscaper.Escape(text);
@@ -2734,6 +3103,62 @@ public sealed class MarkdownSyntaxTreeTests
     {
         var text = "plain text";
         Assert.Same(text, MarkdownEscaper.Escape(text));
+    }
+
+    [Theory]
+    [InlineData("    indented text", "<p>    indented text</p>\n")]
+    [InlineData("a\n\n\tb", "<p>a</p>\n<p>\tb</p>\n")]
+    [InlineData("a  \nb", "<p>a  \nb</p>\n")]
+    public void EscapedTextKeepsTheWhitespaceAroundItsLines(string text, string expected)
+    {
+        // The parser would strip the whitespace, which would start an indented code block or end the line with a hard line break
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(MarkdownEscaper.Escape(text))));
+    }
+
+    [Theory]
+    [InlineData("Thanks \u00A7alice and Tom")]
+    [InlineData("\u00B6\u00B6\u00B6 note\nb \u00B6\u00B6\u00B6")]
+    [InlineData("xD and :) and (y)")]
+    [InlineData("a\u00A7\U0001F600\u00A7")]
+    public void EscapedTextIsParsedBackToTheTextWithTheExtensions(string text)
+    {
+        var options = new MarkdownParseOptions
+        {
+            Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension),
+            EmojiMapping = new MarkdownEmojiMapping(new Dictionary<string, string> { [":laughing:"] = "\U0001F606", [":ok:"] = "\u2705" }, new Dictionary<string, string> { ["xD"] = ":laughing:", ["(y)"] = ":ok:" }),
+            SyntaxExtensions = [new MentionExtension("section", "\u00A7"), new MentionExtension("tag", "T"), new PilcrowFenceExtension()],
+        };
+
+        var escaped = MarkdownEscaper.Escape(text, options);
+
+        var paragraph = Assert.IsType<MarkdownParagraphSyntax>(MarkdownSyntaxTree.ParseText(escaped, options).GetRoot().Blocks.Single());
+        Assert.Equal(text, paragraph.GetPlainText());
+        Assert.NotEqual(escaped, MarkdownEscaper.Escape(text));
+    }
+
+    [Fact]
+    public void EscapeWritesTheTriggerCharactersOfTheExtensionsAsEntities()
+    {
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new MentionExtension("section", "\u00A7"), new PilcrowFenceExtension()] };
+
+        Assert.Equal("&#167;a \\@b", MarkdownEscaper.Escape("\u00A7a @b", options));
+
+        // The trigger character of a fenced block starts a line
+        Assert.Equal("&#182;\u00B6 a \u00B6\n&#182;", MarkdownEscaper.Escape("\u00B6\u00B6 a \u00B6\n\u00B6", options));
+        Assert.Same("plain text", MarkdownEscaper.Escape("plain text", options));
+        Assert.Throws<ArgumentNullException>("options", () => MarkdownEscaper.Escape("a", options: null!));
+    }
+
+    [Theory]
+    [InlineData("a \U0001F600", "a &#128512;")]
+    [InlineData("a \uD83D", "a \uD83D")]
+    [InlineData("\uDE00 \uD83D\uD83D\uDE00", "\uDE00 \uD83D&#128512;")]
+    public void EscapeWritesATriggerCharacterOutsideTheBasicMultilingualPlaneAsOneEntity(string text, string expected)
+    {
+        // An entity cannot write a lone surrogate, which the parser would decode to U+FFFD
+        var options = new MarkdownParseOptions { SyntaxExtensions = [new MentionExtension("smile", "\U0001F600")] };
+
+        Assert.Equal(expected, MarkdownEscaper.Escape(text, options));
     }
 
     [Theory]
@@ -2768,6 +3193,22 @@ public sealed class MarkdownSyntaxTreeTests
         var code = MarkdownSyntaxTree.ParseText(MarkdownEscaper.CreateCodeSpan("a\nb\r\nc")).GetRoot().DescendantNodes().OfType<MarkdownCodeSpanSyntax>().Single();
 
         Assert.Equal("a b c", code.Code);
+    }
+
+    [Theory]
+    [InlineData("a\n# b")]
+    [InlineData("a\n- b")]
+    [InlineData("a\r\n> b")]
+    [InlineData("a\r<div>")]
+    [InlineData("a\n\nb")]
+    [InlineData("\na\n")]
+    public void CodeSpanStaysInItsParagraph(string content)
+    {
+        // A line of the content could start a block, so the line endings are written as the spaces the parser makes them
+        var paragraph = Assert.IsType<MarkdownParagraphSyntax>(MarkdownSyntaxTree.ParseText("x " + MarkdownEscaper.CreateCodeSpan(content)).GetRoot().Blocks.Single());
+
+        var code = Assert.IsType<MarkdownCodeSpanSyntax>(paragraph.Inlines.Last().AsNode());
+        Assert.Equal(content.Replace("\r\n", " ", StringComparison.Ordinal).Replace('\r', ' ').Replace('\n', ' '), code.Code);
     }
 
     [Fact]
@@ -2813,6 +3254,17 @@ public sealed class MarkdownSyntaxTreeTests
     public void FencedCodeBlockInfoStringCannotHaveLineEndings()
     {
         Assert.Throws<ArgumentException>("infoString", () => MarkdownEscaper.CreateFencedCodeBlock("x", "a\nb"));
+    }
+
+    [Fact]
+    public void FencedCodeBlockInfoStringIsNotReadAsGenericAttributes()
+    {
+        var fence = MarkdownEscaper.CreateFencedCodeBlock("x", "csharp {title=a}");
+        var block = MarkdownSyntaxTree.ParseText(fence, new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes }).GetRoot().Blocks.OfType<MarkdownCodeBlockSyntax>().Single();
+
+        Assert.Equal("```csharp &#123;title=a}\nx\n```\n", fence);
+        Assert.Equal("csharp {title=a}", block.Info);
+        Assert.True(block.GetGenericAttributes().IsEmpty);
     }
 
     [Theory]
@@ -2862,6 +3314,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("]")]
     [InlineData("*a* `b`")]
     [InlineData("a&amp;b")]
+    [InlineData("a\n# b")]
+    [InlineData("a\r\n- b")]
+    [InlineData("a\n\nb")]
     public void LinkLabelMatchesItsDefinition(string label)
     {
         var escaped = MarkdownEscaper.EscapeLinkLabel(label);
@@ -2869,6 +3324,48 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.NotNull(link.Definition);
         Assert.Equal("/url", link.Destination);
+    }
+
+    // The labels are matched with the Unicode full case folding, as cmark does
+    [Theory]
+    [InlineData("[ﬀ]\n\n[FF]: /url", "<p><a href=\"/url\">ﬀ</a></p>\n")]
+    [InlineData("[ẞ]\n\n[SS]: /url", "<p><a href=\"/url\">ẞ</a></p>\n")]
+    [InlineData("[ss]\n\n[ẞ]: /url", "<p><a href=\"/url\">ss</a></p>\n")]
+    [InlineData("[Straße]\n\n[STRASSE]: /url", "<p><a href=\"/url\">Straße</a></p>\n")]
+    [InlineData("[STRASSE]\n\n[straße]: /url", "<p><a href=\"/url\">STRASSE</a></p>\n")]
+    [InlineData("[\U00010400]\n\n[\U00010428]: /u", "<p><a href=\"/u\">\U00010400</a></p>\n")]
+    [InlineData("[a \n ﬀ\tb]\n\n[A  FF B]: /u", "<p><a href=\"/u\">a\nﬀ\tb</a></p>\n")]
+    [InlineData("[ı]\n\n[I]: /u", "<p>[ı]</p>\n")]
+    public void LinkLabelMatchesItsDefinitionWithTheFullCaseFolding(string text, string expected)
+    {
+        Assert.Equal(expected, MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(text)));
+    }
+
+    [Theory]
+    [InlineData(" \t Foo \r\n\t Bar\n", "foo bar")]
+    [InlineData("ﬀ ẞ", "ff ss")]
+    [InlineData("İ", "i̇")]
+    [InlineData("\U00010400\U0001E900", "\U00010428\U0001E922")]
+    [InlineData("A\uD800B\uDC00", "a\uD800b\uDC00")]
+    [InlineData("\uDBFF", "\uDBFF")]
+    public void LinkLabelIsNormalizedWithTheFullCaseFolding(string label, string expected)
+    {
+        Assert.Equal(expected, Scanners.NormalizeLabel(label));
+    }
+
+    [Theory]
+    [InlineData("^1", @"\^1")]
+    [InlineData(" \t^1", " \t\\^1")]
+    [InlineData("\n^1", @" \^1")]
+    [InlineData("a^1", "a^1")]
+    public void LinkLabelIsNotAFootnote(string label, string expected)
+    {
+        var escaped = MarkdownEscaper.EscapeLinkLabel(label);
+        var root = MarkdownSyntaxTree.ParseText($"[x][{escaped}]\n\n[{escaped}]: /url", new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes }).GetRoot();
+
+        Assert.Equal(expected, escaped);
+        Assert.Equal("/url", root.DescendantNodes().OfType<MarkdownLinkSyntax>().Single().Destination);
+        Assert.Empty(root.DescendantNodes().OfType<MarkdownFootnoteDefinitionSyntax>());
     }
 
     [Theory]
@@ -2896,6 +3393,8 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("*a* `b` [c](d)", "*a* `b` [c](d)")]
     [InlineData("---", "---")]
     [InlineData("a\u0085b", "a\u0085b")]
+    [InlineData(" a ", " a ")]
+    [InlineData("\na", " a")]
     public void TableCellIsParsedBackToTheText(string text, string expected)
     {
         foreach (var extensions in new[] { MarkdownExtensions.PipeTables, MarkdownExtensions.Tables })
@@ -3193,6 +3692,38 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void WalkerVisitsTheGridTableCellsWhenAsked()
+    {
+        #region MarkdownSyntaxWalker_GridTableCells
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GridTables };
+        var tree = MarkdownSyntaxTree.ParseText("[a](/u)\n\n+---------+---------+\n| [b](/v) | [c](/w) |\n+---------+---------+\n", options);
+
+        var collector = new LinkCollector();
+        collector.Visit(tree.GetRoot());
+
+        Assert.Equal(["/u", "/v", "/w"], collector.Links.Select(link => link.Destination));
+        #endregion
+
+        var walker = new CountingWalker();
+        walker.Visit(tree.GetRoot());
+        Assert.Equal(tree.GetRoot().DescendantNodesAndSelf().Count(), walker.Count);
+    }
+
+    #region MarkdownSyntaxWalker_LinkCollector
+    // Finds the links of a document, the ones of the content of its grid table cells included
+    private sealed class LinkCollector() : MarkdownSyntaxWalker(SyntaxWalkerDepth.Node, visitGridTableCells: true)
+    {
+        public List<MarkdownLinkSyntax> Links { get; } = [];
+
+        public override void VisitMarkdownLink(MarkdownLinkSyntax node)
+        {
+            Links.Add(node);
+            base.VisitMarkdownLink(node);
+        }
+    }
+    #endregion
+
+    [Fact]
     public void RewriterThatChangesNothingKeepsTheNodes()
     {
         var root = MarkdownSyntaxTree.ParseText("> - a *b*\n", MarkdownParseOptions.GitHubFlavored).GetRoot();
@@ -3212,6 +3743,22 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal("new\nnew", ((MarkdownDocumentSyntax)rewritten).GetPlainText());
     }
 
+    [Fact]
+    public void WithRootParsesTheTextAgain()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("a\n\nb\n");
+        var blankLine = tree.GetRoot().DescendantTokens().Last(token => token.Text == "b");
+
+        // Without the blank line, the two paragraphs are one
+        var root = tree.GetRoot().ReplaceToken(blankLine, blankLine.WithLeadingTrivia());
+        var updated = (MarkdownSyntaxTree)tree.WithRoot(root);
+
+        Assert.Equal("a\nb\n", updated.GetRoot().ToFullString());
+        Assert.Single(updated.GetRoot().Blocks);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText("a\nb\n")), MarkdownHtmlRenderer.ToHtml(updated));
+        Assert.Same(tree, tree.WithRoot(tree.GetRoot()));
+    }
+
     [Theory]
     [InlineData("- a\n- b\n", true, 1, "- c\n", "- a\n- c\n- b\n")]
     [InlineData("- a\n\n  b\n", false, 0, "c\n\n", "- c\n\n  a\n\n  b\n")]
@@ -3229,6 +3776,11 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a", "\nb\n", "a\n\nb")]
     [InlineData("```\ncode\n```\nc\n", "# t", "```\ncode\n```\n# t\nc\n")]
     [InlineData("> - a\n>   b\n", "\n  c", ">   b\n>\n>     c\n")]
+    [InlineData("```\ncode\n", "# t", "```\ncode\n```\n# t\n")]
+    [InlineData("````md\ncode", "# t", "````md\ncode\n````\n# t")]
+    [InlineData("> - ~~~\n>   code\n", "# t", ">   code\n>   ~~~\n>   # t\n")]
+    [InlineData(">- a\n", "\nb", ">- a\n>\n>   b\n")]
+    [InlineData(" 1.  a\n", "\nb", " 1.  a\n\n     b\n")]
     public void InsertsBlocksAfter(string text, string markdown, string expectedEnd)
     {
         var tree = MarkdownSyntaxTree.ParseText(text);
@@ -3243,6 +3795,19 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("- a\n- b\n", 0, "- b\n")]
     [InlineData("1. a\n", 1, "1. \n")]
     [InlineData("a\r\n\r\nb", 1, "a\r\n\r\n")]
+    [InlineData("para1\n# h\npara2\n", 1, "para1\n\npara2\n")]
+    [InlineData("a\n***\n---\n", 1, "a\n\n---\n")]
+    [InlineData("> a\n> # h\nb\n", 1, "> a\n>\nb\n")]
+    [InlineData("- a\n- b\n- c\n", 2, "- a\n- c\n")]
+    [InlineData("- a\n\n  b\n", 1, "- b\n")]
+    [InlineData("- a\n\n      code\n", 1, "-     code\n")]
+    [InlineData("> - # a\n>   b\n", 1, "> - b\n")]
+    [InlineData("para1\r\n# h\r\npara2\r\n", 1, "para1\r\n\r\npara2\r\n")]
+    [InlineData("> a\n# h\n> b\n", 1, "> a\n\n> b\n")]
+    [InlineData("- \n  a\n\n  b\n", 1, "- \n  b\n")]
+    [InlineData("- a\n  - -\n", 1, "- \n  - -\n")]
+    [InlineData("> [a]: /u\nb\n", 0, "> b\n")]
+    [InlineData("* a\n  > b\n  >\n* c\n", 0, "* c\n")]
     public void RemovesBlocks(string text, int blockIndex, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text);
@@ -3271,12 +3836,175 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a\r\nb\r\n\r\nc", 0, "x\ny", "x\r\ny\r\n\r\nc")]
     [InlineData("```\ncode\n```\nafter\n", 0, "# t", "# t\nafter\n")]
     [InlineData("- a\n- b\n", 0, "x\n\ny", "- x\n\n  y\n- b\n")]
+    [InlineData("p\n\n    code\n    more\n", 1, "X\n\nY", "p\n\nX\n\nY\n")]
+    [InlineData("> -     code\n", 0, "X\n\nY", "> - X\n>\n>   Y\n")]
+    [InlineData(">\t\tcode\n", 0, "X", "> X\n")]
+    [InlineData("> [a]: /u\nb\n", 0, "# x", "> [a]: /u\n> # x\n")]
     public void ReplacesBlocks(string text, int blockIndex, string markdown, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text);
         var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Where(node => node is MarkdownParagraphSyntax or MarkdownCodeBlockSyntax).ToList()[blockIndex];
 
         Assert.Equal(expected, tree.ReplaceBlock(block, markdown).GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditsOfAnIndentedCodeBlockAreNotInTheCode()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("p\n\n    code\n    more\n");
+        var code = tree.GetRoot().Blocks.OfType<MarkdownCodeBlockSyntax>().Single();
+
+        var replaced = tree.ReplaceBlock(code, "X\n\nY");
+        var before = tree.InsertBlocksBefore(code, "X\n\nY\n");
+        var after = tree.InsertBlocksAfter(code, "\nX\n\nY");
+
+        Assert.Equal("<p>p</p>\n<p>X</p>\n<p>Y</p>\n", MarkdownHtmlRenderer.ToHtml(replaced));
+        Assert.Equal("p\n\nX\n\nY\n    code\n    more\n", before.GetRoot().ToFullString());
+        Assert.Equal("p\n\n    code\n    more\n\nX\n\nY\n", after.GetRoot().ToFullString());
+        Assert.Equal(["Paragraph", "IndentedCodeBlock", "Paragraph", "Paragraph"], after.GetRoot().Blocks.Select(block => block.Kind().ToString()));
+    }
+
+    [Theory]
+    [InlineData("^^ footer text\n", "^^ line1\n^^\n^^ line2\n")]
+    [InlineData("> ^^ footer text\n", "> ^^ line1\n> ^^\n> ^^ line2\n")]
+    [InlineData("[^1]: text\n", "[^1]: line1\n\n    line2\n")]
+    [InlineData("[^longlabel]: text\n", "[^longlabel]: line1\n\n    line2\n")]
+    [InlineData("Term\n:   text\n", "Term\n:   line1\n\n    line2\n")]
+    public void EditsInAContainerWriteItsMarkersOnEachLine(string text, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footers | MarkdownExtensions.Footnotes | MarkdownExtensions.DefinitionLists };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        var paragraph = tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().Last();
+        var container = paragraph.Parent!;
+
+        var updated = tree.ReplaceBlock(paragraph, "line1\n\nline2");
+
+        Assert.Equal(expected, updated.GetRoot().ToFullString());
+        var updatedContainer = updated.GetRoot().DescendantNodes().Single(node => node.RawKind == container.RawKind);
+        Assert.HasCount(2, updatedContainer.ChildNodes().OfType<MarkdownParagraphSyntax>());
+    }
+
+    [Theory]
+    [InlineData("[^1]: ```\n    code\n", "[^1]: ```\n    code\n    ```\n\n# t\n")]
+    [InlineData("::: a\nc\n", "::: a\nc\n:::\n\n# t\n")]
+    [InlineData("::: a\n::: b\n```\nc\n", "::: a\n::: b\n```\nc\n:::\n\n# t\n")]
+    [InlineData("::: a\n::: b\nc\n:::\n", "::: a\n::: b\nc\n:::\n\n# t\n")]
+    public void InsertsBlocksAfterTheBlocksThatAreNotClosed(string text, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Footnotes | MarkdownExtensions.CustomContainers };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        var updated = tree.InsertBlocksAfter(tree.GetRoot().Blocks[0], "\n# t");
+
+        Assert.Equal(expected, updated.GetRoot().ToFullString());
+        Assert.IsType<MarkdownHeadingSyntax>(updated.GetRoot().Blocks[^1]);
+    }
+
+    [Fact]
+    public void EditsOfTheFirstParagraphOfAnAlertKeepItsKind()
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Alerts };
+        var tree = MarkdownSyntaxTree.ParseText("> [!NOTE]\n> text\n>\n> more\n", options);
+        var paragraph = tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().First();
+
+        var replaced = tree.ReplaceBlock(paragraph, "# t");
+        var before = tree.InsertBlocksBefore(paragraph, "# t\n");
+        var removed = tree.RemoveBlock(paragraph);
+
+        Assert.Equal("> [!NOTE]\n> # t\n>\n> more\n", replaced.GetRoot().ToFullString());
+        Assert.Equal("> [!NOTE]\n> # t\n> text\n>\n> more\n", before.GetRoot().ToFullString());
+        Assert.Equal("> [!NOTE]\n> more\n", removed.GetRoot().ToFullString());
+        Assert.All([replaced, before, removed], updated => Assert.IsType<MarkdownAlertSyntax>(updated.GetRoot().Blocks.Single()));
+    }
+
+    [Fact]
+    public void EditorParsesTheTextOnce()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n\nb\n\n- c\n- d\n\ne\n");
+        var blocks = tree.GetRoot().Blocks;
+        var items = tree.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().ToList();
+
+        // The blocks are the ones of the original tree, whatever the changes before
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.ReplaceBlock(blocks[0], "## A");
+        editor.InsertBlocksAfter(blocks[0], "\nx");
+        editor.RemoveBlock(blocks[1]);
+        editor.RemoveBlock(items[0]);
+        editor.InsertBlocksBefore(items[1], "- y");
+        editor.InsertBlocksAfter(blocks[3], "\nz");
+
+        Assert.Equal("# a\n\nb\n\n- c\n- d\n\ne\n", tree.GetRoot().ToFullString());
+        Assert.Equal("## A\n\nx\n\n\n- y\n- d\n\ne\n\nz\n", editor.GetChangedTree().GetRoot().ToFullString());
+        Assert.Same(tree, new MarkdownSyntaxTreeEditor(tree).GetChangedTree());
+    }
+
+    [Fact]
+    public void EditorRemovesTheBlocksThatFollowEachOther()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("- a\n\n  b\n\n  c\n\n  d\n");
+        var paragraphs = tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().ToList();
+
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.RemoveBlock(paragraphs[0]);
+        editor.RemoveBlock(paragraphs[1]);
+        editor.RemoveBlock(paragraphs[2]);
+
+        Assert.Equal("- d\n", editor.GetChangedTree().GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditorChangesTheBlocksAroundARemovedBlock()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("> [a]: /u\nb\n");
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.RemoveBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownLinkReferenceDefinitionSyntax>().Single());
+        editor.ReplaceBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().Single(), "# x");
+
+        Assert.Equal("> # x\n", editor.GetChangedTree().GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditorKeepsTheLineEndingsApart()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n# b\r# c\n", AttributeOptions);
+        var headings = tree.GetRoot().Blocks;
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.InsertBlocksAfter(headings[1], "\n# x");
+        editor.SetGenericAttributes(headings[2], new MarkdownGenericAttributes("id", [], []));
+
+        var updated = editor.GetChangedTree();
+
+        Assert.Equal("# a\n# b\r\n\n# x\n# c {#id}\n", updated.GetRoot().ToFullString());
+        Assert.Equal("id", updated.GetRoot().Blocks[^1].GetGenericAttributes().Id);
+    }
+
+    [Fact]
+    public void EditorThrowsWhenChangesOverlap()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("- a\n- b\n");
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.ReplaceBlock(tree.GetRoot().Blocks[0], "x");
+        editor.ReplaceBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().First(), "y");
+
+        Assert.Throws<InvalidOperationException>(() => editor.GetChangedTree());
+        Assert.Throws<ArgumentException>("block", () => editor.RemoveBlock(MarkdownSyntaxTree.ParseText("a").GetRoot().Blocks[0]));
+    }
+
+    [Fact]
+    public void EditorSetsTheAttributesOfSeveralBlocks()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n\nb\n\n- c\n", AttributeOptions);
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        foreach (var block in tree.GetRoot().Blocks)
+        {
+            editor.SetGenericAttributes(block, new MarkdownGenericAttributes(null, ["old"], []));
+            editor.SetGenericAttributes(block, new MarkdownGenericAttributes(block.Kind().ToString(), [], []));
+        }
+
+        var updated = editor.GetChangedTree();
+
+        Assert.Equal("# a {#AtxHeading}\n\nb {#Paragraph}\n\n{#List}\n- c\n", updated.GetRoot().ToFullString());
+        Assert.Equal(["AtxHeading", "Paragraph", null, "List"], updated.GetRoot().Blocks.Select(block => block.GetGenericAttributes().Id));
     }
 
     [Fact]
@@ -3303,12 +4031,32 @@ public sealed class MarkdownSyntaxTreeTests
     [Fact]
     public void ReadmeExample_HeadingIdentifiers()
     {
+        #region MarkdownSyntaxTree_HeadingIdentifiers
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
+        var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n", options);
+
+        // Write the identifier of every heading as its id, so that the links to it keep working when its text changes. The editor
+        // parses the text once, after all the changes: the headings are the ones of the original tree.
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        foreach (var heading in tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>())
+        {
+            editor.SetGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
+        }
+
+        tree = editor.GetChangedTree();
+
+        Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n", tree.GetRoot().ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_HeadingIdentifiersWithRewriter()
+    {
         #region MarkdownBlockSyntax_WithGenericAttributes
         var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
         var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n\n> ## Introduction\n", options);
 
-        // Write the identifier of every heading as its id, so that the links to it keep working when its text changes. The
-        // rewriter changes all the headings in one pass, without parsing the document again.
+        // The rewriter changes all the headings in one pass, without parsing the document again
         var root = new HeadingIdentifiers().Visit(tree.GetRoot())!;
 
         Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n\n> ## Introduction {#introduction-1}\n", root.ToFullString());
@@ -3535,6 +4283,13 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("> ###### a\n", 1, "> # a\n")]
     [InlineData("a\n===\n", 2, "a\n---\n")]
     [InlineData("> a\n> -\n", 1, "> a\n> =\n")]
+    [InlineData("a\n===\n", 3, "### a\n")]
+    [InlineData("\n  a {#x}\n===\n\nb\n", 6, "\n  ###### a {#x}\n\nb\n")]
+    [InlineData("> a  \n> *b\n> c*\n> ---", 4, "> #### a *b c*")]
+    [InlineData("a [b](\n/u\n\"t\") `c\nd`\n===\n", 5, "##### a [b]( /u \"t\") `c d`\n")]
+    [InlineData("a #\n===\n", 3, "### a # #\n")]
+    [InlineData("a\\#\n===\n", 3, "### a\\#\n")]
+    [InlineData("a\nb  c \n---\n", 3, "### a b  c\n")]
     public void HeadingWithLevel(string text, int level, string expected)
     {
         var root = MarkdownSyntaxTree.ParseText(text).GetRoot();
@@ -3546,10 +4301,35 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(level, MarkdownSyntaxTree.ParseText(updated).GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>().Single().Level);
     }
 
+    [Fact]
+    public void SetextHeadingWithLevelIsTheAtxHeadingOfItsText()
+    {
+        var heading = MarkdownSyntaxTree.ParseText("a\nb  c \n---\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();
+
+        var atx = heading.WithLevel(3);
+
+        Assert.False(atx.IsSetext);
+        Assert.Equal(3, atx.Level);
+        Assert.Equal("### a b  c", atx.ToString());
+        Assert.Equal("a b  c", atx.GetPlainText());
+
+        // The line ending of a title is a space of the title
+        var link = MarkdownSyntaxTree.ParseText("[x](/u \"a\nb\")\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3).DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+        Assert.Equal("a b", link.Title);
+
+        // A space between two escaped characters is text
+        var escaped = MarkdownSyntaxTree.ParseText("\\*\n\\*\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
+        Assert.Equal("* *", escaped.GetPlainText());
+
+        // A line ending in generic attributes is a space of the attributes
+        var withAttributes = MarkdownSyntaxTree.ParseText("text {title=\"a\nb\"}\n===\n", AttributeOptions).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
+        Assert.Equal("a b", withAttributes.DescendantNodes().OfType<MarkdownGenericAttributesSyntax>().Single().Properties.Single().Value);
+    }
+
     [Theory]
     [InlineData("# a\n", 0)]
     [InlineData("# a\n", 7)]
-    [InlineData("a\n===\n", 3)]
+    [InlineData("a\n===\n", 7)]
     public void HeadingWithInvalidLevelThrows(string text, int level)
     {
         var heading = MarkdownSyntaxTree.ParseText(text).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single();
@@ -4008,6 +4788,25 @@ public sealed class MarkdownSyntaxTreeTests
         }
     }
 
+    // A span from @ to the last character of the text, which is its closing marker
+    private sealed class LastCharacterSpanExtension() : MarkdownInlineExtension("span", "@")
+    {
+        public override bool TryParse(ref MarkdownInlineParseContext context)
+        {
+            var length = context.Text.Length;
+            if (length < 3)
+            {
+                return false;
+            }
+
+            context.AddMarker(0, 1);
+            context.AddInlines(1, length - 2);
+            context.AddMarker(length - 1, 1);
+            context.Complete(length);
+            return true;
+        }
+    }
+
     private sealed class SpanRenderer : MarkdownHtmlNodeRenderer
     {
         public override bool TryWrite(MarkdownSyntaxNode node, MarkdownHtmlWriter writer)
@@ -4083,6 +4882,14 @@ public sealed class MarkdownSyntaxTreeTests
         }
     }
     #endregion
+
+    // A fence of pilcrows, which a backslash cannot escape: the blocks are between two lines that start with three of them
+    private sealed class PilcrowFenceExtension() : MarkdownFencedBlockExtension("pilcrow", "\u00B6", MarkdownFencedBlockContent.Blocks)
+    {
+        public override int TryOpen(ReadOnlySpan<char> line) => line.StartsWith("\u00B6\u00B6\u00B6", StringComparison.Ordinal) ? 3 : 0;
+
+        public override int TryClose(ReadOnlySpan<char> line, ReadOnlySpan<char> openingFence) => line.StartsWith(openingFence, StringComparison.Ordinal) ? openingFence.Length : 0;
+    }
 
     // %%% info, raw lines, then %%%
     private sealed class RawFenceExtension() : MarkdownFencedBlockExtension("raw", "%", MarkdownFencedBlockContent.RawLines)

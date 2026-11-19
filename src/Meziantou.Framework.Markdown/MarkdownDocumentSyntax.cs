@@ -39,9 +39,15 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     /// <summary>Finds the definition of a footnote: the first one with the same label, compared as CommonMark compares link labels.</summary>
     /// <param name="label">The label, with its <c>^</c>.</param>
     /// <exception cref="ArgumentNullException"><paramref name="label"/> is <see langword="null"/>.</exception>
+    /// <remarks>The content of a cell of a grid table has no footnote: its references are to the footnotes of the tree of the table.</remarks>
     public MarkdownFootnoteDefinitionSyntax? GetFootnoteDefinition(string label)
     {
         ArgumentNullException.ThrowIfNull(label);
+
+        if ((SyntaxTree as MarkdownSyntaxTree)?.Container is { } container)
+        {
+            return container.GetRoot().GetFootnoteDefinition(label);
+        }
 
         if (_footnotes is null)
         {
@@ -208,90 +214,158 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     }
 
     /// <summary>Gets the identifier of a heading of the document: the id of its generic attributes, or the one of auto-identifiers.</summary>
+    /// <remarks>
+    /// The headings of the content of the cells of the grid tables get their identifiers with the ones of the document of the
+    /// table, which they are unique with.
+    /// </remarks>
     internal string? GetHeadingIdentifier(MarkdownHeadingSyntax heading)
     {
-        if (_headingIdentifiers is null)
+        var root = this;
+        while ((root.SyntaxTree as MarkdownSyntaxTree)?.Container is { } container)
         {
-            var options = Options;
-            var identifiers = new Dictionary<MarkdownHeadingSyntax, string>();
-            if (HasGenericAttributes)
+            root = container.GetRoot();
+        }
+
+        if (root.HeadingIdentifiers.TryGetValue(heading, out var identifier))
+        {
+            return identifier;
+        }
+
+        // A heading of a tree made from the content of a cell, such as an edit of it, is not in the document of the table
+        return root == this ? null : HeadingIdentifiers.GetValueOrDefault(heading);
+    }
+
+    private Dictionary<MarkdownHeadingSyntax, string> HeadingIdentifiers => _headingIdentifiers ??= CreateHeadingIdentifiers();
+
+    private Dictionary<MarkdownHeadingSyntax, string> CreateHeadingIdentifiers()
+    {
+        var options = Options;
+        var identifiers = new Dictionary<MarkdownHeadingSyntax, string>();
+        var gridTables = options.Extensions.HasFlag(MarkdownExtensions.GridTables);
+
+        // The ids of the generic attributes of the elements, which the generated identifiers are unique with. The id of the last
+        // attributes of an element wins.
+        var explicitIds = new Dictionary<SyntaxNode, string>();
+        AddExplicitIds(this);
+        void AddExplicitIds(MarkdownDocumentSyntax document)
+        {
+            if (document.HasGenericAttributes)
             {
-                // The id of the last attributes wins
-                MarkdownGenericAttributesSyntax.FindTargets(this, (attributes, target) =>
+                MarkdownGenericAttributesSyntax.FindTargets(document, (attributes, target) =>
                 {
-                    if (target is MarkdownHeadingSyntax heading && attributes.Id is { } id)
+                    if (attributes.Id is { } id)
                     {
-                        identifiers[heading] = id;
+                        explicitIds[target] = id;
                     }
                 });
             }
 
-            if (options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers))
+            if (gridTables)
             {
-                // As in Markdig, the identifier of a heading is unique among the generated ones, which are made in the order of the
-                // text, except that the footnotes are read where the first one is
-                var used = new HashSet<string>(StringComparer.Ordinal);
-                var lastSuffixes = new Dictionary<string, int>(StringComparer.Ordinal);
-                var footnotesRead = false;
-                foreach (var block in Blocks)
+                foreach (var table in document.DescendantNodes(IsBlockContainer).OfType<MarkdownGridTableSyntax>())
                 {
-                    if (block is MarkdownFootnoteDefinitionSyntax)
+                    foreach (var row in table.Rows)
                     {
-                        if (!footnotesRead)
+                        foreach (var cell in row.Cells)
                         {
-                            foreach (var footnote in Blocks.OfType<MarkdownFootnoteDefinitionSyntax>())
-                            {
-                                AddIdentifiers(footnote);
-                            }
+                            AddExplicitIds(cell.Content.GetRoot());
+                        }
+                    }
+                }
+            }
+        }
 
-                            footnotesRead = true;
+        foreach (var (target, id) in explicitIds)
+        {
+            if (target is MarkdownHeadingSyntax heading)
+            {
+                identifiers[heading] = id;
+            }
+        }
+
+        if (options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers))
+        {
+            // As in Markdig, the identifier of a heading is unique among the generated ones, which are made in the order of the
+            // text, the content of the cells of the grid tables included, except that the footnotes are read where the first one
+            // is. It is also unique with the ids of the generic attributes.
+            var used = new HashSet<string>(explicitIds.Values, StringComparer.Ordinal);
+            var lastSuffixes = new Dictionary<string, int>(StringComparer.Ordinal);
+            var footnotesRead = false;
+            foreach (var block in Blocks)
+            {
+                if (block is MarkdownFootnoteDefinitionSyntax)
+                {
+                    if (!footnotesRead)
+                    {
+                        foreach (var footnote in Blocks.OfType<MarkdownFootnoteDefinitionSyntax>())
+                        {
+                            AddIdentifiers(footnote);
                         }
 
-                        continue;
+                        footnotesRead = true;
                     }
 
-                    AddIdentifiers(block);
+                    continue;
                 }
 
-                void AddIdentifiers(MarkdownBlockSyntax block)
+                AddIdentifiers(block);
+            }
+
+            void AddIdentifiers(MarkdownBlockSyntax block)
+            {
+                foreach (var node in block.DescendantNodesAndSelf(IsBlockContainer))
                 {
-                    foreach (var heading in block.DescendantNodesAndSelf(IsBlockContainer).OfType<MarkdownHeadingSyntax>())
+                    switch (node)
                     {
-                        if (identifiers.ContainsKey(heading))
-                        {
-                            continue;
-                        }
+                        case MarkdownHeadingSyntax heading when !identifiers.ContainsKey(heading):
+                            identifiers[heading] = CreateIdentifier(heading);
+                            break;
 
-                        var baseIdentifier = HeadingIdentifier.Create(heading.GetIdentifierText(), options.AutoIdentifierOptions);
-                        if (baseIdentifier.Length == 0)
-                        {
-                            baseIdentifier = "section";
-                        }
-
-                        // The suffixes below the last one used for this base are all taken
-                        var identifier = baseIdentifier;
-                        if (!used.Add(identifier))
-                        {
-                            var suffix = lastSuffixes.GetValueOrDefault(baseIdentifier);
-                            do
+                        case MarkdownGridTableSyntax table when gridTables:
+                            foreach (var row in table.Rows)
                             {
-                                suffix++;
-                                identifier = baseIdentifier + "-" + suffix.ToString(CultureInfo.InvariantCulture);
+                                foreach (var cell in row.Cells)
+                                {
+                                    foreach (var cellBlock in cell.Content.GetRoot().Blocks)
+                                    {
+                                        AddIdentifiers(cellBlock);
+                                    }
+                                }
                             }
-                            while (!used.Add(identifier));
 
-                            lastSuffixes[baseIdentifier] = suffix;
-                        }
-
-                        identifiers[heading] = identifier;
+                            break;
                     }
                 }
             }
 
-            _headingIdentifiers = identifiers;
+            string CreateIdentifier(MarkdownHeadingSyntax heading)
+            {
+                var baseIdentifier = HeadingIdentifier.Create(heading.GetIdentifierText(), options.AutoIdentifierOptions);
+                if (baseIdentifier.Length == 0)
+                {
+                    baseIdentifier = "section";
+                }
+
+                // The suffixes below the last one used for this base are all taken
+                var identifier = baseIdentifier;
+                if (!used.Add(identifier))
+                {
+                    var suffix = lastSuffixes.GetValueOrDefault(baseIdentifier);
+                    do
+                    {
+                        suffix++;
+                        identifier = baseIdentifier + "-" + suffix.ToString(CultureInfo.InvariantCulture);
+                    }
+                    while (!used.Add(identifier));
+
+                    lastSuffixes[baseIdentifier] = suffix;
+                }
+
+                return identifier;
+            }
         }
 
-        return _headingIdentifiers.GetValueOrDefault(heading);
+        return identifiers;
     }
 
     /// <summary>Finds the heading that a reference link without definition links to with auto-identifiers: the last one whose first line has the label.</summary>
@@ -397,47 +471,6 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
 
         public List<MarkdownGenericAttributesSyntax> Nodes { get; } = [];
 
-        // As in the HTML renderer, the id of the last attributes wins, the classes are added, and a property is kept from the first
-        // attributes that have it
-        public MarkdownGenericAttributes GetAttributes()
-        {
-            if (_attributes is not null)
-                return _attributes;
-
-            string? id = null;
-            List<string>? blockLineClasses = null;
-            var classes = new List<string>();
-            var properties = new List<KeyValuePair<string, string?>>();
-            foreach (var attributes in Nodes)
-            {
-                id = attributes.Id ?? id;
-                if (attributes.IsBlockLine)
-                {
-                    blockLineClasses = [.. attributes.Classes];
-                }
-                else
-                {
-                    classes.AddRange(attributes.Classes);
-                }
-
-                var existingCount = properties.Count;
-                foreach (var property in attributes.Properties)
-                {
-                    if (properties.FindIndex(0, existingCount, existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)) < 0)
-                    {
-                        properties.Add(property);
-                    }
-                }
-            }
-
-            // The classes of the first line of a block come first, as the renderer writes them
-            if (blockLineClasses is not null)
-            {
-                classes.InsertRange(0, blockLineClasses);
-            }
-
-            _attributes = id is null && classes.Count == 0 && properties.Count == 0 ? MarkdownGenericAttributes.Empty : new MarkdownGenericAttributes(id, classes, properties);
-            return _attributes;
-        }
+        public MarkdownGenericAttributes GetAttributes() => _attributes ??= MarkdownBlockSyntax.MergeGenericAttributes(Nodes);
     }
 }

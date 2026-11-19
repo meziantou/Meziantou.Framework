@@ -87,6 +87,10 @@ private sealed class RemoveHtml : MarkdownSyntaxRewriter
 ```
 <!-- endref -->
 
+A node that replaces another can change how the text around it is read, such as a token without the blank line that
+separated two paragraphs. [WithRoot](cref:Meziantou.Framework.Language.SyntaxTree.WithRoot(Meziantou.Framework.Language.SyntaxNode)) on a [MarkdownSyntaxTree](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree)
+parses the text of the root again, so that the tree it returns is the one of its text.
+
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var tree = MarkdownSyntaxTree.ParseText("<div>\nhidden\n</div>\n\nText with <b>tags</b>.\n");
@@ -109,6 +113,10 @@ keep the rest of the node as it was. The copy is in no tree: put it in the place
 | [MarkdownLinkSyntax](cref:Meziantou.Framework.Markdown.MarkdownLinkSyntax) | [WithDestination](cref:Meziantou.Framework.Markdown.MarkdownLinkSyntax.WithDestination(System.String)), [WithTitle](cref:Meziantou.Framework.Markdown.MarkdownLinkSyntax.WithTitle(System.String)) |
 | [MarkdownLinkReferenceDefinitionSyntax](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax) | [WithDestination](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax.WithDestination(System.String)), [WithTitle](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax.WithTitle(System.String)) |
 | [MarkdownCodeBlockSyntax](cref:Meziantou.Framework.Markdown.MarkdownCodeBlockSyntax) | [WithInfo](cref:Meziantou.Framework.Markdown.MarkdownCodeBlockSyntax.WithInfo(System.String)) |
+
+[WithLevel](cref:Meziantou.Framework.Markdown.MarkdownHeadingSyntax.WithLevel(System.Int32)) changes the number of `#` of an ATX heading, and the underline of a setext heading for the levels 1 and 2. A
+setext heading of level 3 to 6 becomes an ATX heading, which has one line: its lines are joined with spaces, and a hard
+line break becomes a space.
 
 The destination and the title of a reference link are the ones of its definition: change the definition. Removing a
 title passes `null`:
@@ -168,18 +176,40 @@ Assert.Equal("steps", tree.GetRoot().DescendantNodes().OfType<MarkdownListSyntax
 <!-- endref -->
 
 [MarkdownGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownGenericAttributes) is a record: `with` changes
-one part, such as the id.
+one part, such as the id. Each call of
+[WithGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree.WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownBlockSyntax,Meziantou.Framework.Markdown.MarkdownGenericAttributes)) parses the whole text again. To change many blocks, use a
+[MarkdownSyntaxTreeEditor](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor): it records the changes to the
+blocks of a tree, and [GetChangedTree](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor.GetChangedTree)
+writes them and parses the text once. Here, every heading gets the identifier it has, so the links to it keep working
+when its text changes:
 
-Each call to `MarkdownSyntaxTree.WithGenericAttributes` parses the text again. To change the attributes of many blocks,
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxTree_HeadingIdentifiers;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
+var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n", options);
+
+// Write the identifier of every heading as its id, so that the links to it keep working when its text changes. The editor
+// parses the text once, after all the changes: the headings are the ones of the original tree.
+var editor = new MarkdownSyntaxTreeEditor(tree);
+foreach (var heading in tree.GetRoot().DescendantNodes().OfType<MarkdownHeadingSyntax>())
+{
+    editor.SetGenericAttributes(heading, heading.GetGenericAttributes() with { Id = heading.Identifier });
+}
+
+tree = editor.GetChangedTree();
+
+Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n", tree.GetRoot().ToFullString());
+```
+<!-- endref -->
+
+To change the attributes in a [MarkdownSyntaxRewriter](cref:Meziantou.Framework.Markdown.MarkdownSyntaxRewriter),
 [MarkdownBlockSyntax.WithGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownBlockSyntax.WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownGenericAttributes))
-returns a copy of the block with the attributes, without parsing the document again: return it from a
-[MarkdownSyntaxRewriter](cref:Meziantou.Framework.Markdown.MarkdownSyntaxRewriter), or pass it to `ReplaceNode` or
-`ReplaceNodes`. It writes the attributes in the block, so it works for the blocks whose attributes are written in them:
-headings, paragraphs, fenced code blocks, math blocks and custom containers. Call it on a block of the tree, whose
-attributes are known, rather than on a copy. It throws an `InvalidOperationException` when the attributes cannot be
-written in the block, for example when they are on a line before it: use `MarkdownSyntaxTree.WithGenericAttributes` then.
-
-Here, every heading gets the identifier it has as its id, so that the links to it keep working when its text changes:
+returns a copy of the block with the attributes, without parsing the document again: return it from the rewriter, or
+pass it to `ReplaceNode` or `ReplaceNodes`. It writes the attributes in the block, so it works for the blocks whose
+attributes are written in them: headings, paragraphs, fenced code blocks, math blocks and custom containers. Call it on a
+block of the tree, whose attributes are known, rather than on a copy. It throws an `InvalidOperationException` when the
+attributes cannot be written in the block, for example when they are on a line before it: use
+`MarkdownSyntaxTree.WithGenericAttributes` or a `MarkdownSyntaxTreeEditor` then.
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_HeadingIdentifiers;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -197,8 +227,7 @@ private sealed class HeadingIdentifiers : MarkdownSyntaxRewriter
 var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
 var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n\n> ## Introduction\n", options);
 
-// Write the identifier of every heading as its id, so that the links to it keep working when its text changes. The
-// rewriter changes all the headings in one pass, without parsing the document again.
+// The rewriter changes all the headings in one pass, without parsing the document again
 var root = new HeadingIdentifiers().Visit(tree.GetRoot())!;
 
 Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n\n> ## Introduction {#introduction-1}\n", root.ToFullString());
@@ -240,9 +269,22 @@ Assert.Equal("> - Paragraph\n>\n>   ```\n>   code\n>   ```\n> - second\n", updat
 ````
 <!-- endref -->
 
+The markers of the containers are the `>` of a block quote, the `^^` of a footer, and the indentation of the content
+of a list item, of a footnote and of a definition: 4 spaces for a footnote, whatever the length of its label. The edits
+of an indented code block start before its indentation, and inserting blocks after a fenced block that is not closed,
+such as a code block that ends the document, writes its closing fence first, so that the new blocks are not in the code. The
+kind of an alert, such as `[!NOTE]`, stays on its line when its first paragraph is replaced or removed.
+
 The text is inserted as it is: separate the new blocks from the others with a blank line when they would otherwise be
-read as one, such as two paragraphs. Removing the first block of a list item keeps the marker of the item. These methods
-parse the whole text again, as a block can change how the blocks after it are read.
+read as one, such as two paragraphs. Removing a block writes a blank line in place of its lines when the lines around
+them are not blank, so that the blocks around it stay apart: a paragraph before a thematic break would otherwise become
+a setext heading. Removing the first block of a list item keeps the marker of the item, and moves the next block of the
+item to the line of the marker.
+
+Each of these methods parses the whole text again, as a block can change how the blocks after it are read.
+[MarkdownSyntaxTreeEditor](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor) has the same methods, and
+parses the text once for all the changes. Its changes are given with the blocks of the original tree, and cannot
+overlap: changing a block and a block it contains throws.
 
 ## Write Markdown
 
@@ -279,6 +321,23 @@ Assert.Equal(@"a \| b c", MarkdownEscaper.EscapeTableCell("a | b\nc"));
 ````
 <!-- endref -->
 
-The whitespace at the start and at the end of a line of escaped text is not kept, and a blank line starts a new paragraph.
-The line endings of a title are written as entities, as a line could start a block, and the ones of a table cell are spaces.
+The spaces and the tabs at the start and at the end of a line of escaped text are written as entities, such as `&#32;`:
+the parser would strip them, and they would start an indented code block or end the line with a hard line break. An empty
+line still starts a new paragraph. A line of a code span, of a link label or of a link title could start a block, such as
+`# a`, so the line endings of a code span and of a label are written as spaces, which the parser makes of them anyway, and
+the ones of a title as entities. The ones of a table cell are spaces too. A label that starts with `^` is escaped, as it
+would be a footnote, and so is a `{` of the info string of a fenced code block, which would start generic attributes.
+
+[Escape](cref:Meziantou.Framework.Markdown.MarkdownEscaper.Escape(System.String)) only knows CommonMark. When the text is
+parsed with extensions,
+[Escape(string, MarkdownParseOptions)](cref:Meziantou.Framework.Markdown.MarkdownEscaper.Escape(System.String,Meziantou.Framework.Markdown.MarkdownParseOptions))
+also writes as entities the characters where they would start a construct and that a backslash cannot escape: the trigger
+characters of the inline extensions of
+[SyntaxExtensions](cref:Meziantou.Framework.Markdown.MarkdownParseOptions.SyntaxExtensions), such as `§`, the ones of the
+fenced block extensions at the start of a line, and the first character of the shortcodes and of the smileys of the
+[Emoji](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Emoji) extension, such as a smiley made of letters. The
+other extensions start with ASCII punctuation, which is escaped. What the escaper cannot know is not covered: the
+abbreviations, whose definitions are elsewhere in the document and match the words of the text, the paragraph extensions,
+which read the lines of the paragraph, and an inline extension whose trigger character is `&`, which is offered the
+entities.
 

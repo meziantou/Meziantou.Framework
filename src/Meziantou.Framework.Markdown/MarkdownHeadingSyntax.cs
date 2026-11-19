@@ -52,18 +52,27 @@ public sealed class MarkdownHeadingSyntax : MarkdownBlockSyntax
 
     /// <summary>Returns this heading with the level <paramref name="level"/>, or itself when it has this level.</summary>
     /// <remarks>
+    /// <para>
     /// The number of <c>#</c> of an ATX heading changes, and the underline of a setext heading is made of <c>=</c> for the
-    /// level 1 and of <c>-</c> for the level 2. The heading is in no tree: replace this one with it, with
+    /// level 1 and of <c>-</c> for the level 2. A setext heading of level 3 to 6 becomes an ATX heading, which has one line: the
+    /// lines of the heading are joined with spaces, and a hard line break becomes a space.
+    /// </para>
+    /// <para>
+    /// The heading is in no tree: replace this one with it, with
     /// <see cref="SyntaxNodeExtensions.ReplaceNode{TRoot}(TRoot, SyntaxNode, SyntaxNode)"/>.
+    /// </para>
     /// </remarks>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="level"/> is not from 1 to 6, or from 1 to 2 for a setext heading.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="level"/> is not from 1 to 6.</exception>
     public MarkdownHeadingSyntax WithLevel(int level)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(level, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(level, IsSetext ? 2 : 6);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(level, 6);
 
         if (level == Level)
             return this;
+
+        if (IsSetext && level > 2)
+            return MarkdownNodeEditor.ToAtxHeading(this, level);
 
         var children = MarkdownNodeEditor.GetChildren(this);
         if (IsSetext)

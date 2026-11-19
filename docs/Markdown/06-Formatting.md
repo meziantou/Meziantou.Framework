@@ -14,7 +14,8 @@ writes a document in a consistent style, and the formatted document renders as t
 - ATX headings (`# Title`), without closing sequence,
 - fenced code blocks, with a fence longer than the backticks of the code,
 - `---` for the thematic breaks,
-- the cells of the tables padded so that their pipes are aligned.
+- the cells of the tables padded so that their pipes are aligned in a monospace editor: a wide character, such as `漢`
+  or an emoji, uses two columns, and a combining mark or a zero-width space none.
 
 The text of the paragraphs, the headings and the cells, the code and the HTML are kept: the formatter does not change the
 inlines. The lines of a paragraph lose their indentation, unless it is what makes them lines of the paragraph, such as

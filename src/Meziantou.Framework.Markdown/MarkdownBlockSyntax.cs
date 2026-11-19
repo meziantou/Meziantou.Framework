@@ -19,10 +19,49 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
     /// block: the ones at the end of the first line of a heading or of a fenced block, at the end of a paragraph, or on the line
     /// before the block. As in the HTML renderer, the id of the last ones wins, the classes are added, and a property is kept
     /// from the first attributes that have it. The attributes of all the blocks of a document are read once, the first time the
-    /// attributes of one of them are read. Change them with <see cref="WithGenericAttributes(MarkdownGenericAttributes?)"/> or
-    /// <see cref="MarkdownSyntaxTree.WithGenericAttributes(MarkdownBlockSyntax, MarkdownGenericAttributes?)"/>.
+    /// attributes of one of them are read. Change them with <see cref="WithGenericAttributes(MarkdownGenericAttributes?)"/>,
+    /// <see cref="MarkdownSyntaxTree.WithGenericAttributes(MarkdownBlockSyntax, MarkdownGenericAttributes?)"/> or
+    /// <see cref="MarkdownSyntaxTreeEditor.SetGenericAttributes(MarkdownBlockSyntax, MarkdownGenericAttributes?)"/>.
     /// </remarks>
     public MarkdownGenericAttributes GetGenericAttributes() => FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.GetGenericAttributes(this).Attributes ?? MarkdownGenericAttributes.Empty;
+
+    // The attributes of a block, from the {...} that are for it, in the order of the text
+    internal static MarkdownGenericAttributes MergeGenericAttributes(IReadOnlyList<MarkdownGenericAttributesSyntax> found)
+    {
+        string? id = null;
+        List<string>? blockLineClasses = null;
+        var classes = new List<string>();
+        var properties = new List<KeyValuePair<string, string?>>();
+        foreach (var attributes in found)
+        {
+            id = attributes.Id ?? id;
+            if (attributes.IsBlockLine)
+            {
+                blockLineClasses = [.. attributes.Classes];
+            }
+            else
+            {
+                classes.AddRange(attributes.Classes);
+            }
+
+            var existingCount = properties.Count;
+            foreach (var property in attributes.Properties)
+            {
+                if (properties.FindIndex(0, existingCount, existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)) < 0)
+                {
+                    properties.Add(property);
+                }
+            }
+        }
+
+        // The classes of the first line of a block come first, as the renderer writes them
+        if (blockLineClasses is not null)
+        {
+            classes.InsertRange(0, blockLineClasses);
+        }
+
+        return id is null && classes.Count == 0 && properties.Count == 0 ? MarkdownGenericAttributes.Empty : new MarkdownGenericAttributes(id, classes, properties);
+    }
 
     /// <summary>Returns this block with the generic attributes <paramref name="attributes"/>, or itself when it has them.</summary>
     /// <param name="attributes">The attributes of the block, or <see langword="null"/> to remove them.</param>

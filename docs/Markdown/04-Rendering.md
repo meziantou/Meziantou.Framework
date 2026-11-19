@@ -53,6 +53,25 @@ Assert.Equal(4, tree.GetRoot().FindClosestLine(3));
 ```
 <!-- endref -->
 
+The ids that the document sets are the same in every document: the identifiers of the headings, the ids of the
+[generic attributes](05-Extensions/15-GenericAttributes.md), and `fn:N` and `fnref:N` for the
+[footnotes](05-Extensions/14-Footnotes.md). When several documents are rendered on one page, such as the comments of a
+discussion, their ids collide, and the link of a footnote goes to the note of another document.
+[IdPrefix](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.IdPrefix) adds a prefix to these ids and to the
+links that the renderer writes to them, as GitHub adds `user-content-`. The links that the text writes, such as `[a](#b)`,
+and the pragma lines keep their ids:
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownHtmlRendererOptions_IdPrefix;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.AutoIdentifiers | MarkdownExtensions.Footnotes };
+var tree = MarkdownSyntaxTree.ParseText("# Notes\n\nSee[^1].\n\n[^1]: A note.\n", options);
+
+// Several documents rendered on one page, such as comments, have different ids
+var html = MarkdownHtmlRenderer.ToHtml(tree, new MarkdownHtmlRendererOptions { IdPrefix = "comment-1-" });
+Assert.Equal("<h1 id=\"comment-1-notes\">Notes</h1>\n<p>See<a id=\"comment-1-fnref:1\" href=\"#comment-1-fn:1\" class=\"footnote-ref\"><sup>1</sup></a>.</p>\n<div class=\"footnotes\">\n<hr />\n<ol>\n<li id=\"comment-1-fn:1\">\n<p>A note.<a href=\"#comment-1-fnref:1\" class=\"footnote-back-ref\">&#8617;</a></p>\n</li>\n</ol>\n</div>\n", html);
+```
+<!-- endref -->
+
 ## Render plain text
 
 [MarkdownPlainTextRenderer.ToPlainText](cref:Meziantou.Framework.Markdown.MarkdownPlainTextRenderer.ToPlainText(Meziantou.Framework.Markdown.MarkdownSyntaxTree))

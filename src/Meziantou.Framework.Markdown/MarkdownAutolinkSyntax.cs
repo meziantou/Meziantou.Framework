@@ -33,7 +33,8 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
                 return GetFirstChildToken().Text.StartsWith("mailto:", StringComparison.Ordinal);
             }
 
-            return GetFirstChildToken().RawKind != (int)SyntaxKind.ExtendedAutolinkToken;
+            // An xmpp: address is a Jabber identifier, which is its own destination
+            return GetFirstChildToken().RawKind != (int)SyntaxKind.ExtendedAutolinkToken && !Text.StartsWith("xmpp:", StringComparison.Ordinal);
         }
     }
 
@@ -60,7 +61,7 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
         }
     }
 
-    /// <summary>Gets the destination: <c>mailto:</c> before an email address, and <c>http://</c> before a <c>www.</c> address (or <c>https://</c> for <see cref="MarkdownAutolinkOptions.UseHttpsForWwwLinks"/>).</summary>
+    /// <summary>Gets the destination: <c>mailto:</c> before an email address that does not start with it, and <c>http://</c> before a <c>www.</c> address (or <c>https://</c> for <see cref="MarkdownAutolinkOptions.UseHttpsForWwwLinks"/>).</summary>
     public string Destination
     {
         get
@@ -75,7 +76,8 @@ public sealed class MarkdownAutolinkSyntax : MarkdownInlineSyntax
             var text = Text;
             if (IsEmail)
             {
-                return "mailto:" + text;
+                // An extended email autolink can start with its scheme
+                return text.StartsWith("mailto:", StringComparison.Ordinal) ? text : "mailto:" + text;
             }
 
             return IsExtended && text.StartsWith("www.", StringComparison.Ordinal) ? "http://" + text : text;

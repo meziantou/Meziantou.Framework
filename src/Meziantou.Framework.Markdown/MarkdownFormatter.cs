@@ -212,8 +212,15 @@ public static class MarkdownFormatter
         // The inlines of Markdig that depend on the character before or after them, which a pipe or a space can be
         private const MarkdownExtensions ContextSensitiveInlines = MarkdownExtensions.JiraLinks | MarkdownExtensions.MarkdigAutolinks | MarkdownExtensions.SmartyPants | MarkdownExtensions.Emoji;
 
-        public List<string> WriteBlocks(IReadOnlyList<MarkdownBlockSyntax> blocks, BlankLines blankLines)
+        // The results of the parses that check a bullet marker, as the items of a list often have the same content
+        private readonly Dictionary<(string Text, SyntaxKind Kind, bool Shallow), bool> _bulletMarkerChecks = [];
+
+        public List<string> WriteBlocks(IReadOnlyList<MarkdownBlockSyntax> blocks, BlankLines blankLines) => WriteBlocks(blocks, blankLines, out _);
+
+        // The lines of the blocks, and the number of lines of the first block, which start them
+        private List<string> WriteBlocks(IReadOnlyList<MarkdownBlockSyntax> blocks, BlankLines blankLines, out int firstBlockLineCount)
         {
+            firstBlockLineCount = 0;
             var lines = new List<string>();
             char? previousBulletMarker = null;
             var previousStart = 0;
@@ -252,6 +259,11 @@ public static class MarkdownFormatter
                     var start = lines.Count;
                     WriteBlock(lines, block, previous, i + 1 < blocks.Count ? blocks[i + 1] : null, blankLine, previousStart);
                     previousStart = start;
+                }
+
+                if (i == 0)
+                {
+                    firstBlockLineCount = lines.Count;
                 }
             }
 
@@ -321,7 +333,8 @@ public static class MarkdownFormatter
         // block quote before the node
         private static bool HasBlankLineBefore(SyntaxNode node)
         {
-            var quoteDepth = node.Ancestors().Count(ancestor => ancestor is MarkdownBlockQuoteSyntax or MarkdownAlertSyntax);
+            // The ancestors are counted only for a line ending, as most blocks have no line before them
+            var quoteDepth = -1;
             var markers = 0;
             foreach (var trivia in node.GetFirstToken().LeadingTrivia)
             {
@@ -331,10 +344,17 @@ public static class MarkdownFormatter
                         markers++;
                         break;
 
-                    case SyntaxKind.EndOfLineTrivia when markers <= quoteDepth:
-                        return true;
-
                     case SyntaxKind.EndOfLineTrivia:
+                        if (quoteDepth < 0)
+                        {
+                            quoteDepth = node.Ancestors().Count(ancestor => ancestor is MarkdownBlockQuoteSyntax or MarkdownAlertSyntax);
+                        }
+
+                        if (markers <= quoteDepth)
+                        {
+                            return true;
+                        }
+
                         markers = 0;
                         break;
                 }
@@ -689,6 +709,10 @@ public static class MarkdownFormatter
 
         private MarkdownParseOptions WithoutTables => field ??= parseOptions with { Extensions = parseOptions.Extensions & ~(MarkdownExtensions.Tables | MarkdownExtensions.PipeTables) };
 
+        // The options that read the blocks only a few levels deep, enough for the kind of the first block of a list item: it is in
+        // the item and the list, and an alert is a block quote whose first paragraph starts with its kind
+        private MarkdownParseOptions ShallowOptions => field ??= parseOptions with { MaximumNestingDepth = Math.Min(parseOptions.MaximumNestingDepth, 8) };
+
         // The lines of the link reference definitions or of the pipe table whose paragraph the block continues
         private static ContinuedBlock? GetContinuedBlock(List<string> lines, int previousStart, MarkdownBlockSyntax? previous, bool blankLine)
         {
@@ -789,10 +813,11 @@ public static class MarkdownFormatter
         {
             var items = list.Items;
             var contents = new List<string>[items.Count];
+            var firstBlockLineCounts = new int[items.Count];
             var taskMarkers = new string[items.Count];
             for (var i = 0; i < items.Count; i++)
             {
-                contents[i] = WriteBlocks(items[i].Blocks, list.IsTight ? BlankLines.Never : BlankLines.Always);
+                contents[i] = WriteBlocks(items[i].Blocks, list.IsTight ? BlankLines.Never : BlankLines.Always, out firstBlockLineCounts[i]);
                 taskMarkers[i] = items[i].IsTask ? items[i].TaskListItemMarkerToken.Text + " " : "";
             }
 
@@ -800,7 +825,7 @@ public static class MarkdownFormatter
             var keepSpacing = false;
             if (!list.IsOrdered)
             {
-                bulletMarker = ChooseBulletMarker(options.BulletListMarker ?? list.MarkerCharacter, previousBulletMarker, items, contents, taskMarkers, context);
+                bulletMarker = ChooseBulletMarker(options.BulletListMarker ?? list.MarkerCharacter, previousBulletMarker, items, contents, firstBlockLineCounts, taskMarkers, context);
                 if (bulletMarker is null)
                 {
                     // No marker is valid with one space after it, as a tab after the marker is not a space for Markdig
@@ -887,7 +912,7 @@ public static class MarkdownFormatter
             var kind => kind,
         };
 
-        private char? ChooseBulletMarker(char preferred, char? previousBulletMarker, IReadOnlyList<MarkdownListItemSyntax> items, List<string>[] contents, string[] taskMarkers, string? context)
+        private char? ChooseBulletMarker(char preferred, char? previousBulletMarker, IReadOnlyList<MarkdownListItemSyntax> items, List<string>[] contents, int[] firstBlockLineCounts, string[] taskMarkers, string? context)
         {
             foreach (var candidate in (ReadOnlySpan<char>)[preferred, '-', '*', '+'])
             {
@@ -907,8 +932,9 @@ public static class MarkdownFormatter
                         continue;
                     }
 
-                    // The item is parsed with all its lines, as the lines after the first one can change what the first one is,
-                    // such as a line without pipe after a row of a pipe table without delimiter row
+                    // The item is parsed with the lines of its first block and the line after them, as they can change what the first
+                    // line is, such as a line without pipe after a row of a pipe table without delimiter row. The marker changes only
+                    // the first line, so the other blocks are read as they were.
                     var item = new StringBuilder();
                     if (itemContext is not null)
                     {
@@ -916,13 +942,24 @@ public static class MarkdownFormatter
                     }
 
                     item.Append(candidate).Append(' ').Append(taskMarkers[i]).Append(firstLine);
-                    for (var j = 1; j < contents[i].Count; j++)
+                    var lineCount = Math.Min(contents[i].Count, firstBlockLineCounts[i] + 1);
+                    for (var j = 1; j < lineCount; j++)
                     {
                         item.Append("\n  ").Append(contents[i][j]);
                     }
 
-                    valid = MarkdownSyntaxTree.ParseText(item.ToString(), parseOptions).GetRoot().Blocks is [.., MarkdownListSyntax { Items: [var parsedItem, ..] }]
-                        && GetFirstBlockKind(parsedItem) == GetFirstBlockKind(items[i]);
+                    // The marker of a list or of a block quote that starts the item makes it what it is, whatever the blocks it
+                    // contains: they are read as text of a paragraph past a few levels, so that the items of nested lists do not
+                    // parse their whole content again at each level
+                    var kind = GetFirstBlockKind(items[i]);
+                    var shallow = itemContext is null && items[i].Blocks is [MarkdownListSyntax or MarkdownBlockQuoteSyntax, ..];
+                    var key = (item.ToString(), kind, shallow);
+                    if (!_bulletMarkerChecks.TryGetValue(key, out valid))
+                    {
+                        valid = MarkdownSyntaxTree.ParseText(key.Item1, shallow ? ShallowOptions : parseOptions).GetRoot().Blocks is [.., MarkdownListSyntax { Items: [var parsedItem, ..] }]
+                            && GetFirstBlockKind(parsedItem) == kind;
+                        _bulletMarkerChecks.Add(key, valid);
+                    }
                 }
 
                 if (valid)
@@ -1093,7 +1130,7 @@ public static class MarkdownFormatter
                         widths.Add(3);
                     }
 
-                    widths[i] = Math.Max(widths[i], cells[i]?.Length ?? 0);
+                    widths[i] = Math.Max(widths[i], cells[i] is null ? 0 : GetDisplayWidth(cells[i]));
                 }
             }
 
@@ -1118,11 +1155,53 @@ public static class MarkdownFormatter
                 builder.Append('|');
                 for (var i = 0; i < cells.Length; i++)
                 {
-                    builder.Append(' ').Append(cells[i]).Append(' ', widths[i] - cells[i].Length).Append(" |");
+                    builder.Append(' ').Append(cells[i]).Append(' ', widths[i] - GetDisplayWidth(cells[i])).Append(" |");
                 }
 
                 lines.Add(builder.ToString());
             }
+        }
+
+        // The number of columns of a monospace editor that the text uses, so that the pipes of the rows of a table are aligned
+        private static int GetDisplayWidth(string text)
+        {
+            var width = 0;
+            var remaining = text.AsSpan();
+            while (!remaining.IsEmpty)
+            {
+                if (char.IsAscii(remaining[0]) && (remaining.Length == 1 || char.IsAscii(remaining[1])))
+                {
+                    width++;
+                    remaining = remaining[1..];
+                    continue;
+                }
+
+                var length = Unicode.GetGraphemeClusterLength(remaining);
+                width += GetGraphemeClusterWidth(remaining[..length]);
+                remaining = remaining[length..];
+            }
+
+            return width;
+        }
+
+        // A wide or fullwidth character, such as 漢 or 😀, uses 2 columns, and so does an emoji written with U+FE0F or a flag. A
+        // combining mark, or a character that is not displayed, such as a zero-width space, uses none.
+        private static int GetGraphemeClusterWidth(ReadOnlySpan<char> cluster)
+        {
+            var codePoint = char.IsSurrogatePair(cluster[0], cluster.Length > 1 ? cluster[1] : '\0') ? char.ConvertToUtf32(cluster[0], cluster[1]) : cluster[0];
+            if (UnicodeProperties.IsDefaultIgnorable(codePoint) || UnicodeProperties.GetGeneralCategory(codePoint) is System.Globalization.UnicodeCategory.NonSpacingMark or System.Globalization.UnicodeCategory.EnclosingMark)
+            {
+                return 0;
+            }
+
+            if (UnicodeProperties.GetEastAsianWidth(codePoint) is UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Fullwidth
+                || UnicodeProperties.GetGraphemeClusterBreak(codePoint) == UnicodeGraphemeClusterBreak.RegionalIndicator
+                || (cluster.Contains('\uFE0F') && UnicodeEmoji.IsEmoji(codePoint)))
+            {
+                return 2;
+            }
+
+            return 1;
         }
 
         // The lines of the tokens, without the markers of their containers and the indentation, which the writer adds again

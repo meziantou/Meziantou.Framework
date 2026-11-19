@@ -1,4 +1,3 @@
-using System.Text;
 using Meziantou.Framework.Markdown.Parsing;
 
 namespace Meziantou.Framework.Markdown;
@@ -35,11 +34,33 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     // For the content of a cell, the blocks it is in, in this tree and the trees around it
     internal int CellDepth => _cell?.Depth ?? 0;
 
+    // The normalized labels of the link reference definitions and of the footnotes that the cells of the grid tables of the tree
+    // use: the ones of the tree and of the trees around it. They are read once for all the cells of the tree.
+    private CellLabels? _cellLabels;
+
+    private sealed record CellLabels(string[] References, string[] Footnotes);
+
+    private CellLabels GetCellLabels()
+    {
+        if (_cellLabels is { } labels)
+        {
+            return labels;
+        }
+
+        var outer = Container?.GetCellLabels();
+        var root = GetRoot();
+        string[] references = [.. root.LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)), .. outer?.References ?? []];
+        string[] footnotes = Options.Extensions.HasFlag(MarkdownExtensions.Footnotes) ? [.. root.Blocks.OfType<MarkdownFootnoteDefinitionSyntax>().Select(definition => Scanners.NormalizeLabel(definition.Label)), .. outer?.Footnotes ?? []] : [];
+        labels = new CellLabels(references, footnotes);
+        _cellLabels = labels;
+        return labels;
+    }
+
     internal static MarkdownSyntaxTree ParseCell(string text, MarkdownSyntaxTree? container, bool isClosed, int depth)
     {
         var options = container?.Options ?? MarkdownParseOptions.Default;
-        string[] labels = [.. container?.GetRoot().LinkReferenceDefinitions.Select(definition => Scanners.NormalizeLabel(definition.Label)) ?? []];
-        var cell = new CellContext(labels, KeepsGridTable: !isClosed, depth);
+        var labels = container?.GetCellLabels();
+        var cell = new CellContext(labels?.References ?? [], labels?.Footnotes ?? [], KeepsGridTable: !isClosed, depth);
         var green = MarkdownParser.Parse(text, options, cell);
         return new MarkdownSyntaxTree(SourceText.From(text), options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), container?.FilePath, container, cell);
     }
@@ -104,38 +125,16 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// <returns>A tree parsed from the new text.</returns>
     /// <remarks>
     /// The text is inserted as it is: separate it from the block with a blank line when the two would otherwise be read as
-    /// one, such as two paragraphs. In a list, a blank line makes the list loose.
+    /// one, such as two paragraphs. In a list, a blank line makes the list loose. To change several blocks, use a
+    /// <see cref="MarkdownSyntaxTreeEditor"/>, which parses the text once.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> or <paramref name="markdown"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="block"/> is not a block of this tree.</exception>
     public MarkdownSyntaxTree InsertBlocksBefore(MarkdownBlockSyntax block, string markdown)
     {
-        ArgumentNullException.ThrowIfNull(block);
-        ArgumentNullException.ThrowIfNull(markdown);
-        EnsureBlockOfThisTree(block);
-
-        // The first line goes where the block starts, after the markers of its line, and the block moves to a line of its own
-        var text = _text.Text;
-        var prefix = GetContinuationPrefix(text, block.SpanStart);
-        var newLine = GetNewLine(text);
-        var lines = SplitLines(markdown);
-        var inserted = new StringBuilder();
-        for (var i = 0; i < lines.Length; i++)
-        {
-            if (i > 0)
-            {
-                AppendPrefixed(inserted, prefix, lines[i]);
-            }
-            else
-            {
-                inserted.Append(lines[i]);
-            }
-
-            inserted.Append(newLine);
-        }
-
-        inserted.Append(prefix);
-        return WithText(text.Insert(block.SpanStart, inserted.ToString()));
+        var editor = new MarkdownSyntaxTreeEditor(this);
+        editor.InsertBlocksBefore(block, markdown);
+        return editor.GetChangedTree();
     }
 
     /// <summary>Inserts blocks after <paramref name="block"/>, in its container.</summary>
@@ -144,61 +143,38 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// <returns>A tree parsed from the new text.</returns>
     /// <remarks>
     /// The lines are inserted after the last line of the block. Separate the text from the block with a blank line when
-    /// the two would otherwise be read as one, such as two paragraphs: a line of text after a paragraph continues it.
+    /// the two would otherwise be read as one, such as two paragraphs: a line of text after a paragraph continues it. A fenced
+    /// block that the end of its container closes, such as a code block without its closing fence, gets a closing fence first.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> or <paramref name="markdown"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="block"/> is not a block of this tree.</exception>
     public MarkdownSyntaxTree InsertBlocksAfter(MarkdownBlockSyntax block, string markdown)
     {
-        ArgumentNullException.ThrowIfNull(block);
-        ArgumentNullException.ThrowIfNull(markdown);
-        EnsureBlockOfThisTree(block);
-
-        var text = _text.Text;
-        var prefix = GetContinuationPrefix(text, block.SpanStart);
-        var newLine = GetNewLine(text);
-        var (lineEnd, nextLine) = GetEndOfLastLine(text, block);
-        var inserted = new StringBuilder();
-        if (nextLine == lineEnd)
-        {
-            // The block ends the text without a line ending
-            inserted.Append(newLine);
-        }
-
-        foreach (var line in SplitLines(markdown))
-        {
-            AppendPrefixed(inserted, prefix, line);
-            inserted.Append(newLine);
-        }
-
-        if (nextLine == lineEnd)
-        {
-            inserted.Length -= newLine.Length;
-        }
-
-        return WithText(text.Insert(nextLine, inserted.ToString()));
+        var editor = new MarkdownSyntaxTreeEditor(this);
+        editor.InsertBlocksAfter(block, markdown);
+        return editor.GetChangedTree();
     }
 
     /// <summary>Removes <paramref name="block"/> and its lines.</summary>
     /// <returns>A tree parsed from the new text.</returns>
     /// <remarks>
-    /// The lines of the block are removed, with the markers of the containers on them. When the block starts on the line
-    /// of the marker of its list item, the marker stays: removing the only block of an item leaves the item empty.
+    /// <para>
+    /// The lines of the block are removed, with the markers of the containers on them. A blank line, with the markers of the
+    /// containers, replaces them when the lines around them are not blank, so that the blocks around the removed one are not read as
+    /// one, such as two paragraphs, or a paragraph and a thematic break that would make it a setext heading.
+    /// </para>
+    /// <para>
+    /// When the block starts on the line of the marker of its list item, the marker stays, and the next block of the item moves to
+    /// this line: removing the only block of an item leaves the item empty.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="block"/> is not a block of this tree.</exception>
     public MarkdownSyntaxTree RemoveBlock(MarkdownBlockSyntax block)
     {
-        ArgumentNullException.ThrowIfNull(block);
-        EnsureBlockOfThisTree(block);
-
-        var text = _text.Text;
-        var lineStart = GetLineStart(text, block.SpanStart);
-        var (lineEnd, nextLine) = GetEndOfLastLine(text, block);
-        var hasListMarker = text.AsSpan(lineStart, block.SpanStart - lineStart).ContainsAnyExcept(" \t>");
-        return hasListMarker
-            ? WithText(text.Remove(block.SpanStart, lineEnd - block.SpanStart))
-            : WithText(text.Remove(lineStart, nextLine - lineStart));
+        var editor = new MarkdownSyntaxTreeEditor(this);
+        editor.RemoveBlock(block);
+        return editor.GetChangedTree();
     }
 
     /// <summary>Replaces <paramref name="block"/> with other blocks, in its container.</summary>
@@ -207,37 +183,17 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// <returns>A tree parsed from the new text.</returns>
     /// <remarks>
     /// The text replaces the lines of the block, from where it starts, after the markers of its line, to the end of its last
-    /// line. The line ending after the block stays, and a line ending at the end of <paramref name="markdown"/> is ignored. Separate
-    /// the text from the blocks around it with a blank line when they would otherwise be read as one, such as two paragraphs.
+    /// line: the indentation of an indented code block is replaced too. The line ending after the block stays, and a line ending at
+    /// the end of <paramref name="markdown"/> is ignored. Separate the text from the blocks around it with a blank line when they
+    /// would otherwise be read as one, such as two paragraphs.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> or <paramref name="markdown"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="block"/> is not a block of this tree.</exception>
     public MarkdownSyntaxTree ReplaceBlock(MarkdownBlockSyntax block, string markdown)
     {
-        ArgumentNullException.ThrowIfNull(block);
-        ArgumentNullException.ThrowIfNull(markdown);
-        EnsureBlockOfThisTree(block);
-
-        var text = _text.Text;
-        var prefix = GetContinuationPrefix(text, block.SpanStart);
-        var newLine = GetNewLine(text);
-        var (lineEnd, _) = GetEndOfLastLine(text, block);
-        var lines = SplitLines(markdown);
-        var replacement = new StringBuilder();
-        for (var i = 0; i < lines.Length; i++)
-        {
-            if (i > 0)
-            {
-                replacement.Append(newLine);
-                AppendPrefixed(replacement, prefix, lines[i]);
-            }
-            else
-            {
-                replacement.Append(lines[i]);
-            }
-        }
-
-        return WithText(string.Concat(text.AsSpan(0, block.SpanStart), replacement.ToString(), text.AsSpan(lineEnd)));
+        var editor = new MarkdownSyntaxTreeEditor(this);
+        editor.ReplaceBlock(block, markdown);
+        return editor.GetChangedTree();
     }
 
     /// <summary>Replaces the generic attributes of <paramref name="block"/>.</summary>
@@ -253,9 +209,11 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// heading.
     /// </para>
     /// <para>
-    /// The text is parsed again, and checked to give the attributes to the block and to keep its text. To change the attributes of
-    /// many blocks, such as every heading, <see cref="MarkdownBlockSyntax.WithGenericAttributes(MarkdownGenericAttributes?)"/>
-    /// changes a block without parsing the document again, for the blocks whose attributes are written in them.
+    /// The text is parsed again, and checked to give the attributes to the block and to keep its text. To change the attributes
+    /// of several blocks, use <see cref="MarkdownSyntaxTreeEditor.SetGenericAttributes(MarkdownBlockSyntax, MarkdownGenericAttributes?)"/>,
+    /// which parses the text once, or, in a <see cref="MarkdownSyntaxRewriter"/>,
+    /// <see cref="MarkdownBlockSyntax.WithGenericAttributes(MarkdownGenericAttributes?)"/>, which changes a block whose attributes are
+    /// written in it without parsing the document again.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> is <see langword="null"/>.</exception>
@@ -269,306 +227,23 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// </exception>
     public MarkdownSyntaxTree WithGenericAttributes(MarkdownBlockSyntax block, MarkdownGenericAttributes? attributes)
     {
-        ArgumentNullException.ThrowIfNull(block);
-        EnsureBlockOfThisTree(block);
-        if (!Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes))
-            throw new InvalidOperationException("The tree is parsed without generic attributes.");
-
-        attributes ??= MarkdownGenericAttributes.Empty;
-        var markdown = attributes.IsEmpty ? null : attributes.ToMarkdown(nameof(attributes));
-        if (block.GetGenericAttributes().Equals(attributes))
-            return this;
-
-        // The text of the block, which the attributes are not part of, does not change, but the whitespace around them can, such as
-        // the line ending that attributes in a paragraph end with
-        var plainText = CollapseWhitespace(block.GetPlainText());
-        var text = _text.Text;
-        var removals = GetAttributesRemovals(text, block);
-        foreach (var insertion in GetAttributesInsertions(text, block, markdown))
-        {
-            var changes = new List<(int Start, int End, string Text)>(removals);
-            if (insertion is { } change)
-            {
-                changes.Add(change);
-            }
-
-            // The changes are applied together: they cannot overlap
-            changes.Sort((left, right) => left.Start != right.Start ? left.Start.CompareTo(right.Start) : left.End.CompareTo(right.End));
-            if (changes.Zip(changes.Skip(1)).Any(pair => pair.Second.Start < pair.First.End))
-            {
-                continue;
-            }
-
-            // The block starts after the changes before it, an insertion where it starts included
-            var blockStart = block.SpanStart;
-            var updatedText = new StringBuilder(text);
-            foreach (var (start, end, replacement) in changes.OrderByDescending(change => change.Start).ThenByDescending(change => change.End))
-            {
-                updatedText.Remove(start, end - start).Insert(start, replacement);
-                if (end <= block.SpanStart)
-                {
-                    blockStart += replacement.Length - (end - start);
-                }
-            }
-
-            var updated = WithText(updatedText.ToString());
-            if (updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().FirstOrDefault(node => node.SpanStart == blockStart && node.RawKind == block.RawKind) is { } updatedBlock && updatedBlock.GetGenericAttributes().Equals(attributes) && CollapseWhitespace(updatedBlock.GetPlainText()) == plainText)
-                return updated;
-        }
-
-        throw new InvalidOperationException($"The {block.Kind()} cannot have these generic attributes: the text written for them is not read as attributes of the block.");
-    }
-
-    // The ranges of the attributes for the block: an attributes paragraph with its lines, and other attributes with the whitespace
-    // before them on their line, or after them when they start the line
-    private List<(int Start, int End, string Text)> GetAttributesRemovals(string text, MarkdownBlockSyntax block)
-    {
-        var removals = new List<(int Start, int End, string Text)>();
-        if (!_root.HasGenericAttributes)
-            return removals;
-
-        var found = new HashSet<MarkdownGenericAttributesSyntax>();
-        _ = MarkdownGenericAttributesSyntax.FindTargets(_root, (attributes, target) =>
-        {
-            if (target != block || !found.Add(attributes))
-            {
-                return;
-            }
-
-            // The lines of a paragraph of attributes are removed, unless it is the block
-            if (attributes.Parent is MarkdownParagraphSyntax paragraph && paragraph != block && paragraph.ChildNodesAndTokens().Count == 1)
-            {
-                var lineStart = GetLineStart(text, paragraph.SpanStart);
-                var (lineEnd, nextLine) = GetEndOfLastLine(text, paragraph);
-                var hasListMarker = text.AsSpan(lineStart, paragraph.SpanStart - lineStart).ContainsAnyExcept(" \t>");
-                removals.Add(hasListMarker ? (paragraph.SpanStart, lineEnd, "") : (lineStart, nextLine, ""));
-                return;
-            }
-
-            // The attributes end with the line ending after them, which separates the text of the lines around them
-            var start = attributes.SpanStart;
-            var end = attributes.Span.End;
-            if (end > start && text[end - 1] == '\n')
-            {
-                end--;
-            }
-
-            if (end > start && text[end - 1] == '\r')
-            {
-                end--;
-            }
-
-            while (start > 0 && text[start - 1] is ' ' or '\t')
-            {
-                start--;
-            }
-
-            if (start == 0 || text[start - 1] is '\r' or '\n')
-            {
-                start = attributes.SpanStart;
-                while (end < text.Length && text[end] is ' ' or '\t')
-                {
-                    end++;
-                }
-            }
-
-            removals.Add((start, end, ""));
-        });
-
-        return removals;
-    }
-
-    // Where the attributes can be written, in the order they are tried: none when there are no attributes
-    private static IEnumerable<(int Start, int End, string Text)?> GetAttributesInsertions(string text, MarkdownBlockSyntax block, string? markdown)
-    {
-        if (markdown is null)
-        {
-            yield return null;
-            yield break;
-        }
-
-        // At the end of a line of the block
-        int? lineEnd = block switch
-        {
-            MarkdownHeadingSyntax { IsSetext: true } heading => GetEndOfPreviousLine(text, GetLineStart(text, heading.UnderlineToken.SpanStart)),
-            MarkdownHeadingSyntax or MarkdownCodeBlockSyntax { IsFenced: true } or MarkdownMathBlockSyntax or MarkdownCustomContainerSyntax => GetEndOfLine(text, block.SpanStart),
-            MarkdownParagraphSyntax paragraph => GetEndOfLastLine(text, paragraph).LineEnd,
-            _ => null,
-        };
-
-        if (lineEnd is { } position)
-        {
-            yield return (position, position, " " + markdown);
-        }
-
-        // On a line before the block, with the markers of its containers, and a blank line before it or after it when it is needed
-        // An indented code block starts after its indentation, which the line of the attributes does not have
-        var lineStart = GetLineStart(text, block.SpanStart);
-        var start = block.SpanStart;
-        if (block is MarkdownCodeBlockSyntax { IsFenced: false })
-        {
-            var columns = 0;
-            while (start > lineStart && columns < 4 && text[start - 1] is ' ' or '\t')
-            {
-                columns = text[start - 1] == '\t' ? 4 : columns + 1;
-                start--;
-            }
-        }
-
-        var prefix = GetContinuationPrefix(text, start);
-        var blank = prefix.TrimEnd();
-        var newLine = GetNewLine(text);
-        yield return (start, start, markdown + newLine + prefix);
-        yield return (start, start, markdown + newLine + blank + newLine + prefix);
-
-        // The blank line before is written with the markers of the line without trailing whitespace, unless the line has the marker of
-        // a list item, which stays on it
-        var hasListMarker = text.AsSpan(lineStart, start - lineStart).ContainsAnyExcept(" \t>");
-        foreach (var after in (string[])[prefix, blank + newLine + prefix])
-        {
-            yield return hasListMarker
-                ? (start, start, newLine + prefix + markdown + newLine + after)
-                : (lineStart, start, blank + newLine + prefix + markdown + newLine + after);
-        }
-    }
-
-    private static string CollapseWhitespace(string text)
-    {
-        var builder = new StringBuilder(text.Length);
-        foreach (var c in text)
-        {
-            if (!char.IsWhiteSpace(c))
-            {
-                builder.Append(c);
-            }
-            else if (builder.Length > 0 && builder[^1] != ' ')
-            {
-                builder.Append(' ');
-            }
-        }
-
-        return builder.ToString().TrimEnd();
-    }
-
-    private static int GetEndOfLine(string text, int position)
-    {
-        while (position < text.Length && text[position] is not ('\r' or '\n'))
-        {
-            position++;
-        }
-
-        return position;
-    }
-
-    // Where the line before the line at lineStart ends, before its line ending
-    private static int GetEndOfPreviousLine(string text, int lineStart)
-    {
-        var position = lineStart - 1;
-        if (position > 0 && text[position] == '\n' && text[position - 1] == '\r')
-        {
-            position--;
-        }
-
-        return position;
+        var editor = new MarkdownSyntaxTreeEditor(this);
+        editor.SetGenericAttributes(block, attributes);
+        return editor.GetChangedTree();
     }
 
     protected override SyntaxNode GetRootCore() => _root;
 
-    private MarkdownSyntaxTree WithText(string text) => Reparse(SourceText.From(text));
-
-    private void EnsureBlockOfThisTree(MarkdownBlockSyntax block)
-    {
-        if (block.SyntaxTree != this)
-        {
-            throw new ArgumentException("The block is not a block of this tree.", nameof(block));
-        }
-    }
-
-    private static int GetLineStart(string text, int position)
-    {
-        while (position > 0 && text[position - 1] is not ('\r' or '\n'))
-        {
-            position--;
-        }
-
-        return position;
-    }
-
-    // The markers of the containers before the block on its line, as they continue on the next lines: a list marker becomes
-    // the spaces of the indentation of its item, and the > of a block quote stays
-    private static string GetContinuationPrefix(string text, int blockStart)
-    {
-        var lineStart = GetLineStart(text, blockStart);
-        var prefix = text.ToCharArray(lineStart, blockStart - lineStart);
-        for (var i = 0; i < prefix.Length; i++)
-        {
-            if (prefix[i] is not (' ' or '\t' or '>'))
-            {
-                prefix[i] = ' ';
-            }
-        }
-
-        return new string(prefix);
-    }
-
-    // Where the last line of the block ends, before its line ending, and where the next line starts
-    private static (int LineEnd, int NextLine) GetEndOfLastLine(string text, MarkdownBlockSyntax block)
-    {
-        // The last token of a code block is a line with its line ending
-        var end = block.Span.End;
-        if (end > block.SpanStart && text[end - 1] is '\r' or '\n')
-        {
-            var lineEnd = end - 1;
-            if (text[lineEnd] == '\n' && lineEnd > 0 && text[lineEnd - 1] == '\r')
-            {
-                lineEnd--;
-            }
-
-            return (lineEnd, end);
-        }
-
-        while (end < text.Length && text[end] is not ('\r' or '\n'))
-        {
-            end++;
-        }
-
-        var next = end;
-        if (next < text.Length)
-        {
-            next += text[next] == '\r' && next + 1 < text.Length && text[next + 1] == '\n' ? 2 : 1;
-        }
-
-        return (end, next);
-    }
-
-    private static string GetNewLine(string text)
-    {
-        var index = text.AsSpan().IndexOfAny('\r', '\n');
-        if (index < 0 || text[index] == '\n')
-        {
-            return "\n";
-        }
-
-        return index + 1 < text.Length && text[index + 1] == '\n' ? "\r\n" : "\r";
-    }
-
-    private static string[] SplitLines(string markdown)
-    {
-        var lines = markdown.ReplaceLineEndings("\n").Split('\n');
-        return lines.Length > 1 && lines[^1].Length == 0 ? lines[..^1] : lines;
-    }
-
-    // A blank line gets the markers without the spaces after them, so that it has no trailing whitespace
-    private static void AppendPrefixed(StringBuilder builder, string prefix, string line) => builder.Append(line.Length == 0 ? prefix.TrimEnd() : prefix).Append(line);
-
     protected override SyntaxTree WithChangedTextCore(SourceText newText) => Reparse(newText);
 
-    // A document that belongs to another tree gets a new red node, so that its nodes know the tree they are in; a root that
-    // is not a document, such as a paragraph, is parsed as one
-    protected override SyntaxTree WithRootCore(SyntaxNode root) => root switch
+    // The text of the root is parsed again: a node that was replaced, such as a token of a rewriter or the copy that a With method
+    // returns, can change how the text around it is read, such as a blank line removed between two paragraphs. The root of this tree
+    // is kept, as it was parsed from its text.
+    protected override SyntaxTree WithRootCore(SyntaxNode root)
     {
-        MarkdownDocumentSyntax { SyntaxTree: null } document => new MarkdownSyntaxTree(SourceText.From(root.ToFullString()), Options, document, FilePath, Container, _cell),
-        MarkdownDocumentSyntax document => new MarkdownSyntaxTree(SourceText.From(root.ToFullString()), Options, (MarkdownDocumentSyntax)document.Green.CreateRed(parent: null, position: 0), FilePath, Container, _cell),
-        _ => Reparse(SourceText.From(root.ToFullString())),
-    };
+        if (root == _root)
+            return this;
+
+        return Reparse(SourceText.From(root.ToFullString()));
+    }
 }

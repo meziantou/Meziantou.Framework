@@ -24,7 +24,8 @@ Assert.Equal("<p>See <a href=\"#getting-started-1\">Getting started</a>.</p>", M
 
 - [MarkdownHeadingSyntax.Identifier](cref:Meziantou.Framework.Markdown.MarkdownHeadingSyntax.Identifier) gives the
   identifier, unless the [generic attributes](15-GenericAttributes.md) of the heading give one.
-- Headings with the same text get a suffix: `-1`, `-2`...
+- Headings with the same text get a suffix: `-1`, `-2`... An identifier is also unique with the ids of the generic
+  attributes, and with the identifiers of the headings of the cells of [grid tables](08-GridTables.md).
 - A reference link without definition whose label is the first line of a heading, such as `[Getting started]`, links to
   it: [MarkdownLinkSyntax.Heading](cref:Meziantou.Framework.Markdown.MarkdownLinkSyntax.Heading) gives the heading.
 
@@ -33,3 +34,8 @@ Assert.Equal("<p>See <a href=\"#getting-started-1\">Getting started</a>.</p>", M
 [AutoIdentifierOptions](cref:Meziantou.Framework.Markdown.MarkdownParseOptions.AutoIdentifierOptions) chooses whether
 these links are made, whether the identifier only has ASCII characters (`Ærø` becomes `aeroe`), and whether it is made
 as GitHub makes it.
+
+[GitHub](cref:Meziantou.Framework.Markdown.MarkdownAutoIdentifierOptions.GitHub) keeps the characters that GitHub keeps,
+so that the anchors copied from GitHub resolve: the letters, the combining marks, the decimal digits, the connector
+punctuation such as `_`, and `-`, in lower case, and each space becomes `-`. `# हिन्दी भाषा` has the identifier
+`हिन्दी-भाषा`, with its vowel signs, and the letters outside the Basic Multilingual Plane are kept.

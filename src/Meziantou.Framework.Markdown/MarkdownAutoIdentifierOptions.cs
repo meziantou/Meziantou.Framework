@@ -13,7 +13,7 @@ public enum MarkdownAutoIdentifierOptions
     /// <summary>The identifier only has ASCII characters: the accents are removed, and the other letters are written in ASCII when they can be (<c>ß</c> becomes <c>ss</c>) or removed.</summary>
     AllowOnlyAscii = 2,
 
-    /// <summary>The identifier is made as GitHub makes it: the letters, the digits, <c>-</c> and <c>_</c> are kept, in lower case, and each space becomes <c>-</c>.</summary>
+    /// <summary>The identifier is made as GitHub makes it: the letters, the combining marks, the digits, <c>-</c> and <c>_</c> are kept, in lower case, and each space becomes <c>-</c>.</summary>
     GitHub = 4,
 
     /// <summary>The default options: <see cref="AutoLink"/> and <see cref="AllowOnlyAscii"/>.</summary>

@@ -2,6 +2,7 @@
 // Target Frameworks: net10.0, net11.0
 // Assembly References:
 //   Meziantou.Framework.Language
+//   Meziantou.Framework.Unicode
 #nullable enable
 
 namespace Meziantou.Framework.Markdown
@@ -225,6 +226,7 @@ namespace Meziantou.Framework.Markdown
         public static string CreateCodeSpan(string content) => throw null;
         public static string CreateFencedCodeBlock(string code, string? infoString = null) => throw null;
         public static string Escape(string text) => throw null;
+        public static string Escape(string text, Meziantou.Framework.Markdown.MarkdownParseOptions options) => throw null;
         public static string EscapeLinkDestination(string url) => throw null;
         public static string EscapeLinkLabel(string label) => throw null;
         public static string EscapeLinkTitle(string title) => throw null;
@@ -442,6 +444,8 @@ namespace Meziantou.Framework.Markdown
         public Meziantou.Framework.Markdown.MarkdownSyntaxTree Content { get => throw null; }
         public int RowSpan { get => throw null; }
         public string Text { get => throw null; }
+        public int MapPosition(int position) => throw null;
+        public Meziantou.Framework.Language.TextSpan MapSpan(Meziantou.Framework.Language.TextSpan span) => throw null;
     }
 
     public sealed class MarkdownGridTableColumn
@@ -502,10 +506,12 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownHtmlRendererOptions : System.IEquatable<Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions>
     {
+        public System.Collections.Generic.IReadOnlyCollection<string>? AllowedUrlSchemes { get => throw null; init { } }
         public System.Func<string, bool> AttributeFilter { get => throw null; init { } }
         public System.Uri? BaseUrl { get => throw null; init { } }
         public static Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions Default { get => throw null; }
         public bool EscapeNonAsciiUrlCharacters { get => throw null; init { } }
+        public string? IdPrefix { get => throw null; init { } }
         public string? LinkRel { get => throw null; init { } }
         public System.Func<string, string>? LinkRewriter { get => throw null; init { } }
         public Meziantou.Framework.Markdown.MarkdownMediaLinkOptions MediaLinks { get => throw null; init { } }
@@ -842,6 +848,18 @@ namespace Meziantou.Framework.Markdown
         protected override Meziantou.Framework.Language.SyntaxTree WithRootCore(Meziantou.Framework.Language.SyntaxNode root) => throw null;
     }
 
+    public sealed class MarkdownSyntaxTreeEditor
+    {
+        public Meziantou.Framework.Markdown.MarkdownSyntaxTree OriginalTree { get => throw null; }
+        public MarkdownSyntaxTreeEditor(Meziantou.Framework.Markdown.MarkdownSyntaxTree tree) { }
+        public Meziantou.Framework.Markdown.MarkdownSyntaxTree GetChangedTree() => throw null;
+        public void InsertBlocksAfter(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, string markdown) { }
+        public void InsertBlocksBefore(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, string markdown) { }
+        public void RemoveBlock(Meziantou.Framework.Markdown.MarkdownBlockSyntax block) { }
+        public void ReplaceBlock(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, string markdown) { }
+        public void SetGenericAttributes(Meziantou.Framework.Markdown.MarkdownBlockSyntax block, Meziantou.Framework.Markdown.MarkdownGenericAttributes? attributes) { }
+    }
+
     public abstract class MarkdownSyntaxVisitor
     {
         public virtual void DefaultVisit(Meziantou.Framework.Markdown.MarkdownSyntaxNode node) { }
@@ -937,7 +955,9 @@ namespace Meziantou.Framework.Markdown
     public class MarkdownSyntaxWalker : Meziantou.Framework.Markdown.MarkdownSyntaxVisitor
     {
         protected Meziantou.Framework.Language.SyntaxWalkerDepth Depth { get => throw null; }
+        protected bool VisitsGridTableCells { get => throw null; }
         public MarkdownSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth = Meziantou.Framework.Language.SyntaxWalkerDepth.Node) { }
+        public MarkdownSyntaxWalker(Meziantou.Framework.Language.SyntaxWalkerDepth depth, bool visitGridTableCells) { }
         public override void DefaultVisit(Meziantou.Framework.Markdown.MarkdownSyntaxNode node) { }
         public virtual void VisitToken(Meziantou.Framework.Language.SyntaxToken token) { }
         public virtual void VisitTrivia(Meziantou.Framework.Language.SyntaxTrivia trivia) { }

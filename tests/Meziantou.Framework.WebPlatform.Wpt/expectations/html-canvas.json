@@ -1617,7 +1617,7 @@
     "reftest": "FAIL"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.canvasFilterObject.tentative.html": {
     "total": 1
@@ -1659,7 +1659,7 @@
     "reftest": "FAIL"
   },
   "html/canvas/element/filters/2d.filter.layers.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/filters/2d.filter.layers.turbulence.inputTypes.tentative.html": {
     "total": 1
@@ -1677,19 +1677,19 @@
     "total": 5
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.isotropic.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.mostly-x.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.mostly-y.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.x-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.anisotropic-blur.y-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.beginLayer-options.tentative.html": {
     "total": 1
@@ -1734,13 +1734,13 @@
     "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.css-filters.blur-and-shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.css-filters.blur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.css-filters.shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/layers/2d.layer.ctm.ctx-filter.html": {
     "reftest": "PASS"
@@ -2079,7 +2079,7 @@
     "total": 1
   },
   "html/canvas/element/manual/draw-element-image/backdrop-filter-nested.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/backdrop-filter-rounded-bounds.tentative.html": {
     "reftest": "PASS"
@@ -2094,7 +2094,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/canvas-content-drawable-stacking-context.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/canvas-in-custom-element-multiple.tentative.html": {
     "reftest": "PASS"
@@ -2178,7 +2178,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-blend-mode.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-blur-filter-on-div.tentative.html": {
     "reftest": "PASS"
@@ -2217,7 +2217,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-nested-canvas.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-none-tall.tentative.html": {
     "reftest": "PASS"
@@ -2229,7 +2229,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/css-transform-on-div.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/date-input-slot-assignment-crash.tentative.html": {
     "crashtest": "PASS"
@@ -2241,10 +2241,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/display-contents.tentative.html": {
-    "total": 2,
-    "failures": {
-      "Dynamic display changes between flex and contents update child styles and draw correctly": "FAIL"
-    }
+    "total": 2
   },
   "html/canvas/element/manual/draw-element-image/draw-element-different-canvas.tentative.html": {
     "total": 1
@@ -2349,10 +2346,7 @@
     "total": 7
   },
   "html/canvas/element/manual/draw-element-image/hit-test/low-dpi-hit-test.tentative.html": {
-    "total": 3,
-    "failures": {
-      "single target miss": "FAIL"
-    }
+    "total": 3
   },
   "html/canvas/element/manual/draw-element-image/hit-test/selection.tentative.html": {
     "total": 1
@@ -2373,10 +2367,10 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/inline-fixed-containment.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/inline-fragments-drawable.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/inline-size-change.tentative.html": {
     "reftest": "PASS"
@@ -2403,7 +2397,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-filter.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-invalidation.tentative.html": {
     "reftest": "PASS"
@@ -2415,13 +2409,10 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-scale.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/nested-content-drawable-canvas.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Nested content=drawable canvas should draw": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/manual/draw-element-image/nested-div-content-drawable-canvas.tentative.html": {
     "total": 1
@@ -2488,10 +2479,7 @@
     "total": 1
   },
   "html/canvas/element/manual/draw-element-image/onpaint-post-tree-order.tentative.html": {
-    "total": 5,
-    "failures": {
-      "Drawing operations in nested canvas onpaint should not cause outer onpaint to fire again": "FAIL"
-    }
+    "total": 5
   },
   "html/canvas/element/manual/draw-element-image/onpaint-remove-drawable-element.tentative.html": {
     "total": 7,
@@ -2701,10 +2689,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/nested-tainted-canvas-ignored.tentative.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "drawElementImage does not draw nested tainted canvases": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/manual/draw-element-image/privacy/nested-tainted-html-in-canvas-ignored.tentative.https.sub.html": {
     "total": 1
@@ -3079,7 +3064,7 @@
     "crashtest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/scale.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/scroller-crash.tentative.html": {
     "crashtest": "PASS"
@@ -8490,10 +8475,10 @@
     "reftest": "FAIL"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.gaussianBlur.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.canvasFilterObject.tentative.html": {
     "total": 1
@@ -8574,10 +8559,10 @@
     "reftest": "FAIL"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.gaussianBlur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.gaussianBlur.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/filters/2d.filter.layers.turbulence.inputTypes.tentative.html": {
     "total": 1
@@ -8592,34 +8577,34 @@
     "total": 1
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.isotropic.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.isotropic.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-x.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-x.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-y.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.mostly-y.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.x-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.x-only.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.y-only.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.anisotropic-blur.y-only.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.beginLayer-options.tentative.html": {
     "total": 1
@@ -8706,22 +8691,22 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur-and-shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur-and-shadow.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.blur.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.shadow.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.css-filters.shadow.tentative.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/layers/2d.layer.ctm.ctx-filter.html": {
     "reftest": "PASS"
@@ -9303,7 +9288,7 @@
     "total": 2
   },
   "html/canvas/offscreen/manual/draw-element-image/scale-worker.tentative.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/manual/draw-element-image/video-worker.tentative.html": {
     "harness": "TIMEOUT",

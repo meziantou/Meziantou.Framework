@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **TEST BUG**: 10
+- **TEST BUG**: 11
 - **NOT IMPLEMENTED**: 3
 - **REQUIRES**: 2
   - `layout`: 2
@@ -114,7 +113,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`calc-size/calc-size-flex-basis-on-row.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-flex-basis-on-row.html) | Pass | 33 / 33 |  |  |
 | [`calc-size/calc-size-height-box-sizing.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-height-box-sizing.html) | Pass | 15 / 15 |  |  |
 | [`calc-size/calc-size-height.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-height.html) | Pass | 37 / 37 |  |  |
-| [`calc-size/calc-size-list-box.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-list-box.html) | Fail | 8 / 10 | BUG | a rounding error of the order of 1e-14px: the layout of the library uses floating-point coordinates where the browsers use fixed-point units (1/64px), and the 13.333px font of the controls (10pt) gives sizes that are not exact binary fractions, so the label of the list box or of the drop-down box measured for its natural size and for the reference differ in their last bits (the test compares the widths exactly) |
+| [`calc-size/calc-size-list-box.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-list-box.html) | Fail | 8 / 10 | TEST BUG | 2 of 10 subtests: the test compares the widths with `assert_equals`, which relies on the exact arithmetic of the fixed-point layout units of the browsers (1/64px); CSS does not define the precision of the used values. The label of the controls is in a 13.333px font (10pt), so the min-content and max-content widths of the list box and of the drop-down box are not binary fractions (95.15364397949219px), and the library computes `calc-size(min-content, size)` and `calc-size(max-content, size + 25px)` by adding the paddings and borders to the resolved content width in another order than the reference `min-content`/`max-content` and the `+ 25` of the script: the widths differ by 6e-14px (95.15364397949213px, 121.15364397949213px instead of 121.15364397949219px) |
 | [`calc-size/calc-size-out-of-flow.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-out-of-flow.html) | Pass | 12 / 12 |  |  |
 | [`calc-size/calc-size-parsing.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-parsing.html) | Pass | 94 / 94 |  |  |
 | [`calc-size/calc-size-replaced-element.html`](https://wpt.fyi/results/css/css-values/calc-size/calc-size-replaced-element.html) | Pass | 33 / 33 |  |  |

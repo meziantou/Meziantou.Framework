@@ -881,6 +881,9 @@ internal sealed partial class DrawingSession
         /// <summary>Gets or sets the filter the pixels of the layer go through when it ends.</summary>
         public Filter? Filter { get; set; }
 
+        /// <summary>Gets or sets the largest value the result of a drop shadow cast from far away is rounded to a multiple of the inverse of (<see cref="QuantizeFilter"/>); 0 when it is not rounded.</summary>
+        public int FarShadowQuantization { get; set; }
+
         /// <summary>Gets or sets the scales of the lengths of <see cref="Filter"/> along x and along y.</summary>
         public (double X, double Y) FilterScale { get; set; }
 

@@ -262,7 +262,7 @@ public sealed class LinkPreloadTests : IDisposable
     }
 
     [Fact]
-    public void LinkHeaders_OfTheSubresources_PreloadTheirResources()
+    public void LinkHeaders_OfTheSubresources_AreIgnored()
     {
         var document = Load("""
             <!doctype html>
@@ -276,13 +276,9 @@ public sealed class LinkPreloadTests : IDisposable
             </script>
             """);
 
-        // The URL is resolved against the URL of the style sheet, and the request has no referrer
-        Assert.Equal(["Style NoCors sub/linked.css", "Font Cors sub/font.woff2", "Image NoCors sub/image.png"], Requests);
-        Assert.All(_requests.Skip(1), request => Assert.Null(request.Referrer));
-
-        // The Link headers of the preloaded responses are not processed, and the preload is consumed by the next fetch
+        // Only the Link headers of the response of the document are processed
         Assert.Equal("loaded", document.Title);
-        Assert.Equal(3, Requests.Count);
+        Assert.Equal(["Style NoCors sub/linked.css", "Image NoCors sub/image.png"], Requests);
     }
 
     [Theory]

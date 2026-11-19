@@ -1023,10 +1023,7 @@
     "total": 74
   },
   "css/filter-effects/parsing/backdrop-filter-parsing-invalid.html": {
-    "total": 91,
-    "failures": {
-      "e.style['backdrop-filter'] = \"drop-shadow(10px 10px -1px red)\" should not set the property value": "FAIL"
-    }
+    "total": 91
   },
   "css/filter-effects/parsing/backdrop-filter-parsing-valid.html": {
     "total": 94
@@ -1044,10 +1041,7 @@
     "total": 128
   },
   "css/filter-effects/parsing/filter-parsing-invalid.html": {
-    "total": 91,
-    "failures": {
-      "e.style['filter'] = \"drop-shadow(10px 10px -1px red)\" should not set the property value": "FAIL"
-    }
+    "total": 91
   },
   "css/filter-effects/parsing/filter-parsing-valid.html": {
     "total": 144

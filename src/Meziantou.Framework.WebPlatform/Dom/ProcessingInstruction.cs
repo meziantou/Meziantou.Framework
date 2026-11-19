@@ -170,7 +170,7 @@ public sealed partial class ProcessingInstruction : CharacterData
     }
 
     /// <summary>https://dom.spec.whatwg.org/#concept-pi-update-attributes-from-data</summary>
-    private void UpdateAttributesFromData()
+    internal void UpdateAttributesFromData()
     {
         _attributes = PseudoAttributes.Parse(Data);
     }

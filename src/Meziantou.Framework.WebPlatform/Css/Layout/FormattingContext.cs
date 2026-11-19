@@ -578,6 +578,7 @@ internal abstract class FormattingContext
         // https://drafts.csswg.org/css-sizing-4/#stretch-fit-sizing: the stretch-fit sizes, when the size of the containing
         // block is definite in the axis
         var (inlineStretchFit, blockStretchFit) = GetStretchFitSizes(isOrthogonal, margin, paddingAndBorder, in space);
+        var untrimmedInlineMargins = writingDirection.ToLogical(untrimmedMargin).InlineSum();
         var aspectRatio = GetPreferredAspectRatio(context, box, inlineIsHorizontal, paddingAndBorder);
         var isCompressedBlockSize = IntrinsicSizing.IsCompressibleFormControl(box)
             && (IntrinsicSizing.HasPercentageSize(box, blockIsHorizontal) || boxModel.GetMaxSize(blockIsHorizontal) is { IsLengthPercentage: true, Value.HasPercentage: true });
@@ -613,6 +614,7 @@ internal abstract class FormattingContext
                 PaddingAndBorder = paddingAndBorder.InlineSum(),
                 Edges = edges.InlineSum(),
                 StretchSize = inlineStretchFit,
+                Margins = untrimmedInlineMargins,
             };
             var tentativeInlineSize = tentativeSizing.Resolve(boxModel.GetSize(inlineIsHorizontal), SizingProperty.Preferred)
                 ?? GetAutomaticInlineSize(context, box, availableInlineSize - logicalMargin.InlineSum(), edges.InlineSum(), tentativeSizing.GetIntrinsicSizingInput(), isFitContent: false);
@@ -680,6 +682,7 @@ internal abstract class FormattingContext
             PaddingAndBorder = paddingAndBorder.InlineSum(),
             Edges = edges.InlineSum(),
             StretchSize = inlineStretchFit,
+            Margins = untrimmedInlineMargins,
             ContentBlockSize = specifiedBlockSize is { } definiteBlockSize ? Math.Max(0, definiteBlockSize - edges.BlockSum()) : null,
 
             // In quirks mode, the percentage heights of the descendants of an auto height block container resolve against the

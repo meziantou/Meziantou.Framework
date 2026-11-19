@@ -418,23 +418,12 @@ internal static partial class CssColorConversion
         return abs > 0.0031308 ? Math.CopySign((1.055 * Math.Pow(abs, 1 / 2.4)) - 0.055, value) : 12.92 * value;
     }
 
-    // The rec2020 transfer function is the piecewise function of ITU-R BT.2020 (extended to the negative values), as in the
-    // browsers and in the previous drafts: the current draft (https://drafts.csswg.org/css-color-4/#predefined-rec2020) uses
-    // the pure 2.4 gamma of ITU-R BT.1886, which no browser implements
-    private const double Rec2020Alpha = 1.09929682680944;
-    private const double Rec2020Beta = 0.018053968510807;
+    // The rec2020 transfer function is the reference EOTF of ITU-R BT.1886 (pure 2.4 gamma, no black lift, unit gain),
+    // extended to the negative values (https://drafts.csswg.org/css-color-4/#predefined-rec2020), not the piecewise OETF of
+    // ITU-R BT.2020 of the previous drafts
+    private static double Rec2020ToLinear(double value) => Math.CopySign(Math.Pow(Math.Abs(value), 2.4), value);
 
-    private static double Rec2020ToLinear(double value)
-    {
-        var abs = Math.Abs(value);
-        return abs < Rec2020Beta * 4.5 ? value / 4.5 : Math.CopySign(Math.Pow((abs + Rec2020Alpha - 1) / Rec2020Alpha, 1 / 0.45), value);
-    }
-
-    private static double LinearToRec2020(double value)
-    {
-        var abs = Math.Abs(value);
-        return abs >= Rec2020Beta ? Math.CopySign((Rec2020Alpha * Math.Pow(abs, 0.45)) - (Rec2020Alpha - 1), value) : 4.5 * value;
-    }
+    private static double LinearToRec2020(double value) => Math.CopySign(Math.Pow(Math.Abs(value), 1 / 2.4), value);
 
     private static double ProPhotoToLinear(double value)
     {

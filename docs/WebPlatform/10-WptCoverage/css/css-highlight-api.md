@@ -11,15 +11,14 @@ description: "The results of the web-platform-tests of css/css-highlight-api, an
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 19 | 19 | 0 | 100% |
 | [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
-| [Reftests](#reftests) | 113 | 118 | 0 | 96% |
+| [Reftests](#reftests) | 114 | 118 | 0 | 97% |
 | [Crash tests](#crash-tests) | 5 | 5 | 0 | 100% |
-| **All** | **140** | **146** | **0** | **96%** |
+| **All** | **141** | **146** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 4
 
@@ -161,7 +160,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`painting/custom-highlight-painting-overlapping-highlights-002.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-overlapping-highlights-002.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-prioritization-001.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-prioritization-001.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-prioritization-002.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-prioritization-002.html) | Pass | 1 / 1 |  |  |
-| [`painting/custom-highlight-painting-prioritization-003.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-prioritization-003.html) | Fail | 0 / 1 | BUG | 1 antialiased pixel of a glyph differs by 1 from the reference (the cause is not identified) |
+| [`painting/custom-highlight-painting-prioritization-003.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-prioritization-003.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-priority-text-decoration-001.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-priority-text-decoration-001.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-selection-text-decoration-currentcolor.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-selection-text-decoration-currentcolor.html) | Pass | 1 / 1 |  |  |
 | [`painting/custom-highlight-painting-staticrange-001.html`](https://wpt.fyi/results/css/css-highlight-api/painting/custom-highlight-painting-staticrange-001.html) | Pass | 1 / 1 |  |  |

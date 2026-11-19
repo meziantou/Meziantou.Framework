@@ -49,8 +49,8 @@ public partial class Document
             }
         }
 
-        // As the largest contentful paint, the new paints are ignored once an input event was dispatched
-        if (window.HasDispatchedInputEvent)
+        // As the largest contentful paint, the new paints are ignored once the user scrolled or an input event was dispatched
+        if (window.HasDispatchedInputEvent || window.HasDispatchedScrollEvent)
             return;
 
         List<ContainerTimingRecord>? pendingRecords = null;
@@ -114,7 +114,8 @@ public partial class Document
                     }
                 }
 
-                if (current.GetAttributeValue("containertimingignore") is not null)
+                // An ignored subtree is rooted at an HTML element (https://w3c.github.io/container-timing/#ignored-subtree)
+                if (current is HtmlElement && current.GetAttributeValue("containertimingignore") is not null)
                     break;
             }
         }

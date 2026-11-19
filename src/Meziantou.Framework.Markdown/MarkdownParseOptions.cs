@@ -38,7 +38,8 @@ public sealed record MarkdownParseOptions
     /// <remarks>
     /// The limit keeps the tree shallow enough to be built, walked and rendered without exhausting the stack, whatever the
     /// text, such as thousands of <c>&gt;</c> or of <c>*</c>. The blocks of the content of a grid table cell are in the table
-    /// and its containers, so grid tables nested in cells count too.
+    /// and its containers, so grid tables nested in cells count too. A value greater than 256 is read as 256: deeper blocks
+    /// with deeper inlines in them would overflow a stack of 1 MB, the default size of the stack of a thread on Windows.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
     public int MaximumNestingDepth
@@ -47,9 +48,13 @@ public sealed record MarkdownParseOptions
         init
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
-            field = value;
+            field = Math.Min(value, MaximumNestingDepthLimit);
         }
     } = 128;
+
+    // The largest nesting depth: a document nested this deep in blocks, with inlines nested as deep in them, is parsed, rendered
+    // and formatted on a stack of 1 MB with room to spare
+    internal const int MaximumNestingDepthLimit = 256;
 
     /// <summary>Gets a value indicating whether HTML is text: no HTML block or inline HTML is recognized, and the renderer escapes it.</summary>
     /// <remarks>Autolinks, such as <c>&lt;https://example.com&gt;</c>, are still links.</remarks>

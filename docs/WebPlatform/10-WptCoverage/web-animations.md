@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of web-animations, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 128 | 136 | 0 | 94% |
+| [Stable](#stable-tests) | 129 | 136 | 0 | 95% |
 | [Tentative](#tentative-tests) | 3 | 8 | 0 | 38% |
 | [Reftests](#reftests) | 18 | 18 | 0 | 100% |
 | [Crash tests](#crash-tests) | 46 | 46 | 0 | 100% |
-| **All** | **195** | **208** | **0** | **94%** |
+| **All** | **196** | **208** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 8
 
@@ -52,7 +51,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation-model/keyframe-effects/effect-value-transformed-distance.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-transformed-distance.html) | Pass | 28 / 28 |  |  |
 | [`animation-model/keyframe-effects/keyframe-exceptions.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/keyframe-exceptions.html) | Pass | 3 / 3 |  |  |
 | [`idlharness.window.js`](https://wpt.fyi/results/web-animations/idlharness.window.js) | Fail | 171 / 218 | NOT IMPLEMENTED | the group effects of Web Animations 2 (`GroupEffect`, `SequenceEffect`, `AnimationNodeList`, the effect tree members of `AnimationEffect`) and `Animation.trigger` |
-| [`interfaces/Animatable/animate-no-browsing-context.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/animate-no-browsing-context.html) | Fail | 2 / 4 | BUG | an animation whose target is in a document without a browsing context leaves the pending state when its timeline is replaced, and its style is not updated once the element is adopted |
+| [`interfaces/Animatable/animate-no-browsing-context.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/animate-no-browsing-context.html) | Pass | 4 / 4 |  |  |
 | [`interfaces/Animatable/animate.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/animate.html) | Pass | 153 / 153 |  |  |
 | [`interfaces/Animatable/getAnimations-iframe.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations-iframe.html) | Pass | 2 / 2 |  |  |
 | [`interfaces/Animatable/getAnimations-pseudoElement-option-on-view-transition.html`](https://wpt.fyi/results/web-animations/interfaces/Animatable/getAnimations-pseudoElement-option-on-view-transition.html) | Pass | 1 / 1 |  |  |

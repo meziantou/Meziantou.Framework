@@ -42,7 +42,9 @@ internal sealed class EventHandlerAttribute(EventTarget target, string type)
             return null;
 
         var form = scopeElement is HtmlElement htmlElement ? htmlElement.FormOwner : null;
-        var parameters = type == "error" && target is Window ? EventHandlerProcessing.ErrorHandlerParameters : EventHandlerProcessing.EventParameters;
+        var parameters = type == "error" && target is Window ? EventHandlerProcessing.ErrorHandlerParameters
+            : element is SvgElement ? EventHandlerProcessing.SvgEventParameters
+            : EventHandlerProcessing.EventParameters;
         var source = new EventHandlerSource(window, target, scopeElement, scopeElement is null ? null : document, form, "on" + type, body, document.Url, parameters);
         try
         {
@@ -143,6 +145,13 @@ internal sealed class DelegateEventHandlerCallback(Action<Event> handler) : Even
 internal static class EventHandlerProcessing
 {
     public static readonly IReadOnlyList<string> EventParameters = ["event"];
+
+    /// <summary>
+    /// The parameter of the event handlers of the SVG elements: as in the browsers, it is named <c>evt</c> (SVG 2 introduces
+    /// <c>evt</c> as an alias of <c>event</c>, https://svgwg.org/svg2-draft/interact.html), and <c>event</c> is the
+    /// <c>event</c> property of the window.
+    /// </summary>
+    public static readonly IReadOnlyList<string> SvgEventParameters = ["evt"];
 
     public static readonly IReadOnlyList<string> ErrorHandlerParameters = ["event", "source", "lineno", "colno", "error"];
 

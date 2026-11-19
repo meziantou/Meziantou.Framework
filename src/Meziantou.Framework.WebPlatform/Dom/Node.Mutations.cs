@@ -325,10 +325,15 @@ public abstract partial class Node
         // Fast path: the parser mostly inserts leaf nodes
         if (_firstChild is null && this is not Element { AttachedShadowRoot: not null })
         {
-            InsertionSteps();
             if (_isConnected)
             {
                 ConnectedCustomElementSteps();
+            }
+
+            InsertionSteps();
+            if (_isConnected)
+            {
+                ConnectedIdSteps();
             }
 
             return;
@@ -340,10 +345,15 @@ public abstract partial class Node
         {
             foreach (var node in WalkShadowIncludingInclusiveDescendants())
             {
-                node.InsertionSteps();
                 if (node._isConnected)
                 {
                     node.ConnectedCustomElementSteps();
+                }
+
+                node.InsertionSteps();
+                if (node._isConnected)
+                {
+                    node.ConnectedIdSteps();
                 }
             }
         }
@@ -363,16 +373,27 @@ public abstract partial class Node
     /// </summary>
     internal bool IsInsertionRoot => s_insertionRoot is not { } root || ReferenceEquals(root, this) || !root.IsShadowIncludingInclusiveAncestorOf(this);
 
-    /// <summary>The steps of the insert algorithm for the connected inclusive descendants (https://dom.spec.whatwg.org/#concept-node-insert, steps 7.7.3 and 7.7.4).</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#reset-the-form-owner: an element with an ID is
+    /// inserted into the document, which may change the form owner of the elements with a form attribute.
+    /// </summary>
+    private void ConnectedIdSteps()
+    {
+        if (this is Element { IdValue: not null } && NodeDocument.HasFormAttributeElements)
+        {
+            NodeDocument.OnIdChangedForFormAttributeElements();
+        }
+    }
+
+    /// <summary>
+    /// The steps of the insert algorithm for the connected inclusive descendants, which run before their insertion steps, so
+    /// the connectedCallback reaction comes before the reactions that the insertion steps enqueue
+    /// (https://dom.spec.whatwg.org/#concept-node-insert, step 7.7.1).
+    /// </summary>
     private void ConnectedCustomElementSteps()
     {
         if (this is Element element)
         {
-            if (element.IdValue is not null && NodeDocument.HasFormAttributeCustomElements)
-            {
-                NodeDocument.OnIdChangedForFormAttributeCustomElements();
-            }
-
             // A custom element adopted into a document without registry has no registry, but its connectedCallback is still
             // invoked, as in browsers and the web-platform-tests (the insert algorithm only enqueues it when the element has
             // a registry, but the remove algorithm always enqueues the disconnectedCallback)
@@ -739,6 +760,14 @@ public abstract partial class Node
             node.SetConnected(false);
         }
 
+        // The disconnectedCallback reaction of a custom element is enqueued before its removing steps run, so it comes before
+        // the reactions that these steps enqueue (https://dom.spec.whatwg.org/#concept-node-remove)
+        var isParentConnected = IsConnected;
+        if (isParentConnected && node is Element { IsCustom: true } customElement)
+        {
+            CustomElementReactions.EnqueueCallbackReaction(customElement, CustomElementCallbackKind.Disconnected, []);
+        }
+
         node.RemovingSteps(isSubtreeRoot: true, this);
 
         // https://html.spec.whatwg.org/multipage/infrastructure.html#node-remove-focus-fixup: when the focused area of the
@@ -749,23 +778,18 @@ public abstract partial class Node
             document.FocusedArea = null;
         }
 
-        var isParentConnected = IsConnected;
-        if (isParentConnected && node is Element { IsCustom: true } customElement)
-        {
-            CustomElementReactions.EnqueueCallbackReaction(customElement, CustomElementCallbackKind.Disconnected, []);
-        }
-
         if (node._firstChild is not null || node is Element { AttachedShadowRoot: not null })
         {
             foreach (var descendant in node.ShadowIncludingInclusiveDescendants())
             {
                 if (!ReferenceEquals(descendant, node))
                 {
-                    descendant.RemovingSteps(isSubtreeRoot: false, this);
                     if (isParentConnected && descendant is Element { IsCustom: true } customDescendant)
                     {
                         CustomElementReactions.EnqueueCallbackReaction(customDescendant, CustomElementCallbackKind.Disconnected, []);
                     }
+
+                    descendant.RemovingSteps(isSubtreeRoot: false, this);
                 }
             }
         }
@@ -791,9 +815,9 @@ public abstract partial class Node
         }
 
         // https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#reset-the-form-owner: an element with an ID is removed from the document
-        if (isParentConnected && document.HasFormAttributeCustomElements && ContainsElementWithId(node))
+        if (isParentConnected && document.HasFormAttributeElements && ContainsElementWithId(node))
         {
-            document.OnIdChangedForFormAttributeCustomElements();
+            document.OnIdChangedForFormAttributeElements();
         }
 
         if (document.HasMutationObservers)

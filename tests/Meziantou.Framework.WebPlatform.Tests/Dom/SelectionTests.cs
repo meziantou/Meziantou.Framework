@@ -57,6 +57,29 @@ public sealed class SelectionTests : IDisposable
     }
 
     [Fact]
+    public void Range_CloneAndExtractContents_UpdateTheAttributesOfTheProcessingInstructions()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<div></div>");
+        var div = document.QuerySelector("div")!;
+        var instruction = document.CreateProcessingInstruction("pi", "a=\"1\" x=\"2\"");
+        div.AppendChild(instruction);
+        div.AppendChild(document.CreateElement("span"));
+
+        var range = document.CreateRange();
+        range.SetStart(instruction, 0);
+        range.SetEnd(instruction, 5);
+        var clone = Assert.IsType<ProcessingInstruction>(range.CloneContents().FirstChild);
+        Assert.Equal("a=\"1\"", clone.Data);
+        Assert.Equal(["a"], clone.GetAttributeNames());
+
+        range.SetStart(instruction, 6);
+        range.SetEnd(div, 2);
+        var extracted = Assert.IsType<ProcessingInstruction>(range.ExtractContents().FirstChild);
+        Assert.Equal(["x"], extracted.GetAttributeNames());
+        Assert.Equal(["a"], instruction.GetAttributeNames());
+    }
+
+    [Fact]
     public void GetSelection_RequiresBrowsingContext()
     {
         var document = Load("<p>text</p>");

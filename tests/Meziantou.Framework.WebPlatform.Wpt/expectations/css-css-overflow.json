@@ -2687,13 +2687,13 @@
     "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-fullscreen-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-fullscreen-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-fullscreen-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-fullscreen-004.html": {
     "reftest": "PASS"

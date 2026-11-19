@@ -2059,9 +2059,6 @@
   "css/css-backgrounds/border-radius-clip-001.html": {
     "reftest": "PASS"
   },
-  "css/css-backgrounds/border-radius-clip-002.htm": {
-    "reftest": "FAIL"
-  },
   "css/css-backgrounds/border-radius-clipping-002.html": {
     "reftest": "PASS"
   },
@@ -2498,27 +2495,13 @@
     "total": 39
   },
   "css/css-backgrounds/parsing/background-image-computed.sub.html": {
-    "total": 64,
-    "failures": {
-      "Property background-image value 'linear-gradient(red 0, blue)'": "FAIL",
-      "Property background-image value 'radial-gradient(ellipse closest-side, red, blue)'": "FAIL"
-    }
+    "total": 64
   },
   "css/css-backgrounds/parsing/background-image-invalid.html": {
-    "total": 30,
-    "failures": {
-      "e.style['background-image'] = \"radial-gradient(circle 10px 10px, red, blue)\" should not set the property value": "FAIL",
-      "e.style['background-image'] = \"radial-gradient(ellipse 10px, red, blue)\" should not set the property value": "FAIL"
-    }
+    "total": 30
   },
   "css/css-backgrounds/parsing/background-image-valid.html": {
-    "total": 35,
-    "failures": {
-      "e.style['background-image'] = \"linear-gradient(red 0, blue)\" should set the property value": "FAIL",
-      "e.style['background-image'] = \"linear-gradient(to top left, red, blue)\" should set the property value": "FAIL",
-      "e.style['background-image'] = \"radial-gradient(circle 10px, red, blue)\" should set the property value": "FAIL",
-      "e.style['background-image'] = \"radial-gradient(ellipse closest-side, red, blue)\" should set the property value": "FAIL"
-    }
+    "total": 35
   },
   "css/css-backgrounds/parsing/background-invalid.html": {
     "total": 2

@@ -1143,6 +1143,39 @@ public sealed class PaintingTests : IDisposable
     }
 
     [Fact]
+    public void Highlights_RecoloredGlyphsUnderTheBackgroundOfTheNextHighlight()
+    {
+        var document = Parse("""
+            <style>
+              ::highlight(first) { background-color: rgb(0, 0, 255); color: rgb(255, 255, 255) }
+              ::highlight(second) { background-color: rgb(255, 255, 0) }
+            </style>
+            <div id=a>abcdef</div>
+            """);
+        var text = document.GetElementById("a")!.FirstChild!;
+        var first = document.CreateRange();
+        first.SetStart(text, 1);
+        first.SetEnd(text, 3);
+        document.Highlights.Set("first", new Meziantou.Framework.WebPlatform.Css.Om.Highlight(first));
+        var second = document.CreateRange();
+        second.SetStart(text, 3);
+        second.SetEnd(text, 5);
+        document.Highlights.Set("second", new Meziantou.Framework.WebPlatform.Css.Om.Highlight(second));
+        var dump = Dump(document);
+
+        // The ink of the recolored glyphs that overhangs the background of the next highlight is painted under it, the rest of
+        // it over the backgrounds (as the text of an inline box followed by an inline box with a background)
+        var lines = dump.Split('\n').Select(line => line.Trim()).ToList();
+        const string Glyphs = "draw-glyphs \"bc\" Ahem 10px at (10, 8) glyphs=2 fill #ffffff  [#text]";
+        var under = lines.IndexOf(Glyphs);
+        var background = lines.IndexOf("draw-rect (30, 0, 20x10) fill #ffff00  [#text]");
+        var over = lines.LastIndexOf(Glyphs);
+        Assert.Equal("clip-path M30 0L50 0L50 10L30 10Z aliased", lines[under - 1]);
+        Assert.Equal("clip-path M-10000000 -10000000L10000000 -10000000L10000000 10000000L-10000000 10000000ZM30 0L50 0L50 10L30 10Z evenodd aliased", lines[over - 1]);
+        Assert.True(under < background && background < over);
+    }
+
+    [Fact]
     public void Borders_JoinsOfTheSides()
     {
         var document = Parse("<div id=a style='width: 20px; height: 20px; border: 5px solid; border-color: rgb(255, 0, 0) rgb(255, 0, 0) rgb(0, 0, 255) rgb(0, 0, 255, 0.5)'></div>");

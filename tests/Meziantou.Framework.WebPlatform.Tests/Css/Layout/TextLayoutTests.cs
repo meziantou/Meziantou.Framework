@@ -443,6 +443,31 @@ public sealed class TextLayoutTests : IDisposable
         Assert.Equal(30, GetTextFragments(document, "b").Sum(t => t.Size.Width));
     }
 
+    [Theory]
+    [InlineData("g <span class=di> </span>h", 30)]
+    [InlineData("i<span class=di> </span> j", 30)]
+    [InlineData("[<span class=di><span class=di> </span> k </span>]", 30)]
+    public void WhiteSpaceTrim_DiscardInner_OnlyDiscardsTheWhiteSpaceInsideTheBox(string html, double width)
+    {
+        // WPT css/css-text/white-space/white-space-trim-discard-inner.html: the space before or after a box that only contains
+        // white space is kept
+        var document = Parse($"<style>.di {{ white-space-trim: discard-inner }}</style><div id=d>{html}</div>");
+        Assert.Equal(width, GetTextFragments(document, "d").Sum(t => t.Size.Width));
+    }
+
+    [Theory]
+    [InlineData("\n\n  X\n\n", "  X")]
+    [InlineData("  X  ", "  X  ")]
+    [InlineData("<span>\n  </span><span>\n  X</span>\n<span>\n</span>", "  X")]
+    public void WhiteSpaceTrim_DiscardInner_BlockContainerDiscardsUpToTheSegmentBreaks(string html, string expected)
+    {
+        // https://drafts.csswg.org/css-text-4/#valdef-white-space-trim-discard-inner: on a block container, the white space up to
+        // the last segment break before the content and from the first one after it (WPT
+        // css/css-text/white-space/white-space-trim-discard-inner-block.html)
+        var document = Parse($"<div id=d style='white-space: pre; white-space-trim: discard-inner'>{html}</div>");
+        Assert.Equal(expected, string.Concat(GetTextFragments(document, "d").Select(GetText)));
+    }
+
     [Fact]
     public void TextBoxTrim_InlineBox()
     {

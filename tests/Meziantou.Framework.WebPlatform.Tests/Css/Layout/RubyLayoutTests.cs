@@ -114,6 +114,18 @@ public sealed class RubyLayoutTests : IDisposable
         Assert.Equal(50, GetTextFragments(document, "b2")[0].GetRectInRoot().X);
     }
 
+    [Fact]
+    public void Pairing_TextAutospaceDoesNotReachTheAnnotationOfTheNextLevel()
+    {
+        // https://drafts.csswg.org/css-text-4/#text-autospace-property: the ideograph that ends the annotation of the first level is
+        // not adjacent to the letter that starts the annotation of the second level, which follows it in the content (WPT
+        // css/css-ruby/nested-ruby-pairing-001.html): no spacing is added after it
+        var alone = Parse("<ruby id=r><rb>X</rb><rb>X</rb><rt>X</rt><rt id=t>\u6C34</rt></ruby>");
+        var document = Parse("<ruby id=r><rb>X</rb><rb>X</rb><rt>X</rt><rt id=t>\u6C34</rt><rtc>X</rtc></ruby>");
+        Assert.Equal(10, GetTextFragments(alone, "t")[0].Size.Width);
+        Assert.Equal(10, GetTextFragments(document, "t")[0].Size.Width);
+    }
+
     [Theory]
     [InlineData("start", 0)]
     [InlineData("center", 30)]

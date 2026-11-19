@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of css/css-display, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **TEST BUG**: 52
+- **TEST BUG**: 53
 
 ## Stable tests
 
@@ -170,7 +169,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`display-math-on-pseudo-elements-002.html`](https://wpt.fyi/results/css/css-display/display-math-on-pseudo-elements-002.html) | Pass | 1 / 1 |  |  |
 | [`display-none-inline-img.html`](https://wpt.fyi/results/css/css-display/display-none-inline-img.html) | Pass | 1 / 1 |  |  |
 | [`display-on-svg-text-content-element.html`](https://wpt.fyi/results/css/css-display/display-on-svg-text-content-element.html) | Pass | 1 / 1 |  |  |
-| [`display-table-cell-on-button.html`](https://wpt.fyi/results/css/css-display/display-table-cell-on-button.html) | Fail | 0 / 1 | BUG | a `button` with a layout-internal `display` (`table-cell`) is laid out as a block-level box (the two buttons are stacked), where a replaced element or a widget with a layout-internal display has a used display of `inline` (https://drafts.csswg.org/css-display-3/#layout-specific-display): the buttons are inline-level boxes aligned at the bottom of the line |
+| [`display-table-cell-on-button.html`](https://wpt.fyi/results/css/css-display/display-table-cell-on-button.html) | Fail | 0 / 1 | TEST BUG | expects a `button` with a layout-internal `display` (`table-cell`) to be an inline-level box (the two buttons on one line, aligned at the bottom), extending the rule of the replaced elements of https://drafts.csswg.org/css-display-3/#layout-specific-display to the widgets; the layout of the `button` element is defined by https://html.spec.whatwg.org/multipage/rendering.html#button-layout: a `display` that is not `inline-grid`, `grid`, `inline-flex`, `flex`, `none`, `contents` or of an inline outer display type behaves as `flow-root`, so the buttons are block-level boxes, stacked (as the library renders them) |
 | [`order-dynamic.html`](https://wpt.fyi/results/css/css-display/order-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`run-in/counter-increment-applies-to-011.xht`](https://wpt.fyi/results/css/css-display/run-in/counter-increment-applies-to-011.xht) | Pass | 1 / 1 |  |  |
 | [`run-in/counter-reset-applies-to-011.xht`](https://wpt.fyi/results/css/css-display/run-in/counter-reset-applies-to-011.xht) | Pass | 1 / 1 |  |  |

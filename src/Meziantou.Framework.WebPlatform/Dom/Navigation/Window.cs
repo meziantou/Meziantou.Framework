@@ -595,6 +595,10 @@ public sealed partial class Window : GlobalScope
             {
                 if (!document.IsPotentiallyTrustworthyForSecureContext())
                     return false;
+
+                // The top-level creation URL of the initial about:blank document of a popup is the one of its creator
+                if (document is { IsInitialAboutBlank: true, BrowsingContext: { Container: null, CreatorIsSecureContext: false } })
+                    return false;
             }
 
             return true;

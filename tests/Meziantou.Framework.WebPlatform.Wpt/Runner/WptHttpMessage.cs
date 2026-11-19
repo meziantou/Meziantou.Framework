@@ -120,19 +120,26 @@ internal static class WptHttpMessage
     }
 
     /// <summary>
-    /// Parses a status line (https://www.rfc-editor.org/rfc/rfc9112.html#section-4): <c>HTTP-version SP status-code [SP reason-phrase]</c>,
-    /// where the status code is three digits.
+    /// Parses a status line (https://www.rfc-editor.org/rfc/rfc9112.html#section-4): <c>HTTP-version SP status-code [SP reason-phrase]</c>.
+    /// As in the browsers, the status code is one to three digits, so it is any number from 0 to 999 (a status of the Fetch
+    /// Standard, https://fetch.spec.whatwg.org/#concept-status), as fetch/h1-parsing/status-code.window.js expects.
     /// </summary>
     private static (int Status, string StatusText)? ParseStatusLine(string line)
     {
-        if (line.Length < "HTTP/1.1 200".Length || !line.StartsWith("HTTP/", StringComparison.Ordinal) || !char.IsAsciiDigit(line[5]) || line[6] != '.' || !char.IsAsciiDigit(line[7]) || line[8] != ' ')
+        if (line.Length < "HTTP/1.1 0".Length || !line.StartsWith("HTTP/", StringComparison.Ordinal) || !char.IsAsciiDigit(line[5]) || line[6] != '.' || !char.IsAsciiDigit(line[7]) || line[8] != ' ')
             return null;
 
-        var code = line.AsSpan(9, 3);
-        if (!char.IsAsciiDigit(code[0]) || !char.IsAsciiDigit(code[1]) || !char.IsAsciiDigit(code[2]))
+        var digits = 0;
+        while (9 + digits < line.Length && char.IsAsciiDigit(line[9 + digits]))
+        {
+            digits++;
+        }
+
+        if (digits is 0 or > 3)
             return null;
 
-        var rest = line.AsSpan(12);
+        var code = line.AsSpan(9, digits);
+        var rest = line.AsSpan(9 + digits);
         if (rest.Length > 0 && rest[0] != ' ')
             return null;
 

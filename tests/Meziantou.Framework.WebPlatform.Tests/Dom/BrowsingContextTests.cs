@@ -475,6 +475,21 @@ public sealed class BrowsingContextTests
         Assert.Equal("null", popup.Document.Origin.Serialize());
     }
 
+    [Theory]
+    [InlineData("https://example.com/", true)]
+    [InlineData("http://example.com/", false)]
+    public void WindowOpen_InitialDocumentIsASecureContextWhenItsCreatorIs(string url, bool secure)
+    {
+        using var context = new BrowsingContext();
+        context.Navigate(url, _ => new DocumentResource(""));
+        context.EventLoop.RunUntilIdle();
+
+        // about:blank is potentially trustworthy, but the initial about:blank document has the top-level creation URL of its creator
+        var popup = context.Window.Open("", "_blank")!;
+        Assert.True(popup.Document.IsInitialAboutBlank);
+        Assert.Equal(secure, popup.IsSecureContext);
+    }
+
     [Fact]
     public void Iframe_Src_UsesDocumentLoader()
     {
@@ -1699,6 +1714,22 @@ public sealed class BrowsingContextTests
         observer.Observe(document.Body!, new MutationObserverInit { ChildList = true });
 
         document.Body!.AppendChild(document.CreateElement("p"));
+        Assert.Equal(0, calls);
+        context.EventLoop.PerformMicrotaskCheckpoint();
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void MutationObserver_OfTemplateContents_IsNotifiedByTheEventLoopOfTheDocument()
+    {
+        using var context = new BrowsingContext();
+        var document = Load(context, "<template></template>");
+        var content = ((HtmlTemplateElement)document.QuerySelector("template")!).Content;
+        var calls = 0;
+        var observer = new MutationObserver((records, _) => calls += records.Count);
+        observer.Observe(content, new MutationObserverInit { ChildList = true });
+
+        content.AppendChild(content.OwnerDocument!.CreateElement("p"));
         Assert.Equal(0, calls);
         context.EventLoop.PerformMicrotaskCheckpoint();
         Assert.Equal(1, calls);

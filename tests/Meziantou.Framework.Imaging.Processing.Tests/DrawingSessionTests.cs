@@ -4906,6 +4906,50 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void AQuantizeFilterRoundsTheColorsMultipliedByTheirAlpha()
+    {
+        // 128 of an alpha of 254 is 127.498 multiplied by its alpha: rounded to 127, which is 32767.5 of 16 bits divided by the alpha
+        var teal = new SolidBrush(new Rgba32(0, 128, 128, 254));
+        using var wide = new Image<Rgba64>(2, 1);
+        wide.Draw(canvas => canvas.Filter(new QuantizeFilter(8), layer => layer.FillRectangle(teal, new Rectangle(0, 0, 1, 1))), Ct);
+        wide.Draw(canvas => canvas.Filter(new QuantizeFilter(16), layer => layer.FillRectangle(teal, new Rectangle(1, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba64(0, 32768, 32768, 65278), wide.Frames[0][0, 0]);
+        Assert.Equal(new Rgba64(0, 32896, 32896, 65278), wide.Frames[0][1, 0]);
+
+        // On 8 bits, the straight color rounded from the rounded value: 127 * 255 / 254 = 127.5
+        using var narrow = new Image<Rgba32>(1, 1);
+        narrow.Draw(canvas => canvas.Filter(new QuantizeFilter(8), layer => layer.FillRectangle(teal, new Rectangle(0, 0, 1, 1))), Ct);
+        Assert.Equal(new Rgba32(0, 128, 128, 254), narrow.Frames[0][0, 0]);
+
+        // After a shadow cast from further than a layer can hold, the shadow is the same
+        var shadow = new DropShadowFilter(new Rgba32(0, 0, 0), new PointD(5000, 0), 0);
+        Assert.Equal(DrawFar(shadow), DrawFar(new FilterChain(shadow, new QuantizeFilter(8))));
+        using (var far = DrawFarImage(new FilterChain(shadow, new QuantizeFilter(8))))
+        {
+            Assert.Equal(new Rgba32(0, 0, 0), far.Frames[0][3, 1]);
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new QuantizeFilter(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new QuantizeFilter(17));
+        Assert.Equal(8, new QuantizeFilter(8).BitsPerSample);
+        Assert.True(new QuantizeFilter(8).TryGetBounds(new RectangleD(1, 2, 3, 4), out var bounds));
+        Assert.Equal(new RectangleD(1, 2, 3, 4), bounds);
+
+        static int[] DrawFar(Filter filter)
+        {
+            using var image = DrawFarImage(filter);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+
+        static Image<Rgba32> DrawFarImage(Filter filter)
+        {
+            var image = new Image<Rgba32>(8, 4);
+            image.Draw(canvas => canvas.Filter(filter, layer => layer.FillRectangle(White, new Rectangle(-4998, 0, 3, 3))), Ct);
+            return image;
+        }
+    }
+
+    [Fact]
     public void TheLengthsOfAFilterAreLengthsOfTheDrawing()
     {
         // Scaled by 2: a blur of 1 is a blur of 2, and a shadow 1 pixel away is 2 pixels away

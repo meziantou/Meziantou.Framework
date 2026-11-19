@@ -16,7 +16,7 @@ internal static class CssCanonicalOrder
     private static readonly ConcurrentDictionary<GrammarNode, bool> UnorderedGroups = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>The properties whose values keep the specified order, as in the implementations (e.g. hanging-punctuation: last first).</summary>
-    private static readonly HashSet<string> SpecifiedOrderProperties = new(StringComparer.Ordinal) { "hanging-punctuation", "image-resolution", "paint-order", "word-space-transform", "grid-lanes-direction" };
+    private static readonly HashSet<string> SpecifiedOrderProperties = new(StringComparer.Ordinal) { "hanging-punctuation", "paint-order", "word-space-transform", "grid-lanes-direction" };
 
     /// <summary>The types whose order is significant (https://drafts.csswg.org/css-anchor-position/#typedef-position-try-fallbacks-try-tactic: the tactics are applied in order).</summary>
     private static readonly HashSet<string> SpecifiedOrderTypes = new(StringComparer.Ordinal) { "try-tactic" };

@@ -26,6 +26,11 @@ Assert.Equal("<p>Markdown was created in 2004<a id=\"fnref:1\" href=\"#fn:1\" cl
 - The next lines of a definition are indented by four spaces, so that a note can have several paragraphs, lists or code
   blocks.
 - A note that no text refers to is not written.
+- The references in the cells of a [grid table](08-GridTables.md) are to the notes of the document, and are numbered
+  where the table is. A cell cannot define a note.
+- The ids of the notes and of the references are `fn:N` and `fnref:N`. When several documents are rendered on one page,
+  give each one an [IdPrefix](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.IdPrefix), so that the links
+  go to the notes of their document (see [Rendering](../04-Rendering.md)).
 
 ## Syntax tree
 

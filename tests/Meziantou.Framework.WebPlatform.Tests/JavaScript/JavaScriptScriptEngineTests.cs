@@ -322,6 +322,17 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void EventHandlers_OfTheSvgElements_HaveAnEvtParameter()
+    {
+        var document = Load("""
+            <svg><rect id=r onclick="document.title = [evt.type, event === evt, onclick.length].join()"/></svg>
+            <script>document.getElementById('r').dispatchEvent(new MouseEvent('click'));</script>
+            """);
+        Assert.Equal("click,true,1", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void OnRealmCreated_ExposesTheGlobalObject()
     {
         using var engine = new HostFunctionsScriptEngine();

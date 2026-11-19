@@ -322,8 +322,19 @@ internal static class CustomElementReactions
         definition.ConstructionStack.Add(element);
         var constructor = definition.Constructor;
         var activeConstructorMap = CustomElementReactionsStack.Current.ActiveConstructorMap;
-        var hasPreviousRegistry = activeConstructorMap.TryGetValue(constructor, out var previousRegistry);
-        activeConstructorMap[constructor] = element.CustomElementRegistry;
+        var previousRegistry = activeConstructorMap.GetValueOrDefault(constructor);
+
+        // Without a registry (the element was adopted by a document whose registry is null or scoped), the HTML element
+        // constructor looks the definition up in the registry of the current global object
+        if (element.CustomElementRegistry is { } elementRegistry)
+        {
+            activeConstructorMap[constructor] = elementRegistry;
+        }
+        else
+        {
+            activeConstructorMap.Remove(constructor);
+        }
+
         try
         {
             if (definition.DisableShadow && element.AttachedShadowRoot is not null)
@@ -347,13 +358,13 @@ internal static class CustomElementReactions
         }
         finally
         {
-            if (hasPreviousRegistry)
+            if (previousRegistry is null)
             {
-                activeConstructorMap[constructor] = previousRegistry;
+                activeConstructorMap.Remove(constructor);
             }
             else
             {
-                activeConstructorMap.Remove(constructor);
+                activeConstructorMap[constructor] = previousRegistry;
             }
 
             definition.ConstructionStack.RemoveAt(definition.ConstructionStack.Count - 1);

@@ -349,7 +349,6 @@
       "Delete at \"<p>abc  [] </p><p>   def</p>\"": "FAIL",
       "Delete at \"<p>abc []  </p><p>   def</p>\"": "FAIL",
       "Delete at \"<p>abc<br>{}<br></p><p>def</p>\" - comparing innerHTML": "FAIL",
-      "Delete at \"<p>abc[]<br></p>\"": "FAIL",
       "Delete at \"<p>{}<br></p><p contenteditable=\"false\">abc</p><p>def</p>\"": "FAIL",
       "Delete at \"<p>{}<br></p><p contenteditable=\"false\">abc</p><p>def</p>\" - comparing innerHTML": "FAIL",
       "Delete at \"<p>{}<br></p><table><tr><td>cell</td></tr></table>\"": "FAIL",

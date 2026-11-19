@@ -31,6 +31,9 @@ public static class MarkdownHtmlRenderer
     // The characters a URL keeps as they are: a % is kept only before two hexadecimal digits, so it is not one of them
     private static readonly SearchValues<char> UriSafeCharacters = SearchValues.Create("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;/?:@&=+$,-_.!~*'()#");
 
+    // The characters that a browser removes from the start of a URL: the C0 controls and the space
+    private static readonly SearchValues<char> UrlLeadingCharacters = SearchValues.Create("\0\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F ");
+
     /// <summary>Renders the document as HTML.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="tree"/> is <see langword="null"/>.</exception>
     public static string ToHtml(MarkdownSyntaxTree tree) => ToHtml(tree, options: null);
@@ -336,6 +339,7 @@ public static class MarkdownHtmlRenderer
             var chain = new List<SyntaxNode>();
             bool result;
             SyntaxNodeOrToken current = node;
+            var currentIndex = -1;
             while (true)
             {
                 if (current.AsNode() is { } currentNode)
@@ -352,7 +356,7 @@ public static class MarkdownHtmlRenderer
                         break;
                     }
 
-                    var first = GetFirstContent(currentNode);
+                    var (first, firstIndex) = GetFirstContent(currentNode);
                     if (first.RawKind == 0)
                     {
                         result = false;
@@ -360,13 +364,14 @@ public static class MarkdownHtmlRenderer
                     }
 
                     current = first;
+                    currentIndex = firstIndex;
                     continue;
                 }
 
                 var token = current.AsToken();
                 result = (SyntaxKind)token.RawKind switch
                 {
-                    SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken => StartsWithRightToLeft(token),
+                    SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken => StartsWithRightToLeft(token, currentIndex),
                     SyntaxKind.EmojiToken or SyntaxKind.ExtendedAutolinkToken => TextDirection.StartsWithRightToLeft(token.Text),
                     _ => false,
                 };
@@ -383,8 +388,9 @@ public static class MarkdownHtmlRenderer
 
         // Markdig merges the literal of a construct that it does not parse, such as ], ! or a backslash, with the text that follows
         // it, but not an emphasis delimiter that can open or close, nor the text before an escaped character: when the text has no
-        // character with a direction, the direction is the one of the text that follows it.
-        private bool StartsWithRightToLeft(SyntaxToken token)
+        // character with a direction, the direction is the one of the text that follows it. The token is the child at the index of
+        // its parent: the siblings are read where they are, without copying them.
+        private bool StartsWithRightToLeft(SyntaxToken token, int index)
         {
             var direction = TextDirection.GetDirection((SyntaxKind)token.RawKind is SyntaxKind.EscapedCharacterToken ? token.Text.AsSpan(1) : token.Text);
             if (direction is not null || token.Parent is not { } parent)
@@ -392,8 +398,7 @@ public static class MarkdownHtmlRenderer
                 return direction ?? false;
             }
 
-            var siblings = new List<SyntaxNodeOrToken>(parent.ChildNodesAndTokens());
-            var index = siblings.FindIndex(child => child.IsToken && child.SpanStart == token.SpanStart && child.RawKind == token.RawKind);
+            var siblings = parent.ChildNodesAndTokens();
             if (index < 0 || IsDelimiterRun(siblings, index))
             {
                 return false;
@@ -413,7 +418,7 @@ public static class MarkdownHtmlRenderer
 
         // Whether a text token is a run of emphasis delimiters that can open or close, from the characters around it (inserted and
         // marked text need two delimiters), or a pipe, which the pipe tables of Markdig replace by a literal when it is not in a table
-        private bool IsDelimiterRun(List<SyntaxNodeOrToken> siblings, int index)
+        private bool IsDelimiterRun(ChildSyntaxList siblings, int index)
         {
             var token = siblings[index];
             if (options.Extensions.HasFlag(MarkdownExtensions.PipeTables) && (SyntaxKind)token.RawKind is SyntaxKind.TextToken && token.AsToken().Text is ['|', ..])
@@ -439,10 +444,14 @@ public static class MarkdownHtmlRenderer
                 : leftFlanking || rightFlanking;
         }
 
-        // The first child that is content: not a marker, a delimiter, a bracket or generic attributes
-        private static SyntaxNodeOrToken GetFirstContent(SyntaxNode node)
+        // The first child that is content, and its index: not a marker, a delimiter, a bracket or generic attributes
+        private static (SyntaxNodeOrToken Child, int Index) GetFirstContent(SyntaxNode node)
         {
             var children = node.ChildNodesAndTokens();
+
+            // The index of the last ] of the children, found on the first bracket: a bracket is closed when a ] follows it. Searching
+            // for it once keeps the search linear in a paragraph of brackets.
+            int? lastClosingBracket = null;
             for (var i = 0; i < children.Count; i++)
             {
                 var child = children[i];
@@ -450,7 +459,7 @@ public static class MarkdownHtmlRenderer
                 {
                     if (childNode is not MarkdownGenericAttributesSyntax && !(node is MarkdownTableSyntax && childNode is MarkdownTableRowSyntax { IsDelimiter: true }))
                     {
-                        return childNode;
+                        return (childNode, i);
                     }
 
                     continue;
@@ -464,30 +473,37 @@ public static class MarkdownHtmlRenderer
 
                 if ((SyntaxKind)child.RawKind is SyntaxKind.TextToken or SyntaxKind.EscapedCharacterToken or SyntaxKind.EmojiToken or SyntaxKind.EntityToken or SyntaxKind.SmartyPantToken or SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken or SyntaxKind.ExtendedAutolinkToken)
                 {
-                    return child;
+                    return (child, i);
                 }
 
                 // Markdig replaces a bracket that a ] closes without a link by a literal, which has no direction, but keeps the
                 // content of a bracket that nothing closes in it
-                if ((SyntaxKind)child.RawKind is SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken && IsClosed(children, i))
+                if ((SyntaxKind)child.RawKind is SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken)
                 {
-                    return child;
+                    lastClosingBracket ??= FindLastClosingBracket(children);
+                    if (lastClosingBracket > i)
+                    {
+                        return (child, i);
+                    }
                 }
             }
 
             return default;
 
-            static bool IsClosed(ChildSyntaxList children, int index)
+            static int FindLastClosingBracket(ChildSyntaxList children)
             {
-                for (var i = index + 1; i < children.Count; i++)
+                var i = children.Count - 1;
+                foreach (var child in children.Reverse())
                 {
-                    if (children[i] is { IsToken: true } token && (SyntaxKind)token.RawKind is SyntaxKind.TextToken && token.AsToken().Text is [']', ..])
+                    if (child.IsToken && (SyntaxKind)child.RawKind is SyntaxKind.TextToken && child.AsToken().Text is [']', ..])
                     {
-                        return true;
+                        return i;
                     }
+
+                    i--;
                 }
 
-                return false;
+                return -1;
             }
         }
 
@@ -619,14 +635,12 @@ public static class MarkdownHtmlRenderer
                     merged = new ParsedAttributes(null, [], []);
                 }
 
-                // A property is added when the element has none with its name from other attributes: the ones of the same attributes are all kept
-                var properties = merged.Properties;
-                var existingCount = properties.Count;
+                // The properties are all kept, in order: AppendAttributes writes the first one of each name
                 foreach (var property in attributes.Properties)
                 {
-                    if (rendererOptions.AttributeFilter(property.Key) && properties.FindIndex(0, existingCount, existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)) < 0)
+                    if (rendererOptions.AttributeFilter(property.Key))
                     {
-                        properties.Add(property);
+                        merged.Properties.Add(property);
                     }
                 }
 
@@ -645,12 +659,12 @@ public static class MarkdownHtmlRenderer
         }
 
         // The generic attributes of the element of the node: its id, the classes of the element and the ones of the attributes, and
-        // the other attributes
-        private void AppendAttributes(SyntaxNode node, string? leadingClasses = null, string? trailingClasses = null, string? id = null)
+        // the other attributes, except the ones that the renderer writes for the element, whose names are given
+        private void AppendAttributes(SyntaxNode node, string? leadingClasses = null, string? trailingClasses = null, string? id = null, ReadOnlySpan<string> renderedAttributes = default)
         {
             ParsedAttributes? attributes = null;
             _ = _attributes?.TryGetValue(node, out attributes);
-            AppendAttributes(node, attributes, leadingClasses, trailingClasses, id);
+            AppendAttributes(node, attributes, leadingClasses, trailingClasses, id, renderedAttributes);
         }
 
         // A class of the class attribute, after a space unless it is the first one
@@ -670,18 +684,23 @@ public static class MarkdownHtmlRenderer
             first = false;
         }
 
-        private void AppendAttributes(SyntaxNode node, ParsedAttributes? attributes, string? leadingClasses = null, string? trailingClasses = null, string? id = null)
+        // An element has one attribute of each name, as a browser keeps the first one: an attribute that the renderer writes, such as
+        // the alt of an image or the rel of a link, is not written again from the generic attributes, so the author cannot change
+        // it, and a generic attribute is written once, with its first value
+        private void AppendAttributes(SyntaxNode node, ParsedAttributes? attributes, string? leadingClasses = null, string? trailingClasses = null, string? id = null, ReadOnlySpan<string> renderedAttributes = default)
         {
             id ??= attributes?.Id;
-            if (id is null && _pragmaIds is not null)
-            {
-                id = _pragmaIds.GetValueOrDefault(node);
-            }
-
             if (id is not null)
             {
                 Markup.Append(" id=\"");
-                AppendAttributeEscaped(id);
+                AppendPrefixedId(id);
+                Markup.Append('"');
+            }
+            else if (_pragmaIds?.GetValueOrDefault(node) is { } pragmaId)
+            {
+                // The pragma lines are for the editor of the document, without the prefix of the ids
+                Markup.Append(" id=\"");
+                AppendAttributeEscaped(pragmaId);
                 Markup.Append('"');
             }
 
@@ -690,7 +709,8 @@ public static class MarkdownHtmlRenderer
             (List<string> Classes, List<KeyValuePair<string, string?>> Properties) extra = default;
             _ = _extraAttributes?.TryGetValue(node, out extra);
             var hasClasses = attributes is { Classes.Count: > 0 } || blockLineClasses is { Count: > 0 } || extra.Classes is { Count: > 0 };
-            if (hasClasses || leadingClasses is not null || trailingClasses is not null)
+            var writesClass = hasClasses || leadingClasses is not null || trailingClasses is not null;
+            if (writesClass)
             {
                 Markup.Append(" class=\"");
                 var first = true;
@@ -723,22 +743,84 @@ public static class MarkdownHtmlRenderer
                 Markup.Append('"');
             }
 
-            foreach (var property in attributes is null ? [] : CollectionsMarshal.AsSpan(attributes.Properties))
+            var properties = attributes is null ? [] : CollectionsMarshal.AsSpan(attributes.Properties);
+            var extraProperties = extra.Properties is null ? [] : CollectionsMarshal.AsSpan(extra.Properties);
+            if (properties.IsEmpty && extraProperties.IsEmpty)
             {
+                return;
+            }
+
+            // The names of the attributes that the element already has: the id, the class and the ones that the renderer writes. And
+            // the generic attributes written, in a set past a few of them, so that writing many is not quadratic.
+            var ownNames = new OwnAttributeNames(id is not null, writesClass, renderedAttributes);
+            var writtenNames = properties.Length > 8 ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) : null;
+            for (var i = 0; i < properties.Length; i++)
+            {
+                var property = properties[i];
+                if (ownNames.Contains(property.Key) || IsWritten(property.Key, properties[..i], writtenNames))
+                {
+                    continue;
+                }
+
+                writtenNames?.Add(property.Key);
                 Markup.Append(' ').Append(property.Key).Append("=\"");
                 AppendAttributeEscaped(property.Value ?? "");
                 Markup.Append('"');
             }
 
             // The attributes of Bootstrap and of the direction of the text, unless the element has them
-            foreach (var property in extra.Properties is null ? [] : CollectionsMarshal.AsSpan(extra.Properties))
+            foreach (var property in extraProperties)
             {
-                if (attributes is null || !attributes.Properties.Exists(existing => string.Equals(existing.Key, property.Key, StringComparison.Ordinal)))
+                if (!ownNames.Contains(property.Key) && !IsWritten(property.Key, properties, writtenNames))
                 {
                     Markup.Append(' ').Append(property.Key).Append("=\"");
                     AppendAttributeEscaped(property.Value ?? "");
                     Markup.Append('"');
                 }
+            }
+
+            // Whether a generic attribute of this name is written before. The names of HTML attributes ignore case.
+            static bool IsWritten(string name, ReadOnlySpan<KeyValuePair<string, string?>> previous, HashSet<string>? names)
+            {
+                if (names is not null)
+                {
+                    return names.Contains(name);
+                }
+
+                foreach (var property in previous)
+                {
+                    if (name.Equals(property.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        // The attributes of an element that generic attributes cannot write again: its id and its class when it has them, and the
+        // ones that the renderer writes
+        private readonly ref struct OwnAttributeNames(bool hasId, bool hasClass, ReadOnlySpan<string> renderedAttributes)
+        {
+            private readonly ReadOnlySpan<string> _renderedAttributes = renderedAttributes;
+
+            public bool Contains(string name)
+            {
+                if ((hasId && name.Equals("id", StringComparison.OrdinalIgnoreCase)) || (hasClass && name.Equals("class", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return true;
+                }
+
+                foreach (var rendered in _renderedAttributes)
+                {
+                    if (name.Equals(rendered, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -1065,7 +1147,9 @@ public static class MarkdownHtmlRenderer
                         // A diagram is its code, where only < and & are escaped, in the element that its script reads
                         var tag = language == "mermaid" ? "pre" : "div";
                         Cr();
-                        Markup.Append('<').Append(tag).Append(" class=\"").Append(language).Append("\">");
+                        Markup.Append('<').Append(tag);
+                        AppendAttributes(code, trailingClasses: language);
+                        Markup.Append('>');
                         AppendCode(code, soft: true);
                         Markup.Append("</").Append(tag).Append('>');
                         Cr();
@@ -1366,17 +1450,21 @@ public static class MarkdownHtmlRenderer
                 return;
             }
 
-            _footnotes = new MarkdownFootnotes(document);
+            _footnotes ??= new MarkdownFootnotes(document);
 
             Cr();
             Markup.Append("<div class=\"footnotes\">\n<hr />\n<ol>\n");
+            // The links back are written after the content of the footnote: the prefix of their ids is escaped as AppendAttributeEscaped does
+            var idPrefix = (rendererOptions.IdPrefix ?? "").Replace("&", "&amp;", StringComparison.Ordinal).Replace("<", "&lt;", StringComparison.Ordinal).Replace(">", "&gt;", StringComparison.Ordinal).Replace("\"", "&quot;", StringComparison.Ordinal).Replace('\0', '\uFFFD');
             foreach (var footnote in _footnotes.Footnotes)
             {
-                Markup.Append("<li id=\"fn:").Append(_footnotes.GetNumber(footnote)).Append("\">\n");
+                Markup.Append("<li id=\"");
+                AppendPrefixedId("fn:" + _footnotes.GetNumber(footnote).ToString(CultureInfo.InvariantCulture));
+                Markup.Append("\">\n");
                 var backLinks = new StringBuilder();
                 foreach (var reference in _footnotes.GetReferences(footnote))
                 {
-                    backLinks.Append("<a href=\"#fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" class=\"footnote-back-ref\">&#8617;</a>");
+                    backLinks.Append("<a href=\"#").Append(idPrefix).Append("fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" class=\"footnote-back-ref\">&#8617;</a>");
                 }
 
                 // The links end the last paragraph, or a paragraph of their own
@@ -1394,6 +1482,30 @@ public static class MarkdownHtmlRenderer
             }
 
             Markup.Append("</ol>\n</div>\n");
+        }
+
+        // The document whose footnotes a node refers to: for the content of a grid table cell, the document of the table
+        private static MarkdownDocumentSyntax GetOutermostDocument(SyntaxNode node)
+        {
+            var tree = node.SyntaxTree as MarkdownSyntaxTree;
+            while (tree?.Container is { } container)
+            {
+                tree = container;
+            }
+
+            return tree?.GetRoot() ?? node.FirstAncestorOrSelf<MarkdownDocumentSyntax>()!;
+        }
+
+        // An id that the document sets, of an element or of a footnote, after the prefix of the options, which the links to the
+        // element have too
+        private void AppendPrefixedId(string id)
+        {
+            if (rendererOptions.IdPrefix is { Length: > 0 } prefix)
+            {
+                AppendAttributeEscaped(prefix);
+            }
+
+            AppendAttributeEscaped(id);
         }
 
         // A paragraph of attributes only, whose last attributes are for the next block, is not written
@@ -1654,6 +1766,7 @@ public static class MarkdownHtmlRenderer
                     Markup.Append("</").Append(tag).Append(">\n");
                 }
 
+                AppendPlainTextRowSeparator();
                 Markup.Append("</tr>\n");
             }
 
@@ -1671,7 +1784,20 @@ public static class MarkdownHtmlRenderer
 
         private string RenderCell(MarkdownSyntaxTree content)
         {
-            using var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText };
+            // The footnotes of the document, which the references of the cell are numbered with, are found once for all the cells
+            using var writer = new Writer(content.GetText().Length, content.Options, rendererOptions) { PlainText = PlainText, _footnotes = _footnotes };
+            try
+            {
+                return RenderCell(writer, content);
+            }
+            finally
+            {
+                _footnotes ??= writer._footnotes;
+            }
+        }
+
+        private static string RenderCell(Writer writer, MarkdownSyntaxTree content)
+        {
             writer.CollectAllAttributes(content);
             if (content.GetRoot().Blocks is [MarkdownParagraphSyntax paragraph] && !(writer._attributes is not null && writer.IsAttributesParagraph(paragraph)))
             {
@@ -1734,6 +1860,7 @@ public static class MarkdownHtmlRenderer
                 Markup.Append("</").Append(tag).Append(">\n");
             }
 
+            AppendPlainTextRowSeparator();
             Markup.Append("</tr>\n");
         }
 
@@ -1757,6 +1884,7 @@ public static class MarkdownHtmlRenderer
                 Markup.Append("</").Append(tag).Append(">\n");
             }
 
+            AppendPlainTextRowSeparator();
             Markup.Append("</tr>\n");
         }
 
@@ -1981,11 +2109,11 @@ public static class MarkdownHtmlRenderer
                         // Markdig sets the target before the generic attributes
                         ParsedAttributes? autolinkAttributes = null;
                         _ = _attributes?.TryGetValue(autolink, out autolinkAttributes);
-                        AppendAttributes(autolink, new ParsedAttributes(autolinkAttributes?.Id, autolinkAttributes?.Classes ?? [], [new("target", "_blank"), .. (autolinkAttributes?.Properties ?? []).Where(property => !string.Equals(property.Key, "target", StringComparison.Ordinal))]));
+                        AppendAttributes(autolink, new ParsedAttributes(autolinkAttributes?.Id, autolinkAttributes?.Classes ?? [], [new("target", "_blank"), .. (autolinkAttributes?.Properties ?? []).Where(property => !string.Equals(property.Key, "target", StringComparison.Ordinal))]), renderedAttributes: GetLinkAttributes(title: null, rel: autolink.IsExtended || !autolink.IsEmail));
                     }
                     else
                     {
-                        AppendAttributes(autolink);
+                        AppendAttributes(autolink, renderedAttributes: GetLinkAttributes(title: null, rel: autolink.IsExtended || !autolink.IsEmail));
                     }
 
                     if (autolink.IsExtended || !autolink.IsEmail)
@@ -2011,7 +2139,7 @@ public static class MarkdownHtmlRenderer
                         attributes = new ParsedAttributes(attributes?.Id, attributes?.Classes ?? [], [new("target", "_blank"), .. (attributes?.Properties ?? []).Where(property => !string.Equals(property.Key, "target", StringComparison.Ordinal))]);
                     }
 
-                    AppendAttributes(jira, attributes);
+                    AppendAttributes(jira, attributes, renderedAttributes: GetLinkAttributes(title: null, rel: true));
                     AppendRel();
                     Markup.Append('>');
                     AppendEscaped(jira.ReferenceToken.Text);
@@ -2046,11 +2174,17 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownFootnoteReferenceSyntax reference:
                 {
-                    _footnotes ??= new MarkdownFootnotes(reference.FirstAncestorOrSelf<MarkdownDocumentSyntax>()!);
-                    if (reference.Definition is { } footnote && _footnotes.Footnotes.Contains(footnote))
+                    // The references of the content of a grid table cell are numbered with the ones of the document of the table. The
+                    // content of a cell rendered alone can be a tree made from an edit of it, whose references are not in the document.
+                    _footnotes ??= new MarkdownFootnotes(GetOutermostDocument(reference), reference.FirstAncestorOrSelf<MarkdownDocumentSyntax>());
+                    if (reference.Definition is { } footnote && _footnotes.Contains(footnote))
                     {
                         var number = _footnotes.GetNumber(footnote);
-                        Markup.Append("<a id=\"fnref:").Append(_footnotes.GetReferenceNumber(reference)).Append("\" href=\"#fn:").Append(number).Append("\" class=\"footnote-ref\"><sup>");
+                        Markup.Append("<a id=\"");
+                        AppendPrefixedId("fnref:" + _footnotes.GetReferenceNumber(reference).ToString(CultureInfo.InvariantCulture));
+                        Markup.Append("\" href=\"#");
+                        AppendPrefixedId("fn:" + number.ToString(CultureInfo.InvariantCulture));
+                        Markup.Append("\" class=\"footnote-ref\"><sup>");
                         _output.Append(number);
                         Markup.Append("</sup></a>");
                     }
@@ -2073,7 +2207,7 @@ public static class MarkdownHtmlRenderer
                     Markup.Append("<img src=\"");
                     AppendAttributeEscaped(NormalizeUrl(image.Destination));
                     Markup.Append('"');
-                    AppendAttributes(image);
+                    AppendAttributes(image, renderedAttributes: string.IsNullOrEmpty(image.Title) ? ImageAttributes : ImageAttributesWithTitle);
                     Markup.Append(" alt=\"");
                     WriteAltText(image.Text);
                     Markup.Append('"');
@@ -2083,9 +2217,9 @@ public static class MarkdownHtmlRenderer
 
                 case MarkdownLinkSyntax link:
                     Markup.Append("<a href=\"");
-                    AppendAttributeEscaped(NormalizeUrl(link.Destination));
+                    AppendAttributeEscaped(NormalizeUrl(rendererOptions.IdPrefix is { Length: > 0 } idPrefix && link.Heading is { Identifier: { } headingId } ? "#" + idPrefix + headingId : link.Destination));
                     Markup.Append('"');
-                    AppendAttributes(link);
+                    AppendAttributes(link, renderedAttributes: GetLinkAttributes(link.Title, rel: true));
                     AppendTitle(link.Title);
                     AppendRel();
                     Markup.Append('>');
@@ -2100,8 +2234,32 @@ public static class MarkdownHtmlRenderer
         {
             if (!string.IsNullOrWhiteSpace(rendererOptions.LinkRel))
             {
-                Markup.Append(" rel=\"").Append(rendererOptions.LinkRel).Append('"');
+                Markup.Append(" rel=\"");
+                AppendAttributeEscaped(rendererOptions.LinkRel);
+                Markup.Append('"');
             }
+        }
+
+        // The attributes that the renderer writes for an image and for a link, which generic attributes cannot write again
+        private static readonly string[] ImageAttributes = ["src", "alt"];
+        private static readonly string[] FrameAttributes = ["src"];
+        private static readonly string[] ImageAttributesWithTitle = ["src", "alt", "title"];
+        private static readonly string[] LinkAttributes = ["href"];
+        private static readonly string[] LinkAttributesWithTitle = ["href", "title"];
+        private static readonly string[] LinkAttributesWithRel = ["href", "rel"];
+        private static readonly string[] LinkAttributesWithTitleAndRel = ["href", "title", "rel"];
+
+        // The attributes of a link: its title when it has one, and the rel of the options when the link has one
+        private string[] GetLinkAttributes(string? title, bool rel)
+        {
+            rel = rel && !string.IsNullOrWhiteSpace(rendererOptions.LinkRel);
+            return (string.IsNullOrEmpty(title), rel) switch
+            {
+                (true, false) => LinkAttributes,
+                (false, false) => LinkAttributesWithTitle,
+                (true, true) => LinkAttributesWithRel,
+                (false, true) => LinkAttributesWithTitleAndRel,
+            };
         }
 
         // An image of a site such as YouTube is an <iframe>, and one of an audio or a video file is <audio> or <video>, with the
@@ -2151,7 +2309,7 @@ public static class MarkdownHtmlRenderer
                         AddProperty(attributes, "allowfullscreen", value: null);
                     }
 
-                    AppendAttributes(image, attributes);
+                    AppendAttributes(image, attributes, renderedAttributes: FrameAttributes);
                     Markup.Append("></iframe>");
                     return true;
                 }
@@ -2306,7 +2464,73 @@ public static class MarkdownHtmlRenderer
                 uri = rewriter(uri);
             }
 
-            return NormalizeUri(uri, rendererOptions.EscapeNonAsciiUrlCharacters);
+            uri = NormalizeUri(uri, rendererOptions.EscapeNonAsciiUrlCharacters);
+            return rendererOptions.AllowedUrlSchemes is { } allowedSchemes && !IsAllowedUrl(uri, allowedSchemes) ? "" : uri;
+        }
+
+        // Whether a URL is relative, or its scheme is one of the allowed ones, ignoring case. The scheme is read as a browser reads
+        // it: after the spaces and the control characters at the start, which it ignores, and without the tabs and the line
+        // endings, which it removes from the whole URL. "java\tscript:" is a javascript: URL.
+        internal static bool IsAllowedUrl(ReadOnlySpan<char> url, IReadOnlyCollection<string> allowedSchemes)
+        {
+            if (!TryGetUrlScheme(url, out var scheme))
+            {
+                return true;
+            }
+
+            foreach (var allowed in allowedSchemes)
+            {
+                if (scheme.Equals(allowed.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // The scheme of a URL, as the URL Standard reads it: an ASCII letter, then ASCII letters, digits, +, - and ., then a colon
+        internal static bool TryGetUrlScheme(ReadOnlySpan<char> url, out ReadOnlySpan<char> scheme)
+        {
+            scheme = default;
+            var start = url.IndexOfAnyExcept(UrlLeadingCharacters);
+            if (start < 0)
+            {
+                return false;
+            }
+
+            url = url[start..];
+
+            // The characters of the scheme, without the tabs and the line endings
+            var length = 0;
+            for (var i = 0; i < url.Length; i++)
+            {
+                var c = url[i];
+                if (c is '\t' or '\n' or '\r')
+                {
+                    continue;
+                }
+
+                if (c == ':')
+                {
+                    if (length == 0)
+                    {
+                        return false;
+                    }
+
+                    scheme = length == i ? url[..i] : url[..i].ToString().Replace("\t", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal).Replace("\r", "", StringComparison.Ordinal);
+                    return true;
+                }
+
+                if (!(char.IsAsciiLetter(c) || (length > 0 && (char.IsAsciiDigit(c) || c is '+' or '-' or '.'))))
+                {
+                    return false;
+                }
+
+                length++;
+            }
+
+            return false;
         }
 
         private static string NormalizeUri(string uri, bool escapeNonAscii = true)
@@ -2499,6 +2723,15 @@ public static class MarkdownHtmlRenderer
             if (PlainText)
             {
                 _output.Append(' ');
+            }
+        }
+
+        // And a line ending after each row, so that the rows are not merged
+        private void AppendPlainTextRowSeparator()
+        {
+            if (PlainText && _output.Length > 0 && _output.LastChar != '\n')
+            {
+                _output.Append('\n');
             }
         }
 

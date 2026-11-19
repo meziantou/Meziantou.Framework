@@ -455,7 +455,7 @@
     "reftest": "PASS"
   },
   "css/css-highlight-api/painting/custom-highlight-painting-prioritization-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-highlight-api/painting/custom-highlight-painting-priority-text-decoration-001.html": {
     "reftest": "PASS"

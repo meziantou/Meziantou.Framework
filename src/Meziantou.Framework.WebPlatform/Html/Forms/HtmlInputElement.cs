@@ -216,6 +216,11 @@ public partial class HtmlInputElement : IEditableTextControl
                 break;
 
             case "name" or "form":
+                if (localName == "form" && value is not null && IsConnected)
+                {
+                    NodeDocument.RegisterFormAttributeElement(this);
+                }
+
                 if (_type == InputType.Radio && _checkedness)
                 {
                     UncheckOtherRadiosInGroup();
@@ -309,12 +314,37 @@ public partial class HtmlInputElement : IEditableTextControl
         {
             UncheckOtherRadiosInGroup();
         }
+
+        if (IsConnected && HasAttributeWithLocalName("form"))
+        {
+            NodeDocument.RegisterFormAttributeElement(this);
+        }
     }
 
     internal override void RemovingSteps(bool isSubtreeRoot, Node oldAncestor)
     {
         base.RemovingSteps(isSubtreeRoot, oldAncestor);
         ClosePicker();
+
+        // The form attribute only applies to a connected element: the form owner of a radio button that is disconnected
+        // becomes its ancestor form, so the other radio buttons of its new group are unchecked
+        if (oldAncestor.IsConnected && HasAttributeWithLocalName("form"))
+        {
+            OnFormOwnerMayHaveChanged();
+        }
+    }
+
+    /// <summary>
+    /// The form owner of the element may have changed (https://html.spec.whatwg.org/multipage/input.html#radio-button-state-(type=radio):
+    /// "The element's form owner changes"): the other radio buttons of the group of a checked radio button are unchecked (the
+    /// group is unchanged when the form owner did not change, and the other radio buttons of the group are already unchecked).
+    /// </summary>
+    internal void OnFormOwnerMayHaveChanged()
+    {
+        if (_type == InputType.Radio && _checkedness)
+        {
+            UncheckOtherRadiosInGroup();
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------

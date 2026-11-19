@@ -313,6 +313,7 @@ internal static class IntrinsicSizing
             PercentageBasis = null,
             PaddingAndBorder = paddingAndBorder.InlineSum(),
             Edges = paddingAndBorder.InlineSum() + gutters.InlineSum(),
+            Margins = marginSum,
             ContentBlockSize = contentBlockSize,
             QuirksPercentageBlockSize = contentBlockSize is null && quirksPercentageBlockSize is not null && FormattingContext.PassesQuirksPercentageBlockSize(box, layout) ? quirksPercentageBlockSize : null,
             TransferredSize = ratio is { } transfer && preferredBlockSize is { } ratioDeterminingSize ? transfer.ToInline(ratioDeterminingSize) : null,
@@ -559,6 +560,12 @@ internal readonly record struct AxisSizing
     /// <summary>The border-box stretch-fit size (https://drafts.csswg.org/css-sizing-3/#stretch-fit-sizing), or null when it is indefinite (<c>stretch</c> then behaves as <c>auto</c>).</summary>
     public double? StretchSize { get; init; }
 
+    /// <summary>
+    /// The margins of the axis (the <c>auto</c> margins are zero, the trimmed and collapsed margins are not), which
+    /// <c>fit-content(&lt;length-percentage&gt;)</c> subtracts from its argument (see <see cref="StretchInto"/>).
+    /// </summary>
+    public double Margins { get; init; }
+
     /// <summary>In the inline axis: the definite block size of the content box, the input of the intrinsic inline sizes.</summary>
     public double? ContentBlockSize { get; init; }
 
@@ -656,6 +663,13 @@ internal readonly record struct AxisSizing
         return (min is { } a ? Math.Max(0, a - Edges) : null, max is { } b ? Math.Max(0, b - Edges) : null);
     }
 
+    /// <summary>
+    /// Returns the border-box size of <c>stretch(&lt;length-percentage&gt;)</c> (https://drafts.csswg.org/css-sizing-4/#funcdef-width-stretch),
+    /// the available space of <c>fit-content(&lt;length-percentage&gt;)</c>: "Fit the margin box to the size specified by the
+    /// argument", whatever the <c>box-sizing</c>.
+    /// </summary>
+    private double StretchInto(double value) => Math.Max(value - Margins, PaddingAndBorder);
+
     private double? ResolveLimit(Size size) => size.IsLengthPercentage && size.TryResolve(PercentageBasis) is { } value ? ToBorderBox(value) : null;
 
     /// <summary>Returns the border-box size of a &lt;length-percentage&gt; with <c>box-sizing</c>.</summary>
@@ -695,9 +709,9 @@ internal readonly record struct AxisSizing
                     // https://drafts.csswg.org/css-sizing-3/#valdef-width-fit-content: min(max-content, max(min-content, stretch))
                     SizeKind.FitContent => StretchSize is { } stretch ? intrinsic.FitContent(stretch) : intrinsic.MaxContent,
 
-                    // https://drafts.csswg.org/css-sizing-4/#valdef-width-fit-content-length-percentage: the fit-content formula with
-                    // the argument as the available space
-                    _ => size.Value.TryResolve(PercentageBasis) is { } limit ? intrinsic.FitContent(ToBorderBox(limit)) : ResolveCyclicFitContent(intrinsic, property),
+                    // https://drafts.csswg.org/css-sizing-4/#funcdef-width-fit-content: "the fit-content formula with the available
+                    // space replaced by stretch() into the specified argument"
+                    _ => size.Value.TryResolve(PercentageBasis) is { } limit ? intrinsic.FitContent(StretchInto(limit)) : ResolveCyclicFitContent(intrinsic, property),
                 };
 
             case SizeKind.Stretch:
@@ -857,7 +871,7 @@ internal readonly record struct AxisSizing
                 if (size.Value.HasPercentage)
                     return ResolveCyclicFitContent(GetIntrinsicSizes(), property) is { } cyclic ? IntrinsicSizes.FromSize(cyclic) : null;
 
-                return IntrinsicSizes.FromSize(GetIntrinsicSizes().FitContent(ToBorderBox(size.Value.Resolve(0))));
+                return IntrinsicSizes.FromSize(GetIntrinsicSizes().FitContent(StretchInto(size.Value.Resolve(0))));
 
             case SizeKind.CalcSize when size.CalcSize is { } calcSize:
                 return ResolveCalcSizeContribution(calcSize, property);

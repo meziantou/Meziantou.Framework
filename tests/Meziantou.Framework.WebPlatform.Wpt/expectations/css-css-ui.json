@@ -3043,10 +3043,7 @@
     }
   },
   "css/css-ui/parsing/cursor-invalid.html": {
-    "total": 15,
-    "failures": {
-      "e.style['cursor'] = \"image-set(linear-gradient(red) 1x), pointer\" should not set the property value": "FAIL"
-    }
+    "total": 15
   },
   "css/css-ui/parsing/cursor-valid.html": {
     "total": 48

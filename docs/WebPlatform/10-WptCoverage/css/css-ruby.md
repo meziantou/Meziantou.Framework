@@ -11,15 +11,15 @@ description: "The results of the web-platform-tests of css/css-ruby, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 21 | 22 | 0 | 95% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
-| [Reftests](#reftests) | 125 | 143 | 0 | 87% |
+| [Reftests](#reftests) | 126 | 143 | 0 | 88% |
 | [Crash tests](#crash-tests) | 15 | 15 | 0 | 100% |
-| **All** | **161** | **181** | **0** | **89%** |
+| **All** | **162** | **181** | **0** | **90%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
+- **BUG**: 4
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 4
@@ -80,7 +80,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`improperly-contained-annotation-001.html`](https://wpt.fyi/results/css/css-ruby/improperly-contained-annotation-001.html) | Pass | 1 / 1 |  |  |
 | [`interlinear-block-margin-box.html`](https://wpt.fyi/results/css/css-ruby/interlinear-block-margin-box.html) | Pass | 1 / 1 |  |  |
 | [`intra-base-white-space-001.html`](https://wpt.fyi/results/css/css-ruby/intra-base-white-space-001.html) | Pass | 1 / 1 |  |  |
-| [`nested-ruby-pairing-001.html`](https://wpt.fyi/results/css/css-ruby/nested-ruby-pairing-001.html) | Fail | 0 / 1 | BUG | rounding: the reference (`rb` and `rtc` elements) is 0.5px wider than the ruby nested in a ruby base: its second column is 16.5px wide where its base `南` and its annotation `なん` are 16px wide (the annotation of the outer ruby, 31.1px, is narrower than the 32px of the bases and widens nothing), so its base is 0.5px to the right; not worth fixing |
+| [`nested-ruby-pairing-001.html`](https://wpt.fyi/results/css/css-ruby/nested-ruby-pairing-001.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-first-letter.html`](https://wpt.fyi/results/css/css-ruby/pseudo-first-letter.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-first-line.html`](https://wpt.fyi/results/css/css-ruby/pseudo-first-line.html) | Pass | 1 / 1 |  |  |
 | [`rb-display-001.html`](https://wpt.fyi/results/css/css-ruby/rb-display-001.html) | Pass | 1 / 1 |  |  |
@@ -132,7 +132,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ruby-intra-level-whitespace-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-intra-level-whitespace-002.html) | Pass | 1 / 1 |  |  |
 | [`ruby-intra-level-whitespace-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-intra-level-whitespace-003.html) | Pass | 1 / 1 |  |  |
 | [`ruby-intrinsic-isize-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-001.html) | Pass | 1 / 1 |  |  |
-| [`ruby-intrinsic-isize-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-002.html) | Fail | 0 / 1 | BUG | the texts of the bases are shaped separately: no kerning between them, unlike the single text of the reference |
+| [`ruby-intrinsic-isize-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-002.html) | Fail | 0 / 1 | BUG | the text of each ruby base is shaped separately, so the kerning pair across two adjacent bases is lost: `<rb>ABC</rb><rb>DEF</rb>` is 63.125px wide (32.898px + 30.227px) where the single text `ABCDEF` of the reference is 62.242px (the serif font of the runner kerns `C` and `D` by -0.883px), so the second block is 0.883px wider and the blocks after it are shifted (the shaping across inline box boundaries without change of formatting, https://drafts.csswg.org/css-text-3/#boundary-shaping, is not applied across ruby bases) |
 | [`ruby-intrinsic-isize-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-003.html) | Pass | 1 / 1 |  |  |
 | [`ruby-justification-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-justification-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the expansion of the ruby columns by the justification of their line (`text-align: justify`): they are not expanded, and the annotation (an inline-block of 100px in an `rtc`) spans the two bases, which are centered in its column; the reference has no annotation and the bases at the start of the line. Chromium 152 matches the reference because it lays out `rtc` as an inline box (it does not implement `ruby-text-container`): the extra space of the justified line goes to the space before it |
 | [`ruby-justification-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-justification-002.html) | Pass | 1 / 1 |  |  |

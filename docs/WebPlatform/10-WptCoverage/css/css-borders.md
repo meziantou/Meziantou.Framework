@@ -10,16 +10,16 @@ description: "The results of the web-platform-tests of css/css-borders, and why 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 107 | 107 | 0 | 100% |
-| [Tentative](#tentative-tests) | 37 | 47 | 0 | 79% |
+| [Tentative](#tentative-tests) | 38 | 47 | 0 | 81% |
 | [Reftests](#reftests) | 252 | 264 | 0 | 95% |
 | [Crash tests](#crash-tests) | 7 | 7 | 0 | 100% |
-| **All** | **403** | **425** | **0** | **95%** |
+| **All** | **404** | **425** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 8
+- **BUG**: 7
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 4
 
@@ -167,7 +167,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/parsing/border-right-radius-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-right-radius-valid.html) | Pass | 8 / 8 |  |  |
 | [`tentative/parsing/border-shape-computed.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-computed.html) | Pass | 22 / 22 |  |  |
 | [`tentative/parsing/border-shape-invalid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-invalid.html) | Pass | 12 / 12 |  |  |
-| [`tentative/parsing/border-shape-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-valid.html) | Fail | 11 / 12 | BUG | 1 of 12 subtests: the specified value of `border-shape` keeps the reference boxes as specified, including the default `border-box` of the outer shape (`circle() border-box circle() content-box`), where the shortest serialization omits it (`circle() circle() content-box`); only the computed value omits the default boxes |
+| [`tentative/parsing/border-shape-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-shape-valid.html) | Pass | 12 / 12 |  |  |
 | [`tentative/parsing/border-top-radius-computed.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-top-radius-computed.html) | Pass | 6 / 6 |  |  |
 | [`tentative/parsing/border-top-radius-invalid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-top-radius-invalid.html) | Pass | 10 / 10 |  |  |
 | [`tentative/parsing/border-top-radius-valid.html`](https://wpt.fyi/results/css/css-borders/tentative/parsing/border-top-radius-valid.html) | Pass | 8 / 8 |  |  |
@@ -293,12 +293,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`border-radius-012.html`](https://wpt.fyi/results/css/css-borders/border-radius-012.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-013.html`](https://wpt.fyi/results/css/css-borders/border-radius-013.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-clip-001.html`](https://wpt.fyi/results/css/css-borders/border-radius-clip-001.html) | Pass | 1 / 1 |  |  |
-| [`border-radius-clip-002.htm`](https://wpt.fyi/results/css/css-borders/border-radius-clip-002.htm) | Fail | 0 / 1 | BUG | only the antialiased edges of what is painted differ, or a box is painted 1px away (not analyzed individually; the causes fixed with #461 are not involved: the Ahem glyphs are not antialiased, the joins of the sides of the borders, the glyphs of the highlights painted once, the slices of the border images, the transformed rectangles that are almost on the pixels) |
+| [`border-radius-clip-002.htm`](https://wpt.fyi/results/css/css-borders/border-radius-clip-002.htm) | Fail | 0 / 1 | BUG | 67 pixels differ by up to 97, the test allows 70 on 50 pixels: in the second pair, the red `#reference-base` (98x98, radius 20px) and the content box of the black `#test-cover` (100x100 from 2px above, inner radius 40px - 10px - 10px = 20px) share their bottom-left corner and their left and bottom edges, so the 47 antialiased pixels of the curves of the black over the red let the red show (37 on the bottom-left corner, 10 where the curves of the other corners cross the straight edges of the red; the browsers have the same artifact, which the fuzziness is meant for). The red is a color and an image (`swatch-red.png`), painted as two layers each clipped by the antialiased rounded rectangle, so their coverages add up (0.48 becomes 0.73): (132,35,35) for the gray (132,132,132) of the reference, a difference of 97 instead of 63. 20 other pixels differ by 1 or 2; with a single coverage, the 67 pixels would still exceed the 50 allowed |
 | [`border-radius-clipping-002.html`](https://wpt.fyi/results/css/css-borders/border-radius-clipping-002.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-clipping-with-transform-001.html`](https://wpt.fyi/results/css/css-borders/border-radius-clipping-with-transform-001.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-currentcolor.html`](https://wpt.fyi/results/css/css-borders/border-radius-currentcolor.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-dynamic-from-no-radius.html`](https://wpt.fyi/results/css/css-borders/border-radius-dynamic-from-no-radius.html) | Pass | 1 / 1 |  |  |
-| [`border-radius-greater-than-width.html`](https://wpt.fyi/results/css/css-borders/border-radius-greater-than-width.html) | Fail | 0 / 1 | BUG | only the antialiased edges of what is painted differ, or a box is painted 1px away (not analyzed individually; the causes fixed with #461 are not involved: the Ahem glyphs are not antialiased, the joins of the sides of the borders, the glyphs of the highlights painted once, the slices of the border images, the transformed rectangles that are almost on the pixels) |
+| [`border-radius-greater-than-width.html`](https://wpt.fyi/results/css/css-borders/border-radius-greater-than-width.html) | Fail | 0 / 1 | BUG | the join of the top (lightgreen) and left (black) borders is the diagonal of the 100x100 corner that the 10px radii do not reach: the library paints the two sides with complementary coverages of the diagonal (each of its 100 pixels is half lightgreen, half black: (72,119,72)), where the reference paints them as two boxes clipped by `clip-path` polygons along the same diagonal, each antialiased over the white page ((100,123,100), a white seam: two coverages of the same edge); 100 pixels differ by 28, no fuzziness is allowed |
 | [`border-radius-horizontal-value-is-zero.html`](https://wpt.fyi/results/css/css-borders/border-radius-horizontal-value-is-zero.html) | Pass | 1 / 1 |  |  |
 | [`border-radius-shorthand-002.html`](https://wpt.fyi/results/css/css-borders/border-radius-shorthand-002.html) | Pass | 1 / 1 |  |  |
 | [`border-right-width-medium.html`](https://wpt.fyi/results/css/css-borders/border-right-width-medium.html) | Pass | 1 / 1 |  |  |
@@ -307,7 +307,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`border-shape-absolute-coords-shape.tentative.html`](https://wpt.fyi/results/css/css-borders/border-shape-absolute-coords-shape.tentative.html) | Pass | 1 / 1 |  |  |
 | [`border-shape/border-shape-background-origin-border-box.html`](https://wpt.fyi/results/css/css-borders/border-shape/border-shape-background-origin-border-box.html) | Pass | 1 / 1 |  |  |
 | [`border-shape/border-shape-circle-extent-keywords.html`](https://wpt.fyi/results/css/css-borders/border-shape/border-shape-circle-extent-keywords.html) | Pass | 1 / 1 |  |  |
-| [`border-shape/border-shape-clips-background.html`](https://wpt.fyi/results/css/css-borders/border-shape/border-shape-clips-background.html) | Fail | 0 / 1 | BUG | the stroke of the circle is painted as the ring of a border (as the border of a box with `border-radius`), the reference strokes an SVG circle: the curves of the two rings are flattened differently, so their antialiased edges differ (276 pixels, by up to 2; no fuzziness is allowed) |
+| [`border-shape/border-shape-clips-background.html`](https://wpt.fyi/results/css/css-borders/border-shape/border-shape-clips-background.html) | Fail | 0 / 1 | BUG | the stroke of the circle is painted as the ring of a border (as the border of a box with `border-radius`), the reference strokes an SVG circle: the curves of the two rings are flattened differently, so their antialiased edges differ (428 pixels, by up to 2; no fuzziness is allowed) |
 | [`border-shape/border-shape-collapsed-shape-clips-background.html`](https://wpt.fyi/results/css/css-borders/border-shape/border-shape-collapsed-shape-clips-background.html) | Pass | 1 / 1 |  |  |
 | [`border-shape/border-shape-combined-shadow.html`](https://wpt.fyi/results/css/css-borders/border-shape/border-shape-combined-shadow.html) | Pass | 1 / 1 |  |  |
 | [`border-shape/border-shape-double-shape-default.html`](https://wpt.fyi/results/css/css-borders/border-shape/border-shape-double-shape-default.html) | Pass | 1 / 1 |  |  |
@@ -381,9 +381,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corner-shape/corner-shape-ancestor-clip-dynamic.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-ancestor-clip-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-backdrop-filter-overflow.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-backdrop-filter-overflow.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-backdrop-filter-video-overflow.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-backdrop-filter-video-overflow.html) | Pass | 1 / 1 |  |  |
-| [`corner-shape/corner-shape-backdrop-filter.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-backdrop-filter.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for: 384 pixels of the shaped corners differ (by up to 32), 381 are allowed |
+| [`corner-shape/corner-shape-backdrop-filter.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-backdrop-filter.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for: 382 pixels of the shaped corners differ (by up to 32), 381 are allowed |
 | [`corner-shape/corner-shape-bevel-overflow-composite.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-bevel-overflow-composite.html) | Pass | 1 / 1 |  |  |
-| [`corner-shape/corner-shape-bevel-overflow.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-bevel-overflow.html) | Fail | 0 / 1 | BUG | the red background of the box and the overflow clip of its green child are both antialiased along the bevels (two coverages of the same edge): the pixels of the edges keep a part of the red background (a difference of 67/255 on the 200 pixels of the four bevels; the test allows 32), where the reference clips one green box |
+| [`corner-shape/corner-shape-bevel-overflow.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-bevel-overflow.html) | Fail | 0 / 1 | BUG | the red background of the box and the overflow clip of its green child are both antialiased along the bevels (two coverages of the same edge), so the pixels of the edges keep a part of the red, which the fuzziness of the test (64) is meant for; 8 pixels at the ends of the bevels (where they meet the middles of the sides of the box, e.g. (57,8)) differ by 65: the bevel covers exactly half of them (blue = 255 x 0.5 x 0.5 = 64), while the reference clips its green box with its rounded `overflow: clip` (radius 50px) and with a `clip-path` polygon, whose coverages are multiplied (0.5 x 0.99: 129 instead of 128) |
 | [`corner-shape/corner-shape-bevel-round-scoop-square-outset.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-bevel-round-scoop-square-outset.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-bevel.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-bevel.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-border-side-colors.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-border-side-colors.html) | Pass | 1 / 1 |  |  |
@@ -399,7 +399,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corner-shape/corner-shape-notch-mixed.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-notch-mixed.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-notch-squircle-outset.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-notch-squircle-outset.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-notch.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-notch.html) | Pass | 1 / 1 |  |  |
-| [`corner-shape/corner-shape-offset-path-coord-box-001.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-offset-path-coord-box-001.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for: 166 pixels of the edges of the shape differ (by up to 2), 16 are allowed |
+| [`corner-shape/corner-shape-offset-path-coord-box-001.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-offset-path-coord-box-001.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for: 232 pixels of the edges of the shape differ (by up to 3), 16 are allowed |
 | [`corner-shape/corner-shape-offset-path-coord-box-002.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-offset-path-coord-box-002.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-opposite-scale-convex-inert.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-opposite-scale-convex-inert.html) | Fail | 0 / 1 | TEST BUG | antialiasing only: the shapes are the same, but the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for: 876 pixels of the edges of the squircle corners differ (by up to 76), 840 are allowed |
 | [`corner-shape/corner-shape-opposite-scale-elliptical.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-opposite-scale-elliptical.html) | Pass | 1 / 1 |  |  |
@@ -425,7 +425,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corner-shape/corner-shape-squircle.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-squircle.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-superellipse-bevel.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-superellipse-bevel.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-superellipse-concave-outset.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-superellipse-concave-outset.html) | Pass | 1 / 1 |  |  |
-| [`corner-shape/corner-shape-superellipse-concave.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-superellipse-concave.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for: 370 pixels of the concave corners differ (by up to 70), 347 are allowed |
+| [`corner-shape/corner-shape-superellipse-concave.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-superellipse-concave.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for: 366 pixels of the concave corners differ (by up to 70), 357 are allowed |
 | [`corner-shape/corner-shape-superellipse-convex-outset.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-superellipse-convex-outset.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-superellipse-convex.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-superellipse-convex.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/corner-shape-superellipse-negative-100.html`](https://wpt.fyi/results/css/css-borders/corner-shape/corner-shape-superellipse-negative-100.html) | Pass | 1 / 1 |  |  |

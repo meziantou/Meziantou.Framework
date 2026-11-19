@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.RegularExpressions;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Language;
 using Meziantou.Framework.Language.Fuzz;
@@ -29,7 +31,7 @@ public static class MarkdownFuzzTargets
 
     private static readonly string[] ExtensionTokens =
     [
-        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"", "+---+", "+===+", "ABC-12", "(X-1)", "![](a.mp4)", "![](https://youtu.be/x)", "+:-:+", "+---+---+\n", "| a | b |\n", "||", "|-|", "| :--: |", "\\-", "\\:", "|{.c}", "-|-\n", " | ", "\u0645", "\u05D0", "\u3002", "\u30C6", "\uFF01",
+        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"", "+---+", "+===+", "ABC-12", "(X-1)", "![](a.mp4)", "![](https://youtu.be/x)", "+:-:+", "+---+---+\n", "| a | b |\n", "||", "|-|", "| :--: |", "\\-", "\\:", "|{.c}", "-|-\n", " | ", "\u0645", "\u05D0", "\u3002", "\u30C6", "\uFF01", "| [^1] |\n", "| # a |\n", "| > [!NOTE] |\n", "| --- |\n",
     ];
 
     // Every extension, with the pipe tables and the autolinks of Markdig. A text of odd length has the tables and the autolinks
@@ -46,6 +48,7 @@ public static class MarkdownFuzzTargets
         LinkRewriter = url => url + "#x",
         LinkRel = "nofollow",
         EscapeNonAsciiUrlCharacters = false,
+        IdPrefix = "u-",
     };
 
     // Inline extensions whose content is text, markers or inlines, and a delimiter extension, with GFM or with every extension
@@ -68,11 +71,24 @@ public static class MarkdownFuzzTargets
 
     private static readonly string[] AbbreviationMatcherTokens = ["\n", "\n\n", " ", "A", "B", "AB", "A B", "ABA", "\u00E9", "\U0001F600"];
 
+    // With AllowedUrlSchemes, the HTML is the one without it, where the href and the src of each tag whose URL has a scheme that
+    // is not allowed are empty: a URL with such a scheme never comes out, and the other URLs are kept. The scheme is read as a
+    // browser reads it, independently of the renderer. Raw HTML is disabled: the filter does not apply to it.
+    private static readonly string[] AllowedUrlSchemes = ["http", "https", "mailto"];
+    private static readonly MarkdownParseOptions[] UrlFilterParseOptions = [MarkdownParseOptions.GitHubFlavored with { DisableHtml = true }, AllExtensionsWithoutHtml];
+    private static readonly MarkdownHtmlRendererOptions UnfilteredUrlOptions = new() { LinkRel = "nofollow", PragmaLines = true };
+    private static readonly MarkdownHtmlRendererOptions FilteredUrlOptions = UnfilteredUrlOptions with { AllowedUrlSchemes = AllowedUrlSchemes };
+    private static readonly Regex HtmlTag = new("<[a-z][^<>]*>", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10));
+    private static readonly Regex UrlAttribute = new(" (?<name>href|src)=\"(?<value>[^\"]*)\"", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10));
+    private static readonly Regex UrlScheme = new("^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10));
+    private static readonly string[] UrlFilterTokens = [.. ExtensionTokens, "javascript:", "JavaScript:", "vbscript:", "data:", "data:text/html,", "mailto:", "http:", "https:", "c:", "a+b.c-d:", "//", "%09", "&#9;", "&#x0A;", "&colon;", "\\:", "\u0001", "\u001F", "<javascript:x>", "](javascript:", "![](data:", "](<java\tscript:x>)", "{href=x}", "{src=x}"];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("markdown", data => Parse(data, MarkdownParseOptions.Default)) { Seeds = GetSeeds, Dictionary = Tokens },
         new("markdown-gfm", data => Parse(data, MarkdownParseOptions.GitHubFlavored)) { Seeds = GetGfmSeeds, Dictionary = GfmTokens },
         new("markdown-extensions", data => Parse(data, (data.Length % 4) switch { 0 => AllExtensions, 2 => AllExtensionsWithPipeTableOptions, _ => AllExtensionsWithoutHtml })) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
+        new("markdown-url-filter", FilterUrls) { Seeds = GetUrlFilterSeeds, Dictionary = UrlFilterTokens },
         new("markdown-escaper", Escape) { Seeds = GetEscaperSeeds, Dictionary = EscaperTokens },
         new("markdown-formatter", Format) { Seeds = GetExtensionSeeds, Dictionary = ExtensionTokens },
         new("markdown-syntax-extensions", ParseWithSyntaxExtensions) { Seeds = GetSyntaxExtensionSeeds, Dictionary = SyntaxExtensionTokens },
@@ -249,6 +265,51 @@ public static class MarkdownFuzzTargets
         }
     }
 
+    private static void FilterUrls(ReadOnlySpan<byte> data)
+    {
+        var text = FuzzText.Decode(data);
+        var tree = MarkdownSyntaxTree.ParseText(text, UrlFilterParseOptions[data.Length % UrlFilterParseOptions.Length]);
+        var unfiltered = MarkdownHtmlRenderer.ToHtml(tree, UnfilteredUrlOptions);
+        var filtered = MarkdownHtmlRenderer.ToHtml(tree, FilteredUrlOptions);
+
+        foreach (Match tag in HtmlTag.Matches(filtered))
+        {
+            foreach (Match attribute in UrlAttribute.Matches(tag.Value))
+            {
+                FuzzAssert.True(IsAllowedUrl(attribute.Groups["value"].Value), $"The URL {FuzzAssert.Format(attribute.Value)} has a scheme that is not allowed: {FuzzAssert.Format(text)}");
+            }
+        }
+
+        var expected = HtmlTag.Replace(unfiltered, tag => UrlAttribute.Replace(tag.Value, attribute => IsAllowedUrl(attribute.Groups["value"].Value) ? attribute.Value : $" {attribute.Groups["name"].Value}=\"\""));
+        FuzzAssert.True(filtered == expected, $"The filtered HTML {FuzzAssert.Format(filtered)} is not the HTML {FuzzAssert.Format(expected)}: {FuzzAssert.Format(text)}");
+
+        // The browsers ignore the C0 controls and the spaces at the start of a URL, and remove its tabs and line endings
+        static bool IsAllowedUrl(string value)
+        {
+            var url = WebUtility.HtmlDecode(value).TrimStart(Enumerable.Range(0, 0x21).Select(c => (char)c).ToArray()).Replace("\t", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal).Replace("\r", "", StringComparison.Ordinal);
+            return UrlScheme.Match(url) is not { Success: true } match || AllowedUrlSchemes.Contains(match.Groups["scheme"].Value, StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetUrlFilterSeeds()
+    {
+        string[] texts =
+        [
+            "[a](javascript:alert(1)) [b](https://example.com) [c](/relative) ![d](data:image/png;base64,AA==) <vbscript:x>", "[a](JavaScript:x)", "[a](<java\tscript:x>)", "[a](HTTPS://a.b)",
+            "[a](./javascript:x) [b](#javascript:x) [c](?javascript:x) [d](//a.b/c)", "[a](c:/x) [b](1a:x)", "<mailto:a@b.c> <a@b.c>", "![](https://youtu.be/x) ![](javascript:a.mp4)",
+            "[a]: javascript:x\n\n[a] ![a]", "[a](&#106;avascript:x) [b](java&#x09;script:x) [c](javascript&colon;x)", "x www.example.com javascript:x mailto:a@b.c tel:+1", "[a](u){href=javascript:x src=data:x}",
+        ];
+        for (var i = 0; i < texts.Length; i++)
+        {
+            yield return FuzzSeed.FromText($"url-filter-{i + 1}", texts[i]);
+        }
+
+        foreach (var seed in GetGfmSeeds())
+        {
+            yield return seed;
+        }
+    }
+
     private static void Parse(ReadOnlySpan<byte> data, MarkdownParseOptions options)
     {
         var text = FuzzText.Decode(data);
@@ -290,6 +351,16 @@ public static class MarkdownFuzzTargets
             var html = MarkdownHtmlRenderer.ToHtml(tree, RendererOptions);
             var ids = System.Text.RegularExpressions.Regex.Matches(html, "id=\"(?<id>pragma-line-[0-9]+)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)).Select(match => match.Groups["id"].Value).ToList();
             FuzzAssert.True(ids.Count == ids.Distinct(StringComparer.Ordinal).Count(), $"A pragma line is the id of two elements: {FuzzAssert.Format(text)}");
+            if (options.DisableHtml)
+            {
+                // The HTML of the text is text, so every id is one the renderer writes: the ids of the document have the prefix, and
+                // so do the links to the footnotes and back
+                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(html, "(?: id=\"|href=\"#)(?<id>[^\"]*)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
+                {
+                    var id = match.Groups["id"].Value;
+                    FuzzAssert.True(id.StartsWith("u-", StringComparison.Ordinal) || (match.Value.StartsWith(" id", StringComparison.Ordinal) && id.StartsWith("pragma-line-", StringComparison.Ordinal)) || (match.Value.StartsWith("href", StringComparison.Ordinal) && !id.StartsWith("fn", StringComparison.Ordinal)), $"The id {FuzzAssert.Format(id)} of {FuzzAssert.Format(match.Value)} has no prefix: {FuzzAssert.Format(text)}");
+                }
+            }
             _ = tree.GetRoot().FindClosestLine(text.Length % 7);
 
             // Node renderers that decline every node, or that write the built-in rendering of every node, change nothing
@@ -378,6 +449,7 @@ public static class MarkdownFuzzTargets
                     {
                         FuzzAssert.True(cell.ColumnIndex >= 0 && cell.ColumnSpan > 0 && cell.ColumnIndex + cell.ColumnSpan <= grid.Columns.Count && cell.RowSpan > 0, $"The cell of the grid table at {grid.Span} has the columns {cell.ColumnIndex} to {cell.ColumnIndex + cell.ColumnSpan} and {cell.RowSpan} rows: {FuzzAssert.Format(text)}");
                         FuzzAssert.True(cell.Content.GetRoot().ToFullString() == cell.Text, $"The content of the cell of the grid table at {grid.Span} does not reproduce its text: {FuzzAssert.Format(text)}");
+                        CheckCellContent(tree, grid, cell, text);
                     }
 
                     break;
@@ -420,6 +492,18 @@ public static class MarkdownFuzzTargets
         var walker = new CountingWalker();
         walker.Visit(root);
         FuzzAssert.True(walker.Count == count, $"The walker visits {walker.Count} nodes of {count}: {FuzzAssert.Format(text)}");
+
+        // With the cells of the grid tables, the walker also visits the document of each cell, and the nodes in it
+        var cellWalker = new CountingWalker(visitGridTableCells: true);
+        cellWalker.Visit(root);
+        var cellCount = CountNodesWithCells(root);
+        FuzzAssert.True(cellWalker.Count == cellCount, $"The walker of the grid table cells visits {cellWalker.Count} nodes of {cellCount}: {FuzzAssert.Format(text)}");
+        if (tree.Options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers))
+        {
+            // The identifiers that are not ids of generic attributes are unique, the ones of the headings of the cells included
+            var identifiers = cellWalker.Headings.Select(heading => heading.Identifier!).Where(identifier => !cellWalker.Ids.Contains(identifier)).ToList();
+            FuzzAssert.True(identifiers.Count == identifiers.Distinct(StringComparer.Ordinal).Count(), $"Two headings have the same identifier: {FuzzAssert.Format(string.Join(", ", identifiers))}: {FuzzAssert.Format(text)}");
+        }
         FuzzAssert.True(ReferenceEquals(new MarkdownSyntaxRewriter().Visit(root), root), $"A rewrite that changes nothing changes the tree: {FuzzAssert.Format(text)}");
 
         if (text.Length < 4096 && root.DescendantNodes().OfType<MarkdownBlockSyntax>().LastOrDefault() is { } block)
@@ -433,6 +517,43 @@ public static class MarkdownFuzzTargets
         if (text.Length < 4096)
         {
             CheckEdits(tree, text);
+        }
+    }
+
+    private static int CountNodesWithCells(MarkdownSyntaxNode node)
+    {
+        var count = 0;
+        foreach (var descendant in node.DescendantNodesAndSelf())
+        {
+            count++;
+            if (descendant is MarkdownGridTableSyntax grid)
+            {
+                count += grid.Rows.SelectMany(row => row.Cells).Sum(cell => CountNodesWithCells(cell.Content.GetRoot()));
+            }
+        }
+
+        return count;
+    }
+
+    // The spans of the content of a cell map to the text of the table, where the text of a line of the cell is the same, and the
+    // footnotes of the cell are the ones of the document
+    private static void CheckCellContent(MarkdownSyntaxTree tree, MarkdownGridTableSyntax grid, MarkdownGridTableCell cell, string text)
+    {
+        var content = cell.Content;
+        foreach (var token in content.GetRoot().DescendantTokens())
+        {
+            var span = cell.MapSpan(token.Span);
+            FuzzAssert.True(span.Start >= grid.Span.Start && span.End <= grid.Span.End, $"The token at {token.Span} of a cell maps to {span}, out of the grid table at {grid.Span}: {FuzzAssert.Format(text)}");
+            if (!token.Text.Contains('\n', StringComparison.Ordinal))
+            {
+                FuzzAssert.True(string.Equals(text.Substring(span.Start, span.Length), token.Text, StringComparison.Ordinal), $"The token {FuzzAssert.Format(token.Text)} at {token.Span} of a cell maps to {FuzzAssert.Format(text.Substring(span.Start, span.Length))}: {FuzzAssert.Format(text)}");
+            }
+        }
+
+        FuzzAssert.True(!content.GetRoot().Blocks.OfType<MarkdownFootnoteDefinitionSyntax>().Any() && !content.GetRoot().Blocks.OfType<MarkdownFrontMatterSyntax>().Any(), $"A cell of the grid table at {grid.Span} has a footnote or a front matter: {FuzzAssert.Format(text)}");
+        foreach (var reference in content.GetRoot().DescendantNodes().OfType<MarkdownFootnoteReferenceSyntax>())
+        {
+            FuzzAssert.True(reference.Definition is null || ReferenceEquals(reference.Definition.SyntaxTree, tree), $"The footnote reference at {reference.Span} of a cell has a definition out of the document: {FuzzAssert.Format(text)}");
         }
     }
 
@@ -552,13 +673,28 @@ public static class MarkdownFuzzTargets
         return MarkdownSyntaxTree.ParseText(text, options).GetRoot().DescendantNodes().OfType<TNode>().FirstOrDefault(other => other.Span.End == text.Length && text.AsSpan(0, other.SpanStart).IsWhiteSpace());
     }
 
-    private sealed class CountingWalker : MarkdownSyntaxWalker
+    private sealed class CountingWalker(bool visitGridTableCells = false) : MarkdownSyntaxWalker(SyntaxWalkerDepth.Node, visitGridTableCells)
     {
         public int Count { get; private set; }
+
+        public List<MarkdownHeadingSyntax> Headings { get; } = [];
+
+        // The ids of the generic attributes
+        public HashSet<string> Ids { get; } = new(StringComparer.Ordinal);
 
         public override void DefaultVisit(MarkdownSyntaxNode node)
         {
             Count++;
+            switch (node)
+            {
+                case MarkdownHeadingSyntax heading:
+                    Headings.Add(heading);
+                    break;
+                case MarkdownGenericAttributesSyntax { Id: { } id }:
+                    Ids.Add(id);
+                    break;
+            }
+
             base.DefaultVisit(node);
         }
     }
@@ -583,9 +719,27 @@ public static class MarkdownFuzzTargets
     ]);
 
     // The examples of the GFM extensions and of the extensions of the 1.x library
+    // The inputs of the unit tests of the content of the grid table cells: footnotes, headings, front matter and alerts
+    private static readonly string[] GridTableCellSeeds =
+    [
+        "+-------+\n| a[^1] |\n+-------+\n\n[^1]: note\n",
+        "+---------+\n| y[^b]   |\n+---------+\n\nz[^a] w[^b]\n\n[^a]: A\n[^b]: B\n",
+        "+-----------+\n| [^1]: a   |\n|           |\n| b         |\n+-----------+\n",
+        "+-------------+\n| [^1]: a     |\n|             |\n| b [^1]      |\n+-------------+\n\nc [^2]\n\n[^2]: z\n",
+        "+---------+\n| ---     |\n| secret  |\n| ---     |\n| visible |\n+---------+\n",
+        "+-----------+\n| > [!NOTE] |\n| > a       |\n+-----------+\n",
+        "# h\n\n+-----+\n| # h |\n+-----+\n\n# h\n",
+        "+-----------+\n| # h {#x}  |\n+-----------+\n\n# x\n",
+        "# a {#b}\n# b\n# b\n",
+        "Intro\n\n+---------------+\n| See [a](/u)   |\n| and [b](/v)   |\n+---------------+\n",
+        "+---+\n| a |\n+===+\n| b |\n+===+\n| c |\n+---+\n",
+        "+---+---+---+\n| a\n+---+---+---+\n| b | c\n+---+---+---+\n",
+        "-\0a\n",
+    ];
+
     private static IEnumerable<FuzzSeed> GetExtensionSeeds()
     {
-        var seeds = GetGfmSeeds();
+        var seeds = GetGfmSeeds().Concat(GridTableCellSeeds.Select((text, i) => FuzzSeed.FromText($"grid-cells-{i + 1}", text)));
         foreach (var name in typeof(MarkdownFuzzTargets).Assembly.GetManifestResourceNames().Where(name => name.StartsWith("markdown.extensions.", StringComparison.Ordinal)).Order(StringComparer.Ordinal))
         {
             seeds = seeds.Concat(GetSeeds(name, name["markdown.extensions.".Length..^".md".Length]));

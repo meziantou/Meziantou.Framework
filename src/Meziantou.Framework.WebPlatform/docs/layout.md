@@ -751,7 +751,9 @@ browsers ship): the intrinsic sizes of the boxes, their contributions, and the r
   `Resolve(size, SizingProperty)` returns the border-box size or null when the value behaves as `auto`/`0`/`none`, and
   `Clamp(size, transferredMin, transferredMax)` applies the min/max sizes (the maximum first). In the inline axis,
   `min-content`/`max-content` are the intrinsic sizes plus the edges, `fit-content` is `min(max-content, max(min-content,
-  stretch))`, `fit-content(<length-percentage>)` the same formula with the argument; they are not affected by `box-sizing`.
+  stretch))`, `fit-content(<length-percentage>)` the same formula with `stretch(<argument>)` as the available space (the
+  margin box fits the argument: the margins, `auto` as zero, are subtracted from it); they are not affected by
+  `box-sizing`.
   In the block axis, the intrinsic keywords are the automatic (content-based) block size (`AxisSizing.ContentSize`): a
   preferred size behaves as `auto`, and the minimum and maximum sizes are applied again once the contents are laid out (the
   replaced elements know it before: their natural block size, or the size transferred from the used inline size).
@@ -843,8 +845,8 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
     in). The document locks the size of its initial containing block at its first layout once the flag is set (the locked
     embedded ICB size: the percentages of the root resolve against it, the viewport units against the viewport). A new
     document forgets the size of the `iframe` when its flag is set.
-  - The outermost `svg` element: its `width`/`height` attributes when they are absolute lengths and the ratio of
-    width/height, else of the `viewBox` (`ImageHeaders.GetSvgNaturalSize`, also used for the SVG images and documents);
+  - The outermost `svg` element: its `width`/`height` attributes when they are numbers or absolute lengths (not `em`, `ex`
+    or the other relative lengths, w3c/csswg-drafts#14117) and the ratio of width/height, else of the `viewBox` (`ImageHeaders.GetSvgNaturalSize`, also used for the SVG images and documents);
     the attributes are also presentation attributes of `width`/`height`, which may override them. A natural block size of
     zero with a natural inline size and an aspect ratio (an SVG image with `height="0"` and a `viewBox`) is replaced by
     the inline size transferred through the ratio, as in the browsers (they transfer the natural inline size whenever they

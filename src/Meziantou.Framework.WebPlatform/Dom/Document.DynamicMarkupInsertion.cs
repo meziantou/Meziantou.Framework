@@ -147,10 +147,16 @@ public partial class Document
             MuteIframeLoad = true;
         }
 
-        // A navigation of the navigable of the document is stopped, and the fetches of the document are aborted
-        if (BrowsingContext is { OngoingNavigationId: not 0 } navigable && ReferenceEquals(navigable.Document, this))
+        // A navigation of the navigable of the document is stopped, and the fetches of the document are aborted. A refresh
+        // with a timeout of 0 that has not navigated yet is a queued navigation (see CancelImmediateRefresh): it is canceled even
+        // when another navigation is ongoing, as stopping that navigation does not cancel the refresh
+        if (BrowsingContext is { } navigable && ReferenceEquals(navigable.Document, this))
         {
-            navigable.StopLoading();
+            var refreshCanceled = CancelImmediateRefresh();
+            if (navigable.OngoingNavigationId != 0 || refreshCanceled)
+            {
+                navigable.StopLoading();
+            }
         }
 
         // The parser of the document is replaced by the script-created parser

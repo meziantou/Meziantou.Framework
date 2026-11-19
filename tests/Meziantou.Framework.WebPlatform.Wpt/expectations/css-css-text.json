@@ -5710,13 +5710,13 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-discard-inner-block.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-discard-inner-preserved.html": {
     "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-discard-inner.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-dynamic.html": {
     "reftest": "PASS"

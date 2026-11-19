@@ -77,7 +77,7 @@ internal sealed class TableWrapperFormattingContext : FormattingContext
         }
         else
         {
-            inlineSize = algorithm.ComputeTableInlineSize(availableInlineSize, space.IsInlineSizeIndefinite ? null : percentageBasis, captionMin, space.GetPercentageBasis(!writingDirection.IsHorizontal));
+            inlineSize = algorithm.ComputeTableInlineSize(availableInlineSize, space.IsInlineSizeIndefinite ? null : percentageBasis, captionMin, space.GetPercentageBasis(!writingDirection.IsHorizontal), logicalMargin.InlineSum());
         }
 
         // The auto margins of a block-level table in normal flow center it, else it is aligned by its justify-self
@@ -285,12 +285,14 @@ internal sealed class TableWrapperFormattingContext : FormattingContext
             }
         }
 
+        var margins = writingDirection.ToLogical(ResolveMargins(boxModel, 0)).InlineSum();
         var sizing = new AxisSizing(context, grid ?? box)
         {
             Horizontal = horizontal,
             IsInlineAxis = true,
             PaddingAndBorder = edges,
             Edges = edges,
+            Margins = margins,
         };
 
         var min = sizes.MinContent;
@@ -313,7 +315,6 @@ internal sealed class TableWrapperFormattingContext : FormattingContext
             max = Math.Max(max, minimum.MaxContent);
         }
 
-        var margins = writingDirection.ToLogical(ResolveMargins(boxModel, 0)).InlineSum();
         return new IntrinsicSizes(min + margins, Math.Max(min, max) + margins);
     }
 

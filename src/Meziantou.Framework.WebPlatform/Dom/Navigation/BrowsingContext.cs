@@ -550,6 +550,14 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     public BrowsingContext? CreatorBrowsingContext { get; private set; }
 
+    /// <summary>
+    /// Whether the document that created this auxiliary browsing context was a secure context, or null without creator: the
+    /// initial about:blank document of the browsing context has the top-level creation URL of its creator
+    /// (https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context), which decides whether
+    /// it is a secure context (https://html.spec.whatwg.org/multipage/webappapis.html#secure-context).
+    /// </summary>
+    internal bool? CreatorIsSecureContext { get; private set; }
+
     /// <summary>The descendant navigables of the navigable, in tree order (https://html.spec.whatwg.org/multipage/document-sequences.html#descendant-navigables).</summary>
     internal IEnumerable<BrowsingContext> GetDescendantNavigables()
     {
@@ -599,6 +607,7 @@ public sealed partial class BrowsingContext : IDisposable
         {
             Opener = opener?.BrowsingContext,
             CreatorBrowsingContext = creator ?? opener?.BrowsingContext,
+            CreatorIsSecureContext = (creator ?? opener?.BrowsingContext)?.Document.RelevantWindow?.IsSecureContext,
         };
 
         // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the group

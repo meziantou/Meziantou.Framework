@@ -151,7 +151,7 @@ public sealed class SvgPathDataTests
         [
             new SvgPathSegment("m", [5, 5]),
             new SvgPathSegment("l", [3.5f, -4]),
-            new SvgPathSegment("A", [25, 25, 0, 0, 2, 50, 50]),
+            new SvgPathSegment("A", [25, 25, 0, -0f, 1, 50, 50]),
             new SvgPathSegment("z", []),
         ]);
         Assert.Equal("m 5 5 l 3.5 -4 A 25 25 0 0 1 50 50 Z", path.GetAttribute("d"));
@@ -165,6 +165,9 @@ public sealed class SvgPathDataTests
     [InlineData("L", new float[] { float.NaN, 10 })]
     [InlineData("L", new float[] { float.PositiveInfinity, 10 })]
     [InlineData("Z", new float[] { 1, 2 })]
+    [InlineData("A", new float[] { 10, 10, 0, 2, 1, 20, 20 })]
+    [InlineData("a", new float[] { 10, 10, 0, 0, 0.5f, 20, 20 })]
+    [InlineData("A", new float[] { 10, 10, 0, -1, 0, 20, 20 })]
     public void SetPathData_TruncatesAtTheFirstInvalidSegment(string type, float[] values)
     {
         var path = CreatePath(d: null);

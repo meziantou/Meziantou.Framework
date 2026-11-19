@@ -1499,7 +1499,8 @@ public sealed class DrawingImageTests
     [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
     public void APatternBrushWithEightBitTilesPaintsAsTheImageOfAnEightBitTile(PixelFormat format)
     {
-        // Whatever the canvas: what an image brush paints with an Rgba32 image of the tile, drawn by the same callback
+        // Whatever the canvas: what an image brush paints with an Rgba32 image of the tile, drawn by the same callback. On a
+        // canvas of wider samples, the colors of the image are the ones of the premultiplied 8-bit samples: round(c a / 255) / a
         var random = new Random(4242 + (int)format);
         var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(5, 3), [new GradientStop(0, new Rgba64(0x1234, 0xFEDC, 0x0101, 0xFFFF)), new GradientStop(1, new Rgba64(0x8081, 0x2223, 0xCDEF, 0x7777))]);
         void Tile(DrawingCanvas canvas)
@@ -1510,10 +1511,27 @@ public sealed class DrawingImageTests
 
         using var tile = new Image<Rgba32>(5, 3);
         tile.Draw(Tile, Ct);
+        using var premultipliedTile = new Image<Rgba64>(5, 3);
+        for (var y = 0; y < tile.Height; y++)
+        {
+            for (var x = 0; x < tile.Width; x++)
+            {
+                var pixel = tile.Frames[0][x, y];
+                premultipliedTile.Frames[0][x, y] = pixel.A switch
+                {
+                    0 => default,
+                    _ => new Rgba64(Premultiplied(pixel.R, pixel.A), Premultiplied(pixel.G, pixel.A), Premultiplied(pixel.B, pixel.A), (ushort)(pixel.A * 257)),
+                };
+            }
+        }
+
+        static ushort Premultiplied(byte color, byte alpha) => (ushort)Math.Round(Math.Round(color * alpha / 255.0, MidpointRounding.AwayFromZero) * 65535 / alpha, MidpointRounding.AwayFromZero);
+
+        var isEightBitColorCanvas = format is PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Argb32 or PixelFormat.Abgr32 or PixelFormat.Bgr565;
         var placement = AffineTransform.CreateRotation(30, new PointD(3, 2)).Then(AffineTransform.CreateTranslation(2.5, -1));
         using var expected = DrawingTestSupport.CreateRandom(format, 14, 11, random.Next);
         using var actual = expected.Clone();
-        var imageBrush = new ImageBrush(tile.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = placement };
+        var imageBrush = new ImageBrush(isEightBitColorCanvas ? tile.Frames[0] : premultipliedTile.Frames[0]) { WrapMode = ImageWrapMode.Repeat, Transform = placement };
         var patternBrush = new PatternBrush(new Rectangle(0, 0, 5, 3), Tile) { Transform = placement, TilePrecision = PatternTilePrecision.EightBit };
         expected.Draw(canvas => canvas.FillEllipse(imageBrush, new PointD(7, 5.5), 6.2, 4.8), Ct);
         actual.Draw(canvas => canvas.FillEllipse(patternBrush, new PointD(7, 5.5), 6.2, 4.8), Ct);
@@ -1524,8 +1542,9 @@ public sealed class DrawingImageTests
     public void ThePrecisionOfTheTileOfAPatternIsTheOneOfTheCanvasByDefault()
     {
         // On a 16-bit canvas, a tile of whole pixels placed on whole pixels keeps the 16-bit color of its drawing; with
-        // 8-bit samples, the color is rounded to 8 bits, (v 255 + 32767) / 65535, then read back as v 257:
-        // 0x1234 = 4660 -> 18 -> 4626, 0x5678 = 22136 -> 86 -> 22102, 0x9ABC = 39612 -> 154 -> 39578, 0x8000 -> 128 -> 32896
+        // 8-bit samples, the color is rounded to 8 bits, (v 255 + 32767) / 65535: 0x1234 = 4660 -> 18, 0x5678 = 22136 -> 86,
+        // 0x9ABC = 39612 -> 154, 0x8000 -> 128 (read back as 32896). The colors are those of the premultiplied 8-bit samples,
+        // round(c 128 / 255) = 9, 43, 77, divided by the alpha: 9 / 128 -> 4608, 43 / 128 -> 22016, 77 / 128 -> 39423
         var color = new Rgba64(0x1234, 0x5678, 0x9ABC, 0x8000);
         var canvasPrecision = new PatternBrush(new Rectangle(0, 0, 2, 2), tile => tile.Fill(color));
         var eightBit = new PatternBrush(new Rectangle(0, 0, 2, 2), tile => tile.Fill(color)) { TilePrecision = PatternTilePrecision.EightBit };
@@ -1544,7 +1563,7 @@ public sealed class DrawingImageTests
             },
             Ct);
         Assert.Equal(color, image.Frames[0][0, 0]);
-        Assert.Equal(new Rgba64(4626, 22102, 39578, 32896), image.Frames[0][1, 0]);
+        Assert.Equal(new Rgba64(4608, 22016, 39423, 32896), image.Frames[0][1, 0]);
         Assert.Equal(color, image.Frames[0][2, 0]);
 
         // On an 8-bit color canvas, both are the same

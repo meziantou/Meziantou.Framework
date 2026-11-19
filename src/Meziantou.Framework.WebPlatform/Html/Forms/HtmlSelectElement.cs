@@ -726,8 +726,9 @@ public partial class HtmlSelectedContentElement
     }
 
     /// <summary>
-    /// The post-connection steps; the update is left to a pending update of the select's descendant selectedcontent elements,
-    /// which updates this element too.
+    /// The post-connection steps (https://html.spec.whatwg.org/multipage/form-elements.html#the-selectedcontent-element): a
+    /// pending update of the select's descendant selectedcontent elements (e.g. queued by the removal of an option) is
+    /// performed now, which updates this element and the other selectedcontent elements of the select.
     /// </summary>
     internal override void PostConnectionSteps()
     {
@@ -735,7 +736,13 @@ public partial class HtmlSelectedContentElement
         var pending = _postConnectionUpdatePending;
         _postConnectionUpdatePending = false;
         var select = RecalculateDisabledness();
-        if (!pending || Disabled || select is null || select.IsMultiple || select.HasPendingSelectedContentUpdate)
+        if (select is { HasPendingSelectedContentUpdate: true })
+        {
+            select.UpdateDescendantSelectedContentElements();
+            return;
+        }
+
+        if (!pending || Disabled || select is null || select.IsMultiple)
             return;
 
         Update(select);

@@ -22,6 +22,29 @@ internal sealed partial class DisplayListRasterizer
     /// Creates the filter of the drawing API of the filters of a display list, applied one after the other
     /// (https://drafts.fxtf.org/filter-effects/#FilterProperty), or returns null when no filter changes anything.
     /// </summary>
+    /// <summary>
+    /// Creates the filter of the filters of an element (or of the <c>filter()</c> image function, or of a canvas). The result of
+    /// the filters that read other pixels than the one they compute (a blur, a shadow, most SVG primitives) is rounded to
+    /// premultiplied 8-bit components, as the browsers draw such a filter on a texture of 8-bit premultiplied components: a canvas
+    /// filter, whose result is rounded so in the bitmap of the canvas, gives the colors of the SVG filter of its reference. The
+    /// browsers apply the color filters (color matrices, component transfers) to the drawing directly: their result is not rounded.
+    /// </summary>
+    private D.Filter? CreateRoundedFilter(DisplayFilter[] filters)
+    {
+        var filter = CreateFilter(filters);
+        if (filter is null || Array.TrueForAll(filters, IsColorFilter))
+            return filter;
+
+        return new D.FilterChain([filter, new D.QuantizeFilter(8)]);
+
+        static bool IsColorFilter(DisplayFilter filter) => filter switch
+        {
+            ColorMatrixFilter or LuminanceToAlphaFilter => true,
+            FilterGraph graph => Array.TrueForAll(graph.Primitives, primitive => primitive is ColorMatrixPrimitive or ComponentTransferPrimitive),
+            _ => false,
+        };
+    }
+
     private D.Filter? CreateFilter(DisplayFilter[] filters)
     {
         var result = new List<D.Filter>(filters.Length);

@@ -94,10 +94,7 @@
     "total": 1
   },
   "container-timing/tentative/containertiming-stop-after-scroll.html": {
-    "total": 1,
-    "failures": {
-      "Container timing stops recording after a user scroll.": "FAIL"
-    }
+    "total": 1
   },
   "container-timing/tentative/containertiming-svg-and-mathml-not-root.html": {
     "total": 2

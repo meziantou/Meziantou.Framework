@@ -69,6 +69,23 @@ public sealed class ScrollingTests : IDisposable
     }
 
     [Fact]
+    public void ScrollState_RoundingErrorsOfTheScrollingAreaDoNotScroll()
+    {
+        // WPT css/css-writing-modes/forms/select-multiple-scrolling.optional.html: the scrolling area of a vertical-rl list box ends
+        // 1.4e-14px after its scrollport (the sum of its fractional rows): the scroll position 0 is the largest one
+        var state = new ScrollState(element: null)
+        {
+            ScrollingArea = new PhysicalRect(-100, 0, 200.00000000000003, 50),
+            Scrollport = new PhysicalRect(0, 0, 100, 50),
+            Overflow = (OverflowKind.Auto, OverflowKind.Auto),
+        };
+        Assert.True(state.ScrollingArea.Right > state.Scrollport.Right);
+        Assert.Equal(new PhysicalOffset(-100, 0), state.MinOffset);
+        Assert.Equal(PhysicalOffset.Zero, state.MaxOffset);
+        Assert.Equal(PhysicalOffset.Zero, state.Clamp(new PhysicalOffset(100, 0)));
+    }
+
+    [Fact]
     public void ContainLayout_ScrollHeightIncludesZeroWidthChildren()
     {
         var document = Parse("<div id=target style='contain: layout; height: 0; width: 0; overflow: hidden'><div style='height: 2000px'></div></div>");

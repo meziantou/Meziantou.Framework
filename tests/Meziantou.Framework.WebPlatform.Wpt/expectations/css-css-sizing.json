@@ -1580,13 +1580,13 @@
     "reftest": "PASS"
   },
   "css/css-sizing/fit-content-length-percentage-box-sizing-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/fit-content-length-percentage-contribution-margins-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/fit-content-length-percentage-margins-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/fit-content-max-inline-size.tentative.html": {
     "reftest": "PASS"
@@ -2777,12 +2777,7 @@
     "total": 4
   },
   "css/css-sizing/svg-intrinsic-size-012.html": {
-    "total": 120,
-    "failures": {
-      "\"0em\" is NOT a valid natural size": "FAIL",
-      "\"1em\" is NOT a valid natural size": "FAIL",
-      "\"1ex\" is NOT a valid natural size": "FAIL"
-    }
+    "total": 120
   },
   "css/css-sizing/svg-intrinsic-size-zero-img-and-object.html": {
     "total": 14

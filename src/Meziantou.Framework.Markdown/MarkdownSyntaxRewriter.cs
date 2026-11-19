@@ -12,6 +12,8 @@ namespace Meziantou.Framework.Markdown;
 /// <see langword="null"/> is removed, and a node whose children all come back unchanged is returned as it was, so
 /// rewriting a tree and changing nothing in it costs nothing and keeps every node. The text of the removed nodes goes with
 /// them, the trivia included: removing a block removes the line endings and the markers of its lines too.
+/// The content of the cells of a grid table is not part of the tree, so it is not rewritten: the table is a node whose lines
+/// are tokens, which a rewrite can replace as a whole.
 /// </remarks>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs" ref:region="MarkdownSyntaxRewriter_RemoveHtml" ref:dedent="true">

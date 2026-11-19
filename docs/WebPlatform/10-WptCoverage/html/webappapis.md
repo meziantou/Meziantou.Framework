@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 324 | 340 | 1 | 96% |
+| [Stable](#stable-tests) | 327 | 340 | 1 | 96% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **329** | **349** | **1** | **95%** |
+| **All** | **332** | **349** | **1** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 7
@@ -157,10 +156,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dynamic-markup-insertion/opening-the-input-stream/014.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/014.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/015.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/015.html) | Pass | 3 / 3 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/016.html`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/016.html) | Pass | 4 / 4 |  |  |
-| [`dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js) | Timeout | 2 / 6 | BUG | `document.open()` aborts the image loads of a frame whose refresh with timeout 0 is queued, but not its `fetch()` (it resolves) and its `XMLHttpRequest` (no event is fired, the subtests time out) |
+| [`dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js) | Pass | 6 / 6 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-header.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-header.window.js) | Pass | 3 / 3 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-meta.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-meta.window.js) | Pass | 3 / 3 |  |  |
-| [`dynamic-markup-insertion/opening-the-input-stream/abort-while-navigating.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-while-navigating.window.js) | Fail | 6 / 9 | BUG | 3 subtests: `document.open()` does not stop the image load of the document whose navigation it aborts (`resources/slow-png.py`): the image loads |
+| [`dynamic-markup-insertion/opening-the-input-stream/abort-while-navigating.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-while-navigating.window.js) | Pass | 9 / 9 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/abort.sub.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort.sub.window.js) | Pass | 5 / 5 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/aborted-parser.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/aborted-parser.window.js) | Pass | 2 / 2 |  |  |
 | [`dynamic-markup-insertion/opening-the-input-stream/active.window.js`](https://wpt.fyi/results/html/webappapis/dynamic-markup-insertion/opening-the-input-stream/active.window.js) | Pass | 7 / 7 |  |  |
@@ -211,7 +210,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`microtask-queuing/queue-microtask-exceptions.any.js`](https://wpt.fyi/results/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js) | Pass | 3 / 3 |  |  |
 | [`microtask-queuing/queue-microtask.any.js`](https://wpt.fyi/results/html/webappapis/microtask-queuing/queue-microtask.any.js) | Pass | 15 / 15 |  |  |
 | [`microtask-queuing/queue-microtask.window.js`](https://wpt.fyi/results/html/webappapis/microtask-queuing/queue-microtask.window.js) | Pass | 2 / 2 |  |  |
-| [`scripting/event-loops/document-without-browsing-context.window.js`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/document-without-browsing-context.window.js) | Fail | 6 / 7 | BUG | 1 of 7 subtests: the template contents owner document has no event loop (`Document.EventLoop` uses the window of the document or of its `OriginDocument`, and the template contents owner document only has a `RealmDocument`), so a mutation of template contents queues no mutation observer microtask: the observer is not notified before the next microtask (https://dom.spec.whatwg.org/#queue-a-mutation-observer-compound-microtask) |
+| [`scripting/event-loops/document-without-browsing-context.window.js`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/document-without-browsing-context.window.js) | Pass | 7 / 7 |  |  |
 | [`scripting/event-loops/microtask_after_raf.html`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/microtask_after_raf.html) | Pass | 1 / 1 |  |  |
 | [`scripting/event-loops/microtask_after_script.html`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/microtask_after_script.html) | Pass | 1 / 1 |  |  |
 | [`scripting/event-loops/microtask_before_prepare_the_script_element-01.html`](https://wpt.fyi/results/html/webappapis/scripting/event-loops/microtask_before_prepare_the_script_element-01.html) | Pass | 1 / 1 |  |  |

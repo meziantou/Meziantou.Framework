@@ -35,6 +35,33 @@ public sealed class FormSubmissionTests : IDisposable
         Assert.Null(request.Body);
     }
 
+    [Fact]
+    public void RadioButton_FormOwnerChangedByAnIdOrADisconnection_UnchecksItsNewGroup()
+    {
+        var document = Load("<form id=a></form><form id=b><input type=radio name=g id=other></form><div id=subtree><form id=ancestor><input type=radio name=g id=destination><input type=radio name=g form=a id=moving></form></div>");
+        var other = (HtmlInputElement)document.GetElementById("other")!;
+        var destination = (HtmlInputElement)document.GetElementById("destination")!;
+        var moving = (HtmlInputElement)document.GetElementById("moving")!;
+        var ancestor = document.GetElementById("ancestor")!;
+        other.Checked = true;
+        destination.Checked = true;
+        moving.Checked = true;
+
+        // The form owner of the radio button becomes the form whose ID is now "a"
+        document.GetElementById("a")!.Id = "x";
+        document.GetElementById("b")!.Id = "a";
+        Assert.Same(document.GetElementById("a"), moving.Form);
+        Assert.True(moving.Checked);
+        Assert.False(other.Checked);
+        Assert.True(destination.Checked);
+
+        // The form attribute does not apply to a disconnected element: its form owner becomes its ancestor form
+        document.GetElementById("subtree")!.Remove();
+        Assert.Same(ancestor, moving.Form);
+        Assert.True(moving.Checked);
+        Assert.False(destination.Checked);
+    }
+
     [Theory]
     [InlineData("application/x-www-form-urlencoded", "application/x-www-form-urlencoded", "a=1&b=x%0D%0Ay")]
     [InlineData("text/plain", "text/plain", "a=1\r\nb=x\r\ny\r\n")]

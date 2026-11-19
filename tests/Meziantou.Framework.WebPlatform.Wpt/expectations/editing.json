@@ -1233,21 +1233,10 @@
   "editing/other/insert-text-in-void-element.tentative.html": {
     "total": 48,
     "failures": {
-      "Inserting text when selection is collapsed in <br> which follows a non-empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <br> which follows a text node and an empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <br> which follows a text node, an empty <span> element and white-space only text node": "FAIL",
-      "Inserting text when selection is collapsed in <embed> which follows a non-empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <embed> which follows a text node and an empty <span> element": "FAIL",
       "Inserting text when selection is collapsed in <embed> which follows a text node, an empty <span> element and white-space only text node": "FAIL",
       "Inserting text when selection is collapsed in <embed> which follows an empty <span> element": "FAIL",
       "Inserting text when selection is collapsed in <hr> which follows a text node, an empty <span> element and white-space only text node": "FAIL",
-      "Inserting text when selection is collapsed in <img> which follows a non-empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <img> which follows a text node and an empty <span> element": "FAIL",
       "Inserting text when selection is collapsed in <img> which follows an empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <input> which follows a non-empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <input> which follows a text node and an empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <wbr> which follows a non-empty <span> element": "FAIL",
-      "Inserting text when selection is collapsed in <wbr> which follows a text node and an empty <span> element": "FAIL",
       "Inserting text when selection is collapsed in <wbr> which follows a text node, an empty <span> element and white-space only text node": "FAIL",
       "Inserting text when selection is collapsed in <wbr> which follows an empty <span> element": "FAIL"
     }
@@ -3189,8 +3178,7 @@
   "editing/run/delete.html?7001-last": {
     "total": 842,
     "failures": {
-      "[[\"delete\",\"\"]] \" <span contenteditable=\\\"false\\\">A</span><div>[]&nbsp;; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span></div> \" compare innerHTML": "FAIL",
-      "[[\"delete\",\"\"]] \"<div><font><table><td>a</table><br>{}<br><table><td>b</table></font></div>\" compare innerHTML": "FAIL"
+      "[[\"delete\",\"\"]] \" <span contenteditable=\\\"false\\\">A</span><div>[]&nbsp;; <span contenteditable=\\\"false\\\">B</span> ; <span contenteditable=\\\"false\\\">C</span></div> \" compare innerHTML": "FAIL"
     }
   },
   "editing/run/fontname.html?1-1000": {
@@ -3288,13 +3276,7 @@
     }
   },
   "editing/run/forwarddelete.html?1001-2000": {
-    "total": 1000,
-    "failures": {
-      "[[\"forwarddelete\",\"\"]] \"<p>foo<table><tr><td>bar[]<br></table><p>baz\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><td>bar</table>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><tr><td>bar</table>\" compare innerHTML": "FAIL",
-      "[[\"forwarddelete\",\"\"]] \"foo<table><tr><td>bar[]<br></table>baz\" compare innerHTML": "FAIL"
-    }
+    "total": 1000
   },
   "editing/run/forwarddelete.html?2001-3000": {
     "total": 1000
@@ -3327,10 +3309,7 @@
     }
   },
   "editing/run/forwarddelete.html?7001-last": {
-    "total": 491,
-    "failures": {
-      "[[\"forwarddelete\",\"\"]] \"<div><font><table><td>a</table>{}<br><br><table><td>b</table></font></div>\" compare innerHTML": "FAIL"
-    }
+    "total": 491
   },
   "editing/run/hilitecolor.html": {
     "total": 1218,
@@ -3978,11 +3957,7 @@
     "total": 1000
   },
   "editing/run/outdent.html?2001-last": {
-    "total": 550,
-    "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"outdent\",\"\"]] \"<blockquote><ol><li>foo<div><ol><li>[bar]</ol></div><li>baz</ol></blockquote>\" compare innerHTML": "FAIL",
-      "[[\"defaultparagraphseparator\",\"p\"],[\"outdent\",\"\"]] \"<blockquote><ol><li>foo<div><ol><li>[bar]</ol></div><li>baz</ol></blockquote>\" compare innerHTML": "FAIL"
-    }
+    "total": 550
   },
   "editing/run/removeformat.html": {
     "total": 1832,

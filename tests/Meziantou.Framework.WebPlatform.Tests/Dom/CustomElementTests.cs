@@ -149,6 +149,30 @@ public sealed class CustomElementTests : IDisposable
         Assert.Equal(["constructed", "connected", "disconnected", "adopted", "connected"], log);
     }
 
+    private sealed class FormLoggingElement(HtmlElement element, List<string> log) : CustomElement(element)
+    {
+        protected internal override void ConnectedCallback() => log.Add("connected");
+
+        protected internal override void DisconnectedCallback() => log.Add("disconnected");
+
+        protected internal override void FormAssociatedCallback(HtmlFormElement? form) => log.Add($"formAssociated {form?.Id ?? "null"}");
+    }
+
+    [Fact]
+    public void InsertAndRemove_EnqueueTheConnectionCallbacksBeforeTheReactionsOfTheInsertionAndRemovingSteps()
+    {
+        var document = Load("<form id=f></form>");
+        var log = new List<string>();
+        document.DefaultView!.CustomElements.Define("x-control", new CustomElementConstructor(element => new FormLoggingElement(element, log)) { FormAssociated = true });
+        var element = document.CreateElement("x-control");
+        var form = document.GetElementById("f")!;
+
+        form.AppendChild(element);
+        element.Remove();
+
+        Assert.Equal(["connected", "formAssociated f", "disconnected", "formAssociated null"], log);
+    }
+
     [Fact]
     public void MoveBefore_DefaultConnectedMoveCallbackInvokesDisconnectedAndConnected()
     {

@@ -2600,7 +2600,7 @@ clipped to its tile, on an image of that part, at the same scale, so that the pi
 perspective, its image is drawn at the resolution those limits allow instead. The image of the tile has the
 precision of the canvas (16-bit samples on a 16-bit canvas); `TilePrecision = PatternTilePrecision.EightBit` draws it
 with 8-bit samples on every canvas, as browsers rasterize the drawing of a canvas (a CSS paint worklet) into an 8-bit
-bitmap.
+bitmap; on a wider canvas, its colors are those of the premultiplied 8-bit samples (`round(c a / 255) / a`).
 
 A `PatternBrush` built from a `HatchStyle` and two colors repeats a tile of 8 by 8 pixels: lines (`Horizontal`,
 `Vertical`, `Cross`, `ForwardDiagonal`, `BackwardDiagonal`, `DiagonalCross`) or a fraction of the pixels
@@ -2740,8 +2740,9 @@ clip.
 the edges of the canvas: by default what is drawn there and transparent beyond it, or the edges of the canvas extended,
 wrapped or mirrored), a `ColorMatrixFilter` (the
 filter functions that change colors), a `DropShadowFilter` (a shadow of the alpha, moved, blurred and colored, under
-the drawing, or alone with `ShadowOnly`, as the shadows of the HTML canvas), and a `FilterChain` of them, applied one
-after the other. `canvas.Filter(filter, callback)` draws the callback on a layer that holds what the clip can show and
+the drawing, or alone with `ShadowOnly`, as the shadows of the HTML canvas), a `QuantizeFilter` (the colors multiplied
+by their alpha, and the alpha, rounded to a number of bits per sample: the result a browser stores in an 8-bit
+premultiplied texture), and a `FilterChain` of them, applied one after the other. `canvas.Filter(filter, callback)` draws the callback on a layer that holds what the clip can show and
 what the filter moves into it, then filters the layer and draws it. That includes what is drawn beyond the canvas
 within the reach of the filter (its blurs, three deviations, and its offsets): a shape out of view casts its shadow on
 the canvas, and a shape that goes beyond an edge stays opaque there when it is blurred, as the element of a page that
@@ -2749,7 +2750,8 @@ is scrolled does. The layer is then an image of its own, of the bounds of the cl
 the largest side of the canvas, and while it has at most four times the pixels of the bounds of the clip and 65,536,
 within the limits of the image); filling the whole canvas in it fills the canvas, which fades at its edges.
 A `DropShadowFilter` whose offset goes further than that margin is cast from a window of its own: the pixels the clip
-shows, moved back by the offset, with the reach of the blur around them. The callback then draws twice (on the layer
+shows, moved back by the offset, with the reach of the blur around them (also when a `QuantizeFilter` follows it in a
+chain of two). The callback then draws twice (on the layer
 and on that window; once, on the window, for a shadow alone), and the cost depends on what the clip shows and on the
 blur, not on the length of the offset: a shape 1000 pixels beyond an edge of a small canvas casts its shadow on it.
 `canvas.BackdropLayer(filter, bounds, opacity,

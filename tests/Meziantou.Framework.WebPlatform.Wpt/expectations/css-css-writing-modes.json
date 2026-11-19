@@ -2028,18 +2028,10 @@
     "total": 5
   },
   "css/css-writing-modes/forms/select-multiple-scrolling.optional.html": {
-    "total": 5,
-    "failures": {
-      "select[multiple][style=\"writing-mode: sideways-rl\"] scrolls correctly": "FAIL",
-      "select[multiple][style=\"writing-mode: vertical-rl\"] scrolls correctly": "FAIL"
-    }
+    "total": 5
   },
   "css/css-writing-modes/forms/select-size-scrolling-and-sizing.optional.html": {
-    "total": 10,
-    "failures": {
-      "select[size][style=\"writing-mode: sideways-rl\"] scrolls correctly": "FAIL",
-      "select[size][style=\"writing-mode: vertical-rl\"] scrolls correctly": "FAIL"
-    }
+    "total": 10
   },
   "css/css-writing-modes/forms/text-input-baseline.html": {
     "total": 21
@@ -2483,7 +2475,7 @@
     "reftest": "PASS"
   },
   "css/css-writing-modes/orthogonal-cell-rowspan-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-writing-modes/orthogonal-child-with-border.html": {
     "reftest": "PASS"

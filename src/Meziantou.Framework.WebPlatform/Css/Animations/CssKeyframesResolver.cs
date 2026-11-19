@@ -108,9 +108,13 @@ internal static class CssKeyframesResolver
                     continue;
                 }
 
+                // The declarations of a block merged into the keyframe of a previous block are after its declarations
+                keyframe.DeclarationOrder ??= new(StringComparer.Ordinal);
+                var position = keyframe.DeclarationOrder.Count == 0 ? 0 : keyframe.DeclarationOrder.Values.Max() + 1;
                 foreach (var declaration in declarations)
                 {
                     keyframe.Longhands[declaration.Name] = declaration;
+                    keyframe.DeclarationOrder[declaration.Name] = position++;
                     keyframe.Properties.RemoveAll(p => p.Key == declaration.Name);
                     keyframe.Properties.Add(new(declaration.Name, declaration.Value));
                 }

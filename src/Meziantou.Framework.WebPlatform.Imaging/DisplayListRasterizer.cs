@@ -19,6 +19,7 @@ internal sealed partial class DisplayListRasterizer
     private readonly RenderingColorSpace _colorSpace;
     private readonly bool _antiAliasEnabled;
     private readonly bool _floatTarget;
+    private readonly bool _wideTarget;
     private DisplayList _list = DisplayList.Empty;
     private int _index;
 
@@ -37,19 +38,22 @@ internal sealed partial class DisplayListRasterizer
     /// <param name="backend">The backend: its options, its fonts and its images.</param>
     /// <param name="colorSpace">The color space of the pixels of the bitmap.</param>
     /// <param name="floatTarget">Whether solid paints retain floating-point components.</param>
-    public DisplayListRasterizer(ImagingRenderingBackend backend, RenderingColorSpace colorSpace, bool floatTarget = false)
+    /// <param name="wideTarget">Whether the bitmap has components of more than 8 bits.</param>
+    public DisplayListRasterizer(ImagingRenderingBackend backend, RenderingColorSpace colorSpace, bool floatTarget = false, bool wideTarget = true)
     {
         _backend = backend;
         _colorSpace = colorSpace;
         _antiAliasEnabled = backend.Options.AntiAlias;
         _floatTarget = floatTarget;
+        _wideTarget = wideTarget;
     }
 
     /// <summary>Draws a display list on a frame (the coordinates of the display list are the pixels of the frame).</summary>
     public static void Rasterize(ImagingRenderingBackend backend, ImageFrame frame, DisplayList displayList, RenderingColorSpace colorSpace)
     {
         var floatTarget = frame.PixelFormat is Meziantou.Framework.Imaging.PixelFormat.RgbaFloat or Meziantou.Framework.Imaging.PixelFormat.RgbaHalf;
-        frame.Draw((backend, displayList, colorSpace, floatTarget), static (canvas, state) => new DisplayListRasterizer(state.backend, state.colorSpace, state.floatTarget).Draw(canvas, state.displayList, DisplayMatrix.Identity));
+        var wideTarget = frame.PixelFormat is not Meziantou.Framework.Imaging.PixelFormat.Rgba32;
+        frame.Draw((backend, displayList, colorSpace, floatTarget, wideTarget), static (canvas, state) => new DisplayListRasterizer(state.backend, state.colorSpace, state.floatTarget, state.wideTarget).Draw(canvas, state.displayList, DisplayMatrix.Identity));
     }
 
     /// <summary>
@@ -93,7 +97,7 @@ internal sealed partial class DisplayListRasterizer
     }
 
     /// <summary>Draws a display list in a new state of the walker (a pattern, an image of a filter).</summary>
-    private void DrawNested(D.DrawingCanvas canvas, DisplayList displayList, DisplayMatrix matrix) => new DisplayListRasterizer(_backend, _colorSpace).Draw(canvas, displayList, matrix);
+    private void DrawNested(D.DrawingCanvas canvas, DisplayList displayList, DisplayMatrix matrix) => new DisplayListRasterizer(_backend, _colorSpace, wideTarget: _wideTarget).Draw(canvas, displayList, matrix);
 
     /// <summary>
     /// Draws the items of the current scope, up to the restore that ends it (which is consumed) or to the end of the display
@@ -191,6 +195,34 @@ internal sealed partial class DisplayListRasterizer
             Rasterizer._index = Index;
             return Rasterizer;
         }
+    }
+
+    /// <summary>Whether the rest of the current scope has a layer with a backdrop filter.</summary>
+    private bool ScopeHasBackdropFilter()
+    {
+        var items = _list.Items;
+        var depth = 0;
+        for (var i = _index; i < items.Length; i++)
+        {
+            switch (items[i])
+            {
+                case SaveLayerItem { BackdropFilters.Length: > 0 }:
+                    return true;
+
+                case SaveItem or SaveLayerItem:
+                    depth++;
+                    break;
+
+                case RestoreItem:
+                    if (depth == 0)
+                        return false;
+
+                    depth--;
+                    break;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Skips the items of the current scope, up to the restore that ends it (which is consumed).</summary>
@@ -553,7 +585,7 @@ internal sealed partial class DisplayListRasterizer
     {
         var opacity = double.IsNaN(item.Opacity) ? 1 : Math.Clamp(item.Opacity, 0, 1);
         var (composite, blend) = GetModes(item.BlendMode);
-        var filter = item.Filters is { Length: > 0 } filters ? CreateFilter(filters) : null;
+        var filter = item.Filters is { Length: > 0 } filters ? CreateRoundedFilter(filters) : null;
         if (item.BackdropFilters is { Length: > 0 } backdropFilters)
         {
             // The filters of the element apply to its filtered backdrop too (the bottom of its content): they are applied after
@@ -571,7 +603,18 @@ internal sealed partial class DisplayListRasterizer
             {
                 var rasterizer = state.start.Rewind();
                 rasterizer.ClipBackdrop(c, state.clip);
-                rasterizer.RunFiltered(c, state.filter);
+                if (!rasterizer.ScopeHasBackdropFilter())
+                {
+                    rasterizer.RunFiltered(c, state.filter);
+                    return;
+                }
+
+                // https://drafts.fxtf.org/filter-effects-2/#BackdropRoot: the element is the backdrop root of the backdrop filters
+                // of its descendants, whose backdrop is its content without its filtered backdrop: the content is drawn on a
+                // transparent layer (only then: a layer rounds the colors of its translucent content once more)
+                var index = rasterizer._index;
+                c.Layer(1, (start: rasterizer.ScopeStart, state.filter), static (layer, content) => content.start.Rewind().RunFiltered(layer, content.filter), D.CompositeMode.SourceOver, D.BlendMode.Normal, D.LayerOpacity.Group);
+                rasterizer.EnsureConsumed(index);
             }, composite, blend, D.LayerOpacity.Group);
             return;
         }
@@ -748,7 +791,7 @@ internal sealed partial class DisplayListRasterizer
         (destinationLeft, destinationTop) = (destinationRect.X, destinationRect.Y);
 
         var (deviceScaleX, deviceScaleY) = GetScaleFactors();
-        var frame = image.GetFrame(_colorSpace, preserveRange: _floatTarget);
+        var frame = image.GetFrame(_colorSpace, preserveRange: _floatTarget, _wideTarget);
         var sampling = GetSampling(draw.Sampling, scaleX * deviceScaleX, scaleY * deviceScaleY);
         var sourceRect = RectangleD.FromLTRB(clippedLeft, clippedTop, clippedRight, clippedBottom);
         if (composite == D.CompositeMode.SourceOver && blend == D.BlendMode.Normal)

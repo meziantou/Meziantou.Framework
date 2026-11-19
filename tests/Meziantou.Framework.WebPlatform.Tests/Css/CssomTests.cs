@@ -131,7 +131,9 @@ public sealed class CssomTests
     // Custom properties (https://drafts.csswg.org/css-variables/#defining-variables)
     [InlineData("--x", " a /* c */ ", "a")]
     [InlineData("--x", "a/* c */b", "a/* c */b")]
-    [InlineData("--x", " ", "")]
+    [InlineData("--x", " ", " ")] // An empty custom property is serialized as a space (https://github.com/w3c/csswg-drafts/issues/9847)
+    [InlineData("--x", " /* c */ ", " ")]
+    [InlineData("--x", "", "")]
     [InlineData("--x y", "a", "")]
     public void SpecifiedValue(string property, string value, string expected)
     {
@@ -423,6 +425,21 @@ public sealed class CssomTests
     [InlineData("background-image", "-webkit-gradient(linear, left top, left bottom)", true)]
     [InlineData("background-image", "-webkit-gradient(conic, left top, left bottom)", false)]
     [InlineData("background-image", "-webkit-gradient(radial, 50% 50%, -1, 50% 50%, 10)", false)]
+
+    // A circle takes one length and an ellipse two (https://drafts.csswg.org/css-images-3/#radial-gradient-syntax)
+    [InlineData("background-image", "radial-gradient(circle 10px, red, blue)", true)]
+    [InlineData("background-image", "radial-gradient(10px circle, red, blue)", true)]
+    [InlineData("background-image", "radial-gradient(closest-side circle, red, blue)", true)]
+    [InlineData("background-image", "radial-gradient(ellipse 10px 20%, red, blue)", true)]
+    [InlineData("background-image", "radial-gradient(10px 20%, red, blue)", true)]
+    [InlineData("background-image", "radial-gradient(circle 10px 10px, red, blue)", false)]
+    [InlineData("background-image", "radial-gradient(ellipse 10px, red, blue)", false)]
+    [InlineData("background-image", "image(url(a.png))", true)]
+    [InlineData("background-image", "image(url(a.png), red)", true)]
+    [InlineData("cursor", "image-set(\"a.png\" 1x, url(b.png) 2x) 1 2, pointer", true)]
+    [InlineData("cursor", "image-set(linear-gradient(red) 1x), pointer", false)]
+    [InlineData("filter", "drop-shadow(1px 2px 0 red)", true)]
+    [InlineData("filter", "drop-shadow(1px 2px -1px red)", false)]
     public void SupportsDeclaration(string property, string value, bool expected) => Assert.Equal(expected, WebPlatform.Css.Om.Css.Supports(property, value));
 
     [Theory]

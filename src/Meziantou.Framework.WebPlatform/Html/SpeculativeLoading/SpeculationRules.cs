@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -26,13 +28,68 @@ internal sealed class SpeculationRuleSet
     public List<SpeculationRule> PrerenderRules { get; } = [];
 
     /// <summary>
+    /// Replaces the lone surrogates of a JSON text, written as characters or as escapes (<c>\uDEAD</c>), with U+FFFD: JSON
+    /// allows them, but System.Text.Json cannot read them as strings. The strings of the rules are used as scalar value
+    /// strings (URLs, URL patterns, selectors...), where a lone surrogate is U+FFFD (https://infra.spec.whatwg.org/#javascript-string-convert).
+    /// </summary>
+    internal static string ReplaceLoneSurrogates(string input)
+    {
+        input = Infra.InfraString.ToScalarValueString(input);
+        if (!input.Contains("\\u", StringComparison.Ordinal))
+            return input;
+
+        StringBuilder? builder = null;
+        var copied = 0;
+        for (var i = 0; i < input.Length; i++)
+        {
+            if (input[i] != '\\')
+                continue;
+
+            if (TryReadSurrogateEscape(input, i, out var value))
+            {
+                // A high surrogate followed by the escape of a low surrogate is a valid pair
+                if (char.IsHighSurrogate(value) && TryReadSurrogateEscape(input, i + 6, out var next) && char.IsLowSurrogate(next))
+                {
+                    i += 11;
+                    continue;
+                }
+
+                builder ??= new StringBuilder(input.Length);
+                builder.Append(input, copied, i - copied).Append("\\uFFFD");
+                copied = i + 6;
+                i += 5;
+                continue;
+            }
+
+            // Another escape: the escaped character does not start an escape (an escaped backslash followed by uD800 is not an escape)
+            i++;
+        }
+
+        if (builder is null)
+            return input;
+
+        builder.Append(input, copied, input.Length - copied);
+        return builder.ToString();
+
+        static bool TryReadSurrogateEscape(string text, int index, out char value)
+        {
+            value = default;
+            if (index + 6 > text.Length || text[index] != '\\' || text[index + 1] != 'u' || !ushort.TryParse(text.AsSpan(index + 2, 4), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var code))
+                return false;
+
+            value = (char)code;
+            return char.IsSurrogate(value);
+        }
+    }
+
+    /// <summary>
     /// https://html.spec.whatwg.org/multipage/speculative-loading.html#parse-a-speculation-rule-set-string
     /// </summary>
     /// <exception cref="JsonException">The string is not valid JSON.</exception>
     /// <exception cref="TypeErrorException">The top-level value is not an object, or the tag of the rule set is not valid.</exception>
     public static SpeculationRuleSet Parse(string input, Document document, UrlRecord baseUrl)
     {
-        using var json = JsonDocument.Parse(input, new JsonDocumentOptions { MaxDepth = 512 });
+        using var json = JsonDocument.Parse(ReplaceLoneSurrogates(input), new JsonDocumentOptions { MaxDepth = 512 });
         var parsed = json.RootElement;
         if (parsed.ValueKind != JsonValueKind.Object)
             throw new TypeErrorException("The speculation rules must be a JSON object");
@@ -487,7 +544,15 @@ internal sealed class DocumentRuleSelectorPredicate(List<SelectorList> selectors
 {
     public override bool HasSelectors => true;
 
-    public override bool Matches(Element element, UrlRecord url) => selectors.Exists(selector => element.Matches(selector));
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/speculative-loading.html#dr-predicate-matches: the scoping root of the selectors is
+    /// the root of the link (its document or its shadow root), not the link itself.
+    /// </summary>
+    public override bool Matches(Element element, UrlRecord url)
+    {
+        var context = SelectorContext.ForDomApi(element.GetRoot());
+        return selectors.Exists(selector => SelectorMatcher.Matches(selector, element, context));
+    }
 }
 
 /// <summary>

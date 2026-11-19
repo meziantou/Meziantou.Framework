@@ -897,10 +897,7 @@
     "total": 1
   },
   "css/cssom/style-set-property.html": {
-    "total": 21,
-    "failures": {
-      "set toString() returning whitespace for div.style.setProperty custom property": "FAIL"
-    }
+    "total": 21
   },
   "css/cssom/style-sheet-interfaces-001.html": {
     "total": 7

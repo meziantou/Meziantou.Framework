@@ -13,7 +13,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// rows computed the same way, and is transparent before the callback draws on it, through a canvas of its own whose
 /// transformation maps the tile and its spacing to the image (a scaling by <c>W / (tw + sx)</c> and
 /// <c>H / (th + sy)</c>), with a clip of the tile when there is a spacing. The image has the samples of a layer (8-bit
-/// on an 8-bit color canvas, 16-bit otherwise), or 8-bit samples with <see cref="PatternTilePrecision.EightBit"/>. The shape is then painted with that image,
+/// on an 8-bit color canvas, 16-bit otherwise), or 8-bit samples with <see cref="PatternTilePrecision.EightBit"/> (painted, on a
+/// canvas of wider samples, as the 16-bit samples of its premultiplied 8-bit colors). The shape is then painted with that image,
 /// placed by the scaling that maps it back, then by <c>T</c>, with the wrap modes of the brush and
 /// <see cref="ImageSampling.Bilinear"/>. Under a projective transformation of the canvas, <c>T</c> is the transformation
 /// of the brush followed by the scaling by the factor of the canvas where <c>W</c> is the one of the origin (see
@@ -44,6 +45,9 @@ internal sealed partial class DrawingSession
 
     private int _patternDepth;
     private Image? _patternImage;
+
+    // The 8-bit tile of an EightBit pattern as the 16-bit samples of its premultiplied 8-bit colors, for a wider canvas
+    private Image<Rgba64>? _patternPremultipliedImage;
     private PatternBrush? _patternBrush;
     private PatternWindow _patternWindow;
     private bool _patternIsAliased;
@@ -143,6 +147,11 @@ internal sealed partial class DrawingSession
             }
 
             DrawTile(brush, image, window, periodPixelsX, periodPixelsY, periodPixelsX / periodWidth, periodPixelsY / periodHeight);
+            if (brush.TilePrecision == PatternTilePrecision.EightBit && !DrawingKernels.HasNarrowWorkingImages(_frames[0].PixelFormat))
+            {
+                SetPremultipliedPatternImage((Image<Rgba32>)image);
+            }
+
             _patternBrush = brush;
             _patternWindow = window;
             _patternIsAliased = _isAliased;
@@ -156,7 +165,50 @@ internal sealed partial class DrawingSession
         var unitY = periodHeight / periodPixelsY;
         var toTile = new AffineTransform(unitX, 0, 0, unitY, tile.X + (window.Left * unitX), tile.Y + (window.Top * unitY));
         placement = _isProjective ? ((ProjectiveTransform)toTile.Then(brush.Transform)).Then(_projection) : toTile.Then(transform);
-        return image.Frames[0];
+        return brush.TilePrecision == PatternTilePrecision.EightBit && _patternPremultipliedImage is { } premultiplied && !DrawingKernels.HasNarrowWorkingImages(_frames[0].PixelFormat)
+            ? premultiplied.Frames[0]
+            : image.Frames[0];
+    }
+
+    /// <summary>
+    /// Sets the image an 8-bit tile is painted with on a canvas of wider samples: each color <c>c</c> of alpha <c>a</c>
+    /// becomes <c>round(c a / 255)</c> (to nearest, ties upward) divided by the alpha, the color of the premultiplied
+    /// 8-bit samples a browser holds the bitmap of a canvas with.
+    /// </summary>
+    private void SetPremultipliedPatternImage(Image<Rgba32> tile)
+    {
+        var width = tile.Width;
+        var height = tile.Height;
+        if (_patternPremultipliedImage is null || _patternPremultipliedImage.Width != width || _patternPremultipliedImage.Height != height)
+        {
+            _patternPremultipliedImage?.Dispose();
+            _patternPremultipliedImage = null;
+            _patternPremultipliedImage = new Image<Rgba64>(_image.Configuration, new Size(width, height), _image.Owner.Scope, layoutOptions: null);
+        }
+
+        var source = tile.Frames[0].GetStorage();
+        var destination = _patternPremultipliedImage.Frames[0].GetStorage();
+        for (var y = 0; y < height; y++)
+        {
+            var sourceRow = unsafe(MemoryMarshal.Cast<byte, Rgba32>(source.GetRowSpanCore(y)))[..width];
+            var destinationRow = unsafe(MemoryMarshal.Cast<byte, Rgba64>(destination.GetRowSpanCore(y)))[..width];
+            for (var x = 0; x < width; x++)
+            {
+                destinationRow[x] = ToPremultipliedSamples(sourceRow[x]);
+            }
+        }
+
+        static Rgba64 ToPremultipliedSamples(Rgba32 pixel)
+        {
+            return pixel.A switch
+            {
+                0 => default,
+                255 => new Rgba64((ushort)(pixel.R * 257), (ushort)(pixel.G * 257), (ushort)(pixel.B * 257), ushort.MaxValue),
+                _ => new Rgba64(Convert(pixel.R, pixel.A), Convert(pixel.G, pixel.A), Convert(pixel.B, pixel.A), (ushort)(pixel.A * 257)),
+            };
+
+            static ushort Convert(byte color, byte alpha) => (ushort)((((((color * alpha) + 127) / 255) * 65535L) + (alpha / 2)) / alpha);
+        }
     }
 
     /// <summary>Gets a value indicating whether the image of a tile would exceed the limits, or have more than four times the pixels of the bounds of the clip (and 65,536).</summary>
@@ -315,5 +367,7 @@ internal sealed partial class DrawingSession
         _patternBrush = null;
         _patternImage?.Dispose();
         _patternImage = null;
+        _patternPremultipliedImage?.Dispose();
+        _patternPremultipliedImage = null;
     }
 }

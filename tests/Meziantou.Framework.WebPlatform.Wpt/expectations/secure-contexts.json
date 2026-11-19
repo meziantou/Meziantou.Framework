@@ -21,10 +21,7 @@
     "total": 1
   },
   "secure-contexts/nested-data-url-iframe.html": {
-    "total": 6,
-    "failures": {
-      "isSecureContext in the initial about:blank of a popup opened by a data: URL iframe": "FAIL"
-    }
+    "total": 6
   },
   "secure-contexts/nested-data-url-iframe.https.html": {
     "total": 6

@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of css/printing, and why the
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
 - **TEST RUNNER**: 1
 
@@ -50,7 +50,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`negative-overflow-print.html`](https://wpt.fyi/results/css/printing/negative-overflow-print.html) | Pass | 1 / 1 |  |  |
 | [`no-resize-event-print.html`](https://wpt.fyi/results/css/printing/no-resize-event-print.html) | Pass | 1 / 1 |  |  |
 | [`number-input-link-crash-print.html`](https://wpt.fyi/results/css/printing/number-input-link-crash-print.html) | Pass | 1 / 1 |  |  |
-| [`page-overflow-crash-print.html`](https://wpt.fyi/results/css/printing/page-overflow-crash-print.html) | Fail | 0 / 1 | BUG | a quirks mode document whose `details` element has `offset-path` on all the elements: the motion path moves the content out of the page area, so the page is as blank as the mismatch reference |
+| [`page-overflow-crash-print.html`](https://wpt.fyi/results/css/printing/page-overflow-crash-print.html) | Fail | 0 / 1 | TEST BUG | a crash test of Gecko (bug 1697291) turned into a mismatch print reftest that asserts that something is printed; but `* { offset-path: path(M 1 7 H 1 V -1 H -1 L 1 0) }` applies a motion path to each of `html`, `body` and `details` (https://drafts.fxtf.org/motion-1/#offset-path-property): each one is moved so that its anchor (its center, or its top-left corner for `#a` with `offset-anchor: 0px 0px`) is at (1px, 7px) of its containing block and rotated by the direction of the path (`offset-rotate: auto`, -90deg after the zero-length first segment). Composed through the three elements, the content of `details` lands below the page area (about 280px to 340px down a page area 192px tall; with a rotation of 0deg it would land far above and to the left), so the page is blank, as the mismatch reference: only a user agent that does not apply the motion path to these elements prints the content |
 | [`paused-animations-print.html`](https://wpt.fyi/results/css/printing/paused-animations-print.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-animations-print.html`](https://wpt.fyi/results/css/printing/pseudo-animations-print.html) | Pass | 1 / 1 |  |  |
 | [`repeated-generated-content-whitespace-crash-print.html`](https://wpt.fyi/results/css/printing/repeated-generated-content-whitespace-crash-print.html) | Pass | 1 / 1 |  |  |

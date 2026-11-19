@@ -11,7 +11,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// A filter of the 2D contexts described by a list of filter primitives (https://github.com/whatwg/html/issues/5621, the
 /// <see href="https://github.com/fserb/canvas2D/blob/master/spec/filters.md">explainer</see>): the
 /// <see cref="CanvasRenderingContext2DBase.Filter"/> of a context, or the filter of a layer
-/// (<see cref="BeginLayerOptions.Filter"/>). The primitives apply in sRGB, in the order of the list.
+/// (<see cref="BeginLayerOptions.Filter"/>). The primitives apply in sRGB, in the order of the list, except the noise of
+/// <c>turbulence</c>, which is generated in linearRGB as the one of an SVG <c>feTurbulence</c> element (as in Chromium).
 /// </summary>
 /// <remarks>
 /// A primitive is described by a dictionary of strings (<c>record&lt;DOMString, any&gt;</c>) whose <c>name</c> is
@@ -177,7 +178,9 @@ public sealed class CanvasFilter
 
     private sealed record TurbulenceOperation(TurbulencePrimitive Primitive) : Operation
     {
-        public override DisplayFilter CreateFilter(PhysicalRect region) => CreateGraph(Primitive, region);
+        // The noise is generated in linearRGB, the default color-interpolation-filters of feTurbulence (WPT
+        // html/canvas/element/manual/filters/tentative/canvas-filter-object-turbulence.html)
+        public override DisplayFilter CreateFilter(PhysicalRect region) => new FilterGraph([Primitive with { Inputs = [FilterInput.SourceGraphic], Subregion = region, LinearRgb = true }], region);
     }
 
     /// <summary>A primitive that does nothing (e.g. an unknown primitive, or a convolution with an empty kernel).</summary>

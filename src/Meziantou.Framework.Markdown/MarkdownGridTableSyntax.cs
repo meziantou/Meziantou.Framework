@@ -10,7 +10,12 @@ namespace Meziantou.Framework.Markdown;
 /// </summary>
 /// <remarks>
 /// The lines of the table are tokens: the cells are read from them, and the content of each cell is a document of its own,
-/// parsed with the options of the tree, whose reference links can use the definitions of the tree.
+/// parsed with the options of the tree, whose reference links can use the definitions of the tree, and whose footnote
+/// references are to the footnotes of the tree. The nodes of the content of the cells are not descendants of the table:
+/// <see cref="SyntaxNode.DescendantNodes(Func{SyntaxNode, bool}?)"/> and <see cref="MarkdownSyntaxRewriter"/> do not reach
+/// them. <see cref="MarkdownSyntaxWalker"/> visits them when it is created with <c>visitGridTableCells</c>, and
+/// <see cref="MarkdownGridTableCell.MapSpan(TextSpan)"/> gives the span in the text of the tree of a span of the content of a
+/// cell.
 /// </remarks>
 public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
 {
@@ -58,10 +63,34 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
         var rows = grid.Rows.Select(row => new MarkdownGridTableRow(row.IsHeader, [.. row.Cells.Select(cell =>
         {
             var text = string.Join('\n', cell.Segments.Select(segment => lines[segment.Line][segment.Start..segment.End]));
-            return new MarkdownGridTableCell(cell.ColumnIndex, cell.ColumnSpan, cell.RowSpan, text, outer, cell.IsClosed, cell.Segments.Count > 0 ? cell.Segments[0].Line : -1, depth);
+            TextSpan[] segments = [.. cell.Segments.Select(segment => new TextSpan(tokens[segment.Line].SpanStart + segment.Start, segment.End - segment.Start))];
+            return new MarkdownGridTableCell(cell.ColumnIndex, cell.ColumnSpan, cell.RowSpan, text, outer, cell.IsClosed, cell.Segments.Count > 0 ? cell.Segments[0].Line : -1, depth, segments);
         })], row.Line)).ToArray();
         _layout = (columns, rows);
         return _layout.Value;
+    }
+
+    // The node and the nodes below it in the order of the text, with, after each grid table, the nodes of the content of its
+    // cells, row by row: the nodes of the document that Markdig reads, as it reads the cells as blocks of the document
+    internal static IEnumerable<SyntaxNode> DescendantNodesAndSelfAndCellNodes(SyntaxNode node)
+    {
+        foreach (var descendant in node.DescendantNodesAndSelf())
+        {
+            yield return descendant;
+            if (descendant is MarkdownGridTableSyntax table)
+            {
+                foreach (var row in table.Rows)
+                {
+                    foreach (var cell in row.Cells)
+                    {
+                        foreach (var cellNode in DescendantNodesAndSelfAndCellNodes(cell.Content.GetRoot()))
+                        {
+                            yield return cellNode;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public override void Accept(MarkdownSyntaxVisitor visitor)

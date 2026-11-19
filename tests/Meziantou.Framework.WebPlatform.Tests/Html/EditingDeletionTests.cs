@@ -143,6 +143,36 @@ public sealed class EditingDeletionTests : IDisposable
     public void EmptiedLineKeepsALineBreak(string html, string command, string expected)
         => Assert.Equal(expected, Run(html, command));
 
+    // The line break of an inline element is deleted, even when the element contains blocks around it
+    [Theory]
+    [InlineData("<div><font><table><tbody><tr><td>a</td></tr></tbody></table><br>[]<br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>", "delete", "<div><font><table><tbody><tr><td>a</td></tr></tbody></table><br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>")]
+    [InlineData("<div><font><table><tbody><tr><td>a</td></tr></tbody></table>[]<br><br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>", "forwardDelete", "<div><font><table><tbody><tr><td>a</td></tr></tbody></table><br><table><tbody><tr><td>b</td></tr></tbody></table></font></div>")]
+    [InlineData("<p><b>foo<br>[]bar</b></p>", "delete", "<p><b>foobar</b></p>")]
+    [InlineData("<p><b>foo[]<br>bar</b></p>", "forwardDelete", "<p><b>foobar</b></p>")]
+    public void LineBreakInInlineElementIsDeleted(string html, string command, string expected)
+        => Assert.Equal(expected, Run(html, command));
+
+    // A forward deletion at the end of the content of a table cell deletes nothing: the cells are not joined, and the
+    // invisible line break that ends the cell is kept
+    [Theory]
+    [InlineData("<table><tbody><tr><td>foo[]<br></td><td>bar</td></tr></tbody></table>")]
+    [InlineData("<table><tbody><tr><td>foo[]<br></td></tr><tr><td>bar</td></tr></tbody></table>")]
+    public void ForwardDeleteAtTheEndOfATableCellDeletesNothing(string html)
+    {
+        var (document, host) = Load(html);
+        var expected = host.InnerHtml;
+        Assert.True(document.ExecCommand("forwardDelete"));
+        Assert.Equal(expected, host.InnerHtml);
+    }
+
+    [Fact]
+    public void TargetRangeOfAForwardDeletionThatDeletesNothingIsTheCaret()
+    {
+        var (_, host) = Load("<p>abc[]<br></p>");
+        Assert.Equal("\"abc\":3-\"abc\":3", GetTargetRanges(host, "deleteContentForward"));
+        Assert.Equal("<p>abc<br></p>", host.InnerHtml);
+    }
+
     // The blocks of the only empty line of the editing host are removed; the other lines are kept
     [Theory]
     [InlineData("<div><div>[]<br></div></div>", "delete", "<br>")]

@@ -794,10 +794,32 @@ public partial class HtmlImageElement
         var fetchRequest = SubresourceFetching.CreateRequest(document, url, RequestDestination.Image, cors: HasAttribute("crossorigin"), ReferrerPolicy, this, imageSet: UsesSrcsetOrPicture(), useCredentials: SubresourceFetching.UsesCredentials(this));
         fetchRequest.ScriptLocation = _updateScriptLocation;
         var timing = ResourceTiming.Start(document, fetchRequest, LocalName);
-        Fetching.Fetch(fetchRequest, ProcessFetchResponse, task => QueueImageTask(document, task));
+
+        // The fetch is in the fetch group of the document: aborting the document (window.stop(), document.open() during a
+        // navigation) cancels it (https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document), and the
+        // image is not loaded (as in Firefox, no event is fired). The download stops.
+#pragma warning disable CA2000 // The controller is disposed with the response of the fetch
+        var controller = new CancellationTokenSource();
+#pragma warning restore CA2000
+        var fetchGroupRecord = document.FetchGroup.Add(() =>
+        {
+            if (!request.Aborted)
+            {
+                AbortRequest(request);
+                controller.Cancel();
+                SetDelayingTheLoadEvent(false);
+            }
+        });
+        Fetching.Fetch(fetchRequest, ProcessFetchResponse, task => QueueImageTask(document, task), controller.Token);
 
         void ProcessFetchResponse(FetchResponse response)
         {
+            fetchGroupRecord.Dispose();
+            var aborted = controller.IsCancellationRequested;
+            controller.Dispose();
+            if (aborted)
+                return;
+
             if (fetchRequest.IsSentToLoader)
             {
                 timing?.Report(response);
@@ -1668,7 +1690,11 @@ internal static class ImageHeaders
         return new ImageNaturalSize(width, height, ratio);
     }
 
-    /// <summary>Parses an absolute length of the width or height of an SVG root element, in CSS pixels; null for a percentage, a relative length, a negative or an invalid value.</summary>
+    /// <summary>
+    /// Parses an absolute length of the width or height of an SVG root element, in CSS pixels; null for a percentage, a relative
+    /// length (em and ex included), a negative or an invalid value: "width and height only affect natural size if they're
+    /// literal number-tokens, or dimension-tokens for an absolute length unit" (https://github.com/w3c/csswg-drafts/issues/14117).
+    /// </summary>
     private static double? ParseSvgLength(string? value)
     {
         if (value is null)
@@ -1691,8 +1717,6 @@ internal static class ImageHeaders
             "q" => 96.0 / 101.6,
             "pt" => 96.0 / 72,
             "pc" => 16.0,
-            "em" => 16.0,
-            "ex" => 16.0 * Css.Fonts.BundledFonts.DefaultRatios.XHeight,
             _ => double.NaN,
         };
 

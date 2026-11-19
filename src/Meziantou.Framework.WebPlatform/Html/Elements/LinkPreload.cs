@@ -152,48 +152,9 @@ internal static class LinkPreload
 
             foreach (var link in LinkHeaderParser.Parse(value))
             {
-                ProcessLinkHeader(document, link, document.UrlRecord, subresource: false);
+                ProcessLinkHeader(document, link, document.UrlRecord);
             }
         }
-    }
-
-    /// <summary>
-    /// Processes the <c>Link</c> headers of the response of a subresource of a document (a style sheet, an image, a
-    /// script, a font or a track), as Chromium and WebKit do (the specification only processes the ones of the documents):
-    /// the <c>preload</c> links are preloaded into the map of preloaded resources of the document, from a task of its event
-    /// loop. Their URLs are resolved against the URL of the response, and, as in Chromium, the requests have no referrer
-    /// (the <c>referrerpolicy</c> parameter is ignored, so that a cross-origin subresource cannot leak the URL of the
-    /// document). The <c>Link</c> headers of a preloaded response, of the response of a preload created by a <c>Link</c>
-    /// header of a subresource, and of a speculative fetch are not processed.
-    /// </summary>
-    public static void ProcessSubresourceLinkHeaders(FetchRequest request, FetchResponse internalResponse)
-    {
-        if (request.IsSpeculative || request.ConsumedPreload || request.IsFromSubresourceLinkHeader || request.Mode == RequestMode.Navigate
-            || request.Destination is not (RequestDestination.Font or RequestDestination.Image or RequestDestination.Script or RequestDestination.Style or RequestDestination.Track)
-            || request.Client is not { WorkerGlobal: null, BrowsingContext: { } browsingContext } document
-            || HeaderList.Get(internalResponse.HeaderList, "Link") is null)
-        {
-            return;
-        }
-
-        var baseUrl = internalResponse.UrlList.Count > 0 ? internalResponse.UrlList[^1] : request.CurrentUrl;
-        var headers = internalResponse.HeaderList.ToArray();
-        browsingContext.EventLoop.QueueTask(() =>
-        {
-            if (document.BrowsingContext is null)
-                return;
-
-            foreach (var (name, value) in headers)
-            {
-                if (!InfraAscii.EqualsIgnoreAsciiCase(name, "Link"))
-                    continue;
-
-                foreach (var link in LinkHeaderParser.Parse(value))
-                {
-                    ProcessLinkHeader(document, link, baseUrl, subresource: true);
-                }
-            }
-        });
     }
 
     /// <summary>Whether the relation types of a link (its <c>rel</c> parameter) contain <c>preload</c> and <c>modulepreload</c>.</summary>
@@ -223,14 +184,9 @@ internal static class LinkPreload
         return relations;
     }
 
-    private static void ProcessLinkHeader(Document document, LinkHeaderValue link, UrlRecord baseUrl, bool subresource)
+    private static void ProcessLinkHeader(Document document, LinkHeaderValue link, UrlRecord baseUrl)
     {
         var relations = GetRelations(link);
-        if (subresource)
-        {
-            relations &= LinkHeaderRelations.Preload;
-        }
-
         if (relations == LinkHeaderRelations.None)
             return;
 
@@ -241,7 +197,7 @@ internal static class LinkPreload
         var href = link.Target;
         var crossOrigin = link.GetParameter("crossorigin");
         var useCredentials = crossOrigin is not null && InfraAscii.EqualsIgnoreAsciiCase(crossOrigin, "use-credentials");
-        var referrerPolicy = subresource ? "no-referrer" : InfraAscii.ToAsciiLowercase(link.GetParameter("referrerpolicy") ?? "");
+        var referrerPolicy = InfraAscii.ToAsciiLowercase(link.GetParameter("referrerpolicy") ?? "");
         if (!ReferrerPolicies.IsValid(referrerPolicy))
         {
             referrerPolicy = "";
@@ -262,7 +218,6 @@ internal static class LinkPreload
 
             var request = SubresourceFetching.CreateRequest(document, url, destination, cors: crossOrigin is not null, referrerPolicy, initiator: null, useCredentials: useCredentials, integrity: link.GetParameter("integrity") ?? "");
             request.Nonce = link.GetParameter("nonce") ?? "";
-            request.IsFromSubresourceLinkHeader = subresource;
             Preload(document, request, processResponse: null);
             return;
         }

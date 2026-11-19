@@ -13,6 +13,7 @@ public sealed class ImageElementTests : IDisposable
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
     private readonly List<string> _requests = [];
+    private readonly List<CancellationToken> _slowRequestTokens = [];
     private readonly ScriptEngine _engine = TestScriptEngines.Create();
 
     public void Dispose()
@@ -37,12 +38,21 @@ public sealed class ImageElementTests : IDisposable
         return document;
     }
 
-    /// <summary>Serves a PNG for the URLs ending with .png (with the Content-DPR header of their <c>dpr</c> query parameter) and a text file for the other ones.</summary>
+    /// <summary>
+    /// Serves a PNG for the URLs ending with .png (with the Content-DPR header of their <c>dpr</c> query parameter) and a text
+    /// file for the other ones. The response of slow.png never comes.
+    /// </summary>
     private sealed class ImageLoader(ImageElementTests test) : DocumentLoader
     {
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
             test._requests.Add(request.Destination + " " + request.Url);
+            if (request.Url.EndsWith("/slow.png", StringComparison.Ordinal))
+            {
+                test._slowRequestTokens.Add(cancellationToken);
+                return new ValueTask<DocumentResource?>(new TaskCompletionSource<DocumentResource?>().Task);
+            }
+
             var dpr = request.Url.IndexOf("?dpr=", StringComparison.Ordinal) is var index and >= 0 ? request.Url[(index + 5)..] : null;
             var resource = request.Url.Contains(".png", StringComparison.Ordinal)
                 ? new DocumentResource(Png) { Headers = dpr is null ? [new("Content-Type", "image/png")] : [new("Content-Type", "image/png"), new("Content-DPR", dpr)] }
@@ -63,6 +73,19 @@ public sealed class ImageElementTests : IDisposable
         Assert.Equal((2u, 3u), (image.NaturalWidth, image.NaturalHeight));
         Assert.True(image.Complete);
         Assert.Equal(["Image https://example.com/a.png"], _requests);
+    }
+
+    [Fact]
+    public void WindowStop_CancelsTheDownloadOfAnImage()
+    {
+        var document = Load("<img src=slow.png>");
+        var token = Assert.Single(_slowRequestTokens);
+        Assert.False(token.IsCancellationRequested);
+
+        document.DefaultView!.Stop();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(token.IsCancellationRequested);
+        Assert.False(Image(document).Complete);
     }
 
     [Theory]

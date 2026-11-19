@@ -1138,6 +1138,11 @@ public partial class Animation : EventTarget, IRealmBoundPlatformObject
         if (_pendingTask == PendingTask.None || _timeline?.CurrentTimeValue is not { } readyTime || (_startTime is null && _holdTime is null))
             return false;
 
+        // The animation of an element of a document without a browsing context is never ready (when the animation is ready is
+        // up to the user agent): the element is not rendered (WPT web-animations/interfaces/Animatable/animate-no-browsing-context.html)
+        if (_effect is KeyframeEffect { Target.NodeDocument.BrowsingContext: null })
+            return false;
+
         // (the animations played by the animation frame callbacks of the previous frame start at its time, see RecordFrameReadyTime)
         if (_frameReadyTime is { } frameReadyTime && _pendingTask == PendingTask.Play && ReferenceEquals(frameReadyTime.Timeline, _timeline))
         {

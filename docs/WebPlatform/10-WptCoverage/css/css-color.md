@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 67 | 69 | 0 | 97% |
+| [Stable](#stable-tests) | 68 | 69 | 0 | 99% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 299 | 311 | 1 | 96% |
+| [Reftests](#reftests) | 304 | 311 | 1 | 98% |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **369** | **383** | **1** | **97%** |
+| **All** | **375** | **383** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 1
 - **TEST BUG**: 6
 - **FLAKY**: 1
 
@@ -57,7 +57,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/color-computed-named-color.html`](https://wpt.fyi/results/css/css-color/parsing/color-computed-named-color.html) | Pass | 455 / 455 |  |  |
 | [`parsing/color-computed-none.html`](https://wpt.fyi/results/css/css-color/parsing/color-computed-none.html) | Pass | 678 / 678 |  |  |
 | [`parsing/color-computed-powerless.html`](https://wpt.fyi/results/css/css-color/parsing/color-computed-powerless.html) | Fail | 568 / 570 | TEST BUG | a computed value with a negative lightness or a hue that serializes as 360 cannot round-trip, as parsing clamps the lightness and normalizes the hue (fails in every browser) |
-| [`parsing/color-computed-relative-color.html`](https://wpt.fyi/results/css/css-color/parsing/color-computed-relative-color.html) | Fail | 1,185 / 1,187 | BUG | two subtests convert from and to `rec2020`: the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the current draft uses the pure 2.4 gamma transfer function (https://drafts.csswg.org/css-color-4/#predefined-rec2020, ITU-R BT.1886): `color(from color(rec2020 0.25 0.5 0.75) srgb r g b)` is `color(srgb -0.280036 0.565528 0.79951)` instead of `color(srgb -0.328686 0.491201 0.76185)` |
+| [`parsing/color-computed-relative-color.html`](https://wpt.fyi/results/css/css-color/parsing/color-computed-relative-color.html) | Pass | 1,187 / 1,187 |  |  |
 | [`parsing/color-computed-rgb.html`](https://wpt.fyi/results/css/css-color/parsing/color-computed-rgb.html) | Pass | 99 / 99 |  |  |
 | [`parsing/color-computed.html`](https://wpt.fyi/results/css/css-color/parsing/color-computed.html) | Pass | 16 / 16 |  |  |
 | [`parsing/color-invalid-color-function.html`](https://wpt.fyi/results/css/css-color/parsing/color-invalid-color-function.html) | Pass | 125 / 125 |  |  |
@@ -279,19 +279,19 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`predefined-008.html`](https://wpt.fyi/results/css/css-color/predefined-008.html) | Pass | 1 / 1 |  |  |
 | [`predefined-009.html`](https://wpt.fyi/results/css/css-color/predefined-009.html) | Pass | 1 / 1 |  |  |
 | [`predefined-010.html`](https://wpt.fyi/results/css/css-color/predefined-010.html) | Pass | 1 / 1 |  |  |
-| [`predefined-011.html`](https://wpt.fyi/results/css/css-color/predefined-011.html) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the test (updated to the current draft by web-platform-tests/wpt#65163) uses the pure 2.4 gamma transfer function of https://drafts.csswg.org/css-color-4/#predefined-rec2020 (ITU-R BT.1886): the square is a slightly different green from the reference |
-| [`predefined-012.html`](https://wpt.fyi/results/css/css-color/predefined-012.html) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the test (updated to the current draft by web-platform-tests/wpt#65163) uses the pure 2.4 gamma transfer function of https://drafts.csswg.org/css-color-4/#predefined-rec2020 (ITU-R BT.1886): the square is a slightly different green from the reference |
+| [`predefined-011.html`](https://wpt.fyi/results/css/css-color/predefined-011.html) | Pass | 1 / 1 |  |  |
+| [`predefined-012.html`](https://wpt.fyi/results/css/css-color/predefined-012.html) | Pass | 1 / 1 |  |  |
 | [`predefined-016.html`](https://wpt.fyi/results/css/css-color/predefined-016.html) | Pass | 1 / 1 |  |  |
 | [`prophoto-rgb-001.html`](https://wpt.fyi/results/css/css-color/prophoto-rgb-001.html) | Pass | 1 / 1 |  |  |
 | [`prophoto-rgb-002.html`](https://wpt.fyi/results/css/css-color/prophoto-rgb-002.html) | Pass | 1 / 1 |  |  |
 | [`prophoto-rgb-003.html`](https://wpt.fyi/results/css/css-color/prophoto-rgb-003.html) | Pass | 1 / 1 |  |  |
 | [`prophoto-rgb-004.html`](https://wpt.fyi/results/css/css-color/prophoto-rgb-004.html) | Pass | 1 / 1 |  |  |
 | [`prophoto-rgb-005.html`](https://wpt.fyi/results/css/css-color/prophoto-rgb-005.html) | Pass | 1 / 1 |  |  |
-| [`rec2020-001.html`](https://wpt.fyi/results/css/css-color/rec2020-001.html) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the test (updated to the current draft by web-platform-tests/wpt#65163) uses the pure 2.4 gamma transfer function of https://drafts.csswg.org/css-color-4/#predefined-rec2020 (ITU-R BT.1886): the square is a slightly different green from the reference |
+| [`rec2020-001.html`](https://wpt.fyi/results/css/css-color/rec2020-001.html) | Pass | 1 / 1 |  |  |
 | [`rec2020-002.html`](https://wpt.fyi/results/css/css-color/rec2020-002.html) | Pass | 1 / 1 |  |  |
 | [`rec2020-003.html`](https://wpt.fyi/results/css/css-color/rec2020-003.html) | Pass | 1 / 1 |  |  |
 | [`rec2020-004.html`](https://wpt.fyi/results/css/css-color/rec2020-004.html) | Pass | 1 / 1 |  |  |
-| [`rec2020-005.html`](https://wpt.fyi/results/css/css-color/rec2020-005.html) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the test (updated to the current draft by web-platform-tests/wpt#65163) uses the pure 2.4 gamma transfer function of https://drafts.csswg.org/css-color-4/#predefined-rec2020 (ITU-R BT.1886): the square is a slightly different green from the reference |
+| [`rec2020-005.html`](https://wpt.fyi/results/css/css-color/rec2020-005.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-a98rgb-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-a98rgb-01.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-displayp3-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-displayp3-01.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-hsl-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-hsl-01.html) | Pass | 1 / 1 |  |  |
@@ -303,7 +303,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`relative-currentcolor-oklch-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-oklch-01.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-prophoto-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-prophoto-01.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-rec2020-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-rec2020-01.html) | Pass | 1 / 1 |  |  |
-| [`relative-currentcolor-rec2020-02.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-rec2020-02.html) | Fail | 0 / 1 | BUG | the `rec2020` color space is converted with the piecewise ITU-R BT.2020 transfer function (1.0993 * L^0.45 - 0.0993), while the reference (updated to the current draft by web-platform-tests/wpt#65163) uses the pure 2.4 gamma transfer function of https://drafts.csswg.org/css-color-4/#predefined-rec2020 (ITU-R BT.1886): the `rec2020` color of the reference is a slightly different green from the converted `currentcolor` of the test |
+| [`relative-currentcolor-rec2020-02.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-rec2020-02.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-rgb-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-rgb-01.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-rgb-02.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-rgb-02.html) | Pass | 1 / 1 |  |  |
 | [`relative-currentcolor-xyzd50-01.html`](https://wpt.fyi/results/css/css-color/relative-currentcolor-xyzd50-01.html) | Pass | 1 / 1 |  |  |

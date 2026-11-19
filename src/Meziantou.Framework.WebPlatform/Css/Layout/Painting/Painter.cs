@@ -60,6 +60,9 @@ internal sealed partial class Painter
     // The time in milliseconds until the next frame of an animated image painted in the document, or null
     private double? _nextFrameDelay;
 
+    /// <summary>The canvases of the snapshot of a drawable element, whose bitmap is drawn when the snapshot is drawn (see <see cref="PaintCanvas"/>), or null.</summary>
+    private List<LiveCanvasImage>? _liveCanvasImages;
+
     /// <summary>The root of the fragment tree of the document.</summary>
     private BoxFragment? _rootFragment;
 
@@ -91,13 +94,15 @@ internal sealed partial class Painter
 
     /// <summary>
     /// The fragment of the element whose image is painted, or null for the document element: the root of the painting, whose
-    /// transform and whose ancestors (their clips, their effects) are ignored.
+    /// ancestors (their clips, their effects) are ignored, and whose transform is ignored unless <see cref="_skipsCanvasDrawables"/>.
     /// </summary>
     private BoxFragment? _captureRoot;
 
     /// <summary>
     /// Whether the painting is the snapshot of a drawable element of a canvas (https://github.com/WICG/html-in-canvas, see
-    /// <see cref="CanvasDrawables"/>): the nested drawable elements (other than <see cref="_captureRoot"/>) are not painted.
+    /// <see cref="CanvasDrawables"/>): the nested drawable elements (other than <see cref="_captureRoot"/>) are not painted, and the
+    /// CSS transform of <see cref="_captureRoot"/> is painted (https://github.com/WICG/html-in-canvas/issues/135: the snapshot is in
+    /// the coordinates of its border box before its CSS transforms, as Chromium does).
     /// </summary>
     private bool _skipsCanvasDrawables;
 
@@ -271,6 +276,13 @@ internal sealed partial class Painter
         /// <summary>Whether a 3D transform was applied by the stacking context or one of its ancestors (the canvas uses a 3D matrix).</summary>
         public bool Has3DTransform { get; init; }
 
+        /// <summary>
+        /// The sum of the translations of the stacking contexts whose transform only translates them (painted in the coordinates of
+        /// their parent, see <see cref="BeginStackingContext"/>) since the nearest transformed group: they are in <see cref="Origin"/>,
+        /// but they are not part of the position of the boxes in the layout that is snapped to the device pixels.
+        /// </summary>
+        public PhysicalOffset Translation { get; init; }
+
         /// <summary>The fragments whose outline is painted at the end of the stacking context.</summary>
         public List<BoxFragment>? Outlines { get; set; }
 
@@ -367,22 +379,29 @@ internal sealed partial class Painter
     /// <summary>
     /// Paints the snapshot of a drawable element of a canvas (https://github.com/WICG/html-in-canvas: "the rendering starts at the
     /// element's border box, before CSS transformations"), in the coordinates of its border box: its stacking context with its
-    /// effects, without its transform, without the clips and the effects of its ancestors, and without its drawable descendants
-    /// (their subtrees are not in its drawable subtree).
+    /// effects and its transform, without the clips and the effects of its ancestors, and without its drawable descendants
+    /// (their subtrees are not in its drawable subtree). The bitmaps of the canvases it contains are not painted: they are drawn
+    /// when the snapshot is drawn (see <see cref="LiveCanvasImage"/>).
     /// </summary>
     /// <param name="engine">The layout of the document.</param>
     /// <param name="document">The document.</param>
     /// <param name="fragment">The first fragment of the element.</param>
     /// <param name="origin">The position of the fragment in the display list (an inline box is painted from the union of its fragments).</param>
     /// <param name="size">The size of the display list.</param>
+    /// <param name="order">
+    /// The painting order of the contents of the canvas with the markers of the stacking contexts (see
+    /// <see cref="CanvasDrawables.GetPaintOrder"/>), which contains the positioned descendants of the element whose containing
+    /// block is not their parent (e.g. a fixed positioned descendant of an inline drawable element), or null.
+    /// </param>
     /// <param name="nextFrameDelay">The time in milliseconds after which the snapshot changes (the next frame of an animated image), or null.</param>
-    public static DisplayList PaintCanvasDrawable(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset origin, PhysicalSize size, out double? nextFrameDelay)
-        => PaintCapture(engine, document, fragment, origin, order: null, canvasDrawable: true, out nextFrameDelay, size);
+    /// <param name="canvases">The canvases whose bitmap is drawn when the snapshot is drawn, or null.</param>
+    public static DisplayList PaintCanvasDrawable(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset origin, PhysicalSize size, List<PaintItem>? order, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases)
+        => PaintCapture(engine, document, fragment, origin, order, canvasDrawable: true, out nextFrameDelay, out canvases, size);
 
     private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, PhysicalSize? size = null)
-        => PaintCapture(engine, document, fragment, snapOrigin, order, canvasDrawable, out _, size);
+        => PaintCapture(engine, document, fragment, snapOrigin, order, canvasDrawable, out _, out _, size);
 
-    private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, out double? nextFrameDelay, PhysicalSize? size = null)
+    private static DisplayList PaintCapture(LayoutEngine engine, Document document, BoxFragment fragment, PhysicalOffset snapOrigin, List<PaintItem>? order, bool canvasDrawable, out double? nextFrameDelay, out List<LiveCanvasImage>? canvases, PhysicalSize? size = null)
     {
         var root = fragment;
         while (root.Parent is BoxFragment parent)
@@ -409,7 +428,8 @@ internal sealed partial class Painter
 
         // The stacking context of the element in the painting order of the document: it contains the positioned descendants whose
         // containing block is outside of the element (e.g. a fixed positioned descendant)
-        // (the drawable elements of a canvas are not in the painting order of the document: the contents of the canvas are hidden)
+        // (the drawable elements of a canvas are not in the painting order of the document: the contents of the canvas are hidden,
+        // the order of the contents of the canvas is given)
         var items = new List<PaintItem>();
         if (order is null && !canvasDrawable)
         {
@@ -431,6 +451,7 @@ internal sealed partial class Painter
         painter.PaintItems(items);
         painter.PaintOutlines(painter._group);
         nextFrameDelay = painter._nextFrameDelay;
+        canvases = painter._liveCanvasImages;
         return builder.ToDisplayList(size ?? fragment.Size);
     }
 
@@ -505,10 +526,13 @@ internal sealed partial class Painter
         // background of the canvas that has the effects of the root element is painted with it, in the scrollport)
         if (hasGutters)
         {
-            builder.Add(new ClipRectItem(painter.SnapToDevicePixels(painter._viewportRect.Translate(-origin))));
+            painter.PaintItemsClippedToScrollport(items, origin);
+        }
+        else
+        {
+            painter.PaintItems(items);
         }
 
-        painter.PaintItems(items);
         painter.PaintOutlines(painter._group);
         if (!capture && fullPageSize is null && painter._paintsScrollbars)
         {
@@ -520,6 +544,49 @@ internal sealed partial class Painter
         nextFrameDelay = painter._nextFrameDelay;
         hasAnimatedCaret = painter._hasAnimatedCaret;
         return builder.ToDisplayList(viewportSize);
+    }
+
+    /// <summary>
+    /// Paints the items of the document clipped to the scrollport of the viewport, but the stacking contexts of the fixed positioned
+    /// boxes of the top layer, whose containing block is the viewport with the scrollbar gutters of the root
+    /// (<see cref="PositionedLayout.GetTopLayerViewportRect"/>): the scrollbars are painted over them.
+    /// </summary>
+    private void PaintItemsClippedToScrollport(List<PaintItem> items, PhysicalOffset origin)
+    {
+        var unclippedSaveCount = _builder.SaveCount;
+        var clipped = false;
+        var start = 0;
+        for (var i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var isTopLayer = item is { Marker: PaintItemMarker.BeginStackingContext, Fragment: BoxFragment { Box.IsInTopLayer: true } };
+            if (i > 0 && !isTopLayer)
+                continue;
+
+            var clips = !isTopLayer || item.Fragment is not BoxFragment { Box: { Style.Layout.Position: PositionKind.Fixed, Parent.Kind: ContainerBoxKind.Viewport } };
+            if (i > 0 && clips == clipped)
+                continue;
+
+            PaintItems(items, start, i);
+            start = i;
+            if (clipped)
+            {
+                _builder.RestoreTo(unclippedSaveCount);
+                _group.Clips.Clear();
+                _group.SaveCount = unclippedSaveCount;
+            }
+
+            if (clips)
+            {
+                _builder.Save();
+                _builder.Add(new ClipRectItem(SnapToDevicePixels(_viewportRect.Translate(-origin))));
+                _group.SaveCount = _builder.SaveCount;
+            }
+
+            clipped = clips;
+        }
+
+        PaintItems(items, start, items.Count);
     }
 
     /// <summary>Returns the items of the stacking context of the <c>::view-transition</c> pseudo-element (the view transition layer).</summary>
@@ -547,13 +614,28 @@ internal sealed partial class Painter
     {
         var box = fragment.Box;
         if (_skipsCanvasDrawables)
-            return box.IsCanvasDrawable && !ReferenceEquals(fragment, _captureRoot);
+            return box.IsCanvasDrawable && !IsCanvasDrawableRoot(box);
 
         if (box.IsViewTransitionRoot)
             return _isViewTransitionCapture;
 
         return _skipsCapturedElements && box is { Element: { } element, IsAnonymous: false } && box.Kind != ContainerBoxKind.Viewport
             && !(ReferenceEquals(element, _captureElement) && box.PseudoElement == _capturePseudoElement) && _document.IsCapturedInViewTransition(element, box.PseudoElement);
+    }
+
+    /// <summary>
+    /// Whether a box is the one of the drawable element whose snapshot is painted (<see cref="_captureRoot"/>), or a part of it:
+    /// all the fragments of an inline drawable element on several lines are painted.
+    /// </summary>
+    private bool IsCanvasDrawableRoot(LayoutBox box)
+    {
+        for (var part = _captureRoot?.Box as ContainerBox; part is not null; part = part.Continuation)
+        {
+            if (ReferenceEquals(part, box))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -633,7 +715,8 @@ internal sealed partial class Painter
                         break;
                     }
 
-                    // The root of the image of a captured element is painted without its transform
+                    // The root of the image of a captured element is painted without its transform (with it in the snapshot of a
+                    // drawable element of a canvas, see BeginStackingContext)
                     if (ReferenceEquals(fragment, _captureRoot))
                     {
                         BeginStackingContext(fragment);
@@ -828,7 +911,8 @@ internal sealed partial class Painter
     {
         // The image of an element captured by a view transition: "if the referenced element has a transform applied to it (or its
         // ancestors), then the transform is ignored", "effects applied to the element from its ancestors are ignored"
-        var isCaptureRoot = ReferenceEquals(fragment, _captureRoot);
+        var isCaptureRoot = ReferenceEquals(fragment, _captureRoot) || (_skipsCanvasDrawables && IsCanvasDrawableRoot(fragment.Box));
+        var ignoresTransform = isCaptureRoot && !_skipsCanvasDrawables;
         List<ClipEntry>? deferredClips = null;
         if (!isCaptureRoot)
         {
@@ -871,12 +955,13 @@ internal sealed partial class Painter
         var box = fragment.Box;
         var has3D = _group.Has3DTransform;
         var isTransformed = false;
+        var translationOffset = _group.Translation;
 
         // https://drafts.csswg.org/css-transforms-2/#3d-rendering-contexts: a 3D rendering context established by a box whose parent
         // does not participate in it is flattened into the plane of its parent, even when that plane is itself in a 3D transform
         // (e.g. a plane of another 3D rendering context): the depth of the planes of the inner context must not compose with it
         var isFlattened = false;
-        if (planeMatrix is null && has3D && !isCaptureRoot && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.UsesPreserve3D(box))
+        if (planeMatrix is null && has3D && !ignoresTransform && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.UsesPreserve3D(box))
         {
             _builder.Transform(Flattening);
             isFlattened = true;
@@ -886,10 +971,11 @@ internal sealed partial class Painter
         {
             _builder.Transform(DisplayMatrix.FromMatrix4x4(planeMatrix));
             origin = offset;
+            translationOffset = PhysicalOffset.Zero;
             has3D = true;
             isTransformed = true;
         }
-        else if (!isCaptureRoot && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.GetMatrixWithPerspective(fragment) is { } matrix)
+        else if (!ignoresTransform && box.Kind != ContainerBoxKind.Viewport && LayoutTransforms.GetMatrixWithPerspective(fragment) is { } matrix)
         {
             if (IsPlaneTranslation(matrix, out var translation) && !LayoutTransforms.UsesPreserve3D(box))
             {
@@ -900,6 +986,7 @@ internal sealed partial class Painter
                 // fractional position of the box). The root of a 3D rendering context keeps its matrix: its perspective and the
                 // depth of its plane apply to the planes of its descendants
                 origin = new PhysicalOffset(origin.X - translation.X, origin.Y - translation.Y);
+                translationOffset = new PhysicalOffset(translationOffset.X + translation.X, translationOffset.Y + translation.Y);
             }
             else
             {
@@ -912,8 +999,13 @@ internal sealed partial class Painter
                     _builder.Transform(Flattening);
                 }
 
-                // https://drafts.csswg.org/css-transforms-1/#transform-rendering: the transform is in the coordinates of the border box
+                // https://drafts.csswg.org/css-transforms-1/#transform-rendering: the transform is in the coordinates of the border box.
+                // As in the browsers, the fractional part of the position of the box in the layout is dropped (its position is
+                // snapped to the device pixels): it cannot be transformed by the transform, and the box is painted from a pixel
+                // boundary. The translations of its ancestors are kept (they are transforms of their own in the browsers)
                 var local = offset - origin;
+                local = new PhysicalOffset(SnapToDevicePixels(local.X - translationOffset.X) + translationOffset.X, SnapToDevicePixels(local.Y - translationOffset.Y) + translationOffset.Y);
+                translationOffset = PhysicalOffset.Zero;
                 _builder.Transform(DisplayMatrix.Translation(local.X, local.Y).PreConcat(DisplayMatrix.FromMatrix4x4(matrix)));
                 origin = offset;
                 has3D |= is3D;
@@ -929,7 +1021,7 @@ internal sealed partial class Painter
             isTransformed = true;
         }
 
-        var group = new Group(fragment, origin, _group, baseSaveCount, _builder.SaveCount) { IsTransformed = isTransformed, Has3DTransform = has3D, DeferredClips = deferredClips };
+        var group = new Group(fragment, origin, _group, baseSaveCount, _builder.SaveCount) { IsTransformed = isTransformed, Has3DTransform = has3D, DeferredClips = deferredClips, Translation = translationOffset };
         _group = group;
         if (transformOnly)
             return;

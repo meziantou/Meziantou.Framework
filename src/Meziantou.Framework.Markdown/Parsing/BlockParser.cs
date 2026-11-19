@@ -30,6 +30,10 @@ internal sealed class BlockParser
     // The blocks that the document is in: for the content of a cell, the grid tables and their containers
     private int _baseDepth;
 
+    // Whether the text is the content of a cell of a grid table, which is not a document: it has no front matter and no
+    // footnotes, and its block quotes are nested in the table
+    private bool _isCell;
+
     // The alert being converted, which a quote in it cannot be, and the paragraph that starts with its kind
     private bool _inAlert;
     private Block? _alertParagraph;
@@ -106,10 +110,16 @@ internal sealed class BlockParser
     /// <summary>Adds the nodes and tokens of the text to <paramref name="tree"/>, the document first. Returns the trivia that is not whitespace.</summary>
     public static List<TriviaSpan> Parse(string text, MarkdownParseOptions options, TreeBuffer tree, CellContext? cell = null)
     {
-        var parser = new BlockParser(text, options, tree) { _keepsGridTable = cell?.KeepsGridTable ?? false, _baseDepth = cell?.Depth ?? 0 };
+        var parser = new BlockParser(text, options, tree) { _keepsGridTable = cell?.KeepsGridTable ?? false, _baseDepth = cell?.Depth ?? 0, _isCell = cell is not null };
         foreach (var label in cell?.References ?? [])
         {
             parser._references.TryAdd(label, value: true);
+        }
+
+        // A cell has no footnote definition: its references are to the footnotes of the document
+        foreach (var label in cell?.Footnotes ?? [])
+        {
+            parser._inlineParser.Footnotes.Add(label);
         }
 
         parser.ParseBlocks();
@@ -157,7 +167,7 @@ internal sealed class BlockParser
     private void ParseBlocks()
     {
         var text = _text;
-        var position = HasExtension(MarkdownExtensions.YamlFrontMatter) ? ParseFrontMatter() : 0;
+        var position = HasExtension(MarkdownExtensions.YamlFrontMatter) && !_isCell ? ParseFrontMatter() : 0;
         while (position < text.Length)
         {
             var lineEnd = position;
@@ -329,7 +339,8 @@ internal sealed class BlockParser
                     AddLine();
                 }
 
-                if (container.Kind == SyntaxKind.HtmlBlock && Scanners.IsHtmlBlockEnd(container.HtmlBlockType, _text[_offset.._lineEnd]))
+                // Only the HTML blocks of the types 1 to 5 end with a line that has their end condition
+                if (container is { Kind: SyntaxKind.HtmlBlock, HtmlBlockType: <= 5 } && Scanners.IsHtmlBlockEnd(container.HtmlBlockType, _text.AsSpan(_offset, _lineEnd - _offset)))
                 {
                     Finalize(container);
                 }
@@ -819,7 +830,7 @@ internal sealed class BlockParser
         if (!_indented && c == '<' && !_disableHtml)
         {
             var interruptsParagraph = container.Kind == SyntaxKind.Paragraph || (!_allClosed && !_blank && _tip.Kind == SyntaxKind.Paragraph);
-            var type = Scanners.GetHtmlBlockStart(_text[_nextNonspace.._lineEnd], interruptsParagraph);
+            var type = Scanners.GetHtmlBlockStart(_text.AsSpan(_nextNonspace, _lineEnd - _nextNonspace), interruptsParagraph);
             if (type > 0)
             {
                 CloseUnmatchedBlocks();
@@ -975,7 +986,8 @@ internal sealed class BlockParser
     }
 
     // A footnote is a child of the document, which can interrupt a paragraph, and end a list whose item the line does not continue
-    private bool IsFootnoteContainer(Block container) => HasExtension(MarkdownExtensions.Footnotes) && (container == _document || (container.Kind is SyntaxKind.Paragraph or SyntaxKind.List && container.Parent == _document));
+    // The footnotes of a cell are the ones of the document of the table: a cell has no definition, as in Markdig
+    private bool IsFootnoteContainer(Block container) => HasExtension(MarkdownExtensions.Footnotes) && !_isCell && (container == _document || (container.Kind is SyntaxKind.Paragraph or SyntaxKind.List && container.Parent == _document));
 
     // [^label]: where the label is a link label that starts with ^ once trimmed. Returns where the ] ends, or 0.
     private int ScanFootnoteLabel(int start)
@@ -1558,8 +1570,8 @@ internal sealed class BlockParser
             markerEnd = digitsEnd + 1;
         }
 
-        var next = Peek(markerEnd);
-        if (next is not ('\0' or ' ' or '\t'))
+        // The marker ends the line, or is followed by whitespace: a NUL of the text is not the end of the line
+        if (markerEnd < _lineEnd && !Scanners.IsSpaceOrTab(_text[markerEnd]))
         {
             return null;
         }
@@ -1588,9 +1600,8 @@ internal sealed class BlockParser
         do
         {
             AdvanceOffset(1, columns: true);
-            next = Peek(_offset);
         }
-        while (_column - spacesStartColumn < 5 && Scanners.IsSpaceOrTab(next));
+        while (_column - spacesStartColumn < 5 && _offset < _lineEnd && Scanners.IsSpaceOrTab(_text[_offset]));
 
         var blankItem = _offset >= _lineEnd;
         var spacesAfterMarker = _column - spacesStartColumn;
@@ -1780,15 +1791,23 @@ internal sealed class BlockParser
         _tip = block.Parent ?? _document;
     }
 
+    // The line that ends a grid table and the end of the table both check its lines: the result is kept until a line is added
     private bool IsGridTable(Block table)
     {
+        if (table.GridTableCheck is { } check && check.LineCount == table.LineCount)
+        {
+            return check.IsTable;
+        }
+
         var lines = new List<string>(table.LineCount);
         foreach (var line in GetLines(table))
         {
             lines.Add(_text[line.Start..line.End]);
         }
 
-        return GridTableLayout.Read(lines) is not null;
+        var isTable = GridTableLayout.Read(lines) is not null;
+        table.GridTableCheck = (table.LineCount, isTable);
+        return isTable;
     }
 
     // With auto-identifiers, a reference link whose label is the first line of a heading links to it, as in Markdig
@@ -2001,7 +2020,7 @@ internal sealed class BlockParser
             default:
             {
                 // A block quote whose paragraph starts with [!KIND] on its own line is an alert
-                var alert = block.Kind == SyntaxKind.BlockQuote && HasExtension(MarkdownExtensions.Alerts) && !_inAlert && (_allowNestedAlerts || block.Parent == _document) && FindAlertParagraph(block);
+                var alert = block.Kind == SyntaxKind.BlockQuote && HasExtension(MarkdownExtensions.Alerts) && !_inAlert && (_allowNestedAlerts || (block.Parent == _document && !_isCell)) && FindAlertParagraph(block);
                 var node = _tree.StartNode(alert ? SyntaxKind.Alert : block.Kind);
                 _tree.AddRange(block.LeadingOrNull);
                 _inAlert |= alert;
@@ -2655,7 +2674,15 @@ internal sealed class BlockParser
 
         public void InsertChild(int index, Block child) => (_children ??= []).Insert(index, child);
 
-        public void RemoveChild(Block child) => _children?.Remove(child);
+        // The child removed is the last one, such as the paragraph of the terms of a definition list: searching from the end keeps
+        // the removal O(1), however many children the block has
+        public void RemoveChild(Block child)
+        {
+            if (_children is { } children && children.LastIndexOf(child) is >= 0 and var index)
+            {
+                children.RemoveAt(index);
+            }
+        }
 
         public bool Open { get; set; } = true;
 
@@ -2772,6 +2799,13 @@ internal sealed class BlockParser
         // For a paragraph whose first lines are not a grid table, their number
         public int GridLineCount { get; set; } = -1;
 
+        // For a grid table, whether its lines are one, for its number of lines
+        public (int LineCount, bool IsTable)? GridTableCheck
+        {
+            get => _extra?.GridTableCheck;
+            set => Extra.GridTableCheck = value;
+        }
+
         // A paragraph: its link reference definitions, then its inlines from ContentStart in its subject
         public List<BuildElement>? DefinitionsOrNull { get; set; }
 
@@ -2820,6 +2854,8 @@ internal sealed class BlockParser
 
     private sealed class BlockExtra
     {
+        public (int LineCount, bool IsTable)? GridTableCheck { get; set; }
+
         public int ExtensionIndex { get; set; }
 
         public bool InfoInlines { get; set; }

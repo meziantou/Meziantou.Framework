@@ -1440,8 +1440,9 @@ internal sealed class InlineParser
                 continue;
             }
 
+            // The candidate can also start a construct of another feature, such as a smiley or a syntax extension
             _pos = limit;
-            if (limit == _end || IsMarkdigAutolinkStart(_pos))
+            if (limit == _end || IsTextStop(_text[_pos]))
             {
                 break;
             }

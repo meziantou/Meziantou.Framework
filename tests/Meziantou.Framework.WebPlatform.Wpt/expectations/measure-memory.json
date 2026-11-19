@@ -1,0 +1,58 @@
+{
+  "measure-memory/detached.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "performance.measureUserAgentSpecificMemory URLs within a cross-site iframe.": "TIMEOUT"
+    }
+  },
+  "measure-memory/idlharness.window.js": {
+    "total": 5
+  },
+  "measure-memory/iframe.cross-origin.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/iframe.cross-site.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/iframe.same-origin.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/main-frame-and-worker.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Well-formed result of performance.measureUserAgentSpecificMemory.": "FAIL"
+    }
+  },
+  "measure-memory/main-frame.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/randomized-breakdown.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/redirect.client.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/redirect.server.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/shared-worker.https.any.js#sharedworker": {
+    "total": 1
+  },
+  "measure-memory/window-open.cross-origin.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/window-open.cross-site.https.window.js": {
+    "total": 1
+  },
+  "measure-memory/window-open.mix.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "performance.measureUserAgentSpecificMemory does not leak URLs in cross-origin iframes and windows.": "TIMEOUT"
+    }
+  },
+  "measure-memory/window-open.same-origin.https.window.js": {
+    "total": 1
+  }
+}

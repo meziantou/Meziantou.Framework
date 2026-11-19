@@ -2773,6 +2773,40 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_MemoryAttribution(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryAttribution value)
+    {
+        var result = r.CreateObject();
+        if (value.Container is not null) r.SetMember(result, "container", (value.Container is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttributionContainer(r, dictionaryValue) : r.Adapter.Null));
+        if (value.Scope is not null) r.SetMember(result, "scope", r.FromString(value.Scope));
+        if (value.Url is not null) r.SetMember(result, "url", r.FromString(value.Url));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MemoryAttributionContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryAttributionContainer value)
+    {
+        var result = r.CreateObject();
+        if (value.Id is not null) r.SetMember(result, "id", r.FromString(value.Id));
+        if (value.Src is not null) r.SetMember(result, "src", r.FromString(value.Src));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MemoryBreakdownEntry(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryBreakdownEntry value)
+    {
+        var result = r.CreateObject();
+        if (value.Attribution is not null) r.SetMember(result, "attribution", r.FromSequence(value.Attribution, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttribution(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "bytes", r.FromNumber((double)value.Bytes));
+        if (value.Types is not null) r.SetMember(result, "types", r.FromSequence(value.Types, static (r, e) => r.FromString(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MemoryMeasurement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement value)
+    {
+        var result = r.CreateObject();
+        if (value.Breakdown is not null) r.SetMember(result, "breakdown", r.FromSequence(value.Breakdown, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryBreakdownEntry(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "bytes", r.FromNumber((double)value.Bytes));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_MessageEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MessageEventInit value)
     {
         var result = r.CreateObject();

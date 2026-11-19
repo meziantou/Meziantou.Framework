@@ -1524,6 +1524,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MediaTrackSupportedConstraints dictionaryDom_MediaTrackSupportedConstraints:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaTrackSupportedConstraints(r, dictionaryDom_MediaTrackSupportedConstraints);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryAttribution dictionaryDom_MemoryAttribution:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttribution(r, dictionaryDom_MemoryAttribution);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryAttributionContainer dictionaryDom_MemoryAttributionContainer:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttributionContainer(r, dictionaryDom_MemoryAttributionContainer);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryBreakdownEntry dictionaryDom_MemoryBreakdownEntry:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryBreakdownEntry(r, dictionaryDom_MemoryBreakdownEntry);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement dictionaryDom_MemoryMeasurement:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryMeasurement(r, dictionaryDom_MemoryMeasurement);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions dictionaryDom_ModelContextExecuteToolOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ModelContextExecuteToolOptions(r, dictionaryDom_ModelContextExecuteToolOptions);
                 return true;
@@ -2387,6 +2399,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaStream> taskSystem_Threading_Tasks_Task_Dom_MediaStream_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaStream_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement> taskSystem_Threading_Tasks_Task_Dom_MemoryMeasurement_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MemoryMeasurement_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryMeasurement(r, dictionaryValue) : r.Adapter.Null));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.NavigationHistoryEntry> taskSystem_Threading_Tasks_Task_Dom_NavigationHistoryEntry_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_NavigationHistoryEntry_, static (r, v) => r.Wrap(v));

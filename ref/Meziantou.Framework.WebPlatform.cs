@@ -10118,6 +10118,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Zoom { get => throw null; init { } }
     }
 
+    public sealed class MemoryAttribution
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MemoryAttributionContainer? Container { get => throw null; init { } }
+        public string Scope { get => throw null; init { } }
+        public string Url { get => throw null; init { } }
+    }
+
+    public sealed class MemoryAttributionContainer
+    {
+        public string Id { get => throw null; init { } }
+        public string Src { get => throw null; init { } }
+    }
+
+    public sealed class MemoryBreakdownEntry
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MemoryAttribution> Attribution { get => throw null; init { } }
+        public ulong Bytes { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Types { get => throw null; init { } }
+    }
+
+    public sealed class MemoryMeasurement
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MemoryBreakdownEntry> Breakdown { get => throw null; init { } }
+        public ulong Bytes { get => throw null; init { } }
+    }
+
     public sealed class MessageChannel
     {
         public Meziantou.Framework.WebPlatform.Dom.MessagePort Port1 { get => throw null; }
@@ -11407,6 +11433,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PerformanceEntry> GetEntriesByType(string type) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.PerformanceMark Mark(string markName, Meziantou.Framework.WebPlatform.Dom.PerformanceMarkOptions? markOptions = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.PerformanceMeasure Measure(string measureName, object? startOrMeasureOptions = null, string? endMark = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement> MeasureUserAgentSpecificMemory() => throw null;
         public double Now() => throw null;
         public void SetResourceTimingBufferSize(uint maxSize) { }
     }

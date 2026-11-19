@@ -476,6 +476,8 @@ public sealed class WptTests
 
     public static TheoryData<string> NetworkErrorLoggingTests => GetTests("network-error-logging");
 
+    public static TheoryData<string> MeasureMemoryTests => GetTests("measure-memory");
+
     public static TheoryData<string> InterventionReportingTests => GetTests("intervention-reporting");
 
     public static TheoryData<string> ContentSecurityPolicyBaseUriTests => GetTests("content-security-policy/base-uri");
@@ -1728,6 +1730,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(NetworkErrorLoggingTests))]
     public void NetworkErrorLogging(string test) => Run("network-error-logging", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MeasureMemoryTests))]
+    public void MeasureMemory(string test) => Run("measure-memory", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DeprecationReportingTests))]

@@ -276,6 +276,32 @@ public sealed class PerformanceTimelineTests : IDisposable
     }
 
     [Fact]
+    public async Task MeasureUserAgentSpecificMemory_AttributesTheRealmsOfTheBrowsingContextGroup()
+    {
+        _loader.Resources["https://example.com/dir/frame.html"] = Html("<p>same origin</p>");
+        _loader.Resources["https://other.example/frame.html"] = Html("<p>other origin</p>");
+        var document = Load("<iframe id=a src=frame.html></iframe><iframe id=b src=https://other.example/frame.html></iframe>");
+
+        #region WebPlatform_MeasureMemory
+        var measurement = document.DefaultView!.Performance.MeasureUserAgentSpecificMemory();
+        #endregion
+
+        _contexts.EventLoop.RunUntilIdle();
+        var result = await measurement;
+        Assert.Equal(result.Breakdown.Aggregate(0ul, (sum, entry) => sum + entry.Bytes), result.Bytes);
+        Assert.Single(result.Breakdown, entry => entry is { Bytes: 0, Attribution.Count: 0, Types.Count: 0 });
+        var attributions = result.Breakdown.SelectMany(entry => entry.Attribution).ToList();
+        Assert.Contains(attributions, attribution => attribution is { Url: "https://example.com/dir/page.html", Scope: "Window", Container: null });
+        Assert.Contains(attributions, attribution => attribution is { Url: "https://example.com/dir/frame.html", Scope: "Window", Container.Id: "a" });
+        Assert.Contains(attributions, attribution => attribution is { Url: "cross-origin-url", Scope: "cross-origin-aggregated", Container: { Id: "b", Src: "https://other.example/frame.html" } });
+
+        // The estimate is deterministic
+        var second = document.DefaultView.Performance.MeasureUserAgentSpecificMemory();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(result.Bytes, (await second).Bytes);
+    }
+
+    [Fact]
     public void Iframe_CrossOrigin_ReportsAnOpaqueEntryWhenItIsLoaded()
     {
         _loader.Resources["https://other.example/frame.html"] = Html("frame");

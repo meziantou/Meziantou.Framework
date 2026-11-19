@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <!-- The baseline: Meziantou.Framework.Markdown 1.x was a fork of Markdig -->
-    <PackageReference Include="Markdig" Version="1.5.1" />
+    <PackageReference Include="Markdig" Version="1.6.0" />
   </ItemGroup>
 
   <ItemGroup>

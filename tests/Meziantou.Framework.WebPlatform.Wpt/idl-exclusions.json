@@ -139,6 +139,5 @@
   "WorkerGlobalScope.caches": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/CacheStorage.js), because the requests and the responses are the objects of Fetch.js",
   "WorkerGlobalScope.crypto": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/WebCrypto.js), because the algorithm normalization converts the dictionaries to a type that depends on the algorithm name",
   "WorkerGlobalScope.fetch": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/Fetch.js), because the bodies are streams (Streams.js)",
-  "XSLTProcessor": "Out of scope: XSLT is not part of the plan",
   "console": "Implemented by the WebIDL bindings (Scripting/WebIdl/WebIdlRealm.Console.cs), because the formatter works on the JavaScript values"
 }

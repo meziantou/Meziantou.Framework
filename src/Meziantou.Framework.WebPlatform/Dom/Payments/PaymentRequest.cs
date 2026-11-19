@@ -27,7 +27,7 @@ internal enum PaymentRequestState
 /// <seealso href="https://w3c.github.io/payment-request/#dom-paymentrequest"/>
 [IdlInterface("PaymentRequest", "https://w3c.github.io/payment-request/#dom-paymentrequest")]
 #pragma warning disable CA1001 // The cancellation source of the user interface is disposed when the user interface is closed
-public sealed class PaymentRequest : EventTarget
+public sealed partial class PaymentRequest : EventTarget
 #pragma warning restore CA1001
 {
     /// <summary>The request whose payment sheet is shown, per payment-relevant browsing context (the top-level browsing context).</summary>
@@ -104,12 +104,28 @@ public sealed class PaymentRequest : EventTarget
             if (!seenPmis.Add(PaymentMethodIdentifier.GetComparisonKey(paymentMethod.SupportedMethods)))
                 throw new RangeErrorException($"The payment method identifier '{paymentMethod.SupportedMethods}' is a duplicate");
 
-            var serializedData = paymentMethod.Data is null ? null : SerializeJson(window, paymentMethod.Data);
+            CheckSecurePaymentConfirmationIsAlone(seenPmis);
 
-            // The additional data type of the payment method, defined by the payment handlers of the backend
+            // The .NET SecurePaymentConfirmationRequest dictionary has no JSON serialization: its data is an empty object
+            var serializedData = paymentMethod.Data switch
+            {
+                null => null,
+                SecurePaymentConfirmationRequest => "{}",
+                _ => SerializeJson(window, paymentMethod.Data),
+            };
+
+            // The additional data type of the payment method: SecurePaymentConfirmationRequest, or the one defined by the
+            // payment handlers of the backend
             if (serializedData is not null)
             {
-                backend?.ValidatePaymentMethodData(paymentMethod.SupportedMethods, serializedData);
+                if (paymentMethod.SupportedMethods == SecurePaymentConfirmationMethod)
+                {
+                    _securePaymentConfirmation = ValidateSecurePaymentConfirmationData(window, paymentMethod.Data);
+                }
+                else
+                {
+                    backend?.ValidatePaymentMethodData(paymentMethod.SupportedMethods, serializedData);
+                }
             }
 
             _serializedMethodData.Add(new PaymentSheetMethod(paymentMethod.SupportedMethods, serializedData));
@@ -244,9 +260,10 @@ public sealed class PaymentRequest : EventTarget
 
         // The payment handlers of the payment methods (the queries are created on the event loop of the window)
         var queries = _serializedMethodData.ConvertAll(method => new PaymentHandlerQuery(_window, method));
+        var securePaymentConfirmationCheck = CreateSecurePaymentConfirmationCheck();
         UserAgentUI.Show<IReadOnlyList<PaymentSheetMethod>>(
             _window,
-            (backend, cancellationToken) => new ValueTask<IReadOnlyList<PaymentSheetMethod>>(GetSupportedMethodsAsync(backend, queries, cancellationToken)),
+            (backend, cancellationToken) => new ValueTask<IReadOnlyList<PaymentSheetMethod>>(GetSupportedMethodsAsync(backend, queries, securePaymentConfirmationCheck, cancellationToken)),
             dismissed: [],
             methods =>
             {
@@ -258,6 +275,13 @@ public sealed class PaymentRequest : EventTarget
                     State = PaymentRequestState.Closed;
                     CloseUserInterface();
                     acceptPromise.TrySetException(CreateException("The user agent supports none of the payment methods", "NotSupportedError"));
+                    return;
+                }
+
+                // The payment handler of Secure Payment Confirmation shows the transaction dialog
+                if (_securePaymentConfirmation is not null)
+                {
+                    ShowTransactionDialog(token);
                     return;
                 }
 
@@ -311,9 +335,10 @@ public sealed class PaymentRequest : EventTarget
         IngestPaymentMethodManifests();
         var result = new TaskCompletionSource<bool>();
         var queries = _serializedMethodData.ConvertAll(method => new PaymentHandlerQuery(_window, method));
+        var securePaymentConfirmationCheck = CreateSecurePaymentConfirmationCheck();
         UserAgentUI.Show(
             _window,
-            async (backend, cancellationToken) => (await GetSupportedMethodsAsync(backend, queries, cancellationToken).ConfigureAwait(false)).Count > 0,
+            async (backend, cancellationToken) => (await GetSupportedMethodsAsync(backend, queries, securePaymentConfirmationCheck, cancellationToken).ConfigureAwait(false)).Count > 0,
             dismissed: false,
             result.SetResult);
         return result.Task;
@@ -390,8 +415,10 @@ public sealed class PaymentRequest : EventTarget
     /// <summary>
     /// The payment method consultation (https://w3c.github.io/payment-request/#show-method, "for each paymentMethod"): the
     /// methods for which the backend has a payment handler. The queries are sent at once, from the event loop of the window.
+    /// <paramref name="securePaymentConfirmationCheck"/> runs the steps to check if a payment can be made of Secure Payment
+    /// Confirmation once the backend supports it.
     /// </summary>
-    private static async Task<IReadOnlyList<PaymentSheetMethod>> GetSupportedMethodsAsync(UserAgentUIBackend backend, List<PaymentHandlerQuery> queries, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<PaymentSheetMethod>> GetSupportedMethodsAsync(UserAgentUIBackend backend, List<PaymentHandlerQuery> queries, Func<CancellationToken, Task<bool>>? securePaymentConfirmationCheck, CancellationToken cancellationToken)
     {
         var answers = new Task<bool>[queries.Count];
         for (var i = 0; i < queries.Count; i++)
@@ -423,6 +450,11 @@ public sealed class PaymentRequest : EventTarget
 #pragma warning restore CA1031
             {
             }
+        }
+
+        if (securePaymentConfirmationCheck is not null && result.FindIndex(method => method.Identifier == SecurePaymentConfirmationMethod) is var index and >= 0 && !await securePaymentConfirmationCheck(cancellationToken).ConfigureAwait(false))
+        {
+            result.RemoveAt(index);
         }
 
         return result;

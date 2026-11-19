@@ -1955,6 +1955,181 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal(expected, LinkHeader.FindPaymentMethodManifest(values.Split('\n')));
     }
 
+    // Secure Payment Confirmation
+
+    private const string SecurePaymentConfirmationScript = """
+        window.go = p => p.then(r => document.title = String(r), e => document.title = e.name);
+        window.clientData = c => JSON.parse(new TextDecoder().decode(c.response.clientDataJSON));
+        window.enroll = (selection) => navigator.credentials.create({ publicKey: {
+          rp: { name: 'Bank' },
+          user: { id: new Uint8Array([1]), name: 'john', displayName: 'John' },
+          challenge: new Uint8Array([1]),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: Object.assign({ authenticatorAttachment: 'platform', residentKey: 'required', userVerification: 'required' }, selection),
+          extensions: { payment: { isPayment: true } },
+        } });
+        window.data = (credentialIds, extra) => Object.assign({
+          credentialIds,
+          challenge: new Uint8Array([9]),
+          rpId: 'example.com',
+          payeeOrigin: 'https://merchant.example/checkout',
+          instrument: { displayName: 'Card', icon: 'data:image/png;base64,iVBORw0KGgo=' },
+        }, extra);
+        window.details = { total: { label: 'Total', amount: { currency: 'usd', value: '1.00' } } };
+        window.spc = (credentialIds, extra) => new PaymentRequest([{ supportedMethods: 'secure-payment-confirmation', data: data(credentialIds, extra) }], details);
+        window.construct = (methods) => { try { new PaymentRequest(methods, details); return 'ok'; } catch (e) { return e.name; } };
+        """;
+
+    private static VirtualAuthenticatorEnvironment CreatePlatformAuthenticator()
+    {
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        authenticators.AddAuthenticator(new VirtualAuthenticatorOptions { Protocol = VirtualAuthenticatorProtocol.Ctap21, Transport = "internal", HasResidentKey = true, HasUserVerification = true, IsUserVerified = true });
+        return authenticators;
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Show_AuthenticatesThePayment()
+    {
+        #region WebPlatform_UserAgentUI_SecurePaymentConfirmation
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        authenticators.AddAuthenticator(new VirtualAuthenticatorOptions
+        {
+            Protocol = VirtualAuthenticatorProtocol.Ctap21,
+            Transport = "internal",
+            HasResidentKey = true,
+            HasUserVerification = true,
+            IsUserVerified = true,
+        });
+
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var options = new BrowsingContextOptions
+        {
+            // The credentials of the payments are the ones of the virtual authenticators
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators },
+
+            // The transaction dialog of Secure Payment Confirmation is the one of the backend
+            UserAgentUI = transactionDialog,
+        };
+        #endregion
+
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        Assert.Equal("webauthn.create|true|true", await RunAsync(document, """
+            enroll().then(c => {
+              window.credential = c;
+              document.title = [clientData(c).type, clientData(c).payment.browserBoundPublicKey.length > 0, c.getClientExtensionResults().payment.browserBoundSignature.signature.byteLength > 0].join('|');
+            }, e => document.title = e.name);
+            """));
+
+        Activate(document);
+        Assert.Equal("secure-payment-confirmation|true|payment.get|example.com|https://example.com|https://merchant.example|USD|1.00|Card|true|true", await RunAsync(document, """
+            spc([credential.rawId]).show().then(response => response.complete('success').then(() => {
+              const c = response.details;
+              const d = clientData(c);
+              document.title = [response.methodName, c.id === credential.id, d.type, d.payment.rpId, d.payment.topOrigin, d.payment.payeeOrigin, d.payment.total.currency, d.payment.total.value,
+                d.payment.instrument.displayName, d.payment.browserBoundPublicKey === clientData(credential).payment.browserBoundPublicKey, c.getClientExtensionResults().payment.browserBoundSignature.signature.byteLength > 0].join('|');
+            }), e => document.title = e.name);
+            """));
+
+        var prompt = transactionDialog.LastPrompt!;
+        Assert.Equal("https://merchant.example", prompt.PayeeOrigin);
+        Assert.Equal("USD", prompt.Total.Currency);
+        Assert.Equal(1, prompt.CredentialCount);
+        Assert.Equal("https://example.com", prompt.Origin);
+    }
+
+    [Theory]
+    [InlineData(SecurePaymentConfirmationChoice.Decline, "{}", "AbortError")]
+    [InlineData(SecurePaymentConfirmationChoice.AuthenticateAnotherWay, "{}", "NotAllowedError")]
+    [InlineData(SecurePaymentConfirmationChoice.OptOut, "{ showOptOut: true }", "OptOutError")]
+    [InlineData(SecurePaymentConfirmationChoice.OptOut, "{}", "AbortError")]
+    public async Task SecurePaymentConfirmation_Show_TheChoiceOfTheUser(SecurePaymentConfirmationChoice choice, string extra, string expected)
+    {
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = new TransactionDialog(choice),
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        Activate(document);
+        Assert.Equal(expected, await RunAsync(document, $"go(spc([credential.rawId], {extra}).show())"));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Show_UnknownCredential_IsNotAllowed()
+    {
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() }, UserAgentUI = transactionDialog });
+
+        Assert.Equal("true", await RunAsync(document, "go(spc([new Uint8Array([1, 2])]).canMakePayment())"));
+        Activate(document);
+        Assert.Equal("NotAllowedError", await RunAsync(document, "go(spc([new Uint8Array([1, 2])]).show())"));
+        Assert.Equal(0, transactionDialog.LastPrompt!.CredentialCount);
+
+        // Without the backend, the user agent does not support Secure Payment Confirmation
+        var other = Load("<script>" + SecurePaymentConfirmationScript + "</script>");
+        Activate(other);
+        Assert.Equal("NotSupportedError", await RunAsync(other, "go(spc([new Uint8Array([1, 2])]).show())"));
+    }
+
+    [Fact]
+    public void SecurePaymentConfirmation_Constructor_ValidatesTheData()
+    {
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>");
+
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])]) }])"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])]) }, { supportedMethods: 'basic-card' }])"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([]) }])"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array()]) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { challenge: null }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { rpId: 'not a domain' }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { payeeOrigin: undefined }) }])"));
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { payeeOrigin: undefined, payeeName: 'Merchant' }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { payeeOrigin: 'http://merchant.example' }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { paymentEntitiesLogos: [{ url: 'https://logo.example/a.png', label: '' }] }) }])"));
+
+        // Only the relying party can give extensions
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { extensions: { credProps: true } }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { rpId: 'bank.example', extensions: { credProps: true } }) }])"));
+
+        // The locales must match the language of the transaction dialog
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { locale: ['fr', 'en'] }) }])"));
+        Assert.Equal("NotSupportedError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { locale: ['fr'] }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { locale: ['-'] }) }])"));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_PaymentExtension()
+    {
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() } });
+
+        // A credential for the payments is a discoverable credential of a platform authenticator that verifies the user
+        Assert.Equal("TypeError", await RunAsync(document, "go(enroll({ authenticatorAttachment: 'cross-platform' }))"));
+        Assert.Equal("TypeError", await RunAsync(document, "go(enroll({ userVerification: 'preferred' }))"));
+        Assert.Equal("[object PublicKeyCredential]", await RunAsync(document, "go(enroll({ residentKey: 'preferred' }).then(c => window.credential = c))"));
+
+        // An authentication with the extension is only possible from the payment handler of Secure Payment Confirmation
+        Assert.Equal("NotAllowedError", await RunAsync(document, """
+            go(navigator.credentials.get({ publicKey: { challenge: new Uint8Array([1]), allowCredentials: [{ type: 'public-key', id: credential.rawId }], extensions: { payment: { isPayment: true } } } }));
+            """));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Availability()
+    {
+        var options = new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() }, UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Decline) };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        Assert.Equal("available", await RunAsync(document, "go(PaymentRequest.securePaymentConfirmationAvailability())"));
+        Assert.Equal("{\"browserBoundKeyHardware\":false}", await RunAsync(document, "go(PaymentRequest.getSecurePaymentConfirmationCapabilities().then(JSON.stringify))"));
+
+        var withoutAuthenticator = Load("<script>" + SecurePaymentConfirmationScript + "</script>", new BrowsingContextOptions { UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Decline) });
+        Assert.Equal("unavailable-no-user-verifying-platform-authenticator", await RunAsync(withoutAuthenticator, "go(PaymentRequest.securePaymentConfirmationAvailability())"));
+
+        var withoutBackend = Load("<script>" + SecurePaymentConfirmationScript + "</script>");
+        Assert.Equal("unavailable-feature-not-enabled", await RunAsync(withoutBackend, "go(PaymentRequest.securePaymentConfirmationAvailability())"));
+    }
+
     private sealed class PendingPaymentSheet : UserAgentUIBackend
     {
         public CancellationToken CancellationToken { get; private set; }
@@ -3169,6 +3344,26 @@ internal sealed class FirstAccountChooser : UserAgentUIBackend
     {
         Prompts.Add(prompt);
         return ValueTask.FromResult(true);
+    }
+}
+#endregion
+
+#region WebPlatform_UserAgentUIBackend_SecurePaymentConfirmation
+/// <summary>
+/// A transaction dialog of Secure Payment Confirmation whose user always makes the same choice: the user agent supports the
+/// secure-payment-confirmation payment method.
+/// </summary>
+internal sealed class TransactionDialog(SecurePaymentConfirmationChoice choice) : UserAgentUIBackend
+{
+    public SecurePaymentConfirmationPrompt? LastPrompt { get; private set; }
+
+    public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(query.Method.Identifier == "secure-payment-confirmation");
+
+    public override ValueTask<SecurePaymentConfirmationChoice> ShowSecurePaymentConfirmationAsync(SecurePaymentConfirmationPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        return ValueTask.FromResult(choice);
     }
 }
 #endregion

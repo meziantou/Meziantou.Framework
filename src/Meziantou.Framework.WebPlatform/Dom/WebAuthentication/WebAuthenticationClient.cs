@@ -62,6 +62,28 @@ internal static class WebAuthenticationClient
         return Run(window, options.Signal, pending: conditional, () => RunGet(window, request));
     }
 
+    /// <summary>
+    /// The authentication of the Secure Payment Confirmation payment handler (https://w3c.github.io/secure-payment-confirmation/#sctn-steps-to-respond-to-a-payment-request):
+    /// [[DiscoverFromExternalSource]] with the <c>payment</c> extension (<see cref="AuthenticationExtensionsClientInputs.Payment"/>),
+    /// whose RP ID is not checked against the origin of the caller, whose client data is a <c>CollectedClientPaymentData</c>
+    /// (<c>payment.get</c>), and that signs it with the browser bound key of the credential.
+    /// </summary>
+    public static Task<Credential?> DiscoverForSecurePaymentConfirmation(Window window, PublicKeyCredentialRequestOptions options, IReadOnlyList<PublicKeyCredentialParameters> browserBoundAlgorithms)
+    {
+        var publicKey = Snapshot(options);
+        GetRequest request;
+        try
+        {
+            request = PrepareGet(window, new CredentialRequestOptions { PublicKey = publicKey }, publicKey, CredentialsContainer.IsSameOriginWithAncestors(window.Document), browserBoundAlgorithms);
+        }
+        catch (Exception ex) when (ex is DomException or TypeErrorException)
+        {
+            return RejectByTask(window, ex);
+        }
+
+        return Run(window, signal: null, pending: false, () => RunGet(window, request));
+    }
+
     // "All BufferSource objects used in this algorithm MUST be snapshotted when the algorithm begins": the bytes of the buffer
     // sources of the scripts are copied
     private static PublicKeyCredentialCreationOptions Snapshot(PublicKeyCredentialCreationOptions options) => new()
@@ -120,6 +142,7 @@ internal static class WebAuthenticationClient
             Write = largeBlob.Write is { } write ? (ReadOnlyMemory<byte>?)write.ToArray() : null,
         } : null,
         RemoteClientDataJson = extensions.RemoteClientDataJson,
+        Payment = extensions.Payment,
     };
 
     private static Task<Credential?> RejectByTask(Window window, Exception exception)
@@ -180,11 +203,11 @@ internal static class WebAuthenticationClient
         return requestedRpId;
     }
 
-    private static byte[] SerializeClientData(Window window, string type, ReadOnlySpan<byte> challenge, bool sameOriginWithAncestors)
+    private static byte[] SerializeClientData(Window window, string type, ReadOnlySpan<byte> challenge, bool sameOriginWithAncestors, string? payment = null)
     {
         var origin = window.Document.Origin;
         var topOrigin = sameOriginWithAncestors ? null : (window.Document.BrowsingContext?.Top.Document.Origin ?? origin).Serialize();
-        return WebAuthenticationEncoding.SerializeClientData(type, challenge, origin.Serialize(), crossOrigin: !sameOriginWithAncestors, topOrigin);
+        return WebAuthenticationEncoding.SerializeClientData(type, challenge, origin.Serialize(), crossOrigin: !sameOriginWithAncestors, topOrigin, payment);
     }
 
     private static IReadOnlyList<VirtualAuthenticator> GetAuthenticators(GlobalScope? global) => global?.Options.WebAuthentication?.Authenticators?.Authenticators ?? [];
@@ -222,7 +245,9 @@ internal static class WebAuthenticationClient
         byte[]? PrfSalt1,
         byte[]? PrfSalt2,
         bool LargeBlob,
-        bool LargeBlobRequired);
+        bool LargeBlobRequired,
+        bool Payment,
+        CredentialKey? BrowserBoundKey);
 
     private static CreateRequest PrepareCreate(Window window, CredentialCreationOptions options, PublicKeyCredentialCreationOptions publicKey, bool sameOriginWithAncestors)
     {
@@ -237,6 +262,12 @@ internal static class WebAuthenticationClient
 
             window.ConsumeUserActivation();
         }
+
+        // The payment extension (https://w3c.github.io/secure-payment-confirmation/#sctn-payment-extension-registration): a
+        // credential for the payments is a discoverable credential of a platform authenticator that verifies the user
+        var payment = publicKey.Extensions?.Payment is { IsPayment: true };
+        if (payment && publicKey.AuthenticatorSelection is not { AuthenticatorAttachment: "platform", ResidentKey: "required" or "preferred", UserVerification: "required" })
+            throw new TypeErrorException("A credential of the payment extension requires a platform authenticator, a discoverable credential and the user verification");
 
         if (publicKey.User.Id.Length is < 1 or > 64)
             throw new TypeErrorException("The user ID must be between 1 and 64 bytes long");
@@ -278,7 +309,16 @@ internal static class WebAuthenticationClient
         if (extensions?.LargeBlob is { } largeBlob && (largeBlob.Read is not null || largeBlob.Write is not null))
             throw DomException.NotSupported("read and write of the largeBlob extension are only valid for an authentication");
 
-        var clientDataJson = SerializeClientData(window, "webauthn.create", publicKey.Challenge.Span, sameOriginWithAncestors);
+        // The browser bound key of the payment extension, whose public key is in the client data
+        CredentialKey? browserBoundKey = null;
+        string? paymentClientData = null;
+        if (payment)
+        {
+            browserBoundKey = BrowserBoundKeyStore.CreateKeyPair(extensions?.Payment?.BrowserBoundPubKeyCredParams is { Count: > 0 } browserBoundParameters ? browserBoundParameters : publicKey.PubKeyCredParams);
+            paymentClientData = PaymentExtension.SerializeRegistrationData(browserBoundKey);
+        }
+
+        var clientDataJson = SerializeClientData(window, "webauthn.create", publicKey.Challenge.Span, sameOriginWithAncestors, paymentClientData);
         if (options.Signal is { Aborted: true } signal)
             throw ToException(signal.Reason);
 
@@ -303,7 +343,9 @@ internal static class WebAuthenticationClient
             salt1,
             salt2,
             LargeBlob: extensions?.LargeBlob is not null,
-            LargeBlobRequired: extensions?.LargeBlob?.Support == "required");
+            LargeBlobRequired: extensions?.LargeBlob?.Support == "required",
+            payment,
+            browserBoundKey);
     }
 
     private static PublicKeyCredential RunCreate(Window window, CreateRequest request)
@@ -368,6 +410,7 @@ internal static class WebAuthenticationClient
                     : null,
                 Prf = request.Prf ? CreatePrfOutputs(authenticator, credential, request.PrfSalt1, request.PrfSalt2, enabled: authenticator.SupportsExtension("prf")) : null,
                 LargeBlob = request.LargeBlob ? new AuthenticationExtensionsLargeBlobOutputs { Supported = authenticator.SupportsExtension("largeBlob") } : null,
+                Payment = request.Payment ? CreatePaymentOutputs(window, credential.Id, request.BrowserBoundKey, request.ClientDataJson, bind: true) : null,
             };
 
             var response = new AuthenticatorAttestationResponse(
@@ -426,6 +469,7 @@ internal static class WebAuthenticationClient
         var credential = new StoredCredential(RandomNumberGenerator.GetBytes(16), request.RpId, CredentialKey.Generate(algorithm.Value))
         {
             IsResident = requireResidentKey,
+            IsPaymentCredential = request.Payment,
             UserHandle = options.User.Id.ToArray(),
             SignCount = 0,
             BackupEligibility = authenticator.DefaultBackupEligibility,
@@ -463,10 +507,23 @@ internal static class WebAuthenticationClient
         IReadOnlyList<PublicKeyCredentialDescriptor> CredentialIdFilter,
         byte[] ClientDataJson,
         byte[] ClientDataHash,
-        string Origin);
+        string Origin,
+        bool SameOriginWithAncestors,
+        IReadOnlyList<PublicKeyCredentialParameters>? BrowserBoundAlgorithms);
 
-    private static GetRequest PrepareGet(Window window, CredentialRequestOptions options, PublicKeyCredentialRequestOptions publicKey, bool sameOriginWithAncestors)
+    /// <param name="window">The window of the caller.</param>
+    /// <param name="options">The options of the request.</param>
+    /// <param name="publicKey">The snapshot of the options of Web Authentication.</param>
+    /// <param name="sameOriginWithAncestors">Whether the caller is same-origin with its ancestors.</param>
+    /// <param name="browserBoundAlgorithms">The algorithms of the browser bound key when the Secure Payment Confirmation payment handler requests the credential, else null.</param>
+    private static GetRequest PrepareGet(Window window, CredentialRequestOptions options, PublicKeyCredentialRequestOptions publicKey, bool sameOriginWithAncestors, IReadOnlyList<PublicKeyCredentialParameters>? browserBoundAlgorithms = null)
     {
+        // The payment extension is only available to the Secure Payment Confirmation payment handler
+        // (https://w3c.github.io/secure-payment-confirmation/#client-extension-processing-authentication)
+        var payment = publicKey.Extensions?.Payment is { IsPayment: true };
+        if (payment && browserBoundAlgorithms is null)
+            throw DomException.NotAllowed("The payment extension can only be used by the Secure Payment Confirmation payment handler");
+
         // Steps 3-4: the conditional mediation filters the discovered credentials instead
         var conditional = options.Mediation == CredentialMediationRequirement.Conditional;
         var allowCredentials = conditional ? [] : publicKey.AllowCredentials;
@@ -476,7 +533,9 @@ internal static class WebAuthenticationClient
         if (origin.IsOpaque)
             throw DomException.NotAllowed("The origin of the caller is opaque");
 
-        var rpId = GetRpId(origin, publicKey.RpId);
+        // The payment extension skips the comparison of the RP ID with the effective domain (step 6.1): the merchant
+        // authenticates the payment on behalf of the relying party
+        var rpId = payment ? publicKey.RpId ?? GetRpId(origin, requestedRpId: null) : GetRpId(origin, publicKey.RpId);
 
         // The authentication extensions supported by the client
         var extensions = publicKey.Extensions;
@@ -508,7 +567,7 @@ internal static class WebAuthenticationClient
         if (options.Signal is { Aborted: true } signal)
             throw ToException(signal.Reason);
 
-        return new GetRequest(publicKey, rpId, allowCredentials, credentialIdFilter, clientDataJson, SHA256.HashData(clientDataJson), origin.Serialize());
+        return new GetRequest(publicKey, rpId, allowCredentials, credentialIdFilter, clientDataJson, SHA256.HashData(clientDataJson), origin.Serialize(), sameOriginWithAncestors, payment ? browserBoundAlgorithms : null);
     }
 
     private static PublicKeyCredential RunGet(Window window, GetRequest request)
@@ -551,7 +610,18 @@ internal static class WebAuthenticationClient
                 }
             }
 
-            if (GetAssertion(authenticator, request, allowedCredentials, userVerification) is not { } assertion)
+            // The payment extension: the client data is a CollectedClientPaymentData that contains the browser bound public key
+            // of the credential that the authenticator uses (the first allowed one)
+            CredentialKey? browserBoundKey = null;
+            var assertionRequest = request;
+            if (request.BrowserBoundAlgorithms is { } browserBoundAlgorithms && options.Extensions?.Payment is { } paymentInputs && allowedCredentials is [var paymentCredential, ..])
+            {
+                browserBoundKey = window.Options.WebAuthentication?.Authenticators?.BrowserBoundKeys.GetOrCreate(paymentCredential.Id, browserBoundAlgorithms);
+                var clientDataJson = SerializeClientData(window, "payment.get", options.Challenge.Span, request.SameOriginWithAncestors, PaymentExtension.SerializeAuthenticationData(paymentInputs, browserBoundKey));
+                assertionRequest = request with { ClientDataJson = clientDataJson, ClientDataHash = SHA256.HashData(clientDataJson) };
+            }
+
+            if (GetAssertion(authenticator, assertionRequest, allowedCredentials, userVerification) is not { } assertion)
                 continue;
 
             var credential = assertion.Credential;
@@ -566,10 +636,11 @@ internal static class WebAuthenticationClient
             {
                 Prf = options.Extensions?.Prf is { } prf ? GetPrfOutputs(authenticator, credential, prf) : null,
                 LargeBlob = options.Extensions?.LargeBlob is { } largeBlob ? ProcessLargeBlob(authenticator, credential, largeBlob) : null,
+                Payment = request.BrowserBoundAlgorithms is not null ? CreatePaymentOutputs(window, credential.Id, browserBoundKey, assertionRequest.ClientDataJson, bind: false) : null,
             };
 
             window.Options.WebAuthentication?.Authenticators?.RecordAuthentication(request.Origin, window.EventLoop.TimeProvider.GetTimestamp());
-            var response = new AuthenticatorAssertionResponse(request.ClientDataJson, assertion.AuthenticatorData, assertion.Signature, assertion.UserHandle);
+            var response = new AuthenticatorAssertionResponse(assertionRequest.ClientDataJson, assertion.AuthenticatorData, assertion.Signature, assertion.UserHandle);
             return new PublicKeyCredential([.. credentialId], response, authenticator.Attachment, outputs);
         }
 
@@ -610,6 +681,23 @@ internal static class WebAuthenticationClient
     // ----------------------------------------------------------------------------------------------------------------
     // Extensions
     // ----------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The outputs of the payment extension (https://w3c.github.io/secure-payment-confirmation/#sctn-payment-extension-registration):
+    /// the signature of the client data by the browser bound key. A registration binds the key to the new credential.
+    /// </summary>
+    private static AuthenticationExtensionsPaymentOutputs CreatePaymentOutputs(Window window, byte[] credentialId, CredentialKey? browserBoundKey, byte[] clientDataJson, bool bind)
+    {
+        if (browserBoundKey is null)
+            return new AuthenticationExtensionsPaymentOutputs();
+
+        if (bind)
+        {
+            window.Options.WebAuthentication?.Authenticators?.BrowserBoundKeys.Bind(credentialId, browserBoundKey);
+        }
+
+        return new AuthenticationExtensionsPaymentOutputs { BrowserBoundSignature = new BrowserBoundSignature { Signature = browserBoundKey.Sign(clientDataJson) } };
+    }
 
     /// <summary>https://w3c.github.io/webauthn/#prf-extension: SHA-256(UTF8Encode("WebAuthn PRF") || 0x00 || input).</summary>
     private static byte[] PrfSalt(ReadOnlySpan<byte> input) => SHA256.HashData([.. "WebAuthn PRF"u8, 0x00, .. input]);

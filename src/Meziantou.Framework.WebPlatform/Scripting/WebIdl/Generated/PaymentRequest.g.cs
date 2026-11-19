@@ -46,6 +46,14 @@ internal static class Binding_PaymentRequest<TAdapter, TValue> where TAdapter : 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.PaymentRequest>(t, Binding);
         var result = o.CanMakePayment(); return r.ToPromise(result, static (r, value) => r.FromBoolean(value));
     }
+    private static TValue Op_securePaymentConfirmationAvailability_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var result = global::Meziantou.Framework.WebPlatform.Dom.PaymentRequest.SecurePaymentConfirmationAvailability(); return r.ToPromise(result, static (r, value) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_SecurePaymentConfirmationAvailability(value)));
+    }
+    private static TValue Op_getSecurePaymentConfirmationCapabilities_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var result = global::Meziantou.Framework.WebPlatform.Dom.PaymentRequest.GetSecurePaymentConfirmationCapabilities(); return r.ToPromise(result, static (r, value) => r.FromRecord(value, static (r, v) => r.FromBoolean(v)));
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "id", Get_id, null);
@@ -58,6 +66,8 @@ internal static class Binding_PaymentRequest<TAdapter, TValue> where TAdapter : 
         r.DefineOperation(instanceTarget, "show", 0, Op_show, returnsPromise: true);
         r.DefineOperation(instanceTarget, "abort", 0, Op_abort, returnsPromise: true);
         r.DefineOperation(instanceTarget, "canMakePayment", 0, Op_canMakePayment, returnsPromise: true);
+        r.DefineOperation(interfaceObject, "securePaymentConfirmationAvailability", 0, Op_securePaymentConfirmationAvailability_Static, returnsPromise: true);
+        r.DefineOperation(interfaceObject, "getSecurePaymentConfirmationCapabilities", 0, Op_getSecurePaymentConfirmationCapabilities_Static, returnsPromise: true);
     }
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)

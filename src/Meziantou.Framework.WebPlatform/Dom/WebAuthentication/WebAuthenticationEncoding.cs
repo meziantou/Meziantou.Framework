@@ -81,9 +81,10 @@ internal static class WebAuthenticationEncoding
     /// <summary>
     /// https://w3c.github.io/webauthn/#clientdatajson-serialization: the JSON-compatible serialization of the client data,
     /// whose members are in a fixed order (<c>type</c>, <c>challenge</c>, <c>origin</c>, <c>crossOrigin</c>, then
-    /// <c>topOrigin</c> when present).
+    /// <c>topOrigin</c> when present), then the remaining members: <paramref name="payment"/> is the JSON object of the
+    /// <c>payment</c> member of a <c>CollectedClientPaymentData</c> (https://w3c.github.io/secure-payment-confirmation/#sctn-collectedclientpaymentdata-dictionary).
     /// </summary>
-    public static byte[] SerializeClientData(string type, ReadOnlySpan<byte> challenge, string origin, bool crossOrigin, string? topOrigin)
+    public static byte[] SerializeClientData(string type, ReadOnlySpan<byte> challenge, string origin, bool crossOrigin, string? topOrigin, string? payment = null)
     {
         var result = new StringBuilder();
         result.Append("{\"type\":");
@@ -98,6 +99,11 @@ internal static class WebAuthenticationEncoding
         {
             result.Append(",\"topOrigin\":");
             AppendCcdString(result, topOrigin);
+        }
+
+        if (payment is not null)
+        {
+            result.Append(",\"payment\":").Append(payment);
         }
 
         result.Append('}');

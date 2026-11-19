@@ -460,7 +460,7 @@ public sealed class CredentialsContainer
     /// Authentication registration when <see cref="CredentialCreationOptions.PublicKey"/> is set. The task fails with an
     /// <c>InvalidStateError</c> <see cref="DomException"/> when the document is not fully active, a <c>NotSupportedError</c>
     /// when the options request no type of credential or several types, a <see cref="TypeErrorException"/> when the data is not
-    /// valid, a <c>NotAllowedError</c> when the document is not allowed to use the <c>publickey-credentials-create</c> feature
+    /// valid, a <c>NotAllowedError</c> when the document is not allowed to use the <c>publickey-credentials-create</c> feature (nor the <c>payment</c> feature)
     /// or a request is already pending, and the errors of the ceremony.
     /// </summary>
     /// <seealso href="https://w3c.github.io/webappsec-credential-management/#dom-credentialscontainer-create"/>
@@ -480,8 +480,10 @@ public sealed class CredentialsContainer
         if (count > 1)
             return Task.FromException<Credential?>(DomException.NotSupported("Only one type of credential can be created"));
 
-        if (options.PublicKey is not null && !PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.PublicKeyCredentialsCreate))
-            return Task.FromException<Credential?>(DomException.NotAllowed("The document is not allowed to use the publickey-credentials-create feature"));
+        // Secure Payment Confirmation adds payment as an alternative create permissions policy of public-key
+        // (https://w3c.github.io/secure-payment-confirmation/#sctn-permissions-policy)
+        if (options.PublicKey is not null && !PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.PublicKeyCredentialsCreate) && !PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.Payment))
+            return Task.FromException<Credential?>(DomException.NotAllowed("The document is not allowed to use the publickey-credentials-create feature (nor the payment feature)"));
 
         if (options.Digital is not null && !PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.DigitalCredentialsCreate))
             return Task.FromException<Credential?>(DomException.NotAllowed("The document is not allowed to use the digital-credentials-create feature"));

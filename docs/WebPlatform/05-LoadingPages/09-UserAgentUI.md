@@ -1,6 +1,6 @@
 ---
 title: User agent UI
-description: Answer the prompts that the web APIs show to the user: the credential chooser, the FedCM account chooser, the payment sheet and the wallet of the digital credentials.
+description: Answer the prompts that the web APIs show to the user: the credential chooser, the FedCM account chooser, the payment sheet, the Secure Payment Confirmation dialog and the wallet of the digital credentials.
 ---
 
 Some web APIs show a prompt of the browser and wait for the user: a browser asks which saved password to use, or whether
@@ -30,6 +30,7 @@ method that a backend does not override, the prompt behaves as if the user dismi
 | [ConfirmIdentityProviderLoginAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ConfirmIdentityProviderLoginAsync) | FedCM: sign in to an identity provider that returned no account | The user does not sign in: a `NetworkError` |
 | [ShowIdentityCredentialErrorAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowIdentityCredentialErrorAsync) | FedCM: the identity provider did not mint a token | Closed at once: the promise is rejected with the `IdentityCredentialError` |
 | [ShowIdentityAutoReauthenticationAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowIdentityAutoReauthenticationAsync) | FedCM: the returning account is signed in without the account chooser | The reauthentication continues |
+| [ShowSecurePaymentConfirmationAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowSecurePaymentConfirmationAsync) | `PaymentRequest.show()` with the `secure-payment-confirmation` payment method | The user declines the transaction: the promise rejects with an `AbortError` |
 
 The methods are called on the thread of the event loop. The task they return can complete later, on any thread: the
 library settles the promise of the page on its event loop, and the event loop is not idle while a prompt is open. The
@@ -265,6 +266,98 @@ The library does not invoke the payment handlers of the service workers: the use
 payment applications of the payment method manifests are not installed, and an event created by a script cannot answer a
 payment (`respondWith()` throws an `InvalidStateError`). The payment handlers of the user agent are the ones of the backend
 (`HasPaymentHandlerAsync`).
+
+## Secure Payment Confirmation
+
+[Secure Payment Confirmation](https://w3c.github.io/secure-payment-confirmation/) lets a merchant authenticate a payment
+with a passkey of the bank of the user. The library implements the payment handler of the `secure-payment-confirmation`
+payment method: the transaction dialog is the one of the backend, and the credentials are the ones of the virtual
+authenticators of [Web Authentication](08-PermissionsAndDevices.md#web-authentication).
+
+The bank registers the passkey with the `payment` extension of Web Authentication
+(`navigator.credentials.create({ publicKey: { ..., extensions: { payment: { isPayment: true } } } })`). Later, the merchant
+asks for the payment with a request whose only payment method is `secure-payment-confirmation` (another method in the same
+request is a `RangeError`), whose data lists the credential IDs, the challenge and RP ID of the bank, the payee, and the
+payment instrument shown to the user (`displayName` and `icon`). The `details` of the response of `show()` is the
+`PublicKeyCredential` of the authentication, which the merchant sends to the bank.
+
+The user agent supports the payment method when
+[HasPaymentHandlerAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.HasPaymentHandlerAsync) returns
+`true` for `secure-payment-confirmation`; otherwise `show()` rejects with a `NotSupportedError`, and
+`PaymentRequest.securePaymentConfirmationAvailability()` resolves with `unavailable-feature-not-enabled`. The backend then
+shows the transaction dialog in
+[ShowSecurePaymentConfirmationAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowSecurePaymentConfirmationAsync)
+and returns the choice of the user. A dialog whose user always makes the same choice:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UserAgentUIBackend_SecurePaymentConfirmation;format=md-fenced-code-block;dedent=true -->
+```csharp
+/// <summary>
+/// A transaction dialog of Secure Payment Confirmation whose user always makes the same choice: the user agent supports the
+/// secure-payment-confirmation payment method.
+/// </summary>
+internal sealed class TransactionDialog(SecurePaymentConfirmationChoice choice) : UserAgentUIBackend
+{
+    public SecurePaymentConfirmationPrompt? LastPrompt { get; private set; }
+
+    public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(query.Method.Identifier == "secure-payment-confirmation");
+
+    public override ValueTask<SecurePaymentConfirmationChoice> ShowSecurePaymentConfirmationAsync(SecurePaymentConfirmationPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        return ValueTask.FromResult(choice);
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UserAgentUI_SecurePaymentConfirmation;format=md-fenced-code-block;dedent=true -->
+```csharp
+var authenticators = new VirtualAuthenticatorEnvironment();
+authenticators.AddAuthenticator(new VirtualAuthenticatorOptions
+{
+    Protocol = VirtualAuthenticatorProtocol.Ctap21,
+    Transport = "internal",
+    HasResidentKey = true,
+    HasUserVerification = true,
+    IsUserVerified = true,
+});
+
+var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+var options = new BrowsingContextOptions
+{
+    // The credentials of the payments are the ones of the virtual authenticators
+    WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators },
+
+    // The transaction dialog of Secure Payment Confirmation is the one of the backend
+    UserAgentUI = transactionDialog,
+};
+```
+<!-- endref -->
+
+| Choice | Result of `show()` |
+|---|---|
+| [Accept](cref:Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationChoice.Accept) | The payment is authenticated with one of the credentials: the response's `methodName` is `secure-payment-confirmation`, and its `details` is the `PublicKeyCredential` (a `NotAllowedError` when no authenticator has one of the credentials) |
+| [AuthenticateAnotherWay](cref:Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationChoice.AuthenticateAnotherWay) | A `NotAllowedError`: the user accepts the transaction but authenticates another way |
+| [Decline](cref:Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationChoice.Decline) | An `AbortError` (the default) |
+| [OptOut](cref:Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationChoice.OptOut) | An `OptOutError` when the data sets `showOptOut`, otherwise an `AbortError` |
+
+The [SecurePaymentConfirmationPrompt](cref:Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationPrompt) gives what
+the dialog shows: the total, the payee name and origin, the instrument, the logos of the payment entities, and the number
+of credentials of the request that the authenticators have (`CredentialCount`: when it is 0, the user can only
+authenticate another way). Before the dialog, the library fetches the icon of the instrument and the logos: when the icon
+cannot be fetched or decoded, `show()` rejects with a `NotSupportedError`, unless the instrument sets
+`iconMustBeShown: false` (its icon is then an empty string); a logo that cannot be fetched gets an empty URL.
+
+The authentication signs the transaction: the client data has the type `payment.get` and a `payment` member with the RP ID,
+the origin of the top-level document, the payee, the total and the instrument. The user agent binds a browser bound key to
+each credential (created by the registration, or by the first payment), whose public key is in the client data and which
+signs it (`getClientExtensionResults().payment.browserBoundSignature`). The library also validates the data when the
+request is constructed (a `RangeError` or a `TypeError` for invalid data, a `NotSupportedError` when no `locale` matches the
+language of the browsing context), allows the extensions only for the relying party, and lets a page use the credentials
+of another RP ID only when they were created with the `payment` extension.
+`PaymentRequest.getSecurePaymentConfirmationCapabilities()` reports that the browser bound keys are not stored in
+hardware.
 
 ## Federated Credential Management
 

@@ -20,8 +20,8 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 42
+- **TEST BUG**: 11
+- **NOT IMPLEMENTED**: 41
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -55,7 +55,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`payment-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/payment-allowed-by-permissions-policy.https.sub.html) | Pass | 4 / 4 |  |  |
 | [`payment-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/payment-default-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`payment-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/payment-disabled-by-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
-| [`payment-extension-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/payment-extension-allowed-by-permissions-policy-attribute.https.sub.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the `payment` extension of Web Authentication (Secure Payment Confirmation): a cross-origin iframe without transient activation cannot create a credential (`NotAllowedError`) |
+| [`payment-extension-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/payment-extension-allowed-by-permissions-policy-attribute.https.sub.html) | Fail | 1 / 2 | TEST BUG | the subtest without the `allow="payment"` attribute: a cross-origin iframe without `allow="payment"` may use neither `publickey-credentials-create` nor `payment` (the alternative create permissions policy of `public-key`, https://w3c.github.io/secure-payment-confirmation/#sctn-permissions-policy), so `create()` rejects with a `NotAllowedError` (https://w3c.github.io/webappsec-credential-management/#algorithm-create, step 9.3: "If document is not allowed to use permission, return a promise rejected with a NotAllowedError"); the test expects the `NotSupportedError` of Chromium |
 | [`permissions-policy-frame-policy-allowed-for-all.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-allowed-for-all.https.sub.html) | Pass | 78 / 78 |  |  |
 | [`permissions-policy-frame-policy-allowed-for-self.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-allowed-for-self.https.sub.html) | Pass | 86 / 86 |  |  |
 | [`permissions-policy-frame-policy-allowed-for-some-override.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-frame-policy-allowed-for-some-override.https.sub.html) | Pass | 32 / 32 |  |  |

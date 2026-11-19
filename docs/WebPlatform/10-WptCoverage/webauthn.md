@@ -20,7 +20,7 @@ description: "The results of the web-platform-tests of webauthn, and why the tes
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 6
+- **NOT IMPLEMENTED**: 5
 
 ## Stable tests
 
@@ -58,7 +58,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`getcredential-badargs-rpid.https.html`](https://wpt.fyi/results/webauthn/getcredential-badargs-rpid.https.html) | Pass | 7 / 7 |  |  |
 | [`getcredential-badargs-sharedarraybuffer.https.html`](https://wpt.fyi/results/webauthn/getcredential-badargs-sharedarraybuffer.https.html) | Pass | 4 / 4 |  |  |
 | [`getcredential-badargs-userverification.https.html`](https://wpt.fyi/results/webauthn/getcredential-badargs-userverification.https.html) | Pass | 2 / 2 |  |  |
-| [`getcredential-extensions.https.html`](https://wpt.fyi/results/webauthn/getcredential-extensions.https.html) | Fail | 8 / 10 | TEST BUG, NOT IMPLEMENTED | `credProps` is a registration extension, which [[DiscoverFromExternalSource]] skips (https://w3c.github.io/webauthn/#sctn-discover-from-external-source, step 7) instead of rejecting with a `NotSupportedError` as Chromium does; the `payment` extension of Secure Payment Confirmation, which is not a member of `AuthenticationExtensionsClientInputs`: it is ignored |
+| [`getcredential-extensions.https.html`](https://wpt.fyi/results/webauthn/getcredential-extensions.https.html) | Fail | 9 / 10 | TEST BUG | `credProps` is a registration extension, which [[DiscoverFromExternalSource]] skips (https://w3c.github.io/webauthn/#sctn-discover-from-external-source, step 7) instead of rejecting with a `NotSupportedError` as Chromium does |
 | [`getcredential-hints.https.html`](https://wpt.fyi/results/webauthn/getcredential-hints.https.html) | Pass | 8 / 8 |  |  |
 | [`getcredential-large-blob-not-supported.https.html`](https://wpt.fyi/results/webauthn/getcredential-large-blob-not-supported.https.html) | Pass | 5 / 5 |  |  |
 | [`getcredential-large-blob-supported.https.html`](https://wpt.fyi/results/webauthn/getcredential-large-blob-supported.https.html) | Pass | 3 / 3 |  |  |

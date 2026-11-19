@@ -2375,6 +2375,51 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public async Task Documentation_XsltLimits()
+    {
+        #region WebPlatform_XsltLimits
+        var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
+        {
+            ["https://example.com/doc.xml"] = ("""<?xml-stylesheet type="text/xsl" href="slow.xsl"?><root>a</root>""", "application/xml"),
+
+            // Two recursive calls with a counter of 40: about 10^12 calls
+            ["https://example.com/slow.xsl"] = ("""
+                <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                  <xsl:template match="/"><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></xsl:template>
+                  <xsl:template name="t">
+                    <xsl:param name="n"/>
+                    <xsl:if test="$n &gt; 0">
+                      <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+                      <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+                    </xsl:if>
+                  </xsl:template>
+                </xsl:stylesheet>
+                """, "text/xsl"),
+        });
+
+        var messages = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = loader,
+            Xslt = new XsltOptions
+            {
+                MaxSteps = 1_000_000,         // instructions, expressions, patterns and copied nodes
+                MaxOutputNodes = 100_000,     // nodes of the result and of the variables
+                Timeout = TimeSpan.FromSeconds(2),
+            },
+            ConsoleMessage = (_, message) => messages.Add(message.Text),
+        });
+        context.Navigate("https://example.com/doc.xml");
+        await context.EventLoop.RunUntilIdleAsync();
+
+        // The transformation fails: the XML document is shown, and the error is reported to the console
+        Assert.Equal("application/xml", context.Document.ContentType);
+        Assert.Equal("root", context.Document.DocumentElement!.LocalName);
+        Assert.Contains(messages, message => message.StartsWith("XSLT transformation failed", StringComparison.Ordinal));
+        #endregion
+    }
+
+    [Fact]
     public async Task Documentation_Downloads()
     {
         #region WebPlatform_Downloads

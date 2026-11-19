@@ -16,6 +16,7 @@ namespace Meziantou.Framework.WebPlatform.JavaScript
         public JavaScriptScriptEngine(Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions? options = null) { }
         protected JavaScriptScriptEngine(Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions? options, System.Threading.CancellationToken terminationToken) { }
         public Meziantou.Framework.JavaScriptEngine.JsValue Call(Meziantou.Framework.WebPlatform.Dom.Window window, Meziantou.Framework.JavaScriptEngine.JsValue function, Meziantou.Framework.JavaScriptEngine.JsValue thisValue, params System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
+        protected internal override void CheckInterrupt() { }
         protected internal override Meziantou.Framework.WebPlatform.Scripting.EventHandlerCallback CompileEventHandler(Meziantou.Framework.WebPlatform.Scripting.EventHandlerSource source) => throw null;
         protected internal override void CreateRealm(Meziantou.Framework.WebPlatform.Dom.GlobalScope global) { }
         protected internal override Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? CreateWorkerScriptEngine(System.Threading.CancellationToken terminationToken) => throw null;

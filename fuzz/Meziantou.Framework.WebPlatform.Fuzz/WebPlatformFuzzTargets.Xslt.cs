@@ -15,8 +15,8 @@ public static partial class WebPlatformFuzzTargets
     private const int XsltMaxLength = 4096;
 
     // The transformations that do not end (an exponential recursion, a loop over a large node-set) stop at these limits with
-    // the error of the transformation
-    private static readonly XsltLimits FuzzXsltLimits = new() { MaxSteps = 200_000, MaxOutputNodes = 20_000, MaxTemplateDepth = 256, MaxDocuments = 4 };
+    // the error of the transformation (no time limit: the result of a transformation does not depend on the load of the machine)
+    private static readonly XsltLimits FuzzXsltLimits = new() { MaxSteps = 200_000, MaxOutputNodes = 20_000, MaxTemplateDepth = 256, MaxDocuments = 4, Timeout = null };
 
     /// <summary>The tokens of the XSLT target: the instructions, the attributes, the functions of XSLT and of XPath.</summary>
     private static string[] XsltTokens =>
@@ -68,6 +68,7 @@ public static partial class WebPlatformFuzzTargets
             ("""<root xsl:version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:value-of select="."/></root>""", "<a>text</a>"),
             (Sheet("""<xsl:template match="/">[<xsl:apply-templates select="root/item"/>][<xsl:for-each select="root/item"><xsl:sort select="."/></xsl:for-each>]</xsl:template><xsl:template match="item"><xsl:param name="p"/></xsl:template>"""), "<root><item>b</item><item>a</item></root>"),
             (Sheet("""<xsl:attribute-set name="a" use-attribute-sets="b c"><xsl:attribute name="v">a</xsl:attribute></xsl:attribute-set><xsl:attribute-set name="b" use-attribute-sets="c"><xsl:attribute name="b">1</xsl:attribute></xsl:attribute-set><xsl:attribute-set name="c" use-attribute-sets="d d"><xsl:attribute name="v">c</xsl:attribute></xsl:attribute-set><xsl:attribute-set name="d"><xsl:attribute name="d"><xsl:value-of select="count(//*)"/></xsl:attribute></xsl:attribute-set><xsl:attribute-set name="e" use-attribute-sets="f"/><xsl:attribute-set name="f" use-attribute-sets="e"/><xsl:template match="/"><r xsl:use-attribute-sets="a" w="r"/><xsl:if test="root/@cycle"><r xsl:use-attribute-sets="e"/></xsl:if></xsl:template>"""), "<root><x/></root>"),
+            (Sheet("""<xsl:template match="/"><xsl:call-template name="t"><xsl:with-param name="n" select="number(root/@n)"/></xsl:call-template></xsl:template><xsl:template name="t"><xsl:param name="n"/><xsl:variable name="f"><e><xsl:copy-of select="/root/*"/></e></xsl:variable><xsl:if test="$n &gt; 0"><xsl:copy-of select="$f"/><xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template><xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template></xsl:if></xsl:template>"""), "<root n='40'><a/><b/></root>"),
         ];
 
         return inputs.Select((input, index) => new FuzzSeed($"xslt-{index}", (byte[])[.. Encoding.UTF8.GetBytes(input.Stylesheet), 0, .. Encoding.UTF8.GetBytes(input.Source)]));

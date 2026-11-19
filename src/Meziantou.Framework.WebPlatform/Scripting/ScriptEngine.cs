@@ -184,6 +184,15 @@ public abstract class ScriptEngine
     protected internal abstract bool IsScriptRunning { get; }
 
     /// <summary>
+    /// Called periodically, while a script is running (<see cref="IsScriptRunning"/>), by the long work of the platform that
+    /// the script started (e.g. an XSLT transformation): throws when the running script must be interrupted (e.g. the
+    /// timeout of the engine). The default implementation does nothing.
+    /// </summary>
+    protected internal virtual void CheckInterrupt()
+    {
+    }
+
+    /// <summary>
     /// Gets whether a promise has a handler (its [[PromiseIsHandled]] internal slot). The promises rejected without handler
     /// are given to <see cref="GlobalScope.TrackPromiseRejection"/> by the engine.
     /// </summary>

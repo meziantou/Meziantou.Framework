@@ -21,12 +21,13 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
         _engine.Dispose();
     }
 
-    private Document Load(string html, JavaScriptScriptEngine? engine = null, DocumentLoader? loader = null)
+    private Document Load(string html, JavaScriptScriptEngine? engine = null, DocumentLoader? loader = null, XsltOptions? xslt = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = engine ?? _engine,
             DocumentLoader = loader,
+            Xslt = xslt ?? XsltOptions.Default,
             TimeProvider = _clock,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
@@ -61,6 +62,39 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
             """, loader: loader);
         Assert.Empty(_errors);
         Assert.Equal("""41|boolean|<ul data-n="42" data-b="false" data-count="2"><li>a</li><li>b</li></ul>""", document.Title);
+    }
+
+    [Fact]
+    public void XsltProcessor_LimitsAndScriptTimeout()
+    {
+        // Two recursive calls with a counter of 40: about 10^12 calls
+        const string Script = """
+            <script>
+              const parser = new DOMParser();
+              const stylesheet = parser.parseFromString(`<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                <xsl:template match="/"><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></xsl:template>
+                <xsl:template name="t"><xsl:param name="n"/><xsl:if test="$n &gt; 0">
+                  <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+                  <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+                </xsl:if></xsl:template>
+              </xsl:stylesheet>`, 'application/xml');
+              const processor = new XSLTProcessor();
+              processor.importStylesheet(stylesheet);
+              try { processor.transformToFragment(parser.parseFromString('<root/>', 'application/xml'), document); document.title = 'done'; } catch (e) { document.title = e.name; }
+            </script>
+            <script>document.title += '|next'</script>
+            """;
+
+        // The limits of the browsing context: the error of the transformation
+        var document = Load(Script, xslt: new XsltOptions { MaxSteps = 10_000 });
+        Assert.Equal("OperationError|next", document.Title);
+        Assert.Empty(_errors);
+
+        // Without limits, the timeout of the script engine interrupts the transformation: the script is terminated
+        using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { Timeout = TimeSpan.FromMilliseconds(200) });
+        document = Load(Script, engine, xslt: new XsltOptions { MaxSteps = long.MaxValue, MaxOutputNodes = long.MaxValue, Timeout = null });
+        Assert.Equal("|next", document.Title);
+        Assert.NotEmpty(_errors);
     }
 
     [Fact]

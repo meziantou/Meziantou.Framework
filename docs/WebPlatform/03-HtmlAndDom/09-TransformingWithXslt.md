@@ -136,6 +136,72 @@ global object that created the [XsltProcessor](cref:Meziantou.Framework.WebPlatf
   `connect-src` directive, as in Chromium. As in Chromium, it returns an empty node-set in the transformations of
   [XsltProcessor](cref:Meziantou.Framework.WebPlatform.Dom.XsltProcessor).
 
+## Limits
+
+A small stylesheet can run for hours (two recursive calls with a counter of 40 make about 10^12 calls) or build a result
+that does not fit in memory. The transformations stop at the limits of [BrowsingContextOptions.Xslt](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Xslt):
+
+| Option | Default | What it counts |
+| --- | --- | --- |
+| [MaxSteps](cref:Meziantou.Framework.WebPlatform.Dom.XsltOptions.MaxSteps) | 100,000,000 | The instructions instantiated, the expressions evaluated, the patterns matched and the nodes copied |
+| [MaxOutputNodes](cref:Meziantou.Framework.WebPlatform.Dom.XsltOptions.MaxOutputNodes) | 2,000,000 | The nodes created, in the result and in the result tree fragments of the variables |
+| [Timeout](cref:Meziantou.Framework.WebPlatform.Dom.XsltOptions.Timeout) | 10 seconds | The duration of the transformation; null for no limit |
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_XsltLimits;format=md-fenced-code-block;dedent=true -->
+```csharp
+var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
+{
+    ["https://example.com/doc.xml"] = ("""<?xml-stylesheet type="text/xsl" href="slow.xsl"?><root>a</root>""", "application/xml"),
+
+    // Two recursive calls with a counter of 40: about 10^12 calls
+    ["https://example.com/slow.xsl"] = ("""
+        <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+          <xsl:template match="/"><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></xsl:template>
+          <xsl:template name="t">
+            <xsl:param name="n"/>
+            <xsl:if test="$n &gt; 0">
+              <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+              <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+            </xsl:if>
+          </xsl:template>
+        </xsl:stylesheet>
+        """, "text/xsl"),
+});
+
+var messages = new List<string>();
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    DocumentLoader = loader,
+    Xslt = new XsltOptions
+    {
+        MaxSteps = 1_000_000,         // instructions, expressions, patterns and copied nodes
+        MaxOutputNodes = 100_000,     // nodes of the result and of the variables
+        Timeout = TimeSpan.FromSeconds(2),
+    },
+    ConsoleMessage = (_, message) => messages.Add(message.Text),
+});
+context.Navigate("https://example.com/doc.xml");
+await context.EventLoop.RunUntilIdleAsync();
+
+// The transformation fails: the XML document is shown, and the error is reported to the console
+Assert.Equal("application/xml", context.Document.ContentType);
+Assert.Equal("root", context.Document.DocumentElement!.LocalName);
+Assert.Contains(messages, message => message.StartsWith("XSLT transformation failed", StringComparison.Ordinal));
+```
+<!-- endref -->
+
+- A transformation that exceeds a limit fails like any other transformation: [XsltProcessor](cref:Meziantou.Framework.WebPlatform.Dom.XsltProcessor) throws a
+  [DomException](cref:Meziantou.Framework.WebPlatform.Dom.DomException) whose name is `OperationError`, and the navigation to an XML document shows the XML document.
+- [XsltProcessor](cref:Meziantou.Framework.WebPlatform.Dom.XsltProcessor) uses the options of the browsing context of the global object that created it, and
+  [XsltOptions.Default](cref:Meziantou.Framework.WebPlatform.Dom.XsltOptions.Default) without browsing context.
+- A transformation run by a script also stops when the script engine interrupts the script, as a loop of the script would:
+  with `Meziantou.Framework.WebPlatform.JavaScript`, the time limit and the memory limit of the engine (the memory the
+  transformation allocates counts), or the cancellation of the engine, terminate the script, which cannot catch it.
+- The duration is checked between the steps: a single XPath expression over a large document (such as nested `//` steps
+  in predicates) runs to its end before the transformation stops.
+
+Lower the limits when the stylesheets or the documents come from an untrusted source.
+
 ## Supported features
 
 The stylesheets support XSLT 1.0: template rules, modes, priorities and import precedence, named templates and

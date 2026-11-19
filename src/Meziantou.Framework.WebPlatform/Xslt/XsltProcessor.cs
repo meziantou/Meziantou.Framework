@@ -20,6 +20,11 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The XPath expressions are evaluated by System.Xml.XPath over the DOM: the stylesheet is interpreted, so the transformations
 /// work without dynamic code (with native AOT). A recursion deeper than 3000 templates is an error.
 /// </para>
+/// <para>
+/// The transformations are bounded by the <see cref="BrowsingContextOptions.Xslt"/> options of the browsing context of the
+/// relevant document (<see cref="XsltOptions.Default"/> without browsing context): a transformation that exceeds them is an
+/// error. A transformation run by a script also stops when the script engine interrupts the script (e.g. its timeout).
+/// </para>
 /// </remarks>
 /// <seealso href="https://dom.spec.whatwg.org/#interface-xsltprocessor"/>
 [IdlInterface("XSLTProcessor", "https://dom.spec.whatwg.org/#interface-xsltprocessor")]
@@ -39,8 +44,11 @@ public sealed class XsltProcessor
         _relevantDocument = Document.CurrentGlobalDocument;
     }
 
-    /// <summary>The limits of the transformations (the fuzzing targets set lower limits).</summary>
-    internal XsltLimits Limits { get; init; } = XsltLimits.Default;
+    /// <summary>
+    /// The limits of the transformations, or null for the <see cref="BrowsingContextOptions.Xslt"/> options of the browsing
+    /// context of the relevant document (the fuzzing targets set lower limits).
+    /// </summary>
+    internal XsltLimits? Limits { get; init; }
 
     /// <summary>
     /// Imports a stylesheet: a document whose document element is an <c>xsl:stylesheet</c> or <c>xsl:transform</c> element
@@ -160,8 +168,11 @@ public sealed class XsltProcessor
                 parameters[name] = value is List<Node> nodes ? XsltNodeSet.FromUnordered([.. nodes.Select(node => (XPathNavigator)new DomXPathNavigator(node))]) : value;
             }
 
-            // As in Chromium, document() is disabled in the transformations of XSLTProcessor
-            return (_compiled, XsltExecution.Transform(_compiled, source, parameters, loader, documentFunctionEnabled: false, Limits));
+            // As in Chromium, document() is disabled in the transformations of XSLTProcessor. A transformation run by a script
+            // stops when the script engine interrupts the script (e.g. its timeout)
+            var limits = Limits ?? XsltLimits.FromOptions(_relevantDocument.BrowsingContext?.Options.Xslt ?? XsltOptions.Default);
+            var interrupt = GlobalScope.Current?.ScriptEngine is { IsScriptRunning: true } engine ? engine.CheckInterrupt : (Action?)null;
+            return (_compiled, XsltExecution.Transform(_compiled, source, parameters, loader, documentFunctionEnabled: false, limits, interrupt));
         }
         catch (XsltException ex)
         {

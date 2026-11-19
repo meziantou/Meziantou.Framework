@@ -150,7 +150,7 @@ public sealed partial class BrowsingContext
         {
             var loader = new XsltDocumentLoader(document, parserInserted: true);
             var stylesheet = XsltCompiler.Compile(stylesheetSource.Node, loader);
-            var result = XsltExecution.Transform(stylesheet, source, new Dictionary<XsltQName, object>(), loader, documentFunctionEnabled: true);
+            var result = XsltExecution.Transform(stylesheet, source, new Dictionary<XsltQName, object>(), loader, documentFunctionEnabled: true, XsltLimits.FromOptions(Options.Xslt));
             settings = stylesheet.Output;
             method = XsltOutput.GetMethod(settings, result);
             markup = XsltOutput.Serialize(settings, result, method);

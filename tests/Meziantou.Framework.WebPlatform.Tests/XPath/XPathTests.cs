@@ -1263,6 +1263,53 @@ public sealed class XPathTests
         Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToDocument(XmlDocumentParser.ParseDocument("<root/>"))).Name);
     }
 
+    // Two recursive calls with a counter of 40: about 10^12 calls
+    private const string ExponentialTemplates = """
+        <xsl:template match="/"><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></xsl:template>
+        <xsl:template name="t">
+          <xsl:param name="n"/>
+          <xsl:if test="$n &gt; 0">
+            <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+            <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+          </xsl:if>
+        </xsl:template>
+        """;
+
+    [Fact]
+    public void Xslt_Limits_StopTheTransformations()
+    {
+        static void AssertOperationError(string stylesheet, XsltLimits limits)
+        {
+            var processor = new XsltProcessor { Limits = limits };
+            processor.ImportStylesheet(XmlDocumentParser.ParseDocument(stylesheet));
+            var source = XmlDocumentParser.ParseDocument("<root><a/><b/></root>");
+            Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToDocument(source)).Name);
+            Assert.Equal("OperationError", Assert.Throws<DomException>(() => processor.TransformToFragment(source, HtmlDocumentParser.ParseDocument("<!DOCTYPE html>"))).Name);
+        }
+
+        // The number of steps, and the duration
+        AssertOperationError(Stylesheet(ExponentialTemplates), new XsltLimits { MaxSteps = 100_000, Timeout = null });
+        AssertOperationError(Stylesheet(ExponentialTemplates), new XsltLimits { MaxSteps = long.MaxValue, Timeout = TimeSpan.Zero });
+
+        // The number of nodes: a fragment copied over and over
+        const string Copies = """
+            <xsl:variable name="f"><e><xsl:copy-of select="/root/*"/></e></xsl:variable>
+            <xsl:template match="/"><r><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></r></xsl:template>
+            <xsl:template name="t">
+              <xsl:param name="n"/>
+              <xsl:if test="$n &gt; 0"><xsl:copy-of select="$f"/><xsl:copy-of select="$f"/><xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template><xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template></xsl:if>
+            </xsl:template>
+            """;
+        AssertOperationError(Stylesheet(Copies), new XsltLimits { MaxSteps = long.MaxValue, MaxOutputNodes = 10_000, Timeout = null });
+
+        // The defaults are finite, and the options are validated
+        Assert.True(XsltOptions.Default.MaxSteps < long.MaxValue);
+        Assert.True(XsltOptions.Default.MaxOutputNodes < long.MaxValue);
+        Assert.NotNull(XsltOptions.Default.Timeout);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new XsltOptions { MaxSteps = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new XsltOptions { Timeout = TimeSpan.FromSeconds(-1) });
+    }
+
     [Fact]
     public void Xslt_InfiniteRecursion_IsAnError()
     {

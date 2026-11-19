@@ -592,6 +592,9 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     /// <summary>Whether JavaScript code is running: the .NET code that calls into the engine uses <see cref="EnterJavaScript"/>.</summary>
     protected internal override bool IsScriptRunning => _executionDepth > 0;
 
+    /// <summary>Throws when a limit of the engine is exceeded (e.g. the timeout): the running script is terminated.</summary>
+    protected internal override void CheckInterrupt() => Engine.CheckInterrupt();
+
     /// <summary>Marks the beginning of a call from .NET into JavaScript code (the JavaScript execution context stack is not empty until the scope is disposed).</summary>
     internal ExecutionScope EnterJavaScript()
     {

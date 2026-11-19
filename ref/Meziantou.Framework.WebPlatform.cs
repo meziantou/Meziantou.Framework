@@ -3557,6 +3557,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.WakeLockOptions? WakeLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WebAuthenticationOptions? WebAuthentication { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.XsltOptions Xslt { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -14834,6 +14835,20 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string SerializeToString(Meziantou.Framework.WebPlatform.Dom.Node root) => throw null;
     }
 
+    public sealed class XsltOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.XsltOptions>
+    {
+        public static Meziantou.Framework.WebPlatform.Dom.XsltOptions Default { get => throw null; }
+        public long MaxOutputNodes { get => throw null; init { } }
+        public long MaxSteps { get => throw null; init { } }
+        public System.TimeSpan? Timeout { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.XsltOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.XsltOptions? left, Meziantou.Framework.WebPlatform.Dom.XsltOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.XsltOptions? left, Meziantou.Framework.WebPlatform.Dom.XsltOptions? right) => throw null;
+    }
+
     public sealed class XsltProcessor
     {
         public void ClearParameters() { }
@@ -15714,6 +15729,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
     {
         protected internal abstract bool IsScriptRunning { get; }
         protected internal virtual bool SupportsModuleScripts { get => throw null; }
+        protected internal virtual void CheckInterrupt() { }
         protected internal abstract Meziantou.Framework.WebPlatform.Scripting.EventHandlerCallback CompileEventHandler(Meziantou.Framework.WebPlatform.Scripting.EventHandlerSource source);
         protected internal abstract void CreateRealm(Meziantou.Framework.WebPlatform.Dom.GlobalScope global);
         protected internal virtual Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? CreateWorkerScriptEngine(System.Threading.CancellationToken terminationToken) => throw null;

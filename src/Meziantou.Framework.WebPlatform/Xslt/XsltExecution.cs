@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Xml.XPath;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -14,14 +15,25 @@ internal sealed record XsltLimits
     /// <summary>The maximum nesting of the templates, as in libxslt (a recursion that does not end is an error, not a crash).</summary>
     public int MaxTemplateDepth { get; init; } = 3000;
 
-    /// <summary>The maximum number of instructions and expressions evaluated.</summary>
-    public long MaxSteps { get; init; } = long.MaxValue;
+    /// <summary>The maximum number of instructions and expressions evaluated (see <see cref="XsltOptions.MaxSteps"/>).</summary>
+    public long MaxSteps { get; init; } = XsltOptions.DefaultMaxSteps;
 
-    /// <summary>The maximum number of nodes created in the result tree and in the result tree fragments.</summary>
-    public long MaxOutputNodes { get; init; } = long.MaxValue;
+    /// <summary>The maximum number of nodes created in the result tree and in the result tree fragments (see <see cref="XsltOptions.MaxOutputNodes"/>).</summary>
+    public long MaxOutputNodes { get; init; } = XsltOptions.DefaultMaxOutputNodes;
+
+    /// <summary>The maximum duration of the transformation, or null (see <see cref="XsltOptions.Timeout"/>).</summary>
+    public TimeSpan? Timeout { get; init; } = XsltOptions.DefaultTimeout;
 
     /// <summary>The maximum number of documents loaded by the document() function.</summary>
     public int MaxDocuments { get; init; } = 1000;
+
+    public static XsltLimits FromOptions(XsltOptions options)
+    {
+        if (ReferenceEquals(options, XsltOptions.Default))
+            return Default;
+
+        return new XsltLimits { MaxSteps = options.MaxSteps, MaxOutputNodes = options.MaxOutputNodes, Timeout = options.Timeout };
+    }
 }
 
 /// <summary>
@@ -31,6 +43,9 @@ internal sealed record XsltLimits
 /// </summary>
 internal sealed class XsltExecution
 {
+    // The duration and the interruption of the host are checked every InterruptInterval steps
+    private const long InterruptInterval = 1024;
+
     [ThreadStatic]
     private static XsltExecution? s_current;
 
@@ -51,16 +66,19 @@ internal sealed class XsltExecution
     private Binding? _locals;
     private XsltTemplate? _currentTemplate;
     private XsltQName _currentMode = XsltStylesheet.DefaultMode;
+    private readonly Action? _interrupt;
+    private readonly long _startTimestamp = Stopwatch.GetTimestamp();
     private int _depth;
     private long _steps;
 
-    private XsltExecution(XsltStylesheet stylesheet, IXsltDocumentLoader? loader, bool documentFunctionEnabled, IReadOnlyDictionary<XsltQName, object> parameters, XsltLimits limits)
+    private XsltExecution(XsltStylesheet stylesheet, IXsltDocumentLoader? loader, bool documentFunctionEnabled, IReadOnlyDictionary<XsltQName, object> parameters, XsltLimits limits, Action? interrupt)
     {
         _stylesheet = stylesheet;
         _loader = loader;
         _documentFunctionEnabled = documentFunctionEnabled;
         _parameters = parameters;
         _limits = limits;
+        _interrupt = interrupt;
         _stripper = stylesheet.HasStripSpace ? new XsltWhitespaceStripper(stylesheet) : null;
         ScratchDocument = new Document(isHtmlDocument: false, "application/xml");
         Output = new XsltResultBuilder(this, ScratchDocument.CreateDocumentFragment());
@@ -96,10 +114,12 @@ internal sealed class XsltExecution
     /// </summary>
     /// <param name="parameters">The values of the global parameters (strings, numbers, booleans and node-sets).</param>
     /// <param name="documentFunctionEnabled">Whether the document() function loads documents (it returns an empty node-set otherwise).</param>
-    /// <exception cref="XsltException">A dynamic error of the transformation.</exception>
-    public static DocumentFragment Transform(XsltStylesheet stylesheet, Node source, IReadOnlyDictionary<XsltQName, object> parameters, IXsltDocumentLoader? loader, bool documentFunctionEnabled, XsltLimits? limits = null)
+    /// <param name="limits">The limits of the transformation, or null for <see cref="XsltLimits.Default"/>.</param>
+    /// <param name="interrupt">Called periodically: throws to interrupt the transformation (e.g. the timeout of the script that runs it).</param>
+    /// <exception cref="XsltException">A dynamic error of the transformation, or a limit is exceeded.</exception>
+    public static DocumentFragment Transform(XsltStylesheet stylesheet, Node source, IReadOnlyDictionary<XsltQName, object> parameters, IXsltDocumentLoader? loader, bool documentFunctionEnabled, XsltLimits? limits = null, Action? interrupt = null)
     {
-        var execution = new XsltExecution(stylesheet, loader, documentFunctionEnabled, parameters, limits ?? XsltLimits.Default);
+        var execution = new XsltExecution(stylesheet, loader, documentFunctionEnabled, parameters, limits ?? XsltLimits.Default, interrupt);
         var previous = s_current;
         s_current = execution;
         try
@@ -133,8 +153,22 @@ internal sealed class XsltExecution
         if (++_steps > _limits.MaxSteps)
             throw new XsltException("The transformation exceeds the maximum number of steps");
 
+        if (_steps % InterruptInterval == 0)
+        {
+            CheckInterrupt();
+        }
+
         if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
             throw new XsltException("The transformation is too deeply nested");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void CheckInterrupt()
+    {
+        if (_limits.Timeout is { } timeout && Stopwatch.GetElapsedTime(_startTimestamp) > timeout)
+            throw new XsltException("The transformation exceeds its time limit");
+
+        _interrupt?.Invoke();
     }
 
     /// <summary>Counts a node of a result tree, and stops the transformation when there are too many.</summary>

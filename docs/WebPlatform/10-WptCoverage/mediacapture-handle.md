@@ -9,21 +9,14 @@ description: "The results of the web-platform-tests of mediacapture-handle, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 1
-  - `hardware`: 1
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`identity/MediaDevices-setCaptureHandleConfig.https.window.js`](https://wpt.fyi/results/mediacapture-handle/identity/MediaDevices-setCaptureHandleConfig.https.window.js) | Disabled | – | REQUIRES(hardware) | Capture Handle, needs screen capture |
+| [`identity/MediaDevices-setCaptureHandleConfig.https.window.js`](https://wpt.fyi/results/mediacapture-handle/identity/MediaDevices-setCaptureHandleConfig.https.window.js) | Pass | 5 / 5 |  |  |

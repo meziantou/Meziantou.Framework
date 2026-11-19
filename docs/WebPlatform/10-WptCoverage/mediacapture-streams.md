@@ -9,85 +9,85 @@ description: "The results of the web-platform-tests of mediacapture-streams, and
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 59 | 59 | – |
+| [Stable](#stable-tests) | 49 | 59 | 0 | 83% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| [Crash tests](#crash-tests) | 0 | 1 | 1 | – |
-| **All** | **0** | **60** | **60** | **–** |
+| [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
+| **All** | **50** | **60** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 60
-  - `hardware`: 60
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 9
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`BrowserCaptureMediaStreamTrack-cropTo.https.html`](https://wpt.fyi/results/mediacapture-streams/BrowserCaptureMediaStreamTrack-cropTo.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`BrowserCaptureMediaStreamTrack-restrictTo.https.html`](https://wpt.fyi/results/mediacapture-streams/BrowserCaptureMediaStreamTrack-restrictTo.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-api.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-api.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-deny.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-deny.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-echoCancellation-all.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-echoCancellation-all.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-echoCancellation-boolean.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-echoCancellation-boolean.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-echoCancellation-remote-only.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-echoCancellation-remote-only.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-empty-option-param.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-empty-option-param.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-impossible-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-impossible-constraint.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-invalid-facing-mode.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-invalid-facing-mode.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-non-applicable-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-non-applicable-constraint.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-optional-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-optional-constraint.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-permissions-query.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-permissions-query.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-required-constraint-with-ideal-value.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-required-constraint-with-ideal-value.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-trivial-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-trivial-constraint.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`GUM-unknownkey-option-param.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-unknownkey-option-param.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-SecureContext.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-SecureContext.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-after-discard.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-after-discard.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-enumerateDevices-not-allowed-camera.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-not-allowed-camera.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-enumerateDevices-not-allowed-mic.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-not-allowed-mic.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-enumerateDevices-per-origin-ids.sub.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-per-origin-ids.sub.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-enumerateDevices-persistent-permission.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-persistent-permission.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-enumerateDevices-returned-objects.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-returned-objects.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-enumerateDevices.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-getSupportedConstraints.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-getSupportedConstraints.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaDevices-getUserMedia.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-getUserMedia.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-MediaElement-firstframe.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-MediaElement-firstframe.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-MediaElement-preload-none.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-MediaElement-preload-none.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-MediaElement-srcObject.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-MediaElement-srcObject.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-add-audio-track.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-add-audio-track.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-audio-only.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-audio-only.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-clone.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-clone.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-default-permissions-policy.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-default-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-finished-add.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-finished-add.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-gettrackid.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-gettrackid.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-id.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-id.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-idl.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-idl.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-removetrack.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-removetrack.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-supported-by-permissions-policy.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStream-video-only.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-video-only.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-MediaElement-disabled-audio-is-silence.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-MediaElement-disabled-audio-is-silence.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-MediaElement-disabled-video-is-black.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-MediaElement-disabled-video-is-black.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-applyConstraints.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-applyConstraints.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-getCapabilities.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-getCapabilities.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-getSettings.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-getSettings.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-id.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-id.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-iframe-audio-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-audio-transfer.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-iframe-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-transfer.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-init.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-init.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-transfer-cross-agent-cluster.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-cross-agent-cluster.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-transfer-to-shared-and-service-workers.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-to-shared-and-service-workers.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-transfer-video.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-video.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrack-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`MediaStreamTrackEvent-constructor.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrackEvent-constructor.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`enumerateDevices-with-navigation.https.html`](https://wpt.fyi/results/mediacapture-streams/enumerateDevices-with-navigation.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`historical.https.html`](https://wpt.fyi/results/mediacapture-streams/historical.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/mediacapture-streams/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`overconstrained_error.https.html`](https://wpt.fyi/results/mediacapture-streams/overconstrained_error.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
-| [`parallel-capture-requests.https.html`](https://wpt.fyi/results/mediacapture-streams/parallel-capture-requests.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
+| [`BrowserCaptureMediaStreamTrack-cropTo.https.html`](https://wpt.fyi/results/mediacapture-streams/BrowserCaptureMediaStreamTrack-cropTo.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Region Capture and Element Capture (`BrowserCaptureMediaStreamTrack`: `cropTo()`, `restrictTo()`, `RestrictionTarget`): the capture backend captures no tab of the library, so the capture of the current tab cannot be cropped |
+| [`BrowserCaptureMediaStreamTrack-restrictTo.https.html`](https://wpt.fyi/results/mediacapture-streams/BrowserCaptureMediaStreamTrack-restrictTo.https.html) | Error | 0 / 3 | NOT IMPLEMENTED | Region Capture and Element Capture (`BrowserCaptureMediaStreamTrack`: `cropTo()`, `restrictTo()`, `RestrictionTarget`): the capture backend captures no tab of the library, so the capture of the current tab cannot be cropped |
+| [`GUM-api.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-api.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-deny.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-deny.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-echoCancellation-all.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-echoCancellation-all.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-echoCancellation-boolean.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-echoCancellation-boolean.https.html) | Pass | 2 / 2 |  |  |
+| [`GUM-echoCancellation-remote-only.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-echoCancellation-remote-only.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-empty-option-param.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-empty-option-param.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-impossible-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-impossible-constraint.https.html) | Pass | 10 / 10 |  |  |
+| [`GUM-invalid-facing-mode.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-invalid-facing-mode.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-non-applicable-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-non-applicable-constraint.https.html) | Pass | 4 / 4 |  |  |
+| [`GUM-optional-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-optional-constraint.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-permissions-query.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-permissions-query.https.html) | Pass | 2 / 2 |  |  |
+| [`GUM-required-constraint-with-ideal-value.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-required-constraint-with-ideal-value.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-trivial-constraint.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-trivial-constraint.https.html) | Pass | 1 / 1 |  |  |
+| [`GUM-unknownkey-option-param.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-unknownkey-option-param.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaDevices-SecureContext.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-SecureContext.html) | Pass | 1 / 1 |  |  |
+| [`MediaDevices-after-discard.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-after-discard.https.html) | Pass | 2 / 2 |  |  |
+| [`MediaDevices-enumerateDevices-not-allowed-camera.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-not-allowed-camera.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaDevices-enumerateDevices-not-allowed-mic.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-not-allowed-mic.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaDevices-enumerateDevices-per-origin-ids.sub.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-per-origin-ids.sub.https.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the identifiers of the devices are not rotated when the storage of the origin is cleared (`Clear-Site-Data`): they are hashes of the identifiers of the backend and of the origins |
+| [`MediaDevices-enumerateDevices-persistent-permission.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-persistent-permission.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaDevices-enumerateDevices-returned-objects.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices-returned-objects.https.html) | Pass | 2 / 2 |  |  |
+| [`MediaDevices-enumerateDevices.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-enumerateDevices.https.html) | Fail | 3 / 4 | TEST BUG | after a camera capture, the test expects the identifiers of the microphones to stay hidden although the `microphone` permission is granted: the 'set the device information exposure' steps extend the exposure to the microphones when their permission is granted ('device exposure can be extended') |
+| [`MediaDevices-getSupportedConstraints.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-getSupportedConstraints.https.html) | Pass | 17 / 17 |  |  |
+| [`MediaDevices-getUserMedia.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaDevices-getUserMedia.https.html) | Pass | 8 / 8 |  |  |
+| [`MediaStream-MediaElement-firstframe.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-MediaElement-firstframe.https.html) | Pass | 2 / 2 |  |  |
+| [`MediaStream-MediaElement-preload-none.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-MediaElement-preload-none.https.html) | Pass | 2 / 2 |  |  |
+| [`MediaStream-MediaElement-srcObject.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-MediaElement-srcObject.https.html) | Pass | 17 / 17 |  |  |
+| [`MediaStream-add-audio-track.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-add-audio-track.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStream-audio-only.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-audio-only.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStream-clone.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-clone.https.html) | Pass | 2 / 2 |  |  |
+| [`MediaStream-default-permissions-policy.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-default-permissions-policy.https.html) | Pass | 15 / 15 |  |  |
+| [`MediaStream-finished-add.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-finished-add.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStream-gettrackid.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-gettrackid.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStream-id.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-id.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStream-idl.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-idl.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStream-removetrack.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-removetrack.https.html) | Pass | 3 / 3 |  |  |
+| [`MediaStream-supported-by-permissions-policy.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-supported-by-permissions-policy.html) | Pass | 2 / 2 |  |  |
+| [`MediaStream-video-only.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStream-video-only.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-MediaElement-disabled-audio-is-silence.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-MediaElement-disabled-audio-is-silence.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-MediaElement-disabled-video-is-black.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-MediaElement-disabled-video-is-black.https.html) | Pass | 3 / 3 |  |  |
+| [`MediaStreamTrack-applyConstraints.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-applyConstraints.https.html) | Pass | 17 / 17 |  |  |
+| [`MediaStreamTrack-getCapabilities.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-getCapabilities.https.html) | Pass | 112 / 112 |  |  |
+| [`MediaStreamTrack-getSettings.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-getSettings.https.html) | Pass | 18 / 18 |  |  |
+| [`MediaStreamTrack-id.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-id.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-iframe-audio-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-audio-transfer.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-iframe-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-transfer.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-init.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-init.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-transfer-cross-agent-cluster.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-cross-agent-cluster.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-transfer-to-shared-and-service-workers.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-to-shared-and-service-workers.https.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-transfer-video.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-video.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrackEvent-constructor.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrackEvent-constructor.https.html) | Pass | 3 / 3 |  |  |
+| [`enumerateDevices-with-navigation.https.html`](https://wpt.fyi/results/mediacapture-streams/enumerateDevices-with-navigation.https.html) | Pass | 1 / 1 |  |  |
+| [`historical.https.html`](https://wpt.fyi/results/mediacapture-streams/historical.https.html) | Pass | 7 / 7 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/mediacapture-streams/idlharness.https.window.js) | Pass | 186 / 186 |  |  |
+| [`overconstrained_error.https.html`](https://wpt.fyi/results/mediacapture-streams/overconstrained_error.https.html) | Pass | 2 / 2 |  |  |
+| [`parallel-capture-requests.https.html`](https://wpt.fyi/results/mediacapture-streams/parallel-capture-requests.https.html) | Pass | 2 / 2 |  |  |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`crashtests/enumerateDevices-after-discard-1.https.html`](https://wpt.fyi/results/mediacapture-streams/crashtests/enumerateDevices-after-discard-1.https.html) | Disabled | – | REQUIRES(hardware) | Media Capture and Streams, needs a camera and a microphone |
+| [`crashtests/enumerateDevices-after-discard-1.https.html`](https://wpt.fyi/results/mediacapture-streams/crashtests/enumerateDevices-after-discard-1.https.html) | Pass | 1 / 1 |  |  |

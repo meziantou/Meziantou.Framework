@@ -1,0 +1,192 @@
+{
+  "mediacapture-insertable-streams/MediaStreamTrackHandle-transfer-cross-agent-cluster.https.html": {
+    "total": 3,
+    "failures": {
+      "MediaStreamTrackHandle can be transferred to a same-origin iframe": "FAIL",
+      "MediaStreamTrackHandle cannot be transferred to a cross-site iframe": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/MediaStreamTrackHandle-transfer-to-shared-and-service-workers.https.html": {
+    "total": 4,
+    "failures": {
+      "MediaStreamTrackHandle cannot be transferred to a service worker": "FAIL",
+      "MediaStreamTrackHandle cannot be transferred to a shared worker": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/MediaStreamTrackProcessor-backpressure.worker.js": {
+    "total": 1,
+    "failures": {
+      "Tests that backpressure forces MediaStreamTrackProcess to skip frames": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/MediaStreamTrackProcessor-maxBufferSize.worker.js": {
+    "total": 2,
+    "failures": {
+      "Tests that multiple read requests are eventually settled": "FAIL",
+      "Tests that multiple write requests are buffered": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/MediaStreamTrackProcessor-stop.worker.js": {
+    "total": 1,
+    "failures": {
+      "Stopping a track just after writing": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/MediaStreamTrackProcessor-with-window-tracks.https.html": {
+    "total": 1,
+    "failures": {
+      "Tests that the reader of a video MediaStreamTrackProcessor produces VideoFrame objects and is closed on track stop while running on a worker": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/MediaStreamTrackProcessor.worker.js": {
+    "total": 2,
+    "failures": {
+      "Tests that MediaStreamTrackProcess respects track.enabled": "FAIL",
+      "Tests that multiple read requests are eventually settled": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/VideoTrackGenerator-with-window-tracks.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Tests that frames are actually rendered correctly in a stream sent over a peer connection.": "FAIL",
+      "Tests that frames are actually rendered correctly in a stream used for a video element.": "FAIL",
+      "Tests that frames are sent correctly with RTCRtpEncodingParameters.scaleResolutionDownBy.": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/VideoTrackGenerator.worker.js": {
+    "total": 9,
+    "failures": {
+      "A muted writer rejects when generator's track is stopped": "FAIL",
+      "A writer rejects when generator's track and clones are stopped": "FAIL",
+      "A writer rejects when generator's track is stopped": "FAIL",
+      "Generator writer rejects on mismatched media input": "FAIL",
+      "Generator writer rejects on non media input": "FAIL",
+      "Tests that VideoFrames are destroyed on write": "FAIL",
+      "Tests that VideoTrackGenerator forwards frames only when unmuted": "FAIL",
+      "Tests that VideoTrackGenerator forwards frames to sink": "FAIL",
+      "Tests that creating a VideoTrackGenerator works as expected": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/idlharness.any.js#dedicatedworker": {
+    "total": 36,
+    "failures": {
+      "MediaStreamTrackHandle interface object length": "FAIL",
+      "MediaStreamTrackHandle interface object name": "FAIL",
+      "MediaStreamTrackHandle interface: existence and properties of interface object": "FAIL",
+      "MediaStreamTrackHandle interface: existence and properties of interface prototype object": "FAIL",
+      "MediaStreamTrackHandle interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "MediaStreamTrackHandle interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "MediaStreamTrackProcessor interface object length": "FAIL",
+      "MediaStreamTrackProcessor interface object name": "FAIL",
+      "MediaStreamTrackProcessor interface: attribute discardedFrames": "FAIL",
+      "MediaStreamTrackProcessor interface: attribute readable": "FAIL",
+      "MediaStreamTrackProcessor interface: attribute totalFrames": "FAIL",
+      "MediaStreamTrackProcessor interface: existence and properties of interface object": "FAIL",
+      "MediaStreamTrackProcessor interface: existence and properties of interface prototype object": "FAIL",
+      "MediaStreamTrackProcessor interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "MediaStreamTrackProcessor interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "MediaStreamTrackProcessor interface: new MediaStreamTrackProcessor({ track: new VideoTrackGenerator() }) must inherit property \"discardedFrames\" with the proper type": "FAIL",
+      "MediaStreamTrackProcessor interface: new MediaStreamTrackProcessor({ track: new VideoTrackGenerator() }) must inherit property \"readable\" with the proper type": "FAIL",
+      "MediaStreamTrackProcessor interface: new MediaStreamTrackProcessor({ track: new VideoTrackGenerator() }) must inherit property \"totalFrames\" with the proper type": "FAIL",
+      "MediaStreamTrackProcessor must be primary interface of new MediaStreamTrackProcessor({ track: new VideoTrackGenerator() })": "FAIL",
+      "Stringification of new MediaStreamTrackProcessor({ track: new VideoTrackGenerator() })": "FAIL",
+      "Stringification of new VideoTrackGenerator()": "FAIL",
+      "VideoTrackGenerator interface object length": "FAIL",
+      "VideoTrackGenerator interface object name": "FAIL",
+      "VideoTrackGenerator interface: attribute muted": "FAIL",
+      "VideoTrackGenerator interface: attribute track": "FAIL",
+      "VideoTrackGenerator interface: attribute writable": "FAIL",
+      "VideoTrackGenerator interface: existence and properties of interface object": "FAIL",
+      "VideoTrackGenerator interface: existence and properties of interface prototype object": "FAIL",
+      "VideoTrackGenerator interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "VideoTrackGenerator interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "VideoTrackGenerator interface: new VideoTrackGenerator() must inherit property \"muted\" with the proper type": "FAIL",
+      "VideoTrackGenerator interface: new VideoTrackGenerator() must inherit property \"track\" with the proper type": "FAIL",
+      "VideoTrackGenerator interface: new VideoTrackGenerator() must inherit property \"writable\" with the proper type": "FAIL",
+      "VideoTrackGenerator must be primary interface of new VideoTrackGenerator()": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackGenerator-audio.https.html": {
+    "total": 5,
+    "failures": {
+      "Creating Generator with a missing kind throws": "FAIL",
+      "Creating Generator with an invalid kind throws": "FAIL",
+      "Mismatched data and generator kind throws on write.": "FAIL",
+      "Tests that audio actually flows to a connected audio element": "FAIL",
+      "Tests that creating a Audio MediaStreamTrackGenerator works as expected": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackGenerator-in-service-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "A service worker is able to initialize a MediaStreamTrackGenerator without crashing": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackGenerator-in-shared-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "A shared worker is able to initialize a MediaStreamTrackGenerator without crashing": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackGenerator-in-worker.https.html": {
+    "total": 3,
+    "failures": {
+      "A worker is able to disable a MediaStreamTrackGenerator without crashing": "FAIL",
+      "A worker is able to enable a MediaStreamTrackGenerator without crashing": "FAIL",
+      "A worker is able to initialize a MediaStreamTrackGenerator without crashing": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackGenerator-pipes-data-in-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "A worker is able to pipe data through a MediaStreamTrackGenerator without crashing": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackGenerator-video.https.html": {
+    "total": 7,
+    "failures": {
+      "Mismatched frame and generator kind throws on write.": "FAIL",
+      "Tests that MediaStreamTrackGenerator forwards frames to sink": "FAIL",
+      "Tests that VideoFrames are destroyed on write.": "FAIL",
+      "Tests that creating a Video MediaStreamTrackGenerator works as expected": "FAIL",
+      "Tests that frames are actually rendered correctly in a stream sent over a peer connection.": "FAIL",
+      "Tests that frames are actually rendered correctly in a stream used for a video element.": "FAIL",
+      "Tests that frames are sent correctly with RTCRtpEncodingParameters.scaleResolutionDownBy.": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackProcessor-backpressure.https.html": {
+    "total": 1,
+    "failures": {
+      "Tests that backpressure forces MediaStreamTrackProcess to skip frames": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/legacy/MediaStreamTrackProcessor-video.https.html": {
+    "total": 3,
+    "failures": {
+      "Tests that multiple read requests are eventually settled": "FAIL",
+      "Tests that the reader of a video MediaStreamTrackProcessor produces VideoFrame objects and is closed on track stop while running on a worker": "FAIL",
+      "Tests that the reader of a video MediaStreamTrackProcessor produces video frames and is closed on track stop": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/tentative/MediaStreamTrackProcessor-audio.https.html": {
+    "total": 2,
+    "failures": {
+      "Tests that the reader of an audio MediaStreamTrackProcessor produces AudioData objects and is closed on track stop": "FAIL",
+      "Tests that the reader of an audio MediaStreamTrackProcessor produces AudioData objects and is closed on track stop while running on a worker": "FAIL"
+    }
+  },
+  "mediacapture-insertable-streams/tentative/VideoTrackGenerator.https.html": {
+    "total": 8,
+    "failures": {
+      "Mismatched frame and generator kind throws on write.": "FAIL",
+      "Tests that VideoFrames are destroyed on write.": "FAIL",
+      "Tests that VideoTrackGenerator forwards frames only when unmuted": "FAIL",
+      "Tests that VideoTrackGenerator forwards frames to sink": "FAIL",
+      "Tests that creating a VideoTrackGenerator works as expected": "FAIL",
+      "Tests that frames are actually rendered correctly in a stream sent over a peer connection.": "FAIL",
+      "Tests that frames are actually rendered correctly in a stream used for a video element.": "FAIL",
+      "Tests that frames are sent correctly with RTCRtpEncodingParameters.scaleResolutionDownBy.": "FAIL"
+    }
+  }
+}

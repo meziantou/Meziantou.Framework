@@ -37,6 +37,9 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://w3c.github.io/battery/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature Battery { get; } = new("battery", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/mediacapture-main/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Camera { get; } = new("camera", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature ClipboardRead { get; } = new("clipboard-read", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature ClipboardWrite { get; } = new("clipboard-write", isAllowedForAllByDefault: false);
@@ -45,6 +48,9 @@ internal sealed partial class PolicyControlledFeature
     public static PolicyControlledFeature ComputePressure { get; } = new("compute-pressure", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature CrossOriginIsolated { get; } = new("cross-origin-isolated", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/mediacapture-screen-share/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature DisplayCapture { get; } = new("display-capture", isAllowedForAllByDefault: false);
 
     /// <summary>https://wicg.github.io/page-lifecycle/#feature-policies: its default allowlist is *.</summary>
     public static PolicyControlledFeature ExecutionWhileNotRendered { get; } = new("execution-while-not-rendered", isAllowedForAllByDefault: true);
@@ -86,6 +92,9 @@ internal sealed partial class PolicyControlledFeature
     public static PolicyControlledFeature DigitalCredentialsGet { get; } = new("digital-credentials-get", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
+
+    /// <summary>https://w3c.github.io/mediacapture-main/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Microphone { get; } = new("microphone", isAllowedForAllByDefault: false);
 
     /// <summary>https://w3c.github.io/payment-request/#permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature Payment { get; } = new("payment", isAllowedForAllByDefault: false);
@@ -132,7 +141,7 @@ internal sealed partial class PolicyControlledFeature
         Autoplay,
         Battery,
         new("bluetooth", isAllowedForAllByDefault: false),
-        new("camera", isAllowedForAllByDefault: false),
+        Camera,
         .. ClientHintFeatures.All,
         ClipboardRead,
         ClipboardWrite,
@@ -142,6 +151,7 @@ internal sealed partial class PolicyControlledFeature
         DeferredFetchMinimal,
         DigitalCredentialsCreate,
         DigitalCredentialsGet,
+        DisplayCapture,
         new("encrypted-media", isAllowedForAllByDefault: false),
         ExecutionWhileNotRendered,
         ExecutionWhileOutOfViewport,
@@ -155,7 +165,7 @@ internal sealed partial class PolicyControlledFeature
         new("local-fonts", isAllowedForAllByDefault: false),
         Magnetometer,
         MediaPlaybackWhileNotVisible,
-        new("microphone", isAllowedForAllByDefault: false),
+        Microphone,
         new("midi", isAllowedForAllByDefault: false),
         Payment,
         new("picture-in-picture", isAllowedForAllByDefault: true),

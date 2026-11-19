@@ -5,98 +5,8 @@
   "webaudio/idlharness.https.window.js": {
     "total": 1168,
     "failures": {
-      "AudioContext interface: calling createMediaElementSource(HTMLMediaElement) on context with too few arguments must throw TypeError": "FAIL",
-      "AudioContext interface: calling createMediaStreamSource(MediaStream) on context with too few arguments must throw TypeError": "FAIL",
-      "AudioContext interface: calling createMediaStreamTrackSource(MediaStreamTrack) on context with too few arguments must throw TypeError": "FAIL",
-      "AudioContext interface: context must inherit property \"createMediaElementSource(HTMLMediaElement)\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"createMediaStreamDestination()\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"createMediaStreamSource(MediaStream)\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"createMediaStreamTrackSource(MediaStreamTrack)\" with the proper type": "FAIL",
-      "AudioContext interface: operation createMediaElementSource(HTMLMediaElement)": "FAIL",
-      "AudioContext interface: operation createMediaStreamDestination()": "FAIL",
-      "AudioContext interface: operation createMediaStreamSource(MediaStream)": "FAIL",
-      "AudioContext interface: operation createMediaStreamTrackSource(MediaStreamTrack)": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
       "DynamicsCompressorNode interface: attribute makeupGain": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"makeupGain\" with the proper type": "FAIL",
-      "MediaElementAudioSourceNode interface object length": "FAIL",
-      "MediaElementAudioSourceNode interface object name": "FAIL",
-      "MediaElementAudioSourceNode interface: attribute mediaElement": "FAIL",
-      "MediaElementAudioSourceNode interface: existence and properties of interface object": "FAIL",
-      "MediaElementAudioSourceNode interface: existence and properties of interface prototype object": "FAIL",
-      "MediaElementAudioSourceNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "MediaElementAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "MediaElementAudioSourceNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"mediaElement\" with the proper type": "FAIL",
-      "MediaElementAudioSourceNode must be primary interface of new MediaElementAudioSourceNode(context, {mediaElement: new Audio})": "FAIL",
-      "MediaStreamAudioDestinationNode interface object length": "FAIL",
-      "MediaStreamAudioDestinationNode interface object name": "FAIL",
-      "MediaStreamAudioDestinationNode interface: attribute stream": "FAIL",
-      "MediaStreamAudioDestinationNode interface: existence and properties of interface object": "FAIL",
-      "MediaStreamAudioDestinationNode interface: existence and properties of interface prototype object": "FAIL",
-      "MediaStreamAudioDestinationNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "MediaStreamAudioDestinationNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "MediaStreamAudioDestinationNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"stream\" with the proper type": "FAIL",
-      "MediaStreamAudioDestinationNode must be primary interface of new MediaStreamAudioDestinationNode(context)": "FAIL",
-      "MediaStreamAudioSourceNode interface object length": "FAIL",
-      "MediaStreamAudioSourceNode interface object name": "FAIL",
-      "MediaStreamAudioSourceNode interface: attribute mediaStream": "FAIL",
-      "MediaStreamAudioSourceNode interface: existence and properties of interface object": "FAIL",
-      "MediaStreamAudioSourceNode interface: existence and properties of interface prototype object": "FAIL",
-      "MediaStreamAudioSourceNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "MediaStreamAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "MediaStreamTrackAudioSourceNode interface object length": "FAIL",
-      "MediaStreamTrackAudioSourceNode interface object name": "FAIL",
-      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface object": "FAIL",
-      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object": "FAIL",
-      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "Stringification of new MediaElementAudioSourceNode(context, {mediaElement: new Audio})": "FAIL",
-      "Stringification of new MediaStreamAudioDestinationNode(context)": "FAIL"
+      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"makeupGain\" with the proper type": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
@@ -532,36 +442,21 @@
     "total": 19
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-constructor.https.html": {
-    "harness": "ERROR",
-    "total": 5,
-    "failures": {
-      "Invalid sinkId argument with a wrong ID should dispatch an onerror event.": "NOTRUN",
-      "Invalid sinkId argument with a wrong type should throw an appropriate exception.": "NOTRUN",
-      "Setting sinkId to the empty string at construction should succeed.": "NOTRUN",
-      "Setting sinkId with a valid device identifier at construction should succeed.": "NOTRUN",
-      "Setting sinkId with an AudioSinkOptions at construction should succeed.": "NOTRUN"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-setsinkid.https.html": {
-    "harness": "ERROR",
     "total": 8,
     "failures": {
-      "default AudioContext.sinkId should be the empty string.": "NOTRUN",
-      "pending setSinkId() should be rejected with InvalidStateError when AudioContext is closed.": "NOTRUN",
-      "setSinkId() should fail with InvalidStateError when calling from a detached document.": "NOTRUN",
-      "setSinkId() should fail with InvalidStateError when calling from a stopped AudioContext.": "NOTRUN",
-      "setSinkId() should fail with NotFoundError on an invalid device identifier.": "NOTRUN",
-      "setSinkId() should fail with TypeError on an invalid AudioSinkOptions.type value.": "NOTRUN",
-      "setSinkId() with AudioSinkOptions.type of \"none\" and setting the same option should succeed.": "NOTRUN",
-      "setSinkId() with a valid device identifier and setting the same ID should succeed.": "NOTRUN"
+      "pending setSinkId() should be rejected with InvalidStateError when AudioContext is closed.": "FAIL",
+      "setSinkId() should fail with InvalidStateError when calling from a detached document.": "FAIL",
+      "setSinkId() should fail with InvalidStateError when calling from a stopped AudioContext.": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-state-change.https.html": {
-    "harness": "ERROR",
+    "harness": "TIMEOUT",
     "total": 3,
     "failures": {
-      "Calling setSinkId() on a running AudioContext should fire both state and sink change events.": "NOTRUN",
-      "Calling setSinkId() on a suspended AudioContext should fire only sink change events.": "NOTRUN",
+      "Calling setSinkId() on a running AudioContext should fire both state and sink change events.": "TIMEOUT",
       "setSinkId() promise should resolve before the sinkchange event is fired.": "NOTRUN"
     }
   },
@@ -571,10 +466,7 @@
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-suspend-resume-close.html": {
     "total": 6,
     "failures": {
-      "testAudioContext": "FAIL",
-      "testMultiContextInput": "FAIL",
-      "testMultiContextOutput": "FAIL",
-      "testOfflineAudioContext": "FAIL"
+      "testMultiContextInput": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-suspend-resume.html": {
@@ -614,10 +506,7 @@
     "total": 178
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-connect-method-chaining.html": {
-    "total": 4,
-    "failures": {
-      "Verify connect() method chaining for MediaElementSourceNode and MediaStreamSourceNode": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-connect-order.html": {
     "total": 1
@@ -674,15 +563,7 @@
     "total": 3
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-nominal-range.html": {
-    "total": 323,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 1 out of 24 tasks were failed.": "FAIL",
-      "< [Offline createBiquadFilter] 2 out of 33 assertions were failed.": "FAIL",
-      "Executing \"Online createMediaElementSource\"": "FAIL",
-      "Executing \"Online createMediaStreamDestination\"": "FAIL",
-      "X BiquadFilterNode.gain.maxValue is not equal to 1541.273681640625. Got 1541.2735595703125.": "FAIL",
-      "X Nominal ranges for AudioParam(s) of BiquadFilterNode are incorrect for: NaN Got false.": "FAIL"
-    }
+    "total": 327
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-setTargetAtTime.html": {
     "total": 6
@@ -1134,149 +1015,68 @@
     "total": 8
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/cors-check.https.html": {
-    "total": 7,
+    "total": 13,
     "failures": {
-      "Executing \"setting-up-graph\"": "FAIL",
-      "Executing \"start-playback-and-capture\"": "FAIL"
+      "# AUDIT TASK RUNNER FINISHED: 1 out of 2 tasks were failed.": "FAIL",
+      "< [start-playback-and-capture] 4 out of 4 assertions were failed.": "FAIL",
+      "X Recorded channel #0 should have contain at least one value different from 0.": "FAIL",
+      "X Recorded channel #1 should have contain at least one value different from 0.": "FAIL",
+      "X Recorded channel #2 should have contain at least one value different from 0.": "FAIL",
+      "X Recorded channel #3 should have contain at least one value different from 0.": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource-mediaStreamAudioDestination-stream-crash.html": {
     "crashtest": "PASS"
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSourceToScriptProcessorTest.html": {
-    "total": 1,
+    "total": 3,
     "failures": {
-      "Element Source tests completed": "FAIL"
+      "All data processed correctly": "FAIL",
+      "Channel 0 processed some data": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_closed_context-crash.html": {
     "crashtest": "PASS"
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_volumeChange.html": {
+    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "createMediaElementSource() output reflects HTMLMediaElement effective volume changes (volume/muted)(src-file)": "FAIL",
-      "createMediaElementSource() output reflects HTMLMediaElement effective volume changes (volume/muted)(src-stream)": "FAIL"
+      "createMediaElementSource() output reflects HTMLMediaElement effective volume changes (volume/muted)(src-file)": "TIMEOUT",
+      "createMediaElementSource() output reflects HTMLMediaElement effective volume changes (volume/muted)(src-stream)": "NOTRUN"
     }
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/no-cors.https.html": {
-    "total": 7,
-    "failures": {
-      "Executing \"setting-up-graph\"": "FAIL",
-      "Executing \"start-playback-and-capture\"": "FAIL"
-    }
+    "total": 13
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html": {
-    "harness": "ERROR",
     "total": 3,
     "failures": {
-      "setSinkId fails with NotFoundError on made up deviceid": "NOTRUN",
-      "setSinkId on default audio output should always work": "NOTRUN",
-      "setSinkId() with output device ID exposed by selectAudioOutput() should resolve": "NOTRUN"
+      "setSinkId fails with NotFoundError on made up deviceid": "FAIL",
+      "setSinkId on default audio output should always work": "FAIL",
+      "setSinkId() with output device ID exposed by selectAudioOutput() should resolve": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/closed-audiocontext-construction.html": {
-    "total": 1,
-    "failures": {
-      "Constructing MediaStreamAudioDestinationNode on a closed AudioContext succeeds": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/ctor-mediastreamaudiodestination.html": {
-    "total": 4,
-    "failures": {
-      "MediaStreamAudioDestinationNode applies channelCount from options": "FAIL",
-      "MediaStreamAudioDestinationNode: default constructor behavior": "FAIL",
-      "MediaStreamAudioDestinationNode: invalid constructor cases": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-ctor.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4
   },
   "webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-from-context-with-different-rate.https.html": {
     "total": 74,
     "failures": {
-      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test closing one AudioContext stops only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing one AudioContext stops only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test closing one AudioContext stops only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing one AudioContext stops only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test disconnecting one source node silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector when destination rates are the same (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@32000)": "FAIL",
-      "Test removing tracks from one MediaStream does not silence any detector when destination rates are the same (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@32000)": "FAIL",
       "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
       "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
       "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
-      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL"
+      "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-routing.html": {
-    "total": 1,
-    "failures": {
-      "MediaStreamAudioSourceNode captures the right track.": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/ctor-offlineaudiocontext.html": {
     "total": 45

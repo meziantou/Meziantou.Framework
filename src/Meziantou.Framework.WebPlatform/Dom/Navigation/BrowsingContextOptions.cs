@@ -155,6 +155,17 @@ public sealed partial record BrowsingContextOptions
     public Media.MediaBackend? MediaBackend { get; init; }
 
     /// <summary>
+    /// Gets or sets the capture devices of the browsing contexts (see <see cref="Media.MediaCaptureBackend"/>): the cameras and
+    /// the microphones of <c>navigator.mediaDevices.getUserMedia()</c> and <c>enumerateDevices()</c>, and the screen of
+    /// <c>getDisplayMedia()</c> (https://w3c.github.io/mediacapture-main/). The library implements the permissions, the
+    /// device identifiers, the constraints, the tracks and the streams; the backend produces the media. The <c>camera</c> and
+    /// <c>microphone</c> permissions are checked with <see cref="Permissions"/> and <see cref="RequestPermission"/>. The
+    /// default is null: there is no capture device (<c>enumerateDevices()</c> returns an empty list and <c>getUserMedia()</c>
+    /// is rejected with a <c>NotFoundError</c>).
+    /// </summary>
+    public Media.MediaCaptureBackend? MediaCapture { get; init; }
+
+    /// <summary>
     /// Gets or sets whether the media elements are allowed to play without a user gesture
     /// (https://html.spec.whatwg.org/multipage/media.html#allowed-to-play): <c>play()</c> and the <c>autoplay</c> attribute.
     /// The default is <see cref="Media.MediaAutoplayPolicy.Allowed"/>.

@@ -1,0 +1,174 @@
+{
+  "mediacapture-image/ImageCapture-MediaTrackSupportedConstraints.https.html": {
+    "total": 1
+  },
+  "mediacapture-image/ImageCapture-creation.https.html": {
+    "total": 4
+  },
+  "mediacapture-image/ImageCapture-grabFrame-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "mediacapture-image/ImageCapture-grabFrame.https.html": {
+    "total": 1
+  },
+  "mediacapture-image/ImageCapture-track.https.html": {
+    "total": 1
+  },
+  "mediacapture-image/MediaStreamTrack-applyConstraints-fast.html": {
+    "total": 3
+  },
+  "mediacapture-image/MediaStreamTrack-applyConstraints-getSettings.https.html": {
+    "harness": "ERROR",
+    "total": 4,
+    "failures": {
+      "exercises an applyConstraints() - getSettings() cycle with PTZ permission granted": "FAIL",
+      "exercises an applyConstraints() with advances constraints with PTZ permission denied": "FAIL",
+      "exercises an applyConstraints() with ideal constraints with PTZ permission denied": "FAIL",
+      "exercises an applyConstraints() with required constraints with PTZ permission denied": "FAIL"
+    }
+  },
+  "mediacapture-image/MediaStreamTrack-applyConstraints-reject.https.html": {
+    "harness": "ERROR",
+    "total": 48,
+    "failures": {
+      "MediaStreamTrack-applyConstraints-reject": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 1": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 10": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 11": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 12": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 13": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 14": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 15": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 16": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 17": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 18": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 19": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 2": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 20": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 21": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 22": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 23": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 3": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 4": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 5": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 6": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 7": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 8": "FAIL",
+      "MediaStreamTrack-applyConstraints-reject 9": "FAIL"
+    }
+  },
+  "mediacapture-image/MediaStreamTrack-applyConstraints.https.html": {
+    "total": 1,
+    "failures": {
+      "exercises MediaStreamTrack.applyConstraints(constraints)": "FAIL"
+    }
+  },
+  "mediacapture-image/MediaStreamTrack-clone.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "checks MediaStreamTrack.clone() gets same applied constraints": "FAIL",
+      "checks MediaStreamTrack.clone() gets same capabilities": "FAIL",
+      "checks MediaStreamTrack.clone() gets same settings": "FAIL"
+    }
+  },
+  "mediacapture-image/MediaStreamTrack-getCapabilities-fast.html": {
+    "total": 1
+  },
+  "mediacapture-image/MediaStreamTrack-getCapabilities.https.html": {
+    "harness": "ERROR",
+    "total": 4,
+    "failures": {
+      "MediaStreamTrack-getCapabilities": "FAIL",
+      "MediaStreamTrack-getCapabilities 1": "FAIL"
+    }
+  },
+  "mediacapture-image/MediaStreamTrack-getConstraints.https.html": {
+    "harness": "ERROR",
+    "total": 32,
+    "failures": {
+      "MediaStreamTrack-getConstraints": "FAIL",
+      "MediaStreamTrack-getConstraints 1": "FAIL",
+      "MediaStreamTrack-getConstraints 10": "FAIL",
+      "MediaStreamTrack-getConstraints 11": "FAIL",
+      "MediaStreamTrack-getConstraints 12": "FAIL",
+      "MediaStreamTrack-getConstraints 13": "FAIL",
+      "MediaStreamTrack-getConstraints 14": "FAIL",
+      "MediaStreamTrack-getConstraints 15": "FAIL",
+      "MediaStreamTrack-getConstraints 2": "FAIL",
+      "MediaStreamTrack-getConstraints 3": "FAIL",
+      "MediaStreamTrack-getConstraints 4": "FAIL",
+      "MediaStreamTrack-getConstraints 5": "FAIL",
+      "MediaStreamTrack-getConstraints 6": "FAIL",
+      "MediaStreamTrack-getConstraints 7": "FAIL",
+      "MediaStreamTrack-getConstraints 8": "FAIL",
+      "MediaStreamTrack-getConstraints 9": "FAIL"
+    }
+  },
+  "mediacapture-image/MediaStreamTrack-getSettings-fast.html": {
+    "total": 1
+  },
+  "mediacapture-image/MediaStreamTrack-getSettings.https.html": {
+    "harness": "ERROR",
+    "total": 4,
+    "failures": {
+      "MediaStreamTrack-getSettings": "FAIL",
+      "MediaStreamTrack-getSettings 1": "FAIL"
+    }
+  },
+  "mediacapture-image/detached-HTMLCanvasElement.html": {
+    "total": 1
+  },
+  "mediacapture-image/getPhotoCapabilities.https.html": {
+    "total": 3,
+    "failures": {
+      "exercises ImageCapture.getPhotoCapabilities()": "FAIL",
+      "throw \"OperationError\" when the MediaStreamTrack is stopped while getting photo capabilities": "FAIL"
+    }
+  },
+  "mediacapture-image/getPhotoSettings.https.html": {
+    "total": 3,
+    "failures": {
+      "exercises ImageCapture.getPhotoSettings()": "FAIL",
+      "throw \"OperationError\" when the MediaStreamTrack is stopped while getting photo settings": "FAIL"
+    }
+  },
+  "mediacapture-image/getusermedia.https.html": {
+    "total": 9
+  },
+  "mediacapture-image/idlharness.https.window.js": {
+    "total": 29
+  },
+  "mediacapture-image/takePhoto-reject.https.html": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "ImageCapture.takePhoto(options) rejects with bad options, #0": "FAIL",
+      "ImageCapture.takePhoto(options) rejects with bad options, #1": "FAIL",
+      "ImageCapture.takePhoto(options) rejects with bad options, #2": "FAIL",
+      "ImageCapture.takePhoto(options) rejects with bad options, #3": "FAIL",
+      "ImageCapture.takePhoto(options) rejects with bad options, #4": "FAIL",
+      "ImageCapture.takePhoto(options) rejects with bad options, #5": "FAIL"
+    }
+  },
+  "mediacapture-image/takePhoto-with-PhotoSettings.https.html": {
+    "total": 1,
+    "failures": {
+      "exercises ImageCapture.takePhoto(PhotoSettings dictionary)": "FAIL"
+    }
+  },
+  "mediacapture-image/takePhoto-without-PhotoCapabilities.https.window.js": {
+    "total": 1,
+    "failures": {
+      "exercise takePhoto() on a track without PhotoCapabilities": "FAIL"
+    }
+  },
+  "mediacapture-image/takePhoto.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "exercises ImageCapture.takePhoto()": "FAIL",
+      "exercises ImageCapture.takePhoto(null)": "FAIL"
+    }
+  }
+}

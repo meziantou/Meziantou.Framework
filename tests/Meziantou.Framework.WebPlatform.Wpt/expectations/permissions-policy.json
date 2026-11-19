@@ -218,11 +218,7 @@
     "total": 78
   },
   "permissions-policy/permissions-policy-frame-policy-timing.https.sub.html": {
-    "total": 2,
-    "failures": {
-      "allow attr timing test diff origin": "FAIL",
-      "allow attr timing test same origin": "FAIL"
-    }
+    "total": 2
   },
   "permissions-policy/permissions-policy-header-policy-allowed-for-all.https.sub.html": {
     "total": 7
@@ -366,17 +362,10 @@
     "total": 1
   },
   "permissions-policy/reporting/camera-report-only.https.html": {
-    "total": 1,
-    "failures": {
-      "Camera report only mode": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/camera-reporting.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Camera Report Format": "NOTRUN"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/encrypted-media-report-only.https.html": {
     "total": 1,
@@ -412,17 +401,10 @@
     "total": 1
   },
   "permissions-policy/reporting/microphone-report-only.https.html": {
-    "total": 1,
-    "failures": {
-      "Microphone report only mode": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/microphone-reporting.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Microphone Report Format": "NOTRUN"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/midi-report-only.https.html": {
     "harness": "TIMEOUT",
@@ -459,28 +441,16 @@
     }
   },
   "permissions-policy/reporting/report-only-and-enforce.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Enforcing policy receives reports when both enforcing and report-only policies are set.": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/report-only-single-endpoint.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Reporting-Endpoints defined endpoint received reports in report-only mode.": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Reporting-Endpoints defined endpoint received reports.": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/report-to-single-endpoint.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Reporting-Endpoints defined endpoint received reports.": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/screen-wake-lock-reporting.https.html": {
     "total": 1

@@ -352,6 +352,29 @@ public sealed class AudioContext : BaseAudioContext
         : _sinkId is string current && string.Equals(current, sinkId.DeviceId, StringComparison.Ordinal);
 
     /// <summary>Closes the context when its document is destroyed: the state is closed at once, without <c>statechange</c> event.</summary>
+    /// <summary>Creates a source of the audio of a media element (https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediaelementsource).</summary>
+    /// <param name="mediaElement">The media element.</param>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediaelementsource"/>
+    [IdlMember("createMediaElementSource", "https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediaelementsource")]
+    public MediaElementAudioSourceNode CreateMediaElementSource(HtmlMediaElement mediaElement) => new(this, new MediaElementAudioSourceOptions { MediaElement = mediaElement });
+
+    /// <summary>Creates a source of the audio of a stream (https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamsource).</summary>
+    /// <param name="mediaStream">The stream.</param>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamsource"/>
+    [IdlMember("createMediaStreamSource", "https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamsource")]
+    public MediaStreamAudioSourceNode CreateMediaStreamSource(MediaStream mediaStream) => new(this, new MediaStreamAudioSourceOptions { MediaStream = mediaStream });
+
+    /// <summary>Creates a source of the audio of a track (https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamtracksource).</summary>
+    /// <param name="mediaStreamTrack">The audio track.</param>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamtracksource"/>
+    [IdlMember("createMediaStreamTrackSource", "https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamtracksource")]
+    public MediaStreamTrackAudioSourceNode CreateMediaStreamTrackSource(MediaStreamTrack mediaStreamTrack) => new(this, new MediaStreamTrackAudioSourceOptions { MediaStreamTrack = mediaStreamTrack });
+
+    /// <summary>Creates a destination whose input is the audio of a stream (https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamdestination).</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamdestination"/>
+    [IdlMember("createMediaStreamDestination", "https://webaudio.github.io/web-audio-api/#dom-audiocontext-createmediastreamdestination")]
+    public MediaStreamAudioDestinationNode CreateMediaStreamDestination() => new(this);
+
     internal void OnDocumentDestroyed()
     {
         _controlState = ControlState.Closed;

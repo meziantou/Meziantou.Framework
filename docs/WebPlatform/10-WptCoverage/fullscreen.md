@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of fullscreen, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 81 | 87 | 0 | 93% |
+| [Stable](#stable-tests) | 82 | 87 | 0 | 94% |
 | [Tentative](#tentative-tests) | 2 | 3 | 0 | 67% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
 | [Crash tests](#crash-tests) | 5 | 5 | 0 | 100% |
-| **All** | **94** | **101** | **0** | **93%** |
+| **All** | **95** | **101** | **0** | **94%** |
 
 ## Failure reasons
 
@@ -21,8 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 1
-- **REQUIRES**: 1
-  - `media`: 1
 
 ## Stable tests
 
@@ -72,7 +70,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/element-request-fullscreen-not-allowed.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-not-allowed.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-options.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-options.html) | Pass | 2 / 2 |  |  |
 | [`api/element-request-fullscreen-same-element.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-same-element.html) | Pass | 1 / 1 |  |  |
-| [`api/element-request-fullscreen-screen-size.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-screen-size.https.html) | Fail | 1 / 2 | REQUIRES(media) | `navigator.mediaDevices.getDisplayMedia()` (the tab capture of the element) |
+| [`api/element-request-fullscreen-screen-size.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-screen-size.https.html) | Pass | 2 / 2 |  |  |
 | [`api/element-request-fullscreen-svg-rect.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-svg-rect.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-svg-svg.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-svg-svg.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-svg-text.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-svg-text.html) | Pass | 1 / 1 |  |  |

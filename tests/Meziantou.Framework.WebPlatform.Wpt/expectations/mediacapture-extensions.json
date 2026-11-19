@@ -1,0 +1,128 @@
+{
+  "mediacapture-extensions/GUM-backgroundBlur.https.html": {
+    "total": 8
+  },
+  "mediacapture-extensions/GUM-eyeGazeCorrection.https.html": {
+    "total": 4
+  },
+  "mediacapture-extensions/GUM-faceFraming.https.html": {
+    "total": 4
+  },
+  "mediacapture-extensions/MediaStream-in-dedicated-worker.https.html": {
+    "total": 9,
+    "failures": {
+      "A MediaStream can be constructed from another MediaStream in a dedicated worker": "FAIL",
+      "A MediaStream can be constructed from transferred tracks in a dedicated worker": "FAIL",
+      "A MediaStream in a dedicated worker becomes inactive when its tracks are stopped": "FAIL",
+      "An empty MediaStream can be constructed in a dedicated worker": "FAIL",
+      "MediaStream, MediaStreamTrack and MediaStreamTrackEvent are exposed in a dedicated worker": "FAIL",
+      "MediaStream.addTrack() and removeTrack() work in a dedicated worker": "FAIL",
+      "MediaStream.clone() works in a dedicated worker": "FAIL",
+      "MediaStream.getTrackById() works in a dedicated worker": "FAIL",
+      "MediaStreamTrackEvent can be constructed in a dedicated worker": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-structured-clone.https.html": {
+    "total": 7,
+    "failures": {
+      "A failed serialization leaves the track transferable": "FAIL",
+      "A track in the transfer list is detached even if the value does not reference it": "FAIL",
+      "Transferring a MediaStreamTrack within the same realm yields a live track and detaches the original": "FAIL",
+      "Transferring a detached track throws": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-transfer-to-worker-attributes.https.html": {
+    "total": 50,
+    "failures": {
+      "Transferring a audio track to a worker": "FAIL",
+      "Transferring a video track to a worker": "FAIL",
+      "Transferring an ended track to a worker yields an ended track": "FAIL",
+      "audio: constraints have the same keys": "FAIL",
+      "audio: constraints.advanced is preserved": "FAIL",
+      "audio: constraints.autoGainControl.ideal is preserved": "FAIL",
+      "audio: constraints.channelCount is preserved": "FAIL",
+      "audio: constraints.deviceId.exact is preserved": "FAIL",
+      "audio: contentHint is preserved": "FAIL",
+      "audio: enabled is preserved": "FAIL",
+      "audio: id is preserved": "FAIL",
+      "audio: kind is preserved": "FAIL",
+      "audio: label is preserved": "FAIL",
+      "audio: muted is preserved": "FAIL",
+      "audio: no ended event on the transferred-from track": "FAIL",
+      "audio: readyState is preserved": "FAIL",
+      "audio: settings have the same keys": "FAIL",
+      "audio: settings.autoGainControl is preserved": "FAIL",
+      "audio: settings.channelCount is preserved": "FAIL",
+      "audio: settings.deviceId is preserved": "FAIL",
+      "audio: settings.echoCancellation is preserved": "FAIL",
+      "audio: settings.groupId is preserved": "FAIL",
+      "audio: settings.latency is preserved": "FAIL",
+      "audio: settings.noiseSuppression is preserved": "FAIL",
+      "audio: settings.sampleRate is preserved": "FAIL",
+      "audio: settings.sampleSize is preserved": "FAIL",
+      "audio: transferred-from track is ended synchronously": "FAIL",
+      "video: constraints have the same keys": "FAIL",
+      "video: constraints.advanced is preserved": "FAIL",
+      "video: constraints.deviceId.exact is preserved": "FAIL",
+      "video: constraints.frameRate.max is preserved": "FAIL",
+      "video: constraints.width is preserved": "FAIL",
+      "video: contentHint is preserved": "FAIL",
+      "video: enabled is preserved": "FAIL",
+      "video: id is preserved": "FAIL",
+      "video: kind is preserved": "FAIL",
+      "video: label is preserved": "FAIL",
+      "video: muted is preserved": "FAIL",
+      "video: no ended event on the transferred-from track": "FAIL",
+      "video: readyState is preserved": "FAIL",
+      "video: settings have the same keys": "FAIL",
+      "video: settings.aspectRatio is preserved": "FAIL",
+      "video: settings.deviceId is preserved": "FAIL",
+      "video: settings.facingMode is preserved": "FAIL",
+      "video: settings.frameRate is preserved": "FAIL",
+      "video: settings.groupId is preserved": "FAIL",
+      "video: settings.height is preserved": "FAIL",
+      "video: settings.resizeMode is preserved": "FAIL",
+      "video: settings.width is preserved": "FAIL",
+      "video: transferred-from track is ended synchronously": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-transfer-to-worker-clone.https.html": {
+    "total": 2,
+    "failures": {
+      "A clone made in the worker survives stopping the transferred track": "FAIL",
+      "A track transferred again to a nested worker survives stopping the intermediate track": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-transfer-to-worker-data-holder.https.html": {
+    "total": 1,
+    "failures": {
+      "Stopping all remaining tracks of a source while a transfer is in flight does not end the transferred track": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-transfer-to-worker-mute.https.html": {
+    "total": 1,
+    "failures": {
+      "Muting and unmuting the source propagates to a transferred track": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-transfer-to-worker-source-lifetime.https.html": {
+    "total": 2,
+    "failures": {
+      "Destroying the capturing context ends a transferred track": "FAIL",
+      "Stopping the original track does not end a transferred clone": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-transfer-to-worker-teardown.https.html": {
+    "total": 5,
+    "failures": {
+      "A worker closing itself while holding a transferred track leaves the source's other tracks live": "FAIL",
+      "Terminating a worker holding a clone made in the worker leaves the source's other tracks live": "FAIL",
+      "Terminating a worker holding a transferred track leaves the source's other tracks live": "FAIL",
+      "Terminating a worker holding the only track of a source lets a new capture start": "FAIL",
+      "Terminating a worker while a track is in transfer to it leaves the source's other tracks live": "FAIL"
+    }
+  },
+  "mediacapture-extensions/MediaStreamTrack-video-stats.https.html": {
+    "total": 15
+  }
+}

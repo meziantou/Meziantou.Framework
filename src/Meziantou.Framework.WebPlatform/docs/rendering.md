@@ -510,7 +510,7 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   open (`InvalidStateError`), the page paints the bitmap without the open layers, and a paint callback ends its open layers.
   The filter of a layer is a CSS filter: the `CanvasFilter` objects are ignored.
 - Not implemented: `CanvasFilter` objects, the HDR settings (`toneMapping`), HDR gradient colors and intermediate layers and effects,
-  `captureStream()`, the text clusters of `TextMetrics`, HTML-in-canvas (`drawElementImage()`), WebGL and WebGPU.
+  the text clusters of `TextMetrics`, HTML-in-canvas (`drawElementImage()`), WebGL and WebGPU.
 
 ## Display list
 

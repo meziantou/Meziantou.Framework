@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Media;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
@@ -46,6 +47,8 @@ public sealed class HostDeviceApisTests : IDisposable
             Share = options.Share,
             Vibrate = options.Vibrate,
             Geolocation = options.Geolocation,
+            MediaCapture = options.MediaCapture,
+            MediaBackend = options.MediaBackend,
             ShowNotification = options.ShowNotification,
             CloseNotification = options.CloseNotification,
             Badging = options.Badging,
@@ -3534,6 +3537,173 @@ public sealed class HostDeviceApisTests : IDisposable
             new BrowsingContextOptions { Features = new WebPlatformFeatures { WebShareEnabled = false, VibrationEnabled = false, GeolocationEnabled = false, NotificationsEnabled = false, BadgingEnabled = false, BatteryStatusEnabled = false, WakeLockEnabled = false, KeyboardLockEnabled = false, KeyboardMapEnabled = false, ScreenOrientationEnabled = false, VirtualKeyboardEnabled = false, InputPendingEnabled = false, SensorsEnabled = false, DeviceOrientationEnabled = false } });
 
         Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,undefined,false", Run(document));
+    }
+
+    // Media Capture and Streams
+
+    #region WebPlatform_MediaCaptureBackend
+    // A camera whose frames are filled with a color, for the tests of a page that uses getUserMedia()
+    private sealed class SolidColorCamera : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Camera = new()
+        {
+            Id = "camera-1",
+            Kind = MediaDeviceKind.VideoInput,
+            Label = "Test camera",
+            Capabilities = new MediaTrackCapabilities { FacingMode = ["user"] },
+            DefaultSettings = new MediaTrackSettings { Width = 640, Height = 480, FacingMode = "user" },
+
+            // The native modes; smaller sizes and frame rates are cropped and scaled down from them
+            VideoModes = [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 30)],
+        };
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Camera];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => new Source(request);
+
+        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        {
+            public override MediaVideoFrame? GetVideoFrame(TimeSpan timestamp)
+            {
+                var width = (int)Settings.Width!.Value;
+                var height = (int)Settings.Height!.Value;
+                var pixels = new byte[width * height * 4];
+                for (var i = 0; i < pixels.Length; i += 4)
+                {
+                    pixels[i + 1] = 128; // green
+                    pixels[i + 3] = 255;
+                }
+
+                return new MediaVideoFrame(width, height, pixels);
+            }
+        }
+    }
+    #endregion
+
+    // The media elements play the streams once a media backend enables their processing model
+    private sealed class NoMediaBackend : MediaBackend
+    {
+        public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => MediaTypeSupport.NotSupported;
+
+        public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
+    }
+
+    private const string GetUserMediaScript = "window.go = c => navigator.mediaDevices.getUserMedia(c).then(s => { window.stream = s; const t = s.getTracks()[0]; const st = t.getSettings(); document.title = [t.kind, t.label, st.width, st.height, st.resizeMode, st.deviceId.length].join(); }, e => document.title = e.name + ':' + (e.constraint ?? ''));";
+
+    [Fact]
+    public async Task GetUserMedia_StartsTheCameraOfTheBackend()
+    {
+        #region WebPlatform_MediaCapture
+        var options = new BrowsingContextOptions
+        {
+            MediaCapture = new SolidColorCamera(),
+
+            // Plays the role of the permission prompt: the user allows the camera
+            RequestPermission = (callbackContext, name) => name == "camera" ? PermissionState.Granted : PermissionState.Denied,
+        };
+        #endregion
+
+        var document = Load("<script>" + GetUserMediaScript + "</script>", options);
+
+        Assert.Equal("video,Test camera,640,480,none,64", await RunAsync(document, "go({ video: true })"));
+    }
+
+    [Fact]
+    public async Task GetUserMedia_ConstraintsSelectTheVideoMode()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+
+        Assert.Equal("video,Test camera,1280,720,none,64", await RunAsync(document, "go({ video: { width: { min: 1000 } } })"));
+        Assert.Equal("video,Test camera,320,240,crop-and-scale,64", await RunAsync(document, "go({ video: { width: 320 } })"));
+        Assert.Equal("OverconstrainedError:width", await RunAsync(document, "go({ video: { width: { min: 4000 } } })"));
+        Assert.Equal("OverconstrainedError:width", await RunAsync(document, "go({ video: { width: { exact: 639 }, resizeMode: { exact: 'none' } } })"));
+    }
+
+    [Fact]
+    public async Task GetUserMedia_Errors()
+    {
+        var withoutBackend = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { Permissions = GrantedPermissions("camera") });
+        Assert.Equal("NotFoundError:", await RunAsync(withoutBackend, "go({ video: true })"));
+
+        var denied = new PermissionStore();
+        denied.SetState("camera", PermissionState.Denied);
+        var deniedDocument = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = denied });
+        Assert.Equal("NotAllowedError:", await RunAsync(deniedDocument, "go({ video: true })"));
+
+        var noRequest = Load("<script>navigator.mediaDevices.getUserMedia({}).catch(e => document.title = e.name);</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera() });
+        Assert.Equal("TypeError", await RunAsync(noRequest));
+
+        var insecure = Load("<script>document.title = 'mediaDevices' in navigator;</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera() }, url: "http://example.com/");
+        Assert.Equal("false", Run(insecure));
+    }
+
+    [Fact]
+    public async Task EnumerateDevices_ExposesTheDetailsOnceADeviceWasCaptured()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "window.list = () => navigator.mediaDevices.enumerateDevices().then(d => document.title = d.map(x => [x.kind, x.label, x.deviceId.length, x instanceof InputDeviceInfo].join()).join(';'));</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+
+        Assert.Equal("videoinput,,0,true", await RunAsync(document, "list()"));
+        await RunAsync(document, "go({ video: true })");
+        Assert.Equal("videoinput,Test camera,64,true", await RunAsync(document, "list()"));
+    }
+
+    [Fact]
+    public async Task ApplyConstraints_ChangesTheSettings()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("1280x720 none 1280", await RunAsync(document, "const t = stream.getVideoTracks()[0]; t.applyConstraints({ width: { exact: 1280 } }).then(() => document.title = `${t.getSettings().width}x${t.getSettings().height} ${t.getSettings().resizeMode} ${t.getConstraints().width.exact}`)"));
+        Assert.Equal("OverconstrainedError height 1280", await RunAsync(document, "const t2 = stream.getVideoTracks()[0]; t2.applyConstraints({ height: { min: 2000 } }).catch(e => document.title = `${e.name} ${e.constraint} ${t2.getSettings().width}`)"));
+        Assert.Equal("ended,live,false", await RunAsync(document, "const t3 = stream.getVideoTracks()[0]; const c = t3.clone(); t3.stop(); document.title = [t3.readyState, c.readyState, stream.active].join()"));
+    }
+
+    [Fact]
+    public async Task MediaStream_ConstructorsAndClone()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("1,1,true,false,0", Run(document, """
+            const copy = new MediaStream(stream);
+            const clone = stream.clone();
+            const empty = new MediaStream();
+            document.title = [copy.getTracks().length, clone.getTracks().length, copy.getTracks()[0] === stream.getTracks()[0], clone.getTracks()[0] === stream.getTracks()[0], empty.getTracks().length].join();
+            """));
+    }
+
+    [Fact]
+    public async Task MediaStreamAudioDestinationNode_StreamHasAnAudioTrack()
+    {
+        var document = Load("<script>const ac = new AudioContext(); const dest = ac.createMediaStreamDestination(); const src = ac.createMediaStreamSource(dest.stream); document.title = [dest.stream.getAudioTracks().length, src.mediaStream === dest.stream, src.numberOfInputs, dest.numberOfOutputs].join();</script>");
+
+        Assert.Equal("1,true,0,0", await RunAsync(document));
+    }
+
+    [Fact]
+    public async Task MediaElement_PlaysAStream()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<video></video><script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), MediaBackend = new NoMediaBackend(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("canplay,4,640x480,Infinity,0", await RunAsync(document, """
+            window.v = document.querySelector('video');
+            v.srcObject = stream;
+            v.oncanplay = () => document.title = ['canplay', v.readyState, v.videoWidth + 'x' + v.videoHeight, v.duration, v.seekable.length].join();
+            """));
+        await RunAsync(document, "v.ontimeupdate = () => { v.ontimeupdate = null; document.title = ['timeupdate', v.currentTime > 0, v.played.length, v.played.end(0) === v.currentTime].join(); }; v.play();");
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal("timeupdate,true,1,true", await RunAsync(document));
+        Assert.Equal("ended,true,durationchange", await RunAsync(document, "v.ondurationchange = () => document.title += ',durationchange'; v.onended = () => document.title = ['ended', v.ended].join(); stream.getTracks()[0].stop();"));
+    }
+
+    [Fact]
+    public void CanvasCaptureStream_FollowsTheSizeOfTheCanvas()
+    {
+        var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");
+
+        Assert.Equal("true,true,80,30,10", Run(document));
     }
 }
 

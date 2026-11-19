@@ -75,6 +75,7 @@ public partial class HtmlMediaElement
 
         var wasPotentiallyPlaying = IsPotentiallyPlaying;
         _readyState = value;
+        ScheduleCaptureUpdate();
         NodeDocument.IncrementElementStateVersion();
         if (_mediaSource is { } source && _mediaSourceGlobal is { } sourceElementGlobal && (previous == HaveEnoughData || value == HaveEnoughData))
         {
@@ -181,6 +182,10 @@ public partial class HtmlMediaElement
         get => _defaultPlaybackStartPosition != 0 ? _defaultPlaybackStartPosition : OfficialPlaybackPosition;
         set
         {
+            // The position of a media stream cannot be changed (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements)
+            if (HasMediaStreamProvider)
+                return;
+
             if (_readyState == HaveNothing)
             {
                 _defaultPlaybackStartPosition = value;
@@ -204,6 +209,9 @@ public partial class HtmlMediaElement
     [IdlMember("fastSeek", "https://html.spec.whatwg.org/multipage/media.html#dom-media-fastseek")]
     public void FastSeek(double time)
     {
+        if (HasMediaStreamProvider)
+            return;
+
         if (Backend is null)
         {
             _defaultPlaybackStartPosition = time;
@@ -292,6 +300,9 @@ public partial class HtmlMediaElement
     {
         get
         {
+            if (HasMediaStreamProvider)
+                return new TimeRanges();
+
             if (_mediaSource is not { } source)
                 return _player is { } player ? new TimeRanges(player.Buffered) : new TimeRanges();
 
@@ -314,6 +325,9 @@ public partial class HtmlMediaElement
     {
         get
         {
+            if (HasMediaStreamProvider)
+                return new TimeRanges();
+
             // The seekable ranges of an attached media source do not depend on the ready state of the element
             // (https://w3c.github.io/media-source/#dom-htmlmediaelement.seekable)
             if (_mediaSource is { } source)
@@ -333,6 +347,10 @@ public partial class HtmlMediaElement
     {
         get
         {
+            // The timeline of a media stream is a single range from 0 to the current time (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements)
+            if (HasMediaStreamProvider)
+                return new TimeRanges([new MediaTimeRange(0, CurrentTime)]);
+
             UpdateCurrentPlaybackPosition();
             return _playedRanges is { } ranges ? new TimeRanges(ranges) : new TimeRanges();
         }
@@ -378,6 +396,10 @@ public partial class HtmlMediaElement
         {
             if (_readyState < HaveMetadata)
                 return false;
+
+            // A media stream ends when it becomes inactive (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements)
+            if (HasMediaStreamProvider)
+                return _mediaStreamEnded;
 
             var position = CurrentPlaybackPosition;
             return IsPlayingForwards
@@ -448,6 +470,7 @@ public partial class HtmlMediaElement
     [IdlMember("play", "https://html.spec.whatwg.org/multipage/media.html#dom-media-play")]
     public Task Play()
     {
+        ScheduleCaptureUpdate();
         if (!IsAllowedToPlay)
             return Task.FromException(DomException.NotAllowed("The playback is not allowed without a user gesture"));
 
@@ -736,12 +759,33 @@ public partial class HtmlMediaElement
     }
 
     /// <summary>
+    /// The media stream of the element became inactive (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements):
+    /// the element has ended playback. The state change of the stream is reported by a task, which fires the events of the
+    /// end of the playback.
+    /// </summary>
+    private void OnMediaStreamEnded()
+    {
+        UpdatePlayback(notifyEnd: false);
+        FireEvent(new Event("timeupdate"));
+        if (!_paused)
+        {
+            SetPaused(true);
+            FireEvent(new Event("pause"));
+            RejectPendingPlayPromises(TakePendingPlayPromises(), "AbortError");
+        }
+
+        FireEvent(new Event("ended"));
+        UpdateCaptureTracks();
+    }
+
+    /// <summary>
     /// The steps run when the current playback position reaches the end of the media resource and the direction of playback
     /// is forwards (https://html.spec.whatwg.org/multipage/media.html#reaches-the-end).
     /// </summary>
     private void OnReachedEnd()
     {
-        if (HasAttributeWithLocalName("loop"))
+        // A media stream cannot be looped (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements)
+        if (HasAttributeWithLocalName("loop") && !HasMediaStreamProvider)
         {
             Seek(EarliestPossiblePosition);
             return;
@@ -759,6 +803,7 @@ public partial class HtmlMediaElement
             }
 
             FireEvent(new Event("ended"));
+            ScheduleCaptureUpdate();
         });
     }
 

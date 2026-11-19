@@ -746,6 +746,11 @@ internal static partial class PresentationalHints
     {
         if (element.GetAttributeValue("background") is { Length: > 0 } background && Html.Reflection.EncodingParseAndSerializeUrl(element.NodeDocument, background) is { } url)
         {
+            // The dangling markup mitigation (https://github.com/whatwg/fetch/pull/519) blocks the fetch of the image, whose URL
+            // loses the flag once it is a CSS value
+            if (Urls.UrlParser.IsPotentiallyDanglingMarkup(background) && (url.StartsWith("http:", StringComparison.Ordinal) || url.StartsWith("https:", StringComparison.Ordinal)))
+                return;
+
             css.Append("background-image: ").Append(CssSerializer.SerializeUrl(url)).Append(';');
         }
     }

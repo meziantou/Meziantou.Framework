@@ -3928,8 +3928,8 @@ ignored.
 - `"cookies"`: the cookies of the cookie jar of the request whose domain is the registrable domain of the origin, or one
   of its subdomains (the cookies set by the response included).
 - `"storage"`: the local storage and the session storage of the origin, its IndexedDB databases without open
-  connection, its caches of the Cache API, and its service worker registrations (unregistered: the controlled clients
-  keep their controller until they are unloaded). The origin private file system is not cleared.
+  connection, its caches of the Cache API, and its service worker registrations (unregistered and cleared at once, as in
+  Chromium: the workers are terminated, and the controlled clients lose their controller). The origin private file system is not cleared.
 - `"executionContexts"`: the navigables of the tree of the top-level traversable of the request whose active document
   has the origin are reloaded, except the browsing context of the request (the navigable that the response navigates,
   or the one of the document or worker that fetched it) and its ancestors: reloading them would fetch the response

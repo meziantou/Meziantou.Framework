@@ -42,8 +42,29 @@ internal static class UrlParser
         if (BasicParse(input, baseUrl, encoding, url, UrlParserState.None) == ParseResult.Failure)
             return null;
 
-        url.PotentiallyDanglingMarkup = IsPotentiallyDanglingMarkup(input);
+        // A relative URL resolved against a URL made of dangling markup (e.g. the href of a base element) keeps its flag: an
+        // empty href is the base URL itself
+        url.PotentiallyDanglingMarkup = IsPotentiallyDanglingMarkup(input) || (baseUrl is { PotentiallyDanglingMarkup: true } && !HasScheme(input));
         return url;
+    }
+
+    /// <summary>Whether an input starts with a scheme (an absolute URL, which does not use the base URL), once its leading C0 controls and spaces are trimmed.</summary>
+    private static bool HasScheme(string input)
+    {
+        var span = input.AsSpan().TrimStart("\0\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F ");
+        if (span.IsEmpty || !char.IsAsciiLetter(span[0]))
+            return false;
+
+        foreach (var c in span[1..])
+        {
+            if (c == ':')
+                return true;
+
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('+' or '-' or '.' or '\t' or '\n' or '\r'))
+                return false;
+        }
+
+        return false;
     }
 
     /// <summary>

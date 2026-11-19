@@ -1042,6 +1042,46 @@ internal sealed partial class ServiceWorkerRegistry
         }
     }
 
+    /// <summary>
+    /// Unregisters the registrations of a storage key immediately, as the browsers do for <c>Clear-Site-Data: "storage"</c>
+    /// (https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage): the registrations, and the ones that
+    /// are unregistered but still control clients, are removed from the registration map, their clients lose their
+    /// controller (<c>controllerchange</c>), and they are cleared without waiting for the clients to unload or for the
+    /// extended events to end (their workers are terminated and become redundant).
+    /// </summary>
+    internal void UnregisterImmediately(StorageKey storageKey)
+    {
+        var registrations = new HashSet<ServiceWorkerRegistrationRecord>(GetRegistrations(storageKey));
+        foreach (var client in GetClients())
+        {
+            if (client.Environment?.ActiveServiceWorker?.Registration is { } used && used.StorageKey == storageKey)
+            {
+                registrations.Add(used);
+            }
+        }
+
+        foreach (var registration in registrations)
+        {
+            RemoveRegistration(registration);
+            foreach (var client in GetClients())
+            {
+                if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
+                    continue;
+
+                environment.ActiveServiceWorker = null;
+                client.QueueTask(() =>
+                {
+                    if (client.Global is { ServiceWorkerObjectsOrNull.Container: { } container })
+                    {
+                        container.FireEvent(new Event("controllerchange"));
+                    }
+                });
+            }
+
+            ClearRegistration(registration);
+        }
+    }
+
     /// <summary>https://w3c.github.io/ServiceWorker/#try-clear-registration-algorithm</summary>
     internal void TryClearRegistration(ServiceWorkerRegistrationRecord registration)
     {

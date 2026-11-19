@@ -190,11 +190,16 @@ The cookies that the response sets are cleared too. As in the browsers, a respon
 (a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies, the caches,
 and the stores of the origin [partitioned](#storage-partitioning) by the site of that page. The stores of the origin as a
 top-level page are kept. So are they for a response loaded by a frame of the top-level site whose parent frame is of
-another site: it clears the stores of that frame's partition. Some data is always kept:
+another site: it clears the stores of that frame's partition.
+
+As in Chromium, the service worker registrations of the origin are cleared at once, without waiting for their pages to
+unload: their workers are terminated (their state becomes `redundant`), and the pages they control lose their
+controller (`navigator.serviceWorker.controller` is null after a `controllerchange` event). A registration that
+`unregister()` already removed, but that still controls a page, is cleared too.
+
+Some data is always kept:
 
 - An IndexedDB database that a page still has open.
 - The origin private file system.
-- The pages that a service worker controls keep it until they are unloaded: unregistering does not remove the
-  controller.
 - `"executionContexts"` only reloads the pages in the tab of the request, and never the page or frame that loaded the
   response, nor the pages that contain it: reloading them would load the response again, forever.

@@ -1039,6 +1039,9 @@
       "Clear-Site-Data must fail pending subresource fetch events.": "TIMEOUT"
     }
   },
+  "service-workers/service-worker/unregister-immediately.https.html": {
+    "total": 4
+  },
   "service-workers/service-worker/unregister-then-register-new-script.https.html": {
     "total": 3
   },

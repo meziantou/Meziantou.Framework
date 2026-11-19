@@ -914,6 +914,40 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task ClearSiteData_ClearsTheRegistrationsAtOnce()
+    {
+        AddScript("https://example.com/dir/sw.js", "self.onactivate = e => {};");
+        AddPage("https://example.com/dir/scope/page.html", "<p>controlled");
+        _loader.Resources["https://example.com/dir/clear"] = new DocumentResource("") { Headers = [new("Clear-Site-Data", "\"storage\"")] };
+        var document = Load($$"""
+            <script>
+              {{WaitForState}}
+              (async () => {
+                const registration = await navigator.serviceWorker.register('sw.js', { scope: 'scope/' });
+                const worker = registration.installing;
+                await state(worker, 'activated');
+                const frame = document.createElement('iframe');
+                frame.src = 'scope/page.html';
+                document.body.append(frame);
+                await new Promise(resolve => frame.onload = resolve);
+                const container = frame.contentWindow.navigator.serviceWorker;
+                const controlled = container.controller !== null;
+                await registration.unregister();
+                const changed = new Promise(resolve => container.oncontrollerchange = resolve);
+                await fetch('clear');
+                await changed;
+                await state(worker, 'redundant');
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                document.title = [controlled, container.controller, worker.state, registrations.length].join();
+              })().catch(e => document.title = 'error: ' + e);
+            </script>
+            """);
+
+        // The registration that unregister() kept for its controlled frame is cleared too: the frame loses its controller
+        Assert.Equal("true,,redundant,0", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
     public async Task FetchEvent_RequestOfARedirectedNavigationHasTheCurrentUrl()
     {
         AddScript("https://example.com/dir/sw.js", """

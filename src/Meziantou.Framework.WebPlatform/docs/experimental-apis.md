@@ -274,3 +274,14 @@ tentative web-platform-tests of `html/canvas/element/text` (`2d.text.shape.*`): 
 text styles of the context, whose glyph runs and clusters are drawn later, with the positions and selection APIs of the text
 clusters of `TextMetrics`, which it is meant to replace. No specification or explainer describes it yet. Its API and behavior
 may change.
+
+<a id="WEBPLATEXP0026"></a>
+
+## WEBPLATEXP0026: resource timing initiator URL
+
+`PerformanceResourceTiming.InitiatorUrl` implements the `initiatorUrl` attribute that Chromium implements behind a flag
+([w3c/resource-timing#263](https://github.com/w3c/resource-timing/issues/263)), as tested by the tentative
+web-platform-tests of `resource-timing/tentative/initiator-url`: the URL of the style sheet that fetched a resource, else
+the URL of the script to which the task that started the fetch is attributed (the script that runs, or the script that
+scheduled the timer, the task, the callback or the asynchronous operation that runs), else the URL of the document or of
+the worker. No specification defines it yet. Its API and behavior may change.

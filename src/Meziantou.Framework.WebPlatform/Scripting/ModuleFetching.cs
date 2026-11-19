@@ -105,6 +105,11 @@ internal static class ModuleFetching
             ParserInserted = options.ParserInserted,
             RenderBlocking = options.RenderBlocking,
             Referrer = referrer ?? "client",
+
+            // The module or the script that imports the module (a fetch without element) is the initiator of the fetch
+            // (PerformanceResourceTiming.InitiatorUrl)
+            InitiatorUrl = initiator is not null || referrer is null or "client" or "no-referrer" ? null : referrer,
+
             // The policy container of the fetch client gives the default policy (the environment that created a worker for
             // its static imports)
             ReferrerPolicy = ReferrerPolicies.GetRequestPolicy(options.ReferrerPolicy, policyClient ?? document),

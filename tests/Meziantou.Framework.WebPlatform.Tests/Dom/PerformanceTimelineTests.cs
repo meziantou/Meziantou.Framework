@@ -262,6 +262,20 @@ public sealed class PerformanceTimelineTests : IDisposable
     }
 
     [Fact]
+    public void ResourceTiming_InitiatorUrl_IsTheStyleSheetOrTheDocument()
+    {
+        _loader.Resources["https://example.com/dir/style.css"] = new DocumentResource("@import url(nested.css);") { Headers = [new("Content-Type", "text/css")] };
+        _loader.Resources["https://example.com/dir/nested.css"] = new DocumentResource("p { color: red }") { Headers = [new("Content-Type", "text/css")] };
+        var document = Load("<link rel=stylesheet href=style.css>");
+
+#pragma warning disable WEBPLATEXP0026 // The initiator URL is experimental
+        var initiators = document.DefaultView!.Performance.GetEntriesByType("resource").Cast<PerformanceResourceTiming>().ToDictionary(entry => entry.Name, entry => entry.InitiatorUrl, StringComparer.Ordinal);
+#pragma warning restore WEBPLATEXP0026
+        Assert.Equal("https://example.com/dir/page.html", initiators["https://example.com/dir/style.css"]);
+        Assert.Equal("https://example.com/dir/style.css", initiators["https://example.com/dir/nested.css"]);
+    }
+
+    [Fact]
     public void Iframe_CrossOrigin_ReportsAnOpaqueEntryWhenItIsLoaded()
     {
         _loader.Resources["https://other.example/frame.html"] = Html("frame");

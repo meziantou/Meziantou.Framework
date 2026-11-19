@@ -119,7 +119,8 @@ public sealed partial class DomEventLoop
         }
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the timer runs in the interaction context of the code that queued it
-        callback = InteractionContext.Wrap(callback);
+        // (and is attributed to its script, see TaskAttribution)
+        callback = TaskAttribution.Wrap(InteractionContext.Wrap(callback));
         var due = ObserveClock(TimeProvider.GetTimestamp()) + (long)(delay.TotalSeconds * TimeProvider.TimestampFrequency);
         lock (_timersLock)
         {
@@ -1114,7 +1115,8 @@ public sealed partial class DomEventLoop
             return;
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the microtask runs in the interaction context of the code that queued it
-        callback = InteractionContext.Wrap(callback);
+        // (and is attributed to its script, see TaskAttribution)
+        callback = TaskAttribution.Wrap(InteractionContext.Wrap(callback));
         if (_scriptEngines.Count > 0 && GetScriptEngine() is { } engine)
         {
             engine.QueueMicrotask(callback);
@@ -1137,7 +1139,7 @@ public sealed partial class DomEventLoop
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the task runs in the interaction context of the
         // code that queued it (e.g. an asynchronous operation started by an event listener of an interaction)
-        QueueTask(InteractionContext.Wrap(callback), schedulerTaskSlot: null);
+        QueueTask(TaskAttribution.Wrap(InteractionContext.Wrap(callback)), schedulerTaskSlot: null);
     }
 
     /// <summary>Queues a task, or the slot of a task of a scheduler (see <see cref="SchedulerTaskSlot"/>).</summary>
@@ -1385,6 +1387,7 @@ public sealed partial class DomEventLoop
             var continuationState = CurrentContinuationState;
             CurrentContinuationState = null;
             using var interactionContextScope = InteractionContext.Enter(null);
+            using var attributionScope = TaskAttribution.Enter(null);
             EndIdlePeriod();
             try
             {

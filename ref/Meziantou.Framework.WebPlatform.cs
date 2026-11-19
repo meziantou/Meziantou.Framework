@@ -11589,6 +11589,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double FinalResponseHeadersStart { get => throw null; }
         public double FirstInterimResponseStart { get => throw null; }
         public string InitiatorType { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0026", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public string InitiatorUrl { get => throw null; init { } }
         public string NextHopProtocol { get => throw null; }
         public double RedirectEnd { get => throw null; }
         public double RedirectStart { get => throw null; }

@@ -51,10 +51,11 @@ public sealed partial class DomEventLoop
     {
         var state = CurrentContinuationState;
         var interactionContext = InteractionContext.Current;
+        var scriptUrl = TaskAttribution.Current;
         var snapshot = _continuationStateSnapshot;
-        if (snapshot is null || !ReferenceEquals(snapshot.State, state) || !ReferenceEquals(snapshot.InteractionContext, interactionContext))
+        if (snapshot is null || !ReferenceEquals(snapshot.State, state) || !ReferenceEquals(snapshot.InteractionContext, interactionContext) || !string.Equals(snapshot.ScriptUrl, scriptUrl, StringComparison.Ordinal))
         {
-            _continuationStateSnapshot = snapshot = new ContinuationStateSnapshot(this, state, interactionContext);
+            _continuationStateSnapshot = snapshot = new ContinuationStateSnapshot(this, state, interactionContext, scriptUrl);
         }
 
         return snapshot;
@@ -139,7 +140,7 @@ public sealed partial class DomEventLoop
 }
 
 /// <summary>The continuation state captured by a job callback, and the event loop whose state it restores when the callback is called.</summary>
-internal sealed class ContinuationStateSnapshot(DomEventLoop eventLoop, SchedulerContinuationState? state, InteractionContext? interactionContext)
+internal sealed class ContinuationStateSnapshot(DomEventLoop eventLoop, SchedulerContinuationState? state, InteractionContext? interactionContext, string? scriptUrl = null)
 {
     public DomEventLoop EventLoop { get; } = eventLoop;
 
@@ -147,4 +148,7 @@ internal sealed class ContinuationStateSnapshot(DomEventLoop eventLoop, Schedule
 
     /// <summary>The interaction context, restored with the continuation state.</summary>
     public InteractionContext? InteractionContext { get; } = interactionContext;
+
+    /// <summary>The script to which the task is attributed (see <see cref="TaskAttribution"/>), restored with the continuation state.</summary>
+    public string? ScriptUrl { get; } = scriptUrl;
 }

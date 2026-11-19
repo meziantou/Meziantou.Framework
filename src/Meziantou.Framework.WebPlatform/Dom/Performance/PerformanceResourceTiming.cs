@@ -51,6 +51,18 @@ public class PerformanceResourceTiming : PerformanceEntry
     public string InitiatorType { get; }
 
     /// <summary>
+    /// Gets the URL of the script or of the style sheet that started the fetch (https://github.com/w3c/resource-timing/issues/263):
+    /// the URL of the style sheet for the resources of a style sheet (its <c>@import</c> rules, its fonts and its images), else
+    /// the URL of the script to which the task that started the fetch is attributed (the script that runs, or the script that
+    /// scheduled the timer, the task, the callback or the asynchronous operation that runs, the URL of the document for an
+    /// inline script), else the URL of the document or of the worker. It is the empty string for a navigation.
+    /// </summary>
+    /// <seealso href="https://github.com/web-platform-tests/wpt/blob/c8fa86fb13d4596dad4c5367cb4555b585c05f8a/resource-timing/resources/test-initiator.js#L39"/>
+    [IdlMember("initiatorUrl", "https://github.com/web-platform-tests/wpt/blob/c8fa86fb13d4596dad4c5367cb4555b585c05f8a/resource-timing/resources/test-initiator.js#L39")]
+    [Experimental(ExperimentalApis.ResourceTimingInitiatorUrl, UrlFormat = ExperimentalApis.UrlFormat)]
+    public string InitiatorUrl { get; init; } = "";
+
+    /// <summary>
     /// Gets the delivery type of the resource: <c>navigational-prefetch</c> for the document of a navigation that used a
     /// navigational prefetch, <c>cache</c> for a resource whose stored response of the HTTP cache was used (validated or
     /// not, https://fetch.spec.whatwg.org/#fetch-finale), else the empty string.

@@ -396,6 +396,7 @@ internal sealed partial class IdlModel
         AddUrlPatternTentativeMethods(model);
         AddLongTasks(model);
         AddScrollTiming(model);
+        AddResourceTimingInitiatorUrl(model);
         ReplaceSvgPathSegmentInterfaceWithDictionary(model);
         RemoveSvgPathElementGeometryMembers(model);
         FixCssParserApiTypes(model);
@@ -785,6 +786,31 @@ internal sealed partial class IdlModel
             SpecUrl = SpecUrl,
             ExperimentalApi = "ScrollTiming",
         };
+    }
+
+    /// <summary>
+    /// The <c>initiatorUrl</c> attribute of PerformanceResourceTiming (https://github.com/w3c/resource-timing/issues/263), which
+    /// Chromium implements behind a flag and the tentative web-platform-tests of <c>resource-timing/tentative/initiator-url</c> test:
+    /// <code>
+    /// partial interface PerformanceResourceTiming { readonly attribute USVString initiatorUrl; };
+    /// </code>
+    /// </summary>
+    private static void AddResourceTimingInitiatorUrl(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("PerformanceResourceTiming", out var definition) || definition.Members.Exists(member => member.Name == "initiatorUrl"))
+            return;
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Attribute,
+            Name = "initiatorUrl",
+            Type = new IdlType { Name = "USVString" },
+            Readonly = true,
+            Href = "https://github.com/web-platform-tests/wpt/blob/c8fa86fb13d4596dad4c5367cb4555b585c05f8a/resource-timing/resources/test-initiator.js#L39",
+            Source = "resource-timing",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "ResourceTimingInitiatorUrl",
+        });
     }
 
     /// <summary>

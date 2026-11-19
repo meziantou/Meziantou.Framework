@@ -204,7 +204,7 @@ public sealed class Scheduler
         var eventLoop = _global.EventLoop;
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the task runs in the interaction context of the caller
-        steps = InteractionContext.Wrap(steps);
+        steps = TaskAttribution.Wrap(InteractionContext.Wrap(steps));
         var task = new SchedulerTask(eventLoop.GetNextSchedulerEnqueueOrder(), continuationState, () =>
         {
             steps();

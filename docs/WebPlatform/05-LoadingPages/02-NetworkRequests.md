@@ -215,6 +215,12 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   events as the chunks arrive (at most every 50 ms; its `responseText` has every chunk received so far). Return the
   response once its headers are received: the time the loader returns it is the `responseStart` of the resource timing
   entry, and the end of the body its `responseEnd`.
+- The resource timing entries (`performance.getEntriesByType("resource")`) have the experimental `initiatorUrl` of
+  Chromium ([PerformanceResourceTiming.InitiatorUrl](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceResourceTiming.InitiatorUrl), whose .NET
+  property reports the experimental diagnostic `WEBPLATEXP0026`): the style
+  sheet that fetched a resource (its `@import` rules, fonts and images), the module that imports a module, else the script
+  that started the fetch, followed through the timers, the tasks, the callbacks and the asynchronous operations it
+  scheduled (an inline script is the page), else the page or the worker.
 - [ReportInterimResponse](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.ReportInterimResponse) reports an
   interim response (`100 Continue`, `103 Early Hints`...) before the final response: its time is the
   `firstInterimResponseStart` of the resource timing entry, and the `Link` headers of the first `103` response of the

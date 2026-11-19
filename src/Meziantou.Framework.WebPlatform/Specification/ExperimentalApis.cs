@@ -83,4 +83,7 @@ internal static class ExperimentalApis
 
     /// <summary>The shaped text of the 2D contexts, which Chromium implements behind a flag: <c>shapeText()</c>, <c>ShapedText</c>, <c>GlyphRun</c>, <c>fillGlyphRun()</c> and <c>strokeGlyphRun()</c>.</summary>
     public const string CanvasShapedText = "WEBPLATEXP0025";
+
+    /// <summary>The <c>initiatorUrl</c> attribute of <c>PerformanceResourceTiming</c> (https://github.com/w3c/resource-timing/issues/263), which the tentative web-platform-tests of <c>resource-timing/tentative/initiator-url</c> test.</summary>
+    public const string ResourceTimingInitiatorUrl = "WEBPLATEXP0026";
 }

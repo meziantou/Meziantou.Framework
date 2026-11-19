@@ -238,6 +238,9 @@ internal sealed partial class FetchRequest
     /// <summary>The referrer: "client", "no-referrer" or a URL (https://fetch.spec.whatwg.org/#concept-request-referrer).</summary>
     public string Referrer { get; set; } = "client";
 
+    /// <summary>The URL of the style sheet that fetches the resource (the initiator URL of its resource timing entry, see <see cref="PerformanceResourceTiming.InitiatorUrl"/>), or null.</summary>
+    public string? InitiatorUrl { get; set; }
+
     /// <summary>The referrer policy, or the empty string (https://fetch.spec.whatwg.org/#concept-request-referrer-policy).</summary>
     public string ReferrerPolicy { get; set; } = "";
 

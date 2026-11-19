@@ -36,6 +36,17 @@ public partial class Window
             };
         }
 
+        // The callback is attributed to the script of the caller (see TaskAttribution)
+        if (TaskAttribution.Current is { } scriptUrl)
+        {
+            var attributedCallback = callback;
+            callback = time =>
+            {
+                using var scope = TaskAttribution.Enter(scriptUrl);
+                attributedCallback(time);
+            };
+        }
+
         _animationFrameCallbackIdentifier++;
         _animationFrameCallbacks[_animationFrameCallbackIdentifier] = callback;
         EventLoop.RequestAnimationFrame(this);

@@ -1786,6 +1786,46 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void PaymentRequest_DestroyedDocument_CancelsTheIngestionOfTheManifests()
+    {
+        // A backend that never completes the ingestion does not keep the event loop busy once the document is destroyed
+        var backend = new InstallingPaymentHandlers { NeverCompletes = true };
+        var document = Load("<script>" + PaymentScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Run(document, "new frame.contentWindow.PaymentRequest(methods, details).canMakePayment()");
+        Assert.False(backend.IngestionToken.IsCancellationRequested);
+        Assert.True(_contexts.EventLoop.HasPendingOperations);
+
+        Run(document, "frame.remove()");
+        Assert.True(backend.IngestionToken.IsCancellationRequested);
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    private sealed class InstallingPaymentHandlers : UserAgentUIBackend
+    {
+        private volatile bool _installed;
+
+        public bool NeverCompletes { get; init; }
+
+        public CancellationToken IngestionToken { get; private set; }
+
+        public override ValueTask IngestPaymentMethodManifestAsync(PaymentMethodManifestRequest request, CancellationToken cancellationToken)
+        {
+            IngestionToken = cancellationToken;
+            if (NeverCompletes)
+                return new(new TaskCompletionSource().Task);
+
+            return new(Task.Run(async () =>
+            {
+                await Task.Delay(50, cancellationToken);
+                _installed = true;
+            }, cancellationToken));
+        }
+
+        public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken) => new(_installed);
+    }
+
+    [Fact]
     public void PaymentRequest_Constructor_ValidatesTheArguments()
     {
         var document = Load("<script>" + PaymentScript + "</script>");

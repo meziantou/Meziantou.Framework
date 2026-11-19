@@ -47,7 +47,8 @@ public sealed partial class PaymentRequest : EventTarget
     private CancellationTokenSource? _ui;
     private BrowsingContext? _showingContext;
     private Document? _showingDocument;
-    private bool _manifestsIngested;
+    /// <summary>The ingestion of the payment method manifests (null until the page asks whether it can make a payment).</summary>
+    private Task? _manifestIngestion;
 
     /// <summary>The change of the user whose events are dispatched, completed once the page updated the details.</summary>
     private TaskCompletionSource<PaymentSheetDetails>? _pendingChange;
@@ -256,7 +257,7 @@ public sealed partial class PaymentRequest : EventTarget
         _ui = new CancellationTokenSource();
 #pragma warning restore CA2000
         var token = _ui.Token;
-        IngestPaymentMethodManifests();
+        _ = IngestPaymentMethodManifests();
 
         // The payment handlers of the payment methods (the queries are created on the event loop of the window)
         var queries = _serializedMethodData.ConvertAll(method => new PaymentHandlerQuery(_window, method));
@@ -332,7 +333,7 @@ public sealed partial class PaymentRequest : EventTarget
         if (!_window.Document.IsFullyActive)
             return Task.FromException<bool>(CreateException("The document is not fully active", "InvalidStateError"));
 
-        IngestPaymentMethodManifests();
+        _ = IngestPaymentMethodManifests();
         var result = new TaskCompletionSource<bool>();
         var queries = _serializedMethodData.ConvertAll(method => new PaymentHandlerQuery(_window, method));
         var securePaymentConfirmationCheck = CreateSecurePaymentConfirmationCheck();
@@ -463,44 +464,95 @@ public sealed partial class PaymentRequest : EventTarget
     /// <summary>
     /// Ingests the payment method manifests of the URL-based payment method identifiers (https://w3c.github.io/payment-method-manifest/#ingest-payment-method-manifests)
     /// with the backend. The specification ingests them when the request is constructed; as in Chromium, they are ingested
-    /// when the page asks whether it can make a payment (<c>canMakePayment()</c>, <c>show()</c>), once per request.
+    /// when the page asks whether it can make a payment (<c>canMakePayment()</c>, <c>show()</c>), once per request. The task
+    /// completes when the backend has ingested them (or failed), or when the document is no longer fully active (the token
+    /// given to the backend is then canceled); it never fails.
     /// </summary>
-    private void IngestPaymentMethodManifests()
+    private Task IngestPaymentMethodManifests()
     {
-        if (_manifestsIngested || _window.Options.UserAgentUI is not { } backend)
-            return;
+        if (_manifestIngestion is { } existing)
+            return existing;
 
-        _manifestsIngested = true;
+        if (_window.Options.UserAgentUI is not { } backend)
+            return _manifestIngestion = Task.CompletedTask;
+
+        var requests = new List<PaymentMethodManifestRequest>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var method in _serializedMethodData)
         {
             if (Urls.UrlParser.Parse(method.Identifier, baseUrl: null) is not { } url || !PaymentMethodIdentifier.IsValidUrlBased(url) || !seen.Add(url.Serialize()))
                 continue;
 
-            var request = new PaymentMethodManifestRequest(_window, url);
+            requests.Add(new PaymentMethodManifestRequest(_window, url));
+        }
 
-            // The event loop is not idle while the manifests are fetched (as for the other fetches): its timers do not run ahead of them
-            var eventLoop = _window.EventLoop;
-            eventLoop.BeginOperation();
-            try
+        if (requests.Count == 0)
+            return _manifestIngestion = Task.CompletedTask;
+
+        // The fetches belong to the document: they are canceled when it is no longer fully active
+        var document = _window.Document;
+#pragma warning disable CA2000 // Disposed once the manifests are ingested
+        var cancellation = new CancellationTokenSource();
+#pragma warning restore CA2000
+        document.AddPromptCloser(cancellation.Cancel);
+        var ingestion = Task.WhenAll(requests.ConvertAll(request => IngestAsync(backend, request, cancellation.Token)));
+        _ = ingestion.ContinueWith(
+            _ =>
             {
-                _ = backend.IngestPaymentMethodManifestAsync(request, CancellationToken.None).AsTask().ContinueWith(
-                    task =>
-                    {
-                        _ = task.Exception;
-                        eventLoop.EndOperation();
-                    },
-                    CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-            }
-#pragma warning disable CA1031 // A failure of the backend is ignored
-            catch (Exception)
-#pragma warning restore CA1031
+                document.RemovePromptCloser(cancellation.Cancel);
+                cancellation.Dispose();
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+        return _manifestIngestion = ingestion;
+    }
+
+    /// <summary>
+    /// Ingests one payment method manifest: the event loop is not idle meanwhile (as for the other fetches, its timers do not
+    /// run ahead of them), until the backend completes or the token is canceled (a backend that ignores the token does not keep
+    /// the event loop busy).
+    /// </summary>
+    private Task IngestAsync(UserAgentUIBackend backend, PaymentMethodManifestRequest request, CancellationToken cancellationToken)
+    {
+        var eventLoop = _window.EventLoop;
+        eventLoop.BeginOperation();
+        // The continuations run synchronously: the ingestion ends (and releases the event loop) as soon as the last fetch ends
+        var completion = new TaskCompletionSource();
+        var ended = 0;
+        void End()
+        {
+            if (Interlocked.Exchange(ref ended, 1) == 0)
             {
                 eventLoop.EndOperation();
+                completion.TrySetResult();
             }
         }
+
+        var registration = cancellationToken.Register(End);
+        Task task;
+        try
+        {
+            task = backend.IngestPaymentMethodManifestAsync(request, cancellationToken).AsTask();
+        }
+#pragma warning disable CA1031 // A failure of the backend is ignored
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            task = Task.FromException(ex);
+        }
+
+        _ = task.ContinueWith(
+            completed =>
+            {
+                _ = completed.Exception;
+                registration.Dispose();
+                End();
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+        return completion.Task;
     }
 
     /// <summary>

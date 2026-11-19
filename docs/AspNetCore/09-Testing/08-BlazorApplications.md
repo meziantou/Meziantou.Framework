@@ -1,6 +1,6 @@
 ---
 title: Blazor applications
-description: Test the static rendering, the enhanced navigation and forms, and the Interactive Server components of a Blazor Web App.
+description: Test the static rendering, the enhanced navigation and forms, and the Interactive Server and WebAssembly components of a Blazor application.
 ---
 
 A page of a Blazor Web App runs the real `blazor.web.js` of the application: the enhanced navigation and forms of the
@@ -25,7 +25,21 @@ await Expect(page.GetByRole("status")).ToHaveTextAsync("Current count: 1");
   falls back to long polling, as it does behind a proxy that blocks them.
 - The render batches come from the server after the action: wait for the result with an
   [assertion](03-Locators.md#assert-the-state-of-the-page) of `Expect`.
-- The Interactive WebAssembly components are not supported: their runtime does not start in the page.
+- The Interactive WebAssembly components need a WebAssembly runtime, which the pages do not have by default: without
+  it, `blazor.webassembly.js` fails to start. See [WebAssembly](07-WebApplications.md#webassembly).
+
+## Blazor WebAssembly
+
+A Blazor WebAssembly application (standalone, or the Interactive WebAssembly components of a Blazor Web App) runs the
+.NET runtime in WebAssembly, in the page:
+
+- Set [WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.WebAssemblyRuntime) to the
+  `WasmtimeRuntime` of the [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+  package.
+- The application must serve the files of the runtime (`_framework/`): for a standalone application, serve the
+  `wwwroot` folder of its published output (`dotnet publish`).
+- The application must target .NET 11 or later. The WebAssembly runtime of .NET 10 uses the legacy exception handling
+  proposal of WebAssembly, which Wasmtime does not support, so it does not start.
 
 To test a component alone, without an application, render it with
 [ComponentTestHost](02-BlazorComponents.md).

@@ -104,6 +104,31 @@ Assert.Single(reports);
 
 [ComponentTestHostOptions](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions) has the same function for the page that hosts the components.
 
+## WebAssembly
+
+The pages run no WebAssembly by default: the `WebAssembly` namespace of their scripts is not defined, so a page that
+instantiates a module fails, and a Blazor WebAssembly application does not start. Set
+[WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.WebAssemblyRuntime) to a runtime: the
+`WasmtimeRuntime` of the [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+package runs the modules with Wasmtime. The pages share the runtime and the browser does not dispose it: dispose it
+after the browser.
+
+<!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_WebAssemblyRuntime;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The runtime of the Meziantou.Framework.WebPlatform.Wasmtime package: the pages share it
+using var runtime = new WasmtimeRuntime();
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { WebAssemblyRuntime = runtime });
+
+// The page instantiates a WebAssembly module and calls its add function
+var page = await browser.OpenAsync("/wasm");
+
+await Expect(page.Locator("output")).ToHaveTextAsync("2 + 3 = 5");
+```
+<!-- endref -->
+
+[ComponentTestHostOptions.WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions.WebAssemblyRuntime) is the runtime of the page that hosts the components in the same way, when it runs JavaScript.
+
 ## Clipboard
 
 Each page has a clipboard of its own, so tests that run in parallel do not see what the others copy.

@@ -45,6 +45,11 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
 - The JS String Builtins are supported: the `builtins: ["js-string"]` compile option provides the functions of the
   `wasm:js-string` module (`length`, `concat`, `charCodeAt`, `fromCharCodeArray`...), and `importedStringConstants`
   turns the globals imported from a module into string constants (the name of the import is the string).
+- The type reflection is supported: `type()` of the `Memory`, `Table`, `Global`, `Tag` and exported functions describes
+  their type (`{ minimum, maximum, shared }`, `{ element, minimum, maximum }`, `{ mutable, value }`, `{ parameters }`,
+  `{ parameters, results }`), the descriptors accept `minimum` instead of `initial`, and
+  `new WebAssembly.Function({ parameters, results }, fn)` creates a WebAssembly function from a JavaScript function: it
+  can be stored in a table. The exported functions are `WebAssembly.Function` objects.
 - `memory.toResizableBuffer()` gives a resizable `ArrayBuffer` of the bytes of a memory: `resize()` grows the memory by
   whole pages, and the buffer follows the size of the memory.
 - The running code is interrupted by the limits of the script engine, such as [Timeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.Timeout).

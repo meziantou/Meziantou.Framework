@@ -849,6 +849,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         var name = state.FunctionNames.TryGetValue(function, out var index) ? index : "0";
         var exportedFunction = Adapter.RunInRealm(EngineRealm, () => Adapter.CreateFunction(name, function.Type.Parameters.Length, (_, arguments) => CallWasmExportedFunction(function, arguments)));
+
+        // The type reflection (https://webassembly.github.io/js-types/js-api/#exported-functions): the Exported Functions are WebAssembly.Function objects
+        Adapter.SetPrototypeOf(exportedFunction, GetWasmFunctionPrototype());
         state.ExportedFunctions.AddOrUpdate(function, exportedFunction);
         state.FunctionAddresses.AddOrUpdate(exportedFunction, function);
         return exportedFunction;
@@ -1143,7 +1146,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>https://webassembly.github.io/spec/js-api/#towebassemblyvaluetype (the ValueType enumeration)</summary>
     internal WasmValueType ToWasmValueType(TValue value)
     {
-        var name = ToEnumerationValue(value, "ValueType", ["i32", "i64", "f32", "f64", "v128", "externref", "anyfunc"]);
+        var name = ToEnumerationValue(value, "ValueType", ["i32", "i64", "f32", "f64", "v128", "externref", "funcref", "anyfunc"]);
         return name switch
         {
             "i32" => WasmValueType.I32,

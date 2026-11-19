@@ -505,8 +505,10 @@ has its own store of instances, memories, tables, globals and tags):
 
 The Wasmtime runtime enables the features of WebAssembly 3.0 (the reference types, the typed function references, the
 GC types, the exceptions, the tail calls, memory64, the multiple memories, the SIMD and relaxed SIMD instructions) and
-the wide arithmetic, and the threads (the shared memories and the atomic instructions). Not implemented: JavaScript
-Promise Integration, the type reflection (`type()`): see the [WPT coverage of wasm](../../../docs/WebPlatform/10-WptCoverage/wasm.md).
+the wide arithmetic, and the threads (the shared memories and the atomic instructions). The type reflection
+(https://webassembly.github.io/js-types/js-api/) is implemented (`WebIdlRealm.WebAssembly.TypeReflection.cs`: the
+`type()` methods, the `minimum` member of the descriptors, `WebAssembly.Function`, whose prototype is the one of the
+exported functions). Not implemented: JavaScript Promise Integration: see the [WPT coverage of wasm](../../../docs/WebPlatform/10-WptCoverage/wasm.md).
 
 The runtime does not use the signal handlers of Wasmtime (the traps are explicit checks) and does not register native
 unwind information for the compiled code (`native_unwind_info` is disabled): on macOS, `__register_frame` and

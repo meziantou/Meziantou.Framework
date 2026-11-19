@@ -687,6 +687,32 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task TypeReflection_DescribesTheTypesOfTheObjects()
+    {
+        var bytes = Wasm("""(module (func (export "f") (param f32) (result i64) (i64.const 1)))""");
+        var result = await RunAsync($$"""
+            async () => {
+              const memory = new WebAssembly.Memory({ minimum: 1, maximum: 4 });
+              memory.grow(1);
+              const table = new WebAssembly.Table({ element: 'funcref', minimum: 2 });
+              const global = new WebAssembly.Global({ value: 'i64', mutable: true }, 1n);
+              const tag = new WebAssembly.Tag({ parameters: ['i32', 'externref'] });
+              const add = new WebAssembly.Function({ parameters: ['i32', 'i32'], results: ['i32'] }, (a, b) => a + b);
+              let error;
+              try { new WebAssembly.Memory({ initial: 1, minimum: 1 }); } catch (e) { error = e.name; }
+              table.set(0, add);
+              const { instance } = await WebAssembly.instantiate({{bytes}});
+              const f = instance.exports.f;
+              return [JSON.stringify(memory.type()), JSON.stringify(table.type()), JSON.stringify(global.type()), JSON.stringify(tag.type()),
+                JSON.stringify(add.type()), add(2, 3), add instanceof WebAssembly.Function, table.get(0) === add, error,
+                Object.getPrototypeOf(WebAssembly.Function) === Function, f instanceof WebAssembly.Function, JSON.stringify(f.type())].join('|');
+            }
+            """);
+
+        Assert.Equal("""{"maximum":4,"minimum":2,"shared":false}|{"element":"funcref","minimum":2}|{"mutable":true,"value":"i64"}|{"parameters":["i32","externref"]}|{"parameters":["i32","i32"],"results":["i32"]}|5|true|true|TypeError|true|true|{"parameters":["f32"],"results":["i64"]}""", result);
+    }
+
+    [Fact]
     public async Task Globals_ConvertTheirValues()
     {
         var bytes = Wasm("""

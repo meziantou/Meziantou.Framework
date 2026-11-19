@@ -972,76 +972,28 @@
     "total": 2
   },
   "wasm/jsapi/function/call.tentative.any.js": {
-    "total": 2,
-    "failures": {
-      "test calling function": "FAIL",
-      "test constructing function": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/function/call.tentative.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "test calling function": "FAIL",
-      "test constructing function": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/function/constructor.tentative.any.js": {
-    "total": 11,
-    "failures": {
-      "Calling": "FAIL",
-      "Too few arguments": "FAIL",
-      "construct with JS function": "FAIL",
-      "fail to construct with non-callable object": "FAIL",
-      "fail with missing parameters": "FAIL",
-      "fail with missing results": "FAIL",
-      "fail with non-existent parameter and result type": "FAIL",
-      "fail with non-function object": "FAIL",
-      "fail with non-string parameters & results": "FAIL",
-      "length": "FAIL",
-      "name": "FAIL"
-    }
+    "total": 11
   },
   "wasm/jsapi/function/constructor.tentative.any.js#dedicatedworker": {
-    "total": 11,
-    "failures": {
-      "Calling": "FAIL",
-      "Too few arguments": "FAIL",
-      "construct with JS function": "FAIL",
-      "fail to construct with non-callable object": "FAIL",
-      "fail with missing parameters": "FAIL",
-      "fail with missing results": "FAIL",
-      "fail with non-existent parameter and result type": "FAIL",
-      "fail with non-function object": "FAIL",
-      "fail with non-string parameters & results": "FAIL",
-      "length": "FAIL",
-      "name": "FAIL"
-    }
+    "total": 11
   },
   "wasm/jsapi/function/table.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "Test insertion into table": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/function/table.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Test insertion into table": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/function/type.tentative.any.js": {
-    "total": 2,
-    "failures": {
-      "Check all types": "FAIL",
-      "Check empty results and parameters": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/function/type.tentative.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Check all types": "FAIL",
-      "Check empty results and parameters": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/functions/entry-different-function-realm.html": {
     "total": 1
@@ -1083,40 +1035,10 @@
     "total": 2
   },
   "wasm/jsapi/global/type.tentative.any.js": {
-    "total": 13,
-    "failures": {
-      "externref, immutable": "FAIL",
-      "externref, mutable": "FAIL",
-      "f32, immutable": "FAIL",
-      "f32, mutable": "FAIL",
-      "f64, immutable": "FAIL",
-      "f64, mutable": "FAIL",
-      "funcref, immutable": "FAIL",
-      "funcref, mutable": "FAIL",
-      "i32, immutable": "FAIL",
-      "i32, mutable": "FAIL",
-      "i64, immutable": "FAIL",
-      "i64, mutable": "FAIL",
-      "key ordering": "FAIL"
-    }
+    "total": 13
   },
   "wasm/jsapi/global/type.tentative.any.js#dedicatedworker": {
-    "total": 13,
-    "failures": {
-      "externref, immutable": "FAIL",
-      "externref, mutable": "FAIL",
-      "f32, immutable": "FAIL",
-      "f32, mutable": "FAIL",
-      "f64, immutable": "FAIL",
-      "f64, mutable": "FAIL",
-      "funcref, immutable": "FAIL",
-      "funcref, mutable": "FAIL",
-      "i32, immutable": "FAIL",
-      "i32, mutable": "FAIL",
-      "i64, immutable": "FAIL",
-      "i64, mutable": "FAIL",
-      "key ordering": "FAIL"
-    }
+    "total": 13
   },
   "wasm/jsapi/global/value-get-set.any.js": {
     "total": 68
@@ -1281,20 +1203,10 @@
     "total": 3
   },
   "wasm/jsapi/memory/constructor-types.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor-types.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor.any.js": {
     "total": 24
@@ -1339,26 +1251,10 @@
     "total": 2
   },
   "wasm/jsapi/memory/type.tentative.any.js": {
-    "total": 6,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "None-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL",
-      "non-shared memory": "FAIL",
-      "shared memory": "FAIL"
-    }
+    "total": 6
   },
   "wasm/jsapi/memory/type.tentative.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "None-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL",
-      "non-shared memory": "FAIL",
-      "shared memory": "FAIL"
-    }
+    "total": 6
   },
   "wasm/jsapi/module/constructor.any.js": {
     "total": 10
@@ -1406,20 +1302,10 @@
     "total": 5
   },
   "wasm/jsapi/table/constructor-types.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/table/constructor-types.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/table/constructor.any.js": {
     "total": 32
@@ -1452,22 +1338,10 @@
     "total": 2
   },
   "wasm/jsapi/table/type.tentative.any.js": {
-    "total": 4,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "Non-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL"
-    }
+    "total": 4
   },
   "wasm/jsapi/table/type.tentative.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "Non-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL"
-    }
+    "total": 4
   },
   "wasm/jsapi/tag/constructor.tentative.any.js": {
     "total": 6
@@ -1482,20 +1356,10 @@
     "total": 2
   },
   "wasm/jsapi/tag/type.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "[]": "FAIL",
-      "[i32 i64 f32 f64]": "FAIL",
-      "[i32 i64]": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/tag/type.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "[]": "FAIL",
-      "[i32 i64 f32 f64]": "FAIL",
-      "[i32 i64]": "FAIL"
-    }
+    "total": 3
   },
   "wasm/proposals/wide-arithmetic/core/wide-arithmetic.wast.js.tentative.html": {
     "total": 123

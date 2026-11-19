@@ -217,6 +217,9 @@ public partial class MediaStreamTrack : EventTarget
 
     internal void RemoveStateChangedCallback(Action callback) => _stateChanged -= callback;
 
+    /// <summary>Whether a sink observes the state of the track.</summary>
+    internal bool HasStateChangedCallbacks => _stateChanged is not null;
+
     /// <summary>
     /// Returns the capabilities of the source of the track: the values or the ranges of values of its constrainable
     /// properties (https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-getcapabilities).

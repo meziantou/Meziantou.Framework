@@ -3738,6 +3738,19 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void MediaStreamPlayer_StopsObservingTheRemovedTracks()
+    {
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        var stream = GetUserMedia(document, new MediaStreamConstraints { Video = true });
+        var track = stream.GetVideoTracks()[0];
+        using var player = new MediaStreamPlayer(stream, TimeProvider.System, isVideoElement: true);
+        Assert.True(track.HasStateChangedCallbacks);
+
+        stream.RemoveTrack(track);
+        Assert.False(track.HasStateChangedCallbacks);
+    }
+
+    [Fact]
     public void GetUserMedia_KeepsTheStateTheSourceHasWhenItStarts()
     {
         var muted = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { MutedOnStart = true }, Permissions = GrantedPermissions("microphone") });

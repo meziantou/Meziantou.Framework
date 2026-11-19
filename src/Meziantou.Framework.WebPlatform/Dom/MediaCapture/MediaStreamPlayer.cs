@@ -84,8 +84,19 @@ internal sealed class MediaStreamPlayer : MediaPlayer
         OnStateChanged();
     }
 
+    /// <summary>Observes the tracks of the stream, and no longer the ones that were removed from it (so that they can be collected).</summary>
     private void ObserveTracks()
     {
+        for (var i = _observedTracks.Count - 1; i >= 0; i--)
+        {
+            var observed = _observedTracks[i];
+            if (!_stream.Tracks.Contains(observed))
+            {
+                observed.RemoveStateChangedCallback(OnStateChanged);
+                _observedTracks.RemoveAt(i);
+            }
+        }
+
         foreach (var track in _stream.Tracks)
         {
             if (!_observedTracks.Contains(track))

@@ -313,6 +313,9 @@
     [release actions](https://w3c.github.io/webdriver/#release-actions) of WebDriver: the keys and the buttons of the
     pointers that the previous action sequences left pressed are released (e.g. a sequence that ends with a `pointerDown`
     is followed by a `pointerup` event when the next sequence starts).
+  - The actions of a sequence target the browsing context of its context (`setContext()`), not its window: an action
+    performed after a navigation of the browsing context (e.g. `location.reload()` during a drag) is dispatched to the
+    window of its new document.
   - The click count is counted within an action sequence: the presses of the same button at the same position and on the
     same element are a multiple click (the `detail` of `mousedown`, `mouseup`, `click` and `auxclick`), unless more than
     500 ms separate them.

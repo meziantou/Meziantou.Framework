@@ -853,8 +853,11 @@ internal sealed class WptActionSequence(Window context, bool releaseActions = fa
 {
     private readonly List<(List<Action> Actions, double Duration)> _ticks = [];
 
-    /// <summary>The window of the browsing context of the actions.</summary>
-    public Window Context { get; } = context;
+    /// <summary>The browsing context of the actions (https://w3c.github.io/webdriver/#dfn-current-browsing-context), not its window: a navigation (e.g. <c>location.reload()</c>) does not end the actions.</summary>
+    private readonly BrowsingContext? _browsingContext = context.BrowsingContext;
+
+    /// <summary>The window of the active document of the browsing context of the actions, when the action is performed.</summary>
+    public Window Context => _browsingContext is { IsDestroyed: false, Document.DefaultView: Window window } ? window : context;
 
     /// <summary>The time between the steps of a pointer move that has a duration (a frame).</summary>
     private const double MoveStepDuration = 16;

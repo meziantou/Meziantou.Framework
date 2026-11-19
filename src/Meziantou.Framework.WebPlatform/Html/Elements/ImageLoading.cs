@@ -797,20 +797,29 @@ public partial class HtmlImageElement
 
         // The fetch is in the fetch group of the document: aborting the document (window.stop(), document.open() during a
         // navigation) cancels it (https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document), and the
-        // image is not loaded (as in Firefox, no event is fired)
+        // image is not loaded (as in Firefox, no event is fired). The download stops.
+#pragma warning disable CA2000 // The controller is disposed with the response of the fetch
+        var controller = new CancellationTokenSource();
+#pragma warning restore CA2000
         var fetchGroupRecord = document.FetchGroup.Add(() =>
         {
             if (!request.Aborted)
             {
                 AbortRequest(request);
+                controller.Cancel();
                 SetDelayingTheLoadEvent(false);
             }
         });
-        Fetching.Fetch(fetchRequest, ProcessFetchResponse, task => QueueImageTask(document, task));
+        Fetching.Fetch(fetchRequest, ProcessFetchResponse, task => QueueImageTask(document, task), controller.Token);
 
         void ProcessFetchResponse(FetchResponse response)
         {
             fetchGroupRecord.Dispose();
+            var aborted = controller.IsCancellationRequested;
+            controller.Dispose();
+            if (aborted)
+                return;
+
             if (fetchRequest.IsSentToLoader)
             {
                 timing?.Report(response);

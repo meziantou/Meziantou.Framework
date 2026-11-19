@@ -272,6 +272,7 @@ internal static class IntrinsicSizing
         var paddingAndBorder = writingDirection.ToLogical(FormattingContext.ResolvePadding(boxModel, 0).Add(boxModel.BorderWidth));
         var gutters = GetScrollbarGutters(context, box, writingDirection);
         var marginSum = horizontal ? margin.HorizontalSum() : margin.VerticalSum();
+        var blockMarginSum = horizontal ? margin.VerticalSum() : margin.HorizontalSum();
 
         // The block size of the box when it is definite: the percentages of its children resolve against it, and its aspect ratio transfers it
         var blockSizing = new AxisSizing(context, box)
@@ -281,7 +282,8 @@ internal static class IntrinsicSizing
             PercentageBasis = containingBlockBlockSize,
             PaddingAndBorder = paddingAndBorder.BlockSum(),
             Edges = paddingAndBorder.BlockSum() + gutters.BlockSum(),
-            StretchSize = containingBlockBlockSize is { } basis ? Math.Max(basis - (horizontal ? margin.VerticalSum() : margin.HorizontalSum()), paddingAndBorder.BlockSum()) : null,
+            StretchSize = containingBlockBlockSize is { } basis ? Math.Max(basis - blockMarginSum, paddingAndBorder.BlockSum()) : null,
+            Margins = blockMarginSum,
         };
 
         // https://quirks.spec.whatwg.org/#the-percentage-height-calculation-quirk: a percentage height resolves against the
@@ -443,6 +445,7 @@ internal static class IntrinsicSizing
                 PercentageBasis = containingBlockBlockSize,
                 PaddingAndBorder = blockPaddingAndBorder,
                 Edges = blockPaddingAndBorder,
+                Margins = blockMargins,
             };
 
             space = space with { FixedBlockSize = blockSizing.Clamp(Math.Max(stretchBasis - blockMargins, blockPaddingAndBorder)) };

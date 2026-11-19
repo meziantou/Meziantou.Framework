@@ -212,6 +212,19 @@ public sealed class IntrinsicSizingTests : IDisposable
         Assert.Equal(20, GetSize(document, "t").Height);
     }
 
+    [Theory]
+    [InlineData("width: max-content")]
+    [InlineData("float: left")]
+    [InlineData("display: inline-grid")]
+    [InlineData("display: inline-grid; grid-template-rows: 200px")]
+    public void BlockSizeStretchFunction_TransferredThroughAspectRatio(string containerStyle)
+    {
+        // The block size given by stretch() excludes the block margins before it is transferred to the inline axis through the
+        // aspect ratio of the child: stretch(100px) with a 50px margin is a 50px block size, so a 50px inline contribution
+        var document = Parse($"<div id=t style='{containerStyle}'><div style='height: stretch(100px); margin-bottom: 50px; aspect-ratio: 1'></div></div>");
+        Assert.Equal(50, GetSize(document, "t").Width);
+    }
+
     [Fact]
     public void BlockSizeStretchFunction_PercentageChildren()
     {

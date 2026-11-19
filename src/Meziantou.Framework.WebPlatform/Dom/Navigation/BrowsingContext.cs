@@ -3570,6 +3570,10 @@ public sealed partial class BrowsingContext : IDisposable
             ReleaseDeviceLocks(document);
             ModelContext.RunUnloadingDocumentCleanupSteps(document);
             PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
+
+            // The prompts of the user agent that the document shows are closed, including when it enters the back/forward
+            // cache: a pending request cannot be answered after the document is restored
+            document.ClosePrompts();
             if (persisted)
                 return;
 

@@ -144,6 +144,8 @@ internal sealed class IdentityCredentialRequest
             abortToken.Register(request._cancellation.Cancel);
         }
 
+        // The request is aborted when the document is no longer fully active (destroyed, or in the back/forward cache)
+        window.Document.AddPromptCloser(request.OnDocumentClosed);
         _ = request._result.Task.ContinueWith(_ => request.OnSettled(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         _ = request.RunAsync();
         return request._result.Task;
@@ -156,8 +158,11 @@ internal sealed class IdentityCredentialRequest
         _cancellation.Cancel();
     }
 
+    private void OnDocumentClosed() => Fail(new DomException("The document is no longer fully active", "AbortError"));
+
     private void OnSettled()
     {
+        Window.Document.RemovePromptCloser(OnDocumentClosed);
         if (PendingRequests.TryGetValue(_top, out var pending) && ReferenceEquals(pending, this))
         {
             PendingRequests.Remove(_top);

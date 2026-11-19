@@ -1735,6 +1735,22 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal(DigitalCredentialRequestKind.Issuance, wallet.LastPrompt!.Kind);
     }
 
+    [Fact]
+    public async Task Credentials_Get_DocumentDestroyedAfterTheAnswer()
+    {
+        // The backend answers, then the document is destroyed before the answer is given to the page
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Run(document, "frame.contentWindow.navigator.credentials.get({ password: true })");
+
+        await Task.Run(() => backend.Answer.SetResult(null));
+        await Task.Delay(50);
+        Run(document, "frame.remove()");
+
+        // The answer was not given to the page yet: the prompt is closed
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+    }
+
     private sealed class PendingCredentialChooser : UserAgentUIBackend
     {
         public TaskCompletionSource<Credential?> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -2394,6 +2410,27 @@ public sealed class HostDeviceApisTests : IDisposable
     {
         var assertion = IdentityProviderResponses.ParseAssertion(Encoding.UTF8.GetBytes(json));
         Assert.Equal(expected, assertion is null ? null : assertion.TokenJson + "|" + assertion.ContinueOn + "|" + (assertion.Error is { } error ? error.Error + "," + error.Url : ""));
+    }
+
+    [Fact]
+    public void IdentityCredential_DestroyedDocument_ReleasesThePendingRequest()
+    {
+        // The request of a removed iframe is aborted: its account chooser is closed, and the page can make a new request
+        var loader = new IdentityProviderLoader();
+        var backend = new PendingAccountChooser();
+        var document = Load("<script>" + FedCmScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Run(document, "frame.contentWindow.navigator.credentials.get(frame.contentWindow.Object.assign({}, options()))");
+        var frameToken = backend.CancellationToken;
+        Assert.True(frameToken.CanBeCanceled);
+        Assert.False(frameToken.IsCancellationRequested);
+
+        Run(document, "frame.remove()");
+        Assert.True(frameToken.IsCancellationRequested);
+
+        Run(document, "go(navigator.credentials.get(options()))");
+        Assert.NotEqual(frameToken, backend.CancellationToken);
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
     }
 
     [Theory]

@@ -56,91 +56,189 @@ internal static class UserAgentUI
     /// <summary>
     /// Shows a prompt with the backend of the window, then calls <paramref name="complete"/> from a task of the event loop of
     /// the window with the answer of the user: <paramref name="dismissed"/> when there is no backend, the backend throws, or the
-    /// prompt is canceled. While the prompt is shown, the event loop is not idle (until the backend answers, or
+    /// prompt is canceled. The prompt belongs to the document of the window: when the document is no longer fully active (it is
+    /// destroyed, or it enters the back/forward cache), the token given to the backend is canceled and
+    /// <paramref name="complete"/> is called at once with <paramref name="dismissed"/>. While the prompt is shown, the event
+    /// loop is not idle (until the backend answers, the document is no longer fully active, or
     /// <paramref name="cancellationToken"/> is canceled: the caller settles its promise itself, and the late answer is ignored).
     /// </summary>
     internal static void Show<T>(Window window, Func<UserAgentUIBackend, CancellationToken, ValueTask<T>> prompt, T dismissed, Action<T> complete, CancellationToken cancellationToken = default)
     {
+        var session = new PromptSession<T>(window, dismissed, complete, cancellationToken);
         if (window.Options.UserAgentUI is not { } backend)
         {
-            window.QueueGlobalTask(() => complete(dismissed));
+            session.ReleaseSource();
+            window.QueueGlobalTask(() => session.Settle(dismissed));
             return;
         }
 
         ValueTask<T> result;
         try
         {
-            result = prompt(backend, cancellationToken);
+            result = prompt(backend, session.Token);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            window.QueueGlobalTask(() => complete(dismissed));
+            session.ReleaseSource();
+            window.QueueGlobalTask(() => session.Settle(dismissed));
             return;
         }
 
         if (result.IsCompleted)
         {
             var answer = GetAnswer(result.AsTask(), dismissed);
-            window.QueueGlobalTask(() => complete(answer));
+            session.ReleaseSource();
+            window.QueueGlobalTask(() => session.Settle(answer));
             return;
         }
 
-        var eventLoop = window.EventLoop;
-        eventLoop.BeginOperation();
-        var ended = 0;
-        void End()
-        {
-            if (Interlocked.Exchange(ref ended, 1) == 0)
-            {
-                eventLoop.EndOperation();
-            }
-        }
-
-        var registration = cancellationToken.CanBeCanceled ? cancellationToken.Register(End) : default;
-        _ = result.AsTask().ContinueWith(
-            completed =>
-            {
-                registration.Dispose();
-                if (Volatile.Read(ref ended) == 0)
-                {
-                    var answer = GetAnswer(completed, dismissed);
-                    window.QueueGlobalTask(() =>
-                    {
-                        if (!cancellationToken.IsCancellationRequested)
-                        {
-                            complete(answer);
-                        }
-                    });
-                }
-
-                End();
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+        session.Track(result.AsTask());
     }
 
     private static T GetAnswer<T>(Task<T> task, T dismissed) => task.IsCompletedSuccessfully ? task.Result : dismissed;
+
+    /// <summary>A prompt shown by a document: it is closed when the caller cancels it, or when the document is no longer fully active.</summary>
+    private sealed class PromptSession<T>
+    {
+        private readonly Window _window;
+        private readonly Document _document;
+        private readonly T _dismissed;
+        private readonly Action<T> _complete;
+        private readonly CancellationToken _callerToken;
+        private readonly CancellationTokenSource _source;
+        private readonly CancellationTokenRegistration _callerRegistration;
+        private DomEventLoop? _eventLoop;
+        private int _settled;
+        private int _released;
+
+        // The source is disposed once the backend no longer uses its token and the prompt is released (2 references)
+        private int _sourceReferences = 2;
+
+        public PromptSession(Window window, T dismissed, Action<T> complete, CancellationToken cancellationToken)
+        {
+            _window = window;
+            _document = window.Document;
+            _dismissed = dismissed;
+            _complete = complete;
+            _callerToken = cancellationToken;
+            _source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _document.AddPromptCloser(OnDocumentClosed);
+
+            // The caller settles its promise itself when it cancels the prompt (e.g. the request is aborted)
+            _callerRegistration = cancellationToken.CanBeCanceled ? cancellationToken.Register(Release) : default;
+        }
+
+        /// <summary>Gets the token given to the backend: canceled by the caller, or when the document is no longer fully active.</summary>
+        public CancellationToken Token => _source.Token;
+
+        /// <summary>Waits for the answer of the backend: the event loop is not idle meanwhile.</summary>
+        public void Track(Task<T> answer)
+        {
+            _eventLoop = _window.EventLoop;
+            _eventLoop.BeginOperation();
+            _ = answer.ContinueWith(
+                completed =>
+                {
+                    if (Volatile.Read(ref _released) == 0)
+                    {
+                        var value = GetAnswer(completed, _dismissed);
+                        _window.QueueGlobalTask(() => Settle(value));
+                    }
+
+                    // The backend no longer uses the token
+                    ReleaseSource();
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        /// <summary>Calls the completion of the caller with the answer, once, unless the caller canceled the prompt.</summary>
+        public void Settle(T answer)
+        {
+            if (Interlocked.Exchange(ref _settled, 1) != 0)
+                return;
+
+            Release();
+            if (!_callerToken.IsCancellationRequested)
+            {
+                _complete(answer);
+            }
+        }
+
+        /// <summary>The document is destroyed or enters the back/forward cache: the prompt is closed and dismissed.</summary>
+        private void OnDocumentClosed()
+        {
+            if (Volatile.Read(ref _settled) != 0 || Volatile.Read(ref _released) != 0)
+                return;
+
+            _source.Cancel();
+            Settle(_dismissed);
+        }
+
+        /// <summary>The prompt no longer belongs to the document, and no longer keeps the event loop busy.</summary>
+        private void Release()
+        {
+            if (Interlocked.Exchange(ref _released, 1) != 0)
+                return;
+
+            _callerRegistration.Dispose();
+            _document.RemovePromptCloser(OnDocumentClosed);
+            _eventLoop?.EndOperation();
+            ReleaseSource();
+        }
+
+        /// <summary>Releases a reference to the source of the token: the backend is done with it, or the prompt is released.</summary>
+        public void ReleaseSource()
+        {
+            if (Interlocked.Decrement(ref _sourceReferences) == 0)
+            {
+                _source.Dispose();
+            }
+        }
+    }
 }
 
 // The prompts of the user agent shown by a document
 public partial class Document
 {
+    private readonly Lock _promptClosersLock = new();
     private List<Action>? _promptClosers;
 
-    /// <summary>Registers the steps that close a prompt of the user agent when the document is destroyed (it is no longer fully active).</summary>
-    internal void AddPromptCloser(Action close) => (_promptClosers ??= []).Add(close);
+    /// <summary>
+    /// Registers the steps that close a prompt of the user agent (or a request that shows prompts) when the document is no
+    /// longer fully active: it is destroyed, or it enters the back/forward cache.
+    /// </summary>
+    internal void AddPromptCloser(Action close)
+    {
+        lock (_promptClosersLock)
+        {
+            (_promptClosers ??= []).Add(close);
+        }
+    }
 
-    /// <summary>Unregisters the steps of <see cref="AddPromptCloser"/>, once the prompt is closed.</summary>
-    internal void RemovePromptCloser(Action close) => _promptClosers?.Remove(close);
+    /// <summary>Unregisters the steps of <see cref="AddPromptCloser"/>, once the prompt is closed. Can be called from any thread.</summary>
+    internal void RemovePromptCloser(Action close)
+    {
+        lock (_promptClosersLock)
+        {
+            _promptClosers?.Remove(close);
+        }
+    }
 
-    /// <summary>Closes the prompts of the user agent shown by the document, when it is destroyed.</summary>
+    /// <summary>Closes the prompts of the user agent shown by the document, when it is no longer fully active.</summary>
     internal void ClosePrompts()
     {
-        if (_promptClosers is not { Count: > 0 } closers)
+        List<Action>? closers;
+        lock (_promptClosersLock)
+        {
+            closers = _promptClosers;
+            _promptClosers = null;
+        }
+
+        if (closers is null)
             return;
 
-        _promptClosers = null;
         foreach (var close in closers)
         {
             close();

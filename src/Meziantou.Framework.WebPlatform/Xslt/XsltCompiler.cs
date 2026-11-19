@@ -522,7 +522,7 @@ internal sealed class XsltCompiler
                 break;
         }
 
-        var body = CompileSequence(element, scope with { Variables = variables }, child);
+        var body = CompileSequence(scope with { Variables = variables }, child);
         return ([.. parameters], body);
     }
 
@@ -689,8 +689,14 @@ internal sealed class XsltCompiler
     // Templates: instructions and literal result elements
     // ---------------------------------------------------------------------------------------------------------------
 
-    /// <summary>Compiles the children of an element (starting at <paramref name="first"/>) as a sequence of instructions.</summary>
-    private XsltInstruction[] CompileSequence(Element parent, Scope scope, Node? first = null)
+    /// <summary>Compiles the children of an element as a sequence of instructions.</summary>
+    private XsltInstruction[] CompileSequence(Element parent, Scope scope) => CompileSequence(scope, parent.FirstChild);
+
+    /// <summary>
+    /// Compiles the children of an element from <paramref name="first"/> to the last one as a sequence of instructions: null
+    /// is the end of the children (e.g. a template whose children are all <c>xsl:param</c> elements), an empty sequence.
+    /// </summary>
+    private XsltInstruction[] CompileSequence(Scope scope, Node? first)
     {
         if (++_nestingDepth > MaxNestingDepth || !RuntimeHelpers.TryEnsureSufficientExecutionStack())
             throw new XsltException("The stylesheet is too deeply nested");
@@ -699,7 +705,7 @@ internal sealed class XsltCompiler
         {
             var instructions = new List<XsltInstruction>();
             var variables = scope.Variables;
-            for (var child = first ?? parent.FirstChild; child is not null; child = child.NextSibling)
+            for (var child = first; child is not null; child = child.NextSibling)
             {
                 switch (child)
                 {
@@ -894,7 +900,7 @@ internal sealed class XsltCompiler
                     sorts.Add(CompileSort(sortElement, Enter(scope, sortElement)));
                 }
 
-                return new XsltForEach(CompileExpression(RequiredAttribute(element, "select"), scope), [.. sorts], CompileSequence(element, scope, child));
+                return new XsltForEach(CompileExpression(RequiredAttribute(element, "select"), scope), [.. sorts], CompileSequence(scope, child));
             }
 
             case "value-of":

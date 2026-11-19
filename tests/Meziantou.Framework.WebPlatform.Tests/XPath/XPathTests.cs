@@ -1192,6 +1192,19 @@ public sealed class XPathTests
     }
 
     [Fact]
+    public void Xslt_TemplateAndForEach_WithOnlyParametersOrSorts()
+    {
+        // A template whose children are all xsl:param elements, and a for-each whose children are all xsl:sort elements, have
+        // an empty body
+        const string Templates = """
+            <xsl:template match="/">[<xsl:apply-templates select="root/item"/>][<xsl:for-each select="root/item"> <xsl:sort select="."/> </xsl:for-each>][<xsl:apply-templates select="root/item" mode="content"/>]</xsl:template>
+            <xsl:template match="item"> <xsl:param name="p"/> <xsl:param name="q" select="1"/> </xsl:template>
+            <xsl:template match="item" mode="content"><xsl:param name="p" select="'-'"/><xsl:for-each select="."><xsl:sort select="."/><xsl:value-of select="concat(., $p)"/></xsl:for-each></xsl:template>
+            """;
+        Assert.Equal("[][][b-a-]", TransformToText(Templates, "<root><item>b</item><item>a</item></root>"));
+    }
+
+    [Fact]
     public void Xslt_InfiniteRecursion_IsAnError()
     {
         var processor = CreateProcessor(Stylesheet("""<xsl:template match="/"><xsl:apply-templates select="."/></xsl:template>"""));

@@ -1188,6 +1188,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (Agent.Wrappers.TryGetValue(target, out var wrapper))
             return wrapper;
 
+        return CreateWrapper(target, prototype);
+    }
+
+    // Not in GetWrapper: the lambdas capture the new wrapper, and their closure would be allocated by each call of GetWrapper
+    private TValue CreateWrapper(object target, TValue? prototype)
+    {
         // A node is created in the realm of its node document when it is created, which it keeps when it is adopted
         if (prototype is null && target is Node node && node.CreationRealmWindow is { } nodeWindow && !ReferenceEquals(nodeWindow, Window))
             return Agent.GetRealm(nodeWindow).GetWrapper(target);
@@ -1203,7 +1209,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         var binding = WebIdlBindings<TAdapter, TValue>.GetInterface(target.GetType()) ?? throw new InvalidOperationException($"The type '{target.GetType()}' is not an IDL interface");
         prototype ??= EnsureInterfaceObject(binding).Prototype;
-        wrapper = target switch
+        var wrapper = target switch
         {
             HtmlAllCollection all => CreateHtmlAllCollectionObject(all, prototype, GetLegacyPlatformObjectHandler(binding)!),
             Location location => CreateLocationObject(prototype, location),

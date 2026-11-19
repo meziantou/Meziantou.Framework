@@ -37,4 +37,10 @@ internal enum ObjectFlags
 
     /// <summary>HostEnsureCanAddPrivateElement(O) throws a TypeError for the object (e.g. a WindowProxy or a Location object of a browser).</summary>
     RejectsPrivateElements = 1 << 10,
+
+    /// <summary>
+    /// With <see cref="Exotic"/>: the internal methods are only exotic for the keys that are array indices (a host object
+    /// whose other properties are ordinary, e.g. a legacy platform object without named properties).
+    /// </summary>
+    OrdinaryNonIndexProperties = 1 << 11,
 }

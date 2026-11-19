@@ -345,6 +345,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool HasCallInternalMethod { get => throw null; set { } }
         public bool HasErrorData { get => throw null; }
         public bool HasImmutablePrototype { get => throw null; set { } }
+        public bool HasOrdinaryNonIndexProperties { get => throw null; protected init { } }
         public bool IsHtmlDdaObject { get => throw null; set { } }
         public string? ModuleSourceClassName { get => throw null; set { } }
         public bool RejectsPrivateElements { get => throw null; set { } }

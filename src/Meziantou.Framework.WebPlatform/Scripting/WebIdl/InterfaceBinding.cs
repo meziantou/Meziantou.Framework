@@ -129,8 +129,23 @@ internal sealed class InterfaceBinding<TAdapter, TValue>
     /// <summary>The indexed and named properties (https://webidl.spec.whatwg.org/#es-legacy-platform-objects), or null.</summary>
     public LegacyPlatformObjectBinding<TAdapter, TValue>? LegacyPlatformObject { get; init; }
 
+    // The last type of an instance (e.g. StaticNodeList for NodeList): the attributes and operations check the this value of
+    // each call, and a test of the exact type costs less than Type.IsInstanceOfType. The realms of several threads can set it.
+    private Type? _lastInstanceType;
+
     /// <summary>Whether the object is an instance of the interface (the .NET type or a derived type).</summary>
-    public bool IsInstance(object target) => ClrType.IsInstanceOfType(target);
+    public bool IsInstance(object target)
+    {
+        var type = target.GetType();
+        if (ReferenceEquals(type, _lastInstanceType))
+            return true;
+
+        if (!ClrType.IsAssignableFrom(type))
+            return false;
+
+        _lastInstanceType = type;
+        return true;
+    }
 
     public bool IsA(string name)
     {

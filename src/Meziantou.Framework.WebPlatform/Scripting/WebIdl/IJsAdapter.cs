@@ -810,8 +810,30 @@ public enum JsPropertyFlags
 public interface IJsHostObjectHandler<TValue>
     where TValue : class
 {
+    /// <summary>
+    /// Gets whether the internal methods are only exotic for the keys that are array indices (the object supports no named
+    /// properties): the adapter may then perform the ordinary internal methods for the other keys without calling the handler.
+    /// </summary>
+    bool HasOrdinaryNonIndexProperties => false;
+
     /// <summary>[[GetOwnProperty]].</summary>
     bool TryGetOwnProperty(TValue obj, TValue key, out JsPropertyDescriptor<TValue> descriptor);
+
+    /// <summary>
+    /// [[GetOwnProperty]] of a key that is an array index, when the object has an indexed property at <paramref name="index"/>;
+    /// otherwise false, and the adapter calls <see cref="TryGetOwnProperty"/> with the key (it avoids converting the index to a string).
+    /// </summary>
+    bool TryGetIndexedProperty(TValue obj, uint index, out JsPropertyDescriptor<TValue> descriptor)
+    {
+        descriptor = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Whether the object has an indexed property at <paramref name="index"/> (without getting its value); false when it has
+    /// not, and the adapter then calls <see cref="TryGetOwnProperty"/> with the key.
+    /// </summary>
+    bool HasIndexedProperty(TValue obj, uint index) => TryGetIndexedProperty(obj, index, out _);
 
     /// <summary>[[DefineOwnProperty]]. Sets <paramref name="result"/> to the result of the operation.</summary>
     bool TryDefineOwnProperty(TValue obj, TValue key, in JsPropertyDescriptor<TValue> descriptor, out bool result);

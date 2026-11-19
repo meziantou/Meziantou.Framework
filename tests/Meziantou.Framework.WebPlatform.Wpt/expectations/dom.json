@@ -1437,6 +1437,24 @@
   "dom/nodes/NodeList-live-mutations.window.js": {
     "total": 4
   },
+  "dom/nodes/NodeList-static-length-getter-tampered-1.html": {
+    "total": 1
+  },
+  "dom/nodes/NodeList-static-length-getter-tampered-2.html": {
+    "total": 1
+  },
+  "dom/nodes/NodeList-static-length-getter-tampered-3.html": {
+    "total": 1
+  },
+  "dom/nodes/NodeList-static-length-getter-tampered-indexOf-1.html": {
+    "total": 1
+  },
+  "dom/nodes/NodeList-static-length-getter-tampered-indexOf-2.html": {
+    "total": 1
+  },
+  "dom/nodes/NodeList-static-length-getter-tampered-indexOf-3.html": {
+    "total": 1
+  },
   "dom/nodes/NonDocumentTypeChildNode-sibling-element.html": {
     "total": 6
   },

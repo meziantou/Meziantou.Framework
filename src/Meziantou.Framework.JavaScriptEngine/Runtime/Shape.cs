@@ -34,7 +34,7 @@ internal sealed class Shape : PropertyMap
     /// <summary>The shape of the arrays without named properties (other than length).</summary>
     public static readonly Shape EmptyArray = new(ShapeKind.Array);
 
-    /// <summary>The shape of the objects whose array indices are exotic (String objects, arguments objects) without named properties.</summary>
+    /// <summary>The shape of the objects whose array indices are exotic (String objects, arguments objects, the host objects of <see cref="JsHostObject.HasOrdinaryNonIndexProperties"/>) without named properties.</summary>
     public static readonly Shape EmptyIndexedExotic = new(ShapeKind.IndexedExotic);
 
     // The keys and attributes of the properties in insertion order. A child shape shares the table of its parent when it is

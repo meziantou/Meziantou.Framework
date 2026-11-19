@@ -52,6 +52,15 @@ public partial class JsObject : JsCell
 
     internal bool IsExotic => (Flags & ObjectFlags.Exotic) != 0;
 
+    /// <summary>Gets whether the internal methods of the object are exotic for a key (<see cref="ObjectFlags.OrdinaryNonIndexProperties"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal bool IsExoticFor(in PropertyKey key) => (Flags & (ObjectFlags.Exotic | ObjectFlags.OrdinaryNonIndexProperties)) switch
+    {
+        ObjectFlags.None => false,
+        ObjectFlags.Exotic => true,
+        _ => key.IsArrayIndex,
+    };
+
     /// <summary>Gets whether the object has a [[Call]] internal method.</summary>
     public bool IsCallable => (Flags & ObjectFlags.Callable) != 0;
 
@@ -515,6 +524,7 @@ public partial class JsObject : JsCell
         {
             JsArray => Shape.EmptyArray,
             JsStringObject or Interpreter.JsArgumentsObject => Shape.EmptyIndexedExotic,
+            _ when (Flags & ObjectFlags.OrdinaryNonIndexProperties) != 0 => Shape.EmptyIndexedExotic,
             _ => null,
         };
     }
@@ -615,7 +625,7 @@ public partial class JsObject : JsCell
         var obj = this;
         while (true)
         {
-            if (obj.IsExotic)
+            if (obj.IsExoticFor(key))
                 return obj.HasPropertyExoticStep(key);
 
             if (obj.TryGetOwnSlot(key, out _, out _))
@@ -625,7 +635,7 @@ public partial class JsObject : JsCell
             if (parent is null)
                 return false;
 
-            if (parent.IsExotic)
+            if (parent.IsExoticFor(key))
                 return parent.HasProperty(key);
 
             obj = parent;
@@ -646,13 +656,13 @@ public partial class JsObject : JsCell
         var obj = this;
         while (true)
         {
-            if (obj.IsExotic && !ReferenceEquals(obj, this))
+            if (obj.IsExoticFor(key) && !ReferenceEquals(obj, this))
                 return obj.Get(key, receiver);
 
             JsValue value;
             PropertyFlags flags;
             bool found;
-            if (obj.IsExotic)
+            if (obj.IsExoticFor(key))
             {
                 found = obj.GetOwnProperty(key, out var descriptor);
                 if (found)
@@ -689,7 +699,7 @@ public partial class JsObject : JsCell
     internal bool OrdinarySet(in PropertyKey key, JsValue value, JsValue receiver)
     {
         // Fast path: an own writable data property of an ordinary receiver
-        if (!IsExotic && receiver.Cell == this && TryGetOwnSlot(key, out _, out var ownFlags) && (ownFlags & (PropertyFlags.Accessor | PropertyFlags.Writable)) == PropertyFlags.Writable)
+        if (!IsExoticFor(key) && receiver.Cell == this && TryGetOwnSlot(key, out _, out var ownFlags) && (ownFlags & (PropertyFlags.Accessor | PropertyFlags.Writable)) == PropertyFlags.Writable)
         {
             SetOwnSlot(key, value, ownFlags);
             return true;

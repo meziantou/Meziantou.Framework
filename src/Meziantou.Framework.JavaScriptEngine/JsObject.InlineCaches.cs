@@ -31,13 +31,13 @@ public partial class JsObject
 
         if (IsExotic)
         {
-            // Only the arrays (except length), the String objects and the arguments objects (except the indices) have
-            // ordinary named properties
+            // Only the arrays (except length), the String objects, the arguments objects and the host objects that are only
+            // exotic for the indices have ordinary named properties
             var ordinary = this switch
             {
                 JsArray => !key.Equals(LengthKeyForCache),
                 JsStringObject or Interpreter.JsArgumentsObject => true,
-                _ => false,
+                _ => (Flags & ObjectFlags.OrdinaryNonIndexProperties) != 0,
             };
 
             if (!ordinary)

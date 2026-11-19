@@ -668,6 +668,30 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void Bindings_LegacyPlatformObjects_IndexedAndNamedProperties()
+    {
+        var document = Load("""
+            <span id=a></span><span id=b></span>
+            <script>
+              const list = document.querySelectorAll('span');
+              const read = o => { let s = ''; for (let i = 0; i < o.length; i++) s += o[i].id; return s; };
+              const results = [];
+              for (let i = 0; i < 3; i++) results.push(read(list));
+              results.push(1 in list, 2 in list, list[2], Reflect.defineProperty(list, 0, { value: 1 }), Object.keys(list).join(' '));
+              Object.setPrototypeOf(list, { get length() { return 0; } });
+              results.push(read(list));
+              Object.defineProperty(list, 'length', { get() { return 1; } });
+              results.push(read(list));
+              const collection = document.getElementsByTagName('span');
+              results.push(collection.b.id, 'a' in collection, collection.length, read(collection));
+              document.title = results.join();
+            </script>
+            """);
+        Assert.Equal("ab,ab,ab,true,false,,false,0 1,,a,b,true,2,ab", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Hyperlink_JavaScriptUrl_RunsTheScript()
     {
         var document = Load("""

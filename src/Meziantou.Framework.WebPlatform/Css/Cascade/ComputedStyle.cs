@@ -1717,7 +1717,8 @@ internal sealed partial class ComputedStyle
         {
             foreach (var name in style._cascaded.Keys)
             {
-                if (CssPropertyRegistry.IsCustomProperty(name))
+                // The private properties are not exposed (https://drafts.csswg.org/css-mixins-1/#private)
+                if (CssPropertyRegistry.IsCustomProperty(name) && !CssPrivateScope.IsHiddenName(name))
                 {
                     names.Add(name);
                 }

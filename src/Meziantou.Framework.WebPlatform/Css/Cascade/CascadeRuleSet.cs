@@ -116,7 +116,7 @@ internal sealed class CascadeRule
     /// </summary>
     public Node? TreeScope { get; init; }
 
-    /// <summary>The application of the mixin whose @result rule contains the rule, or null: the values of its declarations are substituted in the frame of the application.</summary>
+    /// <summary>The application of the mixin whose body contains the rule, or null: the values of its declarations are substituted in the frame of the application.</summary>
     public CssMixinApplication? Mixin { get; init; }
 
     /// <summary>The namespace prefixes declared by the @namespace rules of the style sheet of the rule, or null.</summary>

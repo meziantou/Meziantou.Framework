@@ -760,11 +760,6 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public override ushort Type { get => throw null; }
     }
 
-    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0004", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
-    public sealed class CssMixinResultRule : Meziantou.Framework.WebPlatform.Css.Om.CssGroupingRule
-    {
-    }
-
     public sealed class CssMixinRule : Meziantou.Framework.WebPlatform.Css.Om.CssGroupingRule
     {
         public bool Contents { get => throw null; }

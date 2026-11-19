@@ -65,10 +65,9 @@ patching of the content (`HtmlTemplateElement.HtmlFor`) is standard.
 
 <a id="WEBPLATEXP0004"></a>
 
-## WEBPLATEXP0004: CSS Mixins @result and @private rules
+## WEBPLATEXP0004: CSS Mixins @private rule
 
-`CssMixinResultRule`, the `@result` rule that the browsers and the web-platform-tests use in the body of the mixins (the
-specification no longer defines it), and `CssPrivateRule`, the `@private` rule
+`CssPrivateRule`, the `@private` rule that declares the private properties of a style rule or of a mixin body
 ([w3c/csswg-drafts#14243](https://github.com/w3c/csswg-drafts/issues/14243#issuecomment-5180782117)). The other rules of
 [CSS Mixins](https://drafts.csswg.org/css-mixins-1/) (`@mixin`, `@apply`, `@contents`, `@function`) are not experimental.
 

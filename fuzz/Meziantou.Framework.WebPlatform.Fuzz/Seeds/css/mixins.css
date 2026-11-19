@@ -1,0 +1,4 @@
+@mixin --m(--x type(<length>): 1em, --y) { color: green !important; & { --b: 2; } .a { @layer b; color: red; } @layer a; @result { color: blue; } result: red; @contents { color: red; } }
+@mixin --n { @private { --a: 1; --b <color>: red; --c; } @media (width) { > div { @apply --m(1px, { a, b }) { color: red; } } } @supports (color: red) { @contents; } @container (width > 0px) { @scope (.x) { color: red; } } }
+#a { color: red; @private { --p: var(--q, 1px); } @apply --m; @apply --n(1, { 2, 3 }) { color: green; @private { --r: 3; } } @apply --o { } }
+@layer l { @mixin --l { @starting-style { color: red; } } }

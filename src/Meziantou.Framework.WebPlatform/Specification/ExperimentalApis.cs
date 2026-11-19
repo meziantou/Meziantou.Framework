@@ -18,8 +18,8 @@ internal static class ExperimentalApis
     /// <summary>The declarative partial updates (https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md).</summary>
     public const string DeclarativePartialUpdates = "WEBPLATEXP0003";
 
-    /// <summary>The @result and @private rules of CSS Mixins (https://github.com/w3c/csswg-drafts/issues/14243).</summary>
-    public const string CssMixinResultAndPrivateRules = "WEBPLATEXP0004";
+    /// <summary>The @private rule of CSS Mixins (https://github.com/w3c/csswg-drafts/issues/14243).</summary>
+    public const string CssPrivateRule = "WEBPLATEXP0004";
 
     /// <summary>The <c>change</c> events of <c>ContainerQueryList</c> (https://github.com/w3c/csswg-drafts/pull/13551).</summary>
     public const string ContainerQueryListChangeEvent = "WEBPLATEXP0005";

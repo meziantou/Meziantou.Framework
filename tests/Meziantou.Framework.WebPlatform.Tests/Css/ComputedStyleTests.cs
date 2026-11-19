@@ -955,35 +955,63 @@ public sealed class ComputedStyleTests : IDisposable
     }
 
     [Theory]
-    [InlineData("@mixin --m { @result { color: green; } } #target { color: red; @apply --m; }", "color", "rgb(0, 128, 0)")]
-    [InlineData("@mixin --m { @result { color: red; } } #target { @apply --m; color: green; }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { color: green; } #target { color: red; @apply --m; }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { color: red; } #target { @apply --m; color: green; }", "color", "rgb(0, 128, 0)")]
     [InlineData("#target { color: green; @apply --unknown; }", "color", "rgb(0, 128, 0)")]
-    [InlineData("@mixin --m { @result { .a { color: green; } } } div { @apply --m; }", "color", "rgb(0, 128, 0)")] // A nested rule is relative to the rule that applies the mixin
-    [InlineData("@mixin --m { @result { &.a { color: green; } } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")]
-    [InlineData("@mixin --m { @result { color: green; } } @mixin --m { @result { color: red; } } @layer { @mixin --m { @result { color: blue; } } } #target { @apply --m; }", "color", "rgb(255, 0, 0)")]
-    [InlineData("@mixin --m(--c, --d: green) { @result { color: var(--c); background-color: var(--d); } } #target { @apply --m(blue); }", "background-color", "rgb(0, 128, 0)")]
-    [InlineData("@mixin --m(--c, --d: green) { @result { color: var(--c); background-color: var(--d); } } #target { @apply --m(blue); }", "color", "rgb(0, 0, 255)")]
-    [InlineData("@mixin --m(--c) { @result { color: var(--c, green); } } #target { color: red; @apply --m; }", "color", "rgb(0, 128, 0)")] // A missing argument is the guaranteed-invalid value
-    [InlineData("@mixin --m() { @result { color: red; } } #target { color: green; @apply --m(1); }", "color", "rgb(0, 128, 0)")] // Too many arguments
-    [InlineData("@mixin --m(--l <length>) { @result { font-size: 10px; --a: var(--l); } } #target { @apply --m(2em); }", "--a", "20px")]
-    [InlineData("@mixin --m { --c: var(--d); --d: green; font-size: 99px; @result { color: var(--c); } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")] // Local variables
-    [InlineData("@mixin --m { --c: green; @result { --a: var(--c); } } #target { @apply --m; }", "--c", "")] // The local variables are not custom properties of the element
-    [InlineData("@mixin --m { @media (width > 0px) { @result { color: green; } } @media (width < 0px) { @result { color: red; } } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")]
-    [InlineData("@mixin --m { @result { @contents; } } #target { @apply --m { color: green; } }", "color", "rgb(0, 128, 0)")]
-    [InlineData("@mixin --m { @result { @contents { color: green; } } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")] // The fallback block
-    [InlineData("@mixin --m { @result { @contents { color: red; } } } #target { color: green; @apply --m { } }", "color", "rgb(0, 128, 0)")]
-    [InlineData("@mixin --i(--x) { @result { color: var(--y); } } @mixin --o(--y) { @result { @apply --i(red); } } #target { @apply --o(green); }", "color", "rgb(0, 128, 0)")] // The variables of the outer mixin
-    [InlineData("@mixin --i(--x) { @result { color: var(--x); } } @mixin --o(--y) { @result { @apply --i(var(--y)); } } #target { @apply --o(green); }", "color", "rgb(0, 128, 0)")]
-    [InlineData("@function --f() { result: var(--c); } @mixin --m(--c) { @result { color: --f(); } } #target { color: green; @apply --m(red); }", "color", "rgb(0, 0, 0)")] // A function does not see the variables of a mixin
-    [InlineData("@mixin --a { @result { --a: a; @apply --b; } } @mixin --b { @result { --a: b; @apply --a; } } #target { @apply --a; }", "--a", "b")] // Cycle
+    [InlineData("@mixin --m { .a { color: green; } } div { @apply --m; }", "color", "rgb(0, 128, 0)")] // A nested rule is relative to the rule that applies the mixin
+    [InlineData("@mixin --m { &.a { color: green; } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { color: red; } :where(#target), #b { @apply --m; } :where(#target) { color: green; }", "color", "rgb(0, 128, 0)")] // The declarations have the specificity of the matching selector
+    [InlineData("@mixin --m { color: green !important; } div { color: red !important; } #target { @apply --m; }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { --a: green; } #target { @apply --m; color: var(--a); }", "color", "rgb(0, 128, 0)")] // The custom properties are custom properties of the element
+    [InlineData("@mixin --m { @result { color: red; } } #target { color: green; @apply --m; }", "color", "rgb(0, 128, 0)")] // @result is invalid
+    [InlineData("@mixin --m { color: green; } @mixin --m { color: red; } @layer { @mixin --m { color: blue; } } #target { @apply --m; }", "color", "rgb(255, 0, 0)")]
+    [InlineData("@mixin --m(--c, --d: green) { color: var(--c); background-color: var(--d); } #target { @apply --m(blue); }", "background-color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m(--c, --d: green) { color: var(--c); background-color: var(--d); } #target { @apply --m(blue); }", "color", "rgb(0, 0, 255)")]
+    [InlineData("@mixin --m(--c) { color: var(--c, green); } #target { color: red; @apply --m; }", "color", "rgb(0, 128, 0)")] // A missing argument is the guaranteed-invalid value
+    [InlineData("@mixin --m() { color: red; } #target { color: green; @apply --m(1); }", "color", "rgb(0, 128, 0)")] // Too many arguments
+    [InlineData("@mixin --m(--l <length>) { font-size: 10px; --a: var(--l); } #target { @apply --m(2em); }", "--a", "20px")]
+    [InlineData("@mixin --m { @private { --c: var(--d); } @private { --d: green; } color: var(--c); } #target { @apply --m; }", "color", "rgb(0, 128, 0)")] // Private variables
+    [InlineData("@mixin --m { @private { --c: green; } --a: var(--c); } #target { @apply --m; }", "--c", "")] // The private variables are not custom properties of the element
+    [InlineData("@mixin --m { @media (width > 0px) { color: green; } @media (width < 0px) { color: red; } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { @supports (color: red) { &.a { color: green; } } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { @contents; } #target { @apply --m { color: green; } }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { &.a { @contents; } } #target { color: red; @apply --m { color: green; } }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { @contents { color: green; } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")] // The fallback block
+    [InlineData("@mixin --m { @contents { color: red; } } #target { color: green; @apply --m { } }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { &.a { @apply --n; } } #target { @apply --m; } @mixin --n { color: green; }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --i(--x) { color: var(--y); } @mixin --o(--y) { @apply --i(red); } #target { @apply --o(green); }", "color", "rgb(0, 128, 0)")] // The variables of the outer mixin
+    [InlineData("@mixin --i(--x) { color: var(--x); } @mixin --o(--y) { @apply --i(var(--y)); } #target { @apply --o(green); }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@function --f() { result: var(--c); } @mixin --m(--c) { color: --f(); } #target { color: green; @apply --m(red); }", "color", "rgb(0, 0, 0)")] // A function does not see the variables of a mixin
+    [InlineData("@mixin --a { --a: a; @apply --b; } @mixin --b { --a: b; @apply --a; } #target { @apply --a; }", "--a", "b")] // Cycle
     public void Mixins(string css, string property, string expected) => Assert.Equal(expected, Get("<style>" + css + "</style><div><div id=target class=a></div></div>", property));
+
+    [Theory]
+    [InlineData("#target { @private { --c: green; } color: var(--c, red); }", "color", "rgb(0, 128, 0)")]
+    [InlineData("#target { @private { --c: green; } color: var(--c, red); }", "--c", "")] // A private property is not exposed
+    [InlineData("#target { @private { --c: red; } } #target { color: var(--c, green); }", "color", "rgb(0, 128, 0)")] // Another rule does not see it
+    [InlineData("#target { --c: red; @private { --c: green; } color: var(--c); }", "color", "rgb(0, 128, 0)")] // The declarations of the rule assign the private property
+    [InlineData("div { --c: red; } #target { @media (width < 0px) { @private { --c: red; } } color: var(--c, green); }", "color", "rgb(0, 128, 0)")] // The name is private whatever the condition
+    [InlineData("#target { @private { --a: var(--b); } @private { --b: green; } color: var(--a); }", "color", "rgb(0, 128, 0)")]
+    [InlineData("#target { @private { --a: var(--b); --b: var(--a); } color: var(--a, green); }", "color", "rgb(0, 128, 0)")] // Cycle
+    [InlineData("#target { @private { --x: red; } & { @private { --y: var(--x, green); } color: var(--y); } }", "color", "rgb(0, 128, 0)")] // An initial value does not see the enclosing private properties
+    [InlineData("#target { @private { --x: green; } & { color: var(--x); } }", "color", "rgb(0, 128, 0)")] // A nested rule sees them
+    [InlineData("div { @private { --x: green; } > #target { color: var(--x); } }", "color", "rgb(0, 128, 0)")] // The value inherits
+    [InlineData("@layer a, b; #target { @layer b { @private { --x: green; } } @layer a { @private { --x: red; } } color: var(--x); }", "color", "rgb(0, 128, 0)")]
+    [InlineData("@mixin --m { @private { --c: green; } color: var(--c); } #target { @private { --c: red; } @apply --m; }", "color", "rgb(0, 128, 0)")] // A mixin has its own private properties
+    [InlineData("@mixin --m { @private { --c: green; } } #target { @apply --m; color: var(--c, blue); }", "color", "rgb(0, 0, 255)")] // The applying rule does not see them
+    [InlineData("@mixin --m(--p: var(--c)) { color: var(--p); } #target { @private { --c: green; } @apply --m; }", "color", "rgb(0, 128, 0)")] // The default values see the private properties of the @apply rule
+    [InlineData("@mixin --m(--p) { color: var(--p); } #target { @private { --c: green; } @apply --m(var(--c)); }", "color", "rgb(0, 128, 0)")] // The arguments too
+    [InlineData("@mixin --m { @private { --c: red; } @contents; } #target { @private { --c: green; } @apply --m { color: var(--c); } }", "color", "rgb(0, 128, 0)")] // The contents block sees the private properties of the @apply rule
+    [InlineData("@mixin --m { @private { --c: green; } @contents { color: var(--c); } } #target { @apply --m; }", "color", "rgb(0, 128, 0)")] // The fallback block sees the private properties of the mixin
+    [InlineData("@function --f() { result: var(--c, green); } #target { @private { --c: red; } color: --f(); }", "color", "rgb(0, 128, 0)")] // A function does not see them
+    public void PrivateProperties(string css, string property, string expected) => Assert.Equal(expected, Get("<style>" + css + "</style><div><div id=target class=a></div></div>", property));
 
     [Fact]
     public void Mixins_TreeScoped()
     {
-        var document = Parse("<style>@mixin --m { @result { color: green; } } @mixin --n { @result { color: green; } }</style><div id=host></div>");
+        var document = Parse("<style>@mixin --m { color: green; } @mixin --n { color: green; }</style><div id=host></div>");
         var shadowRoot = document.GetElementById("host")!.AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
-        shadowRoot.SetHtmlUnsafe("<style>@mixin --n { @result { color: blue; } } #a { @apply --m; } #b { @apply --n; }</style><div id=a></div><div id=b></div>");
+        shadowRoot.SetHtmlUnsafe("<style>@mixin --n { color: blue; } #a { @apply --m; } #b { @apply --n; }</style><div id=a></div><div id=b></div>");
         Assert.Equal("rgb(0, 128, 0)", document.DefaultView!.GetComputedStyle(shadowRoot.GetElementById("a")!).GetPropertyValue("color"));
         Assert.Equal("rgb(0, 0, 255)", document.DefaultView!.GetComputedStyle(shadowRoot.GetElementById("b")!).GetPropertyValue("color"));
     }
@@ -992,7 +1020,7 @@ public sealed class ComputedStyleTests : IDisposable
     public void Mixins_TreeScoped_OuterMixinAdded()
     {
         // The @apply rules of a shadow tree are resolved again when a @mixin rule is added to the tree of a shadow host
-        var document = Parse("<style>@mixin --m { @result { color: red; } }</style><div id=host></div>");
+        var document = Parse("<style>@mixin --m { color: red; }</style><div id=host></div>");
         var outerRoot = document.GetElementById("host")!.AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
         outerRoot.SetHtmlUnsafe("<div id=inner-host></div>");
         var innerRoot = outerRoot.GetElementById("inner-host")!.AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
@@ -1001,7 +1029,7 @@ public sealed class ComputedStyleTests : IDisposable
         Assert.Equal("rgb(255, 0, 0)", document.DefaultView!.GetComputedStyle(target).GetPropertyValue("color"));
 
         var style = document.CreateElement("style");
-        style.TextContent = "@mixin --m { @result { color: green; } }";
+        style.TextContent = "@mixin --m { color: green; }";
         document.Body!.AppendChild(style);
         Assert.Equal("rgb(0, 128, 0)", document.DefaultView!.GetComputedStyle(target).GetPropertyValue("color"));
     }
@@ -1009,14 +1037,14 @@ public sealed class ComputedStyleTests : IDisposable
     [Fact]
     public void Mixins_CssomChanges()
     {
-        var document = Parse("<style>@mixin --m { @result { color: red; } }</style><style>#target { }</style><div id=target></div>");
+        var document = Parse("<style>@mixin --m { color: red; }</style><style>#target { }</style><div id=target></div>");
         var target = document.GetElementById("target")!;
         var sheets = document.StyleSheets;
         Assert.Equal("rgb(0, 0, 0)", document.DefaultView!.GetComputedStyle(target).GetPropertyValue("color"));
         ((CssStyleRule)sheets[1]!.CssRules[0]!).InsertRule("@apply --m;");
         Assert.Equal("rgb(255, 0, 0)", document.DefaultView!.GetComputedStyle(target).GetPropertyValue("color"));
-        var result = (CssMixinResultRule)((CssMixinRule)sheets[0]!.CssRules[0]!).CssRules[0]!;
-        ((CssNestedDeclarations)result.CssRules[0]!).Style.SetProperty("color", "green");
+        var mixin = (CssMixinRule)sheets[0]!.CssRules[0]!;
+        ((CssNestedDeclarations)mixin.CssRules[0]!).Style.SetProperty("color", "green");
         Assert.Equal("rgb(0, 128, 0)", document.DefaultView!.GetComputedStyle(target).GetPropertyValue("color"));
     }
 

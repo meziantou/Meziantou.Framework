@@ -58,6 +58,28 @@ user, such as [PreferredColorScheme](cref:Meziantou.Framework.WebPlatform.Dom.Pr
 
 `Window.MatchMedia(query)` evaluates a media query, as `matchMedia()` does in a browser.
 
+## Mixins and private properties
+
+The computed styles apply the mixins of [CSS Mixins](https://drafts.csswg.org/css-mixins-1/): a `@mixin` rule holds
+declarations and nested rules, and an `@apply` rule inserts them in a style rule, with arguments and a contents block.
+A `@private` rule declares custom properties that only its rule (and the rules nested in it) can reference: they are
+not exposed by `GetPropertyValue`.
+
+```css
+@mixin --bordered(--color <color>: black) {
+  @private { --width: 2px; }
+  border: var(--width) solid var(--color);
+  &:hover { @contents; }
+}
+button { @apply --bordered(red) { color: red; } }
+```
+
+- The body of a mixin is written like the body of a style rule: its declarations apply to the elements of the rule that
+  applies it, and its nested rules (`&:hover`, `.icon`) are relative to that rule.
+- `@contents` inserts the block of the `@apply` rule, or its own fallback block when the `@apply` rule has none.
+- The private properties are experimental, like their proposal: [CssPrivateRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssPrivateRule) is marked with the `WEBPLATEXP0004`
+  diagnostic.
+
 ## Typed values
 
 [Element.ComputedStyleMap()](cref:Meziantou.Framework.WebPlatform.Dom.Element.ComputedStyleMap) returns the same values as objects (a length is a number and a unit, a keyword is a

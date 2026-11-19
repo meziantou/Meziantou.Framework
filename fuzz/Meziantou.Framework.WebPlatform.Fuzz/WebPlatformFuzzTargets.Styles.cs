@@ -26,6 +26,7 @@ public static partial class WebPlatformFuzzTargets
         "::before", "::after", "::marker", ":is(", ":not(", ":has(", ":hover", "content:", "'x'", "all:", "inherit", "none", "display:",
         "list-item", "contents", "counter(", "counter-increment:", "attr(", "var(--", "--x:", "transition:", "animation:", "@keyframes",
         "@media", "@layer", "@scope", "@namespace", "box-sizing:", "color:", "width:", "float:", "position:", "!important", "stretch(", "fit-content(", "margin:", "height:",
+        "@mixin --m", "@mixin --m(--x", "@apply --m", "@apply --m(", "@contents", "@private", "&", ".a", "{ }",
     ];
 
     /// <summary>The names of the supported properties that are not aliases, in the order of the registry.</summary>

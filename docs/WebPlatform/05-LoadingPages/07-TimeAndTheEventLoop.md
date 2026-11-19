@@ -229,7 +229,8 @@ var measurement = document.DefaultView!.Performance.MeasureUserAgentSpecificMemo
 <!-- endref -->
 
 - The scripts only see it in the cross-origin isolated windows, service workers and shared workers
-  (`Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`).
+  (`Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`), and the .NET method
+  rejects its task with a `SecurityError` elsewhere: the measurement reveals the sizes of the frames of other origins.
 - Each realm has an entry: the realms of the origin of the page are attributed to their URL, the others to
   `cross-origin-url`, with the `iframe` of the page that contains them as `container`. An empty entry is added, and the
   entries are in a random order, as the specification requires.

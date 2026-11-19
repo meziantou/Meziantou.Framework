@@ -278,9 +278,16 @@ public sealed class PerformanceTimelineTests : IDisposable
     [Fact]
     public async Task MeasureUserAgentSpecificMemory_AttributesTheRealmsOfTheBrowsingContextGroup()
     {
-        _loader.Resources["https://example.com/dir/frame.html"] = Html("<p>same origin</p>");
-        _loader.Resources["https://other.example/frame.html"] = Html("<p>other origin</p>");
-        var document = Load("<iframe id=a src=frame.html></iframe><iframe id=b src=https://other.example/frame.html></iframe>");
+        KeyValuePair<string, string>[] isolation = [new("Cross-Origin-Opener-Policy", "same-origin"), new("Cross-Origin-Embedder-Policy", "require-corp")];
+        KeyValuePair<string, string>[] embedded = [new("Cross-Origin-Embedder-Policy", "require-corp"), new("Cross-Origin-Resource-Policy", "cross-origin")];
+        _loader.Resources["https://example.com/dir/page.html"] = Html("<iframe id=a src=frame.html></iframe><iframe id=b src=https://other.example/frame.html></iframe>", isolation);
+        _loader.Resources["https://example.com/dir/frame.html"] = Html("<p>same origin</p>", embedded);
+        _loader.Resources["https://other.example/frame.html"] = Html("<p>other origin</p>", embedded);
+        var context = CreateContext();
+        context.Navigate("https://example.com/dir/page.html");
+        _contexts.EventLoop.RunUntilIdle();
+        var document = context.Document;
+        Assert.True(document.DefaultView!.CrossOriginIsolated);
 
         #region WebPlatform_MeasureMemory
         var measurement = document.DefaultView!.Performance.MeasureUserAgentSpecificMemory();
@@ -299,6 +306,18 @@ public sealed class PerformanceTimelineTests : IDisposable
         var second = document.DefaultView.Performance.MeasureUserAgentSpecificMemory();
         _contexts.EventLoop.RunUntilIdle();
         Assert.Equal(result.Bytes, (await second).Bytes);
+    }
+
+    [Fact]
+    public async Task MeasureUserAgentSpecificMemory_IsRejectedWhenTheWindowIsNotCrossOriginIsolated()
+    {
+        _loader.Resources["https://other.example/frame.html"] = Html("<p>other origin</p>");
+        var document = Load("<iframe src=https://other.example/frame.html></iframe>");
+        Assert.False(document.DefaultView!.CrossOriginIsolated);
+
+        var measurement = document.DefaultView.Performance.MeasureUserAgentSpecificMemory();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("SecurityError", (await Assert.ThrowsAsync<DomException>(() => measurement)).Name);
     }
 
     [Fact]

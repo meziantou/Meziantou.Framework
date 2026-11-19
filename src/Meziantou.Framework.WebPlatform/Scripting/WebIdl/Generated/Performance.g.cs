@@ -121,7 +121,7 @@ internal static class Binding_Performance<TAdapter, TValue> where TAdapter : str
         r.DefineAttribute(instanceTarget, "onresourcetimingbufferfull", Get_onresourcetimingbufferfull, Set_onresourcetimingbufferfull);
         r.DefineOperation(instanceTarget, "now", 0, Op_now);
         r.DefineOperation(instanceTarget, "toJSON", 0, Op_toJSON);
-        if (r.IsExposed(global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.SharedWorker | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.ServiceWorker)) r.DefineOperation(instanceTarget, "measureUserAgentSpecificMemory", 0, Op_measureUserAgentSpecificMemory, returnsPromise: true);
+        if (r.IsCrossOriginIsolated && r.IsExposed(global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.SharedWorker | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.ServiceWorker)) r.DefineOperation(instanceTarget, "measureUserAgentSpecificMemory", 0, Op_measureUserAgentSpecificMemory, returnsPromise: true);
         r.DefineOperation(instanceTarget, "getEntries", 0, Op_getEntries);
         r.DefineOperation(instanceTarget, "getEntriesByType", 1, Op_getEntriesByType);
         r.DefineOperation(instanceTarget, "getEntriesByName", 1, Op_getEntriesByName);

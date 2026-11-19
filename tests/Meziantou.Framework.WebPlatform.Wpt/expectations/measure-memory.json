@@ -7,7 +7,10 @@
     }
   },
   "measure-memory/idlharness.window.js": {
-    "total": 5
+    "total": 5,
+    "failures": {
+      "Performance interface: operation measureUserAgentSpecificMemory()": "FAIL"
+    }
   },
   "measure-memory/iframe.cross-origin.https.window.js": {
     "total": 1

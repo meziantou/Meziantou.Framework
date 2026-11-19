@@ -77,6 +77,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// </summary>
     internal bool IsSecureContext => GlobalScope.IsSecureContext;
 
+    /// <summary>
+    /// Whether the cross-origin isolated capability of the global object is true: the members declared with
+    /// [CrossOriginIsolated] (https://webidl.spec.whatwg.org/#CrossOriginIsolated) are only exposed in such a realm.
+    /// </summary>
+    internal bool IsCrossOriginIsolated => GlobalScope.CrossOriginIsolated;
+
     /// <summary>The kind of the global object of the realm, to check whether the interfaces and the members are exposed (https://webidl.spec.whatwg.org/#dfn-exposed).</summary>
     internal ExposureSet GlobalExposure => GlobalScope.Exposure;
 

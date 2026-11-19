@@ -92,13 +92,21 @@ public sealed partial class Performance
     /// document of the origin of the measurement that contains the realm. The sizes are a deterministic estimate of the
     /// objects of the library (a base size per realm, the nodes and the text of the documents), not of the JavaScript
     /// heap. The method is only exposed to the scripts of the cross-origin isolated windows, service workers and shared
-    /// workers. The task fails with an <c>InvalidStateError</c> <see cref="DomException"/> when the document is not fully active.
+    /// workers ([CrossOriginIsolated]). The task fails with a <c>SecurityError</c> <see cref="DomException"/> when the global
+    /// object is not cross-origin isolated (<see cref="GlobalScope.CrossOriginIsolated"/>), and with an <c>InvalidStateError</c>
+    /// when the document is not fully active.
     /// </summary>
     /// <seealso href="https://wicg.github.io/performance-measure-memory/#dom-performance-measureuseragentspecificmemory"/>
     [IdlMember("measureUserAgentSpecificMemory", "https://wicg.github.io/performance-measure-memory/#dom-performance-measureuseragentspecificmemory")]
     public Task<MemoryMeasurement> MeasureUserAgentSpecificMemory()
     {
         var global = _global;
+
+        // [CrossOriginIsolated]: the sizes and the URLs of the realms of other origins are only reported to a cross-origin
+        // isolated global object, whose cross-origin frames opted in (Cross-Origin-Embedder-Policy)
+        if (!global.CrossOriginIsolated)
+            return Task.FromException<MemoryMeasurement>(new DomException("The global object is not cross-origin isolated", "SecurityError"));
+
         if (global is Window { Document.IsFullyActive: false })
             return Task.FromException<MemoryMeasurement>(DomException.InvalidState("The document is not fully active"));
 

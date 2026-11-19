@@ -188,7 +188,8 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   `ReportingObserver`s of the page receive them, and they are sent to the `default` endpoint of the `Reporting-Endpoints`
   header. The body gives the identifier of the feature (as in Chromium, e.g.
   `XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload`, `PreventDefaultPassive`), a message and the location of the
-  script.
+  script. The non-standard members that the browsers deprecate (e.g. `webkitRequestAnimationFrame()`,
+  `window.fullScreen`) are not exposed, so they report nothing.
 - The scripts, the style sheets and the preloads check the hashes of their `integrity` attribute
   ([Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/)): a resource whose body does not match
   is a network error (the element fires `error`, the script does not run, the style sheet does not apply), and so is a

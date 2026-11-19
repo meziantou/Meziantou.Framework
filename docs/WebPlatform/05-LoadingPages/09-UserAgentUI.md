@@ -252,3 +252,12 @@ implementation fetches nothing. A backend that installs payment handlers calls
 request to the identifier, follows its `Link: <...>; rel="payment-method-manifest"` header, fetches and validates the
 manifest ([PaymentMethodManifest](cref:Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifest)), then fetches the web
 app manifests of its default applications. The requests carry no credentials, and the manifests cannot be redirected.
+
+The service workers of a site can declare a payment handler of the
+[Payment Handler API](https://w3c.github.io/web-based-payment-handler/): `registration.paymentManager` records its
+`userHint` and the data it provides (`enableDelegations()`), and the scripts of the service workers can create
+`CanMakePaymentEvent` and `PaymentRequestEvent` objects and listen to the `canmakepayment` and `paymentrequest` events.
+The library does not invoke the payment handlers of the service workers: the user agent never fires these events, the
+payment applications of the payment method manifests are not installed, and an event created by a script cannot answer a
+payment (`respondWith()` throws an `InvalidStateError`). The payment handlers of the user agent are the ones of the backend
+(`HasPaymentHandlerAsync`).

@@ -5,10 +5,7 @@
   "web-based-payment-handler/can-make-payment-event-constructor.https.serviceworker.html": {
     "total": 5,
     "failures": {
-      "CanMakePaymentEvent can be constructed in service worker.": "FAIL",
-      "CanMakePaymentEvent can be constructed with a CanMakePaymentEventInit, even if not trusted": "FAIL",
-      "CanMakePaymentEvent can be constructed with an EventInitDict, even if not trusted": "FAIL",
-      "CanMakePaymentEvent can be dispatched, even if not trusted": "FAIL"
+      "CanMakePaymentEvent can be constructed with an EventInitDict, even if not trusted": "FAIL"
     }
   },
   "web-based-payment-handler/can-make-payment-event-constructor.https.worker.js": {
@@ -26,48 +23,19 @@
     }
   },
   "web-based-payment-handler/idlharness.https.any.js": {
-    "total": 26,
-    "failures": {
-      "PaymentManager interface object length": "FAIL",
-      "PaymentManager interface object name": "FAIL",
-      "PaymentManager interface: attribute userHint": "FAIL",
-      "PaymentManager interface: calling enableDelegations(sequence<PaymentDelegation>) on paymentManager with too few arguments must throw TypeError": "FAIL",
-      "PaymentManager interface: existence and properties of interface object": "FAIL",
-      "PaymentManager interface: existence and properties of interface prototype object": "FAIL",
-      "PaymentManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "PaymentManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "PaymentManager interface: operation enableDelegations(sequence<PaymentDelegation>)": "FAIL",
-      "PaymentManager interface: paymentManager must inherit property \"enableDelegations(sequence<PaymentDelegation>)\" with the proper type": "FAIL",
-      "PaymentManager interface: paymentManager must inherit property \"userHint\" with the proper type": "FAIL",
-      "PaymentManager must be primary interface of paymentManager": "FAIL",
-      "ServiceWorkerRegistration interface: attribute paymentManager": "FAIL",
-      "ServiceWorkerRegistration interface: registration must inherit property \"paymentManager\" with the proper type": "FAIL",
-      "Stringification of paymentManager": "FAIL"
-    }
+    "total": 26
   },
   "web-based-payment-handler/idlharness.https.any.js#dedicatedworker": {
-    "total": 13,
-    "failures": {
-      "ServiceWorkerRegistration interface: attribute paymentManager": "FAIL"
-    }
+    "total": 13
   },
   "web-based-payment-handler/idlharness.https.any.js#sharedworker": {
-    "total": 13,
-    "failures": {
-      "ServiceWorkerRegistration interface: attribute paymentManager": "FAIL"
-    }
+    "total": 13
   },
   "web-based-payment-handler/payment-request-event-constructor.https.html": {
     "total": 1
   },
   "web-based-payment-handler/payment-request-event-constructor.https.serviceworker.html": {
-    "total": 5,
-    "failures": {
-      "PaymentRequestEvent can be constructed with a PaymentRequestEventInit, even if not trusted": "FAIL",
-      "PaymentRequestEvent can be constructed with an EventInitDict, even if not trusted": "FAIL",
-      "PaymentRequestEvent can be constucted in service worker.": "FAIL",
-      "PaymentRequestEvent can be dispatched, even if not trusted": "FAIL"
-    }
+    "total": 5
   },
   "web-based-payment-handler/payment-request-event-constructor.https.worker.js": {
     "total": 1
@@ -76,10 +44,6 @@
     "total": 1
   },
   "web-based-payment-handler/untrusted-event.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Test for untrusted event": "TIMEOUT"
-    }
+    "total": 1
   }
 }

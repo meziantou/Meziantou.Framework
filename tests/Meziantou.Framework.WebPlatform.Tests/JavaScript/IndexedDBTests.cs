@@ -121,6 +121,29 @@ public sealed class IndexedDBTests : IDisposable
     }
 
     [Fact]
+    public void StorageBuckets_ARecreatedBucketDoesNotSeeTheDatabasesOfTheDeletedOne()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const first = await navigator.storageBuckets.open('inbox');
+                await new Promise(resolve => {
+                  const request = first.indexedDB.open('db');
+                  request.onupgradeneeded = () => request.result.createObjectStore('store');
+                  request.onsuccess = () => resolve(request.result);
+                });
+                await navigator.storageBuckets.delete('inbox');
+                const second = await navigator.storageBuckets.open('inbox');
+                document.title = (await second.indexedDB.databases()).map(database => database.name).join() || 'empty';
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("empty", document.Title);
+    }
+
+    [Fact]
     public void Key_AProxyOfAnArrayIsNotAValidKey()
     {
         var document = Load("""

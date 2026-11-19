@@ -226,7 +226,7 @@ public sealed class StorageShed
 /// the storage of an origin embedded by another site is partitioned by the site of the top-level document, and so is the
 /// storage of an origin embedded by its own site through a cross-site document (<see cref="HasCrossSiteAncestor"/>). The
 /// storage key of a first-party environment (a top-level document, or a document whose ancestors are all same site with the
-/// top-level document) has no top-level site. <see cref="Bucket"/> names a storage bucket other than the default bucket
+/// top-level document) has no top-level site. <see cref="Bucket"/> identifies a storage bucket other than the default bucket
 /// (https://wicg.github.io/storage-buckets/): the endpoints of a bucket (IndexedDB, the Cache API, the origin private file
 /// system) are stored apart from the ones of the default bucket.
 /// </summary>
@@ -238,8 +238,8 @@ internal readonly record struct StorageKey(string Origin, Guid? PartitionNonce, 
     /// <summary>
     /// The key of the storage in the backends (IndexedDB, the Cache API, the origin private file system): the serialized origin
     /// of a first-party key, else the origin, the top-level site and the cross-site ancestor bit, separated by <c>^</c>, followed
-    /// by <c>#</c> and the name of the bucket for a bucket other than the default one (the names of the buckets only contain
-    /// lowercase ASCII letters, digits, <c>-</c> and <c>_</c>).
+    /// by <c>#</c> and the identity of the bucket for a bucket other than the default one (its name, <c>~</c> and the identifier
+    /// of its lifetime: the names of the buckets only contain lowercase ASCII letters, digits, <c>-</c> and <c>_</c>).
     /// </summary>
     public string Serialize()
     {

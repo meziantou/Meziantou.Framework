@@ -242,7 +242,7 @@ public sealed class StorageBucket
     internal StorageKey StorageKey => _record.Key;
 
     /// <summary>The token of the CacheStorage object of the bucket: a bucket created again after its deletion gets another CacheStorage object.</summary>
-    internal string CacheStorageToken => _record.Key.Serialize() + "@" + _record.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    internal string CacheStorageToken => _record.Key.Serialize();
 
     /// <summary>Whether the bucket of the CacheStorage object is deleted: its operations fail with an <c>UnknownError</c>.</summary>
     internal bool IsDeleted => _record.IsDeleted;
@@ -276,7 +276,7 @@ public sealed class StorageBucket
     }
 }
 
-/// <summary>A storage bucket of a storage shelf (https://wicg.github.io/storage-buckets/#storage-bucket): its storage key (whose <see cref="StorageKey.Bucket"/> is its name) and its metadata.</summary>
+/// <summary>A storage bucket of a storage shelf (https://wicg.github.io/storage-buckets/#storage-bucket): its storage key (whose <see cref="StorageKey.Bucket"/> is its name and the identifier of its lifetime) and its metadata.</summary>
 internal sealed class StorageBucketRecord(long id, string name, StorageKey key)
 {
     /// <summary>The identifier of the bucket: a bucket created again with the same name is another bucket.</summary>
@@ -320,7 +320,11 @@ internal sealed class StorageBucketRegistry
                 buckets.Remove(name);
             }
 
-            record = new StorageBucketRecord(++_nextId, name, storageKey with { Bucket = name })
+            // Each lifetime of a bucket has its own storage: the objects of a deleted bucket (an open database, a file handle) and
+            // the storage that its deletion keeps (a database with an open connection) are not the storage of a new bucket
+            // of the same name
+            var id = ++_nextId;
+            record = new StorageBucketRecord(id, name, storageKey with { Bucket = name + "~" + id.ToString(System.Globalization.CultureInfo.InvariantCulture) })
             {
                 Quota = options.Quota,
                 Expires = options.Expires,

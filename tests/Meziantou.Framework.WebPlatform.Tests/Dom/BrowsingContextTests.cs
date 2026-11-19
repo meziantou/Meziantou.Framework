@@ -2223,6 +2223,26 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void CookieStoreSet_IsRejectedForABlockedUnpartitionedCookieOfACrossSiteIframe()
+    {
+        var cookies = new CookieJar { BlockThirdPartyCookies = true };
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>frame</p>")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, CookieJar = cookies });
+
+        var top = Load(context, "<iframe src='https://other.example/frame.html'></iframe>");
+        var frame = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!.Document;
+        var cookieStore = frame.DefaultView!.CookieStore;
+
+        var unpartitioned = cookieStore.Set(new CookieInit { Name = "a", Value = "1", SameSite = CookieSameSite.None });
+        var partitioned = cookieStore.Set(new CookieInit { Name = "b", Value = "2", SameSite = CookieSameSite.None, Partitioned = true });
+        context.EventLoop.RunUntilIdle();
+
+        Assert.IsType<TypeErrorException>(unpartitioned.Exception?.InnerException);
+        Assert.True(partitioned.IsCompletedSuccessfully);
+        Assert.Equal("b=2", frame.Cookie);
+    }
+
+    [Fact]
     public void RequestStorageAccess_IsRejectedWithoutUserActivationWhenThePermissionIsNotGranted()
     {
         var cookies = new CookieJar();

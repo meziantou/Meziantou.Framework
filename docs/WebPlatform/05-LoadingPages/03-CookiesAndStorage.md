@@ -61,7 +61,9 @@ and unregistering drops them.
 ## Third-party cookies and storage access
 
 By default, as in the browsers that do not block them, a frame of another site than the top-level page sends and stores
-the cookies of its site. Set [BlockThirdPartyCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.BlockThirdPartyCookies) to block them, and
+the cookies of its site. The default is deliberate: Safari blocks the third-party cookies, but Chrome keeps them, the
+cookie specification (RFC 6265bis) sends the `SameSite=None` cookies in the cross-site contexts, and many embedded
+pages (sign-in widgets, payment frames) need them. Set [BlockThirdPartyCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.BlockThirdPartyCookies) to block them, and
 [SetThirdPartyCookieAccess](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.SetThirdPartyCookieAccess) to block or allow the cookies of a site in the pages of another site (the settings of the
 user):
 
@@ -89,7 +91,8 @@ Assert.Equal("id=42", request.GetCookieHeader());
 
 - A context is third-party when its site is not the site of the top-level page, or when one of its parent frames is of
   another site. Its documents (`document.cookie`, `cookieStore`) and its requests (subresources, `fetch()`, WebSockets,
-  the navigations of its frames) neither see nor set the unpartitioned cookies of a blocked site. The cookies with the
+  the navigations of its frames) neither see nor set the unpartitioned cookies of a blocked site: `document.cookie`
+  ignores them, and `cookieStore.set()` rejects its promise with a `TypeError`. The cookies with the
   `Partitioned` attribute are not blocked: they are kept per top-level site.
 - [SetThirdPartyCookieAccess](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.SetThirdPartyCookieAccess) takes null for every top-level site or every embedded site. The rule of a pair of sites
   wins over the rule of every embedded site, which wins over the rule of every top-level site, which wins over

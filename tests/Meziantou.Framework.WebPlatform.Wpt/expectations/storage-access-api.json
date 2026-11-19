@@ -30,10 +30,7 @@
     "total": 1
   },
   "storage-access-api/requestStorageAccess-cross-site-iframe.sub.https.window.js": {
-    "total": 4,
-    "failures": {
-      "[cross-site-frame] document.requestStorageAccess() should resolve in top-level frame or same-site iframe, otherwise reject with a NotAllowedError with no user gesture.": "FAIL"
-    }
+    "total": 4
   },
   "storage-access-api/requestStorageAccess-cross-site-sibling-iframes.sub.https.window.js": {
     "total": 2
@@ -48,10 +45,7 @@
     "total": 4
   },
   "storage-access-api/requestStorageAccess-nested-cross-site-iframe.sub.https.window.js": {
-    "total": 4,
-    "failures": {
-      "[nested-cross-site-frame] document.requestStorageAccess() should resolve in top-level frame or same-site iframe, otherwise reject with a NotAllowedError with no user gesture.": "FAIL"
-    }
+    "total": 4
   },
   "storage-access-api/requestStorageAccess-nested-same-origin-iframe.sub.https.window.js": {
     "total": 4

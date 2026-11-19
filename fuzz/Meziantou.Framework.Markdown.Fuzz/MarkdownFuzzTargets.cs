@@ -828,7 +828,7 @@ public static class MarkdownFuzzTargets
                     var reparsed = MarkdownSyntaxTree.ParseText(root.ReplaceNode(block, copy).ToFullString(), options).GetRoot();
                     var parsedBlock = reparsed.DescendantNodes().OfType<MarkdownBlockSyntax>().FirstOrDefault(node => node.RawKind == block.RawKind && node.SpanStart == block.SpanStart);
                     FuzzAssert.True(parsedBlock is not null && parsedBlock.GetGenericAttributes().Equals(expected), $"The copy of the {block.Kind()} at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
-                    FuzzAssert.True(parsedBlock!.IsEquivalentTo(copy) && parsedBlock.DescendantTokens().Select(GetIntValue).SequenceEqual(copy.DescendantTokens().Select(GetIntValue)), $"The copy of the {block.Kind()} at {block.Span} is not the block parsed from its text: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(parsedBlock.IsEquivalentTo(copy) && parsedBlock.DescendantTokens().Select(GetIntValue).SequenceEqual(copy.DescendantTokens().Select(GetIntValue)), $"The copy of the {block.Kind()} at {block.Span} is not the block parsed from its text: {FuzzAssert.Format(text)}");
                 }
             }
         }

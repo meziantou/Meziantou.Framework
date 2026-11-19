@@ -22,11 +22,15 @@ internal static class StorageEndpoints
     /// <param name="configured">The backend of the options of the global object, or null.</param>
     /// <param name="fromBrowsingContext">The backend of a browsing context (the backend of its group).</param>
     /// <param name="createInMemory">Creates an in-memory backend.</param>
-    public static (TBackend Backend, string Origin)? Resolve<TBackend>(GlobalScope global, TBackend? configured, Func<BrowsingContext, TBackend> fromBrowsingContext, Func<TBackend> createInMemory)
+    /// <param name="storageKey">
+    /// The storage key of the storage, or null for the storage key of the global object: the unpartitioned storage of a
+    /// <see cref="StorageAccessHandle"/>, or the storage of a storage bucket.
+    /// </param>
+    public static (TBackend Backend, string Origin)? Resolve<TBackend>(GlobalScope global, TBackend? configured, Func<BrowsingContext, TBackend> fromBrowsingContext, Func<TBackend> createInMemory, StorageKey? storageKey = null)
         where TBackend : class
     {
         var document = global.EnvironmentDocument;
-        if (StorageKey.Obtain(document) is not { } storageKey)
+        if ((storageKey ?? StorageKey.Obtain(document)) is not { } key)
             return null;
 
         var windowDocument = document.EnvironmentRootDocument;
@@ -41,7 +45,7 @@ internal static class StorageEndpoints
             backend = configured ?? (browsingContext is not null ? fromBrowsingContext(browsingContext) : GetOrCreate(DocumentBackends.GetValue(windowDocument, static _ => []), createInMemory));
         }
 
-        return (backend, storageKey.Serialize());
+        return (backend, key.Serialize());
     }
 
     private static TBackend GetOrCreate<TBackend>(Dictionary<Type, object> backends, Func<TBackend> createInMemory)

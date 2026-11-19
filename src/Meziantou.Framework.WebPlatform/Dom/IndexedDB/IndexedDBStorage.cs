@@ -8,6 +8,6 @@ internal static class IndexedDBStorage
         => global?.ScriptEngine?.GetIndexedDBValueOperations(global) ?? DotNetIndexedDBValueOperations.Instance;
 
     /// <summary>Returns the backend and the origin of the databases of a global object, or null when its origin is opaque.</summary>
-    public static (IndexedDBBackend Backend, string Origin)? Resolve(GlobalScope global)
-        => StorageEndpoints.Resolve(global, global.Options.IndexedDB, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend());
+    public static (IndexedDBBackend Backend, string Origin)? Resolve(GlobalScope global, StorageKey? storageKey = null)
+        => StorageEndpoints.Resolve(global, global.Options.IndexedDB, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend(), storageKey);
 }

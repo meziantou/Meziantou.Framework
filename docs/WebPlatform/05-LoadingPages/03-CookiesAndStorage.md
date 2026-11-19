@@ -119,6 +119,41 @@ its scripts or from .NET ([Document.HasStorageAccess](cref:Meziantou.Framework.W
   `Activate-Storage-Access: retry; allowed-origin="..."` makes an `inactive` request be sent again with the cookies, and
   the document of a frame whose response has `Activate-Storage-Access: load` gets storage access.
 
+### The other storages of a frame
+
+The other storages of a frame of another site than the top-level page are partitioned by the top-level site: its
+`localStorage`, `sessionStorage`, IndexedDB databases, caches, origin private file system, locks, broadcast channels and
+shared workers are not the ones its site gets as a top-level page. `document.requestStorageAccess(types)`
+([Extending Storage Access API to non-cookie storage](https://privacycg.github.io/saa-non-cookie-storage/), or
+[Document.RequestStorageAccess](cref:Meziantou.Framework.WebPlatform.Dom.Document.RequestStorageAccess) from .NET) is granted as `document.requestStorageAccess()`
+and returns a [StorageAccessHandle](cref:Meziantou.Framework.WebPlatform.Dom.StorageAccessHandle) whose members give the unpartitioned storages:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_StorageAccessHandle;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A frame of https://other.example in a page of another site: window.localStorage is partitioned by the top-level site
+frame.DefaultView!.LocalStorage.SetItem("partitioned", "1");
+
+// The handle gives the storage of https://other.example when it is not embedded by another site
+var request = frame.RequestStorageAccess(new StorageAccessTypes { LocalStorage = true, IndexedDB = true });
+context.EventLoop.RunUntilIdle();
+var handle = await request;
+handle.LocalStorage.SetItem("unpartitioned", "2");
+Assert.Null(handle.LocalStorage.GetItem("partitioned"));
+Assert.Null(frame.DefaultView.LocalStorage.GetItem("unpartitioned"));
+
+// The members that were not requested throw an InvalidStateError
+Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => handle.SessionStorage).Name);
+```
+<!-- endref -->
+
+- The [StorageAccessTypes](cref:Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes) select the members that can be used (`all` for every member); a request without
+  any type is rejected with an `InvalidStateError`. The frame gets its unpartitioned cookies only when `all` or
+  `cookies` is requested. `document.hasUnpartitionedCookieAccess()` is `document.hasStorageAccess()`.
+- A `storage` event of an area of a handle is fired at the window of the frame, with the handle's `Storage` object as
+  `storageArea`.
+- The blob URLs are not partitioned: `createObjectURL()` and `revokeObjectURL()` of a handle are the ones of `URL`. The
+  `sameSiteCookies` option of the shared workers is not implemented.
+
 ## Local storage and session storage
 
 `window.localStorage` keeps its items in a [StorageShed](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed). By default, each browsing context created by your application

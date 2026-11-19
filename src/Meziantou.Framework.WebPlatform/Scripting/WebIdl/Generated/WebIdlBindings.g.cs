@@ -641,6 +641,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["StaticRange"] = Binding_StaticRange<TAdapter, TValue>.Binding,
             ["StereoPannerNode"] = Binding_StereoPannerNode<TAdapter, TValue>.Binding,
             ["Storage"] = Binding_Storage<TAdapter, TValue>.Binding,
+            ["StorageAccessHandle"] = Binding_StorageAccessHandle<TAdapter, TValue>.Binding,
             ["StorageEvent"] = Binding_StorageEvent<TAdapter, TValue>.Binding,
             ["StorageManager"] = Binding_StorageManager<TAdapter, TValue>.Binding,
             ["StylePropertyMap"] = Binding_StylePropertyMap<TAdapter, TValue>.Binding,
@@ -1734,6 +1735,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.StaticRangeInit dictionaryDom_StaticRangeInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StaticRangeInit(r, dictionaryDom_StaticRangeInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes dictionaryDom_StorageAccessTypes:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StorageAccessTypes(r, dictionaryDom_StorageAccessTypes);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.StorageEstimate dictionaryDom_StorageEstimate:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StorageEstimate(r, dictionaryDom_StorageEstimate);
                 return true;
@@ -2411,6 +2415,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration> taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.StorageAccessHandle> taskSystem_Threading_Tasks_Task_Dom_StorageAccessHandle_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_StorageAccessHandle_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.StorageEstimate> taskSystem_Threading_Tasks_Task_Dom_StorageEstimate_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_StorageEstimate_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StorageEstimate(r, dictionaryValue) : r.Adapter.Null));

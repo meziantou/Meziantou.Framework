@@ -5417,6 +5417,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Selection? GetSelection() => throw null;
         public bool HasFocus() => throw null;
         public System.Threading.Tasks.Task<bool> HasStorageAccess() => throw null;
+        public System.Threading.Tasks.Task<bool> HasUnpartitionedCookieAccess() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Node ImportNode(Meziantou.Framework.WebPlatform.Dom.Node node, Meziantou.Framework.WebPlatform.Dom.ImportNodeOptions options) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Node ImportNode(Meziantou.Framework.WebPlatform.Dom.Node node, bool subtree = false) => throw null;
         public void MoveBefore(Meziantou.Framework.WebPlatform.Dom.Node node, Meziantou.Framework.WebPlatform.Dom.Node? child) { }
@@ -5442,6 +5443,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void ReleaseEvents() { }
         public void ReplaceChildren(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
         public System.Threading.Tasks.Task RequestStorageAccess() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageAccessHandle> RequestStorageAccess(Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes types) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ViewTransition StartViewTransition(Meziantou.Framework.WebPlatform.Dom.StartViewTransitionOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ViewTransition StartViewTransition(Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback callback) => throw null;
         public void Write(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.TrustedHtmlOrString> text) { }
@@ -13241,6 +13243,39 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Key(uint index) => throw null;
         public void RemoveItem(string key) { }
         public void SetItem(string key, string value) { }
+    }
+
+    public sealed class StorageAccessHandle
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdbFactory IndexedDB { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Storage LocalStorage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Storage SessionStorage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BroadcastChannel CreateBroadcastChannel(string name) => throw null;
+        public string CreateObjectUrl(Meziantou.Framework.WebPlatform.Dom.FileApi.Blob obj) => throw null;
+        public string CreateObjectUrl(Meziantou.Framework.WebPlatform.Dom.MediaSource obj) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.SharedWorker CreateSharedWorker(string scriptUrl, Meziantou.Framework.WebPlatform.Dom.SharedWorkerOptions? options = null) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.SharedWorker CreateSharedWorker(string scriptUrl, string name) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageEstimate> Estimate() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.FileSystemDirectoryHandle> GetDirectory() => throw null;
+        public void RevokeObjectUrl(string url) { }
+    }
+
+    public sealed class StorageAccessTypes
+    {
+        public bool All { get => throw null; init { } }
+        public bool BroadcastChannel { get => throw null; init { } }
+        public bool Caches { get => throw null; init { } }
+        public bool Cookies { get => throw null; init { } }
+        public bool CreateObjectUrl { get => throw null; init { } }
+        public bool Estimate { get => throw null; init { } }
+        public bool GetDirectory { get => throw null; init { } }
+        public bool IndexedDB { get => throw null; init { } }
+        public bool LocalStorage { get => throw null; init { } }
+        public bool Locks { get => throw null; init { } }
+        public bool RevokeObjectUrl { get => throw null; init { } }
+        public bool SessionStorage { get => throw null; init { } }
+        public bool SharedWorker { get => throw null; init { } }
     }
 
     public sealed class StorageEstimate

@@ -540,6 +540,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         {
             DefineTemplatePatchingMembers(prototype);
         }
+        else if (binding.Name is "StorageAccessHandle" && Features.CacheStorageEnabled && Features.FetchEnabled)
+        {
+            DefinePartitionedCacheStorageAttribute(prototype, binding.Name);
+        }
 
         binding.InterfaceObjectPropertyCount = Math.Max(binding.InterfaceObjectPropertyCount, Adapter.GetPropertyCount(interfaceObject));
         binding.PrototypePropertyCount = Math.Max(binding.PrototypePropertyCount, Adapter.GetPropertyCount(prototype));

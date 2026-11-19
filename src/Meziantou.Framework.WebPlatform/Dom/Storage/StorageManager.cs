@@ -117,26 +117,7 @@ public sealed class StorageManager
     /// </summary>
     /// <seealso href="https://storage.spec.whatwg.org/#dom-storagemanager-estimate"/>
     [IdlMember("estimate", "https://storage.spec.whatwg.org/#dom-storagemanager-estimate")]
-    public Task<StorageEstimate> Estimate()
-    {
-        if (_global.EnvironmentDocument.Origin.IsOpaque)
-            return Task.FromException<StorageEstimate>(new TypeErrorException("The storage cannot be used by a document whose origin is opaque"));
-
-        StorageEstimate estimate;
-        try
-        {
-            var quota = (_global.Options.Storage ?? StorageOptions.Default).Quota;
-            estimate = new StorageEstimate { Usage = (ulong)Math.Max(0, GetUsage(_global)), Quota = (ulong)quota };
-        }
-#pragma warning disable CA1031 // "If ... failure, reject promise with a TypeError": the errors of the backends
-        catch (Exception ex)
-#pragma warning restore CA1031
-        {
-            return Task.FromException<StorageEstimate>(new TypeErrorException("The usage of the storage could not be estimated: " + ex.Message));
-        }
-
-        return Complete(estimate);
-    }
+    public Task<StorageEstimate> Estimate() => EstimateCore(_global, storageKey: null);
 
     /// <summary>
     /// Returns the root directory of the origin private file system (https://fs.spec.whatwg.org/#dom-storagemanager-getdirectory),
@@ -145,13 +126,7 @@ public sealed class StorageManager
     /// </summary>
     /// <seealso href="https://fs.spec.whatwg.org/#dom-storagemanager-getdirectory"/>
     [IdlMember("getDirectory", "https://fs.spec.whatwg.org/#dom-storagemanager-getdirectory")]
-    public Task<FileSystemDirectoryHandle> GetDirectory()
-    {
-        if (ResolveFileSystem(_global) is not var (backend, origin))
-            return Task.FromException<FileSystemDirectoryHandle>(new DomException("The file system cannot be used by a document whose origin is opaque", "SecurityError"));
-
-        return Task.FromResult(new FileSystemDirectoryHandle(_global, backend, origin, []));
-    }
+    public Task<FileSystemDirectoryHandle> GetDirectory() => GetDirectoryCore(_global, storageKey: null);
 
     /// <summary>The promises of the storage manager are settled by tasks (the algorithms run in parallel, then queue a storage task).</summary>
     private Task<T> Complete<T>(T value)
@@ -178,36 +153,75 @@ public sealed class StorageManager
     // The documents without browsing context have no persistent storage
     private static readonly StoragePersistenceState DetachedPersistence = new(readOnly: true);
 
-    internal static (FileSystemBackend Backend, string Origin)? ResolveFileSystem(GlobalScope global)
-        => StorageEndpoints.Resolve(global, global.Options.FileSystem, static context => context.FileSystemBackend, static () => new InMemoryFileSystemBackend());
+    internal static (FileSystemBackend Backend, string Origin)? ResolveFileSystem(GlobalScope global, StorageKey? storageKey = null)
+        => StorageEndpoints.Resolve(global, global.Options.FileSystem, static context => context.FileSystemBackend, static () => new InMemoryFileSystemBackend(), storageKey);
 
-    /// <summary>The usage of the storage endpoints of the storage key of a global object, as their storages report it.</summary>
-    internal static long GetUsage(GlobalScope global)
+    /// <summary>
+    /// The usage of the storage endpoints of the storage key of a global object (or of <paramref name="storageKey"/>), as their
+    /// storages report it. The local storage is counted for the default bucket only.
+    /// </summary>
+    internal static long GetUsage(GlobalScope global, StorageKey? storageKey = null)
     {
         var options = global.Options;
         long usage = 0;
-        if (StorageEndpoints.Resolve(global, options.IndexedDB, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend()) is var (indexedDB, indexedDBOrigin))
+        if (StorageEndpoints.Resolve(global, options.IndexedDB, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend(), storageKey) is var (indexedDB, indexedDBOrigin))
         {
             usage += indexedDB.GetUsage(indexedDBOrigin);
         }
 
-        if (StorageEndpoints.Resolve(global, options.CacheStorage, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend()) is var (caches, cachesOrigin))
+        if (StorageEndpoints.Resolve(global, options.CacheStorage, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend(), storageKey) is var (caches, cachesOrigin))
         {
             usage += caches.GetUsage(cachesOrigin);
         }
 
-        if (ResolveFileSystem(global) is var (fileSystem, fileSystemOrigin))
+        if (ResolveFileSystem(global, storageKey) is var (fileSystem, fileSystemOrigin))
         {
             usage += fileSystem.GetUsage(fileSystemOrigin);
         }
 
         var environment = global.EnvironmentDocument;
-        if (environment.EnvironmentBrowsingContext is { } browsingContext && ServiceWorkerRegistry.GetStorageKey(environment) is { } key)
+        if (environment.EnvironmentBrowsingContext is { } browsingContext && (storageKey ?? ServiceWorkerRegistry.GetStorageKey(environment)) is { Bucket: null } key)
         {
             usage += browsingContext.LocalStorageShed.GetUsage(key);
         }
 
         return usage;
+    }
+
+    /// <summary>
+    /// The storage estimate of the storage key of a global object (or of <paramref name="storageKey"/>), settled by a task
+    /// (see <see cref="Estimate"/>).
+    /// </summary>
+    internal static Task<StorageEstimate> EstimateCore(GlobalScope global, StorageKey? storageKey, long? quota = null)
+    {
+        if (global.EnvironmentDocument.Origin.IsOpaque)
+            return Task.FromException<StorageEstimate>(new TypeErrorException("The storage cannot be used by a document whose origin is opaque"));
+
+        StorageEstimate estimate;
+        try
+        {
+            var effectiveQuota = quota ?? (global.Options.Storage ?? StorageOptions.Default).Quota;
+            estimate = new StorageEstimate { Usage = (ulong)Math.Max(0, GetUsage(global, storageKey)), Quota = (ulong)effectiveQuota };
+        }
+#pragma warning disable CA1031 // "If ... failure, reject promise with a TypeError": the errors of the backends
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            return Task.FromException<StorageEstimate>(new TypeErrorException("The usage of the storage could not be estimated: " + ex.Message));
+        }
+
+        var completion = new TaskCompletionSource<StorageEstimate>();
+        global.QueueGlobalTask(() => completion.TrySetResult(estimate));
+        return completion.Task;
+    }
+
+    /// <summary>The root directory of the origin private file system of a storage key (see <see cref="GetDirectory"/>).</summary>
+    internal static Task<FileSystemDirectoryHandle> GetDirectoryCore(GlobalScope global, StorageKey? storageKey)
+    {
+        if (ResolveFileSystem(global, storageKey) is not var (backend, origin))
+            return Task.FromException<FileSystemDirectoryHandle>(new DomException("The file system cannot be used by a document whose origin is opaque", "SecurityError"));
+
+        return Task.FromResult(new FileSystemDirectoryHandle(global, backend, origin, []));
     }
 
     /// <summary>

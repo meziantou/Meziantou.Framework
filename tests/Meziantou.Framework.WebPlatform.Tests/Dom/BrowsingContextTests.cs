@@ -2223,6 +2223,39 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public async Task RequestStorageAccess_WithTypes_GivesTheUnpartitionedStorageToACrossSiteIframe()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>frame</p>")));
+        var permissions = new PermissionStore();
+        permissions.SetState("storage-access", PermissionState.Granted);
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, Permissions = permissions });
+        var top = Load(context, "<iframe src='https://other.example/frame.html'></iframe>");
+        var frame = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!.Document;
+
+        #region WebPlatform_StorageAccessHandle
+        // A frame of https://other.example in a page of another site: window.localStorage is partitioned by the top-level site
+        frame.DefaultView!.LocalStorage.SetItem("partitioned", "1");
+
+        // The handle gives the storage of https://other.example when it is not embedded by another site
+        var request = frame.RequestStorageAccess(new StorageAccessTypes { LocalStorage = true, IndexedDB = true });
+        context.EventLoop.RunUntilIdle();
+        var handle = await request;
+        handle.LocalStorage.SetItem("unpartitioned", "2");
+        Assert.Null(handle.LocalStorage.GetItem("partitioned"));
+        Assert.Null(frame.DefaultView.LocalStorage.GetItem("unpartitioned"));
+
+        // The members that were not requested throw an InvalidStateError
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => handle.SessionStorage).Name);
+        #endregion
+
+        // The request is not the request of the unpartitioned cookies, and a request without type is rejected
+        Assert.False(frame.EnvironmentHasStorageAccess);
+        var empty = frame.RequestStorageAccess(new StorageAccessTypes());
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(empty.Exception?.InnerException).Name);
+    }
+
+    [Fact]
     public void CookieStoreSet_IsRejectedForABlockedUnpartitionedCookieOfACrossSiteIframe()
     {
         var cookies = new CookieJar { BlockThirdPartyCookies = true };

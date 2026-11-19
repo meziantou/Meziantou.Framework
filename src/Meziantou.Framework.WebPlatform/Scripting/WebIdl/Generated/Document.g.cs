@@ -621,6 +621,11 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
         o.ExitPointerLock(); return r.Adapter.Undefined;
     }
+    private static TValue Op_hasUnpartitionedCookieAccess(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
+        var result = o.HasUnpartitionedCookieAccess(); return r.ToPromise(result, static (r, value) => r.FromBoolean(value));
+    }
     private static TValue Op_getSelection(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
@@ -631,10 +636,25 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
         var result = o.HasStorageAccess(); return r.ToPromise(result, static (r, value) => r.FromBoolean(value));
     }
+    private static readonly global::Meziantou.Framework.WebPlatform.Scripting.OverloadInfo[] Op_requestStorageAccess_Overloads = [new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] {  }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("StorageAccessTypes", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, false, false) })];
     private static TValue Op_requestStorageAccess(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
-        var result = o.RequestStorageAccess(); return r.ToPromise(result);
+        switch (r.SelectOverload("requestStorageAccess", Op_requestStorageAccess_Overloads, a))
+        {
+            case 0:
+            {
+                var result = o.RequestStorageAccess(); return r.ToPromise(result);
+            }
+            case 1:
+            {
+                if (a.Length < 1) throw r.NotEnoughArguments("requestStorageAccess", 1, a.Length);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_StorageAccessTypes(r, a[0]);
+                var result = o.RequestStorageAccess(a0); return r.ToPromise(result, static (r, value) => r.Wrap(value));
+            }
+            default:
+                throw new global::System.InvalidOperationException("Unexpected overload");
+        }
     }
     private static TValue Op_getBoxQuads(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -960,6 +980,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineOperation(instanceTarget, "captureEvents", 0, Op_captureEvents);
         r.DefineOperation(instanceTarget, "releaseEvents", 0, Op_releaseEvents);
         r.DefineOperation(instanceTarget, "exitPointerLock", 0, Op_exitPointerLock);
+        r.DefineOperation(instanceTarget, "hasUnpartitionedCookieAccess", 0, Op_hasUnpartitionedCookieAccess, returnsPromise: true);
         r.DefineOperation(instanceTarget, "getSelection", 0, Op_getSelection);
         r.DefineOperation(instanceTarget, "hasStorageAccess", 0, Op_hasStorageAccess, returnsPromise: true);
         r.DefineOperation(instanceTarget, "requestStorageAccess", 0, Op_requestStorageAccess, returnsPromise: true);

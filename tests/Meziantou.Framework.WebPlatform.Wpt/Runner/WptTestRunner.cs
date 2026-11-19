@@ -184,8 +184,8 @@ internal sealed partial class WptTestRunner
     /// The tests that expect the user agent to block the unpartitioned third-party cookies by default, as the browsers that
     /// block them (Safari, and Chromium in the configurations that test it, where these tests run): the tentative tests of
     /// third-party cookie blocking, the <c>Sec-Fetch-Storage-Access</c> header of the Fetch Metadata tests (<c>none</c> for
-    /// the cross-site requests), and the Storage Access API tests that expect a request without user activation to be
-    /// denied. The other tests run with the default of the library (<see cref="CookieJar.BlockThirdPartyCookies"/> is
+    /// the cross-site requests), and the Storage Access API tests that expect a request without user activation, or whose
+    /// permission is denied, to be rejected. The other tests run with the default of the library (<see cref="CookieJar.BlockThirdPartyCookies"/> is
     /// false): the <c>SameSite</c> tests of <c>cookies/</c> expect the <c>SameSite=None</c> cookies to be sent and stored
     /// in the cross-site contexts.
     /// </summary>
@@ -195,6 +195,7 @@ internal sealed partial class WptTestRunner
         "fetch/metadata/",
         "storage-access-api/requestStorageAccess-cross-site-iframe.",
         "storage-access-api/requestStorageAccess-nested-cross-site-iframe.",
+        "storage-access-api/storage-access-beyond-cookies.",
     ];
 
     private static bool BlocksThirdPartyCookies(string testId)

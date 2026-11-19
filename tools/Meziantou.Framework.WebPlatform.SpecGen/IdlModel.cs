@@ -386,6 +386,7 @@ internal sealed partial class IdlModel
         AddContainerQueryListChangeEvent(model);
         AddPaintWorkletExtensions(model);
         AddMediaSourceHandleToMediaProvider(model);
+        AddRequestStorageAccessTypes(model);
         AddLayoutAndAnimationWorkletExtensions(model);
         AddContentVisibilityAutoStateChangeEventHandler(model);
         RenameSnapEventHandlers(model);
@@ -1056,6 +1057,34 @@ internal sealed partial class IdlModel
             Source = "shadow-dom",
             DeclaringDefinition = definition.Name,
             ExperimentalApi = "ShadowRootExtensions",
+        });
+    }
+
+    /// <summary>
+    /// The <c>requestStorageAccess(types)</c> overload of Document defined by Extending Storage Access API (SAA) to non-cookie
+    /// storage (https://privacycg.github.io/saa-non-cookie-storage/#request-storage-access-types), which the IDL extracted
+    /// by webref does not include (only <c>hasUnpartitionedCookieAccess()</c>, <c>StorageAccessTypes</c> and
+    /// <c>StorageAccessHandle</c>):
+    /// <code>
+    /// partial interface Document {
+    ///   Promise&lt;StorageAccessHandle&gt; requestStorageAccess(StorageAccessTypes types);
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddRequestStorageAccessTypes(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("Document", out var definition) || !model.Definitions.ContainsKey("StorageAccessHandle"))
+            return;
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Operation,
+            Name = "requestStorageAccess",
+            Type = new IdlType { Generic = "Promise", Subtypes = [new IdlType { Name = "StorageAccessHandle" }] },
+            Arguments = [new IdlArgument { Name = "types", Type = new IdlType { Name = "StorageAccessTypes" } }],
+            Href = "https://privacycg.github.io/saa-non-cookie-storage/#dom-document-requeststorageaccess-types",
+            Source = "saa-non-cookie-storage",
+            DeclaringDefinition = definition.Name,
         });
     }
 

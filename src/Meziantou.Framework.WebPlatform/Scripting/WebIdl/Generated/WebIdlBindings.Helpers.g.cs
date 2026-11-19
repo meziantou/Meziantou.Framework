@@ -3856,6 +3856,25 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_StorageAccessTypes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "BroadcastChannel", r.FromBoolean(value.BroadcastChannel));
+        r.SetMember(result, "SharedWorker", r.FromBoolean(value.SharedWorker));
+        r.SetMember(result, "all", r.FromBoolean(value.All));
+        r.SetMember(result, "caches", r.FromBoolean(value.Caches));
+        r.SetMember(result, "cookies", r.FromBoolean(value.Cookies));
+        r.SetMember(result, "createObjectURL", r.FromBoolean(value.CreateObjectUrl));
+        r.SetMember(result, "estimate", r.FromBoolean(value.Estimate));
+        r.SetMember(result, "getDirectory", r.FromBoolean(value.GetDirectory));
+        r.SetMember(result, "indexedDB", r.FromBoolean(value.IndexedDB));
+        r.SetMember(result, "localStorage", r.FromBoolean(value.LocalStorage));
+        r.SetMember(result, "locks", r.FromBoolean(value.Locks));
+        r.SetMember(result, "revokeObjectURL", r.FromBoolean(value.RevokeObjectUrl));
+        r.SetMember(result, "sessionStorage", r.FromBoolean(value.SessionStorage));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_StorageEstimate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.StorageEstimate value)
     {
         var result = r.CreateObject();
@@ -12024,6 +12043,53 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             EndOffset = m1,
             StartContainer = m2,
             StartOffset = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes ToDictionary_Dom_StorageAccessTypes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "StorageAccessTypes");
+        var m0_value = r.GetDictionaryMember(value, "BroadcastChannel");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "SharedWorker");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "all");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "caches");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (bool)false : r.ToBoolean(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "cookies");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (bool)false : r.ToBoolean(m4_value);
+        var m5_value = r.GetDictionaryMember(value, "createObjectURL");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (bool)false : r.ToBoolean(m5_value);
+        var m6_value = r.GetDictionaryMember(value, "estimate");
+        var m6 = r.Adapter.IsUndefined(m6_value) ? (bool)false : r.ToBoolean(m6_value);
+        var m7_value = r.GetDictionaryMember(value, "getDirectory");
+        var m7 = r.Adapter.IsUndefined(m7_value) ? (bool)false : r.ToBoolean(m7_value);
+        var m8_value = r.GetDictionaryMember(value, "indexedDB");
+        var m8 = r.Adapter.IsUndefined(m8_value) ? (bool)false : r.ToBoolean(m8_value);
+        var m9_value = r.GetDictionaryMember(value, "localStorage");
+        var m9 = r.Adapter.IsUndefined(m9_value) ? (bool)false : r.ToBoolean(m9_value);
+        var m10_value = r.GetDictionaryMember(value, "locks");
+        var m10 = r.Adapter.IsUndefined(m10_value) ? (bool)false : r.ToBoolean(m10_value);
+        var m11_value = r.GetDictionaryMember(value, "revokeObjectURL");
+        var m11 = r.Adapter.IsUndefined(m11_value) ? (bool)false : r.ToBoolean(m11_value);
+        var m12_value = r.GetDictionaryMember(value, "sessionStorage");
+        var m12 = r.Adapter.IsUndefined(m12_value) ? (bool)false : r.ToBoolean(m12_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes
+        {
+            BroadcastChannel = m0,
+            SharedWorker = m1,
+            All = m2,
+            Caches = m3,
+            Cookies = m4,
+            CreateObjectUrl = m5,
+            Estimate = m6,
+            GetDirectory = m7,
+            IndexedDB = m8,
+            LocalStorage = m9,
+            Locks = m10,
+            RevokeObjectUrl = m11,
+            SessionStorage = m12,
         };
     }
 

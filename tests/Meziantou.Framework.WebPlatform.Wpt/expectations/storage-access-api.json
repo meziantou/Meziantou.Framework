@@ -92,16 +92,14 @@
     }
   },
   "storage-access-api/storage-access-beyond-cookies.BlobURLSharedWorker.sub.https.tentative.window.js": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Verify a blob URL created via URL.createObjectURL from the third-party context shouldn't be useable as the shared worker script when it's passed to saa_handle.SharedWorker.": "FAIL"
+      "Verify a blob URL created via URL.createObjectURL from the third-party context shouldn't be useable as the shared worker script when it's passed to saa_handle.SharedWorker.": "TIMEOUT"
     }
   },
   "storage-access-api/storage-access-beyond-cookies.BroadcastChannel.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Broadcast Channel": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.SharedWorker.sub.https.window.js": {
     "total": 1,
@@ -116,58 +114,31 @@
     }
   },
   "storage-access-api/storage-access-beyond-cookies.caches.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Cache Storage": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.cookies.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Cookies": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.estimate.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Quota": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.getDirectory.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Origin Private File System": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.indexedDB.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for IndexedDB": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.localStorage.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Local Storage": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.locks.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Web Locks": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.none.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for None": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.sessionStorage.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Session Storage": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.thirdPartyBlobStorage.sub.https.window.js": {
     "total": 1,

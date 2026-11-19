@@ -287,6 +287,16 @@ public sealed class SharedWorker : EventTarget
     /// <summary>Connects to a shared worker whose owner is <paramref name="owner"/> (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker).</summary>
     [NotInIdl("The .NET constructor whose owner is explicit")]
     public SharedWorker(GlobalScope owner, string scriptUrl, SharedWorkerOptions? options = null)
+        : this(owner, scriptUrl, options, firstParty: false)
+    {
+    }
+
+    /// <summary>
+    /// Connects to a shared worker whose owner is <paramref name="owner"/>; when <paramref name="firstParty"/> is true, the
+    /// worker is the one of the origin in its first-party contexts (<see cref="StorageAccessHandle.CreateSharedWorker(string, SharedWorkerOptions?)"/>)
+    /// instead of the one of the partition of the owner.
+    /// </summary>
+    internal SharedWorker(GlobalScope owner, string scriptUrl, SharedWorkerOptions? options, bool firstParty)
     {
         ArgumentNullException.ThrowIfNull(owner);
         ArgumentNullException.ThrowIfNull(scriptUrl);
@@ -295,7 +305,7 @@ public sealed class SharedWorker : EventTarget
         var url = Html.Reflection.EncodingParseUrl(owner.EnvironmentDocument, scriptUrl) ?? throw new DomException($"The URL '{scriptUrl}' is invalid", "SyntaxError");
         Port = new MessagePort();
         Port.SetRelevantGlobalCore(owner);
-        SharedWorkerManager.Connect(owner, this, url, options);
+        SharedWorkerManager.Connect(owner, this, url, options, firstParty);
     }
 
     /// <summary>Gets the port connected to the <c>connect</c> event of the worker (https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker-port).</summary>
@@ -321,7 +331,7 @@ internal static class SharedWorkerManager
 {
     private static readonly ConditionalWeakTable<DomEventLoop, List<(string Key, WorkerAgent Agent, List<SharedWorker> Objects)>> Workers = [];
 
-    public static void Connect(GlobalScope owner, SharedWorker worker, UrlRecord url, SharedWorkerOptions options)
+    public static void Connect(GlobalScope owner, SharedWorker worker, UrlRecord url, SharedWorkerOptions options, bool firstParty = false)
     {
         var groupLoop = GetGroupEventLoop(owner.EventLoop);
         var registry = Workers.GetValue(groupLoop, static _ => []);
@@ -329,7 +339,10 @@ internal static class SharedWorkerManager
         // The shared workers are partitioned by the site of the top-level document (https://privacycg.github.io/storage-partitioning/),
         // as in the browsers: a secure frame of an https page does not connect to the worker created by the same frame in an
         // http page, which is not a secure context (secure-contexts/shared-worker-*.tentative.https.html)
-        var topLevelSite = owner.EnvironmentDocument.EnvironmentRootDocument?.BrowsingContext?.Top.Document.Origin is { IsOpaque: false } topLevelOrigin ? topLevelOrigin.GetSiteKey().ToString() : "";
+        // http page, which is not a secure context (secure-contexts/shared-worker-*.tentative.https.html). The first-party
+        // worker of a StorageAccessHandle is the one of the documents of the origin that are not embedded by another site.
+        var topLevelSite = firstParty && !owner.EnvironmentDocument.Origin.IsOpaque ? owner.EnvironmentDocument.Origin.GetSiteKey().ToString()
+            : owner.EnvironmentDocument.EnvironmentRootDocument?.BrowsingContext?.Top.Document.Origin is { IsOpaque: false } topLevelOrigin ? topLevelOrigin.GetSiteKey().ToString() : "";
         var key = owner.Origin + "\n" + url.Serialize() + "\n" + options.Name + "\n" + topLevelSite;
         WorkerAgent? agent = null;
         lock (registry)

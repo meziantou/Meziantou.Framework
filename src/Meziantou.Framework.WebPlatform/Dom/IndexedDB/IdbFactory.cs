@@ -8,12 +8,16 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [IdlInterface("IDBFactory", "https://w3c.github.io/IndexedDB/#idbfactory")]
 public sealed class IdbFactory
 {
-    internal IdbFactory(GlobalScope global)
+    internal IdbFactory(GlobalScope global, StorageKey? storageKey = null)
     {
         Global = global;
+        StorageKey = storageKey;
     }
 
     internal GlobalScope Global { get; }
+
+    /// <summary>The storage key of the databases (the unpartitioned storage of a <see cref="StorageAccessHandle"/>, or a storage bucket), or null for the storage key of <see cref="Global"/>.</summary>
+    internal StorageKey? StorageKey { get; }
 
     // The connections and the open requests of the global object, closed when it is destroyed
     private readonly List<IdbDatabase> _connections = [];
@@ -64,7 +68,7 @@ public sealed class IdbFactory
     [IdlMember("databases", "https://w3c.github.io/IndexedDB/#dom-idbfactory-databases")]
     public Task<IReadOnlyList<IdbDatabaseInfo>> Databases()
     {
-        if (IndexedDBStorage.Resolve(Global) is not { } storage)
+        if (IndexedDBStorage.Resolve(Global, StorageKey) is not { } storage)
             return Task.FromException<IReadOnlyList<IdbDatabaseInfo>>(new DomException("The origin of the document is opaque", "SecurityError"));
 
         var (backend, origin) = storage;
@@ -171,5 +175,5 @@ public sealed class IdbFactory
     }
 
     private (IndexedDBBackend Backend, string Origin) ObtainStorage()
-        => IndexedDBStorage.Resolve(Global) ?? throw new DomException("The origin of the document is opaque", "SecurityError");
+        => IndexedDBStorage.Resolve(Global, StorageKey) ?? throw new DomException("The origin of the document is opaque", "SecurityError");
 }

@@ -3962,6 +3962,10 @@ public sealed class MarkdownSyntaxTreeTests
         // The line ending of a title is a space of the title
         var link = MarkdownSyntaxTree.ParseText("[x](/u \"a\nb\")\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3).DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
         Assert.Equal("a b", link.Title);
+
+        // A space between two escaped characters is text
+        var escaped = MarkdownSyntaxTree.ParseText("\\*\n\\*\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
+        Assert.Equal("* *", escaped.GetPlainText());
     }
 
     [Theory]

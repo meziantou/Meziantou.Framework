@@ -88,7 +88,7 @@ private sealed class RemoveHtml : MarkdownSyntaxRewriter
 <!-- endref -->
 
 A node that replaces another can change how the text around it is read, such as a token without the blank line that
-separated two paragraphs. `WithRoot` on a [MarkdownSyntaxTree](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree)
+separated two paragraphs. [WithRoot](cref:Meziantou.Framework.Language.SyntaxTree.WithRoot(Meziantou.Framework.Language.SyntaxNode)) on a [MarkdownSyntaxTree](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree)
 parses the text of the root again, so that the tree it returns is the one of its text.
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MarkdownSyntaxTreeTests.cs;region=MarkdownSyntaxRewriter_Usage;format=md-fenced-code-block;dedent=true -->
@@ -114,7 +114,7 @@ keep the rest of the node as it was. The copy is in no tree: put it in the place
 | [MarkdownLinkReferenceDefinitionSyntax](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax) | [WithDestination](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax.WithDestination(System.String)), [WithTitle](cref:Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax.WithTitle(System.String)) |
 | [MarkdownCodeBlockSyntax](cref:Meziantou.Framework.Markdown.MarkdownCodeBlockSyntax) | [WithInfo](cref:Meziantou.Framework.Markdown.MarkdownCodeBlockSyntax.WithInfo(System.String)) |
 
-`WithLevel` changes the number of `#` of an ATX heading, and the underline of a setext heading for the levels 1 and 2. A
+[WithLevel](cref:Meziantou.Framework.Markdown.MarkdownHeadingSyntax.WithLevel(System.Int32)) changes the number of `#` of an ATX heading, and the underline of a setext heading for the levels 1 and 2. A
 setext heading of level 3 to 6 becomes an ATX heading, which has one line: its lines are joined with spaces, and a hard
 line break becomes a space.
 
@@ -176,7 +176,8 @@ Assert.Equal("steps", tree.GetRoot().DescendantNodes().OfType<MarkdownListSyntax
 <!-- endref -->
 
 [MarkdownGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownGenericAttributes) is a record: `with` changes
-one part, such as the id. Each call of `WithGenericAttributes` parses the whole text again. To change many blocks, use a
+one part, such as the id. Each call of
+[WithGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTree.WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownBlockSyntax,Meziantou.Framework.Markdown.MarkdownGenericAttributes)) parses the whole text again. To change many blocks, use a
 [MarkdownSyntaxTreeEditor](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor): it records the changes to the
 blocks of a tree, and [GetChangedTree](cref:Meziantou.Framework.Markdown.MarkdownSyntaxTreeEditor.GetChangedTree)
 writes them and parses the text once. Here, every heading gets the identifier it has, so the links to it keep working

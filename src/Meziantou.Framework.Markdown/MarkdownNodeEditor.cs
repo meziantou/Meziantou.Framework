@@ -144,11 +144,11 @@ internal static class MarkdownNodeEditor
             Green.SyntaxToken replacement;
             if (green.RawKind is (int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken)
             {
-                // The space is part of the token the line ending is in, such as the title of a link or the label of a reference, which
-                // are read from the tokens of their kind
+                // The space is part of the title of a link or the label of a reference that the line ending is in, which are read from
+                // the tokens of their kind. Other tokens, such as an escaped character, are not text that can contain a space.
                 var siblings = token.Parent!.ChildNodesAndTokens().ToList();
                 var index = siblings.IndexOf(token);
-                var kind = index > 0 && index < siblings.Count - 1 && siblings[index - 1].IsToken && siblings[index + 1].IsToken && siblings[index - 1].RawKind == siblings[index + 1].RawKind && siblings[index - 1].RawKind is not ((int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken)
+                var kind = index > 0 && index < siblings.Count - 1 && siblings[index - 1].RawKind is (int)SyntaxKind.LinkTitleToken or (int)SyntaxKind.LinkLabelToken && siblings[index + 1].RawKind == siblings[index - 1].RawKind
                     ? (SyntaxKind)siblings[index - 1].RawKind
                     : token.Parent switch
                     {

@@ -5,6 +5,7 @@ using Meziantou.Framework.SnapshotTesting;
 using Meziantou.Framework.WebPlatform.Dom;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using static Meziantou.AspNetCore.Testing.Expectations;
 
 namespace Meziantou.AspNetCore.Testing.Tests;
@@ -54,6 +55,20 @@ public sealed class ComponentTestHostTests
             ConfigureBrowsingContext = options => options with { ScriptEngine = null },
         }));
         Assert.Contains("cannot replace the DocumentLoader or the ScriptEngine", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TimeProvider_IsTheClockOfTheDates()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            EnableJavaScript = true,
+            TimeProvider = clock,
+            HostPage = "<!DOCTYPE html><html><head><script>document.title = new Date().toISOString();</script></head><body></body></html>",
+        });
+
+        Assert.Equal("2026-01-10T12:00:00.000Z", host.Document.Title);
     }
 
     [Fact]

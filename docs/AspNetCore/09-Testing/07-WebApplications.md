@@ -145,6 +145,29 @@ When the content returned by [ProvideContent](cref:Meziantou.AspNetCore.Testing.
 [NotifyContentChanged](cref:Meziantou.AspNetCore.Testing.FakeClipboard.NotifyContentChanged) fires the `clipboardchange`
 events of the pages.
 
+## Clock
+
+[TimeProvider](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.TimeProvider) is the clock of the pages: the
+timers (`setTimeout()`, the animations...) and the dates (`Date.now()`, `new Date()`, and `DateTime.Now` in a Blazor
+WebAssembly application, which reads the dates of JavaScript), with the local time zone of the clock. Use a
+`FakeTimeProvider` (Microsoft.Extensions.TimeProvider.Testing) to test the code that depends on the date:
+
+<!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_TimeProvider;format=md-fenced-code-block;dedent=true -->
+```csharp
+var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero));
+clock.SetLocalTimeZone(TimeZoneInfo.CreateCustomTimeZone("Test", TimeSpan.FromHours(2), "Test", "Test"));
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { TimeProvider = clock });
+
+// The page writes new Date().toISOString() and new Date().getTimezoneOffset()
+var page = await browser.OpenAsync("/clock");
+
+Assert.Equal("2026-01-10T12:00:00.000Z -120", page.Find("output").TextContent);
+```
+<!-- endref -->
+
+[ComponentTestHostOptions.TimeProvider](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions.TimeProvider) is the clock of the page that hosts the components in the same way.
+
 ## Waiting
 
 Each action waits until the page is idle: no task in its event loop, and no request in progress. Some requests never

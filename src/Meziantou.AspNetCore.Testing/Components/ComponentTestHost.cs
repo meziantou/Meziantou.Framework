@@ -250,7 +250,7 @@ public sealed class ComponentTestHost : TestPage
     }
 
     private static ComponentScriptEngine? CreateScriptEngine(ComponentTestHostOptions options)
-        => options.EnableJavaScript ? new ComponentScriptEngine(new JavaScriptScriptEngineOptions { Timeout = options.DefaultTimeout }) : null;
+        => options.EnableJavaScript ? new ComponentScriptEngine(new JavaScriptScriptEngineOptions { Timeout = options.DefaultTimeout, TimeProvider = options.TimeProvider }) : null;
 
     private Element GetContainer(RenderOptions? options)
     {

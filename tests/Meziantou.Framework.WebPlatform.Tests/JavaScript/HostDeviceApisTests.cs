@@ -3716,6 +3716,30 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void SelectSettings_TheAdvancedConstraintSetsDoNotTakeTheCandidatesOfTheBasicOnes()
+    {
+        // The heights derived from the aspect ratios of the advanced sets must not fill the candidates before the height of the basic set
+        var advanced = Enumerable.Range(0, 16).Select(i => (MediaTrackConstraintSet)new MediaTrackConstraints
+        {
+            AspectRatio = new ConstrainDoubleRange { Ideal = 1.10 + (i * 0.01) },
+        }).ToList();
+        var model = MediaTrackSourceModel.Create(MediaTrackKinds.Video, new MediaTrackCapabilities(), new MediaTrackSettings { Width = 1920, Height = 1080, FrameRate = 30 }, [new MediaCaptureVideoMode(1920, 1080, 30)]);
+
+        var result = MediaTrackConstraintProcessing.SelectSettings(model, new MediaTrackConstraints
+        {
+            Width = new ConstrainULongRange { Exact = 640 },
+            Height = new ConstrainULongRange { Exact = 400 },
+            FrameRate = new ConstrainDoubleRange { Exact = 15 },
+            Advanced = advanced,
+        });
+
+        Assert.True(result.Succeeded, result.FailedConstraint);
+        Assert.Equal(640d, result.Settings!["width"]);
+        Assert.Equal(400d, result.Settings["height"]);
+        Assert.Equal(15d, result.Settings["frameRate"]);
+    }
+
+    [Fact]
     public void TrackStats_CountTheFramesOfEachState()
     {
         var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);

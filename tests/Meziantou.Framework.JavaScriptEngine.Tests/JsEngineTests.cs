@@ -2580,6 +2580,46 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void Documentation_HostDefinedModules()
+    {
+        #region JavaScriptEngine_RunHostDefinedModule
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = """
+                import { count, increment } from 'app:counter';
+                const before = count;
+                increment();
+                increment();
+                export const result = `${before} -> ${count}`;
+                """,
+            ["./config.js"] = "export const step = 5;",
+        };
+
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new CounterModuleLoader(files) });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule(files["main.js"], "main.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        module.Evaluate();
+        engine.RunJobs();
+
+        using (engine.Enter())
+        {
+            var exports = module.GetNamespace().AsObject();
+            Assert.Equal("0 -> 10", exports.GetProperty("result").AsString());
+        }
+        #endregion
+
+        using (engine.Enter())
+        {
+            Assert.Same(module, JsModule.FromNamespace(module.GetNamespace()));
+            Assert.Null(JsModule.FromNamespace(realm.CreateObject()));
+            Assert.Null(JsModule.FromNamespace(JsValue.Undefined));
+        }
+    }
+
+    [Fact]
     public void Documentation_ModuleErrors()
     {
         #region JavaScriptEngine_ModuleErrors

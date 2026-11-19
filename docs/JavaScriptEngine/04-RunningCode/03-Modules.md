@@ -286,3 +286,107 @@ Assert.Equal(["math.js", "add.js", "main.js: 3"], logs);
 `module.ModuleSource` before it completes the request. The object is a [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) that extends
 `realm.AbstractModuleSource` and whose [ModuleSourceClassName](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.ModuleSourceClassName) is set (for instance `WebAssembly.Module`). The source
 phase import of a module without module source, such as a JavaScript module, throws a `SyntaxError`.
+
+## Modules implemented by the host
+
+[CreateHostDefinedModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateHostDefinedModule) creates a module implemented in .NET that imports other modules, such as a
+WebAssembly module. Unlike a synthetic module, it requests modules: they are loaded, linked and evaluated before it, as
+the imports of a JavaScript module, and it can be part of a cycle of imports. This loader serves a module that reads the
+`step` export of `./config.js` and exports a live binding:
+
+<!-- ref:../../../samples/Meziantou.Framework.JavaScriptEngine.Samples/CounterModuleLoader.cs;region=JavaScriptEngine_HostDefinedModule;format=md-fenced-code-block;dedent=true -->
+```csharp
+/// <summary>
+/// Loads the JavaScript files of a dictionary, and the "app:counter" module implemented in .NET: it imports the step of
+/// './config.js', and its count export is a live binding.
+/// </summary>
+public sealed class CounterModuleLoader(IReadOnlyDictionary<string, string> files) : JsModuleLoader
+{
+    // The same specifier must give the same module each time
+    private readonly Dictionary<string, JsModule> _modules = [];
+
+    protected override void LoadImportedModule(JsModuleLoadRequest request)
+    {
+        if (!_modules.TryGetValue(request.Specifier, out var module))
+        {
+            if (request.Specifier is "app:counter")
+            {
+                module = CreateCounterModule(request.Realm);
+            }
+            else if (files.TryGetValue(request.Specifier, out var code))
+            {
+                module = request.Realm.ParseModule(code, request.Specifier);
+            }
+            else
+            {
+                request.Fail("Cannot find the module '" + request.Specifier + "'");
+                return;
+            }
+
+            _modules[request.Specifier] = module;
+        }
+
+        request.Complete(module);
+    }
+
+    private static JsHostDefinedModule CreateCounterModule(JsRealm realm)
+    {
+        var count = 0.0;
+
+        // The modules it requests are evaluated before it: the evaluation steps read their exports
+        return realm.CreateHostDefinedModule(["./config.js"], ["count", "increment"], module =>
+        {
+            var step = module.GetImport("./config.js", "step").GetValue().AsNumber();
+            module.SetExportGetter("count", () => count); // the getter runs on each access to the binding
+            module.SetExport("increment", realm.CreateFunction("increment", 0, (_, _) =>
+            {
+                count += step;
+                return JsValue.Undefined;
+            }));
+        }, "app:counter");
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_RunHostDefinedModule;format=md-fenced-code-block;dedent=true -->
+```csharp
+var files = new Dictionary<string, string>(StringComparer.Ordinal)
+{
+    ["main.js"] = """
+        import { count, increment } from 'app:counter';
+        const before = count;
+        increment();
+        increment();
+        export const result = `${before} -> ${count}`;
+        """,
+    ["./config.js"] = "export const step = 5;",
+};
+
+using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new CounterModuleLoader(files) });
+var realm = engine.CreateRealm();
+var module = realm.ParseModule(files["main.js"], "main.js");
+module.LoadRequestedModules();
+engine.RunJobs();
+module.Link();
+module.Evaluate();
+engine.RunJobs();
+
+using (engine.Enter())
+{
+    var exports = module.GetNamespace().AsObject();
+    Assert.Equal("0 -> 10", exports.GetProperty("result").AsString());
+}
+```
+<!-- endref -->
+
+- The evaluation steps run when the module is evaluated, after the modules it requests (except in a cycle: a module
+  that imports this one, directly or not, may be evaluated after it).
+- [GetImport](cref:Meziantou.Framework.JavaScriptEngine.JsHostDefinedModule.GetImport) resolves an export of a requested module, through its re-exports, and throws a `SyntaxError` when the
+  module does not export the name. [TryGetValue](cref:Meziantou.Framework.JavaScriptEngine.JsModuleBinding.TryGetValue) returns false when the binding is not initialized yet (a `let`
+  or a `const` of a module of a cycle that is not evaluated yet), and [Module](cref:Meziantou.Framework.JavaScriptEngine.JsModuleBinding.Module) is the module that declares the
+  binding.
+- The exports are uninitialized until the evaluation steps set them: reading one throws a `ReferenceError`.
+  [SetExport](cref:Meziantou.Framework.JavaScriptEngine.JsHostDefinedModule.SetExport) sets a value, [SetExportGetter](cref:Meziantou.Framework.JavaScriptEngine.JsHostDefinedModule.SetExportGetter) a live binding whose getter runs on each access.
+- An exception thrown by the evaluation steps is the error of the evaluation of the module.
+- [JsModule.FromNamespace](cref:Meziantou.Framework.JavaScriptEngine.JsModule.FromNamespace) returns the module of a namespace object, such as the value of `import * as ns`.

@@ -221,6 +221,25 @@ public sealed partial class JsRealm
         return new JsSyntheticModule(this, url, hostDefined, exportNames, evaluate);
     }
 
+    /// <summary>
+    /// Creates a cyclic module defined by the host (e.g. a WebAssembly module): the modules of
+    /// <paramref name="requestedModules"/> are loaded by the module loader, linked and evaluated before it, then
+    /// <paramref name="evaluate"/> reads its imports with <see cref="JsHostDefinedModule.GetImport"/> and sets its exports
+    /// with <see cref="JsHostDefinedModule.SetExport"/> or <see cref="JsHostDefinedModule.SetExportGetter"/>.
+    /// </summary>
+    /// <param name="requestedModules">The specifiers of the modules that the module imports.</param>
+    /// <param name="exportNames">The names of the exports of the module.</param>
+    /// <param name="evaluate">The evaluation steps of the module. A <see cref="JsException"/> is the error of the evaluation.</param>
+    /// <param name="url">The URL of the module, used to resolve the specifiers by the module loader.</param>
+    /// <param name="hostDefined">The data of the host associated with the module.</param>
+    public JsHostDefinedModule CreateHostDefinedModule(IEnumerable<string> requestedModules, IEnumerable<string> exportNames, Action<JsHostDefinedModule> evaluate, string? url = null, object? hostDefined = null)
+    {
+        ArgumentNullException.ThrowIfNull(requestedModules);
+        ArgumentNullException.ThrowIfNull(exportNames);
+        ArgumentNullException.ThrowIfNull(evaluate);
+        return new JsHostDefinedModule(this, url, hostDefined, requestedModules, exportNames, evaluate);
+    }
+
     /// <summary>Evaluates code in this realm as an indirect <c>eval</c> and returns its completion value.</summary>
     /// <exception cref="JsException">The code threw an exception (a SyntaxError for invalid code).</exception>
     public JsValue Evaluate(string code)

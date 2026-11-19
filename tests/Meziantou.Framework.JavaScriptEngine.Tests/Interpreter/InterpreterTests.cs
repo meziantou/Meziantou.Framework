@@ -1025,6 +1025,45 @@ public sealed class InterpreterTests
                     return;
                 }
 
+                if (request.Specifier == "host-defined")
+                {
+                    // A host-defined cyclic module, as a WebAssembly module: it imports f from host-dep, which imports it
+                    var counter = 0;
+                    module = request.Realm.CreateHostDefinedModule(["host-dep"], ["value", "counter", "uninitialized", "dep"], m =>
+                    {
+                        m.SetExport("value", 42);
+                        m.SetExport("dep", m.GetImport("host-dep", "f").GetValue());
+                        m.SetExportGetter("counter", () => ++counter);
+                    }, request.Specifier);
+                    _modules[request.Specifier] = module;
+                    request.Complete(module);
+                    return;
+                }
+
+                if (request.Specifier == "host-tdz")
+                {
+                    // A host-defined module evaluated before the module it imports from (a cycle): the binding is not initialized
+                    module = request.Realm.CreateHostDefinedModule(["tdz-dep"], ["initialized", "missing"], m =>
+                    {
+                        var binding = m.GetImport("tdz-dep", "x");
+                        string error;
+                        try
+                        {
+                            m.GetImport("tdz-dep", "missing");
+                            error = "none";
+                        }
+                        catch (JsException ex)
+                        {
+                            error = ex.Message;
+                        }
+
+                        m.SetExport("initialized", $"{binding.TryGetValue(out _)},{binding.BindingName},{binding.Module == m.GetRequestedModule("tdz-dep")},{error}");
+                    }, request.Specifier);
+                    _modules[request.Specifier] = module;
+                    request.Complete(module);
+                    return;
+                }
+
                 if (!files.TryGetValue(request.Specifier, out var code))
                 {
                     request.Fail("Cannot find the module '" + request.Specifier + "'");
@@ -1322,6 +1361,36 @@ public sealed class InterpreterTests
         });
 
         Assert.Equal("true,true,true,AbstractModuleSource,Test.ModuleSource,,[object Test.ModuleSource]", result);
+    }
+
+    [Fact]
+    public void Module_HostDefinedModule_ExportsAreSetWhenItIsEvaluatedAfterItsDependencies()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = """
+                import { value, counter, dep } from 'host-defined';
+                import * as ns from 'host-defined';
+                let error;
+                try { ns.uninitialized; } catch (e) { error = e.name; }
+                globalThis.result = [value, counter, counter, dep(), error, Reflect.ownKeys(ns).filter(k => typeof k === 'string').join('|')].join(',');
+                """,
+            ["host-dep"] = "import { value } from 'host-defined'; export function f() { return value; }",
+        });
+
+        Assert.Equal("42,1,2,42,ReferenceError,counter|dep|uninitialized|value", result);
+    }
+
+    [Fact]
+    public void Module_HostDefinedModule_ImportsOfACycleAreNotInitialized()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import 'tdz-dep';",
+            ["tdz-dep"] = "import { initialized } from 'host-tdz'; export const x = 1; globalThis.result = initialized;",
+        });
+
+        Assert.Equal("False,x,True,SyntaxError: The requested module 'tdz-dep' does not provide an export named 'missing'", result);
     }
 
     [Fact]

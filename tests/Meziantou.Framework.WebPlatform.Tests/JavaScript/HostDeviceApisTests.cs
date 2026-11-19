@@ -67,6 +67,7 @@ public sealed class HostDeviceApisTests : IDisposable
             DocumentLoader = options.DocumentLoader,
             PendingInput = options.PendingInput,
             ProtocolHandlers = options.ProtocolHandlers,
+            UserPromptHandler = options.UserPromptHandler,
             TimeProvider = options.TimeProvider,
             Features = options.Features,
         });
@@ -2006,6 +2007,33 @@ public sealed class HostDeviceApisTests : IDisposable
 
         Run(browsingContext.Document, "navigator.unregisterProtocolHandler('web+soup', 'soup?url=%s')");
         Assert.Empty(protocolHandlers.Registry.Handlers);
+    }
+
+    [Fact]
+    public void ProtocolHandlers_NavigationToARegisteredSchemeAsksToLeaveThePageOnce()
+    {
+        var prompts = new List<UserPromptType>();
+        var protocolHandlers = new ProtocolHandlerOptions { RequestRegistration = _ => true };
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/soup?url=web%2Bsoup%3Achicken"] = new DocumentResource("<title>soup</title>");
+        var document = Load("<script>addEventListener('beforeunload', e => e.preventDefault());</script>", new BrowsingContextOptions
+        {
+            ProtocolHandlers = protocolHandlers,
+            DocumentLoader = loader,
+            UserPromptHandler = (_, prompt) =>
+            {
+                prompts.Add(prompt.Type);
+                return UserPromptResult.Accept();
+            },
+        });
+
+        Run(document, "navigator.registerProtocolHandler('web+soup', 'soup?url=%s')");
+        Activate(document);
+        var browsingContext = document.BrowsingContext!;
+        Run(document, "location.href = 'web+soup:chicken'");
+
+        Assert.Equal([UserPromptType.BeforeUnload], prompts);
+        Assert.Equal("soup", browsingContext.Document.Title);
     }
 
     [Fact]

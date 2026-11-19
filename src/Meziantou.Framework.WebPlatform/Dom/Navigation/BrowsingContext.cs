@@ -1310,6 +1310,15 @@ public sealed partial class BrowsingContext : IDisposable
         if (IsDestroyed)
             return;
 
+        // https://html.spec.whatwg.org/multipage/system-state.html#protocol-handler-invocation: a registered handler of the
+        // scheme handles the URL, so the navigation is a navigation to the URL of the handler. As in the browsers, the URL is
+        // translated when the navigation starts, so the checks (the sandboxing, the beforeunload event...) run once, for the
+        // URL that is navigated to.
+        if (traversalEntry is null && url.Scheme is not ("http" or "https" or "file" or "about" or "blob" or "data" or "javascript") && Options.ProtocolHandlers?.Registry.Translate(url) is { } handlerUrl)
+        {
+            url = handlerUrl;
+        }
+
         // As in the browsers, the navigables nested too deeply do not navigate (e.g. a document that loads itself in an
         // iframe with a relative URL would nest documents endlessly)
         if (GetNestingDepth() >= MaxNestingDepth && traversalEntry is null)
@@ -2026,13 +2035,6 @@ public sealed partial class BrowsingContext : IDisposable
             parameters.OpaqueOrigin = true;
             parameters.EmbedderPolicy = sourceDocument?.EmbedderPolicy;
             parameters.DocumentIsolationPolicy = sourceDocument?.DocumentIsolationPolicy ?? EmbedderPolicyValue.UnsafeNone;
-        }
-        else if (url.Scheme is not ("http" or "https" or "file") && Options.ProtocolHandlers?.Registry.Translate(url) is { } handlerUrl)
-        {
-            // https://html.spec.whatwg.org/multipage/system-state.html#protocol-handler-invocation: a registered handler of
-            // the scheme handles the URL: the navigable is navigated to the URL of the handler
-            Navigate(handlerUrl, sourceDocument, historyHandling, referrerPolicy: referrerPolicy, hasTransientActivation: sourceHasTransientActivation, userInvolvement: userInvolvement);
-            return;
         }
         else if (url.Scheme is not ("http" or "https" or "file"))
         {

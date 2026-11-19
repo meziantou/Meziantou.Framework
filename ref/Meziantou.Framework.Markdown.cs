@@ -89,6 +89,7 @@ namespace Meziantou.Framework.Markdown
     public abstract class MarkdownBlockSyntax : Meziantou.Framework.Markdown.MarkdownSyntaxNode
     {
         public Meziantou.Framework.Markdown.MarkdownGenericAttributes GetGenericAttributes() => throw null;
+        public Meziantou.Framework.Markdown.MarkdownBlockSyntax WithGenericAttributes(Meziantou.Framework.Markdown.MarkdownGenericAttributes? attributes) => throw null;
     }
 
     public sealed class MarkdownCodeBlockSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax

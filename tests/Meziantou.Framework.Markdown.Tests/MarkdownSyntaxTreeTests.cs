@@ -4050,6 +4050,29 @@ public sealed class MarkdownSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void ReadmeExample_HeadingIdentifiersWithRewriter()
+    {
+        #region MarkdownBlockSyntax_WithGenericAttributes
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.AutoIdentifiers };
+        var tree = MarkdownSyntaxTree.ParseText("# Introduction\n\nGetting started {.lead}\n===\n\n> ## Introduction\n", options);
+
+        // The rewriter changes all the headings in one pass, without parsing the document again
+        var root = new HeadingIdentifiers().Visit(tree.GetRoot())!;
+
+        Assert.Equal("# Introduction {#introduction}\n\nGetting started {#getting-started .lead}\n===\n\n> ## Introduction {#introduction-1}\n", root.ToFullString());
+        #endregion
+    }
+
+    #region MarkdownSyntaxRewriter_HeadingIdentifiers
+    private sealed class HeadingIdentifiers : MarkdownSyntaxRewriter
+    {
+        // The heading is the one of the tree, whose identifier and attributes are known
+        public override SyntaxNode? VisitMarkdownHeading(MarkdownHeadingSyntax node)
+            => node.Identifier is { } identifier ? node.WithGenericAttributes(node.GetGenericAttributes() with { Id = identifier }) : node;
+    }
+    #endregion
+
     [Theory]
     [InlineData("# Title\n", "# Title {#x .c data-a=1 title=\"a b\" hidden}\n")]
     [InlineData("## Title {#old .k} ##\n", "## Title {#x .c data-a=1 title=\"a b\" hidden}\n")]
@@ -4159,6 +4182,123 @@ public sealed class MarkdownSyntaxTreeTests
         // Markdig gives no attributes to a list item
         Assert.Throws<InvalidOperationException>(() => tree.WithGenericAttributes(tree.GetRoot().DescendantNodes().OfType<MarkdownListItemSyntax>().Single(), new MarkdownGenericAttributes("x", [], [])));
         Assert.Throws<InvalidOperationException>(() => withoutExtension.WithGenericAttributes(withoutExtension.GetRoot().Blocks[0], attributes: null));
+    }
+
+    [Theory]
+    [InlineData("# Title\n", "# Title {#x .c data-a=1}\n")]
+    [InlineData("## Title {#old .k} ##\n", "## Title {#x .c data-a=1}\n")]
+    [InlineData("## Title ##\n", "## Title ## {#x .c data-a=1}\n")]
+    [InlineData("> # Title {#old}\n", "> # Title {#x .c data-a=1}\n")]
+    [InlineData("Title {.k}\n===\n", "Title {#x .c data-a=1}\n===\n")]
+    [InlineData("> a [b](c)\n> continued\n> ---\n", "> a [b](c)\n> continued {#x .c data-a=1}\n> ---\n")]
+    [InlineData("# See [docs]\n\n[docs]: /docs\n", "# See [docs] {#x .c data-a=1}\n\n[docs]: /docs\n")]
+    [InlineData("```cs\ncode\n```\n", "```cs {#x .c data-a=1}\ncode\n```\n")]
+    [InlineData("```\ncode\n```\n", "``` {#x .c data-a=1}\ncode\n```\n")]
+    [InlineData("$$\nx\n$$\n", "$$ {#x .c data-a=1}\nx\n$$\n")]
+    [InlineData("::: note\nx\n:::\n", "::: note {#x .c data-a=1}\nx\n:::\n")]
+    [InlineData("text\r\nmore\r\n", "text\r\nmore {#x .c data-a=1}\r\n")]
+    [InlineData("- a\n  *b*\n", "- a\n  *b* {#x .c data-a=1}\n")]
+    [InlineData("text\n\n| a |\n|---|\n", "text {#x .c data-a=1}\n\n| a |\n|---|\n")]
+    [InlineData("[docs]{.link}\n\nmiddle\n\nend\n\n[docs]: /docs\n", "[docs]{.link} {#x .c data-a=1}\n\nmiddle\n\nend\n\n[docs]: /docs\n")]
+    [InlineData("a[^1]{.n}\n\nmiddle\n\nend\n\n[^1]: note\n", "a[^1]{.n} {#x .c data-a=1}\n\nmiddle\n\nend\n\n[^1]: note\n")]
+    public void BlockWithGenericAttributes(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
+        var block = tree.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().First(node => node is MarkdownHeadingSyntax or MarkdownParagraphSyntax or MarkdownCodeBlockSyntax or MarkdownMathBlockSyntax or MarkdownCustomContainerSyntax);
+        var attributes = new MarkdownGenericAttributes("x", ["c"], [new("data-a", "1")]);
+
+        var updated = block.WithGenericAttributes(attributes);
+        var root = tree.GetRoot().ReplaceNode(block, updated);
+
+        Assert.Null(updated.Parent);
+        Assert.Equal(expected, root.ToFullString());
+
+        // The copy is the block that parsing the text gives
+        var parsed = MarkdownSyntaxTree.ParseText(expected, AttributeOptions).GetRoot();
+        Assert.True(parsed.IsEquivalentTo(root));
+        Assert.Equal(attributes, parsed.DescendantNodes().OfType<MarkdownBlockSyntax>().Single(node => node.RawKind == block.RawKind && node.SpanStart == block.SpanStart).GetGenericAttributes());
+    }
+
+    [Theory]
+    [InlineData("# a {#x .c}\n", "# a\n")]
+    [InlineData("# a {#x} rest\n", "# a\n")]
+    [InlineData("Title {#x}\n===\n", "Title\n===\n")]
+    [InlineData("```cs {.c}\nx\n```\n", "```cs\nx\n```\n")]
+    [InlineData("text {.c}\r\n", "text\r\n")]
+    [InlineData("hello\nworld {.x}\n", "hello\nworld\n")]
+    public void BlockWithGenericAttributesRemovesTheAttributes(string text, string expected)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
+        var block = tree.GetRoot().Blocks[0];
+
+        var root = tree.GetRoot().ReplaceNode(block, block.WithGenericAttributes(attributes: null));
+
+        Assert.Equal(expected, root.ToFullString());
+        Assert.True(MarkdownSyntaxTree.ParseText(expected, AttributeOptions).GetRoot().IsEquivalentTo(root));
+    }
+
+    [Fact]
+    public void BlockWithTheSameGenericAttributesReturnsTheBlock()
+    {
+        var heading = MarkdownSyntaxTree.ParseText("# a {#x .c}\n", AttributeOptions).GetRoot().Blocks[0];
+        var paragraph = MarkdownSyntaxTree.ParseText("- a\n", AttributeOptions).GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().Single();
+
+        Assert.Same(heading, heading.WithGenericAttributes(new MarkdownGenericAttributes("x", ["c"], [])));
+        Assert.Same(paragraph, paragraph.WithGenericAttributes(attributes: null));
+    }
+
+    [Theory]
+    [InlineData("- a\n", 0)]
+    [InlineData("> a\n", 0)]
+    [InlineData("{#pre}\n# T\n", 1)]
+    [InlineData("{#pre}\n# T\n", 0)]
+    [InlineData("# a { b\n", 0)]
+    [InlineData("a {.x} b\nc\n", 0)]
+    [InlineData("hello {.x}\nworld\n", 0)]
+    [InlineData("text\n| a |\n|---|\n", 0)]
+    // The attributes of the setext heading would let the paragraph before it continue on its line
+    [InlineData("foo\n+---+---+\n---\n", 1)]
+    public void BlockWithGenericAttributesThatCannotBeWrittenInTheBlockThrows(string text, int blockIndex)
+    {
+        var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
+        var block = tree.GetRoot().Blocks[blockIndex];
+
+        Assert.Throws<InvalidOperationException>(() => block.WithGenericAttributes(new MarkdownGenericAttributes("x", [], [])));
+    }
+
+    [Fact]
+    public void BlockWithGenericAttributesThatWouldCloseTheFrontMatterThrows()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("---\ntitle\n\n... {.x}\n", new MarkdownParseOptions { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.YamlFrontMatter });
+        var paragraph = tree.GetRoot().Blocks.OfType<MarkdownParagraphSyntax>().Last();
+
+        // Without its attributes, the line is ..., which would close a front matter that the --- of the first line opens
+        Assert.Throws<InvalidOperationException>(() => paragraph.WithGenericAttributes(attributes: null));
+    }
+
+    [Theory]
+    [InlineData("---\n", true)]
+    [InlineData("--- \t\r\ntext", true)]
+    [InlineData("----\n", false)]
+    [InlineData("---a\n", false)]
+    [InlineData("--\n", false)]
+    [InlineData("---", false)]
+    public void StartsWithFrontMatterFence(string text, bool expected)
+    {
+        Assert.Equal(expected, BlockParser.StartsWithFrontMatterFence(text));
+    }
+
+    [Fact]
+    public void BlockWithGenericAttributesThrows()
+    {
+        var heading = (MarkdownHeadingSyntax)MarkdownSyntaxTree.ParseText("# a\n", AttributeOptions).GetRoot().Blocks[0];
+        var withoutExtension = MarkdownSyntaxTree.ParseText("# a\n").GetRoot().Blocks[0];
+
+        Assert.Throws<ArgumentException>("attributes", () => heading.WithGenericAttributes(new MarkdownGenericAttributes("a b", [], [])));
+        Assert.Throws<InvalidOperationException>(() => withoutExtension.WithGenericAttributes(new MarkdownGenericAttributes("x", [], [])));
+
+        // A copy is in no tree: its attributes are not known
+        Assert.Throws<InvalidOperationException>(() => heading.WithLevel(2).WithGenericAttributes(new MarkdownGenericAttributes("x", [], [])));
     }
 
     private static readonly MarkdownParseOptions AttributeOptions = new() { Extensions = MarkdownExtensions.GenericAttributes | MarkdownExtensions.Mathematics | MarkdownExtensions.CustomContainers | MarkdownExtensions.PipeTables | MarkdownExtensions.GridTables | MarkdownExtensions.Footnotes };

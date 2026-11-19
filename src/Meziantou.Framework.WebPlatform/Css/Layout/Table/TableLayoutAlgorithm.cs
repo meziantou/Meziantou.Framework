@@ -310,7 +310,8 @@ internal sealed partial class TableLayoutAlgorithm
     /// <param name="percentageBasis">The inline size of the containing block of the table wrapper box, or null when it is indefinite.</param>
     /// <param name="captionMin">CAPMIN: the largest min-content contribution of the captions.</param>
     /// <param name="percentageBlockSize">The block size of the containing block of the table when it is definite (for an <c>aspect-ratio</c>).</param>
-    public double ComputeTableInlineSize(double availableInlineSize, double? percentageBasis, double captionMin, double? percentageBlockSize = null)
+    /// <param name="inlineMargins">The inline margins of the table wrapper box, which <c>fit-content(&lt;length-percentage&gt;)</c> subtracts from its argument.</param>
+    public double ComputeTableInlineSize(double availableInlineSize, double? percentageBasis, double captionMin, double? percentageBlockSize = null, double inlineMargins = 0)
     {
         var grid = ComputeGridIntrinsicSizes();
         var edges = Border.InlineSum() + GetPadding(percentageBasis ?? 0).InlineSum();
@@ -323,6 +324,7 @@ internal sealed partial class TableLayoutAlgorithm
             PaddingAndBorder = edges,
             Edges = edges,
             StretchSize = Math.Max(availableInlineSize, edges),
+            Margins = inlineMargins,
         };
 
         // An auto (or fit-content) width is the fit-content size in the available space, where the percentage columns may make

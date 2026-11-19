@@ -340,6 +340,20 @@ public sealed class IntrinsicSizingTests : IDisposable
     }
 
     [Theory]
+    [InlineData("", 100, 100)]
+    [InlineData("margin-right: 10px", 90, 100)]
+    [InlineData("margin-right: auto", 100, 100)]
+    public void FitContentFunction_TableSubtractsItsMarginsFromTheArgument(string style, double width, double contribution)
+    {
+        // "XXX XXX" in the 20px Ahem font: min-content 60px, max-content 140px. The argument of fit-content() is the size of the
+        // margin box, in the layout of the table and in its contribution to a float
+        var table = $"<table id=t style='width: fit-content(100px); border-spacing: 0; font: 20px/1 Ahem; {style}'><tr><td style='padding: 0'>XXX XXX</td></tr></table>";
+        var document = Parse($"{table}<div id=f style='float: left'>{table.Replace("id=t", "id=c", StringComparison.Ordinal)}</div>");
+        Assert.Equal(width, GetSize(document, "t").Width);
+        Assert.Equal(contribution, GetSize(document, "f").Width);
+    }
+
+    [Theory]
     [InlineData("min-height: auto", 50)] // The automatic minimum size: the box grows to its contents
     [InlineData("min-height: min-content", 25)] // The min-content block size is the size given by the ratio
     public void AspectRatio_MinimumBlockSize(string style, double height)

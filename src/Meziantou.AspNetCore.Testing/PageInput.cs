@@ -544,15 +544,18 @@ public sealed partial class PageInput
         if (rect.Width <= 0 || rect.Height <= 0)
             return "it is not visible (its box is empty)";
 
-        // Scroll the element into the viewport
+        // As in Playwright, scroll the element into the viewport when the point of the action is not in it (e.g. the element
+        // is partially below the bottom of the viewport)
         var viewport = _page.BrowsingContext.Window;
-        if (rect.Bottom <= 0 || rect.Right <= 0 || rect.Top >= viewport.InnerHeight || rect.Left >= viewport.InnerWidth)
+        point = GetActionPoint(rect, position);
+        var scrolled = false;
+        if (rect.Bottom <= 0 || rect.Right <= 0 || rect.Top >= viewport.InnerHeight || rect.Left >= viewport.InnerWidth || !IsInViewport(viewport, point))
         {
-            _ = element.ScrollIntoView(new ScrollIntoViewOptions { Block = ScrollLogicalPosition.Center, Inline = ScrollLogicalPosition.Center });
-            rect = element.GetBoundingClientRect();
+            rect = ScrollIntoView(element);
+            point = GetActionPoint(rect, position);
+            scrolled = true;
         }
 
-        point = position is { } offset ? (rect.X + offset.X, rect.Y + offset.Y) : (rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
         if (force)
             return null;
 
@@ -581,15 +584,37 @@ public sealed partial class PageInput
 
         if (checks.HasFlag(Actionability.ReceivesEvents))
         {
+            // The hit testing finds the document element at a point outside of the viewport
+            if (!IsInViewport(viewport, point))
+                return $"the point ({point.X}, {point.Y}) is outside of the viewport ({viewport.InnerWidth}x{viewport.InnerHeight})";
+
             var hit = Raw.HitTest(point.X, point.Y);
             if (hit is null)
                 return "it is outside of the viewport";
 
             if (!ComposedTree.IsInclusiveDescendant(hit, element))
+            {
+                // As in Playwright, scroll the element into view before the next attempt: a scroll container may clip it
+                if (!scrolled)
+                {
+                    _ = ScrollIntoView(element);
+                }
+
                 return $"{ActionTarget.DescribeElement(hit)} receives the input at ({point.X}, {point.Y})";
+            }
         }
 
         return null;
+    }
+
+    private static (double X, double Y) GetActionPoint(DomRect rect, ElementPosition? position) => position is { } offset ? (rect.X + offset.X, rect.Y + offset.Y) : (rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
+
+    private static bool IsInViewport(Window viewport, (double X, double Y) point) => point.X >= 0 && point.Y >= 0 && point.X < viewport.InnerWidth && point.Y < viewport.InnerHeight;
+
+    private static DomRect ScrollIntoView(Element element)
+    {
+        _ = element.ScrollIntoView(new ScrollIntoViewOptions { Block = ScrollLogicalPosition.Center, Inline = ScrollLogicalPosition.Center });
+        return element.GetBoundingClientRect();
     }
 
     private static bool IsAnimated(Element element, Document document)

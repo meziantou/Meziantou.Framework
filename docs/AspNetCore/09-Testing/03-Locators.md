@@ -136,7 +136,11 @@ await Expect(form.Locator("#color")).ToHaveTextAsync("r");
 | Enabled: not a disabled form control, no `aria-disabled="true"` | Click, double click, tap, fill, clear, select an option, check, uncheck |
 | Editable: not `readonly` | Fill, clear |
 
-- An element out of the viewport is scrolled into it first.
+- The actions that use the position of the element (click, hover, tap, drag) scroll it into the viewport first when
+  the point of the action is not in the viewport, for example a button whose center is below the bottom of the
+  viewport. They also scroll it when another element receives the input, as when a scroll container clips it. The
+  action fails when the point is still outside of the viewport after scrolling, as for a `position: fixed` element
+  placed below the viewport.
 - [FillAsync](cref:Meziantou.AspNetCore.Testing.Locator.FillAsync), [CheckAsync](cref:Meziantou.AspNetCore.Testing.Locator.CheckAsync)
   and [SelectOptionAsync](cref:Meziantou.AspNetCore.Testing.Locator.SelectOptionAsync) act on the control of a `label`
   when the element is inside the label: `page.GetByText("Accept the terms").CheckAsync()` checks the check box of the

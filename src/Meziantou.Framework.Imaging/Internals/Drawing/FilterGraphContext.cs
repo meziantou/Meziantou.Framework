@@ -32,6 +32,9 @@ internal sealed class FilterGraphContext : IDisposable
     private int _currentIndex;
     private FilterSurface? _source;
 
+    // The drawing on the pixels of the results, when the filtered surface has more pixels (see Bounds)
+    private FilterSurface? _ownedSource;
+
     /// <param name="processor">The processor of the filters.</param>
     /// <param name="surfaceBounds">The pixels of the filtered surface.</param>
     /// <param name="primitives">The primitives of the graph.</param>
@@ -77,15 +80,11 @@ internal sealed class FilterGraphContext : IDisposable
         _lastUses[^1] = primitives.Count;
 
         // A primitive reads its inputs within their subregions only, and what is beyond a surface as transparent, as
-        // the results are beyond their subregions: the pixels no subregion covers make no difference
-        if (ReadsSource)
-        {
-            Bounds = surfaceBounds;
-        }
-        else
-        {
-            Bounds = dependsOnOrigin && !covered.IsEmpty ? Rectangle.FromLTRB(surfaceBounds.Left, surfaceBounds.Top, covered.Right, covered.Bottom) : covered;
-        }
+        // the results are beyond their subregions: the pixels no subregion covers make no difference. The drawing and its
+        // alpha are transparent beyond the region, which contains the subregions: a large layer (whose margin holds the
+        // reach of every primitive) is only computed within the region
+        var area = ReadsSource ? Rectangle.Intersect(Region, surfaceBounds) : covered;
+        Bounds = dependsOnOrigin && !area.IsEmpty ? Rectangle.FromLTRB(surfaceBounds.Left, surfaceBounds.Top, area.Right, area.Bottom) : area;
     }
 
     /// <summary>Gets the processor of the filters, for the lengths of the primitives and the operations they share.</summary>
@@ -101,9 +100,9 @@ internal sealed class FilterGraphContext : IDisposable
     public Rectangle Subregion { get; private set; }
 
     /// <summary>
-    /// Gets the pixels the surfaces of the inputs and of the results hold: those of the filtered surface when a primitive
-    /// reads the drawing or its alpha, and otherwise those the subregions cover (from the left and top of the filtered
-    /// surface when a primitive depends on them, <see cref="FilterPrimitive.DependsOnSurfaceOrigin"/>).
+    /// Gets the pixels the surfaces of the inputs and of the results hold: those of the region on the filtered surface when
+    /// a primitive reads the drawing or its alpha, and otherwise those the subregions cover (from the left and top of the
+    /// filtered surface when a primitive depends on them, <see cref="FilterPrimitive.DependsOnSurfaceOrigin"/>).
     /// </summary>
     public Rectangle Bounds { get; }
 
@@ -122,12 +121,25 @@ internal sealed class FilterGraphContext : IDisposable
     public void Run(FilterSurface target)
     {
         _source = target;
+        if (ReadsSource && target.Bounds != Bounds)
+        {
+            // The primitives read the drawing on the pixels of the results only
+            _ownedSource = new FilterSurface(_processor.Scope, Bounds);
+            _ownedSource.Values.Clear();
+            var area = Rectangle.Intersect(Bounds, target.Bounds);
+            for (var y = area.Top; y < area.Bottom; y++)
+            {
+                target.Values.Slice(target.IndexOf(area.Left, y), 4 * area.Width).CopyTo(_ownedSource.Values[_ownedSource.IndexOf(area.Left, y)..]);
+            }
+
+            _source = _ownedSource;
+        }
 
         // The drawing is what it is within the region: a layer can hold what is drawn beyond the canvas, which a region of
         // the canvas does not read
-        if (ReadsSource && Rectangle.Intersect(target.Bounds, Region) != target.Bounds)
+        if (ReadsSource && Rectangle.Intersect(_source.Bounds, Region) != _source.Bounds)
         {
-            ClearOutside(target, Region);
+            ClearOutside(_source, Region);
         }
 
         for (var index = 0; index < _primitives.Count; index++)
@@ -260,6 +272,8 @@ internal sealed class FilterGraphContext : IDisposable
 
         _sourceGraphic.Dispose();
         _sourceAlpha.Dispose();
+        _ownedSource?.Dispose();
+        _ownedSource = null;
     }
 
     /// <summary>Gets the box, in the drawing, of a rectangle of the canvas.</summary>

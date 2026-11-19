@@ -84,20 +84,17 @@ public sealed class FilterGraph : Filter
 
     internal override void ApplyToLayer(FilterProcessor processor, ImageFrame frame, PixelStorage storage, Rectangle bounds, Span<Rgba64> row)
     {
+        // The result is transparent beyond the pixels of the context (the region when the drawing is read, the pixels the
+        // subregions cover otherwise): only those are read and computed, which keeps a small region of a large layer in
+        // the buffer pool
         using var context = new FilterGraphContext(processor, bounds, _primitives, Region);
-        if (context.ReadsSource)
-        {
-            using var surface = new FilterSurface(processor.Scope, bounds);
-            FilterProcessor.Read(frame, storage, surface, row);
-            context.Run(surface);
-            FilterProcessor.Write(surface, storage, bounds);
-            return;
-        }
-
-        // The drawing is not read, and the result is transparent beyond the pixels the subregions cover: only those are
-        // computed, which keeps a small subregion of a large layer in the buffer pool
         using (var surface = new FilterSurface(processor.Scope, context.Bounds))
         {
+            if (context.ReadsSource)
+            {
+                FilterProcessor.Read(frame, storage, surface, row);
+            }
+
             context.Run(surface);
             FilterProcessor.Write(surface, storage, context.Bounds);
         }

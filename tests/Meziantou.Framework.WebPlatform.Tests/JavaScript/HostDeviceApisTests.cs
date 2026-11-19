@@ -2137,6 +2137,29 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task SecurePaymentConfirmation_Retry_IsNotSupported()
+    {
+        // The transaction dialog cannot be shown again: retry() is rejected without changing the state of the request, so the
+        // response can still be completed
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Accept),
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        Activate(document);
+        Assert.Equal("NotSupportedError|completed", await RunAsync(document, """
+            spc([credential.rawId]).show().then(async response => {
+              const retry = await response.retry({ error: 'again' }).then(() => 'retried', e => e.name);
+              const complete = await response.complete('success').then(() => 'completed', e => e.name);
+              document.title = retry + '|' + complete;
+            }, e => document.title = e.name);
+            """));
+    }
+
+    [Fact]
     public async Task SecurePaymentConfirmation_Show_UnknownCredential_IsNotAllowed()
     {
         var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);

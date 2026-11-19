@@ -123,7 +123,8 @@ public sealed class PaymentResponse : EventTarget
     /// is shown again (<see cref="UserAgentUIBackend.RetryPaymentAsync"/>), and the task completes once the user accepts the
     /// payment again: the members of the response are updated. The task fails with an <c>InvalidStateError</c>
     /// <see cref="DomException"/> when the document is not fully active, the response is complete or is already being retried,
-    /// and with an <c>AbortError</c> when the user dismisses the sheet.
+    /// with a <c>NotSupportedError</c> when the payment was not accepted in the payment sheet (Secure Payment Confirmation), and
+    /// with an <c>AbortError</c> when the user dismisses the sheet.
     /// </summary>
     /// <seealso href="https://w3c.github.io/payment-request/#dom-paymentresponse-retry"/>
     [IdlMember("retry", "https://w3c.github.io/payment-request/#dom-paymentresponse-retry")]
@@ -137,6 +138,11 @@ public sealed class PaymentResponse : EventTarget
 
         if (_retryPromise is not null)
             return Task.FromException(Request.CreateException("The payment is already being retried", "InvalidStateError"));
+
+        // The payment handler of Secure Payment Confirmation has no payment sheet to show again: the request keeps its state, so
+        // complete() can still be called
+        if (Request.Prompt is null)
+            return Task.FromException(Request.CreateException("The payment handler of the response cannot retry the payment", "NotSupportedError"));
 
         PaymentSheetErrors? errors = null;
         if (errorFields is not null)

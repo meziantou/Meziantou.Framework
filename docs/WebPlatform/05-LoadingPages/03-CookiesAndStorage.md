@@ -239,8 +239,11 @@ Assert.Equal("UnknownError", (await Assert.ThrowsAsync<DomException>(() => Run(d
   by the pages and the workers of a browser tab and the tabs it opens. Browser tabs that share a backend, or that use a
   persistent backend again, see the same buckets, whatever the order in which they open them. Each backend stores the
   buckets in a namespace of its own: the storage key prefixed by `storage-buckets `, as empty databases, caches and
-  directories named after the bucket and the GUID of its lifetime. The quota and the expiration time of a bucket are
-  only known by the browser tab that opened it.
+  directories named after the bucket, the order of its creation and a GUID, and a tombstone for its latest deletion.
+  When the backends disagree (a backend that a browser tab did not use when it deleted or created a bucket), the latest
+  creation or deletion wins: a deleted bucket stays deleted, and the storage of a bucket is only removed when it is
+  deleted (by `delete()`, its expiration or `Clear-Site-Data`), not when a backend has an older copy of it. The quota and
+  the expiration time of a bucket are only known by the browser tab that opened it.
 - `persist()` asks [StorageOptions.RequestPersistentStorage](cref:Meziantou.Framework.WebPlatform.Dom.StorageOptions.RequestPersistentStorage), as `navigator.storage.persist()`. `estimate()` reports
   the usage of the bucket and its quota (the `quota` option, or the quota of the origin). The quota of a bucket limits
   its file system, not its databases nor its caches.

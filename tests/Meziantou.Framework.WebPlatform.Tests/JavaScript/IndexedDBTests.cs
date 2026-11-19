@@ -52,13 +52,14 @@ public sealed class IndexedDBTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
-    private Document Load(string html, IndexedDBBackend? backend = null, string url = "https://example.com/", WebPlatformFeatures? features = null)
+    private Document Load(string html, IndexedDBBackend? backend = null, string url = "https://example.com/", WebPlatformFeatures? features = null, CacheStorageBackend? cacheStorage = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = _engine,
             DocumentLoader = _loader,
             IndexedDB = backend,
+            CacheStorage = cacheStorage,
             Features = features,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
@@ -248,6 +249,102 @@ public sealed class IndexedDBTests : IDisposable
             {
                 Directory.Delete(directory, recursive: true);
             }
+        }
+    }
+
+    [Fact]
+    public void StorageBuckets_AStaleIdentityInABackendDoesNotEraseTheStorageOfTheRecreatedBucket()
+    {
+        // The browsing context groups share the caches; the second one has its own IndexedDB backend
+        var caches = new InMemoryCacheStorageBackend();
+        var indexedDB = new InMemoryIndexedDBBackend();
+        var opener = Load("<script>navigator.storageBuckets.open('drafts').then(() => document.title = 'opened');</script>", indexedDB, cacheStorage: caches);
+        var writer = Load("""
+            <script>
+              (async () => {
+                await navigator.storageBuckets.open('drafts');
+                await navigator.storageBuckets.delete('drafts');
+                const drafts = await navigator.storageBuckets.open('drafts');
+                await (await drafts.caches.open('cache')).put('https://example.com/draft', new Response('saved'));
+                document.title = 'written';
+              })();
+            </script>
+            """, cacheStorage: caches);
+        var reader = Load("""
+            <script>
+              (async () => {
+                const drafts = await navigator.storageBuckets.open('drafts');
+                const response = await (await drafts.caches.open('cache')).match('https://example.com/draft');
+                document.title = response ? await response.text() : 'empty';
+              })();
+            </script>
+            """, indexedDB, cacheStorage: caches);
+
+        Assert.Empty(_errors);
+        Assert.Equal("opened", opener.Title);
+        Assert.Equal("written", writer.Title);
+        Assert.Equal("saved", reader.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_ABucketDeletedThroughASharedBackendStaysDeleted()
+    {
+        // The browsing context groups share the caches; the first and the last ones share an IndexedDB backend
+        var caches = new InMemoryCacheStorageBackend();
+        var indexedDB = new InMemoryIndexedDBBackend();
+        var writer = Load(WriteDraftScript, indexedDB, cacheStorage: caches);
+        var deleter = Load("<script>navigator.storageBuckets.delete('drafts').then(() => document.title = 'deleted');</script>", cacheStorage: caches);
+        var reader = Load("""
+            <script>
+              (async () => {
+                const names = await navigator.storageBuckets.keys();
+                const drafts = await navigator.storageBuckets.open('drafts');
+                document.title = (names.join() || 'none') + ',' + await readDraft(drafts);
+              })();
+            </script>
+            """ + ReadDraftScript, indexedDB, cacheStorage: caches);
+
+        Assert.Empty(_errors);
+        Assert.Equal("written", writer.Title);
+        Assert.Equal("deleted", deleter.Title);
+        Assert.Equal("none,empty", reader.Title);
+    }
+
+    [Fact]
+    public async Task StorageBuckets_BrowsingContextGroupsThatOpenABucketAtTheSameTimeGetTheSameIdentity()
+    {
+        var caches = new InMemoryCacheStorageBackend();
+        var first = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = _loader, CacheStorage = caches });
+        var second = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = _loader, CacheStorage = caches });
+        var storageKey = new StorageKey("https://example.com", PartitionNonce: null);
+        var name = "race-" + Guid.NewGuid().ToString("N");
+        using var lookedUp = new ManualResetEventSlim();
+        using var resume = new ManualResetEventSlim();
+        var paused = 0;
+        StorageBucketBackends.LookedUp = bucket =>
+        {
+            if (bucket == name && Interlocked.Exchange(ref paused, 1) == 0)
+            {
+                lookedUp.Set();
+                resume.Wait(TimeSpan.FromSeconds(30));
+            }
+        };
+
+        try
+        {
+            // The first group looked the bucket up (it does not exist), and pauses before it stores the new identity
+            var firstOpen = Task.Run(() => new StorageBucketBackends(first, storageKey).Open(name, expired: null, []));
+            Assert.True(lookedUp.Wait(TimeSpan.FromSeconds(30)));
+            var secondOpen = Task.Run(() => new StorageBucketBackends(second, storageKey).Open(name, expired: null, []));
+            var secondCompletedFirst = await Task.WhenAny(secondOpen, Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken)) == secondOpen;
+            resume.Set();
+
+            Assert.False(secondCompletedFirst);
+            Assert.Equal(await firstOpen, await secondOpen);
+        }
+        finally
+        {
+            StorageBucketBackends.LookedUp = null;
         }
     }
 

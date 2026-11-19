@@ -318,34 +318,38 @@ internal sealed class StorageBucketRegistry
         lock (_lock)
         {
             var buckets = GetBuckets(storageKey);
-            var identity = backends.FindIdentity(name);
-            if (buckets.TryGetValue(name, out var existing))
+            buckets.TryGetValue(name, out var existing);
+
+            // https://wicg.github.io/storage-buckets/#storage-bucket-expiration: an expired bucket is deleted
+            var expired = existing is not null && IsExpired(global, existing) ? existing.Identity : null;
+            string identity;
+            if (backends.HasBackend)
             {
-                if (IsDeletedFromTheBackends(backends, existing, identity))
-                {
-                    existing.IsDeleted = true;
-                    buckets.Remove(name);
-                }
-                else if (IsExpired(global, existing))
-                {
-                    // https://wicg.github.io/storage-buckets/#storage-bucket-expiration: an expired bucket is deleted
-                    existing.IsDeleted = true;
-                    buckets.Remove(name);
-                    deleted.Add(existing.Identity);
-                    deleted.AddRange(backends.RemoveIdentities(name));
-                    identity = null;
-                }
-                else
-                {
+                identity = backends.Open(name, expired, deleted);
+            }
+            else
+            {
+                if (existing is not null && expired is null)
                     return existing;
+
+                if (expired is not null)
+                {
+                    deleted.Add(expired);
                 }
+
+                identity = StorageBucketBackends.CreateIdentity(name);
             }
 
-            // Each lifetime of a bucket has its own storage: the objects of a deleted bucket (an open database, a file handle) and
-            // the storage that its deletion keeps (a database with an open connection) are not the storage of a new bucket
-            // of the same name
-            identity ??= StorageBucketBackends.CreateIdentity(name);
-            deleted.AddRange(backends.SetIdentity(name, identity));
+            if (existing is not null)
+            {
+                if (existing.Identity == identity)
+                    return existing;
+
+                // The bucket expired, or was deleted by another browsing context group that shares the backends
+                existing.IsDeleted = true;
+                buckets.Remove(name);
+            }
+
             record = new StorageBucketRecord(name, storageKey with { Bucket = identity })
             {
                 Quota = options.Quota,
@@ -368,8 +372,9 @@ internal sealed class StorageBucketRegistry
             var buckets = GetBuckets(storageKey);
             foreach (var (name, record) in buckets.ToArray())
             {
-                if (IsDeletedFromTheBackends(backends, record, backends.FindIdentity(name)))
+                if (backends.HasBackend && backends.GetIdentity(name) != record.Identity)
                 {
+                    // Deleted (and possibly created again) by another browsing context group that shares the backends
                     record.IsDeleted = true;
                     buckets.Remove(name);
                 }
@@ -377,8 +382,14 @@ internal sealed class StorageBucketRegistry
                 {
                     record.IsDeleted = true;
                     buckets.Remove(name);
-                    deleted.Add(record.Identity);
-                    deleted.AddRange(backends.RemoveIdentities(name));
+                    if (backends.HasBackend)
+                    {
+                        backends.Delete(name, record.Identity, deleted);
+                    }
+                    else
+                    {
+                        deleted.Add(record.Identity);
+                    }
                 }
             }
 
@@ -398,12 +409,15 @@ internal sealed class StorageBucketRegistry
             if (GetBuckets(storageKey).Remove(name, out var record))
             {
                 record.IsDeleted = true;
-                deleted.Add(record.Identity);
+                if (!backends.HasBackend)
+                {
+                    deleted.Add(record.Identity);
+                }
             }
 
             // The bucket may have been created by another browsing context group that shares the backends, or before the
             // backends were used again
-            deleted.AddRange(backends.RemoveIdentities(name));
+            backends.Delete(name, identity: null, deleted);
         }
 
         backends.Clear(deleted);
@@ -421,11 +435,14 @@ internal sealed class StorageBucketRegistry
                 foreach (var record in buckets.Values)
                 {
                     record.IsDeleted = true;
-                    deleted.Add(record.Identity);
+                    if (!backends.HasBackend)
+                    {
+                        deleted.Add(record.Identity);
+                    }
                 }
             }
 
-            deleted.AddRange(backends.RemoveIdentities(name: null));
+            backends.DeleteAll(deleted);
         }
 
         backends.Clear(deleted);
@@ -477,30 +494,39 @@ internal sealed class StorageBucketRegistry
         return buckets;
     }
 
-    /// <summary>
-    /// Whether a bucket that the group opened was deleted by another browsing context group that shares the backends (the
-    /// backends no longer store its identity): its storage was cleared by that group.
-    /// </summary>
-    private static bool IsDeletedFromTheBackends(StorageBucketBackends backends, StorageBucketRecord record, string? identity)
-        => backends.HasBackend && identity != record.Identity;
-
     private static bool IsExpired(GlobalScope global, StorageBucketRecord record)
         => record.Expires is { } expires && expires <= global.EventLoop.TimeProvider.GetUtcNow().ToUnixTimeMilliseconds();
 }
 
 /// <summary>
 /// The backends that store the buckets of a storage key (IndexedDB, the Cache API and the origin private file system, see
-/// <see cref="StorageEndpoints.GetBackend"/>), and the identities of the lifetimes of the buckets. The identity of a bucket
-/// (its name, <c>~</c> and a new GUID) is created with the bucket, stored in each backend, and removed with the bucket: the
-/// browsing context groups that share a backend, and the ones that use a persistent backend again, find the identity of a
-/// bucket whatever the order in which they open the buckets, and a bucket created again after its deletion has another
-/// identity (the objects and the storage kept by the deleted one, an open database or a file handle, do not reach it). A
-/// backend stores the identities of the buckets of a storage key in a namespace of its own: the serialized storage key
-/// prefixed by <c>storage-buckets </c> (an origin has no space, so it is not the serialization of a storage key), as the
-/// names of empty databases, of empty caches and of empty directories.
+/// <see cref="StorageEndpoints.GetBackend"/>), and the identities of the lifetimes of the buckets.
 /// </summary>
+/// <remarks>
+/// <para>
+/// The identity of a bucket is created with the bucket: its name, <c>~</c>, its order (16 hexadecimal digits) <c>~</c> and a
+/// GUID. Its order is greater than the order of every identity and deletion of the bucket that the backends store, so a
+/// bucket created again after its deletion has a greater order: the objects and the storage kept by the deleted one (an
+/// open database, a file handle) do not reach it. The deletion of a bucket is stored as a tombstone (its identity followed
+/// by <c>~deleted</c>), so that the bucket stays deleted for the browsing context groups that share a backend.
+/// </para>
+/// <para>
+/// Each backend stores the identities and the latest tombstone of the buckets of a storage key in a namespace of its own:
+/// the serialized storage key prefixed by <c>storage-buckets </c> (an origin has no space, so it is not the serialization
+/// of a storage key), as the names of empty databases, of empty caches and of empty directories. The backends that share
+/// the same data with other browsing context groups, or that are persistent, can disagree (a backend that another group
+/// did not use when it deleted or created the bucket): the state of a bucket is its latest tombstone and its latest
+/// identity, if this identity is greater than the tombstone (the bucket exists). Each operation reads and writes this state
+/// in all the backends at once (under a lock shared by the groups), so two groups that create a bucket at the same time get
+/// the same identity. The storage of an identity is only removed when the identity is deleted (it is not greater than the
+/// latest tombstone): an older identity that is not deleted (two groups that created the bucket with backends that they did
+/// not share) only loses its place in the backends, and its storage is kept.
+/// </para>
+/// </remarks>
 internal sealed class StorageBucketBackends
 {
+    private const string TombstoneSuffix = "~deleted";
+
     // The browsing context groups that share a backend have their own registry
     private static readonly Lock IdentitiesLock = new();
 
@@ -533,102 +559,83 @@ internal sealed class StorageBucketBackends
     /// <summary>Whether a backend stores the buckets: false for a credentialless iframe whose page is gone.</summary>
     public bool HasBackend => _stores.Length > 0;
 
-    public static string CreateIdentity(string name) => name + "~" + Guid.NewGuid().ToString("N");
+    /// <summary>A hook of the tests: called by <see cref="Open"/> with the name of the bucket, between its lookup and the storage of its identity.</summary>
+    internal static Action<string>? LookedUp { get; set; }
 
-    /// <summary>Returns the identity of a bucket stored in the backends (the one of the first backend that stores one), or null.</summary>
-    public string? FindIdentity(string name)
+    /// <summary>Creates the identity of a bucket that no backend stores.</summary>
+    public static string CreateIdentity(string name) => new Marker(name, 0, Guid.NewGuid(), IsTombstone: false).Identity;
+
+    /// <summary>Returns the identity of a bucket, or null when it does not exist (or is deleted).</summary>
+    public string? GetIdentity(string name)
     {
         lock (IdentitiesLock)
         {
-            foreach (var store in _stores)
-            {
-                foreach (var identity in store.GetIdentities())
-                {
-                    if (GetName(identity) == name)
-                        return identity;
-                }
-            }
+            return GetState(name).Identity?.Identity;
         }
-
-        return null;
     }
 
-    /// <summary>Returns the names of the buckets stored in the backends, in lexicographic order.</summary>
+    /// <summary>Returns the names of the buckets that exist, in lexicographic order.</summary>
     public IReadOnlyList<string> GetNames()
     {
-        var names = new SortedSet<string>(StringComparer.Ordinal);
         lock (IdentitiesLock)
         {
-            foreach (var store in _stores)
-            {
-                foreach (var identity in store.GetIdentities())
-                {
-                    if (GetName(identity) is { } name)
-                    {
-                        names.Add(name);
-                    }
-                }
-            }
+            return [.. GetMarkers().Select(marker => marker.Name).Distinct(StringComparer.Ordinal).Where(name => GetState(name).Identity is not null).Order(StringComparer.Ordinal)];
         }
-
-        return [.. names];
     }
 
     /// <summary>
-    /// Stores the identity of a bucket in the backends, and returns the other identities of the bucket that they stored: the
-    /// identities of deleted buckets, whose storage is to be cleared (see <see cref="Clear"/>).
+    /// Returns the identity of a bucket, created when the bucket does not exist or when its identity is
+    /// <paramref name="expired"/> (the bucket is then deleted first), and stores it in the backends.
     /// </summary>
-    public List<string> SetIdentity(string name, string identity)
+    /// <param name="name">The name of the bucket.</param>
+    /// <param name="expired">The identity of the bucket if it is expired, or null.</param>
+    /// <param name="deleted">The identities whose storage is to be removed (see <see cref="Clear"/>).</param>
+    public string Open(string name, string? expired, List<string> deleted)
     {
-        List<string> removed = [];
         lock (IdentitiesLock)
         {
-            foreach (var store in _stores)
+            var state = GetState(name);
+            LookedUp?.Invoke(name);
+            if (state.Identity is { } identity && identity.Identity == expired)
             {
-                var found = false;
-                foreach (var stored in store.GetIdentities())
-                {
-                    if (stored == identity)
-                    {
-                        found = true;
-                    }
-                    else if (GetName(stored) == name)
-                    {
-                        store.Remove(stored);
-                        removed.Add(stored);
-                    }
-                }
-
-                if (!found)
-                {
-                    store.Add(identity);
-                }
+                state = state with { Identity = null, Tombstone = identity with { IsTombstone = true } };
             }
-        }
 
-        return removed;
+            if (state.Identity is null)
+            {
+                state = state with { Identity = new Marker(name, state.MaxOrder + 1, Guid.NewGuid(), IsTombstone: false) };
+            }
+
+            Store(name, state, deleted);
+            return state.Identity.Value.Identity;
+        }
     }
 
-    /// <summary>Removes the identities of a bucket (or of all the buckets when <paramref name="name"/> is null) from the backends, and returns them.</summary>
-    public List<string> RemoveIdentities(string? name)
+    /// <summary>
+    /// Deletes a bucket (when its identity is <paramref name="identity"/>, or whatever its identity when it is null): stores
+    /// its tombstone in the backends.
+    /// </summary>
+    /// <param name="name">The name of the bucket.</param>
+    /// <param name="identity">The identity of the bucket to delete, or null.</param>
+    /// <param name="deleted">The identities whose storage is to be removed (see <see cref="Clear"/>).</param>
+    public void Delete(string name, string? identity, List<string> deleted)
     {
-        List<string> removed = [];
         lock (IdentitiesLock)
         {
-            foreach (var store in _stores)
+            DeleteCore(name, identity, deleted);
+        }
+    }
+
+    /// <summary>Deletes all the buckets.</summary>
+    public void DeleteAll(List<string> deleted)
+    {
+        lock (IdentitiesLock)
+        {
+            foreach (var name in GetMarkers().Select(marker => marker.Name).Distinct(StringComparer.Ordinal).ToArray())
             {
-                foreach (var identity in store.GetIdentities())
-                {
-                    if (GetName(identity) is { } bucketName && (name is null || bucketName == name))
-                    {
-                        store.Remove(identity);
-                        removed.Add(identity);
-                    }
-                }
+                DeleteCore(name, identity: null, deleted);
             }
         }
-
-        return removed;
     }
 
     /// <summary>
@@ -647,46 +654,178 @@ internal sealed class StorageBucketBackends
         }
     }
 
-    private static string? GetName(string identity) => identity.IndexOf('~', StringComparison.Ordinal) is var index and > 0 ? identity[..index] : null;
+    private void DeleteCore(string name, string? identity, List<string> deleted)
+    {
+        var state = GetState(name);
+        if (state.Identity is { } current && (identity is null || current.Identity == identity))
+        {
+            state = state with { Identity = null, Tombstone = current with { IsTombstone = true } };
+        }
 
-    /// <summary>A backend: the identities of the buckets that it stores, and the storage of the buckets.</summary>
+        Store(name, state, deleted);
+    }
+
+    private IEnumerable<Marker> GetMarkers()
+    {
+        foreach (var store in _stores)
+        {
+            foreach (var value in store.GetMarkers())
+            {
+                if (Marker.Parse(value) is { } marker)
+                    yield return marker;
+            }
+        }
+    }
+
+    /// <summary>The state of a bucket in the backends: its latest tombstone, and its latest identity if it is greater than the tombstone.</summary>
+    private BucketState GetState(string name)
+    {
+        Marker? identity = null;
+        Marker? tombstone = null;
+        long maxOrder = 0;
+        foreach (var marker in GetMarkers())
+        {
+            if (marker.Name != name)
+                continue;
+
+            maxOrder = Math.Max(maxOrder, marker.Order);
+            if (marker.IsTombstone)
+            {
+                if (tombstone is null || marker.IsGreaterThan(tombstone.Value))
+                {
+                    tombstone = marker;
+                }
+            }
+            else if (identity is null || marker.IsGreaterThan(identity.Value))
+            {
+                identity = marker;
+            }
+        }
+
+        if (identity is { } latest && tombstone is { } deletion && latest.Order <= deletion.Order)
+        {
+            identity = null;
+        }
+
+        return new BucketState(identity, tombstone, maxOrder);
+    }
+
+    /// <summary>
+    /// Stores the state of a bucket in all the backends: its identity and its tombstone replace the other ones. The other
+    /// identities that the tombstone deletes (not greater than it) are added to <paramref name="deleted"/>; the storage of
+    /// the other ones is kept.
+    /// </summary>
+    private void Store(string name, BucketState state, List<string> deleted)
+    {
+        var identity = state.Identity?.Value;
+        var tombstone = state.Tombstone?.Value;
+        foreach (var store in _stores)
+        {
+            var hasIdentity = false;
+            var hasTombstone = false;
+            foreach (var value in store.GetMarkers())
+            {
+                if (Marker.Parse(value) is not { } marker || marker.Name != name)
+                    continue;
+
+                if (value == identity)
+                {
+                    hasIdentity = true;
+                    continue;
+                }
+
+                if (value == tombstone)
+                {
+                    hasTombstone = true;
+                    continue;
+                }
+
+                store.Remove(value);
+                if (!marker.IsTombstone && state.Tombstone is { } deletion && marker.Order <= deletion.Order)
+                {
+                    deleted.Add(marker.Identity);
+                }
+            }
+
+            if (identity is not null && !hasIdentity)
+            {
+                store.Add(identity);
+            }
+
+            if (tombstone is not null && !hasTombstone)
+            {
+                store.Add(tombstone);
+            }
+        }
+    }
+
+    private readonly record struct BucketState(Marker? Identity, Marker? Tombstone, long MaxOrder);
+
+    /// <summary>An identity of a bucket, or the tombstone of a deleted identity, stored in a backend.</summary>
+    private readonly record struct Marker(string Name, long Order, Guid Guid, bool IsTombstone)
+    {
+        public string Identity => Name + "~" + Order.ToString("x16", CultureInfo.InvariantCulture) + "~" + Guid.ToString("N");
+
+        public string Value => IsTombstone ? Identity + TombstoneSuffix : Identity;
+
+        public static Marker? Parse(string value)
+        {
+            var isTombstone = value.EndsWith(TombstoneSuffix, StringComparison.Ordinal);
+            var parts = (isTombstone ? value[..^TombstoneSuffix.Length] : value).Split('~');
+            if (parts.Length != 3
+                || !StorageBucketManager.IsValidName(parts[0])
+                || parts[1].Length != 16
+                || !long.TryParse(parts[1], NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var order)
+                || !Guid.TryParseExact(parts[2], "N", out var guid))
+            {
+                return null;
+            }
+
+            return new Marker(parts[0], order, guid, isTombstone);
+        }
+
+        /// <summary>Whether the marker is greater than another one: its order is greater, or its GUID for the same order.</summary>
+        public bool IsGreaterThan(Marker other) => Order != other.Order ? Order > other.Order : Guid.CompareTo(other.Guid) > 0;
+    }
+
+    /// <summary>A backend: the identities and the tombstones of the buckets that it stores, and the storage of the buckets.</summary>
     private abstract class IdentityStore
     {
-        public abstract IReadOnlyList<string> GetIdentities();
+        public abstract IReadOnlyList<string> GetMarkers();
 
-        public abstract void Add(string identity);
+        public abstract void Add(string marker);
 
-        public abstract void Remove(string identity);
+        public abstract void Remove(string marker);
 
         /// <summary>Removes the storage of a serialized storage key.</summary>
         public abstract void Clear(string origin);
     }
 
-    /// <summary>The identities are the names of empty databases (of version 1).</summary>
-    private sealed class IndexedDBIdentityStore(IndexedDBBackend backend, string identitiesOrigin) : IdentityStore
+    /// <summary>The markers are the names of empty databases (of version 1).</summary>
+    private sealed class IndexedDBIdentityStore(IndexedDBBackend backend, string markersOrigin) : IdentityStore
     {
-        public override IReadOnlyList<string> GetIdentities() => [.. backend.GetDatabases(identitiesOrigin).Select(database => database.Name)];
+        public override IReadOnlyList<string> GetMarkers() => [.. backend.GetDatabases(markersOrigin).Select(database => database.Name)];
 
-        public override void Add(string identity)
+        public override void Add(string marker)
         {
-            using var transaction = backend.BeginTransaction(identitiesOrigin, identity, IdbTransactionMode.VersionChange, []);
+            using var transaction = backend.BeginTransaction(markersOrigin, marker, IdbTransactionMode.VersionChange, []);
             transaction.SetVersion(1);
             transaction.Commit();
         }
 
-        public override void Remove(string identity) => backend.DeleteDatabase(identitiesOrigin, identity);
+        public override void Remove(string marker) => backend.DeleteDatabase(markersOrigin, marker);
 
         public override void Clear(string origin) => StorageBucketRegistry.ClearIndexedDB(backend, origin);
     }
 
-    /// <summary>The identities are the names of empty caches.</summary>
-    private sealed class CacheStorageIdentityStore(CacheStorageBackend backend, string identitiesOrigin) : IdentityStore
+    /// <summary>The markers are the names of empty caches.</summary>
+    private sealed class CacheStorageIdentityStore(CacheStorageBackend backend, string markersOrigin) : IdentityStore
     {
-        public override IReadOnlyList<string> GetIdentities() => backend.GetCacheNames(identitiesOrigin);
+        public override IReadOnlyList<string> GetMarkers() => backend.GetCacheNames(markersOrigin);
 
-        public override void Add(string identity) => backend.CreateCache(identitiesOrigin, identity);
+        public override void Add(string marker) => backend.CreateCache(markersOrigin, marker);
 
-        public override void Remove(string identity) => backend.DeleteCache(identitiesOrigin, identity);
+        public override void Remove(string marker) => backend.DeleteCache(markersOrigin, marker);
 
         public override void Clear(string origin)
         {
@@ -698,14 +837,14 @@ internal sealed class StorageBucketBackends
         }
     }
 
-    /// <summary>The identities are the names of empty directories of the root directory.</summary>
-    private sealed class FileSystemIdentityStore(FileSystemBackend backend, string identitiesOrigin) : IdentityStore
+    /// <summary>The markers are the names of empty directories of the root directory.</summary>
+    private sealed class FileSystemIdentityStore(FileSystemBackend backend, string markersOrigin) : IdentityStore
     {
-        public override IReadOnlyList<string> GetIdentities() => [.. (backend.GetEntries(identitiesOrigin, []) ?? []).Select(entry => entry.Name)];
+        public override IReadOnlyList<string> GetMarkers() => [.. (backend.GetEntries(markersOrigin, []) ?? []).Select(entry => entry.Name)];
 
-        public override void Add(string identity) => backend.CreateEntry(identitiesOrigin, [identity], FileSystemHandleKind.Directory, modificationTime: 0);
+        public override void Add(string marker) => backend.CreateEntry(markersOrigin, [marker], FileSystemHandleKind.Directory, modificationTime: 0);
 
-        public override void Remove(string identity) => backend.RemoveEntry(identitiesOrigin, [identity]);
+        public override void Remove(string marker) => backend.RemoveEntry(markersOrigin, [marker]);
 
         public override void Clear(string origin)
         {

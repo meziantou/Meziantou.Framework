@@ -238,8 +238,9 @@ internal readonly record struct StorageKey(string Origin, Guid? PartitionNonce, 
     /// <summary>
     /// The key of the storage in the backends (IndexedDB, the Cache API, the origin private file system): the serialized origin
     /// of a first-party key, else the origin, the top-level site and the cross-site ancestor bit, separated by <c>^</c>, followed
-    /// by <c>#</c> and the identity of the bucket for a bucket other than the default one (its name, <c>~</c> and the identifier
-    /// of its lifetime: the names of the buckets only contain lowercase ASCII letters, digits, <c>-</c> and <c>_</c>).
+    /// by <c>#</c> and the identity of the bucket for a bucket other than the default one (its name, <c>~</c> and the GUID
+    /// of its lifetime, see <see cref="StorageBucketBackends"/>: the names of the buckets only contain lowercase ASCII
+    /// letters, digits, <c>-</c> and <c>_</c>).
     /// </summary>
     public string Serialize()
     {

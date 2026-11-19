@@ -233,8 +233,14 @@ Assert.Equal("UnknownError", (await Assert.ThrowsAsync<DomException>(() => Run(d
 <!-- endref -->
 
 - A bucket name has 1 to 64 lowercase ASCII letters, digits, `-` and `_`, and starts with a letter or a digit.
-- The buckets of an origin are shared by the pages and the workers of a browser tab and the tabs it opens, in the
-  partition of the page (the buckets of a frame of another site are not the ones of its site as a top-level page).
+- The buckets of an origin are stored with their data, in the backends of [BrowsingContextOptions.IndexedDB](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IndexedDB),
+  [CacheStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CacheStorage) and [FileSystem](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.FileSystem), in the partition of the page (the buckets of a frame of
+  another site are not the ones of its site as a top-level page). With the default in-memory backends, they are shared
+  by the pages and the workers of a browser tab and the tabs it opens. Browser tabs that share a backend, or that use a
+  persistent backend again, see the same buckets, whatever the order in which they open them. Each backend stores the
+  buckets in a namespace of its own: the storage key prefixed by `storage-buckets `, as empty databases, caches and
+  directories named after the bucket and the GUID of its lifetime. The quota and the expiration time of a bucket are
+  only known by the browser tab that opened it.
 - `persist()` asks [StorageOptions.RequestPersistentStorage](cref:Meziantou.Framework.WebPlatform.Dom.StorageOptions.RequestPersistentStorage), as `navigator.storage.persist()`. `estimate()` reports
   the usage of the bucket and its quota (the `quota` option, or the quota of the origin). The quota of a bucket limits
   its file system, not its databases nor its caches.

@@ -56,7 +56,7 @@ public sealed class StorageBucketManager
     public Task<StorageBucket> Open(string name, StorageBucketOptions? options = null)
     {
         options ??= new StorageBucketOptions();
-        if (GetRegistry(out var registry, out var storageKey) is { } error)
+        if (GetRegistry(out var registry, out var browsingContext, out var storageKey) is { } error)
             return Task.FromException<StorageBucket>(error);
 
         if (!IsValidName(name))
@@ -65,7 +65,7 @@ public sealed class StorageBucketManager
         if (options.Quota is { } quota && quota is 0 or > MaxQuota)
             return Task.FromException<StorageBucket>(new TypeErrorException("The quota must be between 1 and Number.MAX_SAFE_INTEGER"));
 
-        var record = registry.Open(_global, storageKey, name, options);
+        var record = registry.Open(_global, browsingContext, storageKey, name, options);
         if (options.Persisted)
         {
             StorageBucket.RequestPersistence(_global, record);
@@ -82,10 +82,10 @@ public sealed class StorageBucketManager
     [IdlMember("keys", "https://wicg.github.io/storage-buckets/#dom-storagebucketmanager-keys")]
     public Task<IReadOnlyList<string>> Keys()
     {
-        if (GetRegistry(out var registry, out var storageKey) is { } error)
+        if (GetRegistry(out var registry, out var browsingContext, out var storageKey) is { } error)
             return Task.FromException<IReadOnlyList<string>>(error);
 
-        return Complete(registry.Keys(_global, storageKey));
+        return Complete(registry.Keys(_global, browsingContext, storageKey));
     }
 
     /// <summary>
@@ -98,13 +98,13 @@ public sealed class StorageBucketManager
     [IdlMember("delete", "https://wicg.github.io/storage-buckets/#dom-storagebucketmanager-delete")]
     public Task Delete(string name)
     {
-        if (GetRegistry(out var registry, out var storageKey) is { } error)
+        if (GetRegistry(out var registry, out var browsingContext, out var storageKey) is { } error)
             return Task.FromException(error);
 
         if (!IsValidName(name))
             return Task.FromException(new TypeErrorException($"The bucket name '{name}' is not valid"));
 
-        registry.Delete(_global, storageKey, name);
+        registry.Delete(browsingContext, storageKey, name);
         return Complete<object?>(null);
     }
 
@@ -125,19 +125,21 @@ public sealed class StorageBucketManager
         static bool IsLowerAlphanumeric(char c) => c is (>= 'a' and <= 'z') or (>= '0' and <= '9');
     }
 
-    /// <summary>Gets the registry of the buckets and the storage key of the environment, or returns the error of the methods.</summary>
-    private Exception? GetRegistry(out StorageBucketRegistry registry, out StorageKey storageKey)
+    /// <summary>Gets the registry of the buckets, the browsing context and the storage key of the environment, or returns the error of the methods.</summary>
+    private Exception? GetRegistry(out StorageBucketRegistry registry, out BrowsingContext browsingContext, out StorageKey storageKey)
     {
         registry = null!;
+        browsingContext = null!;
         storageKey = default;
         var environment = _global.EnvironmentDocument;
-        if (!_global.CanRunScript || environment.EnvironmentBrowsingContext is not { } browsingContext)
+        if (!_global.CanRunScript || environment.EnvironmentBrowsingContext is not { } context)
             return new TypeErrorException("The document is not fully active");
 
         if (StorageKey.Obtain(environment) is not { } key)
             return new DomException("The storage buckets cannot be used by a document whose origin is opaque", "SecurityError");
 
-        registry = browsingContext.StorageBuckets;
+        registry = context.StorageBuckets;
+        browsingContext = context;
         storageKey = key;
         return null;
     }
@@ -276,15 +278,18 @@ public sealed class StorageBucket
     }
 }
 
-/// <summary>A storage bucket of a storage shelf (https://wicg.github.io/storage-buckets/#storage-bucket): its storage key (whose <see cref="StorageKey.Bucket"/> is its name and the identifier of its lifetime) and its metadata.</summary>
-internal sealed class StorageBucketRecord(long id, string name, StorageKey key)
+/// <summary>
+/// A storage bucket of a storage shelf (https://wicg.github.io/storage-buckets/#storage-bucket): its storage key (whose
+/// <see cref="StorageKey.Bucket"/> is the identity of its lifetime, see <see cref="StorageBucketBackends"/>) and its metadata.
+/// </summary>
+internal sealed class StorageBucketRecord(string name, StorageKey key)
 {
-    /// <summary>The identifier of the bucket: a bucket created again with the same name is another bucket.</summary>
-    public long Id { get; } = id;
-
     public string Name { get; } = name;
 
     public StorageKey Key { get; } = key;
+
+    /// <summary>The identity of the lifetime of the bucket: a bucket created again with the same name is another bucket.</summary>
+    public string Identity => Key.Bucket!;
 
     public ulong? Quota { get; init; }
 
@@ -295,36 +300,53 @@ internal sealed class StorageBucketRecord(long id, string name, StorageKey key)
 
 /// <summary>
 /// The storage buckets of the storage keys of a browsing context group (https://wicg.github.io/storage-buckets/#storage-bucket-manager),
-/// shared by its windows and their workers. Thread-safe: the workers use it from their threads.
+/// shared by its windows and their workers. The buckets that exist are the ones whose identity is stored in the backends
+/// (see <see cref="StorageBucketBackends"/>): the groups that share a backend, or that use a persistent backend again, see
+/// the same buckets. The registry keeps the metadata of the buckets that the group opened (their quota and their expiration
+/// time). Thread-safe: the workers use it from their threads.
 /// </summary>
 internal sealed class StorageBucketRegistry
 {
     private readonly Lock _lock = new();
     private readonly Dictionary<StorageKey, SortedDictionary<string, StorageBucketRecord>> _buckets = [];
-    private long _nextId;
 
-    public StorageBucketRecord Open(GlobalScope global, StorageKey storageKey, string name, StorageBucketOptions options)
+    public StorageBucketRecord Open(GlobalScope global, BrowsingContext browsingContext, StorageKey storageKey, string name, StorageBucketOptions options)
     {
-        StorageBucketRecord? expired = null;
+        var backends = new StorageBucketBackends(browsingContext, storageKey);
+        List<string> deleted = [];
         StorageBucketRecord record;
         lock (_lock)
         {
             var buckets = GetBuckets(storageKey);
+            var identity = backends.FindIdentity(name);
             if (buckets.TryGetValue(name, out var existing))
             {
-                if (!IsExpired(global, existing))
+                if (IsDeletedFromTheBackends(backends, existing, identity))
+                {
+                    existing.IsDeleted = true;
+                    buckets.Remove(name);
+                }
+                else if (IsExpired(global, existing))
+                {
+                    // https://wicg.github.io/storage-buckets/#storage-bucket-expiration: an expired bucket is deleted
+                    existing.IsDeleted = true;
+                    buckets.Remove(name);
+                    deleted.Add(existing.Identity);
+                    deleted.AddRange(backends.RemoveIdentities(name));
+                    identity = null;
+                }
+                else
+                {
                     return existing;
-
-                // https://wicg.github.io/storage-buckets/#storage-bucket-expiration: an expired bucket is deleted
-                expired = existing;
-                buckets.Remove(name);
+                }
             }
 
             // Each lifetime of a bucket has its own storage: the objects of a deleted bucket (an open database, a file handle) and
             // the storage that its deletion keeps (a database with an open connection) are not the storage of a new bucket
             // of the same name
-            var id = ++_nextId;
-            record = new StorageBucketRecord(id, name, storageKey with { Bucket = name + "~" + id.ToString(System.Globalization.CultureInfo.InvariantCulture) })
+            identity ??= StorageBucketBackends.CreateIdentity(name);
+            deleted.AddRange(backends.SetIdentity(name, identity));
+            record = new StorageBucketRecord(name, storageKey with { Bucket = identity })
             {
                 Quota = options.Quota,
                 Expires = options.Expires,
@@ -332,72 +354,81 @@ internal sealed class StorageBucketRegistry
             buckets.Add(name, record);
         }
 
-        if (expired is not null)
-        {
-            ClearStorage(global, expired);
-        }
-
+        backends.Clear(deleted);
         return record;
     }
 
-    public IReadOnlyList<string> Keys(GlobalScope global, StorageKey storageKey)
+    public IReadOnlyList<string> Keys(GlobalScope global, BrowsingContext browsingContext, StorageKey storageKey)
     {
-        List<StorageBucketRecord> expired = [];
-        List<string> names = [];
+        var backends = new StorageBucketBackends(browsingContext, storageKey);
+        List<string> deleted = [];
+        IReadOnlyList<string> names;
         lock (_lock)
         {
             var buckets = GetBuckets(storageKey);
             foreach (var (name, record) in buckets.ToArray())
             {
-                if (IsExpired(global, record))
+                if (IsDeletedFromTheBackends(backends, record, backends.FindIdentity(name)))
                 {
+                    record.IsDeleted = true;
                     buckets.Remove(name);
-                    expired.Add(record);
                 }
-                else
+                else if (IsExpired(global, record))
                 {
-                    names.Add(name);
+                    record.IsDeleted = true;
+                    buckets.Remove(name);
+                    deleted.Add(record.Identity);
+                    deleted.AddRange(backends.RemoveIdentities(name));
                 }
             }
+
+            names = backends.HasBackend ? backends.GetNames() : [.. buckets.Keys];
         }
 
-        foreach (var record in expired)
-        {
-            ClearStorage(global, record);
-        }
-
+        backends.Clear(deleted);
         return names;
     }
 
-    public void Delete(GlobalScope global, StorageKey storageKey, string name)
+    public void Delete(BrowsingContext browsingContext, StorageKey storageKey, string name)
     {
-        StorageBucketRecord? record;
+        var backends = new StorageBucketBackends(browsingContext, storageKey);
+        List<string> deleted = [];
         lock (_lock)
         {
-            var buckets = GetBuckets(storageKey);
-            if (!buckets.Remove(name, out record))
-                return;
+            if (GetBuckets(storageKey).Remove(name, out var record))
+            {
+                record.IsDeleted = true;
+                deleted.Add(record.Identity);
+            }
+
+            // The bucket may have been created by another browsing context group that shares the backends, or before the
+            // backends were used again
+            deleted.AddRange(backends.RemoveIdentities(name));
         }
 
-        ClearStorage(global, record);
+        backends.Clear(deleted);
     }
 
     /// <summary>Deletes the buckets of a storage key (the <c>"storage"</c> type of <c>Clear-Site-Data</c>).</summary>
     public void DeleteAll(BrowsingContext browsingContext, StorageKey storageKey)
     {
-        StorageBucketRecord[] records;
+        var backends = new StorageBucketBackends(browsingContext, storageKey);
+        List<string> deleted = [];
         lock (_lock)
         {
-            if (!_buckets.Remove(storageKey, out var buckets))
-                return;
+            if (_buckets.Remove(storageKey, out var buckets))
+            {
+                foreach (var record in buckets.Values)
+                {
+                    record.IsDeleted = true;
+                    deleted.Add(record.Identity);
+                }
+            }
 
-            records = [.. buckets.Values];
+            deleted.AddRange(backends.RemoveIdentities(name: null));
         }
 
-        foreach (var record in records)
-        {
-            ClearStorage(browsingContext, record);
-        }
+        backends.Clear(deleted);
     }
 
     /// <summary>The quota of the bucket whose serialized storage key is <paramref name="serializedKey"/>, or null when it is not a bucket or has no quota.</summary>
@@ -418,65 +449,6 @@ internal sealed class StorageBucketRegistry
         return null;
     }
 
-    private SortedDictionary<string, StorageBucketRecord> GetBuckets(StorageKey storageKey)
-    {
-        if (!_buckets.TryGetValue(storageKey, out var buckets))
-        {
-            buckets = new SortedDictionary<string, StorageBucketRecord>(StringComparer.Ordinal);
-            _buckets.Add(storageKey, buckets);
-        }
-
-        return buckets;
-    }
-
-    private static bool IsExpired(GlobalScope global, StorageBucketRecord record)
-        => record.Expires is { } expires && expires <= global.EventLoop.TimeProvider.GetUtcNow().ToUnixTimeMilliseconds();
-
-    private static void ClearStorage(GlobalScope global, StorageBucketRecord record)
-    {
-        if (global.EnvironmentDocument.EnvironmentBrowsingContext is { } browsingContext)
-        {
-            ClearStorage(browsingContext, record);
-        }
-        else
-        {
-            record.IsDeleted = true;
-        }
-    }
-
-    /// <summary>
-    /// Marks a removed bucket as deleted and removes its databases (except the ones with an open connection), its caches and
-    /// its file system, in the backends that store them: the backends of the partition of the bucket (a bucket of a
-    /// credentialless iframe is stored in the in-memory backends of its page, see <see cref="StorageEndpoints.GetBackend"/>).
-    /// </summary>
-    private static void ClearStorage(BrowsingContext browsingContext, StorageBucketRecord record)
-    {
-        record.IsDeleted = true;
-        var origin = record.Key.Serialize();
-        if (StorageEndpoints.GetBackend(browsingContext, record.Key, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend()) is { } indexedDB)
-        {
-            ClearIndexedDB(indexedDB, origin);
-        }
-
-        if (StorageEndpoints.GetBackend(browsingContext, record.Key, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend()) is { } cacheStorage)
-        {
-            var caches = cacheStorage.Coordinator;
-            foreach (var name in caches.Keys(origin).ToArray())
-            {
-                caches.Delete(origin, name);
-            }
-        }
-
-        if (StorageEndpoints.GetBackend(browsingContext, record.Key, static context => context.FileSystemBackend, static () => new InMemoryFileSystemBackend()) is { } fileSystem
-            && fileSystem.GetEntries(origin, []) is { } entries)
-        {
-            foreach (var entry in entries)
-            {
-                fileSystem.RemoveEntry(origin, [entry.Name]);
-            }
-        }
-    }
-
     /// <summary>Deletes the databases of a serialized storage key that have no open connection.</summary>
     internal static void ClearIndexedDB(IndexedDBBackend indexedDB, string origin)
     {
@@ -491,6 +463,259 @@ internal sealed class StorageBucketRegistry
                 backend.DeleteDatabase(origin, database.Name);
                 return true;
             });
+        }
+    }
+
+    private SortedDictionary<string, StorageBucketRecord> GetBuckets(StorageKey storageKey)
+    {
+        if (!_buckets.TryGetValue(storageKey, out var buckets))
+        {
+            buckets = new SortedDictionary<string, StorageBucketRecord>(StringComparer.Ordinal);
+            _buckets.Add(storageKey, buckets);
+        }
+
+        return buckets;
+    }
+
+    /// <summary>
+    /// Whether a bucket that the group opened was deleted by another browsing context group that shares the backends (the
+    /// backends no longer store its identity): its storage was cleared by that group.
+    /// </summary>
+    private static bool IsDeletedFromTheBackends(StorageBucketBackends backends, StorageBucketRecord record, string? identity)
+        => backends.HasBackend && identity != record.Identity;
+
+    private static bool IsExpired(GlobalScope global, StorageBucketRecord record)
+        => record.Expires is { } expires && expires <= global.EventLoop.TimeProvider.GetUtcNow().ToUnixTimeMilliseconds();
+}
+
+/// <summary>
+/// The backends that store the buckets of a storage key (IndexedDB, the Cache API and the origin private file system, see
+/// <see cref="StorageEndpoints.GetBackend"/>), and the identities of the lifetimes of the buckets. The identity of a bucket
+/// (its name, <c>~</c> and a new GUID) is created with the bucket, stored in each backend, and removed with the bucket: the
+/// browsing context groups that share a backend, and the ones that use a persistent backend again, find the identity of a
+/// bucket whatever the order in which they open the buckets, and a bucket created again after its deletion has another
+/// identity (the objects and the storage kept by the deleted one, an open database or a file handle, do not reach it). A
+/// backend stores the identities of the buckets of a storage key in a namespace of its own: the serialized storage key
+/// prefixed by <c>storage-buckets </c> (an origin has no space, so it is not the serialization of a storage key), as the
+/// names of empty databases, of empty caches and of empty directories.
+/// </summary>
+internal sealed class StorageBucketBackends
+{
+    // The browsing context groups that share a backend have their own registry
+    private static readonly Lock IdentitiesLock = new();
+
+    private readonly StorageKey _storageKey;
+    private readonly IdentityStore[] _stores;
+
+    public StorageBucketBackends(BrowsingContext browsingContext, StorageKey storageKey)
+    {
+        _storageKey = storageKey;
+        var origin = "storage-buckets " + storageKey.Serialize();
+        List<IdentityStore> stores = [];
+        if (StorageEndpoints.GetBackend(browsingContext, storageKey, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend()) is { } indexedDB)
+        {
+            stores.Add(new IndexedDBIdentityStore(indexedDB, origin));
+        }
+
+        if (StorageEndpoints.GetBackend(browsingContext, storageKey, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend()) is { } cacheStorage)
+        {
+            stores.Add(new CacheStorageIdentityStore(cacheStorage, origin));
+        }
+
+        if (StorageEndpoints.GetBackend(browsingContext, storageKey, static context => context.FileSystemBackend, static () => new InMemoryFileSystemBackend()) is { } fileSystem)
+        {
+            stores.Add(new FileSystemIdentityStore(fileSystem, origin));
+        }
+
+        _stores = [.. stores];
+    }
+
+    /// <summary>Whether a backend stores the buckets: false for a credentialless iframe whose page is gone.</summary>
+    public bool HasBackend => _stores.Length > 0;
+
+    public static string CreateIdentity(string name) => name + "~" + Guid.NewGuid().ToString("N");
+
+    /// <summary>Returns the identity of a bucket stored in the backends (the one of the first backend that stores one), or null.</summary>
+    public string? FindIdentity(string name)
+    {
+        lock (IdentitiesLock)
+        {
+            foreach (var store in _stores)
+            {
+                foreach (var identity in store.GetIdentities())
+                {
+                    if (GetName(identity) == name)
+                        return identity;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Returns the names of the buckets stored in the backends, in lexicographic order.</summary>
+    public IReadOnlyList<string> GetNames()
+    {
+        var names = new SortedSet<string>(StringComparer.Ordinal);
+        lock (IdentitiesLock)
+        {
+            foreach (var store in _stores)
+            {
+                foreach (var identity in store.GetIdentities())
+                {
+                    if (GetName(identity) is { } name)
+                    {
+                        names.Add(name);
+                    }
+                }
+            }
+        }
+
+        return [.. names];
+    }
+
+    /// <summary>
+    /// Stores the identity of a bucket in the backends, and returns the other identities of the bucket that they stored: the
+    /// identities of deleted buckets, whose storage is to be cleared (see <see cref="Clear"/>).
+    /// </summary>
+    public List<string> SetIdentity(string name, string identity)
+    {
+        List<string> removed = [];
+        lock (IdentitiesLock)
+        {
+            foreach (var store in _stores)
+            {
+                var found = false;
+                foreach (var stored in store.GetIdentities())
+                {
+                    if (stored == identity)
+                    {
+                        found = true;
+                    }
+                    else if (GetName(stored) == name)
+                    {
+                        store.Remove(stored);
+                        removed.Add(stored);
+                    }
+                }
+
+                if (!found)
+                {
+                    store.Add(identity);
+                }
+            }
+        }
+
+        return removed;
+    }
+
+    /// <summary>Removes the identities of a bucket (or of all the buckets when <paramref name="name"/> is null) from the backends, and returns them.</summary>
+    public List<string> RemoveIdentities(string? name)
+    {
+        List<string> removed = [];
+        lock (IdentitiesLock)
+        {
+            foreach (var store in _stores)
+            {
+                foreach (var identity in store.GetIdentities())
+                {
+                    if (GetName(identity) is { } bucketName && (name is null || bucketName == name))
+                    {
+                        store.Remove(identity);
+                        removed.Add(identity);
+                    }
+                }
+            }
+        }
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Removes the storage of deleted buckets from the backends: their databases (except the ones with an open connection),
+    /// their caches and their file systems.
+    /// </summary>
+    public void Clear(IEnumerable<string> identities)
+    {
+        foreach (var identity in identities.Distinct(StringComparer.Ordinal))
+        {
+            var origin = (_storageKey with { Bucket = identity }).Serialize();
+            foreach (var store in _stores)
+            {
+                store.Clear(origin);
+            }
+        }
+    }
+
+    private static string? GetName(string identity) => identity.IndexOf('~', StringComparison.Ordinal) is var index and > 0 ? identity[..index] : null;
+
+    /// <summary>A backend: the identities of the buckets that it stores, and the storage of the buckets.</summary>
+    private abstract class IdentityStore
+    {
+        public abstract IReadOnlyList<string> GetIdentities();
+
+        public abstract void Add(string identity);
+
+        public abstract void Remove(string identity);
+
+        /// <summary>Removes the storage of a serialized storage key.</summary>
+        public abstract void Clear(string origin);
+    }
+
+    /// <summary>The identities are the names of empty databases (of version 1).</summary>
+    private sealed class IndexedDBIdentityStore(IndexedDBBackend backend, string identitiesOrigin) : IdentityStore
+    {
+        public override IReadOnlyList<string> GetIdentities() => [.. backend.GetDatabases(identitiesOrigin).Select(database => database.Name)];
+
+        public override void Add(string identity)
+        {
+            using var transaction = backend.BeginTransaction(identitiesOrigin, identity, IdbTransactionMode.VersionChange, []);
+            transaction.SetVersion(1);
+            transaction.Commit();
+        }
+
+        public override void Remove(string identity) => backend.DeleteDatabase(identitiesOrigin, identity);
+
+        public override void Clear(string origin) => StorageBucketRegistry.ClearIndexedDB(backend, origin);
+    }
+
+    /// <summary>The identities are the names of empty caches.</summary>
+    private sealed class CacheStorageIdentityStore(CacheStorageBackend backend, string identitiesOrigin) : IdentityStore
+    {
+        public override IReadOnlyList<string> GetIdentities() => backend.GetCacheNames(identitiesOrigin);
+
+        public override void Add(string identity) => backend.CreateCache(identitiesOrigin, identity);
+
+        public override void Remove(string identity) => backend.DeleteCache(identitiesOrigin, identity);
+
+        public override void Clear(string origin)
+        {
+            var caches = backend.Coordinator;
+            foreach (var name in caches.Keys(origin).ToArray())
+            {
+                caches.Delete(origin, name);
+            }
+        }
+    }
+
+    /// <summary>The identities are the names of empty directories of the root directory.</summary>
+    private sealed class FileSystemIdentityStore(FileSystemBackend backend, string identitiesOrigin) : IdentityStore
+    {
+        public override IReadOnlyList<string> GetIdentities() => [.. (backend.GetEntries(identitiesOrigin, []) ?? []).Select(entry => entry.Name)];
+
+        public override void Add(string identity) => backend.CreateEntry(identitiesOrigin, [identity], FileSystemHandleKind.Directory, modificationTime: 0);
+
+        public override void Remove(string identity) => backend.RemoveEntry(identitiesOrigin, [identity]);
+
+        public override void Clear(string origin)
+        {
+            if (backend.GetEntries(origin, []) is { } entries)
+            {
+                foreach (var entry in entries)
+                {
+                    backend.RemoveEntry(origin, [entry.Name]);
+                }
+            }
         }
     }
 }

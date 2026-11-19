@@ -1,12 +1,46 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Storage;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
 /// <summary>IndexedDB (https://w3c.github.io/IndexedDB/).</summary>
 public sealed class IndexedDBTests : IDisposable
 {
+    private const string WriteDraftScript = """
+        <script>
+          (async () => {
+            const drafts = await navigator.storageBuckets.open('drafts');
+            const db = await new Promise(resolve => {
+              const request = drafts.indexedDB.open('db');
+              request.onupgradeneeded = () => request.result.createObjectStore('store');
+              request.onsuccess = () => resolve(request.result);
+            });
+            const transaction = db.transaction('store', 'readwrite');
+            transaction.objectStore('store').put('saved', 'key');
+            transaction.oncomplete = () => { db.close(); document.title = 'written'; };
+          })();
+        </script>
+        """;
+
+    private const string ReadDraftScript = """
+        <script>
+          async function readDraft(bucket) {
+            if ((await bucket.indexedDB.databases()).length === 0)
+              return 'empty';
+
+            return await new Promise(resolve => {
+              const request = bucket.indexedDB.open('db');
+              request.onsuccess = () => {
+                const db = request.result;
+                db.transaction('store').objectStore('store').get('key').onsuccess = e => { db.close(); resolve(e.target.result); };
+              };
+            });
+          }
+        </script>
+        """;
+
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
     private readonly RecordingLoader _loader = new();
@@ -141,6 +175,80 @@ public sealed class IndexedDBTests : IDisposable
 
         Assert.Empty(_errors);
         Assert.Equal("empty", document.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_BrowsingContextGroupsThatShareABackendSeeTheSameBucket()
+    {
+        var backend = new InMemoryIndexedDBBackend();
+        var writer = Load(WriteDraftScript, backend);
+        var reader = Load("""
+            <script>
+              (async () => {
+                await navigator.storageBuckets.open('inbox');
+                const drafts = await navigator.storageBuckets.open('drafts');
+                document.title = await readDraft(drafts);
+              })();
+            </script>
+            """ + ReadDraftScript, backend);
+
+        Assert.Empty(_errors);
+        Assert.Equal("written", writer.Title);
+        Assert.Equal("saved", reader.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_APersistentBackendKeepsTheBucketsWhenItIsOpenedAgain()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "idb-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using (var backend = new SqliteIndexedDBBackend(directory))
+            {
+                Assert.Equal("written", Load(WriteDraftScript, backend).Title);
+            }
+
+            using (var backend = new SqliteIndexedDBBackend(directory))
+            {
+                var reader = Load("""
+                    <script>
+                      (async () => {
+                        const names = await navigator.storageBuckets.keys();
+                        const drafts = await navigator.storageBuckets.open('drafts');
+                        document.title = names.join() + ',' + await readDraft(drafts);
+                      })();
+                    </script>
+                    """ + ReadDraftScript, backend);
+
+                Assert.Equal("drafts,saved", reader.Title);
+            }
+
+            using (var backend = new SqliteIndexedDBBackend(directory))
+            {
+                var deleter = Load("""
+                    <script>
+                      (async () => {
+                        await navigator.storageBuckets.delete('drafts');
+                        const names = await navigator.storageBuckets.keys();
+                        const drafts = await navigator.storageBuckets.open('drafts');
+                        document.title = (names.join() || 'none') + ',' + await readDraft(drafts);
+                      })();
+                    </script>
+                    """ + ReadDraftScript, backend);
+
+                Assert.Equal("none,empty", deleter.Title);
+            }
+
+            Assert.Empty(_errors);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
     }
 
     [Fact]

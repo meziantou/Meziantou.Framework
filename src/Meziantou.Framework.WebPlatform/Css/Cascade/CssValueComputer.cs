@@ -335,6 +335,11 @@ internal static partial class CssValueComputer
             // (WPT css/css-size-adjust/parsing/text-size-adjust-computed.html)
             case "text-size-adjust" when value == "none":
                 return "100%";
+
+            // https://drafts.csswg.org/css-link-params-1/#link-param-prop: "Computed value: as specified" (a typed value is
+            // resolved when the parameters are passed to a resource: param(--a <color>: currentcolor) keeps currentcolor)
+            case "link-parameters":
+                return value;
             case "hyphenate-limit-chars":
                 return ComputeHyphenateLimitChars(style, property, value, baseUrl);
             case "dynamic-range-limit" when value.Contains('(', StringComparison.Ordinal):

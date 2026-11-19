@@ -1859,6 +1859,18 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("background-size: 100% calc(100% / round(up, 100% / 110px))", "background-size", "100% calc(100% / round(up, 100% / 110px, 1))", "100% calc(100% / round(up, 100% / 110px, 1))")]
     [InlineData("min-size: 10px 10px", "min-size", "10px", "10px")]
     [InlineData("max-size: 10px 20px", "max-size", "10px 20px", "10px 20px")]
+    [InlineData("link-parameters: param(--a <color>: currentcolor), param(--b:orange)", "link-parameters", "param(--a <color>: currentcolor), param(--b: orange)", "param(--a <color>: currentcolor), param(--b: orange)")]
+    [InlineData("link-parameters: param(--a type(<color>): red)", "link-parameters", "param(--a <color>: red)", "param(--a <color>: red)")]
+    [InlineData("link-parameters: param(--a type(<color> | <length>): 1px)", "link-parameters", "param(--a type(<color> | <length>): 1px)", "param(--a type(<color> | <length>): 1px)")]
+    [InlineData("link-parameters: param(--a: ), param(--b:)", "link-parameters", "param(--a: ), param(--b: )", "param(--a: ), param(--b: )")]
+    [InlineData("link-parameters: param(COLOR), param(--b), param(--c <length>)", "link-parameters", "param(color), param(--b), param(--c <length>)", "param(color), param(--b), param(--c <length>)")]
+    [InlineData("--x: blue; link-parameters: param(--a: var(--x))", "link-parameters", "param(--a: var(--x))", "param(--a: blue)")]
+    [InlineData("link-parameters: param(--a <notatype>: red)", "link-parameters", "", "none")]
+    [InlineData("link-parameters: param(color <color>: red)", "link-parameters", "", "none")]
+    [InlineData("link-parameters: param(--a, red)", "link-parameters", "", "none")]
+    [InlineData("link-parameters: param(-a: red)", "link-parameters", "", "none")]
+    [InlineData("background-image: url(\"a.svg\" param(--c <color>: green) cross-origin(anonymous) param(--d: 1))", "background-image", "url(\"a.svg\" cross-origin(anonymous) param(--c <color>: green) param(--d: 1))", "url(\"a.svg\" cross-origin(anonymous) param(--c <color>: green) param(--d: 1))")]
+    [InlineData("background-image: url(\"a.svg\" param(--c <notatype>: green))", "background-image", "", "none")]
     public void SpecifiedAndComputedValues(string style, string property, string specified, string computed)
     {
         var document = Parse("<div id=target style='" + style + "'></div>");

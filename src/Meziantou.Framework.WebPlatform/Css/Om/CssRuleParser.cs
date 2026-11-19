@@ -1431,7 +1431,7 @@ internal sealed partial class CssRuleParser
     /// https://drafts.csswg.org/css-mixins-1/#typedef-css-type: &lt;syntax-component&gt; | type( &lt;syntax&gt; ). A syntax
     /// with several components or the universal syntax must be written in type().
     /// </summary>
-    private static CssSyntaxDefinition? ParseCssType(List<CssComponentValue> values)
+    internal static CssSyntaxDefinition? ParseCssType(List<CssComponentValue> values)
     {
         var significant = ValueMatcher.RemoveWhitespace(values);
         if (significant is [CssFunction { Name: var functionName } typeFunction] && InfraAscii.EqualsIgnoreAsciiCase(functionName, "type"))

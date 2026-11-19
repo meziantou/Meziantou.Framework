@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Css.Om;
+using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Rendering;
 
@@ -9,8 +10,9 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// https://svgwg.org/svg2-draft/conform.html#secure-animated-mode): the document is parsed once, in its own isolated
 /// <see cref="Document"/> without browsing context (no script runs, no external resource is fetched: only the <c>data:</c> URLs
 /// of its images), and it is laid out and painted by the same pipeline as the other documents, with a viewport of the size the
-/// image is drawn at (the concrete object size, https://drafts.csswg.org/css-images-3/#concrete-size-resolution). The display
-/// lists of the last sizes are cached.
+/// image is drawn at (the concrete object size, https://drafts.csswg.org/css-images-3/#concrete-size-resolution). The link
+/// parameters passed by the element that draws the image (https://drafts.csswg.org/css-link-params-1/#multiple) are the custom
+/// environment variables of the document. The display lists of the last sizes and parameters are cached.
 /// </summary>
 internal sealed class SvgImage
 {
@@ -19,7 +21,7 @@ internal sealed class SvgImage
 
     private const int MaxCachedSizes = 8;
 
-    private readonly List<(PhysicalSize Size, string ColorScheme, string? PreserveAspectRatio, double Zoom, DisplayList? List)> _displayLists = [];
+    private readonly List<(PhysicalSize Size, string ColorScheme, string? PreserveAspectRatio, double Zoom, CssLinkParameterValues? LinkParameters, DisplayList? List)> _displayLists = [];
 
     private readonly string _hostColorScheme;
     private string? _rootPreserveAspectRatio;
@@ -98,8 +100,11 @@ internal sealed class SvgImage
                 text = text[1..];
             }
 
-            // The XML parser parses the document synchronously; the document has no browsing context: it runs no script and fetches nothing
-            document = XmlDocumentParser.ParseDocument(text, new XmlParserOptions { Url = image.Url.Length > 0 ? image.Url : "about:blank", ContentType = "image/svg+xml" });
+            // The XML parser parses the document synchronously; the document has no browsing context: it runs no script and fetches
+            // nothing. The fragment directive of the URL (the link parameters, https://drafts.csswg.org/css-link-params-1/#url-frag)
+            // is not part of the URL of the document (https://wicg.github.io/scroll-to-text-fragment/#remove-the-fragment-directive)
+            var url = image.Url.Length > 0 ? CssLinkParameters.RemoveFragmentDirective(image.Url) : "about:blank";
+            document = XmlDocumentParser.ParseDocument(text, new XmlParserOptions { Url = url, ContentType = "image/svg+xml" });
         }
 #pragma warning disable CA1031 // A document that cannot be parsed is a broken image
         catch (Exception)
@@ -186,7 +191,10 @@ internal sealed class SvgImage
     /// image (https://svgwg.org/svg2-draft/embedded.html#ImageElement), or null.
     /// </param>
     /// <param name="zoom">The zoom of the element that draws the image (see <see cref="Zoom"/>).</param>
-    public DisplayList? GetDisplayList(PhysicalSize size, string? colorScheme = null, string? preserveAspectRatio = null, double zoom = 1)
+    /// <param name="linkParameters">
+    /// The link parameters passed to the image by the element that draws it (https://drafts.csswg.org/css-link-params-1/#using), or null.
+    /// </param>
+    public DisplayList? GetDisplayList(PhysicalSize size, string? colorScheme = null, string? preserveAspectRatio = null, double zoom = 1, CssLinkParameterValues? linkParameters = null)
     {
         if (!(zoom > 0) || !double.IsFinite(zoom))
         {
@@ -197,9 +205,9 @@ internal sealed class SvgImage
             return null;
 
         colorScheme ??= _hostColorScheme;
-        foreach (var (cachedSize, cachedScheme, cachedPreserveAspectRatio, cachedZoom, cachedList) in _displayLists)
+        foreach (var (cachedSize, cachedScheme, cachedPreserveAspectRatio, cachedZoom, cachedLinkParameters, cachedList) in _displayLists)
         {
-            if (cachedSize == size && cachedScheme == colorScheme && cachedPreserveAspectRatio == preserveAspectRatio && cachedZoom == zoom)
+            if (cachedSize == size && cachedScheme == colorScheme && cachedPreserveAspectRatio == preserveAspectRatio && cachedZoom == zoom && Equals(cachedLinkParameters, linkParameters))
                 return cachedList;
         }
 
@@ -220,7 +228,7 @@ internal sealed class SvgImage
             }
         }
 
-        Environment = Environment with { Width = size.Width, Height = size.Height, PrefersColorScheme = colorScheme };
+        Environment = Environment with { Width = size.Width, Height = size.Height, PrefersColorScheme = colorScheme, LinkParameters = linkParameters };
         DisplayList? list;
         try
         {
@@ -252,7 +260,7 @@ internal sealed class SvgImage
             _displayLists.RemoveAt(0);
         }
 
-        _displayLists.Add((size, colorScheme, preserveAspectRatio, zoom, list));
+        _displayLists.Add((size, colorScheme, preserveAspectRatio, zoom, linkParameters, list));
         return list;
     }
 }

@@ -1786,6 +1786,17 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task PaymentRequest_CanMakePayment_WaitsForTheIngestionOfTheManifests()
+    {
+        // The backend installs the payment handler of the method from its manifest, on another thread: the support of the
+        // method is checked once the manifest is ingested
+        var backend = new InstallingPaymentHandlers();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Assert.Equal("true", await RunAsync(document, "go(new PaymentRequest(methods, details).canMakePayment())"));
+    }
+
+    [Fact]
     public void PaymentRequest_DestroyedDocument_CancelsTheIngestionOfTheManifests()
     {
         // A backend that never completes the ingestion does not keep the event loop busy once the document is destroyed

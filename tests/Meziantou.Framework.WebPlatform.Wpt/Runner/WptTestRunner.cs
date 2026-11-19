@@ -2575,8 +2575,9 @@ internal sealed partial class WptTestRunner
 
             // The handlers of the WebSocket server run on the thread pool: the clock is not advanced while a connection is busy
             // (a handler is about to respond, or the library is processing a message). The task queue is checked afterwards: a
-            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent fetches a payment method manifest
-            if (_webSocketServer.IsBusy || _userAgentUI.IsBusy)
+            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch of a
+            // payment method manifest)
+            if (_webSocketServer.IsBusy || eventLoop.HasPendingUserAgentWork)
             {
                 workerWait.SpinOnce();
                 continue;

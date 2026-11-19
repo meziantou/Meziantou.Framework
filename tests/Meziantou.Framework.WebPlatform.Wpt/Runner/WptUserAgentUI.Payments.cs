@@ -37,27 +37,10 @@ internal sealed partial class WptUserAgentUI
 
     public override ValueTask<PaymentSheetResponse?> RetryPaymentAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken) => WaitUntilClosedAsync<PaymentSheetResponse?>(null, cancellationToken);
 
+    // The fetches are a work of the user agent: the runner does not advance the virtual clock meanwhile (see
+    // DomEventLoop.HasPendingUserAgentWork), so the timers of the test (e.g. the polling of the server logs) do not run ahead of them
     public override async ValueTask IngestPaymentMethodManifestAsync(PaymentMethodManifestRequest request, CancellationToken cancellationToken)
-    {
-        Interlocked.Increment(ref _pendingManifestFetches);
-        try
-        {
-            await request.FetchAsync(cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            Interlocked.Decrement(ref _pendingManifestFetches);
-        }
-    }
-
-    /// <summary>The number of payment method manifests being fetched (their requests run on the thread pool).</summary>
-    private int _pendingManifestFetches;
-
-    /// <summary>
-    /// Gets whether the user agent is fetching a payment method manifest: the runner does not advance the virtual clock meanwhile,
-    /// so the timers of the test (e.g. the polling of the server logs) do not run ahead of the fetches.
-    /// </summary>
-    public bool IsBusy => Volatile.Read(ref _pendingManifestFetches) > 0;
+        => await request.FetchAsync(cancellationToken).ConfigureAwait(false);
 
     public override ValueTask<SecurePaymentConfirmationChoice> ShowSecurePaymentConfirmationAsync(SecurePaymentConfirmationPrompt prompt, CancellationToken cancellationToken) => _spcTransactionMode switch
     {

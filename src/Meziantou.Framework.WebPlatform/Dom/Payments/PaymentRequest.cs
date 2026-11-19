@@ -50,6 +50,9 @@ public sealed partial class PaymentRequest : EventTarget
     /// <summary>The ingestion of the payment method manifests (null until the page asks whether it can make a payment).</summary>
     private Task? _manifestIngestion;
 
+    /// <summary>The steps that wait for the ingestion of the payment method manifests (lock it to use it).</summary>
+    private List<Action>? _afterManifestIngestion;
+
     /// <summary>The change of the user whose events are dispatched, completed once the page updated the details.</summary>
     private TaskCompletionSource<PaymentSheetDetails>? _pendingChange;
 
@@ -257,38 +260,44 @@ public sealed partial class PaymentRequest : EventTarget
         _ui = new CancellationTokenSource();
 #pragma warning restore CA2000
         var token = _ui.Token;
-        _ = IngestPaymentMethodManifests();
 
-        // The payment handlers of the payment methods (the queries are created on the event loop of the window)
+        // The payment handlers of the payment methods (the queries are created on the event loop of the window), once the
+        // manifests are ingested: a backend may install the payment handler of a method from its manifest
         var queries = _serializedMethodData.ConvertAll(method => new PaymentHandlerQuery(_window, method));
         var securePaymentConfirmationCheck = CreateSecurePaymentConfirmationCheck();
-        UserAgentUI.Show<IReadOnlyList<PaymentSheetMethod>>(
-            _window,
-            (backend, cancellationToken) => new ValueTask<IReadOnlyList<PaymentSheetMethod>>(GetSupportedMethodsAsync(backend, queries, securePaymentConfirmationCheck, cancellationToken)),
-            dismissed: [],
-            methods =>
-            {
-                if (State != PaymentRequestState.Interactive || token.IsCancellationRequested)
-                    return;
+        RunAfterManifestIngestion(() =>
+        {
+            if (State != PaymentRequestState.Interactive || token.IsCancellationRequested)
+                return;
 
-                if (methods.Count == 0)
+            UserAgentUI.Show<IReadOnlyList<PaymentSheetMethod>>(
+                _window,
+                (backend, cancellationToken) => new ValueTask<IReadOnlyList<PaymentSheetMethod>>(GetSupportedMethodsAsync(backend, queries, securePaymentConfirmationCheck, cancellationToken)),
+                dismissed: [],
+                methods =>
                 {
-                    State = PaymentRequestState.Closed;
-                    CloseUserInterface();
-                    acceptPromise.TrySetException(CreateException("The user agent supports none of the payment methods", "NotSupportedError"));
-                    return;
-                }
+                    if (State != PaymentRequestState.Interactive || token.IsCancellationRequested)
+                        return;
 
-                // The payment handler of Secure Payment Confirmation shows the transaction dialog
-                if (_securePaymentConfirmation is not null)
-                {
-                    ShowTransactionDialog(token);
-                    return;
-                }
+                    if (methods.Count == 0)
+                    {
+                        State = PaymentRequestState.Closed;
+                        CloseUserInterface();
+                        acceptPromise.TrySetException(CreateException("The user agent supports none of the payment methods", "NotSupportedError"));
+                        return;
+                    }
 
-                PresentUserInterface(methods, detailsPromise, token);
-            },
-            token);
+                    // The payment handler of Secure Payment Confirmation shows the transaction dialog
+                    if (_securePaymentConfirmation is not null)
+                    {
+                        ShowTransactionDialog(token);
+                        return;
+                    }
+
+                    PresentUserInterface(methods, detailsPromise, token);
+                },
+                token);
+        });
         return acceptPromise.Task;
     }
 
@@ -333,15 +342,14 @@ public sealed partial class PaymentRequest : EventTarget
         if (!_window.Document.IsFullyActive)
             return Task.FromException<bool>(CreateException("The document is not fully active", "InvalidStateError"));
 
-        _ = IngestPaymentMethodManifests();
         var result = new TaskCompletionSource<bool>();
         var queries = _serializedMethodData.ConvertAll(method => new PaymentHandlerQuery(_window, method));
         var securePaymentConfirmationCheck = CreateSecurePaymentConfirmationCheck();
-        UserAgentUI.Show(
+        RunAfterManifestIngestion(() => UserAgentUI.Show(
             _window,
             async (backend, cancellationToken) => (await GetSupportedMethodsAsync(backend, queries, securePaymentConfirmationCheck, cancellationToken).ConfigureAwait(false)).Count > 0,
             dismissed: false,
-            result.SetResult);
+            result.SetResult));
         return result.Task;
     }
 
@@ -462,6 +470,27 @@ public sealed partial class PaymentRequest : EventTarget
     }
 
     /// <summary>
+    /// Runs <paramref name="action"/> once the payment method manifests are ingested: at once when they are, or from a task of
+    /// the event loop of the window (the backend is always called from the event loop).
+    /// </summary>
+    private void RunAfterManifestIngestion(Action action)
+    {
+        _ = IngestPaymentMethodManifests();
+        lock (_afterManifestIngestionLock)
+        {
+            if (_afterManifestIngestion is { } waiting)
+            {
+                waiting.Add(action);
+                return;
+            }
+        }
+
+        action();
+    }
+
+    private readonly Lock _afterManifestIngestionLock = new();
+
+    /// <summary>
     /// Ingests the payment method manifests of the URL-based payment method identifiers (https://w3c.github.io/payment-method-manifest/#ingest-payment-method-manifests)
     /// with the backend. The specification ingests them when the request is constructed; as in Chromium, they are ingested
     /// when the page asks whether it can make a payment (<c>canMakePayment()</c>, <c>show()</c>), once per request. The task
@@ -495,17 +524,41 @@ public sealed partial class PaymentRequest : EventTarget
         var cancellation = new CancellationTokenSource();
 #pragma warning restore CA2000
         document.AddPromptCloser(cancellation.Cancel);
+
+        // The event loop is not idle until the steps that wait for the ingestion are queued: the ingestion is a work of the user
+        // agent, during which a virtual clock does not run the timers of the page ahead of the fetches
+        var eventLoop = _window.EventLoop;
+        eventLoop.BeginUserAgentWork();
+        lock (_afterManifestIngestionLock)
+        {
+            _afterManifestIngestion = [];
+        }
+
         var ingestion = Task.WhenAll(requests.ConvertAll(request => IngestAsync(backend, request, cancellation.Token)));
+        _manifestIngestion = ingestion;
         _ = ingestion.ContinueWith(
             _ =>
             {
                 document.RemovePromptCloser(cancellation.Cancel);
                 cancellation.Dispose();
+                List<Action> waiting;
+                lock (_afterManifestIngestionLock)
+                {
+                    waiting = _afterManifestIngestion;
+                    _afterManifestIngestion = null;
+                }
+
+                foreach (var action in waiting)
+                {
+                    _window.QueueGlobalTask(action);
+                }
+
+                eventLoop.EndUserAgentWork();
             },
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
-        return _manifestIngestion = ingestion;
+        return ingestion;
     }
 
     /// <summary>

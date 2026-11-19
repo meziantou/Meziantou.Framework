@@ -43,7 +43,7 @@ public static partial class WebPlatformFuzzTargets
             }
         }
 
-        var context = FuzzCanvasContext.Value;
+        var context = FuzzCanvasContext;
         context.Reset();
         context.Font = "12px sans-serif";
         context.Direction = (options & 1) != 0 ? CanvasDirection.Rtl : CanvasDirection.Ltr;

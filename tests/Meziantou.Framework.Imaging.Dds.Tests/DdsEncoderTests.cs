@@ -108,6 +108,43 @@ public sealed class DdsEncoderTests
     }
 
     [Fact]
+    public void FloatingPointGrayPixelsUseTheFloatingPointFormats()
+    {
+        // Values outside [0, 1], an infinity and a not-a-number, which a 16-bit UNORM format would clamp or lose
+        ushort[] halves = [0xC100, 0x3400, 0x63D0, 0x7C00, 0x7E01, 0x3800];
+        float[] floats = [-2.5f, 0.25f, 1e6f, float.PositiveInfinity, float.NaN, 0.5f];
+        byte[] halfBytes = [.. halves.SelectMany(BitConverter.GetBytes)];
+        byte[] floatBytes = [.. floats.SelectMany(BitConverter.GetBytes)];
+        AssertKept(Image.ImportPixelBytes<GrayHalf>(halfBytes, 6, 1), 113u);
+        AssertKept(Image.ImportPixelBytes<LaHalf>(halfBytes, 3, 1), 113u);
+        AssertKept(Image.ImportPixelBytes<GrayFloat>(floatBytes, 6, 1), 116u);
+        AssertKept(Image.ImportPixelBytes<LaFloat>(floatBytes, 3, 1), 116u);
+
+        static void AssertKept<TPixel>(Image<TPixel> image, uint fourCC)
+            where TPixel : unmanaged
+        {
+            using (image)
+            {
+                // An image and the surfaces of a collection are both widened to RGBA floats or halves, which keep the values
+                image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+                using var expected = image.CloneAs<RgbaFloat>();
+                var expectedBytes = new byte[expected.Width * expected.Height * 16];
+                expected.Frames[0].CopyPixelBytesTo(expectedBytes);
+                using var collection = ImageCollection.Create(ImageCollectionKind.TextureSurfaces);
+                collection.Add(image, new TextureSurface(0));
+                foreach (var data in new[] { Save(image, new DdsEncoder()), SaveCollection(collection, new DdsEncoder()) })
+                {
+                    Assert.Equal(fourCC, ReadUInt32(data, 84));
+                    using var decoded = Image.Load<RgbaFloat>(data);
+                    var actualBytes = new byte[expectedBytes.Length];
+                    decoded.Frames[0].CopyPixelBytesTo(actualBytes);
+                    Assert.Equal(expectedBytes, actualBytes);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void GrayPixelsAreOneChannel()
     {
         using var gray = new Image<Gray8>(4, 1);

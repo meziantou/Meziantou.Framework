@@ -3715,6 +3715,32 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Fact]
+    public void EditorChangesTheBlocksAroundARemovedBlock()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("> [a]: /u\nb\n");
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.RemoveBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownLinkReferenceDefinitionSyntax>().Single());
+        editor.ReplaceBlock(tree.GetRoot().DescendantNodes().OfType<MarkdownParagraphSyntax>().Single(), "# x");
+
+        Assert.Equal("> # x\n", editor.GetChangedTree().GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void EditorKeepsTheLineEndingsApart()
+    {
+        var tree = MarkdownSyntaxTree.ParseText("# a\n# b\r# c\n", AttributeOptions);
+        var headings = tree.GetRoot().Blocks;
+        var editor = new MarkdownSyntaxTreeEditor(tree);
+        editor.InsertBlocksAfter(headings[1], "\n# x");
+        editor.SetGenericAttributes(headings[2], new MarkdownGenericAttributes("id", [], []));
+
+        var updated = editor.GetChangedTree();
+
+        Assert.Equal("# a\n# b\r\n\n# x\n# c {#id}\n", updated.GetRoot().ToFullString());
+        Assert.Equal("id", updated.GetRoot().Blocks[^1].GetGenericAttributes().Id);
+    }
+
+    [Fact]
     public void EditorThrowsWhenChangesOverlap()
     {
         var tree = MarkdownSyntaxTree.ParseText("- a\n- b\n");
@@ -3932,6 +3958,10 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(3, atx.Level);
         Assert.Equal("### a b  c", atx.ToString());
         Assert.Equal("a b  c", atx.GetPlainText());
+
+        // The line ending of a title is a space of the title
+        var link = MarkdownSyntaxTree.ParseText("[x](/u \"a\nb\")\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3).DescendantNodes().OfType<MarkdownLinkSyntax>().Single();
+        Assert.Equal("a b", link.Title);
     }
 
     [Theory]

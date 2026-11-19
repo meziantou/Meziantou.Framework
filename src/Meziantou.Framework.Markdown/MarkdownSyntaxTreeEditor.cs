@@ -51,6 +51,7 @@ public sealed class MarkdownSyntaxTreeEditor
     private readonly List<AttributesEdit> _attributesEdits = [];
     private readonly Dictionary<MarkdownBlockSyntax, int> _attributesEditIndexes = [];
     private readonly Dictionary<MarkdownListItemSyntax, int> _itemWidths = [];
+    private readonly HashSet<MarkdownBlockSyntax> _blocksWithEditedStart = [];
     private Dictionary<MarkdownBlockSyntax, List<MarkdownGenericAttributesSyntax>>? _attributesTargets;
 
     /// <summary>Initializes a new instance of the <see cref="MarkdownSyntaxTreeEditor"/> class, without changes.</summary>
@@ -110,6 +111,7 @@ public sealed class MarkdownSyntaxTreeEditor
         }
 
         _changes.Add(new Change(start, end, inserted.ToString(), InsertBeforeOrder));
+        _blocksWithEditedStart.Add(block);
     }
 
     /// <summary>Inserts blocks after <paramref name="block"/>, in its container.</summary>
@@ -199,6 +201,7 @@ public sealed class MarkdownSyntaxTreeEditor
         }
 
         _changes.Add(new Change(start, lineEnd, replacement.ToString(), ReplaceOrder));
+        _blocksWithEditedStart.Add(block);
     }
 
     /// <summary>Removes <paramref name="block"/> and its lines.</summary>
@@ -243,7 +246,9 @@ public sealed class MarkdownSyntaxTreeEditor
             _attributesEdits[existing] = _attributesEdits[existing] with { Removed = true };
         }
 
-        if (block.GetGenericAttributes().Equals(attributes))
+        // The attributes of the blocks of the tree are read once, rather than by a search of the document for each block
+        _attributesTargets ??= GetAttributesTargets(OriginalTree.GetRoot());
+        if (MarkdownBlockSyntax.MergeGenericAttributes(_attributesTargets.GetValueOrDefault(block) ?? []).Equals(attributes))
             return;
 
         // The text of the block, which the attributes are not part of, does not change, but the whitespace around them can, such as
@@ -274,7 +279,7 @@ public sealed class MarkdownSyntaxTreeEditor
         var changes = new List<Change>(_changes);
         AddRemovals(changes);
         if (_attributesEditIndexes.Count == 0)
-            return changes.Count == 0 ? OriginalTree : Parse(SortWithoutOverlap(changes));
+            return changes.Count == 0 ? OriginalTree : Parse(KeepLineEndingsApart(SortWithoutOverlap(changes)));
 
         // The attributes are written at the first place that the block reads them from: when a place is not read as attributes of the
         // block, the next one is tried
@@ -312,6 +317,7 @@ public sealed class MarkdownSyntaxTreeEditor
                 continue;
             }
 
+            sorted = KeepLineEndingsApart(sorted);
             var tree = Parse(sorted);
             var failed = GetEditsWithoutTheirAttributes(tree, sorted);
             if (failed.Count == 0)
@@ -332,24 +338,54 @@ public sealed class MarkdownSyntaxTreeEditor
         var position = 0;
         foreach (var change in sorted)
         {
-            Append(builder, _text.AsSpan(position, change.Start - position));
-            Append(builder, change.Text);
+            builder.Append(_text, position, change.Start - position).Append(change.Text);
             position = change.End;
         }
 
-        Append(builder, _text.AsSpan(position));
+        builder.Append(_text, position, _text.Length - position);
         return OriginalTree.Reparse(SourceText.From(builder.ToString()));
     }
 
-    // A \r and a \n that the changes put next to each other would be one line ending: the \r becomes \r\n
-    private static void Append(StringBuilder builder, ReadOnlySpan<char> text)
+    // A \r and a \n that the changes put next to each other would be one line ending: a \n is added to the change, so that the \r
+    // becomes \r\n, and the positions of the new text count it
+    private List<Change> KeepLineEndingsApart(List<Change> sorted)
     {
-        if (text.Length > 0 && text[0] == '\n' && builder.Length > 0 && builder[^1] == '\r')
+        var result = new List<Change>(sorted.Count);
+        var last = '\0';
+        var position = 0;
+        foreach (var change in sorted)
         {
-            builder.Append('\n');
+            if (change.Start > position)
+            {
+                if (_text[position] == '\n' && last == '\r' && result.Count > 0)
+                {
+                    result[^1] = result[^1] with { Text = result[^1].Text + "\n" };
+                }
+
+                last = _text[change.Start - 1];
+            }
+
+            var text = change.Text;
+            if (text.Length > 0 && text[0] == '\n' && last == '\r')
+            {
+                text = "\n" + text;
+            }
+
+            if (text.Length > 0)
+            {
+                last = text[^1];
+            }
+
+            result.Add(change with { Text = text });
+            position = change.End;
         }
 
-        builder.Append(text);
+        if (position < _text.Length && _text[position] == '\n' && last == '\r' && result.Count > 0)
+        {
+            result[^1] = result[^1] with { Text = result[^1].Text + "\n" };
+        }
+
+        return result;
     }
 
     private static List<Change> SortWithoutOverlap(List<Change> changes)
@@ -548,7 +584,8 @@ public sealed class MarkdownSyntaxTreeEditor
         // The first line of a paragraph can be indented by 4 columns or more when it continues a link reference definition: without the
         // definition, the indentation would make it an indented code block, and the markers of its containers are needed when it is a
         // lazy continuation line
-        if (wholeLines && next is MarkdownParagraphSyntax && GetLineStart(_text, next.SpanStart) == nextLine && GetEditStart(next) is { AfterLine: false } nextStart && (nextStart.Start < next.SpanStart || nextStart.Lead.Length > 0))
+        // The edits of the paragraph write its start with the markers
+        if (wholeLines && next is MarkdownParagraphSyntax && !_blocksWithEditedStart.Contains(next) && GetLineStart(_text, next.SpanStart) == nextLine && GetEditStart(next) is { AfterLine: false } nextStart && (nextStart.Start < next.SpanStart || nextStart.Lead.Length > 0))
         {
             changes.Add(new Change(nextStart.Start, Math.Max(nextStart.End, next.SpanStart), nextStart.Lead, ReplaceOrder));
         }

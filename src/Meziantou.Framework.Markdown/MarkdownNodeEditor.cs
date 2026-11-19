@@ -144,13 +144,19 @@ internal static class MarkdownNodeEditor
             Green.SyntaxToken replacement;
             if (green.RawKind is (int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken)
             {
-                var kind = token.Parent switch
-                {
-                    MarkdownCodeSpanSyntax => SyntaxKind.CodeTextToken,
-                    MarkdownRawHtmlSyntax => SyntaxKind.HtmlTagToken,
-                    MarkdownMathInlineSyntax => SyntaxKind.MathTextToken,
-                    _ => SyntaxKind.TextToken,
-                };
+                // The space is part of the token the line ending is in, such as the title of a link or the label of a reference, which
+                // are read from the tokens of their kind
+                var siblings = token.Parent!.ChildNodesAndTokens().ToList();
+                var index = siblings.IndexOf(token);
+                var kind = index > 0 && index < siblings.Count - 1 && siblings[index - 1].IsToken && siblings[index + 1].IsToken && siblings[index - 1].RawKind == siblings[index + 1].RawKind && siblings[index - 1].RawKind is not ((int)SyntaxKind.LineEndingToken or (int)SyntaxKind.HardLineBreakToken)
+                    ? (SyntaxKind)siblings[index - 1].RawKind
+                    : token.Parent switch
+                    {
+                        MarkdownCodeSpanSyntax => SyntaxKind.CodeTextToken,
+                        MarkdownRawHtmlSyntax => SyntaxKind.HtmlTagToken,
+                        MarkdownMathInlineSyntax => SyntaxKind.MathTextToken,
+                        _ => SyntaxKind.TextToken,
+                    };
 
                 replacement = Token(kind, " ", leading, trailingTrivia: null);
                 text.Append(' ');

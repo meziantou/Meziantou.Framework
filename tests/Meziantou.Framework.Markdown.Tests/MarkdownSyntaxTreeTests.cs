@@ -4275,6 +4275,18 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Throws<InvalidOperationException>(() => paragraph.WithGenericAttributes(attributes: null));
     }
 
+    [Theory]
+    [InlineData("---\n", true)]
+    [InlineData("--- \t\r\ntext", true)]
+    [InlineData("----\n", false)]
+    [InlineData("---a\n", false)]
+    [InlineData("--\n", false)]
+    [InlineData("---", false)]
+    public void StartsWithFrontMatterFence(string text, bool expected)
+    {
+        Assert.Equal(expected, BlockParser.StartsWithFrontMatterFence(text));
+    }
+
     [Fact]
     public void BlockWithGenericAttributesThrows()
     {

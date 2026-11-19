@@ -1,4 +1,5 @@
 using Meziantou.Framework.Language.InternalSyntax;
+using Meziantou.Framework.Markdown.Parsing;
 using Meziantou.Framework.Markdown.Syntax.InternalSyntax;
 using Green = Meziantou.Framework.Language.InternalSyntax;
 
@@ -201,7 +202,7 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
     // can close it, so the blocks from the start of the document are parsed.
     private List<MarkdownBlockSyntax> GetEnclosingBlocks(MarkdownDocumentSyntax document, MarkdownSyntaxTree tree)
     {
-        var fromStart = tree.Options.Extensions.HasFlag(MarkdownExtensions.YamlFrontMatter) && !tree.IsCell && tree.GetText().Text.StartsWith("---", StringComparison.Ordinal) && document.Blocks is not [MarkdownFrontMatterSyntax, ..];
+        var fromStart = tree.Options.Extensions.HasFlag(MarkdownExtensions.YamlFrontMatter) && !tree.IsCell && BlockParser.StartsWithFrontMatterFence(tree.GetText().Text) && document.Blocks is not [MarkdownFrontMatterSyntax, ..];
 
         SyntaxNode top = this;
         while (top.Parent is { } parent && parent != document)

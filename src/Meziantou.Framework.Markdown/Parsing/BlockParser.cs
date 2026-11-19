@@ -249,7 +249,16 @@ internal sealed class BlockParser
         return 0;
     }
 
-    private bool IsFrontMatterFence(int start, int end, char c) => end - start >= 3 && _text[start] == c && _text[start + 1] == c && _text[start + 2] == c && _text.AsSpan(start + 3, end - start - 3).Trim(" \t\v\f").IsEmpty;
+    private bool IsFrontMatterFence(int start, int end, char c) => IsFrontMatterFence(_text.AsSpan(start, end - start), c);
+
+    private static bool IsFrontMatterFence(ReadOnlySpan<char> line, char c) => line is [var c1, var c2, var c3, ..] && c1 == c && c2 == c && c3 == c && line[3..].Trim(" \t\v\f").IsEmpty;
+
+    /// <summary>Gets a value indicating whether the first line of the text is the <c>---</c> that opens a YAML front matter, which a later line can close.</summary>
+    public static bool StartsWithFrontMatterFence(string text)
+    {
+        var lineEnd = text.AsSpan().IndexOfAny('\r', '\n');
+        return lineEnd >= 0 && IsFrontMatterFence(text.AsSpan(0, lineEnd), '-');
+    }
 
     private (int LineEnd, int EolEnd) GetLine(int start)
     {

@@ -3699,6 +3699,29 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public async Task CanvasCaptureStream_DoesNotCaptureATaintedCanvas()
+    {
+        var document = Load("<canvas width=2 height=2></canvas>");
+        var canvas = (HtmlCanvasElement)document.QuerySelector("canvas")!;
+        var context = (ImageBitmapRenderingContext)canvas.GetContext("bitmaprenderer")!;
+        var track = canvas.CaptureStream().GetVideoTracks()[0];
+
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(2, 2, new byte[16])));
+        Assert.NotNull(track.GetVideoFrame());
+
+        // A cross-origin image drawn on the canvas: its pixels are never captured, and the track is muted
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(2, 2, [.. Enumerable.Repeat((byte)255, 16)], originClean: false)));
+        Assert.Null(track.GetVideoFrame());
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(track.Muted);
+        Assert.Null(track.GetVideoFrame());
+        var grabFrame = await Assert.ThrowsAsync<DomException>(() => new ImageCapture(track).GrabFrame());
+        Assert.Equal("InvalidStateError", grabFrame.Name);
+        var takePhoto = await Assert.ThrowsAsync<DomException>(() => new ImageCapture(track).TakePhoto());
+        Assert.Equal("UnknownError", takePhoto.Name);
+    }
+
+    [Fact]
     public void CanvasCaptureStream_FollowsTheSizeOfTheCanvas()
     {
         var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");

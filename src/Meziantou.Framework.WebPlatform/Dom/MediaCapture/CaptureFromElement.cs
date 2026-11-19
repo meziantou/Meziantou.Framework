@@ -33,6 +33,7 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
 {
     private readonly double? _frameRequestRate;
     private bool _frameRequested;
+    private bool _muteQueued;
     private MediaVideoFrame? _frame;
 
     public CanvasCaptureTrackSource(HtmlCanvasElement canvas, double? frameRequestRate)
@@ -67,6 +68,12 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
     /// <summary>The content of the canvas changed: a frame is captured, unless the frames are only captured on request (a frame rate of 0).</summary>
     public void OnCanvasChanged()
     {
+        if (!Canvas.IsBitmapOriginClean)
+        {
+            OnCanvasTainted();
+            return;
+        }
+
         if (_frameRequestRate is not 0)
         {
             _frameRequested = true;
@@ -82,6 +89,12 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
         {
             _frameRequested = false;
             var pixels = Canvas.GetBitmapSnapshot();
+            if (!pixels.IsOriginClean)
+            {
+                OnCanvasTainted();
+                return null;
+            }
+
             if (pixels.Width > 0 && pixels.Height > 0)
             {
                 _frame = new MediaVideoFrame(pixels.Width, pixels.Height, pixels.Rgba);
@@ -89,6 +102,29 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
         }
 
         return _frame;
+    }
+
+    /// <summary>
+    /// The canvas is not origin-clean: its content is never captured, and the tracks are muted
+    /// (https://w3c.github.io/mediacapture-fromelement/#dom-htmlcanvaselement-capturestream). The last frame, captured while
+    /// the canvas was origin-clean, is dropped; the tracks fire <c>mute</c> from a task.
+    /// </summary>
+    private void OnCanvasTainted()
+    {
+        _frame = null;
+        _frameRequested = false;
+        if (IsMuted || _muteQueued)
+            return;
+
+        _muteQueued = true;
+        if (Canvas.RelevantGlobal is { } global)
+        {
+            global.QueueGlobalTask(() => SetMuted(muted: true));
+        }
+        else
+        {
+            SetMuted(muted: true);
+        }
     }
 
     protected override void OnStopped() => Canvas.RemoveCaptureSource(this);
@@ -187,6 +223,14 @@ public partial class HtmlCanvasElement
     }
 
     internal void RemoveCaptureSource(CanvasCaptureTrackSource source) => _captureSources?.Remove(source);
+
+    /// <summary>Whether the bitmap of the canvas is origin-clean (https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-origin-clean).</summary>
+    internal bool IsBitmapOriginClean => RenderingContext switch
+    {
+        CanvasRenderingContext2D context => context.Bitmap.IsOriginClean,
+        null => true,
+        _ => GetBitmapSnapshot().IsOriginClean,
+    };
 
     /// <summary>The content of the canvas changed: the capture tracks capture a new frame.</summary>
     private void NotifyCaptureSources()

@@ -233,7 +233,8 @@ internal sealed class LocatorEvaluator
         string? GetEmbeddedControlValue(Element element) => element switch
         {
             HtmlInputElement { Type: "button" or "submit" or "reset" } => GetText(element),
-            HtmlInputElement { Type: "text" or "search" or "email" or "tel" or "url" or "number" or "range" } input => input.Value,
+            HtmlInputElement { Type: "number" or "range" } input => input.GetAttribute("aria-valuetext") ?? input.GetAttribute("aria-valuenow") ?? input.Value,
+            HtmlInputElement { Type: "text" or "search" or "email" or "tel" or "url" } input => input.Value,
             HtmlTextAreaElement textArea => textArea.Value,
             HtmlSelectElement select => string.Join(' ', select.SelectedOptions.OfType<HtmlOptionElement>().Select(option => option.Text)),
             _ => null,

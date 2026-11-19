@@ -21,7 +21,7 @@ public static class LocatorFuzzTargets
                 "c:", ":scope", "r:", "rh:", "re:", "t:", "te:", "l:", "le:", "p:", "a:", "T:", "i:", "\n",
                 "button", "link", "heading", "listitem", "checkbox", "textbox", "img",
                 "<button>", "</button>", "<a href=\"#\">", "<h1>", "<ul><li>", "<label for=\"x\">", "<label>", "</label>", "<input id=\"x\">", "<input type=\"submit\" value=\"Go\">",
-                "<select>", "</select>", "<option>", "<option selected>", "<textarea>", "</textarea>", "<button type=\"button\">", "<input type=\"number\" value=\"3\">", "<input type=\"checkbox\">",
+                "<select>", "</select>", "<option>", "<option selected>", "<textarea>", "</textarea>", "<button type=\"button\">", "<input type=\"number\" value=\"3\">", "<input type=\"checkbox\">", "aria-valuetext=\"", "aria-valuenow=\"",
                 "<img alt=\"", "placeholder=\"", "title=\"", "data-testid=\"", "aria-label=\"", "aria-labelledby=\"", "aria-hidden=\"true\"", "role=\"", "style=\"display: none\"", "<script>", "<style>", " id=\"",
             ],
         },
@@ -116,6 +116,7 @@ public static class LocatorFuzzTargets
         yield return FuzzSeed.FromText("label", "l:Search\n" + UsersMarkup);
         yield return FuzzSeed.FromText("label-aria", "l:Profile picture\n" + UsersMarkup);
         yield return FuzzSeed.FromText("label-nested-controls", "le:Currency\n<label>Name <input type=text value=Ada></label><label>Currency <select><option></option><option>USD</option><option selected>EUR</option></select></label><label>Account <button type=button>Checking</button></label><label><input type=checkbox> Flash every <input type=number value=3> seconds</label><label>Notes <textarea>Some notes</textarea></label>");
+        yield return FuzzSeed.FromText("label-aria-valuetext", "le:Notify at low\n<label><input type=checkbox> Notify at <input type=range value=25 aria-valuetext=low></label><label><input type=checkbox> Repeat <input type=number value=2 aria-valuenow=4> times</label>");
         yield return FuzzSeed.FromText("placeholder", "p:email\n" + UsersMarkup);
         yield return FuzzSeed.FromText("alt", "a:portrait\n" + UsersMarkup);
         yield return FuzzSeed.FromText("title", "T:Search field\n" + UsersMarkup);

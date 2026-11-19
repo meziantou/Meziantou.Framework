@@ -67,6 +67,11 @@ public sealed class CredentialRequestOptions
     /// <seealso href="https://w3c-fedid.github.io/digital-credentials/#dom-credentialrequestoptions-digital"/>
     [IdlMember("digital", "https://w3c-fedid.github.io/digital-credentials/#dom-credentialrequestoptions-digital")]
     public DigitalCredentialRequestOptions? Digital { get; init; }
+
+    /// <summary>Gets the FedCM request (the identity providers of the site), or null.</summary>
+    /// <seealso href="https://w3c-fedid.github.io/FedCM/#dom-credentialrequestoptions-identity"/>
+    [IdlMember("identity", "https://w3c-fedid.github.io/FedCM/#dom-credentialrequestoptions-identity")]
+    public IdentityCredentialRequestOptions? Identity { get; init; }
 }
 
 /// <summary>The options of <see cref="CredentialsContainer.Create"/> (https://w3c.github.io/webappsec-credential-management/#dictdef-credentialcreationoptions).</summary>
@@ -151,6 +156,7 @@ public sealed class CredentialsContainer
     private const string FederatedType = "federated";
     private const string PublicKeyType = "public-key";
     private const string DigitalType = "digital-credential";
+    private const string IdentityType = "identity";
 
     private readonly Window _window;
 
@@ -200,6 +206,10 @@ public sealed class CredentialsContainer
 
         if (types.Count > 1 && types.Exists(type => type is not (PasswordType or FederatedType)))
             return Task.FromException<Credential?>(DomException.NotSupported("These types of credentials cannot be requested together"));
+
+        // FedCM (https://w3c-fedid.github.io/FedCM/#browser-api-credential-management-api): an opaque origin is a NetworkError
+        if (types[0] is IdentityType)
+            return IdentityCredentialRequest.Get(_window, options);
 
         if (document.Origin.IsOpaque)
             return Task.FromException<Credential?>(new DomException("The origin of the document is opaque", "SecurityError"));
@@ -264,6 +274,11 @@ public sealed class CredentialsContainer
         if (options.Digital is not null)
         {
             types.Add(DigitalType);
+        }
+
+        if (options.Identity is not null)
+        {
+            types.Add(IdentityType);
         }
 
         return types;

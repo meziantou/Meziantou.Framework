@@ -3906,6 +3906,7 @@ public sealed partial class BrowsingContext : IDisposable
             Options.ScriptEngine?.DestroyRealm(window);
         }
 
+        IdentityProviderDialogs.NotifyDestroyed(this);
         Options.BrowsingContextDestroyed?.Invoke(CallbackContext.For(this));
     }
 

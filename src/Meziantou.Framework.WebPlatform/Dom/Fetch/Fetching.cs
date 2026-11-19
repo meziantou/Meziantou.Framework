@@ -288,10 +288,10 @@ internal static class Fetching
         }
         else if (request.Mode == RequestMode.NoCors)
         {
-            if (request.RedirectMode != FetchRedirectMode.Follow && !request.IsUserAgentRequest)
+            if (request.RedirectMode != FetchRedirectMode.Follow && !request.IsUserAgentRequest && !request.UserAgentNoCors)
                 return FetchResponse.NetworkError();
 
-            request.ResponseTainting = FetchResponseTainting.Opaque;
+            request.ResponseTainting = request.UserAgentNoCors ? FetchResponseTainting.Basic : FetchResponseTainting.Opaque;
             response = await SchemeFetchAsync(request, cancellationToken).ConfigureAwait(false);
         }
         else if (currentUrl.Scheme is not ("http" or "https"))
@@ -653,6 +653,9 @@ internal static class Fetching
         request.SingleHopCacheMode = null;
         if (response.IsNetworkError)
             return response;
+
+        // https://w3c-fedid.github.io/login-status/#login-status-http: the Set-Login header of the response (or of the redirect)
+        LoginStatusHeader.ProcessResponse(request, response);
 
         // https://privacycg.github.io/storage-access-headers/#http-fetch: the response asks to retry the request with the
         // unpartitioned cookies (Activate-Storage-Access: retry), which the storage-access permission allows

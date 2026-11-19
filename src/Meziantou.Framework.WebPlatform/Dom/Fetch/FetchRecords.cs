@@ -243,6 +243,13 @@ internal sealed partial class FetchRequest
 
     public RequestMode Mode { get; set; } = RequestMode.NoCors;
 
+    /// <summary>
+    /// Whether a no-cors request is made by the user agent, which reads its response (the "user-agent-no-cors" mode,
+    /// https://github.com/whatwg/fetch/pull/1533, e.g. the requests of FedCM): the response is not opaque, and the redirect
+    /// mode can be "error". The <c>Sec-Fetch-Mode</c> header is <c>no-cors</c>.
+    /// </summary>
+    public bool UserAgentNoCors { get; set; }
+
     public bool UseCorsPreflight { get; set; }
 
     public FetchCredentialsMode CredentialsMode { get; set; }

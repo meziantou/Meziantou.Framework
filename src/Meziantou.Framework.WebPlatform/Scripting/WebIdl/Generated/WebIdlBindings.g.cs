@@ -363,6 +363,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["IDBTransaction"] = Binding_IDBTransaction<TAdapter, TValue>.Binding,
             ["IDBVersionChangeEvent"] = Binding_IDBVersionChangeEvent<TAdapter, TValue>.Binding,
             ["IIRFilterNode"] = Binding_IIRFilterNode<TAdapter, TValue>.Binding,
+            ["IdentityCredential"] = Binding_IdentityCredential<TAdapter, TValue>.Binding,
+            ["IdentityCredentialError"] = Binding_IdentityCredentialError<TAdapter, TValue>.Binding,
+            ["IdentityProvider"] = Binding_IdentityProvider<TAdapter, TValue>.Binding,
             ["IdleDeadline"] = Binding_IdleDeadline<TAdapter, TValue>.Binding,
             ["IdleDetector"] = Binding_IdleDetector<TAdapter, TValue>.Binding,
             ["ImageBitmap"] = Binding_ImageBitmap<TAdapter, TValue>.Binding,
@@ -427,6 +430,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["NavigationPreloadManager"] = Binding_NavigationPreloadManager<TAdapter, TValue>.Binding,
             ["NavigationTransition"] = Binding_NavigationTransition<TAdapter, TValue>.Binding,
             ["Navigator"] = Binding_Navigator<TAdapter, TValue>.Binding,
+            ["NavigatorLogin"] = Binding_NavigatorLogin<TAdapter, TValue>.Binding,
             ["NavigatorUAData"] = Binding_NavigatorUAData<TAdapter, TValue>.Binding,
             ["NetworkInformation"] = Binding_NetworkInformation<TAdapter, TValue>.Binding,
             ["Node"] = Binding_Node<TAdapter, TValue>.Binding,
@@ -887,6 +891,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.IdbVersionChangeEventInit dictionaryDom_IdbVersionChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbVersionChangeEventInit(r, dictionaryDom_IdbVersionChangeEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialDisconnectOptions dictionaryDom_IdentityCredentialDisconnectOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityCredentialDisconnectOptions(r, dictionaryDom_IdentityCredentialDisconnectOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderRequestOptions dictionaryDom_IdentityProviderRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityProviderRequestOptions(r, dictionaryDom_IdentityProviderRequestOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.InterventionReportBody dictionaryDom_InterventionReportBody:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_InterventionReportBody(r, dictionaryDom_InterventionReportBody);
                 return true;
@@ -1345,6 +1355,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbTransactionOptions dictionaryDom_IdbTransactionOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbTransactionOptions(r, dictionaryDom_IdbTransactionOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorInit dictionaryDom_IdentityCredentialErrorInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityCredentialErrorInit(r, dictionaryDom_IdentityCredentialErrorInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptions dictionaryDom_IdentityCredentialRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityCredentialRequestOptions(r, dictionaryDom_IdentityCredentialRequestOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderConfig dictionaryDom_IdentityProviderConfig:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityProviderConfig(r, dictionaryDom_IdentityProviderConfig);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityResolveOptions dictionaryDom_IdentityResolveOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityResolveOptions(r, dictionaryDom_IdentityResolveOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityUserInfo dictionaryDom_IdentityUserInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityUserInfo(r, dictionaryDom_IdentityUserInfo);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdleOptions dictionaryDom_IdleOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdleOptions(r, dictionaryDom_IdleOptions);
@@ -1895,6 +1920,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.IdbTransactionMode enumDom_IdbTransactionMode:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdbTransactionMode(enumDom_IdbTransactionMode));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext enumDom_IdentityCredentialRequestOptionsContext:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdentityCredentialRequestOptionsContext(enumDom_IdentityCredentialRequestOptionsContext));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode enumDom_IdentityCredentialRequestOptionsMode:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdentityCredentialRequestOptionsMode(enumDom_IdentityCredentialRequestOptionsMode));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOrientation enumDom_ImageBitmapOrientation:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ImageBitmapOrientation(enumDom_ImageBitmapOrientation));
                 return true;
@@ -1912,6 +1943,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.LockMode enumDom_LockMode:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_LockMode(enumDom_LockMode));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.LoginStatus enumDom_LoginStatus:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_LoginStatus(enumDom_LoginStatus));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem enumDom_MagnetometerLocalCoordinateSystem:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MagnetometerLocalCoordinateSystem(enumDom_MagnetometerLocalCoordinateSystem));
@@ -2254,6 +2288,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.IdbDatabaseInfo>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdbDatabaseInfo__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdbDatabaseInfo__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbDatabaseInfo(r, dictionaryValue) : r.Adapter.Null)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.IdentityUserInfo>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdentityUserInfo__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdentityUserInfo__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityUserInfo(r, dictionaryValue) : r.Adapter.Null)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.Notification>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Notification__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Notification__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));

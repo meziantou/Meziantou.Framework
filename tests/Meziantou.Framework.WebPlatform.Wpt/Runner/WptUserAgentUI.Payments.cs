@@ -31,7 +31,26 @@ internal sealed partial class WptUserAgentUI
     public override ValueTask<PaymentSheetResponse?> RetryPaymentAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken) => WaitUntilClosedAsync(cancellationToken);
 
     public override async ValueTask IngestPaymentMethodManifestAsync(PaymentMethodManifestRequest request, CancellationToken cancellationToken)
-        => await request.FetchAsync(cancellationToken).ConfigureAwait(false);
+    {
+        Interlocked.Increment(ref _pendingManifestFetches);
+        try
+        {
+            await request.FetchAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _pendingManifestFetches);
+        }
+    }
+
+    /// <summary>The number of payment method manifests being fetched (their requests run on the thread pool).</summary>
+    private int _pendingManifestFetches;
+
+    /// <summary>
+    /// Gets whether the user agent is fetching a payment method manifest: the runner does not advance the virtual clock meanwhile,
+    /// so the timers of the test (e.g. the polling of the server logs) do not run ahead of the fetches.
+    /// </summary>
+    public bool IsBusy => Volatile.Read(ref _pendingManifestFetches) > 0;
 
     /// <summary>A payment sheet that the user does not answer: it is closed when the page aborts the request.</summary>
     private static async ValueTask<PaymentSheetResponse?> WaitUntilClosedAsync(CancellationToken cancellationToken)

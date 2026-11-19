@@ -116,6 +116,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdbGetAllOptions Defaults_Dom_IdbGetAllOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorInit Defaults_Dom_IdentityCredentialErrorInit = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderRequestOptions Defaults_Dom_IdentityProviderRequestOptions = new() { ConfigUrl = default!, ClientId = default! };
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdentityResolveOptions Defaults_Dom_IdentityResolveOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleOptions Defaults_Dom_IdleOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions Defaults_Dom_ImageBitmapOptions = new();
@@ -380,6 +386,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_IDBTransactionMode_Values = new[] { "readonly", "readwrite", "versionchange" };
 
+    internal static readonly string[] Enum_IdentityCredentialRequestOptionsContext_Values = new[] { "signin", "signup", "use", "continue" };
+
+    internal static readonly string[] Enum_IdentityCredentialRequestOptionsMode_Values = new[] { "active", "passive" };
+
     internal static readonly string[] Enum_ImageDataPixelFormat_Values = new[] { "rgba-unorm8", "rgba-float16" };
 
     internal static readonly string[] Enum_ImageOrientation_Values = new[] { "from-image", "flipY" };
@@ -391,6 +401,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_LineAlignSetting_Values = new[] { "start", "center", "end" };
 
     internal static readonly string[] Enum_LockMode_Values = new[] { "shared", "exclusive" };
+
+    internal static readonly string[] Enum_LoginStatus_Values = new[] { "logged-in", "logged-out" };
 
     internal static readonly string[] Enum_MagnetometerLocalCoordinateSystem_Values = new[] { "device", "screen" };
 
@@ -1286,9 +1298,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         if (value.Digital is not null) r.SetMember(result, "digital", (value.Digital is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DigitalCredentialRequestOptions(r, dictionaryValue) : r.Adapter.Null));
         if (value.Federated is not null) r.SetMember(result, "federated", (value.Federated is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FederatedCredentialRequestOptions(r, dictionaryValue2) : r.Adapter.Null));
+        if (value.Identity is not null) r.SetMember(result, "identity", (value.Identity is { } dictionaryValue3 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityCredentialRequestOptions(r, dictionaryValue3) : r.Adapter.Null));
         r.SetMember(result, "mediation", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CredentialMediationRequirement(value.Mediation)));
         r.SetMember(result, "password", r.FromBoolean(value.Password));
-        if (value.PublicKey is not null) r.SetMember(result, "publicKey", (value.PublicKey is { } dictionaryValue3 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialRequestOptions(r, dictionaryValue3) : r.Adapter.Null));
+        if (value.PublicKey is not null) r.SetMember(result, "publicKey", (value.PublicKey is { } dictionaryValue4 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialRequestOptions(r, dictionaryValue4) : r.Adapter.Null));
         if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
         if (value.UiMode is not null) r.SetMember(result, "uiMode", r.FromString(value.UiMode));
         return result;
@@ -1932,6 +1945,70 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "composed", r.FromBoolean(value.Composed));
         r.SetMember(result, "newVersion", (value.NewVersion.HasValue ? r.FromNumber((double)value.NewVersion.GetValueOrDefault()) : r.Adapter.Null));
         r.SetMember(result, "oldVersion", r.FromNumber((double)value.OldVersion));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_IdentityCredentialDisconnectOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialDisconnectOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "clientId", r.FromString(value.ClientId));
+        r.SetMember(result, "configURL", r.FromString(value.ConfigUrl));
+        r.SetMember(result, "accountHint", r.FromString(value.AccountHint));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_IdentityCredentialErrorInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorInit value)
+    {
+        var result = r.CreateObject();
+        if (value.Error is not null) r.SetMember(result, "error", r.FromString(value.Error));
+        if (value.Url is not null) r.SetMember(result, "url", r.FromString(value.Url));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_IdentityCredentialRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "context", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdentityCredentialRequestOptionsContext(value.Context)));
+        r.SetMember(result, "mode", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdentityCredentialRequestOptionsMode(value.Mode)));
+        r.SetMember(result, "providers", r.FromSequence(value.Providers, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdentityProviderRequestOptions(r, dictionaryValue) : r.Adapter.Null)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_IdentityProviderConfig(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderConfig value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "clientId", r.FromString(value.ClientId));
+        r.SetMember(result, "configURL", r.FromString(value.ConfigUrl));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_IdentityProviderRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderRequestOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "clientId", r.FromString(value.ClientId));
+        r.SetMember(result, "configURL", r.FromString(value.ConfigUrl));
+        if (value.DomainHint is not null) r.SetMember(result, "domainHint", r.FromString(value.DomainHint));
+        if (value.Fields is not null) r.SetMember(result, "fields", r.FromSequence(value.Fields, static (r, e) => r.FromString(e)));
+        if (value.LoginHint is not null) r.SetMember(result, "loginHint", r.FromString(value.LoginHint));
+        if (value.Nonce is not null) r.SetMember(result, "nonce", r.FromString(value.Nonce));
+        if (value.Params is not null) r.SetMember(result, "params", r.ToJs((object?)value.Params));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_IdentityResolveOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdentityResolveOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.AccountId is not null) r.SetMember(result, "accountId", r.FromString(value.AccountId));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_IdentityUserInfo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdentityUserInfo value)
+    {
+        var result = r.CreateObject();
+        if (value.Email is not null) r.SetMember(result, "email", r.FromString(value.Email));
+        if (value.GivenName is not null) r.SetMember(result, "givenName", r.FromString(value.GivenName));
+        if (value.Name is not null) r.SetMember(result, "name", r.FromString(value.Name));
+        if (value.Picture is not null) r.SetMember(result, "picture", r.FromString(value.Picture));
         return result;
     }
 
@@ -4513,6 +4590,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_IdentityCredentialRequestOptionsContext(global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Signin => "signin",
+        global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Signup => "signup",
+        global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Use => "use",
+        global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Continue => "continue",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_IdentityCredentialRequestOptionsMode(global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode.Active => "active",
+        global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode.Passive => "passive",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_ImageBitmapOrientation(global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOrientation value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOrientation.FromImage => "from-image",
@@ -4554,6 +4647,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         global::Meziantou.Framework.WebPlatform.Dom.LockMode.Shared => "shared",
         global::Meziantou.Framework.WebPlatform.Dom.LockMode.Exclusive => "exclusive",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_LoginStatus(global::Meziantou.Framework.WebPlatform.Dom.LoginStatus value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.LoginStatus.LoggedIn => "logged-in",
+        global::Meziantou.Framework.WebPlatform.Dom.LoginStatus.LoggedOut => "logged-out",
         _ => value.ToString(),
     };
 
@@ -6508,28 +6608,32 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m1_value = r.GetDictionaryMember(value, "federated");
         var m1_present = !r.Adapter.IsUndefined(m1_value);
         var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Dom.FederatedCredentialRequestOptions?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_FederatedCredentialRequestOptions(r, m1_value) : default;
-        var m2_value = r.GetDictionaryMember(value, "mediation");
-        var m2 = r.Adapter.IsUndefined(m2_value) ? (string)"optional" : r.ToEnumerationValue(m2_value, "CredentialMediationRequirement", WebIdlHelpers<TAdapter, TValue>.Enum_CredentialMediationRequirement_Values);
-        var m3_value = r.GetDictionaryMember(value, "password");
-        var m3 = r.Adapter.IsUndefined(m3_value) ? (bool)false : r.ToBoolean(m3_value);
-        var m4_value = r.GetDictionaryMember(value, "publicKey");
-        var m4_present = !r.Adapter.IsUndefined(m4_value);
-        var m4 = m4_present ? (global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptions?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_PublicKeyCredentialRequestOptions(r, m4_value) : default;
-        var m5_value = r.GetDictionaryMember(value, "signal");
+        var m2_value = r.GetDictionaryMember(value, "identity");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptions?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdentityCredentialRequestOptions(r, m2_value) : default;
+        var m3_value = r.GetDictionaryMember(value, "mediation");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"optional" : r.ToEnumerationValue(m3_value, "CredentialMediationRequirement", WebIdlHelpers<TAdapter, TValue>.Enum_CredentialMediationRequirement_Values);
+        var m4_value = r.GetDictionaryMember(value, "password");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (bool)false : r.ToBoolean(m4_value);
+        var m5_value = r.GetDictionaryMember(value, "publicKey");
         var m5_present = !r.Adapter.IsUndefined(m5_value);
-        var m5 = m5_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m5_value, "AbortSignal") : default;
-        var m6_value = r.GetDictionaryMember(value, "uiMode");
+        var m5 = m5_present ? (global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptions?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_PublicKeyCredentialRequestOptions(r, m5_value) : default;
+        var m6_value = r.GetDictionaryMember(value, "signal");
         var m6_present = !r.Adapter.IsUndefined(m6_value);
-        var m6 = m6_present ? (string?)r.ToDomString(m6_value) : default;
+        var m6 = m6_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m6_value, "AbortSignal") : default;
+        var m7_value = r.GetDictionaryMember(value, "uiMode");
+        var m7_present = !r.Adapter.IsUndefined(m7_value);
+        var m7 = m7_present ? (string?)r.ToDomString(m7_value) : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.CredentialRequestOptions
         {
             Digital = m0_present ? m0 : Defaults_Dom_CredentialRequestOptions.Digital,
             Federated = m1_present ? m1 : Defaults_Dom_CredentialRequestOptions.Federated,
-            Mediation = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_CredentialMediationRequirement(m2),
-            Password = m3,
-            PublicKey = m4_present ? m4 : Defaults_Dom_CredentialRequestOptions.PublicKey,
-            Signal = m5_present ? m5 : Defaults_Dom_CredentialRequestOptions.Signal,
-            UiMode = m6_present ? m6 : Defaults_Dom_CredentialRequestOptions.UiMode,
+            Identity = m2_present ? m2 : Defaults_Dom_CredentialRequestOptions.Identity,
+            Mediation = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_CredentialMediationRequirement(m3),
+            Password = m4,
+            PublicKey = m5_present ? m5 : Defaults_Dom_CredentialRequestOptions.PublicKey,
+            Signal = m6_present ? m6 : Defaults_Dom_CredentialRequestOptions.Signal,
+            UiMode = m7_present ? m7 : Defaults_Dom_CredentialRequestOptions.UiMode,
         };
     }
 
@@ -7704,6 +7808,124 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Composed = m2,
             NewVersion = m3,
             OldVersion = m4,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialDisconnectOptions ToDictionary_Dom_IdentityCredentialDisconnectOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdentityCredentialDisconnectOptions");
+        var m0_value = r.GetDictionaryMember(value, "clientId");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("IdentityCredentialDisconnectOptions", "clientId");
+        var m0 = r.ToUsvString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "configURL");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("IdentityCredentialDisconnectOptions", "configURL");
+        var m1 = r.ToUsvString(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "accountHint");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("IdentityCredentialDisconnectOptions", "accountHint");
+        var m2 = r.ToUsvString(m2_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialDisconnectOptions
+        {
+            ClientId = m0,
+            ConfigUrl = m1,
+            AccountHint = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorInit ToDictionary_Dom_IdentityCredentialErrorInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdentityCredentialErrorInit");
+        var m0_value = r.GetDictionaryMember(value, "error");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (string?)r.ToDomString(m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "url");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToUsvString(m1_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorInit
+        {
+            Error = m0_present ? m0 : Defaults_Dom_IdentityCredentialErrorInit.Error,
+            Url = m1_present ? m1 : Defaults_Dom_IdentityCredentialErrorInit.Url,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptions ToDictionary_Dom_IdentityCredentialRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdentityCredentialRequestOptions");
+        var m0_value = r.GetDictionaryMember(value, "context");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"signin" : r.ToEnumerationValue(m0_value, "IdentityCredentialRequestOptionsContext", WebIdlHelpers<TAdapter, TValue>.Enum_IdentityCredentialRequestOptionsContext_Values);
+        var m1_value = r.GetDictionaryMember(value, "mode");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"passive" : r.ToEnumerationValue(m1_value, "IdentityCredentialRequestOptionsMode", WebIdlHelpers<TAdapter, TValue>.Enum_IdentityCredentialRequestOptionsMode_Values);
+        var m2_value = r.GetDictionaryMember(value, "providers");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("IdentityCredentialRequestOptions", "providers");
+        var m2 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderRequestOptions>(m2_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdentityProviderRequestOptions(r, e));
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptions
+        {
+            Context = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_IdentityCredentialRequestOptionsContext(m0),
+            Mode = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_IdentityCredentialRequestOptionsMode(m1),
+            Providers = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderConfig ToDictionary_Dom_IdentityProviderConfig(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdentityProviderConfig");
+        var m0_value = r.GetDictionaryMember(value, "clientId");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("IdentityProviderConfig", "clientId");
+        var m0 = r.ToUsvString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "configURL");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("IdentityProviderConfig", "configURL");
+        var m1 = r.ToUsvString(m1_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderConfig
+        {
+            ClientId = m0,
+            ConfigUrl = m1,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderRequestOptions ToDictionary_Dom_IdentityProviderRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdentityProviderRequestOptions");
+        var m0_value = r.GetDictionaryMember(value, "clientId");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("IdentityProviderRequestOptions", "clientId");
+        var m0 = r.ToUsvString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "configURL");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("IdentityProviderRequestOptions", "configURL");
+        var m1 = r.ToUsvString(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "domainHint");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToDomString(m2_value) : default;
+        var m3_value = r.GetDictionaryMember(value, "fields");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (global::System.Collections.Generic.List<string>?)r.ToSequence<string>(m3_value, static (r, e) => r.ToUsvString(e)) : default;
+        var m4_value = r.GetDictionaryMember(value, "loginHint");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (string?)r.ToDomString(m4_value) : default;
+        var m5_value = r.GetDictionaryMember(value, "nonce");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (string?)r.ToDomString(m5_value) : default;
+        var m6_value = r.GetDictionaryMember(value, "params");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (object?)r.ToAny(m6_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdentityProviderRequestOptions
+        {
+            ClientId = m0,
+            ConfigUrl = m1,
+            DomainHint = m2_present ? m2 : Defaults_Dom_IdentityProviderRequestOptions.DomainHint,
+            Fields = m3_present ? m3 : Defaults_Dom_IdentityProviderRequestOptions.Fields,
+            LoginHint = m4_present ? m4 : Defaults_Dom_IdentityProviderRequestOptions.LoginHint,
+            Nonce = m5_present ? m5 : Defaults_Dom_IdentityProviderRequestOptions.Nonce,
+            Params = m6_present ? m6 : Defaults_Dom_IdentityProviderRequestOptions.Params,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityResolveOptions ToDictionary_Dom_IdentityResolveOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdentityResolveOptions");
+        var m0_value = r.GetDictionaryMember(value, "accountId");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (string?)r.ToUsvString(m0_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdentityResolveOptions
+        {
+            AccountId = m0_present ? m0 : Defaults_Dom_IdentityResolveOptions.AccountId,
         };
     }
 
@@ -12268,6 +12490,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext ToEnum_Dom_IdentityCredentialRequestOptionsContext(string value) => value switch
+    {
+        "signin" => global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Signin,
+        "signup" => global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Signup,
+        "use" => global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Use,
+        "continue" => global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsContext.Continue,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode ToEnum_Dom_IdentityCredentialRequestOptionsMode(string value) => value switch
+    {
+        "active" => global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode.Active,
+        "passive" => global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialRequestOptionsMode.Passive,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOrientation ToEnum_Dom_ImageBitmapOrientation(string value) => value switch
     {
         "from-image" => global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOrientation.FromImage,
@@ -12302,6 +12540,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "shared" => global::Meziantou.Framework.WebPlatform.Dom.LockMode.Shared,
         "exclusive" => global::Meziantou.Framework.WebPlatform.Dom.LockMode.Exclusive,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.LoginStatus ToEnum_Dom_LoginStatus(string value) => value switch
+    {
+        "logged-in" => global::Meziantou.Framework.WebPlatform.Dom.LoginStatus.LoggedIn,
+        "logged-out" => global::Meziantou.Framework.WebPlatform.Dom.LoginStatus.LoggedOut,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

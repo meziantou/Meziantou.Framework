@@ -22,7 +22,7 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 /// (<c>WptPythonHandlers.EarlyHints.cs</c>), the ones of the <c>storage-access-api</c> tests
 /// (<c>WptPythonHandlers.StorageAccess.cs</c>), the ones of the <c>worklets</c> tests
 /// (<c>WptPythonHandlers.Worklets.cs</c>), the ones of the <c>payment-method-manifest</c> tests
-/// (<c>WptPythonHandlers.Payments.cs</c>), and the other
+/// (<c>WptPythonHandlers.Payments.cs</c>), the ones of the <c>fedcm</c> tests (<c>WptPythonHandlers.FedCm.cs</c>), and the other
 /// ones (<c>WptPythonHandlers.Html.cs</c>).
 /// </summary>
 internal static partial class WptPythonHandlers
@@ -95,7 +95,7 @@ internal static partial class WptPythonHandlers
     // The static field initializers of the partial declarations run before the static constructor
     static WptPythonHandlers()
     {
-        foreach (var handlers in new[] { CommonHandlers, NetworkHandlers, ResourceHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CompressionDictionaryHandlers, CorsHandlers, SignaturesHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, StorageAccessHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers, PaymentsHandlers })
+        foreach (var handlers in new[] { CommonHandlers, NetworkHandlers, ResourceHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CompressionDictionaryHandlers, CorsHandlers, SignaturesHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, StorageAccessHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers, PaymentsHandlers, FedCmHandlers })
         {
             foreach (var (path, handler) in handlers)
             {
@@ -104,8 +104,8 @@ internal static partial class WptPythonHandlers
         }
     }
 
-    /// <summary>Whether the URL is the one of a Python handler (a <c>.py</c> file).</summary>
-    public static bool IsHandler(Url url) => Uri.UnescapeDataString(url.Pathname).EndsWith(".py", StringComparison.Ordinal);
+    /// <summary>Whether the URL is the one of a Python handler (a <c>.py</c> file, or a path that serve.py routes to a Python file, e.g. <c>/.well-known/web-identity</c>).</summary>
+    public static bool IsHandler(Url url) => Uri.UnescapeDataString(url.Pathname) is var path && (path.EndsWith(".py", StringComparison.Ordinal) || path == WellKnownPath);
 
     /// <summary>
     /// Runs the handler of a request, or returns null when the handler is not emulated. A handler that polls the stash sets

@@ -1,6 +1,6 @@
 ---
 title: User agent UI
-description: Answer the prompts that the web APIs show to the user, such as the credential chooser of the Credential Management API and the wallet of the Digital Credentials API.
+description: Answer the prompts that the web APIs show to the user: the credential chooser, the FedCM account chooser, the payment sheet and the wallet of the digital credentials.
 ---
 
 Some web APIs show a prompt of the browser and wait for the user: a browser asks which saved password to use, or whether
@@ -26,6 +26,10 @@ method that a backend does not override, the prompt behaves as if the user dismi
 | [RetryPaymentAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.RetryPaymentAsync) | `PaymentResponse.retry()` | The user dismisses the payment sheet: the promise rejects with an `AbortError` |
 | [CompletePaymentAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.CompletePaymentAsync) | `PaymentResponse.complete()` | The payment sheet closes at once |
 | [IngestPaymentMethodManifestAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.IngestPaymentMethodManifestAsync) | `PaymentRequest.canMakePayment()` and `PaymentRequest.show()` with a URL-based payment method identifier | The payment method manifest is not fetched |
+| [ChooseIdentityAccountAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ChooseIdentityAccountAsync) | `navigator.credentials.get()` with `identity` (FedCM): the account chooser | No account: the promise is rejected with a `NetworkError` |
+| [ConfirmIdentityProviderLoginAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ConfirmIdentityProviderLoginAsync) | FedCM: sign in to an identity provider that returned no account | The user does not sign in: a `NetworkError` |
+| [ShowIdentityCredentialErrorAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowIdentityCredentialErrorAsync) | FedCM: the identity provider did not mint a token | Closed at once: the promise is rejected with the `IdentityCredentialError` |
+| [ShowIdentityAutoReauthenticationAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowIdentityAutoReauthenticationAsync) | FedCM: the returning account is signed in without the account chooser | The reauthentication continues |
 
 The methods are called on the thread of the event loop. The task they return can complete later, on any thread: the
 library settles the promise of the page on its event loop, and the event loop is not idle while a prompt is open. The
@@ -261,3 +265,78 @@ The library does not invoke the payment handlers of the service workers: the use
 payment applications of the payment method manifests are not installed, and an event created by a script cannot answer a
 payment (`respondWith()` throws an `InvalidStateError`). The payment handlers of the user agent are the ones of the backend
 (`HasPaymentHandlerAsync`).
+
+## Federated Credential Management
+
+[Federated Credential Management](https://w3c-fedid.github.io/FedCM/) (FedCM) lets a site sign the user in with an
+account of an identity provider: `navigator.credentials.get({ identity: { providers: [{ configURL, clientId }] } })`
+returns an [IdentityCredential](cref:Meziantou.Framework.WebPlatform.Dom.IdentityCredential) whose `token` the provider
+minted for the site. The library implements the requests of the browser to the provider: its well-known file and config
+file, its accounts (with the cookies of the provider), the client metadata of the site, and the token of the chosen
+account. The backend shows the dialogs. A backend whose account chooser chooses the first account:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_FedCmBackend;format=md-fenced-code-block;dedent=true -->
+```csharp
+/// <summary>The dialogs of FedCM: the account chooser chooses the first account, and the other dialogs are recorded.</summary>
+internal sealed class FirstAccountChooser : UserAgentUIBackend
+{
+    public List<IdentityCredentialPrompt> Prompts { get; } = [];
+
+    public override ValueTask<IdentityAccountChoice?> ChooseIdentityAccountAsync(IdentityAccountChooserPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.FromResult<IdentityAccountChoice?>(IdentityAccountChoice.Select(prompt.Accounts[0]));
+    }
+
+    public override ValueTask ShowIdentityCredentialErrorAsync(IdentityCredentialErrorPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask<bool> ShowIdentityAutoReauthenticationAsync(IdentityAutoReauthenticationPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.FromResult(true);
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UserAgentUI_FedCm;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new BrowsingContextOptions
+{
+    // The dialogs of FedCM: the account chooser of the backend chooses the first account
+    UserAgentUI = new FirstAccountChooser(),
+};
+```
+<!-- endref -->
+
+[IdentityAccountChooserPrompt](cref:Meziantou.Framework.WebPlatform.Dom.IdentityAccountChooserPrompt) lists the
+accounts of the providers (an [IdentityProviderAccount](cref:Meziantou.Framework.WebPlatform.Dom.IdentityProviderAccount)
+has the name, the email, the picture and the provider of the account, whether it is connected to the site, and the
+privacy policy and terms of service of the site for the user who signs up) and the context of the request (`signin`,
+`signup`, `use` or `continue`), which the title of the chooser shows. The backend answers with
+[IdentityAccountChoice.Select](cref:Meziantou.Framework.WebPlatform.Dom.IdentityAccountChoice.Select), with
+[IdentityAccountChoice.UseOtherAccount](cref:Meziantou.Framework.WebPlatform.Dom.IdentityAccountChoice.UseOtherAccount)
+when the user signs in to another account (a request to a single provider that supports it), or with `null` when the user
+closes the chooser. A backend can refuse to show the chooser, for instance during a cooldown after the user closed it, by
+returning `null` at once.
+
+The library applies the rules of the specification and of the browsers:
+
+- An account connected to the site (chosen before, and not disconnected by `IdentityCredential.disconnect()`) is
+  reauthenticated without the chooser when it is the only returning account and the mediation is not `required`; the
+  backend is told with [ShowIdentityAutoReauthenticationAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowIdentityAutoReauthenticationAsync).
+  `navigator.credentials.preventSilentAccess()` turns it off until the user chooses an account again. A `silent` request
+  only succeeds this way.
+- The login status of a provider is set by `navigator.login.setStatus()` and by the `Set-Login` response header. The
+  accounts of a provider whose user is logged out are not fetched. When a provider whose user is logged in returns no
+  account, [ConfirmIdentityProviderLoginAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ConfirmIdentityProviderLoginAsync)
+  asks whether to sign in: the library opens the login page of the provider in a new browsing context, and waits until it
+  calls `IdentityProvider.close()`. A `continue_on` response of the provider opens its continuation page the same way,
+  which returns the token with `IdentityProvider.resolve()`.
+- A request needs the `identity-credentials-get` permissions policy feature in a cross-origin frame, an `active` request
+  needs a transient activation, and a page has one pending request at a time (an `active` request replaces a pending
+  `passive` one). The library does not delay the rejection of a request that showed no dialog.

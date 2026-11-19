@@ -443,8 +443,8 @@ internal sealed partial class WptTestRunner
             if (cancellationToken.IsCancellationRequested)
                 return ValueTask.FromCanceled<DocumentResource?>(cancellationToken);
 
-            // The requests of fetch() and XMLHttpRequest
-            if (request.Destination == RequestDestination.Empty)
+            // The requests of fetch() and XMLHttpRequest, and the requests of FedCM to the identity providers
+            if (request.Destination is RequestDestination.Empty or RequestDestination.WebIdentity)
                 return runner.LoadFetchResource(request, cancellationToken);
 
             return Load(request.Url, request);
@@ -2575,8 +2575,8 @@ internal sealed partial class WptTestRunner
 
             // The handlers of the WebSocket server run on the thread pool: the clock is not advanced while a connection is busy
             // (a handler is about to respond, or the library is processing a message). The task queue is checked afterwards: a
-            // connection that becomes idle has queued its tasks
-            if (_webSocketServer.IsBusy)
+            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent fetches a payment method manifest
+            if (_webSocketServer.IsBusy || _userAgentUI.IsBusy)
             {
                 workerWait.SpinOnce();
                 continue;

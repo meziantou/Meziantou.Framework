@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
@@ -1983,6 +1984,275 @@ public sealed class HostDeviceApisTests : IDisposable
         }
     }
 
+    // Federated Credential Management (FedCM) and the Login Status API
+
+    private const string FedCmScript = """
+        window.go = p => p.then(c => document.title = [c.type, typeof c.token === 'string' ? c.token : JSON.stringify(c.token), c.isAutoSelected, c.configURL].join('|'), e => document.title = e.name + (e.name === 'IdentityCredentialError' ? '|' + e.error + '|' + e.url : ''));
+        window.options = (mediation, extra) => ({ identity: { providers: [Object.assign({ configURL: 'https://idp.example/fedcm.json', clientId: 'rp', nonce: 'n' }, extra)] }, mediation: mediation ?? 'optional' });
+        """;
+
+    [Fact]
+    public void IdentityCredential_WithoutBackend_IsRejected()
+    {
+        var loader = new IdentityProviderLoader();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader });
+
+        // The accounts are fetched, but the account chooser is dismissed
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get(options()))"));
+        Assert.Contains(loader.Requests, request => request.Url == "https://idp.example/accounts");
+        Assert.DoesNotContain(loader.Requests, request => request.Url == "https://idp.example/token");
+    }
+
+    [Fact]
+    public void IdentityCredential_ChooseAccount_FetchesTheToken()
+    {
+        #region WebPlatform_UserAgentUI_FedCm
+        var options = new BrowsingContextOptions
+        {
+            // The dialogs of FedCM: the account chooser of the backend chooses the first account
+            UserAgentUI = new FirstAccountChooser(),
+        };
+        #endregion
+
+        var loader = new IdentityProviderLoader();
+        var backend = (FirstAccountChooser)options.UserAgentUI;
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("identity|token-for-1234|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+        var prompt = Assert.IsType<IdentityAccountChooserPrompt>(backend.Prompts.Single());
+        Assert.Equal(["1234", "5678"], prompt.Accounts.Select(account => account.Id));
+        Assert.Equal("John Doe", prompt.Accounts[0].Name);
+        Assert.Equal("https://idp.example/fedcm.json", prompt.Accounts[0].ConfigUrl);
+        Assert.False(prompt.Accounts[0].IsConnected);
+        Assert.Equal("https://rp.example/privacy", prompt.Accounts[0].PrivacyPolicyUrl);
+        Assert.Equal(IdentityCredentialRequestOptionsContext.Signin, prompt.RequestContext);
+
+        // The well-known file and the config file are fetched without cookies, the token with the origin of the site
+        var wellKnown = loader.Requests.Single(request => request.Url == "https://idp.example/.well-known/web-identity");
+        Assert.DoesNotContain(wellKnown.Headers, header => header.Key is "Origin" or "Cookie" or "Referer");
+        var token = loader.Requests.Single(request => request.Url == "https://idp.example/token");
+        Assert.Equal("POST", token.Method);
+        Assert.Equal("https://example.com", token.Origin);
+        Assert.Equal("client_id=rp&nonce=n&account_id=1234&disclosure_text_shown=true&is_auto_selected=false&fields=name%2Cemail%2Cpicture&disclosure_shown_for=name%2Cemail%2Cpicture", Encoding.UTF8.GetString(token.Body!.Value.Span));
+        Assert.Contains(token.Headers, header => header.Key == "Sec-Fetch-Dest" && header.Value == "webidentity");
+    }
+
+    [Fact]
+    public void IdentityCredential_ReturningAccount_IsAutoReauthenticated()
+    {
+        var loader = new IdentityProviderLoader();
+        var backend = new FirstAccountChooser();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("identity|token-for-1234|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options('required')))"));
+
+        // The account is connected to the site: an optional or silent request selects it without the account chooser
+        Assert.Equal("identity|token-for-1234|true|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options('silent')))"));
+        Assert.IsType<IdentityAutoReauthenticationPrompt>(backend.Prompts[^1]);
+        Assert.Single(backend.Prompts, prompt => prompt is IdentityAccountChooserPrompt);
+
+        // preventSilentAccess() requires the user mediation again
+        Assert.Equal("NetworkError", Run(document, "navigator.credentials.preventSilentAccess().then(() => go(navigator.credentials.get(options('silent'))))"));
+
+        // The account is disconnected: the silent request fails
+        Assert.Equal("identity|token-for-1234|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+        Assert.Equal("disconnected", Run(document, "IdentityCredential.disconnect({ configURL: 'https://idp.example/fedcm.json', clientId: 'rp', accountHint: '1234' }).then(() => document.title = 'disconnected', e => document.title = e.name)"));
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get(options('silent')))"));
+        Assert.Equal("NetworkError", Run(document, "IdentityCredential.disconnect({ configURL: 'https://idp.example/fedcm.json', clientId: 'rp', accountHint: '1234' }).then(() => document.title = 'disconnected', e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void IdentityCredential_TokenError_IsShownAndRejected()
+    {
+        var loader = new IdentityProviderLoader { TokenResponse = """{ "error": { "error": "access_denied", "url": "/error" } }""" };
+        var backend = new FirstAccountChooser();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("IdentityCredentialError|access_denied|https://idp.example/error", Run(document, "go(navigator.credentials.get(options()))"));
+        var error = Assert.IsType<IdentityCredentialErrorPrompt>(backend.Prompts[^1]);
+        Assert.Equal("access_denied", error.Error.Error);
+        Assert.Equal("invalid_request|", Run(document, "document.title = (e => [e.error, e.url].join('|'))(new IdentityCredentialError('message', { error: 'invalid_request' }))"));
+    }
+
+    [Fact]
+    public void IdentityCredential_ContinueOn_ResolvesTheTokenOfTheContinuationPage()
+    {
+        var loader = new IdentityProviderLoader { TokenResponse = """{ "continue_on": "/continue" }""" };
+        var backend = new FirstAccountChooser();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("identity|{\"value\":42}|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+        Assert.Equal("NotAllowedError", Run(document, "IdentityProvider.resolve('token').then(() => document.title = 'resolved', e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void IdentityCredential_InvalidRequests_AreRejected()
+    {
+        var loader = new IdentityProviderLoader();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = new FirstAccountChooser() });
+
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get({ identity: { providers: [] } }))"));
+        Assert.Equal("InvalidStateError", Run(document, "go(navigator.credentials.get(options('optional', { clientId: '' })))"));
+        Assert.Equal("NotSupportedError", Run(document, "go(navigator.credentials.get({ password: true, identity: options().identity }))"));
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get({ identity: { mode: 'active', providers: options().identity.providers } }))"));
+    }
+
+    [Fact]
+    public void IdentityCredential_LoggedOutProvider_IsNotFetched()
+    {
+        var loader = new IdentityProviderLoader();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = new FirstAccountChooser() });
+
+        // The login status of the origin of the document is set by navigator.login.setStatus()
+        Assert.Equal("set", Run(document, "navigator.login.setStatus('logged-out').then(() => document.title = 'set')"));
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get({ identity: { providers: [{ configURL: location.origin + '/fedcm.json', clientId: 'rp' }] } }))"));
+        Assert.DoesNotContain(loader.Requests, request => request.Url.StartsWith("https://example.com/", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void IdentityCredential_Abort_ClosesTheAccountChooser()
+    {
+        var loader = new IdentityProviderLoader();
+        var backend = new PendingAccountChooser();
+        var document = Load("<script>" + FedCmScript + "window.controller = new AbortController();</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Run(document, "go(navigator.credentials.get(Object.assign(options(), { signal: controller.signal })))");
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
+        Assert.Equal("NotAllowedError", Run(document, "navigator.credentials.get(options()).catch(e => document.title = e.name)"));
+        Assert.Equal("AbortError", Run(document, "controller.abort()"));
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+    }
+
+    [Theory]
+    [InlineData("""{ "provider_urls": ["https://idp.example/fedcm.json"] }""", "https://idp.example/fedcm.json||")]
+    [InlineData("""{ "accounts_endpoint": "/accounts", "login_url": "/login" }""", "|/accounts|/login")]
+    [InlineData("""{ "provider_urls": ["https://a.example/1", "https://a.example/2"] }""", null)]
+    [InlineData("""{ "provider_urls": "https://idp.example/fedcm.json" }""", null)]
+    [InlineData("""null""", "||")]
+    [InlineData("""[]""", null)]
+    [InlineData("""{ "provider_urls": [1, true, null] """, null)]
+    public void IdentityProviderResponses_ParseWellKnown(string json, string? expected)
+    {
+        var wellKnown = IdentityProviderResponses.ParseWellKnown(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, wellKnown is null ? null : string.Join(',', wellKnown.ProviderUrls ?? []) + "|" + wellKnown.AccountsEndpoint + "|" + wellKnown.LoginUrl);
+    }
+
+    [Theory]
+    [InlineData("""{ "accounts_endpoint": "a", "id_assertion_endpoint": "t", "login_url": "l" }""", "a||t|l||False|")]
+    [InlineData("""{ "accounts_endpoint": "a", "client_metadata_endpoint": "m", "id_assertion_endpoint": "t", "login_url": "l", "disconnect_endpoint": "d", "supports_use_other_account": true, "account_label": "x", "branding": { "name": "IdP", "icons": [{ "url": "i.png", "size": 32 }] } }""", "a|m|t|l|d|True|x")]
+    [InlineData("""{ "accounts_endpoint": 12, "id_assertion_endpoint": 1.5, "login_url": false, "supports_use_other_account": "" }""", "12||1.5|false||False|")]
+    [InlineData("""{ "accounts_endpoint": "a", "login_url": "l" }""", null)]
+    [InlineData("""{ "accounts_endpoint": "a", "id_assertion_endpoint": "t", "login_url": "l", "branding": { "icons": [{ "size": 1 }] } }""", null)]
+    [InlineData("""{ "accounts_endpoint": "a", "id_assertion_endpoint": "t", "login_url": "l", "branding": 1 }""", null)]
+    public void IdentityProviderResponses_ParseConfig(string json, string? expected)
+    {
+        var config = IdentityProviderResponses.ParseConfig(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, config is null ? null : string.Join('|', config.AccountsEndpoint, config.ClientMetadataEndpoint, config.IdAssertionEndpoint, config.LoginUrl, config.DisconnectEndpoint, config.SupportsUseOtherAccount, config.AccountLabel));
+    }
+
+    [Theory]
+    [InlineData("""{ "accounts": [{ "id": "1", "name": "John", "email": "j@idp.example", "given_name": "J", "picture": "p.png", "approved_clients": ["a", "b"], "login_hints": ["h"], "domain_hints": ["d"], "label_hints": ["l"] }] }""", "1:John:j@idp.example:J:p.png:a,b:h:d:l")]
+    [InlineData("""{ "accounts": [{ "id": "1", "username": "u" }, { "id": 2, "tel": "+1" }] }""", "1::::::::;2::::::::")]
+    [InlineData("""{ "accounts": [] }""", "")]
+    [InlineData("""{ }""", "")]
+    [InlineData("""{ "accounts": [{ "id": "1" }] }""", null)]
+    [InlineData("""{ "accounts": [{ "name": "John" }] }""", null)]
+    [InlineData("""{ "accounts": [{ "id": "1", "name": "John", "approved_clients": "a" }] }""", null)]
+    [InlineData("""{ "accounts": [{ "id": "\uD800", "name": "\u00E9" }] }""", "\uFFFD:\u00E9:::::::")]
+    public void IdentityProviderResponses_ParseAccounts(string json, string? expected)
+    {
+        var accounts = IdentityProviderResponses.ParseAccounts(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, accounts is null ? null : string.Join(';', accounts.Select(account => string.Join(':', account.Id, account.Name, account.Email, account.GivenName, account.Picture, string.Join(',', account.ApprovedClients ?? []), string.Join(',', account.LoginHints ?? []), string.Join(',', account.DomainHints ?? []), string.Join(',', account.LabelHints ?? [])))));
+    }
+
+    [Theory]
+    [InlineData("""{ "privacy_policy_url": "p", "terms_of_service_url": "t", "client_is_third_party_to_top_frame_origin": true }""", "p|t|True")]
+    [InlineData("""{ }""", "||False")]
+    [InlineData("""{ "client_is_third_party_to_top_frame_origin": 0 }""", "||False")]
+    [InlineData("""1""", null)]
+    public void IdentityProviderResponses_ParseClientMetadata(string json, string? expected)
+    {
+        var metadata = IdentityProviderResponses.ParseClientMetadata(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, metadata is null ? null : string.Join('|', metadata.PrivacyPolicyUrl, metadata.TermsOfServiceUrl, metadata.ClientIsThirdPartyToTopFrameOrigin));
+    }
+
+    [Theory]
+    [InlineData("""{ "token": "token" }""", "\"token\"||")]
+    [InlineData("""{ "token": { "a": [1, null] } }""", "{ \"a\": [1, null] }||")]
+    [InlineData("""{ "token": null }""", "null||")]
+    [InlineData("""{ "continue_on": "/continue" }""", "|/continue|")]
+    [InlineData("""{ "error": { "error": "access_denied", "url": "/error" } }""", "||access_denied,/error")]
+    [InlineData("""{ "error": { "code": "access_denied" } }""", "||,")]
+    [InlineData("""{ "error": "access_denied" }""", null)]
+    [InlineData("""{ "token": "a" """, null)]
+    public void IdentityProviderResponses_ParseAssertion(string json, string? expected)
+    {
+        var assertion = IdentityProviderResponses.ParseAssertion(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, assertion is null ? null : assertion.TokenJson + "|" + assertion.ContinueOn + "|" + (assertion.Error is { } error ? error.Error + "," + error.Url : ""));
+    }
+
+    [Theory]
+    [InlineData("""{ "account_id": "1234" }""", "1234")]
+    [InlineData("""{ "account_id": 1e21 }""", "1e+21")]
+    [InlineData("""{ "account_id": [1, [2, 3]] }""", "1,2,3")]
+    [InlineData("""{ }""", null)]
+    [InlineData("\uFEFF{ \"account_id\": \"1\" }", "1")]
+    public void IdentityProviderResponses_ParseDisconnect(string json, string? expected)
+    {
+        Assert.Equal(expected, IdentityProviderResponses.ParseDisconnect(Encoding.UTF8.GetBytes(json)));
+    }
+
+    /// <summary>An identity provider at https://idp.example (cross-site with the documents of the tests, https://example.com).</summary>
+    private sealed class IdentityProviderLoader : DocumentLoader
+    {
+        public List<DocumentRequest> Requests { get; } = [];
+
+        public string? TokenResponse { get; init; }
+
+        public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+        {
+            lock (Requests)
+            {
+                Requests.Add(request);
+            }
+
+            var path = request.Url.Split('?')[0];
+            var resource = path switch
+            {
+                "https://idp.example/.well-known/web-identity" => Json("""{ "provider_urls": ["https://idp.example/fedcm.json"] }"""),
+                "https://idp.example/fedcm.json" => Json("""{ "accounts_endpoint": "/accounts", "client_metadata_endpoint": "/metadata", "id_assertion_endpoint": "/token", "disconnect_endpoint": "/disconnect", "login_url": "/login" }"""),
+                "https://idp.example/accounts" => Json("""{ "accounts": [{ "id": "1234", "name": "John Doe", "email": "john@idp.example" }, { "id": "5678", "name": "Jane Doe", "email": "jane@idp.example" }] }"""),
+                "https://idp.example/metadata" => Json("""{ "privacy_policy_url": "https://rp.example/privacy" }"""),
+                "https://idp.example/token" => Json(TokenResponse ?? "{ \"token\": \"token-for-" + GetField(request, "account_id") + "\" }", cors: true),
+                "https://idp.example/disconnect" => Json("{ \"account_id\": \"" + GetField(request, "account_hint") + "\" }", cors: true),
+                "https://idp.example/continue" => new DocumentResource("<script>IdentityProvider.resolve({ value: 42 })</script>") { Headers = [new("Content-Type", "text/html")] },
+                _ => null,
+            };
+            return ValueTask.FromResult(resource);
+
+            static DocumentResource Json(string json, bool cors = false) => new(json)
+            {
+                Headers = cors
+                    ? [new("Content-Type", "application/json"), new("Access-Control-Allow-Origin", "https://example.com"), new("Access-Control-Allow-Credentials", "true")]
+                    : [new("Content-Type", "application/json")],
+            };
+
+            static string? GetField(DocumentRequest request, string name)
+                => request.Body is { } body ? System.Web.HttpUtility.ParseQueryString(Encoding.UTF8.GetString(body.Span))[name] : null;
+        }
+    }
+
+    private sealed class PendingAccountChooser : UserAgentUIBackend
+    {
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<IdentityAccountChoice?> ChooseIdentityAccountAsync(IdentityAccountChooserPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            return new(new TaskCompletionSource<IdentityAccountChoice?>().Task);
+        }
+    }
+
     // Screen Orientation
 
     private const string OrientationScript = """
@@ -2873,6 +3143,32 @@ internal sealed class AcceptingPaymentSheet : UserAgentUIBackend
     {
         Result = result;
         return ValueTask.CompletedTask;
+    }
+}
+#endregion
+
+#region WebPlatform_FedCmBackend
+/// <summary>The dialogs of FedCM: the account chooser chooses the first account, and the other dialogs are recorded.</summary>
+internal sealed class FirstAccountChooser : UserAgentUIBackend
+{
+    public List<IdentityCredentialPrompt> Prompts { get; } = [];
+
+    public override ValueTask<IdentityAccountChoice?> ChooseIdentityAccountAsync(IdentityAccountChooserPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.FromResult<IdentityAccountChoice?>(IdentityAccountChoice.Select(prompt.Accounts[0]));
+    }
+
+    public override ValueTask ShowIdentityCredentialErrorAsync(IdentityCredentialErrorPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask<bool> ShowIdentityAutoReauthenticationAsync(IdentityAutoReauthenticationPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.FromResult(true);
     }
 }
 #endregion

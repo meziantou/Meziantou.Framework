@@ -115,6 +115,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-speculation-rules", data => SpeculationRules(FuzzText.Decode(data))) { Seeds = GetSpeculationRulesSeeds, Dictionary = SpeculationRulesTokens },
         new("webplatform-payment-method-manifest", PaymentMethodManifestTarget) { Seeds = GetPaymentMethodManifestSeeds, Dictionary = PaymentMethodManifestTokens },
         new("webplatform-link-header", data => LinkHeaderTarget(FuzzText.Decode(data))) { Seeds = GetLinkHeaderSeeds, Dictionary = LinkHeaderTokens },
+        new("webplatform-fedcm", FedCm) { Seeds = GetFedCmSeeds, Dictionary = FedCmTokens },
     ];
 
     /// <summary>

@@ -70,6 +70,9 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://fetch.spec.whatwg.org/#policy-controlled-feature-deferred-fetch-minimal: its default allowlist is *.</summary>
     public static PolicyControlledFeature DeferredFetchMinimal { get; } = new("deferred-fetch-minimal", isAllowedForAllByDefault: true);
 
+    /// <summary>https://w3c-fedid.github.io/FedCM/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature IdentityCredentialsGet { get; } = new("identity-credentials-get", isAllowedForAllByDefault: false);
+
     /// <summary>https://wicg.github.io/idle-detection/#api-permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature IdleDetection { get; } = new("idle-detection", isAllowedForAllByDefault: false);
 
@@ -146,6 +149,7 @@ internal sealed partial class PolicyControlledFeature
         Fullscreen,
         Geolocation,
         Gyroscope,
+        IdentityCredentialsGet,
         IdleDetection,
         KeyboardMap,
         new("local-fonts", isAllowedForAllByDefault: false),

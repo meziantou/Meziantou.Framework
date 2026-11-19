@@ -729,6 +729,9 @@ public sealed partial record BrowsingContextOptions
     /// <c>navigator.credentials.preventSilentAccess()</c>. Lock it to use it.
     /// </summary>
     internal HashSet<string> OriginsRequiringUserMediation { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>The FedCM state of the user agent: the connected accounts set and the login status of the identity providers.</summary>
+    internal IdentityCredentialState IdentityCredentials { get; } = new();
 }
 
 /// <summary>
@@ -1220,6 +1223,13 @@ public enum RequestDestination
     /// document, or of an <c>xsl:include</c> or <c>xsl:import</c> element (see <see cref="XsltProcessor"/>).
     /// </summary>
     Xslt,
+
+    /// <summary>
+    /// A request of Federated Credential Management to an identity provider (https://w3c-fedid.github.io/FedCM/#idp-api): its
+    /// well-known file, its config file, its accounts, client metadata, identity assertion and disconnect endpoints, and the
+    /// pictures of its accounts. The resource should be returned as bytes, with its status and its headers.
+    /// </summary>
+    WebIdentity,
 }
 
 /// <summary>The mode of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-mode).</summary>

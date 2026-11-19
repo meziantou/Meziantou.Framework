@@ -1,32 +1,21 @@
 {
   "fedcm/alternative-identifiers/fedcm-single-identifier.https.html": {
-    "total": 1,
-    "failures": {
-      "Accounts that only have a phone number or only a username should not cause failure.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-abort-silent-mediation-not-permitted.https.html": {
-    "total": 1,
-    "failures": {
-      "Test the abort signal when request fails due to silent mediation being disallowed": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-abort.https.html": {
-    "total": 1,
-    "failures": {
-      "Test the abort signal": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-accounts-endpoint-rejects-redirects.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that promise is rejected if accounts endpoint redirects": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-accounts-push/fedcm-accounts-push-basic.tentative.https.html": {
+    "harness": "ERROR",
     "total": 1,
     "failures": {
-      "Successfully obtaining token should resolve the promise.": "FAIL"
+      "Successfully obtaining token should resolve the promise.": "TIMEOUT"
     }
   },
   "fedcm/fedcm-accounts-push/fedcm-accounts-push-caches-pictures.tentative.https.html": {
@@ -71,72 +60,38 @@
   "fedcm/fedcm-accounts-push/store-account-list.tentative.https.html": {
     "total": 4,
     "failures": {
-      "login.setStatus with an invalid account throws a TypeError.": "FAIL",
-      "login.setStatus with empty account list succeeds.": "FAIL",
-      "login.setStatus with no account list succeeds.": "FAIL",
-      "login.setStatus with valid account list succeeds.": "FAIL"
+      "login.setStatus with an invalid account throws a TypeError.": "FAIL"
     }
   },
   "fedcm/fedcm-after-abort.https.html": {
-    "total": 1,
-    "failures": {
-      "Get after abort should work": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-authz/fedcm-continue-on-disallowed.https.html": {
-    "total": 1,
-    "failures": {
-      "continue_on with mediation:silent should fail": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-authz/fedcm-continue-on-with-account.https.html": {
-    "total": 1,
-    "failures": {
-      "continue_on and IdentityProvider.resolve work correctly.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-authz/fedcm-continue-on.https.html": {
-    "total": 1,
-    "failures": {
-      "continue_on and IdentityProvider.resolve work correctly.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-authz/fedcm-disclosure-text-shown.https.html": {
-    "total": 4,
-    "failures": {
-      "We should send disclosure_text_shown=false when an empty custom fields array is passed.": "FAIL",
-      "We should send disclosure_text_shown=false when custom fields are passed.": "FAIL",
-      "We should send disclosure_text_shown=true when custom fields are passed in addition to standard fields.": "FAIL",
-      "We should send disclosure_text_shown=true when no custom fields are passed.": "FAIL"
-    }
+    "total": 4
   },
   "fedcm/fedcm-authz/fedcm-params.https.html": {
-    "total": 2,
-    "failures": {
-      "If a getter in a custom parameter object throws an exception, it should get passed through": "FAIL",
-      "Parameters should be sent to the server correctly": "FAIL"
-    }
+    "total": 2
   },
   "fedcm/fedcm-authz/fedcm-resolve-side-effects.https.html": {
     "total": 1
   },
   "fedcm/fedcm-authz/fedcm-userinfo-after-resolve.https.html": {
-    "total": 1,
-    "failures": {
-      "Test getUserInfo() after resolve() to verify that resolve stores the RP/IDP connection": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-authz/resolve-after-preventsilentaccess.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that resolve clears the preventSilentAccess state.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-auto-reauthn-without-approved-clients.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that if the clientId is missing from approved_clients then autoreauthentication cannot occur.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-auto-selected-flag.https.html": {
     "total": 1,
@@ -145,22 +100,13 @@
     }
   },
   "fedcm/fedcm-basic.https.html": {
-    "total": 1,
-    "failures": {
-      "Successfully obtaining token should resolve the promise.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-button-and-other-account/fedcm-active-cannot-replace-active.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the active mode cannot replace active mode.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-button-and-other-account/fedcm-active-replaces-passive.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the active mode can replace passive mode.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-button-and-other-account/fedcm-button-mode-auto-selected-flag.tentative.https.html": {
     "total": 1,
@@ -169,64 +115,31 @@
     }
   },
   "fedcm/fedcm-button-and-other-account/fedcm-button-mode-basics.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Test that the active mode succeeds with user activation.": "FAIL",
-      "Test that the active mode without user activation will fail.": "FAIL",
-      "Test that the mediation:silent is not supported in active mode.": "FAIL"
-    }
+    "total": 3
   },
   "fedcm/fedcm-button-and-other-account/fedcm-passive-after-active.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the passive mode can succeed after active mode.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-button-and-other-account/fedcm-passive-cannot-replace-active.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the passive mode cannot replace active mode.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-button-and-other-account/fedcm-use-other-account-button-flow.tentative.https.html": {
-    "total": 2,
-    "failures": {
-      "Test that the \"Use Other Account\" active works correctly when accounts do not change.": "FAIL",
-      "Test that the \"Use Other Account\" active works correctly.": "FAIL"
-    }
+    "total": 2
   },
   "fedcm/fedcm-button-and-other-account/fedcm-use-other-account.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the \"Use Other Account\" button works correctly.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-client-metadata-not-cached.https.html": {
-    "total": 1,
-    "failures": {
-      "Test client_metadata request is not cached": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-context.https.html": {
-    "total": 4,
-    "failures": {
-      "FedCM call defaults to 'signin' context.": "FAIL",
-      "FedCM with 'continue' context.": "FAIL",
-      "FedCM with 'signup' context.": "FAIL",
-      "FedCM with 'use' context.": "FAIL"
-    }
+    "total": 4
   },
   "fedcm/fedcm-cross-origin-policy.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that COEP policy do not apply to FedCM requests": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-csp.https.html": {
-    "total": 1,
-    "failures": {
-      "Provider configURL should honor Content-Security-Policy.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-delegation/evt-basic.https.html": {
     "total": 2,
@@ -235,118 +148,46 @@
     }
   },
   "fedcm/fedcm-disconnect-errors.https.html": {
-    "total": 3,
-    "failures": {
-      "disconnect fails if the disconnect endpoint is cross-origin with respectto the config file": "FAIL",
-      "disconnect fails if the server sends failure": "FAIL",
-      "disconnect requires 3 parameters: configURL, clientId, and accountHint": "FAIL"
-    }
+    "total": 3
   },
   "fedcm/fedcm-disconnect-iframe.sub.https.html": {
-    "total": 3,
-    "failures": {
-      "Cross-origin iframe can disconnect with explicit identity-credentials-get": "FAIL",
-      "Cross-origin iframe fails disconnect() without explicit identity-credentials-get": "FAIL",
-      "Same-origin iframe does not need explicit identity-credentials-get": "FAIL"
-    }
+    "total": 3
   },
   "fedcm/fedcm-disconnect.sub.https.html": {
-    "total": 7,
-    "failures": {
-      "Disconnect is bound to each IDP": "FAIL",
-      "Disconnect passing an incorrect ID can still succeed": "FAIL",
-      "Repeatedly calling disconnect should eventually fail": "FAIL",
-      "Test that disconnect fails when there is no account to disconnect": "FAIL",
-      "Test that disconnect succeeds when there is a pending get request and the get request succeeds after the disconnect": "FAIL",
-      "Test that disconnect succeeds when there is an account to disconnect": "FAIL",
-      "Test that disconnecting the same account twice results in failure.": "FAIL"
-    }
+    "total": 7
   },
   "fedcm/fedcm-domainhint-any.https.html": {
-    "total": 1,
-    "failures": {
-      "Domain hint 'any' matches an account with any domain hint.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-domainhint-matches-account.https.html": {
-    "total": 1,
-    "failures": {
-      "Domain hint matches an account.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-domainhint-matches-from-two-accounts.https.html": {
-    "total": 1,
-    "failures": {
-      "Domain hint matches an account from two accounts.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-error-attribute/fedcm-error-attribute.https.html": {
-    "total": 4,
-    "failures": {
-      "Constructor ignores code field": "FAIL",
-      "IdentityCredentialError.error attribute works": "FAIL",
-      "error attribute works in button click flow": "FAIL",
-      "error attribute works in dialog dismiss workflow": "FAIL"
-    }
+    "total": 4
   },
   "fedcm/fedcm-error-basic.https.html": {
-    "total": 3,
-    "failures": {
-      "Test that the promise is rejected with proper error details when dialog is dismissed": "FAIL",
-      "Test that the promise is rejected with proper error details when got it is clicked": "FAIL",
-      "Test that the promise is rejected with proper error details when more details is clicked": "FAIL"
-    }
+    "total": 3
   },
   "fedcm/fedcm-flexible-token/basic.https.html": {
-    "total": 8,
-    "failures": {
-      "FedCM should accept boolean tokens (false)": "FAIL",
-      "FedCM should accept boolean tokens (true)": "FAIL",
-      "FedCM should accept floating point number tokens": "FAIL",
-      "FedCM should accept negative number tokens": "FAIL",
-      "FedCM should accept null tokens": "FAIL",
-      "FedCM should accept number tokens": "FAIL",
-      "FedCM should accept string tokens": "FAIL",
-      "FedCM should accept zero as token value": "FAIL"
-    }
+    "total": 8
   },
   "fedcm/fedcm-flexible-token/complex.https.html": {
-    "total": 6,
-    "failures": {
-      "FedCM should accept array tokens": "FAIL",
-      "FedCM should accept empty array tokens": "FAIL",
-      "FedCM should accept empty object tokens": "FAIL",
-      "FedCM should accept mixed-type array tokens": "FAIL",
-      "FedCM should accept nested object tokens": "FAIL",
-      "FedCM should accept object tokens": "FAIL"
-    }
+    "total": 6
   },
   "fedcm/fedcm-flexible-token/resolve-flexible-tokens.https.html": {
-    "total": 6,
-    "failures": {
-      "IdentityProvider.resolve() with array token": "FAIL",
-      "IdentityProvider.resolve() with boolean(true) token": "FAIL",
-      "IdentityProvider.resolve() with null token": "FAIL",
-      "IdentityProvider.resolve() with object token": "FAIL",
-      "IdentityProvider.resolve() with positive number token": "FAIL",
-      "IdentityProvider.resolve() with string token": "FAIL"
-    }
+    "total": 6
   },
   "fedcm/fedcm-identity-assertion-nocors.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that promise is rejected if identity assertion does not use CORS": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-iframe.https.html": {
+    "harness": "TIMEOUT",
     "total": 6,
     "failures": {
-      "FedCM disabled in 2 level deep nested iframe where innermost iframe does not have permission policy": "FAIL",
-      "FedCM disabled in 2 level deep nested iframe where middle iframe does not have permission policy": "FAIL",
-      "FedCM disabled in cross origin iframe without permissions policy": "FAIL",
-      "FedCM enabled in 2 level deep nested iframe. FedCM should be enabled regardless of iframe nesting depth": "FAIL",
-      "FedCM enabled in invisible iframe. FedCM should be enabled as long as the top frame is visible": "FAIL",
-      "FedCM should work in non-HTTPS URLs on localhost": "FAIL"
+      "FedCM should work in non-HTTPS URLs on localhost": "TIMEOUT"
     }
   },
   "fedcm/fedcm-login-status/confirm-idp-login.https.html": {
@@ -356,143 +197,74 @@
     }
   },
   "fedcm/fedcm-login-status/cross-origin-status.https.html": {
-    "total": 5,
-    "failures": {
-      "Cross-origin same-site status header should work from fetch()": "FAIL",
-      "Cross-origin status header should be ignored from fetch()": "FAIL",
-      "Status header should be ignored from a fenced frame, even if it is same-origin": "FAIL",
-      "Status header should be ignored from cross-site iframe": "FAIL",
-      "Status header should be ignored from cross-site iframe that contains a subresource with the header": "FAIL"
-    }
+    "total": 5
   },
   "fedcm/fedcm-login-status/idp-login-with-failed-accounts-fetch.https.html": {
-    "total": 1,
-    "failures": {
-      "Tests the IDP login dialog and subsequent account chooser.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-login-status/logged-out.https.html": {
-    "total": 2,
-    "failures": {
-      "FedCM request should fail because we are marked as not logged in": "FAIL",
-      "User info request should fail because we are marked as not logged in": "FAIL"
-    }
+    "total": 2
   },
   "fedcm/fedcm-login-status/login-page-broken.https.html": {
-    "total": 1,
-    "failures": {
-      "Tests that the promise does get resolved if a login page does not send a signin status header.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-loginhint.https.html": {
-    "total": 3,
-    "failures": {
-      "Login hint matches an account from two accounts.": "FAIL",
-      "Login hint matches an account.": "FAIL",
-      "No login hint matches an account.": "FAIL"
-    }
+    "total": 3
   },
   "fedcm/fedcm-manifest-not-in-list.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the promise is rejected if the manifest is not in the manifest list": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-multi-idp/fedcm-multi-idp-abort.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the abort signal works when multiple IDPs are used.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-multi-idp/fedcm-multi-idp-basic.https.html": {
-    "total": 2,
-    "failures": {
-      "Multi IDP FedCM call succeeds when picking account from the second IDP.": "FAIL",
-      "Multi IDP FedCM call succeeds when picking the first account.": "FAIL"
-    }
+    "total": 2
   },
   "fedcm/fedcm-multi-idp/fedcm-multi-idp-context.https.html": {
-    "total": 2,
-    "failures": {
-      "FedCM multi IDP call defaults to 'signin' context.": "FAIL",
-      "FedCM multi IDP with non-default context.": "FAIL"
-    }
+    "total": 2
   },
   "fedcm/fedcm-multi-idp/fedcm-multi-idp-mediation-optional.https.html": {
     "total": 3,
     "failures": {
-      "Mediation optional automatically succeeds when there is one returning account.": "FAIL",
-      "Mediation optional can succeed when there is more than one returning account.": "FAIL",
-      "Mediation optional can succeed without a returning account.": "FAIL"
+      "Mediation optional automatically succeeds when there is one returning account.": "FAIL"
     }
   },
   "fedcm/fedcm-multi-idp/fedcm-multi-idp-mediation-silent.https.html": {
-    "total": 3,
-    "failures": {
-      "Mediation silent fails if there is no returning account.": "FAIL",
-      "Mediation silent fails when there is more than one returning account.": "FAIL",
-      "Mediation silent succeeds when there is one returning account.": "FAIL"
-    }
+    "total": 3
   },
   "fedcm/fedcm-multi-idp/fedcm-too-many-idps.https.html": {
-    "total": 1,
-    "failures": {
-      "Multi IDP FedCM call fails when too many IDPs are requested.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-navigation-interception/continue-on-redirect-POST.https.html": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Redirects in IdentityProvider.resolve with method: POST work correctly.": "FAIL"
+      "Redirects in IdentityProvider.resolve with method: POST work correctly.": "TIMEOUT"
     }
   },
   "fedcm/fedcm-no-domainhint-matches-account.https.html": {
-    "total": 1,
-    "failures": {
-      "No domain hint matches an account.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-no-login-url.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that promise is rejected if the manifest has no login URL": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-nonce-is-optional.https.html": {
-    "total": 1,
-    "failures": {
-      "nonce is not required in FederatedIdentityProvider.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-not-observed-by-service-worker.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that service worker cannot observe fetches performed by FedCM API": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-opaque-rp-origin.https.html": {
-    "total": 1,
-    "failures": {
-      "Opaque RP origin should trigger a NetworkError.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-pending-call-rejected.https.html": {
-    "total": 1,
-    "failures": {
-      "When there's a pending request, a second `get` call should be rejected.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-pending-disconnect.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that disconnect can be pending when the test finishes.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-pending-userinfo.https.html": {
-    "total": 1,
-    "failures": {
-      "Test basic User InFo API flow": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-register/fedcm-no-registered-idps.https.html": {
     "total": 1,
@@ -501,14 +273,7 @@
     }
   },
   "fedcm/fedcm-reject-invalid-responses.https.html": {
-    "total": 5,
-    "failures": {
-      "Reject when clientId is empty": "FAIL",
-      "Reject when clientId is missing": "FAIL",
-      "Reject when configURL is invalid": "FAIL",
-      "Reject when configURL is missing": "FAIL",
-      "Reject when provider list is empty": "FAIL"
-    }
+    "total": 5
   },
   "fedcm/fedcm-returning-account-auto-reauthn.https.html": {
     "total": 1,
@@ -517,10 +282,7 @@
     }
   },
   "fedcm/fedcm-same-site-none.https.html": {
-    "total": 1,
-    "failures": {
-      "FedCM requests should be considered cross-origin and therefore not send SameSite=Strict or Lax cookies.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-storage-access-api-autogrant.tentative.https.sub.html": {
     "total": 3,
@@ -531,36 +293,19 @@
     }
   },
   "fedcm/fedcm-store.https.html": {
-    "total": 1,
-    "failures": {
-      "navigator.credentials.store() with an identity credential returns NotSupportedError": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-token-endpoint-rejects-redirects.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that token endpoint does not follow redirects": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-token-returned-with-http-error.https.html": {
-    "total": 1,
-    "failures": {
-      "Test that the promise will be rejected if the response has http error": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-too-many-disconnect-calls.https.html": {
-    "total": 1,
-    "failures": {
-      "When disconnect is called while there is a pending one, it is rejected.": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/fedcm-userinfo.https.html": {
-    "total": 3,
-    "failures": {
-      "Test basic User Info API flow": "FAIL",
-      "Test that User Info API does not work in the top frame": "FAIL",
-      "Test that User Info API only works when invoked from iframe that is same origin as the IDP": "FAIL"
-    }
+    "total": 3
   },
   "fedcm/fedcm-well-known-validation/well-known-client-metadata-validation.https.html": {
     "total": 8,
@@ -568,23 +313,13 @@
       "FedCM should fail with missing well-known endpoints and client_metadata": "FAIL",
       "FedCM should fail with partial accounts endpoint and client_metadata": "FAIL",
       "FedCM should fail with partial login endpoint and client_metadata": "FAIL",
-      "FedCM should fail with provider_urls format and client_metadata (validation enforced)": "FAIL",
-      "FedCM should succeed with direct well-known format and client_metadata": "FAIL",
-      "FedCM should succeed with empty well-known endpoints without client_metadata": "FAIL",
-      "FedCM should succeed with missing well-known endpoints without client_metadata": "FAIL",
-      "FedCM should succeed with provider_urls format without client_metadata (no validation)": "FAIL"
+      "FedCM should fail with provider_urls format and client_metadata (validation enforced)": "FAIL"
     }
   },
   "fedcm/third-party-iframe/fedcm-third-party-iframe-active-mode.https.html": {
-    "total": 1,
-    "failures": {
-      "FedCM active mode in third-party iframe shows the iframe origin": "FAIL"
-    }
+    "total": 1
   },
   "fedcm/third-party-iframe/fedcm-third-party-iframe.https.html": {
-    "total": 1,
-    "failures": {
-      "FedCM in third-party iframe shows both origins": "FAIL"
-    }
+    "total": 1
   }
 }

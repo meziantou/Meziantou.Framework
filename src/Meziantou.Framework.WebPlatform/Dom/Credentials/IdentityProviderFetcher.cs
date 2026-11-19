@@ -377,17 +377,20 @@ internal static class IdentityProviderDialogs
             return null;
 
         var popup = browsingContext.CreateAuxiliaryBrowsingContext("", opener: null);
-        var dialog = new Dialog(window, popup, isContinuation);
+        var dialog = new Dialog(window, popup, isContinuation, url.SerializeOrigin());
         Dialogs.AddOrUpdate(popup, dialog);
         using var registration = cancellationToken.Register(() => window.QueueGlobalTask(() => dialog.Complete(null)));
         popup.Navigate(url.Serialize());
         return await dialog.Completion.Task.ConfigureAwait(true);
     }
 
-    /// <summary>https://w3c-fedid.github.io/FedCM/#dom-identityprovider-close: the dialog of the window is closed.</summary>
+    /// <summary>
+    /// https://w3c-fedid.github.io/FedCM/#dom-identityprovider-close: the dialog of the window is closed. Only a document of the
+    /// identity provider can close it.
+    /// </summary>
     public static void Close(Window window)
     {
-        if (GetDialog(window) is { } dialog)
+        if (GetDialog(window) is { } dialog && dialog.IsProviderDocument(window))
         {
             dialog.Window.QueueGlobalTask(() => dialog.Complete(DialogResult.Closed));
         }
@@ -398,6 +401,10 @@ internal static class IdentityProviderDialogs
     {
         if (GetDialog(window) is not { IsContinuation: true } dialog)
             return Task.FromException(DomException.NotAllowed("IdentityProvider.resolve() can only be called by the continuation page of a FedCM request"));
+
+        // A document of another origin in the window of the dialog (e.g. a third-party iframe) cannot complete the sign-in
+        if (!dialog.IsProviderDocument(window))
+            return Task.FromException(DomException.NotAllowed("IdentityProvider.resolve() can only be called by a document of the identity provider"));
 
         // The token is a value of the realm of the provider: it is given to the site as JSON
         var tokenJson = ModelContext.SerializeJson(window, token) ?? "null";
@@ -423,11 +430,14 @@ internal static class IdentityProviderDialogs
         public static DialogResult Closed { get; } = new(TokenJson: null, AccountId: null);
     }
 
-    private sealed class Dialog(Window window, BrowsingContext popup, bool isContinuation)
+    private sealed class Dialog(Window window, BrowsingContext popup, bool isContinuation, string providerOrigin)
     {
         public Window Window { get; } = window;
 
         public bool IsContinuation { get; } = isContinuation;
+
+        /// <summary>Whether the document of a window of the dialog is a document of the identity provider (same origin with the URL of the dialog).</summary>
+        public bool IsProviderDocument(Window caller) => caller.Document.Origin.Serialize() == providerOrigin;
 
         public TaskCompletionSource<DialogResult?> Completion { get; } = new();
 

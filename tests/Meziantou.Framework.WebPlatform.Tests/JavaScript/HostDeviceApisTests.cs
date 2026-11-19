@@ -2261,6 +2261,23 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void IdentityCredential_ContinueOn_ThirdPartyFrameCannotResolve()
+    {
+        // The iframe of another origin in the continuation page cannot complete the sign-in with its own token and account
+        var loader = new IdentityProviderLoader
+        {
+            TokenResponse = """{ "continue_on": "/continue" }""",
+            ContinuationPage = """
+                <iframe src="https://third-party.example/frame"></iframe>
+                <script>onmessage = e => IdentityProvider.resolve({ frame: e.data });</script>
+                """,
+        };
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = new FirstAccountChooser() });
+
+        Assert.Equal("identity|{\"frame\":\"NotAllowedError\"}|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+    }
+
+    [Fact]
     public void IdentityCredential_InvalidRequests_AreRejected()
     {
         var loader = new IdentityProviderLoader();
@@ -2384,6 +2401,8 @@ public sealed class HostDeviceApisTests : IDisposable
 
         public string? TokenResponse { get; init; }
 
+        public string? ContinuationPage { get; init; }
+
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
             lock (Requests)
@@ -2400,7 +2419,8 @@ public sealed class HostDeviceApisTests : IDisposable
                 "https://idp.example/metadata" => Json("""{ "privacy_policy_url": "https://rp.example/privacy" }"""),
                 "https://idp.example/token" => Json(TokenResponse ?? "{ \"token\": \"token-for-" + GetField(request, "account_id") + "\" }", cors: true),
                 "https://idp.example/disconnect" => Json("{ \"account_id\": \"" + GetField(request, "account_hint") + "\" }", cors: true),
-                "https://idp.example/continue" => new DocumentResource("<script>IdentityProvider.resolve({ value: 42 })</script>") { Headers = [new("Content-Type", "text/html")] },
+                "https://idp.example/continue" => new DocumentResource(ContinuationPage ?? "<script>IdentityProvider.resolve({ value: 42 })</script>") { Headers = [new("Content-Type", "text/html")] },
+                "https://third-party.example/frame" => new DocumentResource("<script>IdentityProvider.resolve('stolen', { accountId: '5678' }).then(() => parent.postMessage('resolved', '*'), e => parent.postMessage(e.name, '*'));</script>") { Headers = [new("Content-Type", "text/html")] },
                 _ => null,
             };
             return ValueTask.FromResult(resource);

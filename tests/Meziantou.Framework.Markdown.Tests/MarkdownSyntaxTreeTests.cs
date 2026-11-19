@@ -3966,6 +3966,10 @@ public sealed class MarkdownSyntaxTreeTests
         // A space between two escaped characters is text
         var escaped = MarkdownSyntaxTree.ParseText("\\*\n\\*\n===\n").GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
         Assert.Equal("* *", escaped.GetPlainText());
+
+        // A line ending in generic attributes is a space of the attributes
+        var withAttributes = MarkdownSyntaxTree.ParseText("text {title=\"a\nb\"}\n===\n", AttributeOptions).GetRoot().Blocks.OfType<MarkdownHeadingSyntax>().Single().WithLevel(3);
+        Assert.Equal("a b", withAttributes.DescendantNodes().OfType<MarkdownGenericAttributesSyntax>().Single().Properties.Single().Value);
     }
 
     [Theory]

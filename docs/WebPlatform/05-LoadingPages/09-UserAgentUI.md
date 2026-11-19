@@ -35,7 +35,9 @@ method that a backend does not override, the prompt behaves as if the user dismi
 The methods are called on the thread of the event loop. The task they return can complete later, on any thread: the
 library settles the promise of the page on its event loop, and the event loop is not idle while a prompt is open. The
 cancellation token is canceled when the page no longer waits for the answer (for instance, the signal of the request is
-aborted): close the prompt then. An exception thrown by a method is handled as a dismissal of the prompt.
+aborted), and when the document of the prompt is no longer fully active (it is destroyed, or it enters the back/forward
+cache): close the prompt then. The request is then settled as if the user dismissed the prompt, so a page restored from the
+back/forward cache never receives a late answer. An exception thrown by a method is handled as a dismissal of the prompt.
 
 ## Credentials
 
@@ -62,8 +64,11 @@ internal sealed class InMemoryCredentialStore : UserAgentUIBackend
 
     public CredentialChooserPrompt? LastPrompt { get; private set; }
 
+    public int StorePrompts { get; private set; }
+
     public override ValueTask<bool> StoreCredentialAsync(CredentialStorePrompt prompt, CancellationToken cancellationToken)
     {
+        StorePrompts++;
         _credentials.Add(prompt.Credential);
         return ValueTask.FromResult(true);
     }
@@ -99,7 +104,8 @@ a `FederatedCredential` is the site where it is used.
 
 The library checks the arguments and the algorithms of the specification: the password and federated credentials can be
 requested together but not with the other types (a `NotSupportedError`), they cannot be requested or stored in a frame that
-is not same origin with its ancestors (a `NotAllowedError`), nor from an opaque origin (a `SecurityError`), and they do not
+is not same origin with its ancestors (a `NotAllowedError`), nor from an opaque origin (a `SecurityError`), a page cannot
+store a credential whose `origin` is not its own (a `SecurityError`, before the backend is called), and they do not
 support the `conditional` mediation. `navigator.credentials.create()` creates a credential from its data or from the fields
 of a form (their autofill field names: `username`, `current-password`, `new-password`, `name`, `nickname` and `photo`),
 without storing it. As in the specification, the `origin` member of the data of a credential is required; the `origin` of
@@ -279,7 +285,9 @@ The bank registers the passkey with the `payment` extension of Web Authenticatio
 asks for the payment with a request whose only payment method is `secure-payment-confirmation` (another method in the same
 request is a `RangeError`), whose data lists the credential IDs, the challenge and RP ID of the bank, the payee, and the
 payment instrument shown to the user (`displayName` and `icon`). The `details` of the response of `show()` is the
-`PublicKeyCredential` of the authentication, which the merchant sends to the bank.
+`PublicKeyCredential` of the authentication, which the merchant sends to the bank. The promise given to `show()` updates
+the details before the transaction dialog is shown, so the signed total is the updated one; the response cannot be retried
+(`retry()` rejects with a `NotSupportedError`, and the response can still be completed).
 
 The user agent supports the payment method when
 [HasPaymentHandlerAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.HasPaymentHandlerAsync) returns

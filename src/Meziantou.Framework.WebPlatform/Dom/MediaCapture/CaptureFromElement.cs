@@ -35,7 +35,7 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
     private bool _frameRequested;
     private bool _frameForced;
     private long? _lastCaptureTimestamp;
-    private bool _muteQueued;
+    private bool _mutedStateUpdateQueued;
     private MediaVideoFrame? _frame;
 
     public CanvasCaptureTrackSource(HtmlCanvasElement canvas, double? frameRequestRate)
@@ -67,13 +67,21 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
         settings["height"] = (double)height;
     }
 
-    /// <summary>The content of the canvas changed: a frame is captured, unless the frames are only captured on request (a frame rate of 0).</summary>
+    /// <summary>
+    /// The content of the canvas changed: a frame is captured, unless the frames are only captured on request (a frame rate
+    /// of 0). A canvas that is origin-clean again (<c>reset()</c>, or a new size, clears its bitmap) unmutes the tracks.
+    /// </summary>
     public void OnCanvasChanged()
     {
         if (!Canvas.IsBitmapOriginClean)
         {
             OnCanvasTainted();
             return;
+        }
+
+        if (IsMuted)
+        {
+            QueueMutedStateUpdate();
         }
 
         if (_frameRequestRate is not 0)
@@ -128,7 +136,7 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
     }
 
     /// <summary>
-    /// The canvas is not origin-clean: its content is never captured, and the tracks are muted
+    /// The canvas is not origin-clean: its content is not captured, and the tracks are muted
     /// (https://w3c.github.io/mediacapture-fromelement/#dom-htmlcanvaselement-capturestream). The last frame, captured while
     /// the canvas was origin-clean, is dropped; the tracks fire <c>mute</c> from a task.
     /// </summary>
@@ -137,17 +145,35 @@ internal sealed class CanvasCaptureTrackSource : MediaStreamTrackSource
         _frame = null;
         _frameRequested = false;
         _frameForced = false;
-        if (IsMuted || _muteQueued)
+        if (!IsMuted)
+        {
+            QueueMutedStateUpdate();
+        }
+    }
+
+    /// <summary>The tracks are muted while the canvas is not origin-clean: a task fires <c>mute</c> or <c>unmute</c>, with the state of the canvas when it runs.</summary>
+    private void QueueMutedStateUpdate()
+    {
+        if (_mutedStateUpdateQueued)
             return;
 
-        _muteQueued = true;
+        _mutedStateUpdateQueued = true;
         if (Canvas.RelevantGlobal is { } global)
         {
-            global.QueueGlobalTask(() => SetMuted(muted: true));
+            global.QueueGlobalTask(UpdateMutedState);
         }
         else
         {
-            SetMuted(muted: true);
+            UpdateMutedState();
+        }
+    }
+
+    private void UpdateMutedState()
+    {
+        _mutedStateUpdateQueued = false;
+        if (!IsStopped)
+        {
+            SetMuted(!Canvas.IsBitmapOriginClean);
         }
     }
 

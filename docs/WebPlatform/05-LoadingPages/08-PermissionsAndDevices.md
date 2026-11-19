@@ -229,14 +229,14 @@ private sealed class SolidColorCamera : MediaCaptureBackend
 
 The streams also come from the page itself: `canvas.captureStream()` captures a canvas when it changes, at most
 `frameRate` times per second when the page gives a frame rate (only on `requestFrame()` for a rate of 0). Once the
-canvas is not origin-clean (a cross-origin image was drawn on it), its tracks are muted and get no frame.
-`video.captureStream()` captures the frames of a media element, and `AudioContext.createMediaStreamDestination()`
-captures a Web Audio graph, with the channel count of the node. `createMediaStreamSource()` and
-`createMediaStreamTrackSource()` play the audio of a track in a Web Audio graph. The media elements play a stream
-assigned to `srcObject` as a live timeline that cannot be seeked, once a
-[MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) enables their processing model. `MediaRecorder`
-is not implemented, and the audio of the media elements is not decoded (the media backend gives no audio), so
-`createMediaElementSource()` outputs silence.
+canvas is not origin-clean (a cross-origin image was drawn on it), its tracks are muted and get no frame, until
+`reset()` or a new size clears the bitmap: the tracks are unmuted and capture the canvas again. `video.captureStream()`
+captures the frames of a media element, and `AudioContext.createMediaStreamDestination()` captures a Web Audio graph,
+with the channel count of the node. `createMediaStreamSource()` and `createMediaStreamTrackSource()` play the audio of a
+track in a Web Audio graph. The media elements play a stream assigned to `srcObject` as a live timeline that cannot be
+seeked, once a [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) enables their processing model.
+`MediaRecorder` is not implemented, and the audio of the media elements is not decoded (the media backend gives no
+audio), so `createMediaElementSource()` outputs silence.
 
 ## Notifications
 

@@ -1478,6 +1478,47 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void DrawElementImage_DrawsTheCanvasThatReplacedANestedCanvas()
+    {
+        var page = _pages.Load("""
+            <canvas id=c width=20 height=10 content=drawable>
+              <div drawable id=d style="width: 20px; height: 10px; background: red"><canvas id=n width=10 height=10 style="display: block"></canvas></div>
+            </canvas>
+            """, scriptingEnabled: true);
+        var canvas = (HtmlCanvasElement)page.Document!.GetElementById("c")!;
+        var nested = (HtmlCanvasElement)page.Document.GetElementById("n")!;
+        var element = page.Document.GetElementById("d")!;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        var nestedContext = (CanvasRenderingContext2D)nested.GetContext("2d")!;
+        nestedContext.FillStyle = "blue";
+        nestedContext.FillRect(0, 0, 10, 10);
+
+        void Render()
+        {
+            _pages.Clock.Advance(TimeSpan.FromMilliseconds(20));
+            page.EventLoop.RunUntilIdle();
+        }
+
+        Render();
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+
+        // A canvas with the same size and ID at the same place does not change the display list of the element: its snapshot draws the new canvas
+        var replacement = (HtmlCanvasElement)page.Document.CreateElement("canvas");
+        replacement.Width = 10;
+        replacement.Height = 10;
+        replacement.SetAttribute("style", "display: block");
+        replacement.Id = "n";
+        var replacementContext = (CanvasRenderingContext2D)replacement.GetContext("2d")!;
+        replacementContext.FillStyle = "lime";
+        replacementContext.FillRect(0, 0, 10, 10);
+        nested.ReplaceWith(replacement);
+        Render();
+        context.DrawElementImage(element, 0, 0);
+        Assert.Equal([0, 255, 0, 255], GetPixel(context, 5, 5));
+    }
+
+    [Fact]
     public void DrawElementImage_InlineDrawableElement()
     {
         var page = _pages.Load("""

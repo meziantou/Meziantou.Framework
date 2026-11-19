@@ -561,7 +561,7 @@ public partial class HtmlCanvasElement
                 // (a change of the CSS transform of the element is a change of the rendering, even when the display list is the same)
                 var transform = box.FirstFragment is BoxFragment fragment && LayoutTransforms.GetMatrix(fragment) is { } matrix ? string.Join(',', matrix.Select(value => value.ToString("R", System.Globalization.CultureInfo.InvariantCulture))) : "";
                 var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{size.Width}x{size.Height} {zoomRatio} {transform} {GetPaintsKey(content)} {GetCanvasesKey(canvases)}\n{content.Dump()}");
-                if (previous is not null && previous.TryGetValue(element, out var old) && old.Key == key)
+                if (previous is not null && previous.TryGetValue(element, out var old) && old.Key == key && HasSameCanvases(old, canvases))
                 {
                     (snapshots ??= new(ReferenceEqualityComparer.Instance))[element] = old;
                     continue;
@@ -632,6 +632,25 @@ public partial class HtmlCanvasElement
         var all = _snapshots.Keys.Where(element => changed.Contains(element) || updated.Contains(element)).ToList();
         changed.Clear();
         changed.AddRange(all);
+        return true;
+    }
+
+    /// <summary>
+    /// Returns whether a snapshot draws the same canvas elements as <paramref name="canvases"/>: a canvas replaced by another one at
+    /// the same place does not change the key of the snapshot, which would keep drawing the bitmap of the removed canvas.
+    /// </summary>
+    private static bool HasSameCanvases(ElementSnapshot snapshot, List<LiveCanvasImage>? canvases)
+    {
+        var old = snapshot.Canvases ?? [];
+        if (old.Length != (canvases?.Count ?? 0))
+            return false;
+
+        for (var i = 0; i < old.Length; i++)
+        {
+            if (!ReferenceEquals(old[i].Canvas, canvases![i].Canvas))
+                return false;
+        }
+
         return true;
     }
 

@@ -9,10 +9,10 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 /// <summary>
 /// The target of the pages of another inline size (the content of a page whose page area has another inline size is laid out
 /// again in it, from the break): the input is decoded to the sizes of the first page and of the next ones, a container of rows
-/// (a table with or without a header, a column flex container, a grid with a fixed or an automatic number of columns, a row
-/// flex container that wraps, a block) and its rows (their block sizes, whether they avoid breaks, a paragraph). Each row is in
-/// a page, the first pages of the rows follow their order, each word of the paragraphs is laid out once, and the rectangles of
-/// the fragments are finite.
+/// (a table without a header, with a repeated header or with a header too tall to be repeated, a column flex container, a grid
+/// with a fixed or an automatic number of columns, a row flex container that wraps, a block) and its rows (their block sizes,
+/// whether they avoid breaks, a paragraph). Each row is in a page, the first pages of the rows follow their order, each word of
+/// the paragraphs is laid out once, and the rectangles of the fragments are finite.
 /// </summary>
 public static partial class WebPlatformFuzzTargets
 {
@@ -28,6 +28,9 @@ public static partial class WebPlatformFuzzTargets
         ("<div style='display: grid; grid-template-columns: repeat(auto-fill, 90px)'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<div style='display: flex; flex-wrap: wrap'>", "<div id={0} style='width: 90px; {1}'>{2}</div>", "</div>"),
         ("<div>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+
+        // (a header that avoids breaks and is not repeated, when it is taller than a quarter of the page)
+        ("<table style='width: 100%; border-spacing: 0'><thead style='break-inside: avoid'><tr style='height: 60px'><td></td></tr></thead><tbody>", "<tr id={0} style='{1}'><td>{2}</td></tr>", "</tbody></table>"),
     ];
 
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>
@@ -126,6 +129,9 @@ public static partial class WebPlatformFuzzTargets
             // The containers whose rows depend on their inline size keep their layout
             [35, 75, 55, 4, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
             [35, 75, 55, 5, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+
+            // A row that avoids breaks and does not fit below a header that is not repeated starts the next page
+            [55, 55, 8, 7, 1, 3, 0, 28, 2, 0, 2],
         ];
 
         for (var i = 0; i < scenarios.Length; i++)

@@ -23,10 +23,17 @@ public static partial class WebPlatformFuzzTargets
     /// </summary>
     public static void NetworkErrorLoggingHeader(string input)
     {
+        // Processing the header never throws (it runs in a task of the event loop): an invalid header is ignored
+        var cache = new NetworkErrorLoggingCache();
+        var url = Urls.UrlParser.Parse("https://example.com/resource", baseUrl: null)!;
+        var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        cache.ProcessResponse(url, [new("NEL", input), new("Reporting-Endpoints", "nel=\"/reports\"")], now);
+        cache.ProcessResponse(url, [new("NEL", input)], DateTimeOffset.MaxValue);
+
         if (NetworkErrorLoggingPolicyHeader.Parse(input) is not { } policy)
             return;
 
-        FuzzAssert.True(policy.MaxAge >= 0, $"The NEL header {FuzzAssert.Format(input)} has the max_age {policy.MaxAge}");
+        FuzzAssert.True(policy.MaxAge is >= 0 and <= NetworkErrorLoggingPolicyHeader.MaxMaxAge, $"The NEL header {FuzzAssert.Format(input)} has the max_age {policy.MaxAge}");
         FuzzAssert.True(policy.SuccessFraction is >= 0 and <= 1, $"The NEL header {FuzzAssert.Format(input)} has the success_fraction {policy.SuccessFraction}");
         FuzzAssert.True(policy.FailureFraction is >= 0 and <= 1, $"The NEL header {FuzzAssert.Format(input)} has the failure_fraction {policy.FailureFraction}");
         foreach (var name in policy.RequestHeaders.Concat(policy.ResponseHeaders))
@@ -105,6 +112,8 @@ public static partial class WebPlatformFuzzTargets
             """{"report_to": "nel-group", "max_age": 10886400, "success_fraction": 1.0}""",
             """{"report_to": "nel-group", "max_age": 10886400, "include_subdomains": true, "success_fraction": 1.0}""",
             """{"report_to": "nel-group", "max_age": 10886400, "success_fraction": 0.0}""",
+            """{"report_to": "nel", "max_age": 9223372036854775807}""",
+            """{"report_to": "nel", "max_age": 315360000000}""",
             """{"max_age": 0}""",
             """{"report_to": "group", "max_age": 60, "failure_fraction": 0.5, "request_headers": ["X-Test"], "response_headers": ["ETag"]}""",
             """{"report_to": "group", "max_age": 60, "success_fraction": 2}, {"report_to": "other", "max_age": 1}""",

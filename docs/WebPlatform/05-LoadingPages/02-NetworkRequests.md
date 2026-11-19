@@ -248,7 +248,7 @@ var options = new BrowsingContextOptions { NetworkErrorLogging = networkErrorLog
 <!-- endref -->
 
 - The `NEL` header of a secure response (`{"report_to": "group", "max_age": 86400}`) sets the policy of its origin, and
-  `max_age: 0` removes it. `report_to` names an endpoint of the `Reporting-Endpoints` header or a group of the legacy
+  `max_age: 0` removes it. A `max_age` above 10 years is clamped to 10 years. `report_to` names an endpoint of the `Reporting-Endpoints` header or a group of the legacy
   `Report-To` header of the same response.
 - Each request sent to the network (the redirects and the `304` revalidations included, not the responses of the HTTP
   cache) to an origin with a policy generates a `network-error` report, sent to the endpoint of the policy: `ok`,

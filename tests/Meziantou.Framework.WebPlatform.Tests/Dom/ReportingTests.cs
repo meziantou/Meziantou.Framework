@@ -70,6 +70,21 @@ public sealed class ReportingTests : IDisposable
         Assert.Null(NetworkErrorLoggingPolicyHeader.Parse("""{"max_age": 60}"""));
     }
 
+    [Theory]
+    [InlineData("9223372036854775807")]
+    [InlineData("315360000000")]
+    public void NetworkErrorLogging_AHugeMaxAgeIsClamped(string maxAge)
+    {
+        var networkErrorLogging = new NetworkErrorLoggingCache();
+        Load("<img src='/image.png'>", [
+            new("NEL", "{\"report_to\": \"nel\", \"max_age\": " + maxAge + ", \"success_fraction\": 1.0}"),
+            new("Reporting-Endpoints", "nel=\"/reports\""),
+        ], networkErrorLogging);
+
+        Assert.Contains(_requests, request => request.Url == "https://example.com/reports" && request.Method == "POST");
+        Assert.Equal(1, networkErrorLogging.GetPolicyCount(DateTimeOffset.UtcNow.AddYears(5)));
+    }
+
     [Fact]
     public void NetworkErrorLogging_IsDisabledByDefault()
     {

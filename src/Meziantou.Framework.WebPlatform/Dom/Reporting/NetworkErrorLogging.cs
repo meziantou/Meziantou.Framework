@@ -83,7 +83,9 @@ public sealed class NetworkErrorLoggingCache
         if (ReportingEndpoint.Process(headers, url)?.Find(endpoint => endpoint.Name == header.ReportTo) is not { } endpoint)
             return;
 
-        var policy = new NetworkErrorLoggingPolicy(origin, url.Host?.Serialized ?? "", url.Port, header, endpoint.Url, now + TimeSpan.FromSeconds(header.MaxAge));
+        var lifetime = TimeSpan.FromSeconds(header.MaxAge);
+        var expires = now > DateTimeOffset.MaxValue - lifetime ? DateTimeOffset.MaxValue : now + lifetime;
+        var policy = new NetworkErrorLoggingPolicy(origin, url.Host?.Serialized ?? "", url.Port, header, endpoint.Url, expires);
         lock (_lock)
         {
             _policies[origin] = policy;
@@ -137,7 +139,10 @@ internal sealed record NetworkErrorLoggingPolicyHeader
     /// <summary>The name of the endpoint group of the reports (https://w3c.github.io/network-error-logging/#report_to-member).</summary>
     public required string ReportTo { get; init; }
 
-    /// <summary>The lifetime of the policy, in seconds (https://w3c.github.io/network-error-logging/#max_age-member): 0 removes the policy.</summary>
+    /// <summary>The maximum lifetime of a policy, in seconds: 10 years. A larger <c>max_age</c> is clamped to it.</summary>
+    public const long MaxMaxAge = 10L * 365 * 24 * 60 * 60;
+
+    /// <summary>The lifetime of the policy, in seconds (https://w3c.github.io/network-error-logging/#max_age-member), at most <see cref="MaxMaxAge"/>: 0 removes the policy.</summary>
     public required long MaxAge { get; init; }
 
     /// <summary>Whether the policy applies to the subdomains (https://w3c.github.io/network-error-logging/#include_subdomains-member).</summary>
@@ -159,7 +164,7 @@ internal sealed record NetworkErrorLoggingPolicyHeader
     /// https://w3c.github.io/network-error-logging/#process-policy-headers: parses the value of a <c>NEL</c> header, or returns
     /// null when it is not valid: it is not a JSON object, its <c>max_age</c> is not a non-negative integer, its
     /// <c>report_to</c> is not a string (when <c>max_age</c> is not 0), or a member has another type. The fractions are
-    /// clamped to [0, 1], and the header names are lowercased.
+    /// clamped to [0, 1], <c>max_age</c> to <see cref="MaxMaxAge"/>, and the header names are lowercased.
     /// </summary>
     public static NetworkErrorLoggingPolicyHeader? Parse(string value)
     {
@@ -216,7 +221,7 @@ internal sealed record NetworkErrorLoggingPolicyHeader
             return new NetworkErrorLoggingPolicyHeader
             {
                 ReportTo = reportTo,
-                MaxAge = maxAge,
+                MaxAge = Math.Min(maxAge, MaxMaxAge),
                 IncludeSubdomains = includeSubdomains,
                 SuccessFraction = successFraction,
                 FailureFraction = failureFraction,

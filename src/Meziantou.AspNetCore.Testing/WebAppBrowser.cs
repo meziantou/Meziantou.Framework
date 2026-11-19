@@ -81,6 +81,7 @@ public sealed class WebAppBrowser : IAsyncDisposable, IDisposable
             CookieJar = Cookies,
             ConfigureBrowsingContext = _options.ConfigureBrowsingContext,
             ScriptEngine = _options.EnableJavaScript ? new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { Timeout = _options.DefaultTimeout, TimeProvider = _options.TimeProvider }) : null,
+            WebAssemblyRuntime = _options.WebAssemblyRuntime,
             TimeProvider = _options.TimeProvider,
             DefaultTimeout = _options.DefaultTimeout,
             TestIdAttribute = _options.TestIdAttribute,

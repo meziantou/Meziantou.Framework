@@ -1599,6 +1599,19 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void PasswordCredential_Store_RejectsTheCredentialOfAnotherOrigin()
+    {
+        var backend = new InMemoryCredentialStore();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Assert.Equal("SecurityError", Run(document, "go(navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: 'https://bank.example' })))"));
+        Assert.Equal("SecurityError", Run(document, "go(navigator.credentials.store(new FederatedCredential({ id: 'john', provider: 'https://idp.example', origin: 'https://bank.example' })))"));
+        Assert.Equal(0, backend.StorePrompts);
+        Assert.Equal("null", Run(document, "go(navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin })).then(() => null))"));
+        Assert.Equal(1, backend.StorePrompts);
+    }
+
+    [Fact]
     public void PasswordCredential_PreventSilentAccess_SilentRequestsReturnNull()
     {
         var backend = new InMemoryCredentialStore();
@@ -3273,8 +3286,11 @@ internal sealed class InMemoryCredentialStore : UserAgentUIBackend
 
     public CredentialChooserPrompt? LastPrompt { get; private set; }
 
+    public int StorePrompts { get; private set; }
+
     public override ValueTask<bool> StoreCredentialAsync(CredentialStorePrompt prompt, CancellationToken cancellationToken)
     {
+        StorePrompts++;
         _credentials.Add(prompt.Credential);
         return ValueTask.FromResult(true);
     }

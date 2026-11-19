@@ -396,7 +396,8 @@ public sealed class CredentialsContainer
     /// Stores a credential (https://w3c.github.io/webappsec-credential-management/#algorithm-store): the user is asked whether
     /// to save a password or federated credential (<see cref="UserAgentUIBackend.StoreCredentialAsync"/>), and the task completes
     /// whatever the answer. The task fails with a <c>NotAllowedError</c> <see cref="DomException"/> when the document is in a
-    /// frame that is not same origin with its ancestors, and a <c>NotSupportedError</c> for the other types of credentials
+    /// frame that is not same origin with its ancestors, a <c>SecurityError</c> when the origin of the credential is not the
+    /// origin of the document, and a <c>NotSupportedError</c> for the other types of credentials
     /// (the public key credentials cannot be stored).
     /// </summary>
     /// <seealso href="https://w3c.github.io/webappsec-credential-management/#dom-credentialscontainer-store"/>
@@ -437,6 +438,23 @@ public sealed class CredentialsContainer
             {
                 _activeCredentialTypes.Remove(type);
                 result.TrySetException(DomException.NotAllowed("The credentials cannot be stored in a frame that is not same origin with its ancestors"));
+            });
+            return result.Task;
+        }
+
+        // The origin of a password or federated credential is given by the page: a page cannot store a credential of another site
+        var credentialOrigin = credential switch
+        {
+            PasswordCredential password => password.Origin,
+            FederatedCredential federated => federated.Origin,
+            _ => null,
+        };
+        if (!string.Equals(credentialOrigin, document.Origin.Serialize(), StringComparison.Ordinal))
+        {
+            _window.QueueGlobalTask(() =>
+            {
+                _activeCredentialTypes.Remove(type);
+                result.TrySetException(new DomException("The origin of the credential is not the origin of the document", "SecurityError"));
             });
             return result.Task;
         }

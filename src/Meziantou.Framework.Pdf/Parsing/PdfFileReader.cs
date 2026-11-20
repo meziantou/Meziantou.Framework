@@ -109,7 +109,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             windowLength = _input.Read(offset, window);
             var end = FindEndOfFileToken(window.AsMemory(0, windowLength));
             if (end >= 0)
-                return offset + end;
+                return SkipEndOfLine(offset + end);
 
             if (windowLength >= remaining || windowLength >= MaxWindow || windowLength < window.Length)
                 break;
@@ -137,7 +137,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
                     var end = MatchFileTrailer(span, position + index + keyword.Length);
                     if (end >= 0)
-                        return start + end;
+                        return SkipEndOfLine(start + end);
 
                     position += index + keyword.Length;
                 }
@@ -194,25 +194,30 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         }
     }
 
-    /// <summary>Matches white space, <c>%%EOF</c> and its end of line at a position: the offset after them, or -1.</summary>
+    /// <summary>Matches white space and <c>%%EOF</c> at a position: the offset after them, or -1.</summary>
     private static int MatchEndOfFile(ReadOnlySpan<byte> span, int position)
     {
         position = SkipWhitespace(span, position);
-        if (!span[position..].StartsWith("%%EOF"u8))
-            return -1;
+        return span[position..].StartsWith("%%EOF"u8) ? position + 5 : -1;
+    }
 
-        position += 5;
-        if (position < span.Length && span[position] == (byte)'\r')
+    /// <summary>Gets the offset after the end of line at an offset of the file, read from the file: the end of line can be after the bytes searched.</summary>
+    private long SkipEndOfLine(long offset)
+    {
+        Span<byte> bytes = stackalloc byte[2];
+        var read = _input.Read(offset, bytes[..(int)Math.Clamp(_input.Length - offset, 0, 2)]);
+        var length = 0;
+        if (length < read && bytes[length] == (byte)'\r')
         {
-            position++;
+            length++;
         }
 
-        if (position < span.Length && span[position] == (byte)'\n')
+        if (length < read && bytes[length] == (byte)'\n')
         {
-            position++;
+            length++;
         }
 
-        return position;
+        return offset + length;
     }
 
     private static int SkipWhitespace(ReadOnlySpan<byte> span, int position)

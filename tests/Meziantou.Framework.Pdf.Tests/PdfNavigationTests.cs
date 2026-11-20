@@ -1371,6 +1371,26 @@ public sealed class PdfNavigationTests
         Assert.Null(saved.Outlines[0].Destination);
     }
 
+    [Fact]
+    public void TheEndOfLineAfterTheEndOfFileMarkerIsInTheRevision()
+    {
+        // The %%EOF marker ends at the end of the first bytes searched, and its CRLF is after them
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());
+        var startxref = text.LastIndexOf("startxref", StringComparison.Ordinal);
+        var xref = int.Parse(text[(startxref + "startxref".Length)..].Trim().Split('\n')[0].Trim(), CultureInfo.InvariantCulture);
+        var trailer = text.LastIndexOf("trailer", StringComparison.Ordinal);
+        var dictionary = text[trailer..startxref].Replace("<<", "<< /Pad ()", StringComparison.Ordinal);
+        var ending = "startxref\n" + xref.ToString(CultureInfo.InvariantCulture) + "\n%%EOF";
+        var padding = xref + 4096 - (trailer + dictionary.Length + ending.Length);
+        dictionary = dictionary.Replace("/Pad ()", "/Pad (" + new string('x', padding) + ")", StringComparison.Ordinal);
+        var original = Encoding.Latin1.GetBytes(text[..trailer] + dictionary + ending + "\r\n");
+        var updated = HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Prev {prev} >>");
+
+        var revisions = PdfDocument.Open(updated).Revisions;
+
+        Assert.Equal([original.Length, updated.Length], revisions.Select(revision => revision.Length));
+    }
+
     [Theory]
     [InlineData("/Comment (%%EOF)")]
     [InlineData("/Comment (startxref\n0\n%%EOF\n)")]

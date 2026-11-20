@@ -246,7 +246,7 @@
     "crashtest": "PASS"
   },
   "editing/crashtests/insertimage-with-replacing-selection-in-picture-element.html": {
-    "crashtest": "TIMEOUT"
+    "crashtest": "PASS"
   },
   "editing/crashtests/insertlinebreak-around-comment-node.html": {
     "crashtest": "PASS"

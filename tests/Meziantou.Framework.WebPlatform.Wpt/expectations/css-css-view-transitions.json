@@ -462,11 +462,7 @@
     "total": 1
   },
   "css/css-view-transitions/navigation/mismatched-snapshot-containing-block-size-skips.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "\n  View transitions: mismatched snapshot containing block size skips transition.\n": "TIMEOUT"
-    }
+    "total": 1
   },
   "css/css-view-transitions/navigation/navigation-auto-excludes-reload.html": {
     "total": 1
@@ -1660,10 +1656,7 @@
     "reftest": "PASS"
   },
   "css/css-view-transitions/window-resize-aborts-transition-before-ready.html": {
-    "total": 1,
-    "failures": {
-      "\nView transitions: Resizing viewport before animating rejects the ready promise.\n": "FAIL"
-    }
+    "total": 1
   },
   "css/css-view-transitions/window-resize-aborts-transition.html": {
     "harness": "TIMEOUT",

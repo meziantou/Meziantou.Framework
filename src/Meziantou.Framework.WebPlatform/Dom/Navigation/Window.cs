@@ -385,7 +385,11 @@ public sealed partial class Window : GlobalScope
 
         // The creation of a popup consumes the user activation: the navigation is initiated with the activation of the call
         var hasTransientActivation = sourceDocument.RelevantWindow?.HasTransientActivation ?? false;
-        sourceNavigable ??= sourceDocument.BrowsingContext;
+
+        // The target (e.g. _self) is chosen from the navigable of this window, which is the opener, as in the browsers: the
+        // entry document (e.g. the page that runs frames[0].open() in a promise job) only resolves the URL and initiates the
+        // navigation
+        sourceNavigable ??= Document.BrowsingContext;
         if (sourceNavigable is null || sourceNavigable.ChooseNavigable(target, noopener, out var windowType) is not { } targetNavigable)
             return null;
 

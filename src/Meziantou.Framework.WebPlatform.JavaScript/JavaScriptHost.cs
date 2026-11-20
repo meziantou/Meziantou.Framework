@@ -54,10 +54,11 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
             return base.CallJobCallback(engine, jobCallback, thisValue, arguments);
 
         // https://html.spec.whatwg.org/multipage/webappapis.html#hostenqueuepromisejob: the job is run with the settings object
-        // of its realm (the realm of the handler, the current realm of the job) as the entry settings object, so that e.g. the
-        // URLs given to window.open() are resolved against its document
+        // of its realm (the function realm of the handler, https://tc39.es/ecma262/#sec-newpromisereactionjob) as the entry
+        // settings object, so that e.g. the URLs given to window.open() are resolved against its document. The current realm
+        // of the agent is not the realm of the job: it is the realm of the code that ran last
         var previousEntryDocument = Document.EntryGlobalDocument;
-        if (owner.Agent.CurrentRealm?.GlobalScope.EnvironmentDocument is { } jobDocument)
+        if (jobCallback.Callback is JsFunction function && owner.Agent.GetRealm(function.Realm)?.GlobalScope.EnvironmentDocument is { } jobDocument)
         {
             Document.EntryGlobalDocument = jobDocument;
         }

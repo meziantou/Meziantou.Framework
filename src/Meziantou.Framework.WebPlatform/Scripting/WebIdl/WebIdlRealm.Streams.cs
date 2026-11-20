@@ -418,8 +418,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
     }
 
-    // The streams of the scripts of the platform streams converted in this realm (the same object for each conversion)
-    private readonly ConditionalWeakTable<object, TValue> _platformStreams = [];
+    // The streams of the scripts of the platform streams converted in this realm (the same object for each conversion). The
+    // values are typed object: a ConditionalWeakTable<object, TValue> requires a TValue with a public parameterless
+    // constructor for the trimming (IL2091), which the values of the engines do not have
+    private readonly ConditionalWeakTable<object, object> _platformStreams = [];
 
     /// <summary>
     /// Returns the stream of the scripts of a <see cref="PlatformReadableStream"/> or a <see cref="PlatformWritableStream"/>
@@ -429,7 +431,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     private TValue GetPlatformStream(object stream)
     {
         if (_platformStreams.TryGetValue(stream, out var existing))
-            return existing;
+            return (TValue)existing;
 
         return Adapter.RunInRealm(EngineRealm, () =>
         {

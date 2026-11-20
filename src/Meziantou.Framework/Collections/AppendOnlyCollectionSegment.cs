@@ -8,7 +8,7 @@ internal sealed class AppendOnlyCollectionSegment<T>
     public AppendOnlyCollectionSegment(int capacity, int startIndex)
     {
         // Only the first Count items are ever read, and they are written before Count is incremented.
-        Items = unsafe(GC.AllocateUninitializedArray<T>(capacity));
+        Items = new T[capacity];
         StartIndex = startIndex;
     }
 

@@ -104,11 +104,12 @@ public partial class Assert
             return comparer.Equals(expected, actual);
 
         // object.Equals boxes both operands. When both have the same static type, EqualityComparer<T>.Default gives
-        // the same answer without allocating, and the JIT devirtualizes it for value types.
+        // the same answer without allocating, and the JIT devirtualizes it for value types. The types are the same, so the
+        // JIT removes the box and the unbox of the cast for value types.
         var sameType = typeof(TExpected) == typeof(TActual);
         if (sameType)
         {
-            if (EqualityComparer<TExpected>.Default.Equals(expected, unsafe(Unsafe.As<TActual, TExpected>(ref actual))))
+            if (EqualityComparer<TExpected>.Default.Equals(expected, (TExpected)(object?)actual!))
                 return true;
 
             if (typeof(TExpected).IsValueType)

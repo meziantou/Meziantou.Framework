@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Toml.Helpers;
 using Meziantou.Framework.Toml.Model;
@@ -1852,8 +1851,7 @@ internal sealed class Lexer
         isInvalidSurrogate = false;
         var span = _text.Span;
         Debug.Assert((uint)position < (uint)_textLength && _textLength <= span.Length);
-        ref var start = ref unsafe(MemoryMarshal.GetReference(span));
-        var c1 = unsafe(Unsafe.Add(ref start, position));
+        var c1 = span[position];
         position++;
 
         // Fast surrogate checks (avoid char.IsHighSurrogate/IsLowSurrogate)
@@ -1862,7 +1860,7 @@ internal sealed class Lexer
             if ((uint)position < (uint)_textLength)
             {
                 // The next code unit is only part of this character when it completes the pair
-                var c2 = unsafe(Unsafe.Add(ref start, position));
+                var c2 = span[position];
                 if (((uint)c2 & 0xFC00u) == 0xDC00u)
                 {
                     position++;

@@ -253,33 +253,23 @@ public static class Argon2
             r.CopyTo(z);
         }
 
-        // Unsafe.Add avoids the bounds checks of the 128 words of the block: this one check covers them all
-        _ = r[QWordsInBlock - 1];
-        unsafe
+        // The slices have a constant length, so the JIT removes the bounds checks of the constant indices: one check per slice.
+        // The rows: (Q_0, ..., Q_7) <- P(R_0, ..., R_7), each R_i being 16 consecutive 64-bit words
+        for (var i = 0; i < 8; i++)
         {
-            ref var v = ref MemoryMarshal.GetReference(r);
+            var row = r.Slice(i * 16, 16);
+            Permute(
+                ref row[0], ref row[1], ref row[2], ref row[3], ref row[4], ref row[5], ref row[6], ref row[7],
+                ref row[8], ref row[9], ref row[10], ref row[11], ref row[12], ref row[13], ref row[14], ref row[15]);
+        }
 
-            // The rows: (Q_0, ..., Q_7) <- P(R_0, ..., R_7), each R_i being 16 consecutive 64-bit words
-            for (var i = 0; i < 8; i++)
-            {
-                var o = i * 16;
-                Permute(
-                    ref Unsafe.Add(ref v, o), ref Unsafe.Add(ref v, o + 1), ref Unsafe.Add(ref v, o + 2), ref Unsafe.Add(ref v, o + 3),
-                    ref Unsafe.Add(ref v, o + 4), ref Unsafe.Add(ref v, o + 5), ref Unsafe.Add(ref v, o + 6), ref Unsafe.Add(ref v, o + 7),
-                    ref Unsafe.Add(ref v, o + 8), ref Unsafe.Add(ref v, o + 9), ref Unsafe.Add(ref v, o + 10), ref Unsafe.Add(ref v, o + 11),
-                    ref Unsafe.Add(ref v, o + 12), ref Unsafe.Add(ref v, o + 13), ref Unsafe.Add(ref v, o + 14), ref Unsafe.Add(ref v, o + 15));
-            }
-
-            // The columns: (Z_i, Z_(8+i), ..., Z_(56+i)) <- P(Q_i, Q_(8+i), ..., Q_(56+i)), each Z_j being 2 consecutive 64-bit words
-            for (var i = 0; i < 8; i++)
-            {
-                var o = i * 2;
-                Permute(
-                    ref Unsafe.Add(ref v, o), ref Unsafe.Add(ref v, o + 1), ref Unsafe.Add(ref v, o + 16), ref Unsafe.Add(ref v, o + 17),
-                    ref Unsafe.Add(ref v, o + 32), ref Unsafe.Add(ref v, o + 33), ref Unsafe.Add(ref v, o + 48), ref Unsafe.Add(ref v, o + 49),
-                    ref Unsafe.Add(ref v, o + 64), ref Unsafe.Add(ref v, o + 65), ref Unsafe.Add(ref v, o + 80), ref Unsafe.Add(ref v, o + 81),
-                    ref Unsafe.Add(ref v, o + 96), ref Unsafe.Add(ref v, o + 97), ref Unsafe.Add(ref v, o + 112), ref Unsafe.Add(ref v, o + 113));
-            }
+        // The columns: (Z_i, Z_(8+i), ..., Z_(56+i)) <- P(Q_i, Q_(8+i), ..., Q_(56+i)), each Z_j being 2 consecutive 64-bit words
+        for (var i = 0; i < 8; i++)
+        {
+            var column = r.Slice(i * 2, 114);
+            Permute(
+                ref column[0], ref column[1], ref column[16], ref column[17], ref column[32], ref column[33], ref column[48], ref column[49],
+                ref column[64], ref column[65], ref column[80], ref column[81], ref column[96], ref column[97], ref column[112], ref column[113]);
         }
 
         Xor(z, r, next);

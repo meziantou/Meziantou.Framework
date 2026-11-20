@@ -217,13 +217,17 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
                 {
                     destination.WriteTo(dictionary);
                 }
+                else if (item.Action is { } itemAction)
+                {
+                    PdfAction.CheckDocument(itemAction, document, nameof(item));
+                    dictionary.Remove(PdfNames.Dest);
+                    dictionary[PdfNames.A] = itemAction.Dictionary;
+                }
                 else
                 {
+                    // No destination and no action: the item does nothing
                     dictionary.Remove(PdfNames.Dest);
-                    if (dictionary.Get<PdfDictionary>(PdfNames.A) is { } action && action.GetName(PdfNames.S) == PdfNames.GoTo)
-                    {
-                        dictionary.Remove(PdfNames.A);
-                    }
+                    dictionary.Remove(PdfNames.A);
                 }
             }
 
@@ -282,7 +286,8 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
             }
 
             var flags = dictionary.GetInteger(PdfNames.F, 0);
-            var item = new PdfOutlineItem(title, destination, isOpen: dictionary.GetInteger(PdfNames.Count, 0) > 0, color, isBold: (flags & 2) != 0, isItalic: (flags & 1) != 0, dictionary, current);
+            var action = destination is null && dictionary.Get<PdfDictionary>(PdfNames.A) is { } actionDictionary && actionDictionary.GetName(PdfNames.S) != PdfNames.GoTo ? PdfAction.Read(document, actionDictionary) : null;
+            var item = new PdfOutlineItem(title, destination, action, isOpen: dictionary.GetInteger(PdfNames.Count, 0) > 0, color, isBold: (flags & 2) != 0, isItalic: (flags & 1) != 0, dictionary, current);
             item.Children.LoadChildren(document, dictionary, visited, ref count, depth + 1);
             item.Collection = this;
             _items.Add(item);

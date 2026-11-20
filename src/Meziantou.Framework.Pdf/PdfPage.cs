@@ -7,6 +7,11 @@ namespace Meziantou.Framework.Pdf;
 /// <summary>A page of a document (ISO 32000-2, 7.7.3.3). The members read and write the page dictionary; the inheritable entries are looked up in the page tree.</summary>
 public sealed partial class PdfPage
 {
+    private PdfAdditionalActions? _additionalActions;
+
+    /// <summary>Gets the additional actions of the page (<c>/AA</c>, ISO 32000-2, 12.6.3): the actions run when the page is opened and closed.</summary>
+    public PdfAdditionalActions AdditionalActions => _additionalActions ??= new PdfAdditionalActions(Document, Dictionary, PdfAdditionalActions.PageTriggers);
+
     private const int MaxInheritanceDepth = 64;
     private static readonly PdfRectangle DefaultMediaBox = new(0, 0, 612, 792);
 

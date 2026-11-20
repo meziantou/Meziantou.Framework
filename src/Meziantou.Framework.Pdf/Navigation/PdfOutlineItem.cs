@@ -7,6 +7,7 @@ public sealed class PdfOutlineItem
 {
     private string _title;
     private PdfDestination? _destination;
+    private PdfAction? _action;
     private bool _isOpen;
     private PdfColor? _color;
     private bool _isBold;
@@ -24,10 +25,11 @@ public sealed class PdfOutlineItem
         Changes = OutlineItemChanges.All;
     }
 
-    internal PdfOutlineItem(string title, PdfDestination? destination, bool isOpen, PdfColor? color, bool isBold, bool isItalic, PdfDictionary dictionary, PdfReference reference)
+    internal PdfOutlineItem(string title, PdfDestination? destination, PdfAction? action, bool isOpen, PdfColor? color, bool isBold, bool isItalic, PdfDictionary dictionary, PdfReference reference)
     {
         _title = title;
         _destination = destination;
+        _action = action;
         _isOpen = isOpen;
         _color = color;
         _isBold = isBold;
@@ -49,13 +51,38 @@ public sealed class PdfOutlineItem
         }
     }
 
-    /// <summary>Gets or sets the destination, or <see langword="null"/> when the item has none or has an action of another kind.</summary>
+    /// <summary>Gets or sets the destination, or <see langword="null"/> when the item has none or has an action of another kind. Setting a destination removes the <see cref="Action"/>.</summary>
     public PdfDestination? Destination
     {
         get => _destination;
         set
         {
             _destination = value;
+            if (value is not null)
+            {
+                _action = null;
+            }
+
+            Changes |= OutlineItemChanges.Destination;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the action of the item (<c>/A</c>, ISO 32000-2, 12.6) when it is not a destination, such as opening a
+    /// URI or running a named action; <see langword="null"/> when the item has a <see cref="Destination"/> or nothing.
+    /// Setting an action removes the destination. The action is written when the document is saved.
+    /// </summary>
+    public PdfAction? Action
+    {
+        get => _action;
+        set
+        {
+            _action = value;
+            if (value is not null)
+            {
+                _destination = null;
+            }
+
             Changes |= OutlineItemChanges.Destination;
         }
     }

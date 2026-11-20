@@ -67,6 +67,8 @@ public static class PdfFuzzTargets
         new("pdf-round-trip", RoundTrip) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
+        new("pdf-annotation-model", AnnotationModel) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-document-views", DocumentViews) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -239,6 +241,303 @@ public static class PdfFuzzTargets
 
         FuzzAssert.True(sanitized.Output.Span.StartsWith(bytes), "The sanitizer did not keep the bytes of the file");
         FuzzAssert.False(PdfSaveSanitizer.Sanitize(sanitized.Output, ReadOptions).HasChanges, "The output of the sanitizer still needs repairs");
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The typed views of its annotations read within their bounds (the opacity, the border, the
+    /// rotation of the widgets); their appearances are drawn; flattening every annotation leaves only the pop-ups of the
+    /// annotations of other pages and the widgets of signed signatures, the redactions are applied, and the document
+    /// reads back.
+    /// </summary>
+    private static void AnnotationModel(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+            if (document.Pages.Count == 0)
+                return;
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var page in document.Pages.Take(4))
+            {
+                foreach (var annotation in page.Annotations.Take(64))
+                {
+                    ReadAnnotation(annotation);
+                    _ = annotation.UpdateAppearance();
+                }
+            }
+
+            foreach (var page in document.Pages.Take(4))
+            {
+                page.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = annotation => annotation is not PdfRedactAnnotation });
+                foreach (var annotation in page.Annotations)
+                {
+                    FuzzAssert.True(annotation is PdfPopupAnnotation or PdfWidgetAnnotation or PdfRedactAnnotation, $"A {annotation.Subtype} annotation was not flattened");
+                }
+            }
+
+            document.ApplyRedactions();
+            FuzzAssert.False(document.Pages.Take(4).Any(page => page.Annotations.OfType<PdfRedactAnnotation>().Any()), "A redaction annotation was not applied");
+            var read = PdfDocument.Open(document.ToByteArray());
+            FuzzAssert.Equal(document.Pages.Count, read.Pages.Count, "The pages of the flattened document did not read back");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The typed views of the document read within their bounds: the actions and their
+    /// <c>/Next</c> chains, the additional actions, the optional content, the viewer preferences, the portfolio and its
+    /// folders, and the revisions, which are prefixes of the file in increasing order that open as documents.
+    /// </summary>
+    private static void DocumentViews(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        try
+        {
+            ReadAction(document.OpenAction, depth: 0);
+            foreach (var trigger in document.AdditionalActions.Triggers)
+            {
+                ReadAction(document.AdditionalActions[trigger], depth: 0);
+            }
+
+            foreach (var page in document.Pages.Take(4))
+            {
+                foreach (var trigger in page.AdditionalActions.Triggers)
+                {
+                    ReadAction(page.AdditionalActions[trigger], depth: 0);
+                }
+
+                foreach (var annotation in page.Annotations.Take(64))
+                {
+                    _ = annotation.OptionalContent;
+                    ReadAction((annotation as PdfLinkAnnotation)?.Action ?? (annotation as PdfWidgetAnnotation)?.Action, depth: 0);
+                    foreach (var trigger in annotation.AdditionalActions.Triggers)
+                    {
+                        ReadAction(annotation.AdditionalActions[trigger], depth: 0);
+                    }
+                }
+            }
+
+            foreach (var item in document.Outlines.Take(64))
+            {
+                ReadAction(item.Action, depth: 0);
+            }
+
+            var content = document.OptionalContent;
+            foreach (var group in content.Groups.Take(64))
+            {
+                _ = (group.Name, group.Intents, group.IsVisible);
+            }
+
+            if (content.DefaultConfiguration is { } configuration)
+            {
+                _ = (configuration.BaseState, configuration.LockedGroups, configuration.RadioButtonGroups, configuration.Name);
+            }
+
+            FuzzAssert.True(content.Configurations.Count <= 4096, "Too many optional content configurations");
+            var preferences = document.ViewerPreferences;
+            _ = (preferences.HideToolbar, preferences.DisplayDocumentTitle, preferences.NonFullScreenPageMode, preferences.Direction, preferences.Duplex, preferences.PickTrayByPdfSize, preferences.EnforcedPreferences);
+            FuzzAssert.True(preferences.PrintPageRanges.All(range => range.First >= 0 && range.Last >= range.First), "A print page range is not in order");
+            FuzzAssert.True(preferences.NumberOfCopies is null or (>= 1 and <= 5), "The number of copies is out of range");
+            _ = (document.PageLayout, document.PageMode);
+
+            if (document.Portfolio is { } portfolio)
+            {
+                _ = (portfolio.View, portfolio.InitialFile, portfolio.SortFields, portfolio.SortAscending);
+                foreach (var field in portfolio.Fields)
+                {
+                    _ = (field.Name, field.Type, field.Order, field.IsVisible, field.IsEditable);
+                }
+
+                var pending = new Stack<(PdfPortfolioFolder Folder, int Depth)>();
+                if (portfolio.RootFolder is { } root)
+                {
+                    pending.Push((root, 0));
+                }
+
+                var count = 0;
+                while (pending.Count > 0 && count++ < 10_000)
+                {
+                    var (folder, depth) = pending.Pop();
+                    FuzzAssert.True(depth <= 32, "The folders of a portfolio are nested too deeply");
+                    _ = (folder.Name, folder.Id);
+                    foreach (var child in folder.Children.Take(16))
+                    {
+                        pending.Push((child, depth + 1));
+                    }
+                }
+            }
+
+            var revisions = document.Revisions;
+            for (var i = 0; i < revisions.Count; i++)
+            {
+                FuzzAssert.True(revisions[i].Length > 0 && revisions[i].Length <= data.Length, "A revision is not a prefix of the file");
+                FuzzAssert.True(i == 0 || revisions[i].Length > revisions[i - 1].Length, "The revisions are not in increasing order");
+                FuzzAssert.Equal(i == revisions.Count - 1, revisions[i].IsLatest, "Only the last revision is the latest");
+            }
+
+            foreach (var revision in revisions.Take(3))
+            {
+                try
+                {
+                    _ = revision.Open().Pages.Count;
+                }
+                catch (PdfException)
+                {
+                }
+            }
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    private static void ReadAction(PdfAction? action, int depth)
+    {
+        if (action is null || depth > 4)
+            return;
+
+        _ = action.Kind;
+        switch (action)
+        {
+            case PdfGoToAction goTo:
+                _ = goTo.Destination;
+                break;
+            case PdfGoToRemoteAction remote:
+                _ = (remote.FileName, remote.PageIndex, remote.DestinationName, remote.NewWindow);
+                break;
+            case PdfGoToEmbeddedAction embedded:
+                _ = (embedded.FileName, embedded.TargetFileName);
+                break;
+            case PdfLaunchAction launch:
+                _ = launch.FileName;
+                break;
+            case PdfUriAction uri:
+                _ = (uri.Uri, uri.IsMap);
+                break;
+            case PdfNamedAction named:
+                _ = named.Name;
+                break;
+            case PdfSubmitFormAction submit:
+                _ = (submit.Url, submit.FieldNames, submit.Flags);
+                break;
+            case PdfResetFormAction reset:
+                _ = (reset.FieldNames, reset.Exclude);
+                break;
+            case PdfImportDataAction import:
+                _ = import.FileName;
+                break;
+            case PdfHideAction hide:
+                _ = (hide.FieldNames, hide.Hides);
+                break;
+            case PdfSetOptionalContentStateAction state:
+                _ = (state.Changes, state.PreserveRadioButtons);
+                break;
+            case PdfJavaScriptAction script:
+                _ = script.Script;
+                break;
+        }
+
+        var next = action.Next;
+        FuzzAssert.True(next.Count <= 256, "Too many actions after an action");
+        foreach (var item in next.Take(4))
+        {
+            ReadAction(item, depth + 1);
+        }
+    }
+
+    private static void ReadAnnotation(PdfAnnotation annotation)
+    {
+        _ = annotation.Rectangle;
+        _ = annotation.Contents;
+        _ = annotation.UniqueName;
+        _ = annotation.ModificationDate;
+        _ = annotation.Color;
+        _ = annotation.HasAppearance;
+        var border = annotation.Border;
+        FuzzAssert.True(border.Width >= 0 && double.IsFinite(border.Width), "The width of a border is not a positive number");
+        FuzzAssert.True(border.CloudyIntensity is >= 0 and <= 2, "The intensity of a cloudy border is out of range");
+        FuzzAssert.True(border.DashPattern.Count is > 0 and <= 16 && border.DashPattern.All(length => length >= 0), "The dashes of a border are out of range");
+        _ = border.BorderStyle;
+        if (annotation is PdfMarkupAnnotation markup)
+        {
+            FuzzAssert.True(markup.Opacity is >= 0 and <= 1, "The opacity of an annotation is out of range");
+            _ = markup.Popup;
+            _ = markup.InReplyTo;
+            _ = markup.ReplyType;
+            _ = markup.RichContents;
+            _ = markup.GetReplies();
+        }
+
+        switch (annotation)
+        {
+            case PdfTextAnnotation text:
+                _ = (text.Icon, text.IsOpen, text.State, text.StateModel);
+                break;
+            case PdfFreeTextAnnotation freeText:
+                _ = (freeText.DefaultAppearance, freeText.Alignment, freeText.CalloutLineEnding, freeText.Intent);
+                FuzzAssert.True(freeText.CalloutLine.Count is 0 or 2 or 3, "A callout line does not have 2 or 3 points");
+                break;
+            case PdfLineAnnotation line:
+                _ = (line.Start, line.End, line.StartEnding, line.EndEnding, line.InteriorColor, line.LeaderLineLength, line.LeaderLineExtension, line.ShowCaption);
+                break;
+            case PdfSquareAnnotation square:
+                _ = square.InteriorColor;
+                break;
+            case PdfCircleAnnotation circle:
+                _ = circle.InteriorColor;
+                break;
+            case PdfPolygonAnnotation polygon:
+                FuzzAssert.True(polygon.Vertices.Count <= 65536, "Too many vertices");
+                _ = polygon.InteriorColor;
+                break;
+            case PdfPolyLineAnnotation polyline:
+                FuzzAssert.True(polyline.Vertices.Count <= 65536, "Too many vertices");
+                _ = (polyline.StartEnding, polyline.EndEnding, polyline.InteriorColor);
+                break;
+            case PdfInkAnnotation ink:
+                FuzzAssert.True(ink.Strokes.Sum(stroke => stroke.Count) <= 65536, "Too many points in the strokes");
+                break;
+            case PdfTextMarkupAnnotation textMarkup:
+                _ = (textMarkup.Kind, textMarkup.Regions);
+                break;
+            case PdfStampAnnotation stamp:
+                FuzzAssert.False(string.IsNullOrEmpty(stamp.Icon), "A stamp has no name");
+                break;
+            case PdfCaretAnnotation caret:
+                _ = caret.ShowsParagraphSymbol;
+                break;
+            case PdfRedactAnnotation redact:
+                FuzzAssert.True(redact.Regions.Count > 0, "A redaction has no region");
+                _ = (redact.InteriorColor, redact.OverlayText, redact.RepeatOverlayText);
+                break;
+            case PdfPopupAnnotation popup:
+                _ = (popup.Parent, popup.IsOpen);
+                break;
+            case PdfWidgetAnnotation widget:
+                var characteristics = widget.AppearanceCharacteristics;
+                FuzzAssert.True(characteristics.Rotation is 0 or 90 or 180 or 270, "The rotation of a widget is not a multiple of 90");
+                _ = (widget.AppearanceState, widget.HighlightMode, characteristics.BorderColor, characteristics.BackgroundColor, characteristics.NormalCaption, characteristics.RolloverCaption, characteristics.DownCaption);
+                break;
+        }
     }
 
     /// <summary>

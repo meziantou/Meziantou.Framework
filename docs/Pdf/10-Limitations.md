@@ -29,6 +29,10 @@ description: What the library does not do, so that you can plan around it.
   from the blank spaces of the page: it reads them from left to right, and keeps the order of the content for the text
   written vertically.
 - The library reports the permissions of an encrypted document, but does not enforce them.
+- The folders of a portfolio are read, not created, and the files are not associated with their folder. The actions
+  without a class of their own (threads, sounds, movies, renditions, transitions, 3D views, rich media) are read as
+  dictionaries. The library does not run the actions, except the scripts of the form fields
+  ([Form scripts](05-ReadingAndModifying/10-FormScripts.md)).
 - A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
   file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
 - A file larger than 2 GB is written by [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save), [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync), [SaveIncremental](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncremental) and
@@ -74,6 +78,9 @@ description: What the library does not do, so that you can plan around it.
 - The halftones are ignored unless the options ask for them. They are then applied to the red, green and blue
   components of the image, to fully opaque objects only; the screens of the other colorants, `AccurateScreens` and the
   named device halftones are not used (see [Halftones](06-Rendering/05-Halftones.md)).
+- [FlattenAnnotations](cref:Meziantou.Framework.Pdf.PdfDocument.FlattenAnnotations) draws the appearances in the rectangles of the annotations: the `NoZoom` and
+  `NoRotate` flags are not applied. The appearances [UpdateAppearance](cref:Meziantou.Framework.Pdf.PdfAnnotation.UpdateAppearance) draws for the free texts use the standard 14
+  fonts, and draw the borders of the shapes without their cloudy effect.
 - The appearances generated for the annotations that have none are simple: their text is not wrapped, a rich text value
   is drawn with the standard 14 fonts, and the alignment of a text is estimated without the metrics of its font (see
   [Layers and annotations](06-Rendering/04-LayersAndAnnotations.md)).

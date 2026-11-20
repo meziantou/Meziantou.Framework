@@ -195,7 +195,7 @@ public sealed partial class PdfInteractiveForm
                 continue;
             }
 
-            if (field is PdfTextField or PdfChoiceField && (needAppearances || field.GetWidgetDictionaries().Any(widget => GetNormalAppearance(widget.Dictionary) is null)))
+            if (field is PdfTextField or PdfChoiceField && (needAppearances || field.GetWidgetDictionaries().Any(widget => AppearanceDrawer.GetNormalAppearance(widget.Dictionary) is null)))
             {
                 PdfFieldAppearance.Update(field);
             }
@@ -206,7 +206,7 @@ public sealed partial class PdfInteractiveForm
                     continue;
 
                 var flags = (PdfAnnotationFlags)unchecked((int)widget.GetInteger(PdfNames.F, 0));
-                if (!flags.HasFlag(PdfAnnotationFlags.Hidden) && GetNormalAppearance(widget) is { } appearance)
+                if (!flags.HasFlag(PdfAnnotationFlags.Hidden) && AppearanceDrawer.GetNormalAppearance(widget) is { } appearance)
                 {
                     if (!builders.TryGetValue(page, out var builder))
                     {
@@ -214,7 +214,7 @@ public sealed partial class PdfInteractiveForm
                         builders[page] = builder;
                     }
 
-                    Draw(builder, widget, appearance);
+                    AppearanceDrawer.Draw(Document, builder, widget, appearance);
                 }
 
                 RemoveAnnotation(page, widget, reference);
@@ -336,48 +336,6 @@ public sealed partial class PdfInteractiveForm
                 }
             }
         }
-    }
-
-    /// <summary>Gets the normal appearance of a widget: its stream, or the stream of its appearance state (12.5.5).</summary>
-    private static PdfObject? GetNormalAppearance(PdfDictionary widget)
-    {
-        var normal = widget.Get<PdfDictionary>(PdfFormField.APName)?[PdfNames.N];
-        switch (normal is null ? null : PdfReference.ResolveIfReference(normal))
-        {
-            case PdfStream:
-                return normal;
-            case PdfDictionary states when widget.GetName(PdfFormField.ASName) is { } state && states.GetResolved(state) is PdfStream:
-                return states[state];
-            default:
-                return null;
-        }
-    }
-
-    /// <summary>Paints an appearance stream as a form XObject in the rectangle of its annotation (12.5.5, the algorithm of the appearance streams).</summary>
-    private void Draw(PdfContentBuilder builder, PdfDictionary widget, PdfObject appearance)
-    {
-        var stream = (PdfStream)PdfReference.ResolveIfReference(appearance);
-        if (!PdfRectangle.TryRead(widget.Get<PdfArray>(PdfNames.Rect), out var rectangle) || !PdfRectangle.TryRead(stream.Dictionary.Get<PdfArray>(PdfNames.BBox), out var bbox))
-            return;
-
-        var matrix = stream.Dictionary.Get<PdfArray>(PdfNames.Matrix) is { Count: 6 } values
-            ? new PdfMatrix(values.GetNumber(0), values.GetNumber(1), values.GetNumber(2), values.GetNumber(3), values.GetNumber(4), values.GetNumber(5))
-            : PdfMatrix.Identity;
-        var corners = new[] { matrix.Transform(bbox.Left, bbox.Bottom), matrix.Transform(bbox.Right, bbox.Bottom), matrix.Transform(bbox.Right, bbox.Top), matrix.Transform(bbox.Left, bbox.Top) };
-        var left = corners.Min(point => point.X);
-        var right = corners.Max(point => point.X);
-        var bottom = corners.Min(point => point.Y);
-        var top = corners.Max(point => point.Y);
-        if (right - left <= 0 || top - bottom <= 0)
-            return;
-
-        // The form XObject applies its own matrix: the transformation maps its transformed bounding box to the rectangle
-        var transform = PdfMatrix.CreateTranslation(-left, -bottom) * PdfMatrix.CreateScale(rectangle.Width / (right - left), rectangle.Height / (top - bottom)) * PdfMatrix.CreateTranslation(rectangle.Left, rectangle.Bottom);
-        var reference = appearance as PdfReference ?? Document.Objects.Add(stream);
-        stream.Dictionary[PdfNames.Type] = PdfNames.XObject;
-        stream.Dictionary[PdfNames.Subtype] = PdfNames.Form;
-        var name = builder.AddResource(PdfNames.XObject, "Fm", reference);
-        builder.SaveGraphicsState().Transform(transform).PaintXObject(name).RestoreGraphicsState();
     }
 
     private static void RemoveAnnotation(PdfPage page, PdfDictionary widget, PdfReference? reference)

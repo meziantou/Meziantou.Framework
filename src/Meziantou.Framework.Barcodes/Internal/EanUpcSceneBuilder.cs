@@ -101,7 +101,8 @@ internal static class EanUpcSceneBuilder
             {
                 EanUpcTextPosition.Left => Math.Max(0, Snap(left - gap - metrics[i].Width, snap, Math.Floor)),
                 EanUpcTextPosition.Right => left + (layout.SymbolEnd * moduleWidth) + gap,
-                _ => Snap(left + (group.Range.Start * moduleWidth) + (((group.Range.Length * moduleWidth) - metrics[i].Width) / 2), snap, Math.Floor),
+                // The digits shrunk to the width of their range can be wider by a rounding error: they start at the range
+                _ => Snap(left + (group.Range.Start * moduleWidth) + Math.Max(0, ((group.Range.Length * moduleWidth) - metrics[i].Width) / 2), snap, Math.Floor),
             };
 
             // The small digits stand on the baseline of the others

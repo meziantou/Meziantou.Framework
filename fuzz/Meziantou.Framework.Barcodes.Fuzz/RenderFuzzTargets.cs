@@ -212,7 +212,8 @@ internal static class RenderFuzzTargets
         var symbolHeight = (rows + (2.0 * verticalQuietZone)) * effectiveModuleHeight;
         if (hasText)
         {
-            FuzzAssert.True(scene.Width >= symbolWidth && scene.Height > symbolHeight, $"The scene ({scene.Width}x{scene.Height}) is smaller than the symbol and its text ({symbolWidth}x{symbolHeight})");
+            // The scene adds up the quiet zones and the bars: the sum can differ from the product by a rounding error
+            FuzzAssert.True(scene.Width >= symbolWidth * (1 - 1e-12) && scene.Height > symbolHeight,$"The scene ({scene.Width}x{scene.Height}) is smaller than the symbol and its text ({symbolWidth}x{symbolHeight})");
 
             // The text is one line, as it is measured, except the groups of digits of EAN and UPC: its control characters are
             // drawn as '?'
@@ -315,6 +316,15 @@ internal static class RenderFuzzTargets
         }
     }
 
+    // Small logos: a header that declares a large image fails at the limits instead of allocating hundreds of megabytes
+    private static readonly ImageDecodeOptions LogoDecodeOptions = new()
+    {
+        Configuration = new ImageConfiguration
+        {
+            Limits = new ImageResourceLimits { MaxEncodedBytes = 4 * 1024 * 1024, MaxFramePixels = 1 << 22, MaxLiveAllocationBytes = 256 * 1024 * 1024 },
+        },
+    };
+
     /// <summary>
     /// The size a logo covers in its square comes from the header of the image: when the reader gives one, the decoder of
     /// Imaging, which the image renderer uses, decodes the image at that size, or rejects the data.
@@ -328,10 +338,11 @@ internal static class RenderFuzzTargets
         Image image;
         try
         {
-            image = Image.Load(data);
+            image = Image.Load(data, LogoDecodeOptions);
         }
         catch (ImageException)
         {
+            // Also ImageResourceLimitException: a header that declares a large image
             return;
         }
 

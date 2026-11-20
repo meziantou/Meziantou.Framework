@@ -964,6 +964,9 @@ public sealed class ImageRendererTests
             data.Add("12345", QRCodeType.MicroQR, moduleSize);
             data.Add("MICRO QR", QRCodeType.MicroQR, moduleSize);
             data.Add("hello micro", QRCodeType.MicroQR, moduleSize);
+
+            // An M4 symbol whose top-left 13x13 modules also decode as an M2 symbol
+            data.Add("\0\0\0\0\0\u0001\0\u0010\0\0\0\0\0", QRCodeType.MicroQR, moduleSize);
             data.Add("HELLO", QRCodeType.RMQR, moduleSize);
             data.Add("https://www.meziantou.net", QRCodeType.RMQR, moduleSize);
         }

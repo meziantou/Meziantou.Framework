@@ -335,7 +335,8 @@ internal static class QRSegmentFuzzTargets
         else if (kind is 1)
         {
             var bytes = expected.Select(unit => unit.Value).ToArray();
-            var expectedText = useEci || !System.Text.Unicode.Utf8.IsValid(bytes) ? Encoding.Latin1.GetString(bytes) : Encoding.UTF8.GetString(bytes);
+            // Without ECI designator, the decoder guesses the character set: UTF-8, Shift JIS (bytes 0x80 to 0x9F, katakana) or ISO/IEC 8859-1
+            var expectedText = useEci ? Encoding.Latin1.GetString(bytes) : EciCharacterSets.GetString(bytes, assignmentNumber: null);
             FuzzAssert.Equal(expectedText, merged, "The text of the sequence read by QRCodeDecoder");
         }
     }

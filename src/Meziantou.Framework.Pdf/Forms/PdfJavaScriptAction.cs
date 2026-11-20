@@ -3,18 +3,15 @@ using Meziantou.Framework.Pdf.Objects;
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>A JavaScript action (ISO 32000-2, 12.6.4.17): a script a viewer runs.</summary>
-public sealed class PdfJavaScriptAction
+public sealed class PdfJavaScriptAction : PdfAction
 {
-    private static readonly PdfName JSName = PdfName.Create("JS");
+    internal static readonly PdfName JSName = PdfName.Create("JS");
 
     internal PdfJavaScriptAction(PdfDictionary dictionary, string script)
+        : base(dictionary, document: null)
     {
-        Dictionary = dictionary;
         Script = script;
     }
-
-    /// <summary>Gets the dictionary of the action.</summary>
-    public PdfDictionary Dictionary { get; }
 
     /// <summary>Gets the script: the text string or the stream of <c>/JS</c>.</summary>
     public string Script { get; }

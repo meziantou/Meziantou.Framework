@@ -19,6 +19,7 @@ public sealed class PdfEmbeddedFile
     internal static readonly PdfName AFName = PdfName.Create("AF");
     internal static readonly PdfName AFRelationshipName = PdfName.Create("AFRelationship");
     internal static readonly PdfName ParamsName = PdfName.Create("Params");
+    internal static readonly PdfName CIName = PdfName.Create("CI");
 
     private const string DefaultMimeType = "application/octet-stream";
 
@@ -163,4 +164,56 @@ public sealed class PdfEmbeddedFile
     }
 
     private DateTimeOffset? GetDate(PdfName key) => PdfDate.TryParse(Parameters?.GetText(key), out var date) ? date : null;
+
+    /// <summary>Gets the value of a field of the portfolio for this file (<c>/CI</c>, ISO 32000-2, 12.3.5): a <see cref="string"/>, a <see cref="double"/> or a <see cref="DateTimeOffset"/>; <see langword="null"/> when the file has none.</summary>
+    /// <param name="key">The key of the field (<see cref="PdfPortfolioField.Key"/>).</param>
+    /// <returns>The value.</returns>
+    public object? GetPortfolioValue(string key)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        var value = Dictionary.Get<PdfDictionary>(CIName)?.GetResolved(PdfName.Create(key));
+        if (value is PdfDictionary subitem)
+        {
+            value = subitem.GetResolved(PdfNames.D);
+        }
+
+        return value switch
+        {
+            PdfNumber number => number.DoubleValue,
+            PdfString text when Text.PdfDate.TryParse(text.ToText(), out var date) && text.ToText().StartsWith("D:", StringComparison.Ordinal) => date,
+            PdfString text => text.ToText(),
+            _ => null,
+        };
+    }
+
+    /// <summary>Sets the text of a field of the portfolio for this file (<c>/CI</c>), or removes it.</summary>
+    /// <param name="key">The key of the field.</param>
+    /// <param name="value">The text, or <see langword="null"/> to remove the value.</param>
+    public void SetPortfolioValue(string key, string? value) => SetPortfolioValue(key, value is null ? null : PdfString.FromText(value));
+
+    /// <summary>Sets the number of a field of the portfolio for this file (<c>/CI</c>).</summary>
+    /// <param name="key">The key of the field.</param>
+    /// <param name="value">The number.</param>
+    public void SetPortfolioValue(string key, double value) => SetPortfolioValue(key, PdfObjectFactory.Number(value));
+
+    /// <summary>Sets the date of a field of the portfolio for this file (<c>/CI</c>).</summary>
+    /// <param name="key">The key of the field.</param>
+    /// <param name="value">The date.</param>
+    public void SetPortfolioValue(string key, DateTimeOffset value) => SetPortfolioValue(key, PdfString.FromText(Text.PdfDate.Format(value)));
+
+    private void SetPortfolioValue(string key, PdfObject? value)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(key);
+        var item = Dictionary.Get<PdfDictionary>(CIName);
+        if (item is null)
+        {
+            if (value is null)
+                return;
+
+            item = new PdfDictionary { [PdfNames.Type] = PdfName.Create("CollectionItem") };
+            Dictionary[CIName] = Document.Objects.Add(item);
+        }
+
+        item[PdfName.Create(key)] = value;
+    }
 }

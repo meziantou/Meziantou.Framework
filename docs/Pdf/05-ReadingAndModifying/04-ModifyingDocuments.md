@@ -174,3 +174,24 @@ document.SaveIncremental(output);
 
 To sign a document, use [PdfSigner](cref:Meziantou.Framework.Pdf.Signing.PdfSigner), which appends the signature as an incremental update itself: see
 [Digital signatures](../07-Security/04-DigitalSignatures.md).
+
+## Revisions
+
+A file saved incrementally keeps its previous versions: [Revisions](cref:Meziantou.Framework.Pdf.PdfDocument.Revisions) lists them, the original file then one per
+incremental update. Each revision opens as a document, and lists the changes made after it:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfNavigationTests.cs;region=Pdf_Revisions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var revisions = document.Revisions;
+
+// The document as it was before the incremental updates, and what they changed
+var firstVersion = revisions[0].Open();
+var changes = revisions[0].GetModifications();
+```
+<!-- endref -->
+
+- A revision is a prefix of the file, which ends at an end-of-file marker (`%%EOF`). The first-page section of a
+  linearized file belongs to the revision of the rest of the file.
+- A repaired file is one revision, and a document that was not read from a file has none.
+- [GetModifications](cref:Meziantou.Framework.Pdf.PdfRevision.GetModifications) compares the revision with the document as it is now, the changes not saved yet included, as the
+  verification of the signatures does: see [Digital signatures](../07-Security/04-DigitalSignatures.md).

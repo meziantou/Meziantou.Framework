@@ -29,6 +29,10 @@ description: What the library does not do, so that you can plan around it.
   from the blank spaces of the page: it reads them from left to right, and keeps the order of the content for the text
   written vertically.
 - The library reports the permissions of an encrypted document, but does not enforce them.
+- The folders of a portfolio are read, not created, and the files are not associated with their folder. The actions
+  without a class of their own (threads, sounds, movies, renditions, transitions, 3D views, rich media) are read as
+  dictionaries. The library does not run the actions, except the scripts of the form fields
+  ([Form scripts](05-ReadingAndModifying/10-FormScripts.md)).
 - A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
   file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
 - A file larger than 2 GB is written by [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save), [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync), [SaveIncremental](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncremental) and

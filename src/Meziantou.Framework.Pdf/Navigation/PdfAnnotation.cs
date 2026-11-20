@@ -19,6 +19,7 @@ public class PdfAnnotation
     internal const int MaxPoints = 65536;
 
     private PdfAnnotationBorder? _border;
+    private PdfAdditionalActions? _additionalActions;
 
     private protected PdfAnnotation(PdfPage page, PdfDictionary dictionary, PdfReference? reference)
     {
@@ -88,6 +89,37 @@ public class PdfAnnotation
 
     /// <summary>Gets the border of the annotation (<c>/BS</c>, <c>/Border</c> and <c>/BE</c>, 12.5.4): its width, its style, its dashes and its cloudy effect.</summary>
     public PdfAnnotationBorder Border => _border ??= new PdfAnnotationBorder(Dictionary);
+
+    /// <summary>
+    /// Gets the additional actions of the annotation (<c>/AA</c>, ISO 32000-2, 12.6.3): the actions run when the mouse
+    /// enters or leaves it, when it gets or loses the focus, when its page is opened... A widget also has the actions of
+    /// its field when the field and the widget are the same dictionary (<see cref="PdfActionTrigger.Keystroke"/>,
+    /// <see cref="PdfActionTrigger.Format"/>, <see cref="PdfActionTrigger.Validate"/>, <see cref="PdfActionTrigger.Calculate"/>).
+    /// </summary>
+    public PdfAdditionalActions AdditionalActions => _additionalActions ??= new PdfAdditionalActions(
+        Page.Document,
+        Dictionary,
+        this is PdfWidgetAnnotation ? [.. PdfAdditionalActions.AnnotationTriggers, PdfActionTrigger.Keystroke, PdfActionTrigger.Format, PdfActionTrigger.Validate, PdfActionTrigger.Calculate] : PdfAdditionalActions.AnnotationTriggers);
+
+    /// <summary>
+    /// Gets or sets the optional content group (the layer) the annotation belongs to (<c>/OC</c>, ISO 32000-2, 8.11.3.3):
+    /// the annotation is shown when the group is on. <see langword="null"/> when the annotation has none, or when it
+    /// belongs to an optional content membership dictionary (read <see cref="Dictionary"/>).
+    /// </summary>
+    /// <exception cref="ArgumentException">The group belongs to another document.</exception>
+    public PdfOptionalContentGroup? OptionalContent
+    {
+        get => Dictionary[AnnotationNames.OC] is PdfReference reference && reference.Resolve() is PdfDictionary group && group.GetName(PdfNames.Type)?.Value == "OCG"
+            ? new PdfOptionalContentGroup(Page.Document, group, reference)
+            : null;
+        set
+        {
+            if (value is not null && value.Document != Page.Document)
+                throw new ArgumentException("The group belongs to another document", nameof(value));
+
+            Dictionary[AnnotationNames.OC] = value?.Reference;
+        }
+    }
 
     /// <summary>Gets a value indicating whether the annotation has a normal appearance (<c>/AP /N</c>, 12.5.5), a stream or a dictionary of appearance states.</summary>
     public bool HasAppearance => Dictionary.Get<PdfDictionary>(AnnotationNames.AP)?.GetResolved(PdfNames.N) is PdfStream or PdfDictionary;

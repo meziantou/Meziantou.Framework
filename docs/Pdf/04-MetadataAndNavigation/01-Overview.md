@@ -16,6 +16,10 @@ Besides its pages, a document carries what describes it and what helps readers m
 | Add notes, highlights, shapes, ink, free texts and stamps | `PdfPage.Annotations.AddNote`, `AddTextMarkup`, `AddSquare`, `AddInk`, ... | [Annotations](06-Annotations.md) |
 | Read and change the annotations of a file, reply to them | The annotation classes, such as [PdfLineAnnotation](cref:Meziantou.Framework.Pdf.PdfLineAnnotation) | [Annotations](06-Annotations.md) |
 | Draw the annotations into the content of the pages | [FlattenAnnotations](cref:Meziantou.Framework.Pdf.PdfDocument.FlattenAnnotations) | [Annotations](06-Annotations.md#flatten-the-annotations) |
+| Go to a page, open a URI or run a script on a click or an event | [PdfAction](cref:Meziantou.Framework.Pdf.PdfAction), [OpenAction](cref:Meziantou.Framework.Pdf.PdfDocument.OpenAction), `AdditionalActions` | [Actions](07-Actions.md) |
+| Put content in layers the user can show or hide | [OptionalContent](cref:Meziantou.Framework.Pdf.PdfDocument.OptionalContent) | [Layers](08-Layers.md) |
+| Choose the layout of the pages and the panels viewers show | [PageLayout](cref:Meziantou.Framework.Pdf.PdfDocument.PageLayout), [PageMode](cref:Meziantou.Framework.Pdf.PdfDocument.PageMode), [ViewerPreferences](cref:Meziantou.Framework.Pdf.PdfDocument.ViewerPreferences) | [Viewer preferences](09-ViewerPreferences.md) |
+| Show the embedded files as a list with columns | [CreatePortfolio](cref:Meziantou.Framework.Pdf.PdfDocument.CreatePortfolio) | [Portfolios](10-Portfolios.md) |
 
 The changes are written when the document is saved, by a full or an incremental save: see
 [Modifying documents](../05-ReadingAndModifying/04-ModifyingDocuments.md).
@@ -28,3 +32,8 @@ The changes are written when the document is saved, by a full or an incremental 
 - [Page labels](05-PageLabels.md): the labels viewers show instead of the page numbers.
 - [Annotations](06-Annotations.md): notes, text markups, shapes, ink, free texts and stamps, the annotations of a
   file, replies and pop-ups, flattening, and the flags of the annotations.
+- [Actions](07-Actions.md): what viewers do on a click, when the document or a page is opened, and on other events.
+- [Layers](08-Layers.md): optional content groups and their configurations.
+- [Viewer preferences](09-ViewerPreferences.md): the page layout, the page mode, and the preferences of viewers and
+  their print dialog.
+- [Portfolios](10-Portfolios.md): show the embedded files as a list, with fields, sorted and in folders.

@@ -57,6 +57,9 @@ document.Catalog[PdfName.Create("ViewerPreferences")] = document.Objects.Add(vie
 ```
 <!-- endref -->
 
+The page layout and the viewer preferences of this example also have typed properties:
+[PageLayout](cref:Meziantou.Framework.Pdf.PdfDocument.PageLayout) and [ViewerPreferences](cref:Meziantou.Framework.Pdf.PdfDocument.ViewerPreferences), see [Viewer preferences](../04-MetadataAndNavigation/09-ViewerPreferences.md).
+
 - Set an entry of a dictionary with its indexer, or with [SetName](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.SetName), [SetText](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.SetText) and [SetNumber](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.SetNumber); remove it with [Remove](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.Remove).
 - `PdfDocument.Objects.Add` makes an object indirect and returns its reference, which other objects can point to.
   [Remove](cref:Meziantou.Framework.Pdf.Objects.PdfIndirectObjectCollection.Remove) removes an indirect object: the references to it then point to the null object.

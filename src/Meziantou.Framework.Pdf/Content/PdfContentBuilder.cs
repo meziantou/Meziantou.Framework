@@ -917,6 +917,22 @@ public sealed class PdfContentBuilder
         return Operator("BDC");
     }
 
+    /// <summary>
+    /// Begins the content of an optional content group, a layer (<c>/OC</c> marked content, ISO 32000-2, 8.11.3.2): the
+    /// content until the matching <see cref="EndMarkedContent"/> is shown when the group is on.
+    /// </summary>
+    /// <param name="group">The group, of the document of the builder (<see cref="PdfOptionalContentProperties.AddGroup(string, bool)"/>).</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">The group belongs to another document.</exception>
+    public PdfContentBuilder BeginOptionalContent(PdfOptionalContentGroup group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        if (group.Document != _document)
+            throw new ArgumentException("The group belongs to another document", nameof(group));
+
+        return BeginMarkedContentWithResource("OC", group.Reference);
+    }
+
     /// <summary>Begins a marked-content sequence whose property list is a resource of the <c>/Properties</c> category (<c>BDC</c> with a name, ISO 32000-2, 14.6.2), such as an optional content group.</summary>
     internal PdfContentBuilder BeginMarkedContentWithResource(string tag, PdfObject properties)
     {

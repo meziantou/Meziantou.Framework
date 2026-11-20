@@ -81,6 +81,47 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     /// <summary>Gets the options the file was read with, among them the password of an encrypted file.</summary>
     public PdfReadOptions Options => _options;
 
+    /// <summary>Gets the offsets of the cross-reference sections of the file, from the newest to the oldest (the <c>/Prev</c> chain, 7.5.6).</summary>
+    public List<long> CrossReferenceOffsets { get; } = [];
+
+    /// <summary>Gets the offset after the first end-of-file marker (<c>%%EOF</c>, 7.5.5) at or after an offset, and its end-of-line; the length of the file when there is none.</summary>
+    public long FindEndOfFile(long offset)
+    {
+        var marker = "%%EOF"u8;
+        const int ChunkSize = 64 * 1024;
+        var buffer = ArrayPool<byte>.Shared.Rent(ChunkSize + marker.Length + 2);
+        try
+        {
+            for (var start = Math.Max(offset, 0); start < _input.Length; start += ChunkSize)
+            {
+                var read = _input.Read(start, buffer.AsSpan(0, (int)Math.Min(ChunkSize + marker.Length + 2, _input.Length - start)));
+                var span = buffer.AsSpan(0, read);
+                var index = span.IndexOf(marker);
+                if (index >= 0 && index < ChunkSize)
+                {
+                    var end = index + marker.Length;
+                    if (end < span.Length && span[end] == (byte)'\r')
+                    {
+                        end++;
+                    }
+
+                    if (end < span.Length && span[end] == (byte)'\n')
+                    {
+                        end++;
+                    }
+
+                    return start + end;
+                }
+            }
+
+            return _input.Length;
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
     /// <summary>Gets the security handler of an encrypted file, which decrypts the objects when they are loaded.</summary>
     public SecurityHandler? Security { get; private set; }
 
@@ -220,6 +261,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                     break;
                 }
 
+                CrossReferenceOffsets.Add(offset);
                 if (trailer is null)
                 {
                     trailer = section.Trailer;

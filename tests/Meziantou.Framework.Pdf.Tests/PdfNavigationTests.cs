@@ -912,6 +912,361 @@ public sealed class PdfNavigationTests
         document.FlattenAnnotations();
 
         Assert.Equal(expected, PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText().Trim());
+
+    public void ActionsAreReadAsTheirTypes()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /OpenAction [3 0 R /Fit] /AA << /WC << /S /JavaScript /JS (close) >> >> /OCProperties << /OCGs [5 0 R] /D << >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R 6 0 R 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R] /AA << /O << /S /Named /N /LastPage >> >> >>")
+            .Add(4, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /GoToR /F (other.pdf) /D [2 /Fit] /NewWindow true /Next [<< /S /Named /N /NextPage >> << /S /Thread /D 0 >>] >> >>")
+            .Add(5, "<< /Type /OCG /Name (Layer) >>")
+            .Add(6, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /Launch /F << /Type /Filespec /UF (app.exe) >> >> >>")
+            .Add(7, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /URI /URI (https://example.com/a) /IsMap true >> >>")
+            .Add(8, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /SubmitForm /F << /FS /URL /F (https://example.com/submit) >> /Fields [(a) 15 0 R] /Flags 36 >> >>")
+            .Add(9, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /ResetForm /Fields [(a)] /Flags 1 >> >>")
+            .Add(10, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /ImportData /F (data.fdf) >> >>")
+            .Add(11, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /Hide /T [(a) (b)] /H false >> >>")
+            .Add(12, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /SetOCGState /State [/OFF 5 0 R /Toggle 5 0 R] /PreserveRB false >> >>")
+            .Add(13, "<< /Subtype /Link /Rect [0 0 10 10] /A << /S /GoToE /T << /R /C /N (embedded.pdf) >> >> >>")
+            .Add(14, "<< /Subtype /Widget /Rect [0 0 10 10] /A << /S /JavaScript /JS (app.alert(1)) >> /AA << /E << /S /Named /N /FirstPage >> /K << /S /JavaScript /JS (k) >> >> >>")
+            .Add(15, "<< /T (child) /Parent 16 0 R >>")
+            .Add(16, "<< /T (parent) >>");
+        var document = PdfDocument.Open(file.ToArray());
+        var annotations = document.Pages[0].Annotations;
+
+        var openAction = Assert.IsType<PdfGoToAction>(document.OpenAction);
+        Assert.Same(document.Pages[0], openAction.Destination!.Page);
+        Assert.Equal("close", Assert.IsType<PdfJavaScriptAction>(document.AdditionalActions[PdfActionTrigger.DocumentClose]).Script);
+        Assert.Equal([PdfActionTrigger.DocumentClose], document.AdditionalActions.Triggers);
+        Assert.Equal("LastPage", Assert.IsType<PdfNamedAction>(document.Pages[0].AdditionalActions[PdfActionTrigger.PageOpen]).Name);
+
+        var remote = Assert.IsType<PdfGoToRemoteAction>(((PdfLinkAnnotation)annotations[0]).Action);
+        Assert.Equal("other.pdf", remote.FileName);
+        Assert.Equal(2, remote.PageIndex);
+        Assert.True(remote.NewWindow);
+        Assert.Equal(["Named", "Thread"], remote.Next.Select(action => action.Kind));
+        Assert.IsType<PdfUnknownAction>(remote.Next[1]);
+
+        Assert.Equal("app.exe", Assert.IsType<PdfLaunchAction>(((PdfLinkAnnotation)annotations[1]).Action).FileName);
+        var uri = Assert.IsType<PdfUriAction>(((PdfLinkAnnotation)annotations[2]).Action);
+        Assert.Equal(new Uri("https://example.com/a"), uri.Uri);
+        Assert.True(uri.IsMap);
+
+        var submit = Assert.IsType<PdfSubmitFormAction>(((PdfLinkAnnotation)annotations[3]).Action);
+        Assert.Equal(new Uri("https://example.com/submit"), submit.Url);
+        Assert.Equal(["a", "parent.child"], submit.FieldNames);
+        Assert.Equal(PdfSubmitFormFlags.ExportFormat | PdfSubmitFormFlags.Xfdf, submit.Flags);
+
+        var reset = Assert.IsType<PdfResetFormAction>(((PdfLinkAnnotation)annotations[4]).Action);
+        Assert.Equal(["a"], reset.FieldNames);
+        Assert.True(reset.Exclude);
+        Assert.Equal("data.fdf", Assert.IsType<PdfImportDataAction>(((PdfLinkAnnotation)annotations[5]).Action).FileName);
+        var hide = Assert.IsType<PdfHideAction>(((PdfLinkAnnotation)annotations[6]).Action);
+        Assert.Equal(["a", "b"], hide.FieldNames);
+        Assert.False(hide.Hides);
+
+        var state = Assert.IsType<PdfSetOptionalContentStateAction>(((PdfLinkAnnotation)annotations[7]).Action);
+        Assert.Equal([PdfOptionalContentStateChange.Off, PdfOptionalContentStateChange.Toggle], state.Changes.Select(change => change.State));
+        Assert.Equal("Layer", state.Changes[0].Group.Name);
+        Assert.False(state.PreserveRadioButtons);
+        Assert.Equal("embedded.pdf", Assert.IsType<PdfGoToEmbeddedAction>(((PdfLinkAnnotation)annotations[8]).Action).TargetFileName);
+
+        var widget = Assert.IsType<PdfWidgetAnnotation>(annotations[9]);
+        Assert.Equal("app.alert(1)", Assert.IsType<PdfJavaScriptAction>(widget.Action).Script);
+        Assert.Equal([PdfActionTrigger.MouseEnter, PdfActionTrigger.Keystroke], widget.AdditionalActions.Triggers);
+    }
+
+    [Fact]
+    public void Example_Actions()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        var last = document.Pages.Add(PdfSize.A4);
+
+        #region Pdf_Actions
+        // Open the document on its last page, and run a script before it is printed
+        document.OpenAction = PdfAction.GoTo(PdfDestination.Fit(last));
+        document.AdditionalActions[PdfActionTrigger.DocumentPrint] = PdfAction.JavaScript("app.alert('Printing')");
+
+        // A link that goes to the next page, then opens a website
+        var link = page.Annotations.AddLink(new PdfRectangle(72, 700, 200, 720), new Uri("https://example.com"));
+        var next = PdfAction.Named("NextPage");
+        next.SetNext(PdfAction.OpenUri(new Uri("https://www.meziantou.net")));
+        link.Action = next;
+
+        // A bookmark that resets the form
+        document.Outlines.Add("Reset").Action = PdfAction.ResetForm();
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Same(read.Pages[1], Assert.IsType<PdfGoToAction>(read.OpenAction).Destination!.Page);
+        Assert.Equal("app.alert('Printing')", Assert.IsType<PdfJavaScriptAction>(read.AdditionalActions[PdfActionTrigger.DocumentPrint]).Script);
+        var readLink = Assert.IsType<PdfLinkAnnotation>(Assert.Single(read.Pages[0].Annotations));
+        var named = Assert.IsType<PdfNamedAction>(readLink.Action);
+        Assert.Equal("NextPage", named.Name);
+        Assert.Equal(new Uri("https://www.meziantou.net/"), Assert.IsType<PdfUriAction>(Assert.Single(named.Next)).Uri);
+        Assert.Null(readLink.Uri);
+        var outline = Assert.Single(read.Outlines);
+        Assert.IsType<PdfResetFormAction>(outline.Action);
+        Assert.Null(outline.Destination);
+    }
+
+    [Fact]
+    public void ActionsAreCheckedAgainstTheirDocument()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        var other = new PdfDocument();
+        var otherPage = other.Pages.Add(PdfSize.A4);
+        var link = page.Annotations.AddLink(new PdfRectangle(0, 0, 10, 10), new Uri("https://example.com"));
+
+        Assert.Throws<ArgumentException>(() => link.Action = PdfAction.GoTo(PdfDestination.Fit(otherPage)));
+        Assert.Throws<ArgumentException>(() => document.OpenAction = PdfAction.SetOptionalContentState(PdfOptionalContentStateChange.On, other.OptionalContent.AddGroup("x")));
+        Assert.Throws<ArgumentException>(() => page.AdditionalActions[PdfActionTrigger.DocumentClose] = PdfAction.Named("FirstPage"));
+        Assert.Throws<ArgumentException>(() => PdfAction.Hide([]));
+        var action = PdfAction.Named("NextPage");
+        Assert.Throws<ArgumentException>(() => action.SetNext(action));
+
+        // A destination of a link is read as a go-to action, and replaced by an action
+        var goTo = page.Annotations.AddLink(new PdfRectangle(0, 0, 10, 10), PdfDestination.Fit(page));
+        Assert.Same(page, Assert.IsType<PdfGoToAction>(goTo.Action).Destination!.Page);
+        goTo.Action = PdfAction.Named("FirstPage");
+        Assert.False(goTo.Dictionary.ContainsKey(PdfNames.Dest));
+        page.AdditionalActions[PdfActionTrigger.PageOpen] = PdfAction.Named("FirstPage");
+        page.AdditionalActions[PdfActionTrigger.PageOpen] = null;
+        Assert.False(page.Dictionary.ContainsKey(PdfName.Create("AA")));
+    }
+
+    [Fact]
+    public void Example_Layers()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+
+        #region Pdf_Layers
+        var notes = document.OptionalContent.AddGroup("Notes");
+        var draft = document.OptionalContent.AddGroup("Draft watermark", visible: false);
+        page.CreateContentBuilder()
+            .BeginOptionalContent(notes).SetFillColor(PdfColor.FromRgb(0, 0, 1)).Rectangle(0, 0, 50, 50).Fill().EndMarkedContent()
+            .BeginOptionalContent(draft).SetFillColor(PdfColor.FromRgb(1, 0, 0)).Rectangle(50, 50, 50, 50).Fill().EndMarkedContent();
+
+        // The user cannot hide the notes, and the viewer shows the list of layers
+        document.OptionalContent.DefaultConfiguration!.SetLocked(notes, locked: true);
+        document.PageMode = PdfPageMode.UseOptionalContent;
+        #endregion
+
+        page.Annotations.AddSquare(new PdfRectangle(0, 50, 50, 100), interiorColor: PdfColor.FromRgb(0, 1, 0)).OptionalContent = draft;
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(["Notes", "Draft watermark"], read.OptionalContent.Groups.Select(group => group.Name));
+        Assert.True(read.OptionalContent.Groups[0].IsVisible);
+        Assert.False(read.OptionalContent.Groups[1].IsVisible);
+        Assert.Equal(["Notes"], read.OptionalContent.DefaultConfiguration!.LockedGroups.Select(group => group.Name));
+        Assert.Equal(read.OptionalContent.Groups[1], read.Pages[0].Annotations[0].OptionalContent);
+        Assert.Equal(PdfPageMode.UseOptionalContent, read.PageMode);
+        Assert.Equal(["View"], read.OptionalContent.Groups[0].Intents);
+
+        using var image = read.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(image, 25, 25, 0, 0, 255);
+        AssertPixel(image, 75, 75, 255, 255, 255);
+        AssertPixel(image, 25, 75, 255, 255, 255);
+
+        read.OptionalContent.Groups[1].IsVisible = true;
+        read.OptionalContent.DefaultConfiguration!.AddRadioButtonGroup(read.OptionalContent.Groups);
+        Assert.HasCount(2, Assert.Single(read.OptionalContent.DefaultConfiguration.RadioButtonGroups));
+        using var visible = PdfDocument.Open(read.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(visible, 75, 75, 255, 0, 0);
+    }
+
+    [Fact]
+    public void OptionalContentConfigurationsAreRead()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /OCProperties << /OCGs [4 0 R 5 0 R] /D << /BaseState /OFF /ON [4 0 R] >> /Configs [<< /Name (Print) /Creator (App) /BaseState /Unchanged /OFF [4 0 R] >>] >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R >>")
+            .Add(4, "<< /Type /OCG /Name (A) /Intent [/View /Design] >>")
+            .Add(5, "<< /Type /OCG /Name (B) >>");
+        var content = PdfDocument.Open(file.ToArray()).OptionalContent;
+
+        Assert.True(content.Groups[0].IsVisible);
+        Assert.False(content.Groups[1].IsVisible);
+        Assert.Equal(["View", "Design"], content.Groups[0].Intents);
+        Assert.Equal(PdfOptionalContentBaseState.Off, content.DefaultConfiguration!.BaseState);
+        var print = Assert.Single(content.Configurations);
+        Assert.Equal("Print", print.Name);
+        Assert.Equal("App", print.Creator);
+        Assert.Equal(PdfOptionalContentBaseState.Unchanged, print.BaseState);
+        Assert.False(print.IsVisible(content.Groups[0]));
+        Assert.True(print.IsVisible(content.Groups[1]));
+
+        content.Groups[1].IsVisible = true;
+        content.Groups[0].IsVisible = false;
+        Assert.True(content.Groups[1].IsVisible);
+        Assert.False(content.Groups[0].IsVisible);
+    }
+
+    [Fact]
+    public void Example_ViewerPreferences()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+
+        #region Pdf_ViewerPreferences
+        document.PageLayout = PdfPageLayout.TwoPageRight;
+        document.PageMode = PdfPageMode.UseOutlines;
+        var preferences = document.ViewerPreferences;
+        preferences.DisplayDocumentTitle = true;
+        preferences.HideToolbar = true;
+        preferences.Direction = PdfReadingDirection.RightToLeft;
+        preferences.DisablePrintScaling = true;
+        preferences.Duplex = PdfDuplexMode.DuplexFlipLongEdge;
+        preferences.PrintPageRanges = [(0, 0), (2, 4)];
+        preferences.NumberOfCopies = 2;
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(PdfPageLayout.TwoPageRight, read.PageLayout);
+        Assert.Equal(PdfPageMode.UseOutlines, read.PageMode);
+        var readPreferences = read.ViewerPreferences;
+        Assert.True(readPreferences.DisplayDocumentTitle);
+        Assert.True(readPreferences.HideToolbar);
+        Assert.False(readPreferences.HideMenubar);
+        Assert.Equal(PdfReadingDirection.RightToLeft, readPreferences.Direction);
+        Assert.True(readPreferences.DisablePrintScaling);
+        Assert.Equal(PdfDuplexMode.DuplexFlipLongEdge, readPreferences.Duplex);
+        Assert.Equal([(0, 0), (2, 4)], readPreferences.PrintPageRanges);
+        Assert.Equal(2, readPreferences.NumberOfCopies);
+        Assert.Equal([1, 1, 3, 5], readPreferences.Dictionary!.Get<PdfArray>(PdfName.Create("PrintPageRange"))!.Select(item => ((PdfNumber)item).DoubleValue));
+
+        readPreferences.HideToolbar = false;
+        readPreferences.DisplayDocumentTitle = false;
+        readPreferences.Direction = PdfReadingDirection.LeftToRight;
+        readPreferences.DisablePrintScaling = false;
+        readPreferences.Duplex = PdfDuplexMode.Unspecified;
+        readPreferences.PrintPageRanges = [];
+        readPreferences.NumberOfCopies = null;
+        Assert.Null(readPreferences.Dictionary);
+        Assert.Throws<ArgumentOutOfRangeException>(() => readPreferences.NumberOfCopies = 6);
+        Assert.Throws<ArgumentOutOfRangeException>(() => readPreferences.NonFullScreenPageMode = PdfPageMode.FullScreen);
+    }
+
+    [Fact]
+    public void Example_Portfolio()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+
+        #region Pdf_Portfolio
+        var report = document.EmbeddedFiles.Add("report.pdf", "%PDF-1.7"u8);
+        var data = document.EmbeddedFiles.Add("data.csv", "a,b"u8);
+        var portfolio = document.CreatePortfolio();
+        portfolio.View = PdfPortfolioView.Details;
+        portfolio.InitialFile = "report.pdf";
+        portfolio.AddField("name", "Name", PdfPortfolioFieldType.FileName);
+        portfolio.AddField("owner", "Owner");
+        portfolio.AddField("reviewed", "Reviewed", PdfPortfolioFieldType.Date);
+        portfolio.SetSort(ascending: true, "owner", "name");
+        report.SetPortfolioValue("owner", "Finance");
+        report.SetPortfolioValue("reviewed", new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero));
+        data.SetPortfolioValue("owner", "IT");
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var readPortfolio = Assert.IsType<PdfPortfolio>(read.Portfolio);
+        Assert.Equal("report.pdf", readPortfolio.InitialFile);
+        Assert.Equal(["name", "owner", "reviewed"], readPortfolio.Fields.Select(field => field.Key));
+        Assert.Equal([PdfPortfolioFieldType.FileName, PdfPortfolioFieldType.Text, PdfPortfolioFieldType.Date], readPortfolio.Fields.Select(field => field.Type));
+        Assert.Equal(["owner", "name"], readPortfolio.SortFields);
+        Assert.True(readPortfolio.SortAscending);
+        var readReport = read.EmbeddedFiles.Single(file => file.FileName == "report.pdf");
+        Assert.Equal("Finance", readReport.GetPortfolioValue("owner"));
+        Assert.Equal(new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), readReport.GetPortfolioValue("reviewed"));
+        Assert.Null(readReport.GetPortfolioValue("missing"));
+        Assert.Same(read.Portfolio!.Dictionary, read.CreatePortfolio().Dictionary);
+        Assert.Null(new PdfDocument().Portfolio);
+    }
+
+    [Fact]
+    public void PortfolioFoldersAreBounded()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Collection << /View /T /Folders 4 0 R /Schema << /Type /CollectionSchema /size << /Subtype /Size /N (Size) /O 2 /V false /E true >> /n << /Subtype /N /O 1 >> >> /Sort << /S /n /A [false] >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R >>")
+            .Add(4, "<< /Type /Folder /ID 1 /Name (Root) /Child 5 0 R >>")
+            .Add(5, "<< /Type /Folder /ID 2 /Name (A) /Next 6 0 R /Child 4 0 R >>")
+            .Add(6, "<< /Type /Folder /ID 3 /Name (B) /Next 5 0 R >>");
+        var portfolio = PdfDocument.Open(file.ToArray()).Portfolio!;
+
+        Assert.Equal(PdfPortfolioView.Tile, portfolio.View);
+        Assert.Equal(["n", "size"], portfolio.Fields.Select(field => field.Key));
+        Assert.False(portfolio.Fields[1].IsVisible);
+        Assert.True(portfolio.Fields[1].IsEditable);
+        Assert.Equal("Size", portfolio.Fields[1].Name);
+        Assert.False(portfolio.SortAscending);
+        var root = portfolio.RootFolder!;
+        Assert.Equal("Root", root.Name);
+        Assert.Equal(1, root.Id);
+        Assert.Equal(["A", "B"], root.Children.Select(folder => folder.Name));
+
+        // The cycle of the folders ends at the maximum depth
+        var depth = 0;
+        for (var folder = root; folder.Children.Count > 0 && depth < 100; folder = folder.Children[0])
+        {
+            depth++;
+        }
+
+        Assert.Equal(32, depth);
+    }
+
+    [Fact]
+    public void Example_Revisions()
+    {
+        var original = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R >>")
+            .ToArray();
+        var updated = HandWrittenPdf.AppendUpdate(original, [(3, "<< /Type /Page /Parent 2 0 R /Rotate 90 >>")], "<< /Size 4 /Root 1 0 R /Prev {prev} >>");
+        var bytes = HandWrittenPdf.AppendUpdate(updated, [(4, "<< /Producer (x) >>")], "<< /Size 5 /Root 1 0 R /Info 4 0 R /Prev {prev} >>");
+        var document = PdfDocument.Open(bytes);
+
+        #region Pdf_Revisions
+        var revisions = document.Revisions;
+
+        // The document as it was before the incremental updates, and what they changed
+        var firstVersion = revisions[0].Open();
+        var changes = revisions[0].GetModifications();
+        #endregion
+
+        Assert.Equal(0, firstVersion.Pages[0].Rotation);
+        Assert.NotEmpty(changes);
+        Assert.Equal([original.Length, updated.Length, bytes.Length], revisions.Select(revision => revision.Length));
+        Assert.Equal([false, false, true], revisions.Select(revision => revision.IsLatest));
+        Assert.Equal(0, revisions[0].Open().Pages[0].Rotation);
+        Assert.Equal(90, revisions[1].Open().Pages[0].Rotation);
+        Assert.NotEmpty(revisions[0].GetModifications());
+        Assert.Empty(revisions[2].GetModifications());
+        Assert.Empty(new PdfDocument().Revisions);
+    }
+
+    [Fact]
+    public void ALinearizedFileIsOneRevision()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Pages.Add(PdfSize.A4);
+        var linearized = document.ToByteArray(new PdfSaveOptions { Linearize = true });
+
+        var read = PdfDocument.Open(linearized);
+
+        Assert.Equal(linearized.Length, Assert.Single(read.Revisions).Length);
+        using var stream = new MemoryStream();
+        read.Information.Title = "Updated";
+        read.SaveIncremental(stream);
+        var revisions = PdfDocument.Open(stream.ToArray()).Revisions;
+        Assert.Equal([linearized.Length, stream.Length], revisions.Select(revision => revision.Length));
     }
 
     private static void AssertPixel(Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> image, int x, int y, int r, int g, int b, int tolerance = 3)

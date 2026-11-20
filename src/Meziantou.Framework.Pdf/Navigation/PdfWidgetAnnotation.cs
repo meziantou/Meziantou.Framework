@@ -46,4 +46,20 @@ public sealed class PdfWidgetAnnotation : PdfAnnotation
 
     /// <summary>Gets the appearance characteristics of the widget (<c>/MK</c>): its rotation, its colors and the captions of a button.</summary>
     public PdfAppearanceCharacteristics AppearanceCharacteristics => _characteristics ??= new PdfAppearanceCharacteristics(Dictionary);
+
+    /// <summary>Gets or sets the action run when the widget is activated (<c>/A</c>, ISO 32000-2, 12.6), such as the action of a push button; <see langword="null"/> when it has none.</summary>
+    /// <exception cref="ArgumentException">The action refers to objects of another document.</exception>
+    public PdfAction? Action
+    {
+        get => PdfAction.Read(Page.Document, Dictionary[PdfNames.A]);
+        set
+        {
+            if (value is not null)
+            {
+                PdfAction.CheckDocument(value, Page.Document, nameof(value));
+            }
+
+            Dictionary[PdfNames.A] = value?.Dictionary;
+        }
+    }
 }

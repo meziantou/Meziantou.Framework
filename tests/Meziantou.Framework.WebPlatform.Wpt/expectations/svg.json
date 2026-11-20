@@ -555,11 +555,7 @@
     "total": 1
   },
   "svg/animations/seek-repeat-event-condition.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "repeat(3) begins after seeking into the third repeat iteration": "TIMEOUT"
-    }
+    "total": 1
   },
   "svg/animations/seeking-events-1.html": {
     "total": 1
@@ -2059,11 +2055,7 @@
     "total": 3
   },
   "svg/linking/scripted/a.ping-functionality.html": {
-    "total": 3,
-    "failures": {
-      "SVG anchor with multiple ping URLs should send multiple pings": "FAIL",
-      "SVG anchor with ping attribute should send ping on click": "FAIL"
-    }
+    "total": 3
   },
   "svg/linking/scripted/a.referrer-invalid-value.html": {
     "total": 1
@@ -2081,12 +2073,7 @@
     "total": 2
   },
   "svg/linking/scripted/a.target-dynamic-update.html": {
-    "harness": "TIMEOUT",
-    "total": 4,
-    "failures": {
-      "Clicking a <use> instance of <a> uses the target set via setAttribute": "TIMEOUT",
-      "Clicking a <use> instance of <a> uses the target set via target.baseVal": "NOTRUN"
-    }
+    "total": 4
   },
   "svg/linking/scripted/a.type-getter-01.svg": {
     "total": 2
@@ -3703,17 +3690,7 @@
     "total": 8
   },
   "svg/styling/css-var-dom-interface.html": {
-    "total": 9,
-    "failures": {
-      "SVGLength DOM interface methods with CSS variables": "FAIL",
-      "SVGLength DOM interface with CSS variable containing number": "FAIL",
-      "SVGLength DOM interface with CSS variable containing percentage": "FAIL",
-      "SVGLength DOM interface with CSS variable containing px unit": "FAIL",
-      "SVGLength DOM interface with invalid CSS variable": "FAIL",
-      "SVGLength should handle detached elements gracefully for CSS variables": "FAIL",
-      "SVGLength should handle standalone lengths gracefully for CSS variables": "FAIL",
-      "SVGLength.convertToSpecifiedUnits with CSS variables": "FAIL"
-    }
+    "total": 9
   },
   "svg/styling/css-var-on-length-attributes-01.svg": {
     "reftest": "PASS"
@@ -3833,25 +3810,16 @@
     "reftest": "PASS"
   },
   "svg/styling/presentation-attributes-irrelevant.html": {
-    "total": 59,
-    "failures": {
-      "glyph-orientation-vertical presentation attribute supported on an irrelevant element": "FAIL"
-    }
+    "total": 59
   },
   "svg/styling/presentation-attributes-relevant.html": {
-    "total": 70,
-    "failures": {
-      "glyph-orientation-vertical presentation attribute supported on a relevant element": "FAIL"
-    }
+    "total": 70
   },
   "svg/styling/presentation-attributes-special-cases.html": {
     "total": 26
   },
   "svg/styling/presentation-attributes-unknown.html": {
-    "total": 59,
-    "failures": {
-      "glyph-orientation-vertical presentation attribute supported on an unknown SVG element": "FAIL"
-    }
+    "total": 59
   },
   "svg/styling/rect-sizing-viewport-units.svg": {
     "reftest": "PASS"
@@ -4640,10 +4608,7 @@
     "total": 11
   },
   "svg/types/scripted/SVGLength-px.html": {
-    "total": 10,
-    "failures": {
-      "SVGLength, converting from 'px' to other units (detached), percentage": "FAIL"
-    }
+    "total": 10
   },
   "svg/types/scripted/SVGLength-rem.html": {
     "total": 2

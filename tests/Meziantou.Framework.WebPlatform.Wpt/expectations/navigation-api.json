@@ -582,13 +582,7 @@
     "total": 1
   },
   "navigation-api/navigate-event/sourceElement-shadow-tree.html": {
-    "harness": "TIMEOUT",
-    "total": 3,
-    "failures": {
-      "sourceElement for an <a> in a closed shadow root is the shadow host": "NOTRUN",
-      "sourceElement for an <a> in a open shadow root is the shadow host": "NOTRUN",
-      "sourceElement for an <svg:a> in a <use> shadow tree is the <use> element": "TIMEOUT"
-    }
+    "total": 3
   },
   "navigation-api/navigate-event/traverseTo-detach.html": {
     "total": 1

@@ -102,6 +102,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-canvas-drawables", data => CanvasDrawElements(FuzzText.Decode(data.Length > CanvasDrawablesMaxLength ? data[..CanvasDrawablesMaxLength] : data))) { Seeds = () => GetSeeds("canvas-drawable"), Dictionary = CanvasDrawablesTokens },
         new("webplatform-canvas-filter", CanvasFilterDescription) { Seeds = GetCanvasFilterSeeds, Dictionary = CanvasFilterTokens },
         new("webplatform-svg-text-shapes", SvgTextShapes) { Seeds = GetSvgTextShapesSeeds, Dictionary = SvgTextShapeTokens },
+        new("webplatform-svg-length", data => SvgLengthValue(FuzzText.Decode(data.Length > SvgLengthMaxLength ? data[..SvgLengthMaxLength] : data))) { Seeds = GetSvgLengthSeeds, Dictionary = SvgLengthTokens },
         new("webplatform-hyphenation", Hyphenation) { Seeds = GetHyphenationSeeds, Dictionary = HyphenationTokens },
         new("webplatform-paged-inline-size", PagedInlineSize) { Seeds = GetPagedInlineSizeSeeds, Dictionary = PagedInlineSizeTokens },
         new("webplatform-videoframe-copyto", VideoFrameCopyTo) { Seeds = GetVideoFrameCopyToSeeds },

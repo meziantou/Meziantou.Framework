@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../common/ComInitializationScope.cs" Link="ComInitializationScope.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="../../common/Win32/Windows.Win32.ComHelpers.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.Foundation.BSTR.g.cs" LinkBase="Win32" />
@@ -39,6 +43,8 @@
     <Compile Include="../../common/Win32/Windows.Win32.InlineArrayIndexerExtensions.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.NativeOwnershipAttribute.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoCreateInstance.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoInitializeEx.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoUninitialize.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetCurrentProcess.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetLogicalProcessorInformationEx.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.PInvoke.LocalFree.g.cs" LinkBase="Win32" />
@@ -51,6 +57,7 @@
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.BINDPTR.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.CALLCONV.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.CLSCTX.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.COINIT.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.CY.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.DESCKIND.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.DISPATCH_FLAGS.g.cs" LinkBase="Win32" />

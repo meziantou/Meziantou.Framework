@@ -70,6 +70,7 @@ public static class MarkOfTheWeb
 
         try
         {
+            using var comScope = ComInitializationScope.Enter();
             var securityManager = unsafe(CreateSecurityManager());
             if (securityManager is null)
                 return UrlZone.Invalid;
@@ -214,6 +215,8 @@ public static class MarkOfTheWeb
             throw new FileNotFoundException("File not found", filePath);
 
         filePath = Path.GetFullPath(filePath);
+
+        using var comScope = ComInitializationScope.Enter();
 
         var securityManager = unsafe(CreateSecurityManager());
         if (securityManager is null)

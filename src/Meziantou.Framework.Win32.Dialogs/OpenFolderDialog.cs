@@ -52,6 +52,7 @@ public sealed class OpenFolderDialog
         {
             SelectedPath = null;
 
+            using var comScope = ComInitializationScope.Enter();
             var hwndOwner = owner != IntPtr.Zero ? new HWND(owner) : PInvoke.GetActiveWindow();
             FileOpenDialog.CreateInstance<IFileOpenDialog>(out var dialog).ThrowOnFailure();
             try

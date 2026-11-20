@@ -41,6 +41,7 @@ public sealed class SecurityProvidersSnapshot
     {
         unsafe
         {
+            using var comScope = ComInitializationScope.Enter();
             if (WSCProductList.CreateInstance<IWSCProductList>(out var pWSCProductList).Failed || pWSCProductList is null)
                 return ImmutableArray<SecurityProviderSnapshot>.Empty;
 

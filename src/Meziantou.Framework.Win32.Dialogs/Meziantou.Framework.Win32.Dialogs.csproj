@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../common/ComInitializationScope.cs" Link="ComInitializationScope.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="../../common/Win32/Windows.Win32.ComHelpers.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
@@ -26,10 +30,13 @@
     <Compile Include="../../common/Win32/Windows.Win32.IVTable-2.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.IVTable.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoCreateInstance.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoInitializeEx.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoUninitialize.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetActiveWindow.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SHCreateItemFromParsingName.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.BIND_OPTS.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.CLSCTX.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.COINIT.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.IBindCtx.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.IEnumMoniker.g.cs" LinkBase="Win32" />
     <Compile Include="../../common/Win32/Windows.Win32.System.Com.IEnumString.g.cs" LinkBase="Win32" />

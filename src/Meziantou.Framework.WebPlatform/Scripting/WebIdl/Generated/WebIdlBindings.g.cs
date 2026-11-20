@@ -61,6 +61,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["BeforeUnloadEvent"] = Binding_BeforeUnloadEvent<TAdapter, TValue>.Binding,
             ["BiquadFilterNode"] = Binding_BiquadFilterNode<TAdapter, TValue>.Binding,
             ["Blob"] = Binding_Blob<TAdapter, TValue>.Binding,
+            ["BlobEvent"] = Binding_BlobEvent<TAdapter, TValue>.Binding,
             ["BreakToken"] = Binding_BreakToken<TAdapter, TValue>.Binding,
             ["BroadcastChannel"] = Binding_BroadcastChannel<TAdapter, TValue>.Binding,
             ["BufferedChangeEvent"] = Binding_BufferedChangeEvent<TAdapter, TValue>.Binding,
@@ -421,6 +422,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["MediaMetadata"] = Binding_MediaMetadata<TAdapter, TValue>.Binding,
             ["MediaQueryList"] = Binding_MediaQueryList<TAdapter, TValue>.Binding,
             ["MediaQueryListEvent"] = Binding_MediaQueryListEvent<TAdapter, TValue>.Binding,
+            ["MediaRecorder"] = Binding_MediaRecorder<TAdapter, TValue>.Binding,
             ["MediaSession"] = Binding_MediaSession<TAdapter, TValue>.Binding,
             ["MediaSource"] = Binding_MediaSource<TAdapter, TValue>.Binding,
             ["MediaSourceHandle"] = Binding_MediaSourceHandle<TAdapter, TValue>.Binding,
@@ -849,6 +851,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions dictionaryDom_AddEventListenerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AddEventListenerOptions(r, dictionaryDom_AddEventListenerOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit dictionaryDom_BlobEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BlobEventInit(r, dictionaryDom_BlobEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BufferedChangeEventInit dictionaryDom_BufferedChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BufferedChangeEventInit(r, dictionaryDom_BufferedChangeEventInit);
@@ -1509,6 +1514,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState dictionaryDom_MediaPositionState:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaPositionState(r, dictionaryDom_MediaPositionState);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions dictionaryDom_MediaRecorderOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaRecorderOptions(r, dictionaryDom_MediaRecorderOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionDetails dictionaryDom_MediaSessionActionDetails:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaSessionActionDetails(r, dictionaryDom_MediaSessionActionDetails);
@@ -2280,6 +2288,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PressureState enumDom_PressureState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PressureState(enumDom_PressureState));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RecordingState enumDom_RecordingState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RecordingState(enumDom_RecordingState));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.RedEyeReduction enumDom_RedEyeReduction:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RedEyeReduction(enumDom_RedEyeReduction));

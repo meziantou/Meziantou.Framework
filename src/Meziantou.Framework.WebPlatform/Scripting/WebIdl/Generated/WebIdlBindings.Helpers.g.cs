@@ -60,6 +60,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions Defaults_Dom_BeginLayerOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit Defaults_Dom_BlobEventInit = new() { Data = default! };
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions Defaults_Dom_BoxQuadOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BreakTokenOptions Defaults_Dom_BreakTokenOptions = new();
@@ -159,6 +161,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions Defaults_Dom_MagnetometerSensorOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState Defaults_Dom_MediaPositionState = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions Defaults_Dom_MediaRecorderOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaStreamConstraints Defaults_Dom_MediaStreamConstraints = new();
 
@@ -1180,6 +1184,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         var result = r.CreateObject();
         if (value.Filter is not null) r.SetMember(result, "filter", r.ToJs((object?)value.Filter));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_BlobEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "data", r.Wrap(value.Data));
+        r.SetMember(result, "timecode", r.FromNumber((double)value.Timecode));
         return result;
     }
 
@@ -2533,6 +2548,19 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         if (value.Duration is not null) r.SetMember(result, "duration", (value.Duration.HasValue ? r.FromNumber((double)value.Duration.GetValueOrDefault()) : r.Adapter.Null));
         if (value.PlaybackRate is not null) r.SetMember(result, "playbackRate", (value.PlaybackRate.HasValue ? r.FromNumber((double)value.PlaybackRate.GetValueOrDefault()) : r.Adapter.Null));
         if (value.Position is not null) r.SetMember(result, "position", (value.Position.HasValue ? r.FromNumber((double)value.Position.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaRecorderOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "audioBitrateMode", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_BitrateMode(value.AudioBitrateMode)));
+        if (value.AudioBitsPerSecond is not null) r.SetMember(result, "audioBitsPerSecond", (value.AudioBitsPerSecond.HasValue ? r.FromNumber((double)value.AudioBitsPerSecond.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.BitsPerSecond is not null) r.SetMember(result, "bitsPerSecond", (value.BitsPerSecond.HasValue ? r.FromNumber((double)value.BitsPerSecond.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "mimeType", r.FromString(value.MimeType));
+        if (value.VideoBitsPerSecond is not null) r.SetMember(result, "videoBitsPerSecond", (value.VideoBitsPerSecond.HasValue ? r.FromNumber((double)value.VideoBitsPerSecond.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.VideoKeyFrameIntervalCount is not null) r.SetMember(result, "videoKeyFrameIntervalCount", (value.VideoKeyFrameIntervalCount.HasValue ? r.FromNumber((double)value.VideoKeyFrameIntervalCount.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.VideoKeyFrameIntervalDuration is not null) r.SetMember(result, "videoKeyFrameIntervalDuration", (value.VideoKeyFrameIntervalDuration.HasValue ? r.FromNumber((double)value.VideoKeyFrameIntervalDuration.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -5925,6 +5953,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_RecordingState(global::Meziantou.Framework.WebPlatform.Dom.RecordingState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.RecordingState.Inactive => "inactive",
+        global::Meziantou.Framework.WebPlatform.Dom.RecordingState.Recording => "recording",
+        global::Meziantou.Framework.WebPlatform.Dom.RecordingState.Paused => "paused",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_RedEyeReduction(global::Meziantou.Framework.WebPlatform.Dom.RedEyeReduction value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.RedEyeReduction.Never => "never",
@@ -7376,6 +7412,31 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions
         {
             Filter = m0_present ? m0 : Defaults_Dom_BeginLayerOptions.Filter,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit ToDictionary_Dom_BlobEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "BlobEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "data");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("BlobEventInit", "data");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob>(m3_value, "Blob");
+        var m4_value = r.GetDictionaryMember(value, "timecode");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (double?)r.ToDouble(m4_value, restricted: true) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Data = m3,
+            Timecode = m4_present ? (double)(m4!) : Defaults_Dom_BlobEventInit.Timecode,
         };
     }
 
@@ -9944,6 +10005,40 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Duration = m0_present ? m0 : Defaults_Dom_MediaPositionState.Duration,
             PlaybackRate = m1_present ? m1 : Defaults_Dom_MediaPositionState.PlaybackRate,
             Position = m2_present ? m2 : Defaults_Dom_MediaPositionState.Position,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions ToDictionary_Dom_MediaRecorderOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaRecorderOptions");
+        var m0_value = r.GetDictionaryMember(value, "audioBitrateMode");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"variable" : r.ToEnumerationValue(m0_value, "BitrateMode", WebIdlHelpers<TAdapter, TValue>.Enum_BitrateMode_Values);
+        var m1_value = r.GetDictionaryMember(value, "audioBitsPerSecond");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (uint?)r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m2_value = r.GetDictionaryMember(value, "bitsPerSecond");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (uint?)r.ToUnsignedLong(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m3_value = r.GetDictionaryMember(value, "mimeType");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "videoBitsPerSecond");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (uint?)r.ToUnsignedLong(m4_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m5_value = r.GetDictionaryMember(value, "videoKeyFrameIntervalCount");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (uint?)r.ToUnsignedLong(m5_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m6_value = r.GetDictionaryMember(value, "videoKeyFrameIntervalDuration");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (double?)r.ToDouble(m6_value, restricted: true) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions
+        {
+            AudioBitrateMode = WebIdlHelpers<TAdapter, TValue>.ToEnum_WebCodecs_BitrateMode(m0),
+            AudioBitsPerSecond = m1_present ? m1 : Defaults_Dom_MediaRecorderOptions.AudioBitsPerSecond,
+            BitsPerSecond = m2_present ? m2 : Defaults_Dom_MediaRecorderOptions.BitsPerSecond,
+            MimeType = m3,
+            VideoBitsPerSecond = m4_present ? m4 : Defaults_Dom_MediaRecorderOptions.VideoBitsPerSecond,
+            VideoKeyFrameIntervalCount = m5_present ? m5 : Defaults_Dom_MediaRecorderOptions.VideoKeyFrameIntervalCount,
+            VideoKeyFrameIntervalDuration = m6_present ? m6 : Defaults_Dom_MediaRecorderOptions.VideoKeyFrameIntervalDuration,
         };
     }
 

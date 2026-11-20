@@ -475,7 +475,7 @@ public sealed class VideoFrame : IStructuredSerializable, IStructuredTransferabl
     /// <exception cref="TypeErrorException">The timestamp is missing, or the options are invalid.</exception>
     /// <seealso href="https://w3c.github.io/webcodecs/#dom-videoframe-videoframe"/>
     [IdlMember("constructor", "https://w3c.github.io/webcodecs/#dom-videoframe-videoframe")]
-    public VideoFrame(object image, VideoFrameInit? init = null)
+    public VideoFrame(object? image, VideoFrameInit? init = null)
     {
         ArgumentNullException.ThrowIfNull(image);
         init ??= new VideoFrameInit();

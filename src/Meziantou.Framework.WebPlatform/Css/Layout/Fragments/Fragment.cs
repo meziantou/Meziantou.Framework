@@ -1609,6 +1609,11 @@ internal sealed class TextFragment : Fragment
     /// </summary>
     public PhysicalRect GetRangeRect(int start, int end)
     {
+        // The letters of a spelling change are the text of all the characters they replace: a range over any of them has the
+        // rectangle of the letters (their glyphs are not the ones of these characters)
+        if (IsSpellingChange && end > start && start < End && end > Start)
+            return new PhysicalRect(0, 0, Size.Width, Size.Height);
+
         var a = GetInlineOffset(start);
         var b = GetInlineOffset(end, roundUp: end > start);
         var low = Math.Min(a, b);

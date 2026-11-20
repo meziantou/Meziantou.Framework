@@ -6193,7 +6193,8 @@ hyphenator of Android `hyphenator_aosp.cc`):
   line (`AddLineStartSpellingChange`, `LineLeaf.SpellingChangeLength`; it replaces the empty leaf of that box when the word
   continues in the next one: `<span>zee&shy;ë</span>n`), that the line breaking measures (`MeasureLineStartSpellingChange`).
   Its fragment is a text fragment of the characters it replaces (`TextFragment.IsSpellingChange`, not `IsHyphen`): the
-  client rects of a range over them, their emphasis marks, and a single caret unit.
+  client rects of a range over any of them are the whole letters (`GetRangeRect`; a collapsed range has no width), their
+  emphasis marks, and a single caret unit.
   No browser implements them (WPT `css/css-text/hyphens/i18n`).
 - The edges of a hyphenated line are shaped again as at the other breaks (`ShapeLineEdges`, as Chrome's
   `ShapingLineBreaker`): when the opportunity is unsafe to break (a kerned pair, a joining) or inside a cluster (a ligature

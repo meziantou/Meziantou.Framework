@@ -266,6 +266,12 @@ public sealed class InlineFormattingContextTests : IDisposable
         range.SetEnd(node, (uint)replacedEnd);
         var rect = Assert.Single(range.GetClientRects());
         Assert.Equal((0d, 10d, 10d, 10d), (rect.X, rect.Y, rect.Width, rect.Height));
+
+        // (a range over a part of the replaced characters: the combining diaeresis alone)
+        range.SetStart(node, (uint)replacedEnd - 1);
+        rect = Assert.Single(range.GetClientRects());
+        Assert.Equal((0d, 10d, 10d, 10d), (rect.X, rect.Y, rect.Width, rect.Height));
+        range.SetStart(node, (uint)replacedStart);
         range.SetEnd(node, (uint)replacedStart + 1);
         range.Collapse(toStart: false);
         Assert.All(range.GetClientRects(), collapsed => Assert.Equal(0, collapsed.Width));

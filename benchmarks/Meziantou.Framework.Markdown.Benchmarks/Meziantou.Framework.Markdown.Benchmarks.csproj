@@ -3,14 +3,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- Markdig is the baseline of the benchmarks, not a dependency of the library -->
-    <AllowPackage_Markdig>true</AllowPackage_Markdig>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-    <!-- The baseline: Meziantou.Framework.Markdown 1.x was a fork of Markdig -->
-    <PackageReference Include="Markdig" Version="1.6.0" />
   </ItemGroup>
 
   <ItemGroup>

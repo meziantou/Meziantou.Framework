@@ -342,6 +342,24 @@ public class PdfAnnotation
         return result;
     }
 
+    /// <summary>Sets the rectangle to the bounds of regions (12.5.6.10: the quadrilaterals are in the rectangle), so that an appearance drawn for them is not clipped.</summary>
+    private protected void SetRectangleFromRegions(IReadOnlyList<PdfRectangle> regions)
+    {
+        if (regions.Count == 0)
+            return;
+
+        var (left, bottom, right, top) = (double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity);
+        foreach (var region in regions)
+        {
+            left = Math.Min(left, Math.Min(region.Left, region.Right));
+            right = Math.Max(right, Math.Max(region.Left, region.Right));
+            bottom = Math.Min(bottom, Math.Min(region.Bottom, region.Top));
+            top = Math.Max(top, Math.Max(region.Bottom, region.Top));
+        }
+
+        Rectangle = new PdfRectangle(left, bottom, right, top);
+    }
+
     /// <summary>Writes rectangles as <c>/QuadPoints</c>, in the order viewers expect: upper-left, upper-right, lower-left, lower-right (12.5.6.10, table 182).</summary>
     internal static PdfArray WriteQuadrilaterals(IEnumerable<PdfRectangle> regions)
     {

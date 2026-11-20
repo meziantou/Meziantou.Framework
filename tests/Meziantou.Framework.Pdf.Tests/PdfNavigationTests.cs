@@ -624,6 +624,25 @@ public sealed class PdfNavigationTests
     }
 
     [Fact]
+    public void SettingTheRegionsOfAMarkupMovesItsRectangle()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var highlight = (PdfTextMarkupAnnotation)page.Annotations.AddTextMarkup(PdfTextMarkupKind.Highlight, [new PdfRectangle(10, 10, 50, 20)]);
+        var redaction = page.Annotations.AddRedaction([new PdfRectangle(10, 10, 50, 20)]);
+
+        highlight.Regions = [new PdfRectangle(100, 150, 180, 160), new PdfRectangle(100, 135, 140, 145)];
+        redaction.Regions = [new PdfRectangle(120, 100, 160, 110)];
+
+        Assert.Equal(new PdfRectangle(100, 135, 180, 160), highlight.Rectangle);
+        Assert.Equal(new PdfRectangle(120, 100, 160, 110), redaction.Rectangle);
+        Assert.True(highlight.UpdateAppearance());
+        var box = highlight.Dictionary.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N)!.Dictionary.Get<PdfArray>(PdfName.Create("BBox"))!;
+        Assert.True(PdfRectangle.TryRead(box, out var bounds));
+        Assert.True(bounds.Width >= 80 && bounds.Height >= 25);
+    }
+
+    [Fact]
     public void UpdateAppearanceDrawsTheTextAfterManySpaces()
     {
         var file = new HandWrittenPdf()
@@ -1352,11 +1371,14 @@ public sealed class PdfNavigationTests
         Assert.Null(saved.Outlines[0].Destination);
     }
 
-    [Fact]
-    public void AnEndOfFileMarkerInATrailerStringDoesNotEndARevision()
+    [Theory]
+    [InlineData("/Comment (%%EOF)")]
+    [InlineData("/Comment (startxref\n0\n%%EOF\n)")]
+    [InlineData("/Comment (x) % startxref\n0\n%%EOF\n")]
+    public void AnEndOfFileMarkerInATrailerStringDoesNotEndARevision(string entry)
     {
         var original = HandWrittenPdf.CreateSimple().ToArray();
-        var updated = HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Comment (%%EOF) /Prev {prev} >>");
+        var updated = HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R " + entry + " /Prev {prev} >>");
 
         var revisions = PdfDocument.Open(updated).Revisions;
 

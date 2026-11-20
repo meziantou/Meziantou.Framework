@@ -95,6 +95,44 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     /// </summary>
     public long FindEndOfFile(long offset)
     {
+        // The tokens after the section, so that the keyword in a string or a comment is not an end; the data of a stream
+        // (a cross-reference stream) is skipped to its endstream keyword. A section followed by more than the window is
+        // searched in its bytes after the window
+        const int Window = 16 * 1024 * 1024;
+        offset = Math.Max(offset, 0);
+        var windowLength = (int)Math.Min(Window, Math.Max(0, _input.Length - offset));
+        var window = new byte[windowLength];
+        windowLength = _input.Read(offset, window);
+        var lexer = new PdfLexer(window.AsMemory(0, windowLength));
+        var previous = default(PdfToken);
+        while (true)
+        {
+            var token = lexer.Next();
+            if (token.Kind == PdfTokenKind.EndOfInput)
+                break;
+
+            if (lexer.IsKeyword(token, "stream"u8))
+            {
+                var endOfStream = lexer.Span[token.End..].IndexOf("endstream"u8);
+                if (endOfStream < 0)
+                    break;
+
+                lexer.Position = token.End + endOfStream + "endstream"u8.Length;
+            }
+            else if (token.Kind == PdfTokenKind.Integer && lexer.IsKeyword(previous, "startxref"u8))
+            {
+                var end = MatchEndOfFile(lexer.Span, token.End);
+                if (end >= 0)
+                    return offset + end;
+            }
+
+            previous = token;
+        }
+
+        if (offset + windowLength >= _input.Length)
+            return _input.Length;
+
+        offset += windowLength;
         var keyword = "startxref"u8;
         const int ChunkSize = 64 * 1024;
         const int Overlap = 64;
@@ -126,7 +164,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             ArrayPool<byte>.Shared.Return(buffer);
         }
 
-        // After startxref: white space, the digits of the offset, white space, %%EOF and its end of line
+        // After startxref: white space, the digits of the offset, then the end of file
         static int MatchFileTrailer(ReadOnlySpan<byte> span, int position)
         {
             position = SkipWhitespace(span, position);
@@ -136,36 +174,39 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                 position++;
             }
 
-            if (position == digits)
-                return -1;
-
-            position = SkipWhitespace(span, position);
-            if (!span[position..].StartsWith("%%EOF"u8))
-                return -1;
-
-            position += 5;
-            if (position < span.Length && span[position] == (byte)'\r')
-            {
-                position++;
-            }
-
-            if (position < span.Length && span[position] == (byte)'\n')
-            {
-                position++;
-            }
-
-            return position;
+            return position == digits ? -1 : MatchEndOfFile(span, position);
         }
+    }
 
-        static int SkipWhitespace(ReadOnlySpan<byte> span, int position)
+    /// <summary>Matches white space, <c>%%EOF</c> and its end of line at a position: the offset after them, or -1.</summary>
+    private static int MatchEndOfFile(ReadOnlySpan<byte> span, int position)
+    {
+        position = SkipWhitespace(span, position);
+        if (!span[position..].StartsWith("%%EOF"u8))
+            return -1;
+
+        position += 5;
+        if (position < span.Length && span[position] == (byte)'\r')
         {
-            while (position < span.Length && PdfLexer.IsWhitespace(span[position]))
-            {
-                position++;
-            }
-
-            return position;
+            position++;
         }
+
+        if (position < span.Length && span[position] == (byte)'\n')
+        {
+            position++;
+        }
+
+        return position;
+    }
+
+    private static int SkipWhitespace(ReadOnlySpan<byte> span, int position)
+    {
+        while (position < span.Length && PdfLexer.IsWhitespace(span[position]))
+        {
+            position++;
+        }
+
+        return position;
     }
 
     /// <summary>Gets the security handler of an encrypted file, which decrypts the objects when they are loaded.</summary>

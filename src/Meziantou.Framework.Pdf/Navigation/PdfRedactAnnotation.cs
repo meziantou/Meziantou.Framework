@@ -30,6 +30,7 @@ public sealed class PdfRedactAnnotation : PdfMarkupAnnotation
         {
             ArgumentNullException.ThrowIfNull(value);
             Dictionary[AnnotationNames.QuadPoints] = value.Count == 0 ? null : WriteQuadrilaterals(value);
+            SetRectangleFromRegions(value);
         }
     }
 

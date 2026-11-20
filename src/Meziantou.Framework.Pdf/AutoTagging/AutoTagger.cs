@@ -124,19 +124,21 @@ internal static class AutoTagger
     /// </summary>
     private static void Rewrite(PdfDocument document, PdfPage page, Dictionary<int, PdfStructureElement> elements, HashSet<int> pagination, PdfAutoTagResult result)
     {
+        // The operators are copied as they are, from the bytes of the content: only the marked-content operators are
+        // added, so that the numbers keep their precision and the rendering does not change
         var data = page.GetContentData();
         var reader = new ContentStreamReader(data);
         var operands = new List<PdfObject>();
-        var output = new List<(string Name, PdfObject[] Operands, byte[]? Data)>();
+        var output = new List<Segment>();
         var pathStart = -1;
         var index = -1;
         var tree = document.StructureTree;
+        var position = reader.Position;
         while (reader.TryRead(operands, out var name))
         {
             index++;
-            (string, PdfObject[], byte[]?) operation = name == "BI" && operands is [PdfDictionary inline, PdfString imageData]
-                ? (name, [inline], imageData.Bytes.ToArray())
-                : (name, [.. operands], null);
+            var operation = new Segment(position, reader.Position, null, []);
+            position = reader.Position;
             if (PathConstruction.Contains(name))
             {
                 if (pathStart < 0)
@@ -150,9 +152,9 @@ internal static class AutoTagger
 
             if (PathPainting.Contains(name))
             {
-                output.Insert(pathStart >= 0 ? pathStart : output.Count, ("BMC", [PdfName.Create("Artifact")], null));
+                output.Insert(pathStart >= 0 ? pathStart : output.Count, Segment.Operator("BMC", PdfName.Create("Artifact")));
                 output.Add(operation);
-                output.Add(("EMC", [], null));
+                output.Add(Segment.Operator("EMC"));
                 pathStart = -1;
                 result.Artifacts++;
                 continue;
@@ -175,29 +177,45 @@ internal static class AutoTagger
             if (elements.TryGetValue(index, out var element))
             {
                 var mcid = tree.AddMarkedContent(element, page);
-                output.Add(("BDC", [PdfName.Create(element.Type), new PdfDictionary { [PdfName.Create("MCID")] = PdfInteger.Get(mcid) }], null));
+                output.Add(Segment.Operator("BDC", PdfName.Create(element.Type), new PdfDictionary { [PdfName.Create("MCID")] = PdfInteger.Get(mcid) }));
             }
             else if (pagination.Contains(index))
             {
-                output.Add(("BDC", [PdfNames.Artifact, new PdfDictionary { [PdfNames.Type] = PdfName.Create("Pagination") }], null));
+                output.Add(Segment.Operator("BDC", PdfNames.Artifact, new PdfDictionary { [PdfNames.Type] = PdfName.Create("Pagination") }));
                 result.Artifacts++;
             }
             else
             {
-                output.Add(("BMC", [PdfNames.Artifact], null));
+                output.Add(Segment.Operator("BMC", PdfNames.Artifact));
                 result.Artifacts++;
             }
 
             output.Add(operation);
-            output.Add(("EMC", [], null));
+            output.Add(Segment.Operator("EMC"));
         }
 
         var writer = new Writing.PdfByteWriter(data.Length + (output.Count * 16));
-        foreach (var (name, values, imageData) in output)
+        foreach (var segment in output)
         {
-            ContentStreamWriter.Write(writer, name, values, imageData);
+            if (segment.Name is { } name)
+            {
+                ContentStreamWriter.Write(writer, name, segment.Operands);
+            }
+            else
+            {
+                writer.Write(data.AsSpan(segment.Start, segment.End - segment.Start));
+            }
+
+            // The bytes of an operation can end with its operator: a new line separates it from the next one
+            writer.WriteNewLine();
         }
 
         page.Dictionary[PdfNames.Contents] = document.Objects.Add(new PdfStream(new PdfDictionary(), writer.ToArray()));
+    }
+
+    /// <summary>An operation of the content: its bytes in the original content, or a marked-content operator to write.</summary>
+    private sealed record Segment(int Start, int End, string? Name, PdfObject[] Operands)
+    {
+        public static Segment Operator(string name, params PdfObject[] operands) => new(0, 0, name, operands);
     }
 }

@@ -999,6 +999,37 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void AutoTagKeepsTheOperatorsAsTheyAre()
+    {
+        const string Content = "q 0.0000004 0 0 0.0000004 0 0 cm 0 0 m 250000000 0 l 250000000 250000000 l f Q\nBT /F1 12 Tf 72 700 Td (Text) Tj ET";
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 800] /Resources << /Font << /F1 4 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream(Content))
+            .ToArray();
+        var document = PdfDocument.Open(file);
+        using var before = document.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+
+        document.AutoTag();
+
+        var content = Encoding.Latin1.GetString(document.Pages[0].GetContentData());
+        Assert.Contains("0.0000004 0 0 0.0000004 0 0 cm", content, StringComparison.Ordinal);
+        Assert.Contains("(Text) Tj", content, StringComparison.Ordinal);
+        Assert.Contains("BDC", content, StringComparison.Ordinal);
+        using var after = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        for (var y = 0; y < before.Height; y++)
+        {
+            for (var x = 0; x < before.Width; x++)
+            {
+                if (before.Frames[0][x, y] != after.Frames[0][x, y])
+                    Assert.Fail($"The pixel ({x}, {y}) changed");
+            }
+        }
+    }
+
+    [Fact]
     public void ConvertToPdfA_LevelANeedsTheTextOfTheGlyphs()
     {
         var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");

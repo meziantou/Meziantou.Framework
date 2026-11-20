@@ -71,6 +71,36 @@ app.MapGet("/secure.js", () => Results.Text("""
     document.getElementById('copy').addEventListener('click', () => navigator.clipboard.writeText('Copied text'));
     document.getElementById('paste').addEventListener('click', async () => document.querySelector('output').textContent = await navigator.clipboard.readText());
     """, "text/javascript"));
+app.MapGet("/dialogs", () => Html("Dialogs", """
+    <ul><li id="item">Report.pdf</li></ul>
+    <button id="delete">Delete</button>
+    <button id="rename">Rename</button>
+    <button id="save">Save</button>
+    <a href="/">Home</a>
+    <output></output>
+    <script>
+      const item = document.getElementById('item');
+      const output = document.querySelector('output');
+      document.getElementById('delete').addEventListener('click', () => {
+        if (confirm('Delete ' + item.textContent + '?')) {
+          item.remove();
+          alert('Deleted');
+        } else {
+          output.textContent = 'Kept';
+        }
+      });
+      document.getElementById('rename').addEventListener('click', () => {
+        const name = prompt('New name', item.textContent);
+        if (name !== null)
+          item.textContent = name;
+      });
+
+      document.getElementById('save').addEventListener('click', () => setTimeout(() => alert('Saved'), 100));
+
+      // Unsaved changes: leaving the page asks for a confirmation (once the user interacted with the page)
+      addEventListener('beforeunload', e => e.preventDefault());
+    </script>
+    """));
 
 app.Run();
 

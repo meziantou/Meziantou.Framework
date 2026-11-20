@@ -47,6 +47,8 @@ await Expect(page.Locator("#greeting")).ToHaveTextAsync("Hello Ada");
 As in Playwright, `GetByRole`, `GetByLabel`, `GetByText` and the other locators find their element again each time they
 are used, the actions wait until the element is visible, stable, enabled and not covered, and the assertions of
 `Expectations.Expect` retry until they pass. The elements are the DOM elements of `Meziantou.Framework.WebPlatform.Dom`.
+The `alert()`, `confirm()` and `prompt()` dialogs are answered in advance by the `DialogController` of the page
+(`page.Dialogs.AcceptNext()`, `DismissNext()`, `HandleNext(...)`), which records them; an unexpected dialog fails the test.
 
 ## WebAssembly and Blazor WebAssembly
 

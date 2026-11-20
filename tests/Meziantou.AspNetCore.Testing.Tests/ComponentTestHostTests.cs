@@ -238,6 +238,26 @@ public sealed class ComponentTestHostTests
     }
 
     [Fact]
+    public async Task JSInterop_ConfirmShowsADialogOfThePage()
+    {
+        #region ComponentTestHost_Dialogs
+        // The calls of the components to confirm() go to the window of the page
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions { EnableJavaScript = true });
+        var component = await host.RenderAsync<DeleteButton>();
+
+        host.Dialogs.AcceptNext();
+        await component.GetByRole("button", "Delete").ClickAsync();
+
+        Assert.Equal("Deleted", component.Find("#status").TextContent);
+        Assert.Equal("Delete the item?", Assert.Single(host.Dialogs.History).Message);
+        #endregion
+
+        // Without answer, the strict mode fails the click
+        await Assert.ThrowsAsync<UnexpectedDialogException>(() => component.GetByRole("button", "Delete").ClickAsync());
+        Assert.Equal("Kept", component.Find("#status").TextContent);
+    }
+
+    [Fact]
     public async Task JSInterop_CallsTheScriptsOfThePage()
     {
         #region ComponentTestHost_PageJavaScript

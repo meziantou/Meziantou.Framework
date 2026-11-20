@@ -1,0 +1,9 @@
+@inject IJSRuntime JS
+<p id="status">@_status</p>
+<button @onclick="DeleteAsync">Delete</button>
+
+@code {
+    private string _status = "";
+
+    private async Task DeleteAsync() => _status = await JS.InvokeAsync<bool>("confirm", "Delete the item?") ? "Deleted" : "Kept";
+}

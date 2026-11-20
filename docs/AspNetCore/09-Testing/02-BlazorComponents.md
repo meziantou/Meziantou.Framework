@@ -98,5 +98,5 @@ Assert.Equal("Not found", app.Find("p").TextContent);
 
 - [Locators and assertions](03-Locators.md): find the elements, act on them once they are actionable, and assert their state.
 - [User input](04-UserInput.md): the mouse, the keyboard and the touch screen.
-- [Snapshots](05-Snapshots.md): the HTML, the accessibility tree and the screenshots.
-- [JavaScript interop](06-JavaScriptInterop.md): set up the results of the calls, or run the scripts of the page.
+- [Snapshots](06-Snapshots.md): the HTML, the accessibility tree and the screenshots.
+- [JavaScript interop](07-JavaScriptInterop.md): set up the results of the calls, or run the scripts of the page.

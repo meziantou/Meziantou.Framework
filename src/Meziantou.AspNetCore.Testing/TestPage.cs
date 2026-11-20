@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using Meziantou.AspNetCore.Testing.Internals;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Imaging;
@@ -21,6 +22,8 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
     private readonly List<string> _consoleMessages = [];
     private readonly List<ScriptError> _scriptErrors = [];
     private readonly List<ContentSecurityPolicyViolationReport> _contentSecurityPolicyViolations = [];
+    private readonly Queue<PageDialog> _unreadDialogs = [];
+    private readonly List<Exception> _dialogFailures = [];
     private readonly Lock _signalLock = new();
     private TaskCompletionSource _workSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _disposed;
@@ -32,6 +35,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         ArgumentNullException.ThrowIfNull(settings);
         DefaultTimeout = settings.DefaultTimeout;
         TestIdAttribute = settings.TestIdAttribute;
+        Dialogs = settings.Dialogs ?? new DialogController();
         _scriptEngine = settings.ScriptEngine;
         var options = new BrowsingContextOptions
         {
@@ -61,8 +65,11 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         var unhandledScriptError = options.UnhandledScriptError;
         var contentSecurityPolicyViolation = options.ContentSecurityPolicyViolation;
         var documentActivated = options.DocumentActivated;
+        var userPromptHandler = options.UserPromptHandler;
         _browsingContext = new BrowsingContext(options with
         {
+            UserPromptHandler = (context, prompt) => Dialogs.Handle(this, context, prompt, userPromptHandler),
+
             ConsoleMessage = (context, message) =>
             {
                 lock (_consoleMessages)
@@ -154,6 +161,13 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             }
         }
     }
+
+    /// <summary>
+    /// Gets the controller that answers the dialogs of the page (<c>alert()</c>, <c>confirm()</c>, <c>prompt()</c>, and the
+    /// confirmation of a <c>beforeunload</c> event) and records them: <see cref="TestPageSettings.Dialogs"/>, or a controller
+    /// of the page in <see cref="DialogMode.Strict"/> mode.
+    /// </summary>
+    public DialogController Dialogs { get; }
 
     /// <summary>Gets the maximum time the waits of the page wait for.</summary>
     public TimeSpan DefaultTimeout { get; }
@@ -263,6 +277,35 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         }
     }
 
+    /// <summary>
+    /// Runs the event loop of the page until it shows a dialog that this method did not return yet, and returns it with its
+    /// answer. The dialog is answered when it is shown, by the handlers of <see cref="Dialogs"/>: set them up before.
+    /// </summary>
+    /// <param name="timeout">The maximum time to wait, or null for <see cref="DefaultTimeout"/>.</param>
+    /// <param name="cancellationToken">A token to cancel the wait.</param>
+    /// <returns>The dialog.</returns>
+    /// <exception cref="TimeoutException">The page shows no new dialog before <paramref name="timeout"/>.</exception>
+    public async Task<PageDialog> WaitForDialogAsync(TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+    {
+        PageDialog? dialog = null;
+        try
+        {
+            await WaitCoreAsync(() =>
+            {
+                lock (_unreadDialogs)
+                {
+                    return _unreadDialogs.TryDequeue(out dialog);
+                }
+            }, timeout, cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException ex)
+        {
+            throw new TimeoutException($"The page shows no dialog after {timeout ?? DefaultTimeout}", ex);
+        }
+
+        return dialog!;
+    }
+
     /// <summary>Gets the page of a node of one of its documents.</summary>
     /// <param name="node">The node.</param>
     /// <returns>The page.</returns>
@@ -336,6 +379,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             }
 
             RunEventLoop();
+            ThrowIfDialogFailed();
             ThrowIfFailed();
 
             bool done;
@@ -372,6 +416,43 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
 
             await Task.WhenAny(waits).ConfigureAwait(false);
         }
+    }
+
+    internal void OnDialogShown(PageDialog dialog)
+    {
+        lock (_unreadDialogs)
+        {
+            _unreadDialogs.Enqueue(dialog);
+        }
+    }
+
+    internal void ReportDialogFailure(Exception exception)
+    {
+        lock (_dialogFailures)
+        {
+            _dialogFailures.Add(exception);
+        }
+    }
+
+    // The failures of the dialogs (an unexpected dialog, an exception of a handler) fail the action that showed them
+    internal void ThrowIfDialogFailed()
+    {
+        Exception[] failures;
+        lock (_dialogFailures)
+        {
+            if (_dialogFailures.Count == 0)
+                return;
+
+            failures = [.. _dialogFailures];
+            _dialogFailures.Clear();
+        }
+
+        if (failures is [var failure])
+        {
+            ExceptionDispatchInfo.Throw(failure);
+        }
+
+        throw new AggregateException("The dialogs of the page failed", failures);
     }
 
     private void SignalWork()

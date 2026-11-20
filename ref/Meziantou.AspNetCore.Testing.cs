@@ -32,6 +32,28 @@ namespace Meziantou.AspNetCore.Testing
         public System.TimeSpan? Timeout { get => throw null; init { } }
     }
 
+    public sealed class DialogController
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.AspNetCore.Testing.PageDialog> History { get => throw null; }
+        public Meziantou.AspNetCore.Testing.DialogMode Mode { get => throw null; set { } }
+        public int PendingCount { get => throw null; }
+        public void AcceptAll(string? text = null) { }
+        public void AcceptNext(string? text = null) { }
+        public static Meziantou.AspNetCore.Testing.DialogController AcceptingAll() => throw null;
+        public void ClearHistory() { }
+        public void DismissAll() { }
+        public void DismissNext() { }
+        public static Meziantou.AspNetCore.Testing.DialogController DismissingAll() => throw null;
+        public void HandleAll(System.Action<Meziantou.AspNetCore.Testing.PageDialog>? handler) { }
+        public void HandleNext(System.Action<Meziantou.AspNetCore.Testing.PageDialog> handler) { }
+    }
+
+    public enum DialogMode
+    {
+        Strict = 0,
+        Loose = 1,
+    }
+
     public static class DomSnapshot
     {
         public static string GetAccessibilitySnapshot(System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Dom.Node> nodes) => throw null;
@@ -254,6 +276,21 @@ namespace Meziantou.AspNetCore.Testing
         public System.Threading.Tasks.Task ToHaveUrlAsync(string url, System.TimeSpan? timeout = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
+    public sealed class PageDialog
+    {
+        public bool Accepted { get => throw null; }
+        public string DefaultValue { get => throw null; }
+        public bool IsAnswered { get => throw null; }
+        public bool IsUnexpected { get => throw null; }
+        public string Message { get => throw null; }
+        public Meziantou.AspNetCore.Testing.TestPage Page { get => throw null; }
+        public string? Text { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UserPromptType Type { get => throw null; }
+        public void Accept(string? text = null) { }
+        public void Dismiss() { }
+        public override string ToString() => throw null;
+    }
+
     public sealed class PageInput
     {
         public Meziantou.Framework.WebPlatform.Dom.UserInput Raw { get => throw null; }
@@ -298,6 +335,7 @@ namespace Meziantou.AspNetCore.Testing
         public System.Collections.Generic.IReadOnlyList<string> ConsoleMessages { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport> ContentSecurityPolicyViolations { get => throw null; }
         public System.TimeSpan DefaultTimeout { get => throw null; }
+        public Meziantou.AspNetCore.Testing.DialogController Dialogs { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; }
         public Meziantou.AspNetCore.Testing.PageInput Input { get => throw null; }
         protected bool IsDisposed { get => throw null; }
@@ -325,6 +363,7 @@ namespace Meziantou.AspNetCore.Testing
         protected virtual void ThrowIfFailed() { }
         public System.Threading.Tasks.Task WaitForAssertionAsync(System.Action assertion, System.TimeSpan? timeout = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task WaitForAsync(System.Func<bool> condition, System.TimeSpan? timeout = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.AspNetCore.Testing.PageDialog> WaitForDialogAsync(System.TimeSpan? timeout = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task WaitForIdleAsync(System.TimeSpan? timeout = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
@@ -333,12 +372,20 @@ namespace Meziantou.AspNetCore.Testing
         public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
+        public Meziantou.AspNetCore.Testing.DialogController? Dialogs { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
         public string TestIdAttribute { get => throw null; init { } }
         public System.TimeProvider? TimeProvider { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions Viewport { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
+    }
+
+    public sealed class UnexpectedDialogException : System.Exception
+    {
+        public Meziantou.AspNetCore.Testing.PageDialog? Dialog { get => throw null; }
+        public UnexpectedDialogException(string message) { }
+        public UnexpectedDialogException(string message, System.Exception innerException) { }
     }
 
     public sealed class WebAppBrowser : System.IAsyncDisposable, System.IDisposable
@@ -359,6 +406,7 @@ namespace Meziantou.AspNetCore.Testing
     {
         public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
+        public Meziantou.AspNetCore.Testing.DialogController? Dialogs { get => throw null; init { } }
         public bool EnableJavaScript { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.DocumentRequest, bool>? IsLongLivedRequest { get => throw null; init { } }
         public string TestIdAttribute { get => throw null; init { } }
@@ -428,6 +476,7 @@ namespace Meziantou.AspNetCore.Testing.Components
         public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions, Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>? ConfigureBrowsingContext { get => throw null; init { } }
         public System.Collections.Generic.IDictionary<string, System.Func<Meziantou.Framework.WebPlatform.Dom.Event, System.EventArgs>> CustomEventArgs { get => throw null; }
         public System.TimeSpan DefaultTimeout { get => throw null; init { } }
+        public Meziantou.AspNetCore.Testing.DialogController? Dialogs { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
         public bool EnableJavaScript { get => throw null; init { } }
         public string HostPage { get => throw null; init { } }

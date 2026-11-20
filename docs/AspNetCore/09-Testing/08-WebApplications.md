@@ -37,7 +37,7 @@ await Expect(page.Locator("#greeting")).ToHaveTextAsync("Hello Ada");
 [TestDocumentLoaders.FromDirectories](cref:Meziantou.AspNetCore.Testing.TestDocumentLoaders.FromDirectories(System.Uri,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.String))
 serves the files of folders, such as the output of `dotnet publish`: the URL of a folder serves its `index.html` file,
 and the fallback file serves the routes of a single-page application, as `MapFallbackToFile` does. See
-[Blazor WebAssembly](08-BlazorApplications.md#blazor-webassembly).
+[Blazor WebAssembly](09-BlazorApplications.md#blazor-webassembly).
 
 The pages handle the cookies and the redirects, as a browser does: the pages of a
 [WebAppBrowser](cref:Meziantou.AspNetCore.Testing.WebAppBrowser) share their cookies
@@ -67,7 +67,7 @@ Assert.Equal("Bonjour Ada", page.Find("#greeting").TextContent);
 [BrowserPage](cref:Meziantou.AspNetCore.Testing.BrowserPage) navigates (`GoToAsync`, `GoBackAsync`, `GoForwardAsync`,
 `ReloadAsync`) and waits until the new document is loaded. The queries, the actions, the waits and the snapshots are the
 ones of [TestPage](cref:Meziantou.AspNetCore.Testing.TestPage), shared with the tests of Blazor components: see
-[Locators and assertions](03-Locators.md), [User input](04-UserInput.md) and [Snapshots](05-Snapshots.md).
+[Locators and assertions](03-Locators.md), [User input](04-UserInput.md), [Dialogs](05-Dialogs.md) and [Snapshots](06-Snapshots.md).
 
 The pages run their scripts; set [EnableJavaScript](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.EnableJavaScript)
 to false to test the pages as without JavaScript. The errors of the scripts are in [ScriptErrors](cref:Meziantou.AspNetCore.Testing.TestPage.ScriptErrors), their console in
@@ -78,7 +78,7 @@ loads) in [ContentSecurityPolicyViolations](cref:Meziantou.AspNetCore.Testing.Te
 
 [ConfigureBrowsingContext](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.ConfigureBrowsingContext) changes any
 option of the browsing contexts of the pages ([BrowsingContextOptions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions)): the user agent, the languages, the permissions,
-the geolocation, the dialogs... It receives the options made from the other settings and returns the options to use,
+the geolocation, the dialogs (see [Dialogs](05-Dialogs.md) for the answers of a page)... It receives the options made from the other settings and returns the options to use,
 usually with a `with` expression. The pages still record their console messages, script errors and content security
 policy violations, and call the callbacks that the function sets. The function cannot replace the document loader nor
 the script engine, which the pages depend on to wait and to run the JavaScript interop: use the loader of the browser and

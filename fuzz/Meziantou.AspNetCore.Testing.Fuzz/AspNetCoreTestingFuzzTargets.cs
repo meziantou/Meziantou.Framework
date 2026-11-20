@@ -17,6 +17,7 @@ public static class AspNetCoreTestingFuzzTargets
         new("aspnetcore-testing-static-files", StaticFiles) { Seeds = GetSeeds, Dictionary = ["/", "..", "%2e", "%2f", "%5c", "\\", "?", "#", "//", "%00", "secret.txt", "public.txt", "index.html", "sub/", "static-secret/", "https://localhost", "https://example.com", ":", "@"] },
         new("aspnetcore-testing-long-lived-requests", LongLivedRequests) { Seeds = GetSeeds, Dictionary = ["?", "&", "id=", "_=", "=", "#", "https://localhost/_blazor"] },
         .. LocatorFuzzTargets.All,
+        .. DialogFuzzTargets.All,
         .. Components.ComponentFuzzTargets.All,
     ];
 

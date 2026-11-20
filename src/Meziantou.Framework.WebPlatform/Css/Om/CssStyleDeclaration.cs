@@ -820,22 +820,43 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             {
                 var tailStart = children.Count > 0 ? children[^1].End : GetContentStart(source, value);
 
-                // The content of a block deeper than the maximum nesting depth is skipped by the parser: it is parsed again from
-                // its start, so that its unclosed functions, blocks and strings are closed before the closers of this block
+                // The content of a block deeper than the maximum nesting depth is skipped by the parser: its tokens are scanned
+                // once, so that its unclosed functions, blocks and strings are closed before the closers of this block
                 if (children.Count == 0 && tailStart < source.Length)
                 {
-                    var tail = source[tailStart..];
-                    var tailComponents = CssParser.ParseListOfComponentValues(tail);
-                    if (tailComponents.Count > 0 && tailComponents[^1].End >= tail.Length)
+                    var tokenizer = new CssTokenizer(source[tailStart..]);
+                    var endings = new Stack<char>();
+                    CssPreservedToken? lastToken = null;
+                    while (tokenizer.ConsumeToken() is { Type: not CssTokenType.EndOfFile } skipped)
                     {
-                        var fixedText = FixupEndOfFile(text, tailComponents[^1], tail, closeBlocks);
-                        return closeBlocks ? fixedText + closers : fixedText;
+                        lastToken = new CssPreservedToken(skipped) { Start = skipped.Start, End = skipped.End };
+                        switch (skipped.Type)
+                        {
+                            case CssTokenType.LeftCurlyBracket:
+                                endings.Push('}');
+                                break;
+                            case CssTokenType.LeftSquareBracket:
+                                endings.Push(']');
+                                break;
+                            case CssTokenType.LeftParenthesis or CssTokenType.Function:
+                                endings.Push(')');
+                                break;
+                            case CssTokenType.RightCurlyBracket or CssTokenType.RightSquareBracket or CssTokenType.RightParenthesis when endings.TryPeek(out var ending) && ending == skipped.Type switch { CssTokenType.RightCurlyBracket => '}', CssTokenType.RightSquareBracket => ']', _ => ')' }:
+                                endings.Pop();
+                                break;
+                        }
                     }
 
-                    if (tailComponents.Count > 0)
+                    // (the stack enumerates the innermost closer first)
+                    closers.Insert(0, string.Concat(endings));
+                    source = tokenizer.Input;
+                    if (lastToken is not null && lastToken.End >= source.Length)
                     {
-                        tailStart += tailComponents[^1].End;
+                        value = lastToken;
+                        break;
                     }
+
+                    tailStart = lastToken?.End ?? 0;
                 }
 
                 if (EndsInUnclosedComment(source, tailStart))

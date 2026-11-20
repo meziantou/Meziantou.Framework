@@ -45,9 +45,13 @@ public static partial class WebPlatformFuzzTargets
         FuzzAssert.Equal(serialized, MediaContentType.Parse(serialized)?.ToString(), "The serialization of the content type parses to another content type");
 
         // A valid MIME type string is a MIME type of the lenient parser, with the first value of each parameter
-        var mimeType = MimeType.Parse(input);
-        FuzzAssert.True(mimeType is not null, "A content type is not a MIME type");
-        FuzzAssert.Equal(contentType.Essence, mimeType!.Essence, "The essence differs from the one of the MIME type");
+        if (MimeType.Parse(input) is not { } mimeType)
+        {
+            FuzzAssert.True(false, "A content type is not a MIME type");
+            return;
+        }
+
+        FuzzAssert.Equal(contentType.Essence, mimeType.Essence, "The essence differs from the one of the MIME type");
         foreach (var name in contentType.Parameters.Select(parameter => parameter.Key).Distinct(StringComparer.Ordinal))
         {
             FuzzAssert.Equal(contentType.Parameters.First(parameter => parameter.Key == name).Value, mimeType.GetParameter(name), $"The parameter '{name}' differs from the one of the MIME type");

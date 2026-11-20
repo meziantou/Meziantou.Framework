@@ -9,8 +9,11 @@ description: What the library does not do, so that you can plan around it.
   algorithm, without a dictionary: the languages written without spaces between their words (Thai, Lao, Khmer,
   Burmese) are broken between their characters only when a word does not fit. It does not apply the bidirectional
   algorithm to the lines.
-- The cells of a table hold text: no image, nested table or cell that spans several rows. The justified lines stretch
-  the spaces only.
+- The cells of a table of the content builder ([PdfTable](cref:Meziantou.Framework.Pdf.PdfTable)) hold text: no image, nested table or cell that spans
+  several rows; the tables of a flow document have them. The justified lines stretch the spaces only.
+- A flow document ([PdfFlowDocument](cref:Meziantou.Framework.Pdf.PdfFlowDocument)) does not hyphenate, nor break with a dictionary. It reorders the
+  runs of a right-to-left paragraph, not the characters of different directions inside a run of a standard font. A
+  table row taller than a page goes beyond the bottom margin. It has no form fields.
 - The standard 14 fonts show the characters of `WinAnsiEncoding` (Symbol and ZapfDingbats their own); other characters
   need an embedded font.
 - The fonts with CFF2 outlines, the bitmap fonts and the instances of variable fonts are not embedded.

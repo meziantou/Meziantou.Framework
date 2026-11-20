@@ -9,6 +9,8 @@ namespace Meziantou.Framework.Pdf;
 /// </summary>
 public sealed class PdfStructureElement
 {
+    private static readonly PdfName AName = PdfName.Create("A");
+
     private static readonly PdfName AltName = PdfName.Create("Alt");
     private static readonly PdfName ActualTextName = PdfName.Create("ActualText");
     private static readonly PdfName LangName = PdfName.Create("Lang");
@@ -82,6 +84,73 @@ public sealed class PdfStructureElement
     {
         ArgumentNullException.ThrowIfNull(annotation);
         Tree.AddAnnotation(this, annotation);
+    }
+
+    /// <summary>
+    /// Gets an attribute of the element (<c>/A</c>, ISO 32000-2, 14.7.6): the value of an entry of the attribute object of
+    /// an owner, such as the <c>Scope</c> of the <c>Table</c> owner.
+    /// </summary>
+    /// <param name="owner">The owner of the attribute object (<c>/O</c>): <c>Layout</c>, <c>List</c>, <c>PrintField</c>, <c>Table</c>, ...</param>
+    /// <param name="name">The name of the attribute.</param>
+    /// <returns>The value, or <see langword="null"/> when the element has no such attribute.</returns>
+    public PdfObject? GetAttribute(string owner, string name)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(owner);
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        return FindAttributeObject(owner)?.GetResolved(PdfName.Create(name));
+    }
+
+    /// <summary>Sets an attribute of the element (<c>/A</c>, 14.7.6), in the attribute object of its owner, which is created when the element has none.</summary>
+    /// <param name="owner">The owner of the attribute object (<c>/O</c>): <c>Layout</c>, <c>List</c>, <c>PrintField</c>, <c>Table</c>, ...</param>
+    /// <param name="name">The name of the attribute, such as <c>Scope</c>, <c>RowSpan</c> or <c>BBox</c>.</param>
+    /// <param name="value">The value, or <see langword="null"/> to remove the attribute.</param>
+    public void SetAttribute(string owner, string name, PdfObject? value)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(owner);
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        var attributes = FindAttributeObject(owner);
+        if (attributes is null)
+        {
+            if (value is null)
+                return;
+
+            attributes = new PdfDictionary { [PdfName.Create("O")] = PdfName.Create(owner) };
+            switch (Dictionary.GetResolved(AName))
+            {
+                case null:
+                    Dictionary[AName] = attributes;
+                    break;
+                case PdfArray array:
+                    array.Add(attributes);
+                    break;
+                case var existing:
+                    Dictionary[AName] = new PdfArray(existing, attributes);
+                    break;
+            }
+        }
+
+        attributes[PdfName.Create(name)] = value;
+    }
+
+    /// <summary>Finds the attribute object of an owner (14.7.6.1): <c>/A</c> is an attribute object, or an array of attribute objects and revision numbers.</summary>
+    private PdfDictionary? FindAttributeObject(string owner)
+    {
+        var ownerName = PdfName.Create("O");
+        switch (Dictionary.GetResolved(AName))
+        {
+            case PdfDictionary single when single.GetName(ownerName)?.Value == owner:
+                return single;
+            case PdfArray array:
+                for (var i = 0; i < array.Count && i < 256; i++)
+                {
+                    if (array.GetResolved(i) is PdfDictionary item && item.GetName(ownerName)?.Value == owner)
+                        return item;
+                }
+
+                break;
+        }
+
+        return null;
     }
 
     internal void AddKid(PdfObject kid)

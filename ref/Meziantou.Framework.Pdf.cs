@@ -650,6 +650,77 @@ namespace Meziantou.Framework.Pdf
         EvenOdd = 1,
     }
 
+    public class PdfFlowContainer
+    {
+        public Meziantou.Framework.Pdf.PdfFlowContainer Heading(int level, string text) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer Image(Meziantou.Framework.Pdf.PdfImage image, string alternateDescription, double? width = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer List(System.Collections.Generic.IEnumerable<System.Action<Meziantou.Framework.Pdf.PdfFlowContainer>> items, bool ordered = false) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer List(System.Collections.Generic.IEnumerable<string> items, bool ordered = false) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer Paragraph(System.Action<Meziantou.Framework.Pdf.PdfInlineBuilder> build, Meziantou.Framework.Pdf.PdfParagraphStyle? style = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer Paragraph(string text, Meziantou.Framework.Pdf.PdfParagraphStyle? style = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer Rule(Meziantou.Framework.Pdf.PdfColor? color = null, double width = 0.5d) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer Spacer(double height) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowContainer Table(System.Action<Meziantou.Framework.Pdf.PdfFlowTableBuilder> build) => throw null;
+    }
+
+    public sealed class PdfFlowDocument : Meziantou.Framework.Pdf.PdfFlowContainer
+    {
+        public PdfFlowDocument(Meziantou.Framework.Pdf.PdfFlowOptions? options = null) { }
+        public Meziantou.Framework.Pdf.PdfDocument Build() => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowDocument Columns(int count, double gap, System.Action<Meziantou.Framework.Pdf.PdfFlowContainer> content) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument Heading(int level, string text) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument Image(Meziantou.Framework.Pdf.PdfImage image, string alternateDescription, double? width = null) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument List(System.Collections.Generic.IEnumerable<System.Action<Meziantou.Framework.Pdf.PdfFlowContainer>> items, bool ordered = false) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument List(System.Collections.Generic.IEnumerable<string> items, bool ordered = false) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowDocument PageBreak() => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument Paragraph(System.Action<Meziantou.Framework.Pdf.PdfInlineBuilder> build, Meziantou.Framework.Pdf.PdfParagraphStyle? style = null) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument Paragraph(string text, Meziantou.Framework.Pdf.PdfParagraphStyle? style = null) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument Rule(Meziantou.Framework.Pdf.PdfColor? color = null, double width = 0.5d) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument Spacer(double height) => throw null;
+        public new Meziantou.Framework.Pdf.PdfFlowDocument Table(System.Action<Meziantou.Framework.Pdf.PdfFlowTableBuilder> build) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowDocument TableOfContents(string title = "Contents") => throw null;
+    }
+
+    public sealed class PdfFlowOptions
+    {
+        public bool CreateOutline { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfFont Font { get => throw null; init { } }
+        public double FontSize { get => throw null; init { } }
+        public System.Func<int, int, string>? Footer { get => throw null; init { } }
+        public System.Func<int, int, string>? Header { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfFont? HeadingFont { get => throw null; init { } }
+        public string? Language { get => throw null; init { } }
+        public double LineHeight { get => throw null; init { } }
+        public double MarginBottom { get => throw null; init { } }
+        public double MarginLeft { get => throw null; init { } }
+        public double MarginRight { get => throw null; init { } }
+        public double MarginTop { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfSize PageSize { get => throw null; init { } }
+        public double ParagraphSpacing { get => throw null; init { } }
+        public bool Tagged { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfColor TextColor { get => throw null; init { } }
+        public string? Title { get => throw null; init { } }
+    }
+
+    public sealed class PdfFlowRowBuilder
+    {
+        public Meziantou.Framework.Pdf.PdfFlowRowBuilder Cell(System.Action<Meziantou.Framework.Pdf.PdfFlowContainer> content, int columnSpan = 1, int rowSpan = 1) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowRowBuilder Cell(string text, int columnSpan = 1, int rowSpan = 1) => throw null;
+    }
+
+    public sealed class PdfFlowTableBuilder
+    {
+        public Meziantou.Framework.Pdf.PdfColor BorderColor { get => throw null; set { } }
+        public double BorderWidth { get => throw null; set { } }
+        public double CellPadding { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfColor? HeaderBackground { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfFlowTableBuilder Columns(params System.ReadOnlySpan<double> weights) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowTableBuilder HeaderRow(System.Action<Meziantou.Framework.Pdf.PdfFlowRowBuilder> build) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowTableBuilder HeaderRow(params System.Collections.Generic.IEnumerable<string> cells) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowTableBuilder Row(System.Action<Meziantou.Framework.Pdf.PdfFlowRowBuilder> build) => throw null;
+        public Meziantou.Framework.Pdf.PdfFlowTableBuilder Row(params System.Collections.Generic.IEnumerable<string> cells) => throw null;
+    }
+
     public abstract class PdfFont
     {
         public abstract double Ascent { get; }
@@ -843,6 +914,13 @@ namespace Meziantou.Framework.Pdf
     {
         public static Meziantou.Framework.Pdf.PdfDocument CreateNUp(Meziantou.Framework.Pdf.PdfDocument source, Meziantou.Framework.Pdf.PdfNUpOptions options) => throw null;
         public static int SplitSpreads(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.PdfSpreadSplitOptions? options = null) => throw null;
+    }
+
+    public sealed class PdfInlineBuilder
+    {
+        public Meziantou.Framework.Pdf.PdfInlineBuilder LineBreak() => throw null;
+        public Meziantou.Framework.Pdf.PdfInlineBuilder Link(string text, System.Uri uri, Meziantou.Framework.Pdf.PdfTextStyle? style = null) => throw null;
+        public Meziantou.Framework.Pdf.PdfInlineBuilder Text(string text, Meziantou.Framework.Pdf.PdfTextStyle? style = null) => throw null;
     }
 
     public sealed class PdfInteractiveForm
@@ -1216,6 +1294,21 @@ namespace Meziantou.Framework.Pdf
         public static bool operator !=(Meziantou.Framework.Pdf.PdfPageSummary? left, Meziantou.Framework.Pdf.PdfPageSummary? right) => throw null;
     }
 
+    public sealed class PdfParagraphStyle : System.IEquatable<Meziantou.Framework.Pdf.PdfParagraphStyle>
+    {
+        public Meziantou.Framework.Pdf.PdfTextAlignment? Alignment { get => throw null; init { } }
+        public double Indent { get => throw null; init { } }
+        public double? SpaceAfter { get => throw null; init { } }
+        public double? SpaceBefore { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfTextStyle? TextStyle { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.Pdf.PdfParagraphStyle? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfParagraphStyle? left, Meziantou.Framework.Pdf.PdfParagraphStyle? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfParagraphStyle? left, Meziantou.Framework.Pdf.PdfParagraphStyle? right) => throw null;
+    }
+
     public sealed class PdfPasswordException : Meziantou.Framework.Pdf.PdfException
     {
         public PdfPasswordException(string? message) { }
@@ -1579,6 +1672,8 @@ namespace Meziantou.Framework.Pdf
         public string Type { get => throw null; }
         public void AddAnnotation(Meziantou.Framework.Pdf.PdfAnnotation annotation) { }
         public Meziantou.Framework.Pdf.PdfStructureElement AddElement(string type) => throw null;
+        public Meziantou.Framework.Pdf.Objects.PdfObject? GetAttribute(string owner, string name) => throw null;
+        public void SetAttribute(string owner, string name, Meziantou.Framework.Pdf.Objects.PdfObject? value) { }
     }
 
     public sealed class PdfStructureTree
@@ -1832,6 +1927,19 @@ namespace Meziantou.Framework.Pdf
         public static bool operator !=(Meziantou.Framework.Pdf.PdfTextSegment left, Meziantou.Framework.Pdf.PdfTextSegment right) => throw null;
         public static implicit operator Meziantou.Framework.Pdf.PdfTextSegment(double adjustment) => throw null;
         public static implicit operator Meziantou.Framework.Pdf.PdfTextSegment(string text) => throw null;
+    }
+
+    public sealed class PdfTextStyle : System.IEquatable<Meziantou.Framework.Pdf.PdfTextStyle>
+    {
+        public Meziantou.Framework.Pdf.PdfColor? Color { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; init { } }
+        public double? FontSize { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.Pdf.PdfTextStyle? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Pdf.PdfTextStyle? left, Meziantou.Framework.Pdf.PdfTextStyle? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Pdf.PdfTextStyle? left, Meziantou.Framework.Pdf.PdfTextStyle? right) => throw null;
     }
 
     public sealed class PdfTextWord

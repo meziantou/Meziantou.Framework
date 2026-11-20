@@ -35,7 +35,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   metadata, the outline (bookmarks), links and annotations (notes, text markups, free texts, stamps, flags), page
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
   (`PdfContentBuilder.DrawTextBox`: Unicode line breaking, soft hyphens and pluggable hyphenation), tables
-  (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page), pages moved, duplicated, removed and imported from other documents (merging), N-up sheets and
+  (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page),
+  flow documents laid out in pages and tagged (`PdfFlowDocument`: headings, paragraphs, lists, images, tables, columns,
+  table of contents), pages moved, duplicated, removed and imported from other documents (merging), N-up sheets and
   scanned spreads split into pages (`PdfImposition`), a
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`, with the
   right-to-left lines put in the order of the text by the Unicode Bidirectional Algorithm), positioned

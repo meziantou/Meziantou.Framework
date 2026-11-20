@@ -1,0 +1,5 @@
+using Meziantou.Framework.Pdf.Objects;
+
+namespace Meziantou.Framework.Pdf;
+
+internal sealed record ListBlock(List<List<FlowBlock>> Items, bool Ordered) : FlowBlock;

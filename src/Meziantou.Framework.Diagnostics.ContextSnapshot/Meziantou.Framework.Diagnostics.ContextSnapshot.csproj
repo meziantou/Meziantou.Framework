@@ -15,11 +15,112 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="System.Management" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../common/Win32/Windows.Win32.ComHelpers.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.CHAR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.DECIMAL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HLOCAL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HRESULT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.VARIANT_BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.WIN32_ERROR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IComIID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IVTable-2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IVTable.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.InlineArrayIndexerExtensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.NativeOwnershipAttribute.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoCreateInstance.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetCurrentProcess.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetLogicalProcessorInformationEx.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.LocalFree.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PowerGetActiveScheme.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PowerReadFriendlyName.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SysFreeString.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.WscGetSecurityProviderHealth.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.SysFreeStringSafeHandle.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.ADVANCED_FEATURE_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.BINDPTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.CALLCONV.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.CLSCTX.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.CY.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.DESCKIND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.DISPATCH_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.DISPPARAMS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.ELEMDESC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.EXCEPINFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.FUNCDESC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.FUNCFLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.FUNCKIND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IDLDESC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IDLFLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IDispatch.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IMPLTYPEFLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.INVOKEKIND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.ITypeComp.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.ITypeInfo.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.ITypeLib.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IUnknown.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.SAFEARRAY.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.SAFEARRAYBOUND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.SYSKIND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.TLIBATTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.TYPEATTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.TYPEDESC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.TYPEKIND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.VARDESC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.VARFLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.VARKIND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ole.ARRAYDESC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ole.IRecordInfo.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ole.PARAMDESC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ole.PARAMDESCEX.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ole.PARAMFLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Registry.HKEY.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SecurityCenter.IWSCProductList.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SecurityCenter.IWscProduct.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SecurityCenter.WSCProductList.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SecurityCenter.WSC_SECURITY_PRODUCT_STATE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SecurityCenter.WSC_SECURITY_PROVIDER.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SecurityCenter.WSC_SECURITY_PROVIDER_HEALTH.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SecurityCenter.WSC_SECURITY_SIGNATURE_STATUS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.CACHE_RELATIONSHIP.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.GROUP_AFFINITY.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.GROUP_RELATIONSHIP.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.LOGICAL_PROCESSOR_RELATIONSHIP.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.NUMA_NODE_RELATIONSHIP.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.PROCESSOR_CACHE_TYPE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.PROCESSOR_GROUP_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.PROCESSOR_RELATIONSHIP.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemInformation.SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemServices.SHARED_COMPUTE_UNIT_RELATIONSHIP.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Variant.VARENUM.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Variant.VARIANT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_ITypeComp_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_ITypeInfo_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_ITypeLib_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Ole_IRecordInfo_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_128.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_16.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_18.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_20.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_38.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_256.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_260.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_64.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__ushort_3.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

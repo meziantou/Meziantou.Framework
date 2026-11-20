@@ -26,7 +26,7 @@ internal sealed class NativeDirectoryEnumerator : IDisposable
 
     public static NativeDirectoryEnumerator Open(string path)
     {
-        var handle = TestPInvoke.CreateFile(
+        var handle = PInvoke.CreateFile(
             path,
             (uint)FILE_ACCESS_RIGHTS.FILE_LIST_DIRECTORY,
             FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE | FILE_SHARE_MODE.FILE_SHARE_DELETE,
@@ -55,52 +55,55 @@ internal sealed class NativeDirectoryEnumerator : IDisposable
     }
 
     /// <summary>Reads one batch of entries. Returns <see langword="false"/> once the enumeration is exhausted.</summary>
-    private unsafe bool Query(bool restartScan, string? searchExpression, List<string> names)
+    private bool Query(bool restartScan, string? searchExpression, List<string> names)
     {
-        var buffer = new byte[BufferSize];
-
-        fixed (char* searchExpressionPtr = searchExpression)
+        unsafe
         {
-            var searchExpressionLength = checked((ushort)((searchExpression?.Length ?? 0) * sizeof(char)));
-            UNICODE_STRING? fileName = searchExpression is null ? null : new UNICODE_STRING
+            var buffer = new byte[BufferSize];
+
+            fixed (char* searchExpressionPtr = searchExpression)
             {
-                Length = searchExpressionLength,
-                MaximumLength = searchExpressionLength,
-                Buffer = searchExpressionPtr,
-            };
+                var searchExpressionLength = checked((ushort)((searchExpression?.Length ?? 0) * sizeof(char)));
+                UNICODE_STRING? fileName = searchExpression is null ? null : new UNICODE_STRING
+                {
+                    Length = searchExpressionLength,
+                    MaximumLength = searchExpressionLength,
+                    Buffer = searchExpressionPtr,
+                };
 
-            var status = Windows.Wdk.TestPInvoke.NtQueryDirectoryFile(
-                _handle,
-                Event: null,
-                ApcRoutine: null,
-                ApcContext: null,
-                IoStatusBlock: out _,
-                buffer,
-                FILE_INFORMATION_CLASS.FileDirectoryInformation,
-                ReturnSingleEntry: false,
-                fileName,
-                restartScan);
+                var status = Windows.Wdk.PInvoke.NtQueryDirectoryFile(
+                    _handle,
+                    Event: null,
+                    ApcRoutine: null,
+                    ApcContext: null,
+                    IoStatusBlock: out _,
+                    buffer,
+                    FILE_INFORMATION_CLASS.FileDirectoryInformation,
+                    ReturnSingleEntry: false,
+                    fileName,
+                    restartScan);
 
-            // STATUS_NO_MORE_FILES and any other non-success status end the enumeration
-            if (status.Value is not 0)
-                return false;
-        }
-
-        fixed (byte* bufferPtr = buffer)
-        {
-            var entry = (FILE_DIRECTORY_INFORMATION*)bufferPtr;
-            while (true)
-            {
-                names.Add(new string(entry->FileName.AsSpan((int)(entry->FileNameLength / sizeof(char)))));
-
-                if (entry->NextEntryOffset is 0)
-                    break;
-
-                entry = (FILE_DIRECTORY_INFORMATION*)((byte*)entry + entry->NextEntryOffset);
+                // STATUS_NO_MORE_FILES and any other non-success status end the enumeration
+                if (status.Value is not 0)
+                    return false;
             }
-        }
 
-        return true;
+            fixed (byte* bufferPtr = buffer)
+            {
+                var entry = (FILE_DIRECTORY_INFORMATION*)bufferPtr;
+                while (true)
+                {
+                    names.Add(new string(entry->FileName.AsSpan((int)(entry->FileNameLength / sizeof(char)))));
+
+                    if (entry->NextEntryOffset is 0)
+                        break;
+
+                    entry = (FILE_DIRECTORY_INFORMATION*)((byte*)entry + entry->NextEntryOffset);
+                }
+            }
+
+            return true;
+        }
     }
 
     public void Dispose()

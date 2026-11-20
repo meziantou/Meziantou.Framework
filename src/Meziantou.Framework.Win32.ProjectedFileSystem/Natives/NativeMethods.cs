@@ -17,40 +17,53 @@ internal static class NativeMethods
         return ToHResult(PInvoke.PrjMarkDirectoryAsPlaceholder(rootPathName, targetPathName, versionInfo: null, in virtualizationInstanceID));
     }
 
-    internal static unsafe HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle? namespaceVirtualizationContext)
+    internal static HResult PrjStartVirtualizing(string virtualizationRootPath, in ProjFs.PRJ_CALLBACKS callbacks, IntPtr instanceContext, in ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle? namespaceVirtualizationContext)
     {
-        ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT context;
-        HResult hr;
-        fixed (char* virtualizationRootPathPointer = virtualizationRootPath)
-        fixed (ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS* optionsPointer = &options)
+        unsafe
         {
-            hr = ToHResult(PInvoke.PrjStartVirtualizing(virtualizationRootPathPointer, in callbacks, (void*)instanceContext, optionsPointer, &context));
-        }
+            ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT context;
+            HResult hr;
+            fixed (char* virtualizationRootPathPointer = virtualizationRootPath)
+            fixed (ProjFs.PRJ_CALLBACKS* callbacksPointer = &callbacks)
+            fixed (ProjFs.PRJ_STARTVIRTUALIZING_OPTIONS* optionsPointer = &options)
+            {
+                hr = ToHResult(PInvoke.PrjStartVirtualizing(virtualizationRootPathPointer, callbacksPointer, (void*)instanceContext, optionsPointer, &context));
+            }
 
-        // Only take ownership when the call succeeded. On failure the out parameter is not a
-        // handle the driver ever gave out, and wrapping it leaves the instance looking started.
-        namespaceVirtualizationContext = hr.IsSuccess ? new ProjFSSafeHandle((IntPtr)context, ownHandle: true) : null;
-        return hr;
+            // Only take ownership when the call succeeded. On failure the out parameter is not a
+            // handle the driver ever gave out, and wrapping it leaves the instance looking started.
+            namespaceVirtualizationContext = hr.IsSuccess ? new ProjFSSafeHandle((IntPtr)context, ownHandle: true) : null;
+            return hr;
+        }
     }
 
     // PrjStopVirtualizing has no return value, so there is no status to surface here
     internal static void PrjStopVirtualizing(IntPtr namespaceVirtualizationContext)
     {
-        PInvoke.PrjStopVirtualizing((ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)namespaceVirtualizationContext);
+        unsafe
+        {
+            PInvoke.PrjStopVirtualizing((ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)namespaceVirtualizationContext);
+        }
     }
 
     internal static HResult PrjFillDirEntryBuffer(string fileName, in ProjFs.PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle)
     {
-        return ToHResult(PInvoke.PrjFillDirEntryBuffer(fileName, callbacks, (ProjFs.PRJ_DIR_ENTRY_BUFFER_HANDLE)dirEntryBufferHandle));
+        unsafe
+        {
+            return ToHResult(PInvoke.PrjFillDirEntryBuffer(fileName, callbacks, (ProjFs.PRJ_DIR_ENTRY_BUFFER_HANDLE)dirEntryBufferHandle));
+        }
     }
 
-    internal static unsafe HResult PrjWritePlaceholderInfo(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in ProjFs.PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize)
+    internal static HResult PrjWritePlaceholderInfo(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in ProjFs.PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize)
     {
-        using var context = new SafeHandleValue(namespaceVirtualizationContext);
-        fixed (ProjFs.PRJ_PLACEHOLDER_INFO* placeholderInfoPointer = &placeholderInfo)
+        unsafe
         {
-            var placeholderInfoData = new ReadOnlySpan<byte>((byte*)placeholderInfoPointer, checked((int)placeholderInfoSize));
-            return ToHResult(PInvoke.PrjWritePlaceholderInfo(ToContext(context), destinationFileName, placeholderInfoData));
+            using var context = new SafeHandleValue(namespaceVirtualizationContext);
+            fixed (ProjFs.PRJ_PLACEHOLDER_INFO* placeholderInfoPointer = &placeholderInfo)
+            {
+                var placeholderInfoData = new ReadOnlySpan<byte>((byte*)placeholderInfoPointer, checked((int)placeholderInfoSize));
+                return ToHResult(PInvoke.PrjWritePlaceholderInfo(ToContext(context), destinationFileName, placeholderInfoData));
+            }
         }
     }
 
@@ -70,22 +83,31 @@ internal static class NativeMethods
         return ToHResult(PInvoke.PrjGetVirtualizationInstanceInfo(ToContext(context), out virtualizationInstanceInfo));
     }
 
-    internal static unsafe IntPtr PrjAllocateAlignedBuffer(ProjFSSafeHandle namespaceVirtualizationContext, uint size)
+    internal static IntPtr PrjAllocateAlignedBuffer(ProjFSSafeHandle namespaceVirtualizationContext, uint size)
     {
-        using var context = new SafeHandleValue(namespaceVirtualizationContext);
-        return (IntPtr)PInvoke.PrjAllocateAlignedBuffer(ToContext(context), (nuint)size);
+        unsafe
+        {
+            using var context = new SafeHandleValue(namespaceVirtualizationContext);
+            return (IntPtr)PInvoke.PrjAllocateAlignedBuffer(ToContext(context), (nuint)size);
+        }
     }
 
-    internal static unsafe void PrjFreeAlignedBuffer(IntPtr buffer)
+    internal static void PrjFreeAlignedBuffer(IntPtr buffer)
     {
-        PInvoke.PrjFreeAlignedBuffer((void*)buffer);
+        unsafe
+        {
+            PInvoke.PrjFreeAlignedBuffer((void*)buffer);
+        }
     }
 
-    internal static unsafe HResult PrjWriteFileData(ProjFSSafeHandle namespaceVirtualizationContext, in Guid dataStreamId, IntPtr buffer, ulong byteOffset, uint length)
+    internal static HResult PrjWriteFileData(ProjFSSafeHandle namespaceVirtualizationContext, in Guid dataStreamId, IntPtr buffer, ulong byteOffset, uint length)
     {
-        using var context = new SafeHandleValue(namespaceVirtualizationContext);
-        var payload = new ReadOnlySpan<byte>((void*)buffer, checked((int)length));
-        return ToHResult(PInvoke.PrjWriteFileData(ToContext(context), in dataStreamId, payload, byteOffset));
+        unsafe
+        {
+            using var context = new SafeHandleValue(namespaceVirtualizationContext);
+            var payload = new ReadOnlySpan<byte>((void*)buffer, checked((int)length));
+            return ToHResult(PInvoke.PrjWriteFileData(ToContext(context), in dataStreamId, payload, byteOffset));
+        }
     }
 
     internal static HResult PrjClearNegativePathCache(ProjFSSafeHandle namespaceVirtualizationContext, out uint totalEntryNumber)
@@ -109,16 +131,19 @@ internal static class NativeMethods
         return hr;
     }
 
-    internal static unsafe HResult PrjUpdateFileIfNeeded(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in ProjFs.PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
+    internal static HResult PrjUpdateFileIfNeeded(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in ProjFs.PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
     {
-        using var context = new SafeHandleValue(namespaceVirtualizationContext);
-        ProjFs.PRJ_UPDATE_FAILURE_CAUSES nativeFailureReason;
-        fixed (ProjFs.PRJ_PLACEHOLDER_INFO* placeholderInfoPointer = &placeholderInfo)
+        unsafe
         {
-            var placeholderInfoData = new ReadOnlySpan<byte>((byte*)placeholderInfoPointer, checked((int)placeholderInfoSize));
-            var hr = ToHResult(PInvoke.PrjUpdateFileIfNeeded(ToContext(context), destinationFileName, placeholderInfoData, (ProjFs.PRJ_UPDATE_TYPES)updateFlags, out nativeFailureReason));
-            failureReason = (PRJ_UPDATE_FAILURE_CAUSES)nativeFailureReason;
-            return hr;
+            using var context = new SafeHandleValue(namespaceVirtualizationContext);
+            ProjFs.PRJ_UPDATE_FAILURE_CAUSES nativeFailureReason;
+            fixed (ProjFs.PRJ_PLACEHOLDER_INFO* placeholderInfoPointer = &placeholderInfo)
+            {
+                var placeholderInfoData = new ReadOnlySpan<byte>((byte*)placeholderInfoPointer, checked((int)placeholderInfoSize));
+                var hr = ToHResult(PInvoke.PrjUpdateFileIfNeeded(ToContext(context), destinationFileName, placeholderInfoData, (ProjFs.PRJ_UPDATE_TYPES)updateFlags, out nativeFailureReason));
+                failureReason = (PRJ_UPDATE_FAILURE_CAUSES)nativeFailureReason;
+                return hr;
+            }
         }
     }
 
@@ -141,7 +166,10 @@ internal static class NativeMethods
     // concurrently, and the driver must not receive a context that PrjStopVirtualizing already tore down
     private static ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT ToContext(SafeHandleValue handle)
     {
-        return (ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)handle.Value;
+        unsafe
+        {
+            return (ProjFs.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT)handle.Value;
+        }
     }
 
     private static HResult ToHResult(HRESULT value)

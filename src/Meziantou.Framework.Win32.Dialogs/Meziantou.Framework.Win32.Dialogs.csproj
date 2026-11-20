@@ -14,10 +14,70 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Win32.ComHelpers.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HRESULT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HWND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PROPERTYKEY.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IComIID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IVTable-2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IVTable.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoCreateInstance.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetActiveWindow.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SHCreateItemFromParsingName.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.BIND_OPTS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.CLSCTX.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IBindCtx.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IEnumMoniker.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IEnumString.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IMoniker.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IPersist.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IPersistStream.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IRunningObjectTable.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.ISequentialStream.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IStream.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IUnknown.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.LOCKTYPE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.ROT_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.STATSTG.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.STGM.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.SystemServices.SFGAO_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IBindCtx_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IEnumMoniker_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IEnumString_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IMoniker_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IPersistStream_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IPersist_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IRunningObjectTable_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_ISequentialStream_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IStream_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.Common.COMDLG_FILTERSPEC.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.FDAP.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.FDE_OVERWRITE_RESPONSE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.FDE_SHAREVIOLATION_RESPONSE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.FILEOPENDIALOGOPTIONS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.FileOpenDialog.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IEnumShellItems.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IFileDialog.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IFileDialogEvents.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IFileOpenDialog.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IModalWindow.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IShellItem.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IShellItemArray.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.IShellItemFilter.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.PropertiesSystem.GETPROPERTYSTOREFLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.SIATTRIBFLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.SIGDN.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI_Shell_IEnumShellItems_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI_Shell_IFileDialogEvents_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI_Shell_IFileDialog_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI_Shell_IFileOpenDialog_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI_Shell_IShellItemArray_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI_Shell_IShellItemFilter_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI_Shell_IShellItem_Extensions.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

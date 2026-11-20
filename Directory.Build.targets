@@ -93,12 +93,6 @@
 
   <Import Project="$(MSBuildThisFileDirectory)src/Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" Condition="'$(IncludeRoslynHelpers)' == 'true'" />
 
-  <Target Name="ConfigurePolyfill" AfterTargets="ResolveLockFileAnalyzers" BeforeTargets="CoreCompile">
-    <PropertyGroup>
-      <MeziantouPolyfill_ExcludedPolyfills Condition="@(Analyzer->AnyHaveMetadataValue('NuGetPackageId', 'Microsoft.Windows.CsWin32'))">T:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute|T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>
-    </PropertyGroup>
-  </Target>
-
   <!-- Ensure the latest framework is a target of the project -->
   <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' != '.proj' AND '$(ValidateProjectTargets)' == 'true' AND '$(IsSampleProject)' != 'true' AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false AND $(TargetFramework.Contains('$(LatestTargetFramework)')) == false">
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFramework)" />

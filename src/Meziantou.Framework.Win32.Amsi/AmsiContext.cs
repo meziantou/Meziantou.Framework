@@ -41,8 +41,11 @@ public sealed class AmsiContext : IDisposable
     /// <exception cref="COMException">Thrown when the AMSI context cannot be initialized.</exception>
     public static AmsiContext Create(string applicationName)
     {
-        Amsi.AmsiInitialize(applicationName, out var context).ThrowOnFailure();
-        return new AmsiContext(context);
+        unsafe
+        {
+            Amsi.AmsiInitialize(applicationName, out var context).ThrowOnFailure();
+            return new AmsiContext(context);
+        }
     }
 
     /// <summary>Determines whether at least one antimalware provider is registered with AMSI.</summary>
@@ -112,9 +115,12 @@ public sealed class AmsiContext : IDisposable
     /// <exception cref="ObjectDisposedException">Thrown when the context has been disposed.</exception>
     public AmsiSession CreateSession()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        Amsi.AmsiOpenSession(_handle, out var session).ThrowOnFailure();
-        return new AmsiSession(this, session);
+        unsafe
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Amsi.AmsiOpenSession(_handle, out var session).ThrowOnFailure();
+            return new AmsiSession(this, session);
+        }
     }
 
     /// <summary>Scans a string for malware using the Windows antimalware provider.</summary>
@@ -149,9 +155,12 @@ public sealed class AmsiContext : IDisposable
     /// <exception cref="ObjectDisposedException">Thrown when the context has been disposed.</exception>
     public AmsiResult Scan(string payload, string contentName)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        Amsi.AmsiScanString(_handle, payload, contentName, DefaultSession, out var result).ThrowOnFailure();
-        return result;
+        unsafe
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Amsi.AmsiScanString(_handle, payload, contentName, DefaultSession, out var result).ThrowOnFailure();
+            return result;
+        }
     }
 
     /// <summary>Scans a byte buffer for malware using the Windows antimalware provider.</summary>
@@ -162,9 +171,12 @@ public sealed class AmsiContext : IDisposable
     /// <exception cref="ObjectDisposedException">Thrown when the context has been disposed.</exception>
     public AmsiResult Scan(byte[] payload, string contentName)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, DefaultSession, out var result).ThrowOnFailure();
-        return result;
+        unsafe
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, DefaultSession, out var result).ThrowOnFailure();
+            return result;
+        }
     }
 
     public void Dispose()

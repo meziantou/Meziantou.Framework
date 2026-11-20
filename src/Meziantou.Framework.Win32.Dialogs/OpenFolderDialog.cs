@@ -48,37 +48,41 @@ public sealed class OpenFolderDialog
     /// <returns>A <see cref="DialogResult"/> indicating whether the user clicked OK, Cancel, or if the operation was aborted.</returns>
     public DialogResult ShowDialog(IntPtr owner) // IWin32Window
     {
-        SelectedPath = null;
-
-        var hwndOwner = owner != IntPtr.Zero ? new HWND(owner) : PInvoke.GetActiveWindow();
-        var dialog = (IFileOpenDialog)new FileOpenDialog();
-        try
+        unsafe
         {
-            Configure(dialog);
+            SelectedPath = null;
 
-            var hr = dialog.Show(hwndOwner);
-            LastHResult = hr;
-            if (hr == ErrorCancelled)
-                return DialogResult.Cancel;
-
-            if (hr != Ok)
-                return DialogResult.Abort;
-
-            dialog.GetResult(out var item);
+            var hwndOwner = owner != IntPtr.Zero ? new HWND(owner) : PInvoke.GetActiveWindow();
+            FileOpenDialog.CreateInstance<IFileOpenDialog>(out var dialog).ThrowOnFailure();
             try
             {
-                SelectedPath = GetFileSystemPath(item);
+                Configure(dialog);
+
+                var hr = dialog->Show(hwndOwner);
+                LastHResult = hr;
+                if (hr == ErrorCancelled)
+                    return DialogResult.Cancel;
+
+                if (hr != Ok)
+                    return DialogResult.Abort;
+
+                IShellItem* item;
+                dialog->GetResult(&item);
+                try
+                {
+                    SelectedPath = GetFileSystemPath(item);
+                }
+                finally
+                {
+                    item->Release();
+                }
+
+                return DialogResult.OK;
             }
             finally
             {
-                Marshal.ReleaseComObject(item);
+                dialog->Release();
             }
-
-            return DialogResult.OK;
-        }
-        finally
-        {
-            Marshal.ReleaseComObject(dialog);
         }
     }
 
@@ -123,32 +127,44 @@ public sealed class OpenFolderDialog
     /// </value>
     public bool ChangeCurrentDirectory { get; set; }
 
-    private void Configure(IFileOpenDialog dialog)
+    private unsafe void Configure(IFileOpenDialog* dialog)
     {
-        dialog.SetOptions(CreateOptions(ChangeCurrentDirectory));
-
-        if (!string.IsNullOrEmpty(InitialDirectory))
+        unsafe
         {
-            var shellItem = TryCreateShellItem(InitialDirectory);
-            if (shellItem is not null)
+            dialog->SetOptions(CreateOptions(ChangeCurrentDirectory));
+
+            if (!string.IsNullOrEmpty(InitialDirectory))
             {
-                dialog.SetFolder(shellItem);
+                var shellItem = TryCreateShellItem(InitialDirectory);
+                if (shellItem is not null)
+                {
+                    try
+                    {
+                        dialog->SetFolder(shellItem);
+                    }
+                    finally
+                    {
+                        // The dialog holds its own reference on the folder
+                        shellItem->Release();
+                    }
+                }
             }
-        }
 
-        if (Title is not null)
-        {
-            dialog.SetTitle(Title);
-        }
+            if (Title is not null)
+            {
+                dialog->SetTitle(Title);
+            }
 
-        if (OkButtonLabel is not null)
-        {
-            dialog.SetOkButtonLabel(OkButtonLabel);
+            if (OkButtonLabel is not null)
+            {
+                dialog->SetOkButtonLabel(OkButtonLabel);
+            }
         }
     }
 
     /// <summary>Resolves a path or shell location to a shell item, or <see langword="null"/> when the shell cannot parse it.</summary>
-    internal static IShellItem? TryCreateShellItem(string path)
+    /// <remarks>The caller owns the returned shell item and must release it.</remarks>
+    internal static unsafe IShellItem* TryCreateShellItem(string path)
     {
         if (TryParse(path, out var shellItem))
         {
@@ -164,11 +180,18 @@ public sealed class OpenFolderDialog
 
         return null;
 
-        static bool TryParse(string value, [NotNullWhen(true)] out IShellItem? item)
+        static bool TryParse(string value, out IShellItem* item)
         {
-            var hr = PInvoke.SHCreateItemFromParsingName(value, null, out IShellItem result);
-            item = hr == Ok ? result : null;
-            return item is not null;
+            unsafe
+            {
+                var hr = PInvoke.SHCreateItemFromParsingName<IShellItem>(value, null, out item);
+                if (hr != Ok)
+                {
+                    item = null;
+                }
+
+                return item is not null;
+            }
         }
 
         static bool TryGetFullPath(string value, [NotNullWhen(true)] out string? fullPath)
@@ -198,17 +221,20 @@ public sealed class OpenFolderDialog
     }
 
     /// <summary>Reads the file system path out of a shell item and frees the buffer the shell allocated for it.</summary>
-    internal static unsafe string GetFileSystemPath(IShellItem item)
+    internal static unsafe string GetFileSystemPath(IShellItem* item)
     {
-        PWSTR name = default;
-        try
+        unsafe
         {
-            item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, &name);
-            return name.ToString();
-        }
-        finally
-        {
-            Marshal.FreeCoTaskMem((IntPtr)name.Value);
+            PWSTR name = default;
+            try
+            {
+                item->GetDisplayName(SIGDN.SIGDN_FILESYSPATH, &name);
+                return name.ToString();
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem((IntPtr)name.Value);
+            }
         }
     }
 }

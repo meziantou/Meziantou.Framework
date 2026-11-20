@@ -40,7 +40,7 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     [SupportedOSPlatform("windows6.0.6000")]
-    public unsafe static FileIdentifier FromFile(string path)
+    public static FileIdentifier FromFile(string path)
     {
         using var handle = FileHandleHelper.OpenFileOrDirectory(path);
         return FromFile(handle);
@@ -51,16 +51,19 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
     /// <returns>The file identifier for the specified file or directory.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     [SupportedOSPlatform("windows6.0.6000")]
-    public unsafe static FileIdentifier FromFile(SafeFileHandle handle)
+    public static FileIdentifier FromFile(SafeFileHandle handle)
     {
-        var result = new FILE_ID_INFO();
-        using var handleScope = new SafeHandleValue(handle);
-        if (PInvoke.GetFileInformationByHandleEx((HANDLE)handleScope.Value, FILE_INFO_BY_HANDLE_CLASS.FileIdInfo, &result, (uint)sizeof(FILE_ID_INFO)))
+        unsafe
         {
-            return new FileIdentifier(result.FileId);
-        }
+            var result = new FILE_ID_INFO();
+            using var handleScope = new SafeHandleValue(handle);
+            if (PInvoke.GetFileInformationByHandleEx((HANDLE)handleScope.Value, FILE_INFO_BY_HANDLE_CLASS.FileIdInfo, &result, (uint)sizeof(FILE_ID_INFO)))
+            {
+                return new FileIdentifier(result.FileId);
+            }
 
-        throw new Win32Exception(Marshal.GetLastWin32Error());
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
     }
 
     public bool Equals(FileIdentifier other) => _value == other._value;

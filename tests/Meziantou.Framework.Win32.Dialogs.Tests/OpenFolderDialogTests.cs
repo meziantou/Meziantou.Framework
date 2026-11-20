@@ -26,10 +26,20 @@ public class OpenFolderDialogTests
     {
         var directory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
 
-        var item = OpenFolderDialog.TryCreateShellItem(directory);
+        var item = unsafe(OpenFolderDialog.TryCreateShellItem(directory));
 
-        Assert.NotNull(item);
-        Assert.Equal(directory, GetFileSystemPath(item), ignoreCase: true);
+        Assert.NotEqual(0, (nint)item);
+        try
+        {
+            Assert.Equal(directory, unsafe(OpenFolderDialog.GetFileSystemPath(item)), ignoreCase: true);
+        }
+        finally
+        {
+            unsafe
+            {
+                item->Release();
+            }
+        }
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -40,10 +50,20 @@ public class OpenFolderDialogTests
         var directory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
         var forwardSlashes = directory.Replace('\\', '/');
 
-        var item = OpenFolderDialog.TryCreateShellItem(forwardSlashes);
+        var item = unsafe(OpenFolderDialog.TryCreateShellItem(forwardSlashes));
 
-        Assert.NotNull(item);
-        Assert.Equal(directory, GetFileSystemPath(item), ignoreCase: true);
+        Assert.NotEqual(0, (nint)item);
+        try
+        {
+            Assert.Equal(directory, unsafe(OpenFolderDialog.GetFileSystemPath(item)), ignoreCase: true);
+        }
+        finally
+        {
+            unsafe
+            {
+                item->Release();
+            }
+        }
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -53,7 +73,7 @@ public class OpenFolderDialogTests
         var letter = "ZYXWVU".FirstOrDefault(candidate => !mounted.Contains(candidate));
         global::Xunit.Assert.SkipWhen(letter is '\0', "Every candidate drive letter is in use on this machine");
 
-        Assert.Null(OpenFolderDialog.TryCreateShellItem($@"{letter}:\some\folder"));
+        Assert.Equal(0, (nint)unsafe(OpenFolderDialog.TryCreateShellItem($@"{letter}:\some\folder")));
     }
 
     [Theory, RunIf(TestOperatingSystems.Windows)]
@@ -63,7 +83,7 @@ public class OpenFolderDialogTests
     [InlineData("   ")]
     public void TryCreateShellItem_ReturnsNullForAnUnresolvableValue(string path)
     {
-        Assert.Null(OpenFolderDialog.TryCreateShellItem(path));
+        Assert.Equal(0, (nint)unsafe(OpenFolderDialog.TryCreateShellItem(path)));
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -71,9 +91,13 @@ public class OpenFolderDialogTests
     {
         // "This PC" is not a file system path, so it only resolves because the value goes through
         // the shell namespace parser rather than a path parser.
-        var item = OpenFolderDialog.TryCreateShellItem("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}");
+        var item = unsafe(OpenFolderDialog.TryCreateShellItem("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"));
 
-        Assert.NotNull(item);
+        Assert.NotEqual(0, (nint)item);
+        unsafe
+        {
+            item->Release();
+        }
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
@@ -95,6 +119,4 @@ public class OpenFolderDialogTests
         Assert.NotNull(setter);
         Assert.False(setter.IsPublic);
     }
-
-    private static string GetFileSystemPath(IShellItem item) => OpenFolderDialog.GetFileSystemPath(item);
 }

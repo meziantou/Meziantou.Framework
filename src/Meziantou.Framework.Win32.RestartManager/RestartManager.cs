@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Versioning;
 using Windows.Win32;
@@ -220,13 +221,18 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the shutdown operation fails.</exception>
     public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
     {
-        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+        unsafe
+        {
+            ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        using var handleScope = new SafeHandleValue(_sessionHandle);
-        var result = PInvoke.RmShutdown((uint)handleScope.Value, (uint)action, callback);
-        if (result != WIN32_ERROR.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
+            // The function pointer stays valid while the delegate is alive, which GC.KeepAlive guarantees until the call returns
+            var callback = statusCallback is null ? null : (delegate* unmanaged[Stdcall]<uint, void>)Marshal.GetFunctionPointerForDelegate(statusCallback);
+            using var handleScope = new SafeHandleValue(_sessionHandle);
+            var result = PInvoke.RmShutdown((uint)handleScope.Value, (uint)action, callback);
+            GC.KeepAlive(statusCallback);
+            if (result != WIN32_ERROR.ERROR_SUCCESS)
+                throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
+        }
     }
 
     /// <summary>Restarts applications and services that were shut down by the Restart Manager and that were registered for restart.</summary>
@@ -241,13 +247,18 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the restart operation fails.</exception>
     public void Restart(RestartManagerWriteStatusCallback? statusCallback)
     {
-        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+        unsafe
+        {
+            ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        RM_WRITE_STATUS_CALLBACK? callback = statusCallback is null ? null : statusCallback.Invoke;
-        using var handleScope = new SafeHandleValue(_sessionHandle);
-        var result = PInvoke.RmRestart((uint)handleScope.Value, 0, callback);
-        if (result != WIN32_ERROR.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmRestart failed ({result})");
+            // The function pointer stays valid while the delegate is alive, which GC.KeepAlive guarantees until the call returns
+            var callback = statusCallback is null ? null : (delegate* unmanaged[Stdcall]<uint, void>)Marshal.GetFunctionPointerForDelegate(statusCallback);
+            using var handleScope = new SafeHandleValue(_sessionHandle);
+            var result = PInvoke.RmRestart((uint)handleScope.Value, 0, callback);
+            GC.KeepAlive(statusCallback);
+            if (result != WIN32_ERROR.ERROR_SUCCESS)
+                throw new Win32Exception((int)result, $"RmRestart failed ({result})");
+        }
     }
 
     /// <summary>Cancels the <see cref="Shutdown(RestartManagerShutdownType)"/> or <see cref="Restart()"/> operation that is currently running on this session.</summary>
@@ -259,12 +270,15 @@ public sealed class RestartManager : IDisposable
     /// <exception cref="Win32Exception">Thrown when the cancellation fails.</exception>
     public void CancelCurrentTask()
     {
-        ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
+        unsafe
+        {
+            ObjectDisposedException.ThrowIf(_sessionHandle.IsClosed, this);
 
-        using var handleScope = new SafeHandleValue(_sessionHandle);
-        var result = PInvoke.RmCancelCurrentTask((uint)handleScope.Value);
-        if (result != WIN32_ERROR.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
+            using var handleScope = new SafeHandleValue(_sessionHandle);
+            var result = PInvoke.RmCancelCurrentTask((uint)handleScope.Value);
+            if (result != WIN32_ERROR.ERROR_SUCCESS)
+                throw new Win32Exception((int)result, $"RmCancelCurrentTask failed ({result})");
+        }
     }
 
     // A null entry is marshalled as a NULL pointer, which the Restart Manager accepts silently: it reports
@@ -314,14 +328,17 @@ public sealed class RestartManager : IDisposable
         }
     }
 
-    private static unsafe WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)
+    private static WIN32_ERROR StartSession(out uint handle, Span<char> sessionKeyBuffer)
     {
-        uint localHandle = 0;
-        fixed (char* sessionKeyBufferPtr = sessionKeyBuffer)
+        unsafe
         {
-            var result = PInvoke.RmStartSession(&localHandle, 0, new PWSTR(sessionKeyBufferPtr));
-            handle = localHandle;
-            return result;
+            uint localHandle = 0;
+            fixed (char* sessionKeyBufferPtr = sessionKeyBuffer)
+            {
+                var result = PInvoke.RmStartSession(&localHandle, 0, new PWSTR(sessionKeyBufferPtr));
+                handle = localHandle;
+                return result;
+            }
         }
     }
 

@@ -18,10 +18,49 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.WIN32_ERROR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.InlineArrayIndexerExtensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CreateFile.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.DeviceIoControl.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.FLAG_USN_TRACK_MODIFIED_RANGES_ENABLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.FSCTL_READ_FILE_USN_DATA.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetFileInformationByHandleEx.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.SECURITY_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_ACCESS_RIGHTS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_CREATION_DISPOSITION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_ID_128.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_ID_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_INFO_BY_HANDLE_CLASS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_SHARE_MODE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.CREATE_USN_JOURNAL_DATA.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.DELETE_USN_JOURNAL_DATA.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.READ_USN_JOURNAL_DATA_V1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_DELETE_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_JOURNAL_DATA_V2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_RECORD_COMMON_HEADER.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_RECORD_EXTENT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_RECORD_V2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_RECORD_V3.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_RECORD_V4.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_SOURCE_INFO_ID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Ioctl.USN_TRACK_MODIFIED_RANGES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_128.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_16.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_18.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_20.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_38.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_256.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_260.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_64.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__ushort_3.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

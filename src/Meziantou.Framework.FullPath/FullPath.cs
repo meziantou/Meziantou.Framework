@@ -452,7 +452,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Gets the path to a Windows known folder.</summary>
     /// <param name="knownFolder">The known folder to retrieve the path for.</param>
     [SupportedOSPlatform("windows6.0.6000")]
-    public static unsafe FullPath GetKnownFolderPath(KnownFolder knownFolder)
+    public static FullPath GetKnownFolderPath(KnownFolder knownFolder)
     {
         var result = PInvoke.SHGetKnownFolderPath(knownFolder.FolderId, Windows.Win32.UI.Shell.KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT, hToken: null, out var path);
         using (path)
@@ -796,23 +796,26 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     /// <summary>Opens the system file manager and selects this file or directory.</summary>
     [SupportedOSPlatform("windows5.1.2600")]
     [SupportedOSPlatform("macos")]
-    public unsafe void OpenInExplorer()
+    public void OpenInExplorer()
     {
         if (IsEmpty)
             throw new InvalidOperationException("Path is empty");
 
         if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
         {
-            var itemList = PInvoke.ILCreateFromPath(Value);
-            if (itemList is not null)
+            unsafe
             {
-                try
+                var itemList = PInvoke.ILCreateFromPath(Value);
+                if (itemList is not null)
                 {
-                    PInvoke.SHOpenFolderAndSelectItems(itemList, 0u, apidl: null, 0u).ThrowOnFailure();
-                }
-                finally
-                {
-                    PInvoke.ILFree(itemList);
+                    try
+                    {
+                        PInvoke.SHOpenFolderAndSelectItems(itemList, 0u, apidl: null, 0u).ThrowOnFailure();
+                    }
+                    finally
+                    {
+                        PInvoke.ILFree(itemList);
+                    }
                 }
             }
         }

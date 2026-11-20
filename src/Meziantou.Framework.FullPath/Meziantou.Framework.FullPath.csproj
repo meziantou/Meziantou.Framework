@@ -8,9 +8,6 @@
     <PackageTags>path, file-system, io, full-path, normalization</PackageTags>
   </PropertyGroup>
 
-  <ItemGroup>
-    <AdditionalFiles Include="NativeMethods.txt" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="$(OutputPath)/../../Meziantou.Framework.FullPath.Analyzer/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.FullPath.Analyzer.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
@@ -23,10 +20,56 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Wdk.PInvoke.SYMLINK_FLAG_RELATIVE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Wdk.Storage.FileSystem.REPARSE_DATA_BUFFER.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.CoTaskMemFreePWSTRSafeHandle.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.CoTaskMemFreeSafeHandle.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.FindCloseSafeHandle.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HRESULT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.InlineArrayIndexerExtensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.NativeOwnershipAttribute.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoTaskMemFree.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CreateFile.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.DeviceIoControl.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.FSCTL_GET_REPARSE_POINT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.FindClose.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.FindFirstFileEx.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetFinalPathNameByHandle.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.ILCreateFromPath.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.ILFree.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.IO_REPARSE_TAG_SYMLINK.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.MAX_PATH.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SHGetKnownFolderPath.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SHOpenFolderAndSelectItems.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.SECURITY_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_CREATION_DISPOSITION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_SHARE_MODE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FINDEX_INFO_LEVELS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FINDEX_SEARCH_OPS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FIND_FIRST_EX_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.GETFINALPATHNAMEBYHANDLE_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.WIN32_FIND_DATAW.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.Common.ITEMIDLIST.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.Common.SHITEMID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.KNOWN_FOLDER_FLAG.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_128.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_16.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_18.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_20.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_38.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_256.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_260.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_64.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__ushort_3.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

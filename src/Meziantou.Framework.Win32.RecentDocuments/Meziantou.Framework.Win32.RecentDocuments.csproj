@@ -8,9 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.ILCreateFromPath.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.ILFree.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SHAddToRecentDocs.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.Common.ITEMIDLIST.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.Common.SHITEMID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.SHARD.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.UI.Shell.SHARDAPPIDINFOIDLIST.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-2.g.cs" LinkBase="Win32" />
   </ItemGroup>
+
 </Project>

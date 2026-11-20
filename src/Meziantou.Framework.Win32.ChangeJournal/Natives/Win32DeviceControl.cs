@@ -21,54 +21,60 @@ internal static class Win32DeviceControl
     private const int MaximumOutputBufferLength = 1024 * 1024;
 
     [SupportedOSPlatform("windows5.1.2600")]
-    internal static unsafe Span<byte> ControlWithInput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure, int initialBufferLength) where TStructure : unmanaged
+    internal static Span<byte> ControlWithInput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure, int initialBufferLength) where TStructure : unmanaged
     {
-        var structureLength = (uint)sizeof(TStructure);
-        byte[] buffer = initialBufferLength is 0 ? [] : new byte[initialBufferLength];
-
-        fixed (void* structurePointer = &structure)
+        unsafe
         {
-            using var handleScope = new SafeHandleValue(handle);
-            while (true)
+            var structureLength = (uint)sizeof(TStructure);
+            byte[] buffer = initialBufferLength is 0 ? [] : new byte[initialBufferLength];
+
+            fixed (void* structurePointer = &structure)
             {
-                uint returnedSize;
-                bool controlResult;
-                fixed (void* bufferPointer = buffer)
+                using var handleScope = new SafeHandleValue(handle);
+                while (true)
                 {
-                    controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, structurePointer, structureLength, bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                    uint returnedSize;
+                    bool controlResult;
+                    fixed (void* bufferPointer = buffer)
+                    {
+                        controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, structurePointer, structureLength, bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                    }
+
+                    if (controlResult)
+                        return buffer.AsSpan(0, (int)returnedSize);
+
+                    var errorCode = Marshal.GetLastWin32Error();
+                    if (errorCode is not (int)WIN32_ERROR.ERROR_MORE_DATA || buffer.Length >= MaximumOutputBufferLength)
+                        throw new Win32Exception(errorCode);
+
+                    // ERROR_MORE_DATA reports the number of bytes written, not the number required, so it is never larger than the
+                    // buffer that just proved too small. Grow geometrically instead of trusting returnedSize to be large enough.
+                    buffer = new byte[Math.Min(Math.Max(buffer.Length * 2, MinimumOutputBufferLength), MaximumOutputBufferLength)];
                 }
-
-                if (controlResult)
-                    return buffer.AsSpan(0, (int)returnedSize);
-
-                var errorCode = Marshal.GetLastWin32Error();
-                if (errorCode is not (int)WIN32_ERROR.ERROR_MORE_DATA || buffer.Length >= MaximumOutputBufferLength)
-                    throw new Win32Exception(errorCode);
-
-                // ERROR_MORE_DATA reports the number of bytes written, not the number required, so it is never larger than the
-                // buffer that just proved too small. Grow geometrically instead of trusting returnedSize to be large enough.
-                buffer = new byte[Math.Min(Math.Max(buffer.Length * 2, MinimumOutputBufferLength), MaximumOutputBufferLength)];
             }
         }
     }
 
     [SupportedOSPlatform("windows5.1.2600")]
-    internal static unsafe void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : unmanaged
+    internal static void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : unmanaged
     {
-        var structureLength = (uint)sizeof(TStructure);
-        fixed (void* pStructure = &structure)
+        unsafe
         {
-            uint returnedSize = 0;
-            using var handleScope = new SafeHandleValue(handle);
-            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, lpInBuffer: null, 0u, pStructure, structureLength, &returnedSize, lpOverlapped: null);
-            if (!controlResult)
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+            var structureLength = (uint)sizeof(TStructure);
+            fixed (void* pStructure = &structure)
+            {
+                uint returnedSize = 0;
+                using var handleScope = new SafeHandleValue(handle);
+                var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, lpInBuffer: null, 0u, pStructure, structureLength, &returnedSize, lpOverlapped: null);
+                if (!controlResult)
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
 
-            // A driver that does not know the whole structure fills in only the prefix it does know and reports how much it
-            // wrote. Ignoring that would hand back a structure whose newer fields are zero, which is indistinguishable from a
-            // driver that really did report zero for them.
-            if (returnedSize < structureLength)
-                throw new InvalidDataException($"The device returned {returnedSize.ToString(CultureInfo.InvariantCulture)} bytes for a {structureLength.ToString(CultureInfo.InvariantCulture)}-byte structure");
+                // A driver that does not know the whole structure fills in only the prefix it does know and reports how much it
+                // wrote. Ignoring that would hand back a structure whose newer fields are zero, which is indistinguishable from a
+                // driver that really did report zero for them.
+                if (returnedSize < structureLength)
+                    throw new InvalidDataException($"The device returned {returnedSize.ToString(CultureInfo.InvariantCulture)} bytes for a {structureLength.ToString(CultureInfo.InvariantCulture)}-byte structure");
+            }
         }
     }
 }

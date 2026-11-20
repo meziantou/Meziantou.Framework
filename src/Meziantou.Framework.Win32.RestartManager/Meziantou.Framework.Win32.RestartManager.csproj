@@ -14,10 +14,35 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.WIN32_ERROR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.InlineArrayIndexerExtensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CCH_RM_SESSION_KEY.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmCancelCurrentTask.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmEndSession.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmGetList.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmJoinSession.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmRegisterResources.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmRestart.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmShutdown.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.RmStartSession.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.RestartManager.RM_APP_STATUS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.RestartManager.RM_APP_TYPE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.RestartManager.RM_PROCESS_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.RestartManager.RM_UNIQUE_PROCESS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_128.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_16.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_18.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_20.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_38.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_256.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_260.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_64.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__ushort_3.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

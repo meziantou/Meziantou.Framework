@@ -1,5 +1,0 @@
-﻿SHAddToRecentDocs
-SHARD
-SHARDAPPIDINFOIDLIST
-ILCreateFromPathW
-ILFree

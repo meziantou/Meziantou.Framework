@@ -315,7 +315,11 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
         entry.Relationship = relationship;
         entry.Size = (uint)sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX);
         entry.Anonymous.Processor.GroupCount = groupCount;
-        entry.Anonymous.Processor.GroupMask[0].Mask = groupMask;
+        unsafe
+        {
+            entry.Anonymous.Processor.GroupMask[0].Mask = groupMask;
+        }
+
         buffer.AddRange(unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(in entry))));
     }
 }

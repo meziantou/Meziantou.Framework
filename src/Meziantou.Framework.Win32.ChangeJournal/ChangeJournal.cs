@@ -152,39 +152,42 @@ public sealed class ChangeJournal : IDisposable
     /// <param name="handle">A handle to the file or directory.</param>
     /// <returns>The change journal entry for the specified file or directory.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
-    public static unsafe ChangeJournalEntryVersion2or3 GetEntry(SafeFileHandle handle)
+    public static ChangeJournalEntryVersion2or3 GetEntry(SafeFileHandle handle)
     {
-        using var handleScope = new SafeHandleValue(handle);
-
-        var buffer = new byte[USN_RECORD_V3.SizeOf(MaximumFileNameLength)];
-        while (true)
+        unsafe
         {
-            uint returnedSize;
-            fixed (void* bufferPointer = buffer)
+            using var handleScope = new SafeHandleValue(handle);
+
+            var buffer = new byte[USN_RECORD_V3.SizeOf(MaximumFileNameLength)];
+            while (true)
             {
-                if (PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null))
+                uint returnedSize;
+                fixed (void* bufferPointer = buffer)
                 {
-                    // The record must fit in what was actually read. Without this the record could claim any length, and the
-                    // file name bound inside GetBufferedEntry would be checked against a length the buffer does not have.
-                    if (returnedSize < sizeof(USN_RECORD_COMMON_HEADER))
-                        throw new InvalidDataException($"The change journal returned {returnedSize} bytes, which is too short to hold a record header");
+                    if (PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null))
+                    {
+                        // The record must fit in what was actually read. Without this the record could claim any length, and the
+                        // file name bound inside GetBufferedEntry would be checked against a length the buffer does not have.
+                        if (returnedSize < sizeof(USN_RECORD_COMMON_HEADER))
+                            throw new InvalidDataException($"The change journal returned {returnedSize} bytes, which is too short to hold a record header");
 
-                    var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>(bufferPointer);
-                    if (header.RecordLength > returnedSize)
-                        throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength}, which does not fit in the {returnedSize} bytes that were read");
+                        var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>(bufferPointer);
+                        if (header.RecordLength > returnedSize)
+                            throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength}, which does not fit in the {returnedSize} bytes that were read");
 
-                    return (ChangeJournalEntryVersion2or3)ChangeJournalEntries.GetBufferedEntry((nint)bufferPointer, header);
+                        return (ChangeJournalEntryVersion2or3)ChangeJournalEntries.GetBufferedEntry((nint)bufferPointer, header);
+                    }
                 }
+
+                var errorCode = Marshal.GetLastWin32Error();
+                if (errorCode is not (int)WIN32_ERROR.ERROR_MORE_DATA || buffer.Length >= MaximumEntryBufferLength)
+                    throw new Win32Exception(errorCode);
+
+                // ERROR_MORE_DATA reports the number of bytes written, not the number required, so grow geometrically
+                // instead of trusting returnedSize to be large enough.
+                var length = Math.Max(buffer.Length * 2, (int)Math.Min(returnedSize, MaximumEntryBufferLength));
+                buffer = new byte[Math.Min(length, MaximumEntryBufferLength)];
             }
-
-            var errorCode = Marshal.GetLastWin32Error();
-            if (errorCode is not (int)WIN32_ERROR.ERROR_MORE_DATA || buffer.Length >= MaximumEntryBufferLength)
-                throw new Win32Exception(errorCode);
-
-            // ERROR_MORE_DATA reports the number of bytes written, not the number required, so grow geometrically
-            // instead of trusting returnedSize to be large enough.
-            var length = Math.Max(buffer.Length * 2, (int)Math.Min(returnedSize, MaximumEntryBufferLength));
-            buffer = new byte[Math.Min(length, MaximumEntryBufferLength)];
         }
     }
 

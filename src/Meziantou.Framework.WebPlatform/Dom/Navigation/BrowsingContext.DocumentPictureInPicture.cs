@@ -52,7 +52,7 @@ public partial class BrowsingContext
         pip._hasSystemFocus = false;
         pip.QueueTask(() =>
         {
-            if (pip.GetGroupTopLevelBrowsingContexts().Any(static context => context._hasSystemFocus))
+            if (pip.GetGroupTopLevelBrowsingContexts().Any(context => context._hasSystemFocus))
             {
                 pip.SetSystemFocus(true);
             }

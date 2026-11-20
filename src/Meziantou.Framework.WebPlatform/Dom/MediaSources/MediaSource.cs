@@ -212,7 +212,7 @@ public class MediaSource : EventTarget
     }
 
     /// <summary>An encrypted frame cannot be decrypted: the media element runs the "media data is corrupted" steps (<c>MEDIA_ERR_DECODE</c>).</summary>
-    internal void OnMediaDataCorrupted() => RunOnElement(static element => element.OnMediaSourceError(isNetworkError: false));
+    internal void OnMediaDataCorrupted() => RunOnElement(element => element.OnMediaSourceError(isNetworkError: false));
 
     /// <summary>The global object that created the source: its tasks are queued on its event loop.</summary>
     internal GlobalScope? Global => _global;

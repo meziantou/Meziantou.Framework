@@ -15,7 +15,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         {
             // https://whatpr.org/websockets/48.html#dom-websocketstream-opened: the streams are created in the relevant realm
             // of the WebSocketStream when the promise is fulfilled (the same promise is returned each time)
-            DefineAttribute(prototype, "opened", static (realm, thisValue) =>
+            DefineAttribute(prototype, "opened", (realm, thisValue) =>
             {
                 var stream = realm.Unwrap(thisValue) as WebSocketStream ?? throw realm.CreateTypeError("Illegal invocation: 'this' does not implement interface WebSocketStream");
                 return realm.GetRelevantRealm(thisValue).ToPromise(stream.Opened, (relevantRealm, info) => relevantRealm.CreateWebSocketOpenInfo(stream, info));

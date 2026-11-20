@@ -61,7 +61,7 @@ public abstract class MarkdownBlockSyntax : MarkdownSyntaxNode
             classes.InsertRange(0, blockLineClasses);
         }
 
-        return id is null && classes.Count == 0 && properties.Count == 0 ? MarkdownGenericAttributes.Empty : new MarkdownGenericAttributes(id, classes, properties);
+        return id is null && classes.Count == 0 && properties.Count == 0 ? MarkdownGenericAttributes.Empty : new MarkdownGenericAttributes(id, [.. classes], [.. properties]);
     }
 
     /// <summary>Returns this block with the generic attributes <paramref name="attributes"/>, or itself when it has them.</summary>

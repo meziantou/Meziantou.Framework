@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml;
@@ -30,7 +31,7 @@ public sealed class TomlTableSyntax : TomlEntrySyntax
 
     /// <summary>Gets the key/value pairs under this header: the ones that follow it, up to the next header.</summary>
     /// <remarks>A header that is not part of a document has none.</remarks>
-    public IReadOnlyList<TomlPropertySyntax> Properties
+    public ImmutableArray<TomlPropertySyntax> Properties
     {
         get
         {

@@ -355,7 +355,7 @@ public sealed class CssSyntaxTreeTests
         var tree = ParseWithTimeout(text);
 
         CssSyntaxAssert.TextIsFaithful(text, tree);
-        Assert.True(tree.GetDiagnostics().Count <= (text.Length * 2) + 1, $"Expected a bounded number of diagnostics, got {tree.GetDiagnostics().Count}.");
+        Assert.HasCountLessThanOrEqual((text.Length * 2) + 1, tree.GetDiagnostics(), "Expected a bounded number of diagnostics.");
     }
 
     [Theory]
@@ -1115,7 +1115,7 @@ public sealed class CssSyntaxTreeTests
 
         Assert.Single(tree.GetDiagnostics(rules[0]));
         Assert.Single(tree.GetDiagnostics(rules[1]));
-        Assert.Equal(2, tree.GetDiagnostics().Count);
+        Assert.HasCount(2, tree.GetDiagnostics());
     }
 
     private static string DumpPrelude(string text, int statementIndex = 0)

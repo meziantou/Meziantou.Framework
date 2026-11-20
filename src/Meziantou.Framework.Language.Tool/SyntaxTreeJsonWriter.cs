@@ -43,7 +43,7 @@ internal static class SyntaxTreeJsonWriter
     private static void WriteDiagnostics(Utf8JsonWriter writer, SyntaxTree tree, DumpOptions options)
     {
         var diagnostics = tree.GetDiagnostics();
-        if (diagnostics.Count == 0)
+        if (diagnostics.Length == 0)
             return;
 
         writer.WriteStartArray("diagnostics");

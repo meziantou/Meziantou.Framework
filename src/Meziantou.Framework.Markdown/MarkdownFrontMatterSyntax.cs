@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
@@ -19,7 +20,7 @@ public sealed class MarkdownFrontMatterSyntax : MarkdownBlockSyntax
     public SyntaxToken ClosingFenceToken => GetLastChildToken();
 
     /// <summary>Gets the tokens of the lines of the front matter, with their line endings.</summary>
-    public IReadOnlyList<SyntaxToken> LineTokens => GetTokens(SyntaxKind.FrontMatterLineToken);
+    public ImmutableArray<SyntaxToken> LineTokens => GetTokens(SyntaxKind.FrontMatterLineToken);
 
     /// <summary>Gets the YAML: the lines between the fences, each one ended by <c>\n</c>.</summary>
     public string Yaml => string.Concat(LineTokens.Select(token => MarkdownText.TrimLineEnding(token.Text).ToString() + "\n"));

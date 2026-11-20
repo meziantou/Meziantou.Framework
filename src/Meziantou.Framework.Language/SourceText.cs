@@ -1,4 +1,5 @@
-using System.Collections.ObjectModel;
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Language;
 
@@ -6,7 +7,7 @@ namespace Meziantou.Framework.Language;
 public sealed class SourceText
 {
     // The lines are built the first time they are asked for: parsing a text does not need them, and they copy the text
-    private LineTable? _lines;
+    private TextLine[]? _lines;
 
     private SourceText(string text)
     {
@@ -15,7 +16,7 @@ public sealed class SourceText
 
     public string Text { get; }
     public int Length => Text.Length;
-    public IReadOnlyList<TextLine> Lines => GetLines().View;
+    public ImmutableArray<TextLine> Lines => ImmutableCollectionsMarshal.AsImmutableArray(GetLines());
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static SourceText From(string text)
@@ -60,7 +61,7 @@ public sealed class SourceText
         // instead. Testing against End would put the second half of a CRLF on the following line. The answer is
         // therefore the last line that starts at or before the position.
         var low = 0;
-        var lines = GetLines().Lines;
+        var lines = GetLines();
         var high = lines.Length - 1;
         while (low < high)
         {
@@ -100,7 +101,7 @@ public sealed class SourceText
     /// </remarks>
     /// <returns>An empty list when the texts are equal, otherwise the single range covering everything that differs.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="oldText"/> is <see langword="null"/>.</exception>
-    public IReadOnlyList<TextChangeRange> GetChangeRanges(SourceText oldText)
+    public ImmutableArray<TextChangeRange> GetChangeRanges(SourceText oldText)
     {
         ArgumentNullException.ThrowIfNull(oldText);
 
@@ -141,7 +142,7 @@ public sealed class SourceText
     public override string ToString() => Text;
 
     // Two threads may both build the lines: they build the same ones, and either result can be kept
-    private LineTable GetLines() => _lines ??= new LineTable(BuildLines(Text));
+    private TextLine[] GetLines() => _lines ??= BuildLines(Text);
 
     private static TextLine[] BuildLines(string text)
     {
@@ -179,12 +180,5 @@ public sealed class SourceText
             return index + 1 < text.Length && text[index + 1] == '\n' ? 2 : 1;
 
         return current == '\n' ? 1 : 0;
-    }
-
-    private sealed class LineTable(TextLine[] lines)
-    {
-        public TextLine[] Lines { get; } = lines;
-
-        public ReadOnlyCollection<TextLine> View { get; } = new(lines);
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Green = Meziantou.Framework.Language.Xml.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Xml;
@@ -14,9 +15,9 @@ public sealed class XmlSyntaxTree : SyntaxTree
 {
     private readonly SourceText _text;
     private readonly XmlDocumentSyntax _root;
-    private readonly IReadOnlyList<Diagnostic> _diagnostics;
+    private readonly ImmutableArray<Diagnostic> _diagnostics;
 
-    private XmlSyntaxTree(SourceText text, Green.XmlDocumentSyntax green, IReadOnlyList<Diagnostic> diagnostics)
+    private XmlSyntaxTree(SourceText text, Green.XmlDocumentSyntax green, ImmutableArray<Diagnostic> diagnostics)
     {
         _text = text;
         _diagnostics = diagnostics;
@@ -32,7 +33,7 @@ public sealed class XmlSyntaxTree : SyntaxTree
     public new XmlDocumentSyntax GetRoot() => _root;
 
     /// <summary>Gets everything wrong with the document, in the order it appears in the text.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
+    public override ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is <see langword="null"/>.</exception>
     public static XmlSyntaxTree ParseText([StringSyntax(StringSyntaxAttribute.Xml)] string text) => ParseText(SourceText.From(text));

@@ -486,7 +486,7 @@ namespace Meziantou.Framework.Language.Css
     public sealed class CssLayerNameSyntax : Meziantou.Framework.Language.Css.CssSyntaxNode
     {
         public string Name { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<string> Parts { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<string> Parts { get => throw null; }
         public Meziantou.Framework.Language.SyntaxTokenList Tokens { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Css.CssSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Css.CssSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -943,8 +943,8 @@ namespace Meziantou.Framework.Language.Css
         public Meziantou.Framework.Language.Css.CssParseOptions Options { get => throw null; }
         public static Meziantou.Framework.Language.Css.CssSyntaxTree Create(Meziantou.Framework.Language.Css.CssStyleSheetSyntax root, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Css.CssSyntaxTree Create(Meziantou.Framework.Language.Css.CssStyleSheetSyntax root, Meziantou.Framework.Language.Css.CssParseOptions? options, string? path = null) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Css.CssSyntaxTree oldTree) => throw null;
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Css.CssSyntaxTree oldTree) => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxNode node) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public override System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;

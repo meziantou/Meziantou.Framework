@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Meziantou.Framework.Markdown;
 
 /// <summary>Configures how <see cref="MarkdownHtmlRenderer"/> writes HTML.</summary>
@@ -59,7 +61,7 @@ public sealed record MarkdownHtmlRendererOptions
     /// HTML sanitizer, it does not replace one.
     /// </para>
     /// </remarks>
-    public IReadOnlyCollection<string>? AllowedUrlSchemes { get; init; }
+    public ImmutableArray<string>? AllowedUrlSchemes { get => field is { IsDefault: true } ? [] : field; init; }
 
     /// <summary>Gets the URL that the relative URLs of the links and of the images are relative to, or <see langword="null"/> to keep them relative.</summary>
     public Uri? BaseUrl { get; init; }
@@ -105,7 +107,7 @@ public sealed record MarkdownHtmlRendererOptions
     /// Gets the renderers that write some nodes instead of the built-in rendering, such as the code blocks of a language. Each
     /// block and each inline is offered to them in order, and the first one that writes it wins.
     /// </summary>
-    public IReadOnlyList<MarkdownHtmlNodeRenderer> NodeRenderers { get; init; } = [];
+    public ImmutableArray<MarkdownHtmlNodeRenderer> NodeRenderers { get => field.IsDefault ? [] : field; init; } = [];
 
     /// <summary>Gets whether an attribute only describes the content: whatever its value, it cannot run script or load a resource.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>

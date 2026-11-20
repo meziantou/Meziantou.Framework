@@ -96,7 +96,7 @@ internal static class TomlFuzzTargets
                     break;
 
                 case TomlKeySyntax key:
-                    FuzzAssert.Equal(key.Parts.Count, key.Names.Count, $"The key {FuzzAssert.Format(key.ToString())} does not have a name for each part");
+                    FuzzAssert.Equal(key.Parts.Length, key.Names.Length, $"The key {FuzzAssert.Format(key.ToString())} does not have a name for each part");
                     _ = key.IsDotted;
                     break;
             }
@@ -123,11 +123,11 @@ internal static class TomlFuzzTargets
             }
         }
 
-        FuzzAssert.True(root.RootProperties.SequenceEqual(rootProperties, ReferenceEqualityComparer.Instance), "RootProperties are not the properties before the first table header");
+        FuzzAssert.True(root.RootProperties.AsEnumerable().SequenceEqual(rootProperties, ReferenceEqualityComparer.Instance), "RootProperties are not the properties before the first table header");
         FuzzAssert.True(root.Tables.SequenceEqual(tables.Select(item => item.Table), ReferenceEqualityComparer.Instance), "Tables are not the table headers of the entries");
         foreach (var (table, properties) in tables)
         {
-            FuzzAssert.True(table.Properties.SequenceEqual(properties, ReferenceEqualityComparer.Instance), $"The properties of the table {FuzzAssert.Format(table.Key.ToString())} are not the properties up to the next header");
+            FuzzAssert.True(table.Properties.AsEnumerable().SequenceEqual(properties, ReferenceEqualityComparer.Instance), $"The properties of the table {FuzzAssert.Format(table.Key.ToString())} are not the properties up to the next header");
         }
     }
 
@@ -136,13 +136,13 @@ internal static class TomlFuzzTargets
         var pairs = new List<TomlKeyValue>();
         foreach (var pair in root.GetKeyValues())
         {
-            FuzzAssert.Equal(pair.Parts.Count, pair.Names.Count, $"The pair {FuzzAssert.Format(pair.ToString())} does not have a name for each part");
-            for (var i = 0; i < pair.Names.Count; i++)
+            FuzzAssert.Equal(pair.Parts.Length, pair.Names.Length, $"The pair {FuzzAssert.Format(pair.ToString())} does not have a name for each part");
+            for (var i = 0; i < pair.Names.Length; i++)
             {
                 FuzzAssert.Equal(pair.Parts[i].ValueText, pair.Names[i], $"The name {i} of the pair {FuzzAssert.Format(pair.ToString())} is not the value of its part");
             }
 
-            FuzzAssert.True(pair.Names.Count > 0, "A pair has no name");
+            FuzzAssert.True(pair.Names.Length > 0, "A pair has no name");
             pairs.Add(pair);
             if (pairs.Count >= MaxKeyValues)
                 break;

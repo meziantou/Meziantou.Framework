@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using Green = Meziantou.Framework.Language.Toml.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml;
@@ -133,7 +135,7 @@ public sealed class TomlSyntaxTree : SyntaxTree
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= ComputeDiagnostics();
+    public override ImmutableArray<Diagnostic> GetDiagnostics() => ImmutableCollectionsMarshal.AsImmutableArray(_diagnostics ??= ComputeDiagnostics());
 
     /// <summary>Gets the diagnostics at or below <paramref name="node"/>, including the keys and tables it defines twice.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="node"/> is <see langword="null"/>.</exception>
@@ -144,7 +146,7 @@ public sealed class TomlSyntaxTree : SyntaxTree
         if (!_isParsed)
             return Within(GetDiagnostics(), node.FullSpan);
 
-        return Merge(base.GetDiagnostics(node), Within(GetDocumentDiagnostics(), node.FullSpan));
+        return Merge(base.GetDiagnostics(node), Within(ImmutableCollectionsMarshal.AsImmutableArray(GetDocumentDiagnostics()), node.FullSpan));
     }
 
     /// <summary>Gets the diagnostics on <paramref name="token"/> and the trivia around it.</summary>
@@ -166,10 +168,10 @@ public sealed class TomlSyntaxTree : SyntaxTree
 
     /// <summary>Gets the diagnostics of <paramref name="diagnostics"/>, which are in source order, that lie within <paramref name="span"/>.</summary>
     /// <remarks>A binary search finds the first one, so asking every node of a tree for its diagnostics stays linear.</remarks>
-    private static List<Diagnostic> Within(IReadOnlyList<Diagnostic> diagnostics, TextSpan span)
+    private static List<Diagnostic> Within(ImmutableArray<Diagnostic> diagnostics, TextSpan span)
     {
         var low = 0;
-        var high = diagnostics.Count;
+        var high = diagnostics.Length;
         while (low < high)
         {
             var middle = low + ((high - low) / 2);
@@ -184,7 +186,7 @@ public sealed class TomlSyntaxTree : SyntaxTree
         }
 
         var result = new List<Diagnostic>();
-        for (var i = low; i < diagnostics.Count && diagnostics[i].Location.SourceSpan.Start <= span.End; i++)
+        for (var i = low; i < diagnostics.Length && diagnostics[i].Location.SourceSpan.Start <= span.End; i++)
         {
             if (span.Contains(diagnostics[i].Location.SourceSpan))
             {
@@ -230,7 +232,7 @@ public sealed class TomlSyntaxTree : SyntaxTree
 
     /// <summary>Describes how <paramref name="oldTree"/> would have to change to become this one.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
-    public IReadOnlyList<TextChange> GetChanges(TomlSyntaxTree oldTree) => base.GetChanges(oldTree);
+    public ImmutableArray<TextChange> GetChanges(TomlSyntaxTree oldTree) => base.GetChanges(oldTree);
 
     /// <summary>Determines whether the two trees have the same structure and text.</summary>
     public bool IsEquivalentTo(TomlSyntaxTree? other) => base.IsEquivalentTo(other);

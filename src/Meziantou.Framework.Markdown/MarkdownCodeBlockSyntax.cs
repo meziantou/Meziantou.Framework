@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using System.Text;
@@ -26,7 +27,7 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
         get
         {
             var fences = GetTokens(SyntaxKind.CodeFenceToken);
-            return fences.Count == 2 ? fences[1] : default;
+            return fences.Length == 2 ? fences[1] : default;
         }
     }
 
@@ -99,7 +100,7 @@ public sealed class MarkdownCodeBlockSyntax : MarkdownBlockSyntax
     }
 
     /// <summary>Gets the tokens of the lines of the code, with their line endings.</summary>
-    public IReadOnlyList<SyntaxToken> LineTokens => GetTokens(SyntaxKind.CodeLineToken);
+    public ImmutableArray<SyntaxToken> LineTokens => GetTokens(SyntaxKind.CodeLineToken);
 
     /// <summary>Gets the code: its lines without the indentation of the block and the markers of its containers, each one ended by <c>\n</c>.</summary>
     public string Code

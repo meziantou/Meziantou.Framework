@@ -259,7 +259,7 @@ public sealed class PosixParserTests
     {
         var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("cat <<EOF > out.txt\nbody\nEOF\n", ShellDialect.Bash));
 
-        Assert.Equal(2, command.Redirections.Count);
+        Assert.HasCount(2, command.Redirections);
         Assert.Equal("\nbody\n", Assert.Single(command.Redirections.Select(r => r.HereDocument).OfType<PosixHereDocumentSyntax>()).BodyToken.Text);
     }
 

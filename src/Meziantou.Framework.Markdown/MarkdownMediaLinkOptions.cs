@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 
 namespace Meziantou.Framework.Markdown;
 
@@ -61,5 +62,5 @@ public sealed record MarkdownMediaLinkOptions
     public IReadOnlyDictionary<string, string> ExtensionToMimeType { get; init; } = DefaultMimeTypes;
 
     /// <summary>Gets the sites whose links are rendered as an <c>&lt;iframe&gt;</c>, tried in order.</summary>
-    public IReadOnlyList<IMarkdownMediaHost> Hosts { get; init; } = IMarkdownMediaHost.KnownHosts;
+    public ImmutableArray<IMarkdownMediaHost> Hosts { get => field.IsDefault ? [] : field; init; } = IMarkdownMediaHost.KnownHosts;
 }

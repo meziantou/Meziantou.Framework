@@ -250,11 +250,11 @@ internal static class IniFuzzTargets
             }
         }
 
-        FuzzAssert.True(root.GlobalProperties.SequenceEqual(global, ReferenceEqualityComparer.Instance), "GlobalProperties are not the properties before the first section header");
-        FuzzAssert.True(root.Sections.SequenceEqual(sections.Select(item => item.Section), ReferenceEqualityComparer.Instance), "Sections are not the section headers of the entries");
+        FuzzAssert.True(root.GlobalProperties.AsEnumerable().SequenceEqual(global, ReferenceEqualityComparer.Instance), "GlobalProperties are not the properties before the first section header");
+        FuzzAssert.True(root.Sections.AsEnumerable().SequenceEqual(sections.Select(item => item.Section), ReferenceEqualityComparer.Instance), "Sections are not the section headers of the entries");
         foreach (var (section, properties) in sections)
         {
-            FuzzAssert.True(section.Properties.SequenceEqual(properties, ReferenceEqualityComparer.Instance), $"The properties of the section {FuzzAssert.Format(section.Name)} are not the properties up to the next header");
+            FuzzAssert.True(section.Properties.AsEnumerable().SequenceEqual(properties, ReferenceEqualityComparer.Instance), $"The properties of the section {FuzzAssert.Format(section.Name)} are not the properties up to the next header");
         }
 
         return new Layout(global, sections);

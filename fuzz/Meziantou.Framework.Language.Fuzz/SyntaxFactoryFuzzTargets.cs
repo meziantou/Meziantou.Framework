@@ -163,7 +163,7 @@ internal static class SyntaxFactoryFuzzTargets
         var context = $"KeyPart({FuzzAssert.Format(name)}) in {FuzzAssert.Format(text)} ({options.Version})";
         AssertNoDiagnostics(tree.GetDiagnostics(), context);
         var key = tree.GetRoot().RootProperties.Single().Key;
-        FuzzAssert.Equal(1, key.Parts.Count, $"{context} is not a key of one part");
+        FuzzAssert.Equal(1, key.Parts.Length, $"{context} is not a key of one part");
         AssertSameToken(token, key.Parts[0], context);
         FuzzAssert.Equal(name, key.Names[0], $"{context} does not read back as the name");
     }

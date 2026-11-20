@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
@@ -11,7 +12,7 @@ public sealed class MarkdownListItemSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
 
     /// <summary>Gets the marker of the item: <c>-</c>, <c>+</c>, <c>*</c>, or a number followed by <c>.</c> or <c>)</c>.</summary>
     public SyntaxToken MarkerToken => GetToken(SyntaxKind.ListMarkerToken);
@@ -26,7 +27,7 @@ public sealed class MarkdownListItemSyntax : MarkdownBlockSyntax
     public bool IsChecked => IsTask && TaskListItemMarkerToken.Text[1] != ' ';
 
     /// <summary>Gets the blocks of the item.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
+    public ImmutableArray<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

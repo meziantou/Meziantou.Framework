@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 namespace Meziantou.Framework.Language.Toml;
 
 /// <summary>A key/value pair of a document, with the full key it defines: the header it is under, its own key, and the inline tables it is in.</summary>
@@ -13,7 +14,7 @@ namespace Meziantou.Framework.Language.Toml;
 /// </remarks>
 public sealed class TomlKeyValue
 {
-    internal TomlKeyValue(TomlTableSyntax? table, IReadOnlyList<string> names, IReadOnlyList<SyntaxToken> parts, TomlPropertySyntax property)
+    internal TomlKeyValue(TomlTableSyntax? table, ImmutableArray<string> names, ImmutableArray<SyntaxToken> parts, TomlPropertySyntax property)
     {
         Table = table;
         Names = names;
@@ -25,10 +26,10 @@ public sealed class TomlKeyValue
     public TomlTableSyntax? Table { get; }
 
     /// <summary>Gets the name of each part of the full key, with quotes removed and escape sequences resolved.</summary>
-    public IReadOnlyList<string> Names { get; }
+    public ImmutableArray<string> Names { get; }
 
     /// <summary>Gets the token that writes each of <see cref="Names"/>, in the header, the key, or the key of an inline table.</summary>
-    public IReadOnlyList<SyntaxToken> Parts { get; }
+    public ImmutableArray<SyntaxToken> Parts { get; }
 
     /// <summary>Gets the key/value pair, which is in an inline table when the value is.</summary>
     public TomlPropertySyntax Property { get; }
@@ -37,22 +38,4 @@ public sealed class TomlKeyValue
     public TomlValueSyntax Value => Property.Value;
 
     public override string ToString() => string.Join('.', Names) + " = " + Value;
-
-    /// <summary>A list made of two others, so that the pairs under a header share its names rather than each copying them.</summary>
-    internal sealed class Concatenation<T>(IReadOnlyList<T> first, IReadOnlyList<T> second) : IReadOnlyList<T>
-    {
-        public int Count { get; } = first.Count + second.Count;
-
-        public T this[int index] => index < first.Count ? first[index] : second[index - first.Count];
-
-        public IEnumerator<T> GetEnumerator()
-        {
-            for (var i = 0; i < Count; i++)
-            {
-                yield return this[i];
-            }
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-    }
 }

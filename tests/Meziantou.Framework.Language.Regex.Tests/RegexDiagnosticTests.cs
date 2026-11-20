@@ -137,8 +137,8 @@ public sealed class RegexDiagnosticTests
         var tree = RegexSyntaxAssert.TextIsFaithful(pattern, options);
 
         var diagnostics = tree.GetDiagnostics();
-        Assert.True(diagnostics.Count >= 3, $"[{pattern}] reported {string.Join(", ", diagnostics.Select(d => d.Id))}");
-        Assert.HasCount(diagnostics.Count, diagnostics.Select(d => (d.Id, d.Location.SourceSpan)).Distinct().ToArray());
+        Assert.HasCountGreaterThanOrEqual(3, diagnostics, $"[{pattern}] reported {string.Join(", ", diagnostics.Select(d => d.Id))}");
+        Assert.HasCount(diagnostics.Length, diagnostics.Select(d => (d.Id, d.Location.SourceSpan)).Distinct().ToArray());
     }
 
     [Fact]

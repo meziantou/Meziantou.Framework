@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Green = Meziantou.Framework.Language.Json.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Json;
@@ -18,7 +19,7 @@ public sealed class JsonSyntaxTree : SyntaxTree
 {
     private readonly SourceText _text;
     private readonly JsonDocumentSyntax _root;
-    private IReadOnlyList<Diagnostic>? _diagnostics;
+    private ImmutableArray<Diagnostic> _diagnostics;
 
     private JsonSyntaxTree(SourceText text, Green.JsonDocumentSyntax green, string? path, int reusedNodeCount = 0)
     {
@@ -69,7 +70,15 @@ public sealed class JsonSyntaxTree : SyntaxTree
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= base.GetDiagnostics();
+    public override ImmutableArray<Diagnostic> GetDiagnostics()
+    {
+        if (_diagnostics.IsDefault)
+        {
+            _diagnostics = base.GetDiagnostics();
+        }
+
+        return _diagnostics;
+    }
 
     /// <summary>Returns a tree over <paramref name="newText"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="newText"/> is <see langword="null"/>.</exception>
@@ -94,7 +103,7 @@ public sealed class JsonSyntaxTree : SyntaxTree
 
     /// <summary>Describes how <paramref name="oldTree"/> would have to change to become this one.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
-    public IReadOnlyList<TextChange> GetChanges(JsonSyntaxTree oldTree) => base.GetChanges(oldTree);
+    public ImmutableArray<TextChange> GetChanges(JsonSyntaxTree oldTree) => base.GetChanges(oldTree);
 
     /// <summary>Determines whether the two trees have the same structure and text.</summary>
     public bool IsEquivalentTo(JsonSyntaxTree? other) => base.IsEquivalentTo(other);
@@ -111,7 +120,7 @@ public sealed class JsonSyntaxTree : SyntaxTree
     protected override SyntaxTree WithChangedTextCore(SourceText newText)
     {
         var changes = newText.GetChangeRanges(_text);
-        if (changes.Count == 0)
+        if (changes.Length == 0)
             return this;
 
         // Reusing needs somewhere to reuse from, and a document that was mostly rewritten has nothing worth keeping.

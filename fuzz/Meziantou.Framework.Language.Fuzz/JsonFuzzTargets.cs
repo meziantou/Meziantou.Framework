@@ -309,7 +309,7 @@ internal static class JsonFuzzTargets
         }
 
         // A tree without diagnostics, not even a duplicate name, is one System.Text.Json reads as a JsonNode
-        if (tree.GetDiagnostics().Count > 0)
+        if (tree.GetDiagnostics().Length > 0)
             return;
 
         // Normalized paths are only defined for strings of Unicode scalar values, which System.Text.Json requires too: a

@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Markdown
     {
         bool AllowFullScreen { get; }
         string? Class { get; }
-        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.IMarkdownMediaHost> KnownHosts { get => throw null; }
+        public static System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.IMarkdownMediaHost> KnownHosts { get => throw null; }
         bool TryHandle(System.Uri mediaUri, bool isSchemaRelative, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? iframeUrl);
     }
 
@@ -35,7 +35,7 @@ namespace Meziantou.Framework.Markdown
     public sealed class MarkdownAlertSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
         public string AlertKind { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken KindToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken MarkerToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
@@ -80,7 +80,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownBlockQuoteSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken MarkerToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -100,7 +100,7 @@ namespace Meziantou.Framework.Markdown
         public Meziantou.Framework.Language.SyntaxToken InfoToken { get => throw null; }
         public bool IsFenced { get => throw null; }
         public string? Language { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken OpeningFenceToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -128,7 +128,7 @@ namespace Meziantou.Framework.Markdown
     public sealed class MarkdownCustomContainerSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
         public string Arguments { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken ClosingFenceToken { get => throw null; }
         public string Name { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken OpeningFenceToken { get => throw null; }
@@ -138,16 +138,16 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownDefinitionItemSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken MarkerToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownDefinitionTermSyntax> Terms { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownDefinitionTermSyntax> Terms { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
 
     public sealed class MarkdownDefinitionListSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownDefinitionItemSyntax> Items { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownDefinitionItemSyntax> Items { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
@@ -170,7 +170,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownDocumentSyntax : Meziantou.Framework.Markdown.MarkdownSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken EndOfFileToken { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Markdown.MarkdownLinkReferenceDefinitionSyntax> LinkReferenceDefinitions { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
@@ -235,15 +235,15 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownExtensionBlockSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public string Content { get => throw null; }
         public string Info { get => throw null; }
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> Inlines { get => throw null; }
         public bool IsFenced { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Lines { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Markers { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> Lines { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> Markers { get => throw null; }
         public string Name { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Texts { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> Texts { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public override string GetPlainText() => throw null;
@@ -252,10 +252,10 @@ namespace Meziantou.Framework.Markdown
     public sealed class MarkdownExtensionInlineSyntax : Meziantou.Framework.Markdown.MarkdownInlineSyntax
     {
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.SyntaxNodeOrToken> Inlines { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Markers { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> Markers { get => throw null; }
         public string Name { get => throw null; }
         public string Text { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> Texts { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> Texts { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
@@ -342,7 +342,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownFigureSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken ClosingFenceToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken OpeningFenceToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
@@ -351,7 +351,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownFooterSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken MarkerToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -359,7 +359,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownFootnoteDefinitionSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public string Label { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -402,7 +402,7 @@ namespace Meziantou.Framework.Markdown
     public sealed class MarkdownFrontMatterSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
         public Meziantou.Framework.Language.SyntaxToken ClosingFenceToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken OpeningFenceToken { get => throw null; }
         public string Yaml { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
@@ -412,13 +412,13 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownGenericAttributes : System.IEquatable<Meziantou.Framework.Markdown.MarkdownGenericAttributes>
     {
-        public System.Collections.Generic.IReadOnlyList<string> Classes { get => throw null; init { } }
+        public System.Collections.Immutable.ImmutableArray<string> Classes { get => throw null; init { } }
         public static Meziantou.Framework.Markdown.MarkdownGenericAttributes Empty { get => throw null; }
         public string? Id { get => throw null; init { } }
         public bool IsEmpty { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string?>> Properties { get => throw null; init { } }
-        public MarkdownGenericAttributes(string? Id, System.Collections.Generic.IReadOnlyList<string> Classes, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string?>> Properties) { }
-        public void Deconstruct(out string? Id, out System.Collections.Generic.IReadOnlyList<string> Classes, out System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string?>> Properties) => throw null;
+        public System.Collections.Immutable.ImmutableArray<System.Collections.Generic.KeyValuePair<string, string?>> Properties { get => throw null; init { } }
+        public MarkdownGenericAttributes(string? Id, System.Collections.Immutable.ImmutableArray<string> Classes, System.Collections.Immutable.ImmutableArray<System.Collections.Generic.KeyValuePair<string, string?>> Properties) { }
+        public void Deconstruct(out string? Id, out System.Collections.Immutable.ImmutableArray<string> Classes, out System.Collections.Immutable.ImmutableArray<System.Collections.Generic.KeyValuePair<string, string?>> Properties) => throw null;
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Markdown.MarkdownGenericAttributes? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -429,9 +429,9 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownGenericAttributesSyntax : Meziantou.Framework.Markdown.MarkdownInlineSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<string> Classes { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<string> Classes { get => throw null; }
         public string? Id { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string?>> Properties { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<System.Collections.Generic.KeyValuePair<string, string?>> Properties { get => throw null; }
         public Meziantou.Framework.Markdown.MarkdownSyntaxNode? Target { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -456,15 +456,15 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownGridTableRow
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownGridTableCell> Cells { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownGridTableCell> Cells { get => throw null; }
         public bool IsHeader { get => throw null; }
     }
 
     public sealed class MarkdownGridTableSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownGridTableColumn> Columns { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownGridTableRow> Rows { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownGridTableColumn> Columns { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownGridTableRow> Rows { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }
@@ -487,7 +487,7 @@ namespace Meziantou.Framework.Markdown
     public sealed class MarkdownHtmlBlockSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
         public string Html { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public override string GetPlainText() => throw null;
@@ -506,7 +506,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownHtmlRendererOptions : System.IEquatable<Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions>
     {
-        public System.Collections.Generic.IReadOnlyCollection<string>? AllowedUrlSchemes { get => throw null; init { } }
+        public System.Collections.Immutable.ImmutableArray<string>? AllowedUrlSchemes { get => throw null; init { } }
         public System.Func<string, bool> AttributeFilter { get => throw null; init { } }
         public System.Uri? BaseUrl { get => throw null; init { } }
         public static Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions Default { get => throw null; }
@@ -515,7 +515,7 @@ namespace Meziantou.Framework.Markdown
         public string? LinkRel { get => throw null; init { } }
         public System.Func<string, string>? LinkRewriter { get => throw null; init { } }
         public Meziantou.Framework.Markdown.MarkdownMediaLinkOptions MediaLinks { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownHtmlNodeRenderer> NodeRenderers { get => throw null; init { } }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownHtmlNodeRenderer> NodeRenderers { get => throw null; init { } }
         public bool PragmaLines { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Markdown.MarkdownSmartyPant, string> SmartyPants { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions? other) => throw null;
@@ -633,7 +633,7 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownListItemSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownBlockSyntax> Blocks { get => throw null; }
         public bool IsChecked { get => throw null; }
         public bool IsTask { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken MarkerToken { get => throw null; }
@@ -646,7 +646,7 @@ namespace Meziantou.Framework.Markdown
     {
         public bool IsOrdered { get => throw null; }
         public bool IsTight { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownListItemSyntax> Items { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownListItemSyntax> Items { get => throw null; }
         public char MarkerCharacter { get => throw null; }
         public Meziantou.Framework.Markdown.MarkdownOrderedListStyle? OrderedStyle { get => throw null; }
         public int? StartNumber { get => throw null; }
@@ -657,7 +657,7 @@ namespace Meziantou.Framework.Markdown
     public sealed class MarkdownMathBlockSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
         public Meziantou.Framework.Language.SyntaxToken ClosingFenceToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> LineTokens { get => throw null; }
         public string Math { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken OpeningFenceToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
@@ -686,7 +686,7 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.MarkdownMediaLinkOptions Default { get => throw null; }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> ExtensionToMimeType { get => throw null; init { } }
         public string Height { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.IMarkdownMediaHost> Hosts { get => throw null; init { } }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.IMarkdownMediaHost> Hosts { get => throw null; init { } }
         public string Width { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Markdown.MarkdownMediaLinkOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
@@ -747,7 +747,7 @@ namespace Meziantou.Framework.Markdown
         public Meziantou.Framework.Markdown.MarkdownJiraLinkOptions JiraLinks { get => throw null; init { } }
         public int MaximumNestingDepth { get => throw null; init { } }
         public Meziantou.Framework.Markdown.MarkdownPipeTableOptions PipeTableOptions { get => throw null; init { } }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownSyntaxExtension> SyntaxExtensions { get => throw null; init { } }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownSyntaxExtension> SyntaxExtensions { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.Markdown.MarkdownParseOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -981,11 +981,11 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownTableRowSyntax : Meziantou.Framework.Markdown.MarkdownSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownTableCellSyntax> Cells { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> DelimiterTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownTableCellSyntax> Cells { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> DelimiterTokens { get => throw null; }
         public bool IsDelimiter { get => throw null; }
         public bool IsHeader { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> PipeTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> PipeTokens { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public override string GetPlainText() => throw null;
@@ -993,11 +993,11 @@ namespace Meziantou.Framework.Markdown
 
     public sealed class MarkdownTableSyntax : Meziantou.Framework.Markdown.MarkdownBlockSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownTableAlignment> Alignments { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownTableAlignment> Alignments { get => throw null; }
         public Meziantou.Framework.Markdown.MarkdownTableRowSyntax? DelimiterRow { get => throw null; }
         public Meziantou.Framework.Markdown.MarkdownTableRowSyntax? HeaderRow { get => throw null; }
         public bool IsPipeTable { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Markdown.MarkdownTableRowSyntax> Rows { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Markdown.MarkdownTableRowSyntax> Rows { get => throw null; }
         public override void Accept(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Markdown.MarkdownSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
     }

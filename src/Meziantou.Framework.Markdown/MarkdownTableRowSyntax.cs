@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
@@ -11,7 +12,7 @@ public sealed class MarkdownTableRowSyntax : MarkdownSyntaxNode
     {
     }
 
-    private IReadOnlyList<MarkdownTableCellSyntax>? _cells;
+    private ImmutableArray<MarkdownTableCellSyntax> _cells;
 
     /// <summary>Gets a value indicating whether this is the header row of its table.</summary>
     public bool IsHeader => Kind() == SyntaxKind.TableHeaderRow;
@@ -21,13 +22,13 @@ public sealed class MarkdownTableRowSyntax : MarkdownSyntaxNode
 
     /// <summary>Gets the cells of the row. A delimiter row has none: its cells are tokens.</summary>
     /// <remarks>A row can have more cells than its table has columns, which are not rendered, or fewer, which are rendered empty.</remarks>
-    public IReadOnlyList<MarkdownTableCellSyntax> Cells => GetNodes(ref _cells);
+    public ImmutableArray<MarkdownTableCellSyntax> Cells => GetNodes(ref _cells);
 
     /// <summary>Gets the cells of a delimiter row, such as <c>:--:</c>.</summary>
-    public IReadOnlyList<SyntaxToken> DelimiterTokens => GetTokens(SyntaxKind.TableDelimiterToken);
+    public ImmutableArray<SyntaxToken> DelimiterTokens => GetTokens(SyntaxKind.TableDelimiterToken);
 
     /// <summary>Gets the pipes of the row.</summary>
-    public IReadOnlyList<SyntaxToken> PipeTokens => GetTokens(SyntaxKind.PipeToken);
+    public ImmutableArray<SyntaxToken> PipeTokens => GetTokens(SyntaxKind.PipeToken);
 
     public override string GetPlainText() => string.Join('\t', Cells.Select(cell => cell.GetPlainText()));
 

@@ -391,7 +391,7 @@ namespace Meziantou.Framework.Language.Xml
     public sealed class XmlSyntaxTree : Meziantou.Framework.Language.SyntaxTree
     {
         public override string? FilePath { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public new Meziantou.Framework.Language.Xml.XmlDocumentSyntax GetRoot() => throw null;
         protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;

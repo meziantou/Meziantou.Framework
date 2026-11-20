@@ -273,7 +273,7 @@ public sealed class ShellEditingTests
     {
         SyntaxTree tree = ShellSyntaxTree.ParseText("if true", ShellDialect.Bash);
 
-        Assert.Equal(((ShellSyntaxTree)tree).GetDiagnostics().Count, tree.GetDiagnostics().Count);
+        Assert.HasCount(((ShellSyntaxTree)tree).GetDiagnostics().Length, tree.GetDiagnostics());
         Assert.NotEmpty(tree.GetDiagnostics());
     }
 

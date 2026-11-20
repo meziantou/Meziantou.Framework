@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
@@ -14,7 +15,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     {
     }
 
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
     private Dictionary<string, MarkdownLinkReferenceDefinitionSyntax>? _definitions;
     private Dictionary<string, MarkdownAbbreviationDefinitionSyntax>? _abbreviations;
     private Dictionary<string, MarkdownFootnoteDefinitionSyntax>? _footnotes;
@@ -26,7 +27,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     private Dictionary<string, MarkdownHeadingSyntax>? _headings;
 
     /// <summary>Gets the blocks of the document, in the order of the text.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
+    public ImmutableArray<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     /// <summary>Gets the token that ends the document, which holds the trivia after the last block.</summary>
     public SyntaxToken EndOfFileToken => GetToken(SyntaxKind.EndOfFileToken);

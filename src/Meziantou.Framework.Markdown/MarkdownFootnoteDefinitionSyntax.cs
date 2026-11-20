@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Markdown;
@@ -10,13 +11,13 @@ public sealed class MarkdownFootnoteDefinitionSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
 
     /// <summary>Gets the label of the footnote, with its <c>^</c>.</summary>
     public string Label => GetToken(SyntaxKind.FootnoteLabelToken).Text;
 
     /// <summary>Gets the blocks of the footnote.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
+    public ImmutableArray<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

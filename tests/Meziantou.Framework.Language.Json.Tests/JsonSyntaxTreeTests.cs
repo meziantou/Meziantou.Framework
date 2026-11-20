@@ -412,7 +412,7 @@ public sealed class JsonSyntaxTreeTests
         Assert.NotEmpty(tree.GetDiagnostics());
         Assert.Equal(text, tree.GetRoot().ToFullString());
         Assert.All(tree.GetDiagnostics(), diagnostic => Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity));
-        Assert.True(tree.GetDiagnostics().Count <= text.Length * 2, $"Expected a bounded number of diagnostics, got {tree.GetDiagnostics().Count}.");
+        Assert.HasCountLessThanOrEqual(text.Length * 2, tree.GetDiagnostics(), "Expected a bounded number of diagnostics.");
     }
 
     [Fact]

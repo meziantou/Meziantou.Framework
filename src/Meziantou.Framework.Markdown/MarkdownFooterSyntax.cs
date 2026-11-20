@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
@@ -11,13 +12,13 @@ public sealed class MarkdownFooterSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
 
     /// <summary>Gets the <c>^^</c> of the first line. The markers of the next lines are trivia.</summary>
     public SyntaxToken MarkerToken => GetToken(SyntaxKind.FooterMarkerToken);
 
     /// <summary>Gets the blocks of the footer, whose paragraphs are rendered without <c>&lt;p&gt;</c>.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
+    public ImmutableArray<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

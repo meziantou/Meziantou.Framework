@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -143,8 +144,8 @@ public static class MarkdownHtmlRenderer
     internal sealed class Writer(int sourceLength, MarkdownParseOptions options, MarkdownHtmlRendererOptions rendererOptions) : IDisposable
     {
         // The node renderers of the options, and the writer they write with, created for the first node they are offered
-        private readonly IReadOnlyList<MarkdownHtmlNodeRenderer> _nodeRenderers = rendererOptions.NodeRenderers;
-        private readonly bool _hasNodeRenderers = rendererOptions.NodeRenderers.Count > 0;
+        private readonly ImmutableArray<MarkdownHtmlNodeRenderer> _nodeRenderers = rendererOptions.NodeRenderers;
+        private readonly bool _hasNodeRenderers = rendererOptions.NodeRenderers.Length > 0;
         private MarkdownHtmlWriter? _nodeWriter;
 
         // The node that MarkdownHtmlWriter.WriteDefault writes: it is not offered to the node renderers again. And the last node
@@ -874,8 +875,8 @@ public static class MarkdownHtmlRenderer
                 }
 
                 // Markdig moves the definitions out of the definition
-                var blocks = item.Blocks.Where(block => block is not (MarkdownLinkReferenceDefinitionSyntax or MarkdownAbbreviationDefinitionSyntax)).ToList();
-                if (blocks.Count == 0 && item.BlankLineCount == 0)
+                var blocks = item.Blocks.Where(block => block is not (MarkdownLinkReferenceDefinitionSyntax or MarkdownAbbreviationDefinitionSyntax)).ToImmutableArray();
+                if (blocks.Length == 0 && item.BlankLineCount == 0)
                 {
                     continue;
                 }
@@ -913,7 +914,7 @@ public static class MarkdownHtmlRenderer
             _ => true,
         };
 
-        public void WriteBlocks(IReadOnlyList<MarkdownBlockSyntax> blocks)
+        public void WriteBlocks(ImmutableArray<MarkdownBlockSyntax> blocks)
         {
             foreach (var block in blocks)
             {
@@ -1374,7 +1375,7 @@ public static class MarkdownHtmlRenderer
         private void WriteExtensionBlock(MarkdownExtensionBlockSyntax extension)
         {
             // As a code block, which starts on a new line even as the first block of a container
-            if (extension.Lines.Count > 0)
+            if (extension.Lines.Length > 0)
             {
                 Cr();
                 Markup.Append("<pre><code");
@@ -1469,7 +1470,7 @@ public static class MarkdownHtmlRenderer
 
                 // The links end the last paragraph, or a paragraph of their own
                 _backLinks = backLinks.ToString();
-                _backLinksParagraph = footnote.Blocks.Count > 0 ? footnote.Blocks[^1] as MarkdownParagraphSyntax : null;
+                _backLinksParagraph = footnote.Blocks.Length > 0 ? footnote.Blocks[^1] as MarkdownParagraphSyntax : null;
                 WriteBlocks(footnote.Blocks);
                 if (_backLinksParagraph is null)
                 {
@@ -1526,7 +1527,7 @@ public static class MarkdownHtmlRenderer
                     (false, true) => "<input checked=\"\" disabled=\"\" type=\"checkbox\"> ",
                     (false, false) => "<input disabled=\"\" type=\"checkbox\"> ",
                 };
-                if (item.Blocks.Count > 0 && item.Blocks[0] is MarkdownParagraphSyntax)
+                if (item.Blocks.Length > 0 && item.Blocks[0] is MarkdownParagraphSyntax)
                 {
                     _pendingCheckbox = checkbox;
                 }
@@ -1565,7 +1566,7 @@ public static class MarkdownHtmlRenderer
             WriteTableRow(table.HeaderRow!, "th", alignments);
             Markup.Append("</thead>\n");
             var rows = table.Rows;
-            if (rows.Count > 0)
+            if (rows.Length > 0)
             {
                 Markup.Append("<tbody>\n");
                 foreach (var row in rows)
@@ -1591,14 +1592,14 @@ public static class MarkdownHtmlRenderer
             int columnCount;
             if (pipeTableOptions.UseHeaderForColumnCount)
             {
-                columnCount = (header ?? rows[0]).Cells.Count;
+                columnCount = (header ?? rows[0]).Cells.Length;
             }
             else
             {
-                columnCount = header?.Cells.Count ?? 0;
+                columnCount = header?.Cells.Length ?? 0;
                 foreach (var row in rows)
                 {
-                    columnCount = Math.Max(columnCount, row.Cells.Count);
+                    columnCount = Math.Max(columnCount, row.Cells.Length);
                 }
             }
 
@@ -1607,7 +1608,7 @@ public static class MarkdownHtmlRenderer
             long missingCells = 0;
             foreach (var row in header is null ? rows : rows.Prepend(header))
             {
-                missingCells += Math.Max(0, columnCount - row.Cells.Count);
+                missingCells += Math.Max(0, columnCount - row.Cells.Length);
             }
 
             var completeShortRows = missingCells <= MaximumAutocompletedCells - _autocompletedCells;
@@ -1632,7 +1633,7 @@ public static class MarkdownHtmlRenderer
                 Markup.Append("</thead>\n");
             }
 
-            if (rows.Count > 0)
+            if (rows.Length > 0)
             {
                 Markup.Append("<tbody>\n");
                 foreach (var row in rows)
@@ -1645,7 +1646,7 @@ public static class MarkdownHtmlRenderer
 
             Markup.Append("</table>\n");
 
-            int GetCellCount(MarkdownTableRowSyntax row) => completeShortRows ? columnCount : Math.Min(columnCount, row.Cells.Count);
+            int GetCellCount(MarkdownTableRowSyntax row) => completeShortRows ? columnCount : Math.Min(columnCount, row.Cells.Length);
         }
 
         // The width of each column of the delimiter row, in percent of the dashes of the row, computed as Markdig computes it. No
@@ -1753,7 +1754,7 @@ public static class MarkdownHtmlRenderer
                         Markup.Append(" id=\"").Append(cellId).Append('"');
                     }
 
-                    Markup.Append(columns[Math.Min(cell.ColumnIndex, columns.Count - 1)].Alignment switch
+                    Markup.Append(columns[Math.Min(cell.ColumnIndex, columns.Length - 1)].Alignment switch
                     {
                         MarkdownTableAlignment.Center => " align=\"center\"",
                         MarkdownTableAlignment.Left => " align=\"left\"",
@@ -1817,7 +1818,7 @@ public static class MarkdownHtmlRenderer
             return writer.ToString();
         }
 
-        private void WritePipeTableRow(MarkdownTableRowSyntax row, string tag, int columnCount, IReadOnlyList<MarkdownTableAlignment> alignments)
+        private void WritePipeTableRow(MarkdownTableRowSyntax row, string tag, int columnCount, ImmutableArray<MarkdownTableAlignment> alignments)
         {
             Markup.Append("<tr");
             AppendAttributes(row);
@@ -1826,9 +1827,9 @@ public static class MarkdownHtmlRenderer
             for (var i = 0; i < columnCount; i++)
             {
                 Markup.Append('<').Append(tag);
-                if (alignments.Count > 0)
+                if (alignments.Length > 0)
                 {
-                    Markup.Append(alignments[Math.Min(i, alignments.Count - 1)] switch
+                    Markup.Append(alignments[Math.Min(i, alignments.Length - 1)] switch
                     {
                         MarkdownTableAlignment.Center => " align=\"center\"",
                         MarkdownTableAlignment.Left => " align=\"left\"",
@@ -1838,7 +1839,7 @@ public static class MarkdownHtmlRenderer
                 }
 
                 Markup.Append('>');
-                if (i < cells.Count)
+                if (i < cells.Length)
                 {
                     // As in Markdig, a cell starts after its last hard line break: the inlines before it are not written
                     var inlines = cells[i].Inlines;
@@ -1873,7 +1874,7 @@ public static class MarkdownHtmlRenderer
             for (var i = 0; i < alignments.Count; i++)
             {
                 Markup.Append('<').Append(tag).Append(alignments[i]).Append('>');
-                if (i < cells.Count)
+                if (i < cells.Length)
                 {
                     _inTableCell = true;
                     WriteInlines(cells[i].Inlines);
@@ -2488,7 +2489,7 @@ public static class MarkdownHtmlRenderer
         // Whether a URL is relative, or its scheme is one of the allowed ones, ignoring case. The scheme is read as a browser reads
         // it: after the spaces and the control characters at the start, which it ignores, and without the tabs and the line
         // endings, which it removes from the whole URL. "java\tscript:" is a javascript: URL.
-        internal static bool IsAllowedUrl(ReadOnlySpan<char> url, IReadOnlyCollection<string> allowedSchemes)
+        internal static bool IsAllowedUrl(ReadOnlySpan<char> url, ImmutableArray<string> allowedSchemes)
         {
             if (!TryGetUrlScheme(url, out var scheme))
             {

@@ -79,6 +79,12 @@ Assert.Equal(",", elements.GetSeparator(1).Text); // the trailing comma
 Indexing a separated list returns the node, not the separator: read the separators with `GetSeparator(index)` or
 [GetSeparators()](cref:Meziantou.Framework.Language.SeparatedSyntaxList{TNode}.GetSeparators).
 
+The other properties that give several values, such as the [Arguments](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax.Arguments)
+of a shell command or the [Names](cref:Meziantou.Framework.Language.Toml.TomlKeySyntax.Names) of a TOML key, return an
+`ImmutableArray<T>`, as do [GetDiagnostics()](cref:Meziantou.Framework.Language.SyntaxTree.GetDiagnostics),
+[GetChanges](cref:Meziantou.Framework.Language.SyntaxTree.GetChanges(Meziantou.Framework.Language.SyntaxTree)) and
+[SourceText.Lines](cref:Meziantou.Framework.Language.SourceText.Lines): like the tree, what they give never changes.
+
 ## Invalid text in a tree
 
 The tree of an invalid document still holds every character, and keeps the shape the author most likely meant:

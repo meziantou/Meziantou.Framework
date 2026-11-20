@@ -193,7 +193,7 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellStatementListSyntax Body { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken CloseParenToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken OpenParenToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> PatternSeparatorTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> PatternSeparatorTokens { get => throw null; }
         public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Patterns { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken TerminatorToken { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
@@ -1080,7 +1080,7 @@ namespace Meziantou.Framework.Language.Shell
 
     public sealed class ShellCommandListSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> OperatorTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> OperatorTokens { get => throw null; }
         public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Pipelines { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -1104,12 +1104,12 @@ namespace Meziantou.Framework.Language.Shell
 
     public sealed class ShellCommandSyntax : Meziantou.Framework.Language.Shell.ShellStatementSyntax
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellWordSyntax> Arguments { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellAssignmentSyntax> Assignments { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Shell.ShellWordSyntax> Arguments { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Shell.ShellAssignmentSyntax> Assignments { get => throw null; }
         public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> Elements { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellWordSyntax? Name { get => throw null; }
         public string? NameValue { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> Redirections { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Shell.ShellRedirectionSyntax> Redirections { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public Meziantou.Framework.Language.Shell.ShellCommandSyntax Update(Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Shell.ShellSyntaxNode> elements) => throw null;
@@ -1287,7 +1287,7 @@ namespace Meziantou.Framework.Language.Shell
     {
         public Meziantou.Framework.Language.SyntaxToken BangToken { get => throw null; }
         public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Commands { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> OperatorTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> OperatorTokens { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public Meziantou.Framework.Language.Shell.ShellPipelineSyntax Update(Meziantou.Framework.Language.SyntaxToken bangToken, Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> commands) => throw null;
@@ -1357,7 +1357,7 @@ namespace Meziantou.Framework.Language.Shell
 
     public sealed class ShellStatementListSyntax : Meziantou.Framework.Language.Shell.ShellSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.SyntaxToken> SeparatorTokens { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.SyntaxToken> SeparatorTokens { get => throw null; }
         public Meziantou.Framework.Language.SeparatedSyntaxList<Meziantou.Framework.Language.Shell.ShellStatementSyntax> Statements { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Shell.ShellSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
@@ -1486,8 +1486,8 @@ namespace Meziantou.Framework.Language.Shell
         public Meziantou.Framework.Language.Shell.ShellDialect Dialect { get => throw null; }
         public override string? FilePath { get => throw null; }
         public Meziantou.Framework.Language.Shell.ShellParseOptions Options { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public new Meziantou.Framework.Language.Shell.ShellScriptSyntax GetRoot() => throw null;
         protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;

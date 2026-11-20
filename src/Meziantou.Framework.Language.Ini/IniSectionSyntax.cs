@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Ini;
@@ -20,7 +21,7 @@ public sealed class IniSectionSyntax : IniEntrySyntax
 
     /// <summary>Gets the properties under this header: the ones that follow it, up to the next header.</summary>
     /// <remarks>A header that is not part of a document has none.</remarks>
-    public IReadOnlyList<IniPropertySyntax> Properties => Parent is IniDocumentSyntax document ? document.GetSectionProperties(this) : [];
+    public ImmutableArray<IniPropertySyntax> Properties => Parent is IniDocumentSyntax document ? document.GetSectionProperties(this) : [];
 
     /// <summary>Returns this section with the given parts, or itself when nothing changed.</summary>
     public IniSectionSyntax Update(SyntaxToken openBracketToken, SyntaxToken nameToken, SyntaxToken closeBracketToken)

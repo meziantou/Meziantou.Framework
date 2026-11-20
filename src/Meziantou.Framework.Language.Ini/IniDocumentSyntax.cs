@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using Meziantou.Framework.Language.InternalSyntax;
 using Green = Meziantou.Framework.Language.Ini.Syntax.InternalSyntax;
@@ -45,10 +46,10 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
     public IniParseOptions Options => ((Green.IniDocumentSyntax)Green).Options;
 
     /// <summary>Gets the properties that come before the first section header.</summary>
-    public IReadOnlyList<IniPropertySyntax> GlobalProperties => Index.GlobalProperties;
+    public ImmutableArray<IniPropertySyntax> GlobalProperties => Index.GlobalProperties;
 
     /// <summary>Gets the section headers, in source order.</summary>
-    public IEnumerable<IniSectionSyntax> Sections => Index.Sections;
+    public ImmutableArray<IniSectionSyntax> Sections => Index.Sections;
 
     private SectionIndex Index
     {
@@ -91,7 +92,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         if (UsesNameComparer(comparer))
             return Index.GetNames(Options.NameComparer).GetProperties(section, key);
 
-        var properties = section is null ? GlobalProperties : GetSections(section, comparer).SelectMany(header => header.Properties);
+        var properties = section is null ? GlobalProperties.AsEnumerable() : GetSections(section, comparer).SelectMany(header => header.Properties);
         return properties.Where(property => !property.KeyToken.IsMissing && comparer.Equals(property.Key, key));
     }
 
@@ -154,7 +155,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         var indentation = "";
         if (section is null)
         {
-            insertAt = index.Sections.Count > 0 ? index.EntryIndexes[index.Sections[0]] : entries.Count;
+            insertAt = index.Sections.Length > 0 ? index.EntryIndexes[index.Sections[0]] : entries.Count;
             sibling = LastOrNull(index.GlobalProperties);
         }
         else
@@ -175,7 +176,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
             }
 
             var headerOrdinal = index.SectionOrdinals[header];
-            insertAt = headerOrdinal + 1 < index.Sections.Count ? index.EntryIndexes[index.Sections[headerOrdinal + 1]] : entries.Count;
+            insertAt = headerOrdinal + 1 < index.Sections.Length ? index.EntryIndexes[index.Sections[headerOrdinal + 1]] : entries.Count;
             sibling = LastOrNull(index.Properties[header]);
             indentation = IniPropertySyntax.GetIndentation(header.OpenBracketToken.LeadingTrivia);
         }
@@ -282,7 +283,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         foreach (var header in GetSections(name, comparer))
         {
             var ordinal = index.SectionOrdinals[header];
-            var end = ordinal + 1 < index.Sections.Count ? index.EntryIndexes[index.Sections[ordinal + 1]] : count;
+            var end = ordinal + 1 < index.Sections.Length ? index.EntryIndexes[index.Sections[ordinal + 1]] : count;
             for (var i = index.EntryIndexes[header]; i < end; i++)
             {
                 removed.Add(i);
@@ -366,7 +367,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         return Update(entries.AddRange(added), endOfFile);
     }
 
-    internal IReadOnlyList<IniPropertySyntax> GetSectionProperties(IniSectionSyntax section)
+    internal ImmutableArray<IniPropertySyntax> GetSectionProperties(IniSectionSyntax section)
         => Index.Properties.TryGetValue(section, out var properties) ? properties : [];
 
     internal override SyntaxNode? GetNodeSlot(int index) => index == 0 ? GetRedAtZero(ref _entries) : null;
@@ -517,30 +518,32 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         return (SyntaxFactory.TriviaList(trivia.Take(split)), SyntaxFactory.TriviaList(trivia.Skip(split)));
     }
 
-    private static IniPropertySyntax? LastOrNull(IReadOnlyList<IniPropertySyntax> properties) => properties.Count > 0 ? properties[^1] : null;
+    private static IniPropertySyntax? LastOrNull(ImmutableArray<IniPropertySyntax> properties) => properties.Length > 0 ? properties[^1] : null;
 
     private static bool IsByteOrderMark(SyntaxTrivia trivia) => trivia.IsKind(SyntaxKind.WhitespaceTrivia) && trivia.ToFullString() is "\uFEFF";
 
     /// <summary>Where each section header and property sits, worked out once per document.</summary>
-    /// <remarks>The lists it hands out are read-only, as the document that shares them is immutable.</remarks>
+    /// <remarks>The lists it hands out are immutable, as the document that shares them is.</remarks>
     private sealed class SectionIndex
     {
         private NameIndex? _names;
 
         public SectionIndex(SyntaxList<IniEntrySyntax> entries)
         {
-            var sections = new List<IniSectionSyntax>();
-            var current = new List<IniPropertySyntax>();
-            GlobalProperties = current.AsReadOnly();
+            var sections = ImmutableArray.CreateBuilder<IniSectionSyntax>();
+            var current = ImmutableArray.CreateBuilder<IniPropertySyntax>();
+            IniSectionSyntax? currentSection = null;
             for (var i = 0; i < entries.Count; i++)
             {
                 switch (entries[i])
                 {
                     case IniSectionSyntax section:
-                        current = [];
+                        // ToImmutable copies the properties to an array of their size, and Clear keeps the buffer for the next section
+                        AddProperties(currentSection, current.ToImmutable());
+                        current.Clear();
+                        currentSection = section;
                         SectionOrdinals.Add(section, sections.Count);
                         sections.Add(section);
-                        Properties.Add(section, current.AsReadOnly());
                         EntryIndexes.Add(section, i);
                         break;
 
@@ -551,14 +554,27 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
                 }
             }
 
-            Sections = sections.AsReadOnly();
+            AddProperties(currentSection, current.ToImmutable());
+            Sections = sections.DrainToImmutable();
         }
 
-        public IReadOnlyList<IniPropertySyntax> GlobalProperties { get; }
-        public ReadOnlyCollection<IniSectionSyntax> Sections { get; }
+        public ImmutableArray<IniPropertySyntax> GlobalProperties { get; private set; }
+        public ImmutableArray<IniSectionSyntax> Sections { get; }
         public Dictionary<IniSectionSyntax, int> SectionOrdinals { get; } = new(ReferenceEqualityComparer.Instance);
-        public Dictionary<IniSectionSyntax, IReadOnlyList<IniPropertySyntax>> Properties { get; } = new(ReferenceEqualityComparer.Instance);
+        public Dictionary<IniSectionSyntax, ImmutableArray<IniPropertySyntax>> Properties { get; } = new(ReferenceEqualityComparer.Instance);
         public Dictionary<IniEntrySyntax, int> EntryIndexes { get; } = new(ReferenceEqualityComparer.Instance);
+
+        private void AddProperties(IniSectionSyntax? section, ImmutableArray<IniPropertySyntax> properties)
+        {
+            if (section is null)
+            {
+                GlobalProperties = properties;
+            }
+            else
+            {
+                Properties.Add(section, properties);
+            }
+        }
 
         /// <summary>Gets the sections and properties by name, as <paramref name="comparer"/> compares names.</summary>
         /// <remarks>Only the comparer of the document is ever asked for, so the first one asked for is the one kept.</remarks>
@@ -620,7 +636,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
             return headers.SelectMany(header => _sectionProperties[header].TryGetValue(key, out var properties) ? properties : []);
         }
 
-        private static Dictionary<string, List<IniPropertySyntax>> ByKey(IReadOnlyList<IniPropertySyntax> properties, StringComparer comparer)
+        private static Dictionary<string, List<IniPropertySyntax>> ByKey(ImmutableArray<IniPropertySyntax> properties, StringComparer comparer)
         {
             var result = new Dictionary<string, List<IniPropertySyntax>>(comparer);
             foreach (var property in properties)

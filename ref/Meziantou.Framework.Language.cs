@@ -186,10 +186,10 @@ namespace Meziantou.Framework.Language
     public sealed class SourceText
     {
         public int Length { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextLine> Lines { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextLine> Lines { get => throw null; }
         public string Text { get => throw null; }
         public static Meziantou.Framework.Language.SourceText From(string text) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChangeRange> GetChangeRanges(Meziantou.Framework.Language.SourceText oldText) => throw null;
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextChangeRange> GetChangeRanges(Meziantou.Framework.Language.SourceText oldText) => throw null;
         public Meziantou.Framework.Language.TextLine GetLine(int position) => throw null;
         public Meziantou.Framework.Language.SourceText GetSubText(Meziantou.Framework.Language.TextSpan span) => throw null;
         public override string ToString() => throw null;
@@ -528,9 +528,9 @@ namespace Meziantou.Framework.Language
     {
         public abstract string? FilePath { get; }
         public int Length { get => throw null; }
-        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextSpan> GetChangedSpans(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
-        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
-        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public virtual System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextSpan> GetChangedSpans(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
+        public virtual System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
+        public virtual System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxNode node) => throw null;
         public virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxToken token) => throw null;
         public virtual System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Diagnostic> GetDiagnostics(Meziantou.Framework.Language.SyntaxTrivia trivia) => throw null;

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
@@ -24,18 +25,18 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
     {
     }
 
-    private (IReadOnlyList<MarkdownGridTableColumn> Columns, IReadOnlyList<MarkdownGridTableRow> Rows)? _layout;
+    private Layout? _layout;
 
     /// <summary>Gets the lines of the table, with their line endings.</summary>
-    public IReadOnlyList<SyntaxToken> LineTokens => GetTokens(SyntaxKind.GridTableLineToken);
+    public ImmutableArray<SyntaxToken> LineTokens => GetTokens(SyntaxKind.GridTableLineToken);
 
     /// <summary>Gets the columns of the table, from its first line.</summary>
-    public IReadOnlyList<MarkdownGridTableColumn> Columns => GetLayout().Columns;
+    public ImmutableArray<MarkdownGridTableColumn> Columns => GetLayout().Columns;
 
     /// <summary>Gets the rows of the table: the rows above a line of <c>=</c>, <c>+===+</c>, are the header.</summary>
-    public IReadOnlyList<MarkdownGridTableRow> Rows => GetLayout().Rows;
+    public ImmutableArray<MarkdownGridTableRow> Rows => GetLayout().Rows;
 
-    private (IReadOnlyList<MarkdownGridTableColumn> Columns, IReadOnlyList<MarkdownGridTableRow> Rows) GetLayout()
+    private Layout GetLayout()
     {
         if (_layout is { } layout)
         {
@@ -43,7 +44,7 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
         }
 
         var tokens = LineTokens;
-        var lines = new List<string>(tokens.Count);
+        var lines = new List<string>(tokens.Length);
         foreach (var token in tokens)
         {
             lines.Add(token.Text.TrimEnd('\r', '\n'));
@@ -57,7 +58,7 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
             totalWidth += column.End - column.Start - 1;
         }
 
-        var columns = grid.Columns.Select(column => new MarkdownGridTableColumn(column.Alignment, (float)(column.End - column.Start - 1) * 100.0f / totalWidth)).ToArray();
+        var columns = grid.Columns.Select(column => new MarkdownGridTableColumn(column.Alignment, (float)(column.End - column.Start - 1) * 100.0f / totalWidth)).ToImmutableArray();
         var outer = SyntaxTree as MarkdownSyntaxTree;
         var depth = (outer?.CellDepth ?? 0) + Ancestors().Count(ancestor => ancestor is MarkdownBlockSyntax) + 1;
         var rows = grid.Rows.Select(row => new MarkdownGridTableRow(row.IsHeader, [.. row.Cells.Select(cell =>
@@ -65,9 +66,10 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
             var text = string.Join('\n', cell.Segments.Select(segment => lines[segment.Line][segment.Start..segment.End]));
             TextSpan[] segments = [.. cell.Segments.Select(segment => new TextSpan(tokens[segment.Line].SpanStart + segment.Start, segment.End - segment.Start))];
             return new MarkdownGridTableCell(cell.ColumnIndex, cell.ColumnSpan, cell.RowSpan, text, outer, cell.IsClosed, cell.Segments.Count > 0 ? cell.Segments[0].Line : -1, depth, segments);
-        })], row.Line)).ToArray();
-        _layout = (columns, rows);
-        return _layout.Value;
+        })], row.Line)).ToImmutableArray();
+        layout = new Layout(columns, rows);
+        _layout = layout;
+        return layout;
     }
 
     // The node and the nodes below it in the order of the text, with, after each grid table, the nodes of the content of its
@@ -107,4 +109,6 @@ public sealed class MarkdownGridTableSyntax : MarkdownBlockSyntax
 
         return visitor.VisitMarkdownGridTable(this);
     }
+
+    private sealed record Layout(ImmutableArray<MarkdownGridTableColumn> Columns, ImmutableArray<MarkdownGridTableRow> Rows);
 }

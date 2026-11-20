@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using System.Text;
@@ -22,12 +23,12 @@ public sealed class MarkdownMathBlockSyntax : MarkdownBlockSyntax
         get
         {
             var fences = GetTokens(SyntaxKind.MathFenceToken);
-            return fences.Count == 2 ? fences[1] : default;
+            return fences.Length == 2 ? fences[1] : default;
         }
     }
 
     /// <summary>Gets the tokens of the lines of math, with their line endings.</summary>
-    public IReadOnlyList<SyntaxToken> LineTokens => GetTokens(SyntaxKind.MathLineToken);
+    public ImmutableArray<SyntaxToken> LineTokens => GetTokens(SyntaxKind.MathLineToken);
 
     /// <summary>Gets the math: its lines without the indentation of the block and the markers of its containers, each one ended by <c>\n</c>.</summary>
     public string Math

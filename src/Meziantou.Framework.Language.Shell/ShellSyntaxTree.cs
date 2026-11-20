@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.Shell.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Shell;
@@ -14,9 +15,10 @@ public sealed class ShellSyntaxTree : SyntaxTree
 {
     private readonly SourceText _text;
     private readonly ShellScriptSyntax _root;
-    private readonly List<Diagnostic> _diagnostics;
+    // Not readonly: ParseCommand reports the content after the statement once the tree is built, before anyone sees the tree
+    private ImmutableArray<Diagnostic> _diagnostics;
 
-    private ShellSyntaxTree(SourceText text, ShellParseOptions options, Syntax.InternalSyntax.ShellScriptSyntax green, List<Diagnostic> diagnostics)
+    private ShellSyntaxTree(SourceText text, ShellParseOptions options, Syntax.InternalSyntax.ShellScriptSyntax green, ImmutableArray<Diagnostic> diagnostics)
     {
         _text = text;
         Options = options;
@@ -38,7 +40,7 @@ public sealed class ShellSyntaxTree : SyntaxTree
     public new ShellScriptSyntax GetRoot() => _root;
 
     /// <summary>Gets everything wrong with the script, in the order the parser found it.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
+    public override ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <summary>Parses <paramref name="text"/> as a complete script. Never throws; problems are reported as diagnostics.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="dialect"/> is <see langword="null"/>.</exception>
@@ -139,7 +141,7 @@ public sealed class ShellSyntaxTree : SyntaxTree
     /// nodes and a structural comparison would report the whole script as replaced.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
-    public override IReadOnlyList<TextChange> GetChanges(SyntaxTree oldTree)
+    public override ImmutableArray<TextChange> GetChanges(SyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
 
@@ -196,5 +198,5 @@ public sealed class ShellSyntaxTree : SyntaxTree
     }
 
     private void AddTrailingContentDiagnostic(TextSpan span)
-        => _diagnostics.Add(new Diagnostic("SHELL0101", "Unexpected content after the parsed statement.", DiagnosticSeverity.Error, new Location(span, _text)));
+        => _diagnostics = _diagnostics.Add(new Diagnostic("SHELL0101", "Unexpected content after the parsed statement.", DiagnosticSeverity.Error, new Location(span, _text)));
 }

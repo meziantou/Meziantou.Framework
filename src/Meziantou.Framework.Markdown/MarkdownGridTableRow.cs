@@ -1,9 +1,11 @@
+using System.Collections.Immutable;
+
 namespace Meziantou.Framework.Markdown;
 
 /// <summary>A row of a grid table.</summary>
 public sealed class MarkdownGridTableRow
 {
-    internal MarkdownGridTableRow(bool isHeader, IReadOnlyList<MarkdownGridTableCell> cells, int lineIndex)
+    internal MarkdownGridTableRow(bool isHeader, ImmutableArray<MarkdownGridTableCell> cells, int lineIndex)
     {
         IsHeader = isHeader;
         Cells = cells;
@@ -17,5 +19,5 @@ public sealed class MarkdownGridTableRow
     public bool IsHeader { get; }
 
     /// <summary>Gets the cells that start in the row. A cell of a row above can span it.</summary>
-    public IReadOnlyList<MarkdownGridTableCell> Cells { get; }
+    public ImmutableArray<MarkdownGridTableCell> Cells { get; }
 }

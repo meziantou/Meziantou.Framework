@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 using static Meziantou.Framework.Language.Xml.Syntax.InternalSyntax.XmlDiagnosticDescriptors;
@@ -49,7 +50,7 @@ internal sealed class LanguageParser : ICharacterDataReporter
     }
 
     /// <summary>Gets everything wrong with the document, in the order it appears in the text.</summary>
-    public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
+    public ImmutableArray<Diagnostic> Diagnostics { get; private set; } = [];
 
     public XmlDocumentSyntax ParseDocument()
     {
@@ -106,9 +107,7 @@ internal sealed class LanguageParser : ICharacterDataReporter
         }
 
         // The checks run in several passes, so the order they found things in is not the order of the text.
-        var sorted = _diagnostics.OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start).ToArray();
-        _diagnostics.Clear();
-        _diagnostics.AddRange(sorted);
+        Diagnostics = _diagnostics.Count == 0 ? [] : [.. _diagnostics.OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start)];
 
         return new XmlDocumentSyntax(SyntaxFactory.List(CollectionsMarshal.AsSpan(_documentNodes)), SyntaxFactory.Token(SyntaxKind.EndOfFileToken));
     }

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using System.Text;
@@ -13,15 +14,39 @@ public sealed class MarkdownGenericAttributesSyntax : MarkdownInlineSyntax
     }
 
     private ParsedAttributes? _attributes;
+    private ImmutableArray<string> _classes;
+    private ImmutableArray<KeyValuePair<string, string?>> _properties;
 
     /// <summary>Gets the id, or <see langword="null"/> when there is none.</summary>
     public string? Id => Attributes.Id;
 
     /// <summary>Gets the classes.</summary>
-    public IReadOnlyList<string> Classes => Attributes.Classes;
+    public ImmutableArray<string> Classes
+    {
+        get
+        {
+            if (_classes.IsDefault)
+            {
+                _classes = [.. Attributes.Classes];
+            }
+
+            return _classes;
+        }
+    }
 
     /// <summary>Gets the other attributes, whose value is <see langword="null"/> when they are written without one, such as <c>{hidden}</c>.</summary>
-    public IReadOnlyList<KeyValuePair<string, string?>> Properties => Attributes.Properties;
+    public ImmutableArray<KeyValuePair<string, string?>> Properties
+    {
+        get
+        {
+            if (_properties.IsDefault)
+            {
+                _properties = [.. Attributes.Properties];
+            }
+
+            return _properties;
+        }
+    }
 
     /// <summary>Gets the node whose element the attributes are for, or <see langword="null"/> when they are for none.</summary>
     /// <remarks>

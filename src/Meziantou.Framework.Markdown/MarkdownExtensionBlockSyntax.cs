@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using System.Text;
@@ -16,10 +17,10 @@ namespace Meziantou.Framework.Markdown;
 /// </remarks>
 public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
 {
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
-    private IReadOnlyList<SyntaxToken>? _markers;
-    private IReadOnlyList<SyntaxToken>? _texts;
-    private IReadOnlyList<SyntaxToken>? _lines;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
+    private ImmutableArray<SyntaxToken> _markers;
+    private ImmutableArray<SyntaxToken> _texts;
+    private ImmutableArray<SyntaxToken> _lines;
 
     internal MarkdownExtensionBlockSyntax(GreenNode green, SyntaxNode? parent, int position)
         : base(green, parent, position)
@@ -33,7 +34,7 @@ public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
     public bool IsFenced => GetFirstChildToken().RawKind == (int)SyntaxKind.ExtensionFenceToken;
 
     /// <summary>Gets the fences of a fenced block, or the markers of the block of a paragraph, in the order of the text.</summary>
-    public IReadOnlyList<SyntaxToken> Markers => _markers ??= [.. ChildTokens().Where(token => token.RawKind is (int)SyntaxKind.ExtensionFenceToken or (int)SyntaxKind.ExtensionMarkerToken)];
+    public ImmutableArray<SyntaxToken> Markers => GetTokens(ref _markers, SyntaxKind.ExtensionFenceToken, SyntaxKind.ExtensionMarkerToken);
 
     /// <summary>Gets the text after the opening fence, without the whitespace around it, or an empty string.</summary>
     public string Info
@@ -61,7 +62,7 @@ public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
     }
 
     /// <summary>Gets the lines between the fences of a block of <see cref="MarkdownFencedBlockContent.RawLines"/>, with their line endings.</summary>
-    public IReadOnlyList<SyntaxToken> Lines => _lines ??= [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionLineToken)];
+    public ImmutableArray<SyntaxToken> Lines => GetTokens(ref _lines, SyntaxKind.ExtensionLineToken);
 
     /// <summary>Gets the text of the lines between the fences, each line ending with <c>\n</c>.</summary>
     public string Content
@@ -88,10 +89,10 @@ public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
     }
 
     /// <summary>Gets the blocks between the fences of a block of <see cref="MarkdownFencedBlockContent.Blocks"/>.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
+    public ImmutableArray<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     /// <summary>Gets the text tokens of the block of a paragraph, in the order of the text.</summary>
-    public IReadOnlyList<SyntaxToken> Texts => _texts ??= [.. ChildTokens().Where(token => token.RawKind == (int)SyntaxKind.ExtensionTextToken)];
+    public ImmutableArray<SyntaxToken> Texts => GetTokens(ref _texts, SyntaxKind.ExtensionTextToken);
 
     /// <summary>
     /// Gets the text and the inlines of the block of a paragraph, or the info of a fenced block that reads it as inlines: the
@@ -99,7 +100,7 @@ public sealed class MarkdownExtensionBlockSyntax : MarkdownBlockSyntax
     /// </summary>
     public IEnumerable<SyntaxNodeOrToken> Inlines => ChildNodesAndTokens().Where(child => child.AsNode() is not MarkdownBlockSyntax && !(child.IsToken && child.AsToken().RawKind is (int)SyntaxKind.ExtensionFenceToken or (int)SyntaxKind.ExtensionMarkerToken or (int)SyntaxKind.ExtensionLineToken or (int)SyntaxKind.InfoStringToken));
 
-    public override string GetPlainText() => IsFenced ? (Lines.Count > 0 ? Content : base.GetPlainText()) : GetPlainText(Inlines);
+    public override string GetPlainText() => IsFenced ? (Lines.Length > 0 ? Content : base.GetPlainText()) : GetPlainText(Inlines);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

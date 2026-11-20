@@ -10,4 +10,7 @@ internal sealed class XrefSection(Dictionary<int, XrefEntry> entries, PdfDiction
     public PdfDictionary Trailer { get; } = trailer;
 
     public bool IsStream { get; } = isStream;
+
+    /// <summary>Gets a value indicating whether the trailer of the table cannot be read: <see cref="Trailer"/> is empty, and only the entries of the table are kept.</summary>
+    public bool IsTrailerDamaged { get; init; }
 }

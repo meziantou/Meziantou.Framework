@@ -3747,6 +3747,28 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void PruneUnreachableObjectsFollowsChainsOfReferences()
+    {
+        // The value of the objects 6 and 7 is a reference: the document follows it to the catalog and to the page tree
+        var file = new HandWrittenPdf { Trailer = "<< /Size {size} /Root 6 0 R >>" }
+            .Add(1, "<< /Type /Catalog /Pages 7 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 12 Tf 72 720 Td (Hello) Tj ET"))
+            .Add(6, "1 0 R")
+            .Add(7, "2 0 R");
+        var document = PdfDocument.Open(file.ToArray());
+        Assert.Single(document.Pages);
+
+        PdfOptimizer.Apply(PdfOptimizer.CreatePlan(document, new PdfOptimizationOptions { PruneUnreachableObjects = true }));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.False(read.IsRepaired);
+        Assert.Equal("Hello", Assert.Single(read.Pages).ExtractText());
+    }
+
+    [Fact]
     public void OptimizerPrunesUnusedResources()
     {
         var document = new PdfDocument();

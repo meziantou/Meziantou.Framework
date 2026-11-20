@@ -1520,7 +1520,9 @@ internal sealed class TextFragment : Fragment
     /// <summary>
     /// Whether the fragment is the hyphen displayed at the end of a line broken after a soft hyphen
     /// (https://drafts.csswg.org/css-text-4/#hyphenation): its glyphs are the ones of <c>hyphenate-character</c>, and its
-    /// <see cref="Start"/> and <see cref="End"/> are the offset after the soft hyphen.
+    /// <see cref="Start"/> and <see cref="End"/> are the offset after the soft hyphen. It is also the letters that the spelling
+    /// change of a hyphenation break displays at the start of the next line (the vowel without its Dutch trema): its
+    /// <see cref="Start"/> and <see cref="End"/> are then the offsets of the characters they replace.
     /// </summary>
     public bool IsHyphen { get; init; }
 

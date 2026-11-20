@@ -494,6 +494,48 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([(1, new PhysicalRect(100, 0, 100, 100))], GetPageRects(pages, document.GetElementById("i7")!));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("flex-direction: row-reverse")]
+    [InlineData("justify-content: center")]
+    public void Pages_WrappingFlexContainerContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string style)
+    {
+        // The first page is 200px wide (2 items per flex line), the next ones 400px wide: the items after the break between two
+        // flex lines start a new flex line in the page area of the second page, where 4 items fit per line; none is repeated or
+        // skipped
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=i{i}></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { flex: 0 0 100px; height: 100px }</style>
+            <div id=c style='display: flex; flex-wrap: wrap; {{style}}'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        for (var i = 0; i < 6; i++)
+        {
+            Assert.Equal(0, Assert.Single(GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!)).Page);
+        }
+
+        var rects = Enumerable.Range(6, 4).Select(i => Assert.Single(GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!))).ToList();
+        Assert.All(rects, rect => Assert.Equal((1, 0d, 100d, 100d), (rect.Page, rect.Rect.Y, rect.Rect.Width, rect.Rect.Height)));
+        Assert.Equal([0d, 100d, 200d, 300d], rects.Select(rect => rect.Rect.X).Order());
+    }
+
+    [Fact]
+    public void Pages_WrappingFlexContainerBrokenInsideALineKeepsItsLayout()
+    {
+        // The break is inside a flex line (its items are side by side): the items after it would not be in the same lines in the
+        // page area of the second page, so the flex container keeps the layout of the first page
+        var items = string.Concat(Enumerable.Range(0, 4).Select(i => $"<div id=i{i}></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { flex: 0 0 100px; height: 200px }</style>
+            <div id=c style='display: flex; flex-wrap: wrap'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([(0, new PhysicalRect(0, 200, 100, 100)), (1, new PhysicalRect(0, 0, 100, 100))], GetPageRects(pages, document.GetElementById("i2")!));
+    }
+
     [Fact]
     public void Pages_ParagraphContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
     {

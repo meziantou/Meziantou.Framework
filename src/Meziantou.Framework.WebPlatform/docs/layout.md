@@ -2084,8 +2084,7 @@ an atomic inline laid out while its parent collects its items rents another inst
   baseline is the one of a horizontal line of 1em (the half-leading is floored as in the lines), so it is painted like a
   `1em` inline-block with a horizontal writing mode. The glyphs are in logical order: a right-to-left composition (an
   override) is painted from its right end.
-- Not done: the spelling changes that replace a character at the start of the next line (the Dutch trema: `zeeën` is
-  `zee-en` at the break) or that need a dictionary (the triple consonants of the Swedish and Norwegian compounds), the hyphenation dictionaries of Uyghur and Cree, the
+- Not done: the spelling changes that need a dictionary (the triple consonants of the Swedish and Norwegian compounds), the hyphenation dictionaries of Uyghur and Cree, the
   hyphenation dictionaries whose license is copyleft (cs, hu, hy, lv), the values of the `halt`/`vhal`/`chws` font features of
   `text-spacing-trim` (the half of a fullwidth glyph of a font that has `halt`/`vhal` is half of its advance), `text-autospace: punctuation`, the half of
   `letter-spacing` on each side of the characters (the spacing is after each character and removed at the end of the line: the
@@ -3232,8 +3231,12 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   marker nor `text-box-trim`), the content before it being in a virtual first fragmentainer whose fragments are dropped.
   A segment also starts at a break between the rows of a container whose rows are the same in any inline size
   (`IsRowContainer`: a table wrapper box, a table grid box and its row groups, a single-line column flex container, a grid
-  whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid), or inside the only row that the break
-  crosses when the rows are stacked (not in a grid: its items are side by side). The anchor is then the container and its
+  whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid, a multi-line row flex container whose
+  lines are stacked in the order of the items: `flex-wrap: wrap`, not balanced, not a `-webkit-box`, `IsFlexLineContainer`),
+  or inside the only row that the break crosses when the rows are stacked (not in a grid nor in a flex line: their items are
+  side by side). The flex lines depend on the inline size: in the next segment, the items after a break between two flex
+  lines start a new flex line (`LayoutContext.FlexLineResumes`, used by `FlexLayoutAlgorithm.CollectLines`: the first of
+  them in the order of the items ends the line before it), so that the items before it are in the lines before the break. The anchor is then the container and its
   children after the break (`BreakAnchor.Following`): the next segment starts at the first of them, offset by the break,
   but not before the end of the other children (which may end later in another inline size, e.g. with another alignment).
   The rows are parallel flows that break apart from the flow of their container (a row may continue after the break of the
@@ -3250,7 +3253,7 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   that start in a previous segment (`PageSegmentStart.RepeatedSectionsDisabled`). The pages of a segment followed by another one are copies of the fragments (the next layout may
   return and move the fragments of the boxes laid out the same way). The boxes fixed to the viewport are laid out once, in
   the initial containing block of the first page, as in Blink. A page of another inline size that starts inside a line, a
-  multi-column container, a table row, a flex container that wraps or a grid whose columns depend on its inline size... is
+  multi-column container, a table row, a flex line, a grid row or a grid whose columns depend on its inline size... is
   laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
@@ -6168,7 +6171,8 @@ hyphenator of Android `hyphenator_aosp.cc`):
   language-specific hyphenation character(s) and should apply any appropriate spelling changes just as for automatic
   hyphenation at the same point" ([`hyphens`](https://drafts.csswg.org/css-text-4/#hyphens-property)). At a soft hyphen and at
   an automatic opportunity (`GetHyphenationBreak`): in Dutch (`nl`), the diminutive of a word in -é written with `ee` is `é`
-  again (`cafee|tje` is `café-tje`); in Hungarian (`hu`), a long double consonant written with a digraph is two digraphs
+  again (`cafee|tje` is `café-tje`), and the trema that separates two vowels is removed at the start of the next line (`zee|ën`
+  is `zee-` `en`, also with U+0308 COMBINING DIAERESIS); in Hungarian (`hu`), a long double consonant written with a digraph is two digraphs
   (`Ös|szeg` is `Ösz-szeg`, also `cs`, `dz`, `dzs`, `gy`, `ly`, `ny`, `ty`, `zs`); in Pinyin (`zh-*-pinyin`), the apostrophe that
   separates two syllables is removed at the start of the next line (`tú|’àn` is `tú-` `àn`), and it is a hyphenation
   opportunity of `hyphens: auto` (and of a soft hyphen before it, which UAX #14 forbids before a quotation mark); in Catalan
@@ -6184,6 +6188,10 @@ hyphenator of Android `hyphenator_aosp.cc`):
   in the browsers, which do not repeat it. The letters
   of the spelling change are shaped with the hyphen (the hyphen fragment), the characters they replace are removed from the end
   of the line, the line breaking measures them, and the next line starts after the removed characters (its `ContentStart`).
+  The letters that replace characters at the start of the next line (the vowel without its trema,
+  `HyphenationBreak.InsertedAfter`) are a hyphen leaf before its first text (`AddLineStartSpellingChange`,
+  `LineLeaf.SpellingChangeLength`) that the line breaking measures (`MeasureLineStartSpellingChange`): its fragment is a
+  hyphen fragment whose offsets are the ones of the characters it replaces (the client rects of a range over them).
   No browser implements them (WPT `css/css-text/hyphens/i18n`).
 - The edges of a hyphenated line are shaped again as at the other breaks (`ShapeLineEdges`, as Chrome's
   `ShapingLineBreaker`): when the opportunity is unsafe to break (a kerned pair, a joining) or inside a cluster (a ligature

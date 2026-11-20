@@ -49,7 +49,8 @@ var pages = context.RenderPages();
 - The pages may have different sizes and margins (`@page :first`, the named pages, `:left` and `:right`): the content of a
   page whose page area has another width is laid out again in it, also when the page starts in the middle of a paragraph
   (its lines continue in the width of the new page), between the rows of a table, between the items of a column flex
-  container, or between the rows of a grid whose number of columns does not depend on its width.
+  container, between the lines of a flex container that wraps (the items after the break start a new line in the width of
+  the new page), or between the rows of a grid whose number of columns does not depend on its width.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

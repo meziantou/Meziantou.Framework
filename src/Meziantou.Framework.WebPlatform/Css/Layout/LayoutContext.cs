@@ -60,6 +60,13 @@ internal sealed class LayoutContext
     internal Dictionary<ContainerBox, InlineResume>? InlineResumes { get; set; }
 
     /// <summary>
+    /// The multi-line flex containers of the strip that is being laid out whose items after a break start a new flex line: the
+    /// content of a page of another inline size that starts between two of their flex lines (see
+    /// <c>LayoutEngine.LayoutPageSegment</c>). The first of these items in the order of the items starts a line. Null otherwise.
+    /// </summary>
+    internal Dictionary<ContainerBox, HashSet<ContainerBox>>? FlexLineResumes { get; set; }
+
+    /// <summary>
     /// The inputs of the layout of the strip that is being laid out that depend on its fragmentation, and the records of the
     /// boxes whose layout may depend on it (see <see cref="Layout.StripRelayout"/>). Null otherwise (also in the strips of the
     /// nested multi-column containers).

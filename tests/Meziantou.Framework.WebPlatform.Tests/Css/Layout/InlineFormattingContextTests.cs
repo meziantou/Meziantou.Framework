@@ -239,6 +239,45 @@ public sealed class InlineFormattingContextTests : IDisposable
     }
 
     [Theory]
+    [InlineData("zee&shy;&#xEB;n", 4, 5)] // zeeën is zee-en: the e at the start of the next line has no trema
+    [InlineData("zee&shy;e&#x308;n", 4, 6)] // (with U+0308 COMBINING DIAERESIS)
+    [InlineData("ZEE&shy;&#xCB;N", 4, 5)]
+    public void HyphensManual_DutchTrema(string text, int replacedStart, int replacedEnd)
+    {
+        var document = Parse($"<div id=d lang=nl style='width: 10px; hyphens: manual'>{text}</div>");
+        var fragments = GetTextFragments(document, "d");
+        Assert.Equal(2, fragments.Count(fragment => fragment.IsHyphen));
+
+        // The letter that replaces the vowel with its trema starts the next line, before the rest of the word
+        var vowel = fragments.Single(fragment => fragment.IsHyphen && fragment.End > fragment.Start);
+        Assert.Equal(replacedStart, vowel.Start);
+        Assert.Equal(replacedEnd, vowel.End);
+        Assert.Equal(new PhysicalRect(0, 10, 10, 10), vowel.GetRectInRoot());
+        var rest = Assert.Single(fragments, fragment => !fragment.IsHyphen && fragment.GetRectInRoot().Y == 10);
+        Assert.Equal(new PhysicalRect(10, 10, 10, 10), rest.GetRectInRoot());
+        Assert.Equal(replacedEnd, rest.Start);
+
+        // The letter is part of the characters it replaces
+        var node = (Text)document.GetElementById("d")!.FirstChild!;
+        var range = document.CreateRange();
+        range.SetStart(node, (uint)replacedStart);
+        range.SetEnd(node, (uint)replacedEnd);
+        var rect = Assert.Single(range.GetClientRects());
+        Assert.Equal((0d, 10d, 10d, 10d), (rect.X, rect.Y, rect.Width, rect.Height));
+    }
+
+    [Theory]
+    [InlineData("en", "zee&shy;&#xEB;n", "zee\U000000AD-|\U000000EBn")]
+    [InlineData("nl", "zee&#xEB;n", "zee\U000000EBn")] // (no hyphenation opportunity)
+    [InlineData("nl", "zee&shy;&#xEB;", "zee\U000000AD-|\U000000EB")] // (the word ends after the vowel)
+    public void HyphensManual_DutchTrema_NotChanged(string language, string text, string expected)
+    {
+        var document = Parse($"<div id=d lang={language} style='width: 10px; hyphens: manual'>{text}</div>");
+        Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
+        Assert.DoesNotContain(GetTextFragments(document, "d"), fragment => fragment.IsHyphen && fragment.End > fragment.Start);
+    }
+
+    [Theory]
     [InlineData("zh-Latn-pinyin", "manual", "ab-|-cd")] // the hyphen between two syllables of Pinyin starts the next line too
     [InlineData("zh-Latn-pinyin", "none", "ab-|cd")]
     [InlineData("en", "manual", "ab-|cd")]

@@ -19,15 +19,16 @@ public static partial class WebPlatformFuzzTargets
 
     /// <summary>
     /// The characters of the text: letters, spaces, the hyphens and the soft hyphen, the apostrophes of Pinyin, the middle dots
-    /// and the l with middle dot of Catalan, an Arabic letter and a Canadian syllabic.
+    /// and the l with middle dot of Catalan, an Arabic letter, a Canadian syllabic, and the vowels with a trema of Dutch
+    /// (precomposed, or followed by U+0308 COMBINING DIAERESIS).
     /// </summary>
-    private const string HyphenationAlphabet = "aelLcCkKtTjJsSzZbdginoru \u00E9\u00D6-\u2010\u00AD'\u2019\u00B7\u2027\u0140\u013F\u0628\u1472";
+    private const string HyphenationAlphabet = "aelLcCkKtTjJsSzZbdginoru \u00E9\u00D6-\u2010\u00AD'\u2019\u00B7\u2027\u0140\u013F\u0628\u1472\u00EB\u00CB\u00EF\u0308";
 
     /// <summary>
     /// The tokens of the target: the words of the spelling changes and the compound words, encoded as the input (the indexes of
     /// their characters in <see cref="HyphenationAlphabet"/>, each one byte in UTF-8).
     /// </summary>
-    private static string[] HyphenationTokens => [.. new[] { "eetj", "\u00D6ssz", "l\u00B7l", "\u0140l", "ck", "a-a", "a\u00AD-a", "a\u2019a" }.Select(EncodeHyphenationText)];
+    private static string[] HyphenationTokens => [.. new[] { "eetj", "\u00D6ssz", "l\u00B7l", "\u0140l", "ck", "a-a", "a\u00AD-a", "a\u2019a", "e\u00AD\u00EBn", "e\u00ADe\u0308n" }.Select(EncodeHyphenationText)];
 
     /// <summary>Decodes the input to a hyphenated text, and checks its layout.</summary>
     public static void Hyphenation(ReadOnlySpan<byte> data)
@@ -92,6 +93,12 @@ public static partial class WebPlatformFuzzTargets
             (8, 2, 30, "ab-cd"),
             (9, 2, 30, "ab-cd"),
             (0, 2, 30, "ab-cd"),
+            (1, 1, 10, "zee\u00AD\u00EBn"),
+            (1, 1, 10, "zee\u00ADe\u0308n"),
+            (1, 1, 10, "Zee\u00AD\u00CBn"),
+            (1, 1, 10, "zee\u00AD\u00EB"),
+            (0, 1, 10, "zee\u00AD\u00EBn"),
+            (1, 2, 30, "be\u00EFnzee\u00EBn"),
         ];
 
         for (var i = 0; i < scenarios.Length; i++)

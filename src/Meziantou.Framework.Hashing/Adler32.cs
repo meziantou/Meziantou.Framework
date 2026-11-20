@@ -165,6 +165,8 @@ public static class Adler32
         {
             var run = data[..Math.Min(RunLength, data.Length & ~31)];
             Debug.Assert(run.Length % 32 == 0, "The loads of 32 bytes must stay in the run");
+            // The loads are unchecked: Vector256.Create(span) measured 9% (1 MiB) to 19% (1 KiB) slower on this path, and
+            // iterating a shrinking span 28% slower on 1 KiB. The SSSE3 and Vector128 paths read the spans with bounds checks.
             ref var start = ref unsafe(MemoryMarshal.GetReference(run));
             var sums = Vector256<uint>.Zero;
             var prefixes = Vector256<uint>.Zero;
@@ -196,14 +198,13 @@ public static class Adler32
         {
             var run = data[..Math.Min(RunLength, data.Length & ~31)];
             Debug.Assert(run.Length % 32 == 0, "The loads of 32 bytes must stay in the run");
-            ref var start = ref unsafe(MemoryMarshal.GetReference(run));
             var sums = Vector128<uint>.Zero;
             var prefixes = Vector128<uint>.Zero;
             var weighted = Vector128<uint>.Zero;
-            for (nuint offset = 0; offset < (nuint)run.Length; offset += 32)
+            for (var offset = 0; offset < run.Length; offset += 32)
             {
-                var low = unsafe(Vector128.LoadUnsafe(ref start, offset));
-                var high = unsafe(Vector128.LoadUnsafe(ref start, offset + 16));
+                var low = Vector128.Create(run.Slice(offset, 16));
+                var high = Vector128.Create(run.Slice(offset + 16, 16));
                 prefixes += sums;
                 sums += (Sse2.SumAbsoluteDifferences(low, Vector128<byte>.Zero) + Sse2.SumAbsoluteDifferences(high, Vector128<byte>.Zero)).AsUInt32();
 
@@ -230,14 +231,13 @@ public static class Adler32
         {
             var run = data[..Math.Min(RunLength, data.Length & ~15)];
             Debug.Assert(run.Length % 16 == 0, "The loads of 16 bytes must stay in the run");
-            ref var start = ref unsafe(MemoryMarshal.GetReference(run));
             var sums = Vector128<uint>.Zero;
             var prefixes = Vector128<uint>.Zero;
             var weighted = Vector128<uint>.Zero;
-            for (nuint offset = 0; offset < (nuint)run.Length; offset += 16)
+            for (var offset = 0; offset < run.Length; offset += 16)
             {
                 prefixes += sums;
-                var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref start, offset)));
+                var (low, high) = Vector128.Widen(Vector128.Create(run.Slice(offset, 16)));
                 sums += WidenSum(low + high);
                 weighted += WidenSum((low * weightsLow) + (high * weightsHigh));
             }

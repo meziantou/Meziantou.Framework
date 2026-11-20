@@ -242,7 +242,7 @@ internal sealed partial class InlineLayoutAlgorithm
             }
         }
 
-        // https://drafts.csswg.org/css-text-4/#text-autospace-property: 1/8ic between the ideographs and the non-ideographic
+        // https://drafts.csswg.org/css-text-4/#text-autospace-property: 1/8ic (text-autospace-size) between the ideographs and the non-ideographic
         // letters or numerals that are directly adjoining on a line (added after the first character of the boundary)
         var autospace = text.TextAutospace;
         if ((autospace & (TextAutospace.IdeographAlpha | TextAutospace.IdeographNumeric)) != TextAutospace.None)
@@ -294,7 +294,7 @@ internal sealed partial class InlineLayoutAlgorithm
                 {
                     // (the spacing after the last character of a run before a run of a lower bidi embedding level is before the
                     // first character of the next run, see GetAutospaceBeforeItem)
-                    autospaceAfter = Items[next.Item].BidiLevel < item.BidiLevel ? 0 : GetIdeographicAdvance(style) / 8;
+                    autospaceAfter = Items[next.Item].BidiLevel < item.BidiLevel ? 0 : GetIdeographicAdvance(style) * text.TextAutospaceSize;
                 }
                 else if ((autospace & TextAutospace.Replace) != TextAutospace.None && codePoint == ' ' && position > 0)
                 {
@@ -302,7 +302,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     var previous = GetAdjacentCharacter(position, itemIndex, forward: false);
                     if (previous.CodePoint >= 0 && IsAutospaceBoundary(previous.CodePoint, Items[previous.Item].Style, next.CodePoint, nextStyle, autospace, vertical))
                     {
-                        autospaceAfter = (GetIdeographicAdvance(style) / 8) - shaped.GetWidth(position - item.Start, position - item.Start + 1);
+                        autospaceAfter = (GetIdeographicAdvance(style) * text.TextAutospaceSize) - shaped.GetWidth(position - item.Start, position - item.Start + 1);
                     }
                 }
             }
@@ -347,7 +347,7 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         return IsAutospaceBoundary(previous, Items[previousItem].Style, codePoint, item.Style, autospace, previousStyle.Layout.IsVerticalWritingMode)
-            ? GetIdeographicAdvance(previousStyle) / 8
+            ? GetIdeographicAdvance(previousStyle) * previousStyle.Layout.Text.TextAutospaceSize
             : 0;
     }
 

@@ -171,7 +171,7 @@ internal static class CssAnimationUpdater
                 animation.TimelineTreeScope = treeScope;
             }
 
-            return timelines.Find(element, reference.Name!, treeScope) ?? timelines.InactiveTimeline;
+            return timelines.Find(element, style.PseudoElement, reference.Name!, treeScope) ?? timelines.InactiveTimeline;
         }
 
         // The anonymous timeline of the animation is kept when its parameters do not change

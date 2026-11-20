@@ -283,6 +283,7 @@ internal sealed record TextLayoutStyle
         TextCombineUpright = TextCombineUpright.Parse(style.GetComputedValue("text-combine-upright"));
         TextSpacingTrim = LayoutKeywords.ParseTextSpacingTrim(style.GetComputedValue("text-spacing-trim"));
         TextAutospace = LayoutKeywords.ParseTextAutospace(style.GetComputedValue("text-autospace"));
+        TextAutospaceSize = LengthPercentage.TryParseNumber(style.GetComputedValue("text-autospace-size"), out var autospaceSize) ? autospaceSize : 0.125;
         var wordSpaceTransform = style.GetComputedValue("word-space-transform");
         WordSpaceTransform = LayoutKeywords.ParseWordSpaceTransform(wordSpaceTransform);
         WordSpaceTransformAutoPhrase = WordSpaceTransform != WordSpaceTransform.None && wordSpaceTransform.Contains("auto-phrase", StringComparison.Ordinal);
@@ -357,6 +358,9 @@ internal sealed record TextLayoutStyle
 
     /// <summary>https://drafts.csswg.org/css-text-4/#text-autospace-property (<c>normal</c> is <c>ideograph-alpha ideograph-numeric</c>).</summary>
     public TextAutospace TextAutospace { get; }
+
+    /// <summary>The inter-script spacing of text-autospace, in ic (https://github.com/w3c/csswg-drafts/issues/8510: <c>text-autospace-size</c>, 1/8ic by default).</summary>
+    public double TextAutospaceSize { get; }
 
     /// <summary>https://drafts.csswg.org/css-text-4/#word-space-transform</summary>
     public WordSpaceTransform WordSpaceTransform { get; }

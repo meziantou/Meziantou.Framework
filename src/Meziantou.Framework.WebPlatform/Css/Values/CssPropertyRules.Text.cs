@@ -138,11 +138,18 @@ internal static partial class CssPropertyRules
         return trim == "trim-both" ? edge : trim + " " + edge;
     }
 
-    /// <summary>white-space: a legacy keyword, or &lt;'white-space-collapse'&gt; || &lt;'text-wrap-mode'&gt; (the omitted values are collapse and wrap).</summary>
+    /// <summary>The keywords of white-space-trim in the order of its grammar (https://drafts.csswg.org/css-text-4/#white-space-trim).</summary>
+    private static readonly string[] WhiteSpaceTrimKeywords = ["discard-before", "discard-after", "discard-inner"];
+
+    /// <summary>
+    /// white-space: a legacy keyword, or &lt;'white-space-collapse'&gt; || &lt;'text-wrap-mode'&gt; || &lt;'white-space-trim'&gt;
+    /// (the omitted values are collapse, wrap and none).
+    /// </summary>
     private static Dictionary<string, string>? ExpandWhiteSpace(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
         var collapse = "collapse";
         var mode = "wrap";
+        var trim = new List<string>(3);
         foreach (var value in significant)
         {
             var keyword = value is CssPreservedToken { Type: CssTokenType.Ident } ident ? InfraAscii.ToAsciiLowercase(ident.Value) : null;
@@ -154,24 +161,45 @@ internal static partial class CssPropertyRules
             {
                 mode = keyword;
             }
-            else if (keyword is not null)
+            else if (keyword is not null && Array.IndexOf(WhiteSpaceTrimKeywords, keyword) >= 0)
+            {
+                trim.Add(keyword);
+            }
+            else if (keyword is not null and not "none")
             {
                 collapse = keyword;
             }
         }
 
-        return new(StringComparer.Ordinal) { ["white-space-collapse"] = collapse, ["text-wrap-mode"] = mode };
+        var trimValue = trim.Count == 0 ? "none" : string.Join(' ', WhiteSpaceTrimKeywords.Where(trim.Contains));
+        return new(StringComparer.Ordinal) { ["white-space-collapse"] = collapse, ["text-wrap-mode"] = mode, ["white-space-trim"] = trimValue };
     }
 
     private static string? SerializeWhiteSpace(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
     {
-        if (!lookup.TryGetValue("white-space-collapse", out var collapse) || !lookup.TryGetValue("text-wrap-mode", out var mode))
+        if (!lookup.TryGetValue("white-space-collapse", out var collapse) || !lookup.TryGetValue("text-wrap-mode", out var mode) || !lookup.TryGetValue("white-space-trim", out var trim))
             return null;
 
-        if (Array.Find(WhiteSpaceKeywords, k => k.Collapse == collapse && k.Mode == mode) is { Keyword: { } keyword })
+        if (trim == "none" && Array.Find(WhiteSpaceKeywords, k => k.Collapse == collapse && k.Mode == mode) is { Keyword: { } keyword })
             return keyword;
 
-        return mode == "wrap" ? collapse : collapse + " " + mode;
+        var parts = new List<string>(3);
+        if (collapse != "collapse")
+        {
+            parts.Add(collapse);
+        }
+
+        if (mode != "wrap")
+        {
+            parts.Add(mode);
+        }
+
+        if (trim != "none")
+        {
+            parts.Add(trim);
+        }
+
+        return string.Join(' ', parts);
     }
 
     /// <summary>

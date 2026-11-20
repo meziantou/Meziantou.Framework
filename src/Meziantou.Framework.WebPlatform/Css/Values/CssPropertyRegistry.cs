@@ -101,7 +101,7 @@ internal static partial class CssPropertyRegistry
         ["overflow-inline"] = "visible | hidden | clip | scroll | auto | overlay",
 
         // https://drafts.csswg.org/css-text-4/#white-space-property: the legacy keywords or the longhands
-        ["white-space"] = "normal | pre | nowrap | pre-wrap | break-spaces | pre-line | <'white-space-collapse'> || <'text-wrap-mode'>",
+        ["white-space"] = "normal | pre | nowrap | pre-wrap | break-spaces | pre-line | <'white-space-collapse'> || <'text-wrap-mode'> || <'white-space-trim'>",
 
         // https://drafts.csswg.org/css-inline-3/#propdef-vertical-align, and -webkit-baseline-middle of WebKit and Blink, which aligns
         // the vertical middle of the box with the baseline of its parent: the value of the align attribute set to center or
@@ -255,6 +255,10 @@ internal static partial class CssPropertyRegistry
         // laid out in the shapes of shape-inside (webref does not have the properties of SVG 2 that CSS does not define); no
         // browser implements it, so it is not a property of the computed styles
         new("shape-subtract", "none | [ <basic-shape> | <url> ]+", "none", false, [], null, AnimationType: CssAnimationTypeKind.Discrete) { IsEnumerated = false },
+
+        // The amount of the inter-script spacing of text-autospace, in ic: a resolution of the CSS Working Group that the
+        // specification does not have yet (https://github.com/w3c/csswg-drafts/issues/8510#issuecomment-6438888621)
+        new("text-autospace-size", "<number>", "0.125", true, [], null, AnimationType: CssAnimationTypeKind.ByComputedValue),
     ];
 
     /// <summary>
@@ -285,6 +289,9 @@ internal static partial class CssPropertyRegistry
 
         // https://drafts.csswg.org/css-animations-2/#timeline-trigger (see OverriddenGrammars)
         ["timeline-trigger"] = ["timeline-trigger-name", "timeline-trigger-source", "timeline-trigger-activation-range", "timeline-trigger-active-range"],
+
+        // https://drafts.csswg.org/css-text-4/#white-space-property: white-space also sets white-space-trim
+        ["white-space"] = ["white-space-collapse", "text-wrap-mode", "white-space-trim"],
     };
 
     private static readonly FrozenDictionary<string, CssPropertyDefinition> ByName = CreatePropertyMap();

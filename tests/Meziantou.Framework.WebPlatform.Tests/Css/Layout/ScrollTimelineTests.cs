@@ -219,6 +219,50 @@ public sealed class ScrollTimelineTests : IDisposable
     }
 
     [Fact]
+    public void CssAnimation_TimelineScopeOfAPseudoElement()
+    {
+        var document = Parse("""
+            <style>
+              @keyframes grow { from { width: 0px } to { width: 100px } }
+              #scroller { scroll-timeline: --t; width: 100px; height: 100px; overflow: hidden }
+              .target::before { content: ''; display: block; width: 10px; animation: grow linear; animation-timeline: --t }
+              #scoped::before { timeline-scope: --t }
+            </style>
+            <div id=scroller><div style='height: 500px'></div></div>
+            <div id=scoped class=target></div>
+            <div id=unscoped class=target></div>
+            """);
+        RunFrames(2);
+        document.GetElementById("scroller")!.ScrollTop = 200;
+        RunFrames();
+
+        // The timeline-scope of the ::before limits the lookup to its own descendants: it has none
+        var view = document.DefaultView!;
+        Assert.Equal("50px", view.GetComputedStyle(document.GetElementById("unscoped")!, "::before").GetPropertyValue("width"));
+        Assert.Equal("10px", view.GetComputedStyle(document.GetElementById("scoped")!, "::before").GetPropertyValue("width"));
+    }
+
+    [Fact]
+    public void CssAnimation_NamedViewTimelineOfAPseudoElement()
+    {
+        var document = Parse("""
+            <style>
+              @keyframes grow { from { width: 0px } to { width: 100px } }
+              body { timeline-scope: --v }
+              #scroller { width: 100px; height: 100px; overflow: hidden }
+              #scroller::after { content: ''; display: block; height: 100px; view-timeline: --v }
+              #target { width: 10px; animation: grow linear; animation-timeline: --v }
+            </style>
+            <div id=scroller><div style='height: 100px'></div></div>
+            <div id=target></div>
+            """);
+        RunFrames(2);
+        var animation = Assert.Single(document.GetElementById("target")!.GetAnimations());
+        var timeline = Assert.IsType<ViewTimeline>(animation.Timeline);
+        Assert.Same(document.GetElementById("scroller"), timeline.Source);
+    }
+
+    [Fact]
     public void CssAnimation_UnresolvedTimelineNameHasNoEffect()
     {
         var document = Parse("""

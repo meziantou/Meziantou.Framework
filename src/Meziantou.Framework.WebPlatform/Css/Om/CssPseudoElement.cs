@@ -1,6 +1,7 @@
 using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
@@ -45,8 +46,19 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
     /// <summary>
     /// The name of the style and of the box of the pseudo-element on <see cref="OriginatingElement"/>, or null for a
     /// <c>::marker</c> of a <c>::before</c> or <c>::after</c> (an anonymous box of its pseudo-element, which cannot be styled).
+    /// A <c>::scroll-button()</c> of a physical direction (e.g. <c>scroll-button(left)</c>) is the button of the flow-relative
+    /// direction it maps to in the current writing mode of the element.
     /// </summary>
-    internal string? BoxName => ParentPseudoElement is null || ParentPseudoElement.Name.StartsWith("view-transition", StringComparison.Ordinal) ? Name : null;
+    internal string? BoxName
+    {
+        get
+        {
+            if (ParentPseudoElement is not null && !ParentPseudoElement.Name.StartsWith("view-transition", StringComparison.Ordinal))
+                return null;
+
+            return IsPhysicalScrollButton(Name) ? ScrollControls.Canonicalize(Name, () => GetWritingDirection(OriginatingElement)) : Name;
+        }
+    }
 
     Window? IRealmBoundPlatformObject.RealmWindow => OriginatingElement.NodeDocument.DefaultView;
 
@@ -122,8 +134,9 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
     /// <summary>
     /// https://drafts.csswg.org/css-pseudo-4/#dom-element-pseudo: returns the pseudo-element of an element designated by a
     /// pseudo-element selector, or null when the selector is invalid or does not designate a tree-abiding pseudo-element that is
-    /// not element-backed. A <c>::scroll-button()</c> of a physical direction is the button of the flow-relative direction it
-    /// maps to in the writing mode of the element.
+    /// not element-backed. A <c>::scroll-button()</c> of a physical direction is a distinct pseudo-element (its
+    /// <c>selectorText</c> keeps the direction), whose box is the button of the flow-relative direction it maps to in the current
+    /// writing mode of the element (see <see cref="BoxName"/>).
     /// </summary>
     internal static CssPseudoElement? Get(Element element, string type)
     {
@@ -132,13 +145,32 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
 
         if (ScrollControls.IsScrollButton(name))
         {
-            name = ScrollControls.Canonicalize(name, () => GetWritingDirection(element));
+            name = GetScrollButtonName(name);
             if (name is null)
                 return null;
         }
 
         return IsSupported(name) ? GetOrCreate(element, name) : null;
     }
+
+    /// <summary>
+    /// Returns the name of the pseudo-element designated by <c>::scroll-button()</c> with an argument: the canonical name of a
+    /// flow-relative direction, <c>scroll-button(up)</c>, <c>scroll-button(right)</c>, <c>scroll-button(down)</c> or
+    /// <c>scroll-button(left)</c> for a physical direction (ASCII case-insensitive), or null when the argument does not designate
+    /// one button (<c>*</c>, <c>prev</c>, <c>next</c>).
+    /// </summary>
+    private static string? GetScrollButtonName(string name)
+    {
+        var start = name.IndexOf('(', StringComparison.Ordinal);
+        if (start >= 0 && name.EndsWith(')', StringComparison.Ordinal) && InfraAscii.ToAsciiLowercase(name[(start + 1)..^1]) is var direction && direction is "up" or "right" or "down" or "left")
+            return ScrollControls.ButtonRuleName + "(" + direction + ")";
+
+        return ScrollControls.Canonicalize(name, () => default);
+    }
+
+    /// <summary>Whether the name of a pseudo-element is the name of a <c>::scroll-button()</c> of a physical direction (see <see cref="GetScrollButtonName"/>).</summary>
+    private static bool IsPhysicalScrollButton(string name)
+        => name is "scroll-button(up)" or "scroll-button(right)" or "scroll-button(down)" or "scroll-button(left)";
 
     /// <summary>
     /// Returns the pseudo-element of an element whose style and box have the given name (see <see cref="BoxName"/>), or null when

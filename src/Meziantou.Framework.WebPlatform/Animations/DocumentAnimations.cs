@@ -587,14 +587,14 @@ internal sealed class DocumentAnimations
             return;
 
         timelines.Update(engine);
-        foreach (var ((element, _), animations) in _cssAnimations.ToArray())
+        foreach (var ((element, pseudoElement), animations) in _cssAnimations.ToArray())
         {
             foreach (var animation in animations)
             {
                 if (animation.TimelineOverridden || animation.TimelineReference is not { Kind: Css.Animations.CssTimelineKind.Named, Name: { } name })
                     continue;
 
-                var timeline = timelines.Find(element, name, animation.TimelineTreeScope) ?? timelines.InactiveTimeline;
+                var timeline = timelines.Find(element, pseudoElement, name, animation.TimelineTreeScope) ?? timelines.InactiveTimeline;
                 if (!ReferenceEquals(animation.TimelineValue, timeline))
                 {
                     animation.SetTimelineByStyle(timeline);

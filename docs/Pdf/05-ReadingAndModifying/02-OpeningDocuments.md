@@ -84,14 +84,17 @@ See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwo
 
 [OpenAsync](cref:Meziantou.Framework.Pdf.PdfDocument.OpenAsync) with an `HttpClient` and a URI opens a file over HTTP and downloads only the parts it reads, with range requests:
 
-<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfReaderTests.cs;region=Pdf_OpenRemote;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../samples/Meziantou.Framework.Pdf.Samples/Program.cs;region=Pdf_OpenRemote;format=md-fenced-code-block;dedent=true -->
 ```csharp
+// The client sends the range requests: it must stay usable while the document is read
+using var httpClient = new HttpClient();
+
 // Only the parts of the file the document reads are downloaded
-var document = await PdfDocument.OpenAsync(httpClient, new Uri("https://example.com/report.pdf"));
+var document = await PdfDocument.OpenAsync(httpClient, uri);
 
 // Download what a page needs before reading it, so that reading it sends no request
-await document.PrefetchPageAsync(10);
-var text = document.Pages[10].ExtractText();
+await document.PrefetchPageAsync(0);
+var text = document.Pages[0].ExtractText();
 ```
 <!-- endref -->
 

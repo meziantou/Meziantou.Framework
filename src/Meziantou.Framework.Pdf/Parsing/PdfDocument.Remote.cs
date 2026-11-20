@@ -91,6 +91,16 @@ public sealed partial class PdfDocument
             pending.Push(resources);
         }
 
+        // What rendering reads outside the page: the layers of the document, and the form of the widgets (its default
+        // resources and appearance)
+        foreach (var key in new[] { PdfName.Create("OCProperties"), PdfNames.AcroForm })
+        {
+            if (Catalog[key] is { } value)
+            {
+                pending.Push(value);
+            }
+        }
+
         while (pending.Count > 0 && visited.Count < MaxPrefetchedObjects)
         {
             var value = pending.Pop();
@@ -121,14 +131,18 @@ public sealed partial class PdfDocument
             }
         }
 
+        if (pending.Count > 0)
+            throw new PdfResourceLimitException($"The page uses more than {MaxPrefetchedObjects} objects: they are not all downloaded");
+
         return true;
 
         void PushEntries(PdfDictionary dictionary)
         {
-            foreach (var (key, item) in dictionary)
+            // The other pages, which the page tree, the annotations (/P) and the destinations lead to, are not followed:
+            // a page or page tree node is not entered, except the page itself. The parents of the form fields are followed
+            foreach (var (_, item) in dictionary)
             {
-                // The links to the page tree and to the pages of the destinations are not followed
-                if (key != PdfNames.Parent && key != PdfNames.P && key != PdfNames.Dest)
+                if (item is not null)
                 {
                     pending.Push(item);
                 }

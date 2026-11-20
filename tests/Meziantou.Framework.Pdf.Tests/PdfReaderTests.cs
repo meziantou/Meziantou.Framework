@@ -815,20 +815,15 @@ public sealed class PdfReaderTests
     }
 
     [Fact]
-    public async Task Example_OpenRemote()
+    public async Task PrefetchedPagesAreReadWithoutRequests()
     {
         var file = CreateLargeDocument(pageCount: 20, linearize: true);
         using var handler = new RangeHandler(file);
         using var httpClient = new HttpClient(handler, disposeHandler: false);
 
-        #region Pdf_OpenRemote
-        // Only the parts of the file the document reads are downloaded
         var document = await PdfDocument.OpenAsync(httpClient, new Uri("https://example.com/report.pdf"));
-
-        // Download what a page needs before reading it, so that reading it sends no request
         await document.PrefetchPageAsync(10);
         var text = document.Pages[10].ExtractText();
-        #endregion
 
         Assert.Equal("Page 11", text.Trim());
         Assert.Equal(0, handler.SynchronousRequests);
@@ -918,6 +913,72 @@ public sealed class PdfReaderTests
         Assert.Equal("Page 3", repaired.Pages[2].ExtractText().Trim());
     }
 
+    [Theory]
+    [InlineData(100)]
+    [InlineData(-100)]
+    public async Task RangesOfAnotherLengthAreRefused(int lengthError)
+    {
+        var file = CreateLargeDocument(pageCount: 10, linearize: false);
+        using var handler = new RangeHandler(file) { LengthError = lengthError };
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        // The ranges after the first ones: those of the objects of the pages
+        await Assert.ThrowsAsync<HttpRequestException>(async () =>
+        {
+            var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+            await document.PrefetchPageAsync(9);
+        });
+    }
+
+    [Fact]
+    public async Task APrefetchedPageWithAFormIsRenderedWithoutRequests()
+    {
+        var document = new PdfDocument();
+        for (var i = 0; i < 6; i++)
+        {
+            var page = document.Pages.Add(PdfSize.A4);
+            page.CreateContentBuilder().AppendRawContent(System.Text.Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("% filler line of the content stream\n", 3000))));
+            document.Form.AddTextField(page, "field" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), new PdfRectangle(72, 700, 300, 720)).Value = "Value";
+        }
+
+        var file = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        var remote = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        await remote.PrefetchPageAsync(4);
+        using var image = Rendering.PdfRenderer.RenderPage(remote.Pages[4], new Rendering.PdfRenderOptions { UseSystemFonts = false, Dpi = 18 });
+
+        Assert.Equal(0, handler.SynchronousRequests);
+    }
+
+    [Fact]
+    public async Task ADeepFirstObjectIsReadWithTheLimitsOfTheOptions()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Deep " + new string('[', 20) + new string(']', 20) + " >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>")
+            .ToArray();
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        Assert.Single(document.Pages);
+    }
+
+    [Fact]
+    public async Task AHeaderBeyondTheFirstKilobyteNeedsTheWholeFile()
+    {
+        var file = new byte[2000].Concat(HandWrittenPdf.CreateSimple().ToArray()).ToArray();
+        file.AsSpan(0, 2000).Fill((byte)' ');
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        await Assert.ThrowsAsync<UnsupportedPdfFeatureException>(() => PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"), new PdfReadOptions { AllowFullDownload = false }));
+    }
+
     private static byte[] CreateLargeDocument(int pageCount, bool linearize)
     {
         var document = new PdfDocument();
@@ -947,6 +1008,9 @@ public sealed class PdfReaderTests
         public long ServedBytes { get; private set; }
 
         public List<(long From, long Length)> Ranges { get; } = [];
+
+        /// <summary>Gets the bytes the server adds to (positive) or removes from (negative) the ranges it returns after the first one.</summary>
+        public int LengthError { get; init; }
 
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -982,9 +1046,15 @@ public sealed class PdfReaderTests
             var item = Assert.Single(range.Ranges);
             var from = item.From!.Value;
             var to = Math.Min(item.To!.Value, file.Length - 1);
-            ServedBytes += to - from + 1;
-            Ranges.Add((from, to - from + 1));
-            var content = new ByteArrayContent(file, (int)from, (int)(to - from + 1));
+            var length = (int)(to - from + 1);
+            if (Requests > 1)
+            {
+                length = Math.Clamp(length + LengthError, 1, file.Length - (int)from);
+            }
+
+            ServedBytes += length;
+            Ranges.Add((from, length));
+            var content = new ByteArrayContent(file, (int)from, length);
             content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(from, to, file.Length);
             return new HttpResponseMessage(System.Net.HttpStatusCode.PartialContent) { Content = content };
         }

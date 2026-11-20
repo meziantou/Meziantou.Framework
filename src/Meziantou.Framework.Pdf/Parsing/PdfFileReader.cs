@@ -208,7 +208,8 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         {
             // Some producers prepend garbage beyond 1 KiB, and some files have no header at all: like other readers, the
             // file is read anyway, and it is rejected when no catalog can be found
-            index = _input is HttpRangePdfInput { AllowFullDownload: false } ? -1 : IndexOf(_input, "%PDF-"u8);
+            CheckFullDownload();
+            index = IndexOf(_input, "%PDF-"u8);
             if (index < 0)
             {
                 Diagnostics.Report(PdfDiagnosticKind.MissingHeader, "The file has no %PDF- header");

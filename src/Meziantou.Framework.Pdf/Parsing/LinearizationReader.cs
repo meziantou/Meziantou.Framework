@@ -41,8 +41,10 @@ internal static class LinearizationReader
 
             return (end, (int)firstPage, (int)count);
         }
-        catch (InvalidPdfContentException)
+        catch (PdfException)
         {
+            // The probe is optional: an object it cannot read (too deep for its own limit) is read by the reader with the
+            // limits of the options
             return null;
         }
     }

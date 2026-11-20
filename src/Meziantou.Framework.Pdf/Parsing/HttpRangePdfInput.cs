@@ -76,8 +76,9 @@ internal sealed class HttpRangePdfInput : PdfInput
         }
 
         var input = new HttpRangePdfInput(client, uri, length, allowFullDownload) { RequestCount = 1 };
-        var data = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        var data = await ReadBoundedAsync(response, Math.Min(length, BlockSize), cancellationToken).ConfigureAwait(false);
         input.Store(0, data);
+        input.CheckStored(0, 0);
 
         // The end of the file: the startxref keyword and the last cross-reference section are there
         await input.PrefetchAsync([(Math.Max(0, length - (4 * BlockSize)), (int)Math.Min(length, 4 * BlockSize))], cancellationToken).ConfigureAwait(false);
@@ -119,7 +120,10 @@ internal sealed class HttpRangePdfInput : PdfInput
     /// <exception cref="PdfResourceLimitException">The work misses blocks more times than the limit.</exception>
     public async Task<T> RunDeferred<T>(Func<T> work, CancellationToken cancellationToken)
     {
-        for (var attempt = 0; attempt < 1024; attempt++)
+        // The work runs again as long as each run downloads something: a large file can miss many blocks one after the
+        // other. A run that downloads nothing new would run forever
+        var attemptsWithoutProgress = 0;
+        while (attemptsWithoutProgress < 3)
         {
             List<(long Offset, int Length)> missing;
             _deferMisses = true;
@@ -136,10 +140,12 @@ internal sealed class HttpRangePdfInput : PdfInput
                 _deferMisses = false;
             }
 
+            var before = DownloadedBytes;
             await PrefetchAsync(missing, cancellationToken).ConfigureAwait(false);
+            attemptsWithoutProgress = DownloadedBytes > before ? 0 : attemptsWithoutProgress + 1;
         }
 
-        throw new PdfResourceLimitException("The document needs too many downloads to be read");
+        throw new HttpRequestException("The server does not return the ranges of the file the document needs");
     }
 
     /// <summary>Downloads the blocks of ranges that are not downloaded yet.</summary>
@@ -149,8 +155,9 @@ internal sealed class HttpRangePdfInput : PdfInput
         {
             using var request = CreateRequest(_uri, first * BlockSize, Math.Min(_length, (last + 1) * BlockSize) - 1);
             using var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-            var data = await ReadResponseAsync(response, first, cancellationToken).ConfigureAwait(false);
+            var data = await ReadResponseAsync(response, first, last, cancellationToken).ConfigureAwait(false);
             Store(first * BlockSize, data);
+            CheckStored(first, last);
         }
     }
 
@@ -168,13 +175,14 @@ internal sealed class HttpRangePdfInput : PdfInput
             using var request = CreateRequest(_uri, first * BlockSize, Math.Min(_length, (last + 1) * BlockSize) - 1);
             using var response = _client.Send(request, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
-            using var content = new MemoryStream();
+            byte[] data;
             using (var body = response.Content.ReadAsStream())
             {
-                body.CopyTo(content);
+                data = ReadBounded(body, GetMaxResponseLength(response, first, last));
             }
 
-            Store(first * BlockSize, CheckResponse(response, content.ToArray(), first));
+            Store(first * BlockSize, CheckResponse(response, data, first));
+            CheckStored(first, last);
         }
     }
 
@@ -216,11 +224,79 @@ internal sealed class HttpRangePdfInput : PdfInput
         return result;
     }
 
-    private async Task<byte[]> ReadResponseAsync(HttpResponseMessage response, long firstBlock, CancellationToken cancellationToken)
+    private async Task<byte[]> ReadResponseAsync(HttpResponseMessage response, long firstBlock, long lastBlock, CancellationToken cancellationToken)
     {
         response.EnsureSuccessStatusCode();
-        var data = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+        var data = await ReadBoundedAsync(response, GetMaxResponseLength(response, firstBlock, lastBlock), cancellationToken).ConfigureAwait(false);
         return CheckResponse(response, data, firstBlock);
+    }
+
+    /// <summary>Gets the length a response may have: the range requested, or the file when the server ignores the range.</summary>
+    private long GetMaxResponseLength(HttpResponseMessage response, long firstBlock, long lastBlock)
+    {
+        if (response.StatusCode == HttpStatusCode.OK)
+            return _length;
+
+        return Math.Min(_length, (lastBlock + 1) * BlockSize) - (firstBlock * BlockSize);
+    }
+
+    /// <summary>Checks that the blocks of a request are stored: a response shorter than the range is an error, not a block missing later.</summary>
+    private void CheckStored(long firstBlock, long lastBlock)
+    {
+        lock (_lock)
+        {
+            for (var block = firstBlock; block <= lastBlock; block++)
+            {
+                if (!_blocks.ContainsKey(block))
+                    throw new HttpRequestException(string.Create(CultureInfo.InvariantCulture, $"The server returned fewer bytes than the range of the file at offset {block * BlockSize}"));
+            }
+        }
+    }
+
+    /// <summary>Reads the body of a response, refusing a body longer than the range: a server cannot make the reader buffer more than it asked for.</summary>
+    private static async Task<byte[]> ReadBoundedAsync(HttpResponseMessage response, long maxLength, CancellationToken cancellationToken)
+    {
+        if (response.Content.Headers.ContentLength is { } declared && declared > maxLength)
+            throw new HttpRequestException(string.Create(CultureInfo.InvariantCulture, $"The server returned {declared} bytes instead of at most {maxLength}"));
+
+        var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using (stream.ConfigureAwait(false))
+        {
+            var buffer = new byte[(int)Math.Min(maxLength + 1, Array.MaxLength)];
+            var total = 0;
+            while (total < buffer.Length)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(total), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+
+                total += read;
+            }
+
+            if (total > maxLength)
+                throw new HttpRequestException(string.Create(CultureInfo.InvariantCulture, $"The server returned more than the {maxLength} bytes requested"));
+
+            return buffer[..total];
+        }
+    }
+
+    private static byte[] ReadBounded(Stream stream, long maxLength)
+    {
+        var buffer = new byte[(int)Math.Min(maxLength + 1, Array.MaxLength)];
+        var total = 0;
+        while (total < buffer.Length)
+        {
+            var read = stream.Read(buffer.AsSpan(total));
+            if (read == 0)
+                break;
+
+            total += read;
+        }
+
+        if (total > maxLength)
+            throw new HttpRequestException(string.Create(CultureInfo.InvariantCulture, $"The server returned more than the {maxLength} bytes requested"));
+
+        return buffer[..total];
     }
 
     /// <summary>Gets the bytes of a response from its first block: the range requested, or the same range of the whole file a server that ignores ranges sends.</summary>

@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -4504,6 +4505,52 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Contains("Cluster(unknown)", elements);
         Assert.Contains("SimpleBlock:2@0+key", elements);
         Assert.DoesNotContain("CodecID:V_VP8", elements);
+    }
+
+    [Fact]
+    public async Task MediaRecorder_ReadsTheAudioFromTheCurrentPositionOfTheSource()
+    {
+        // The samples of the microphone are their position / 1000: the recorded samples tell where the recorder read
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => window.stream = stream);");
+
+        // The source plays for 2 s before the recording starts, then the recording is paused for 1 s
+        Advance(clock, document, 2000);
+        Run(document, "record(stream, { mimeType: 'audio/webm;codecs=opus' });");
+        Advance(clock, document, 100);
+        Run(document, "recorder.pause();");
+        Advance(clock, document, 1000);
+        Run(document, "recorder.resume();");
+        Advance(clock, document, 100);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await blobs[0].arrayBuffer());
+              let binary = '';
+              for (const b of bytes) binary += String.fromCharCode(b);
+              document.title = btoa(binary);
+            };
+            recorder.stop();
+            """);
+
+        var samples = WebMReader.ReadBlocks(Convert.FromBase64String(document.Title))
+            .Where(block => block.Track == 2)
+            .SelectMany(block => Enumerable.Range(0, block.Frame.Length / 4).Select(i => BinaryPrimitives.ReadSingleLittleEndian(block.Frame.AsSpan(i * 4))))
+            .ToArray();
+
+        // 2 s at 48 kHz: the first sample is at the position 96000 of the source, not at 0
+        Assert.InRange(samples[0], 96f, 97f);
+
+        // The audio is continuous before the pause, and continues from the live position of the source after it (3.1 s)
+        var jump = Enumerable.Range(1, samples.Length - 1).First(i => samples[i] - samples[i - 1] > 1);
+        Assert.InRange(jump, 3000, 5500);
+        Assert.InRange(samples[jump], 148f, 150f);
     }
 
     // MediaStreamTrack Insertable Streams

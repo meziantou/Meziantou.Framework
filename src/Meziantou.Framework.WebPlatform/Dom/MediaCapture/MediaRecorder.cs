@@ -600,6 +600,7 @@ public sealed class MediaRecorder : EventTarget
         private long _pausedTicks;
         private long? _pausedAt;
         private long _audioFramesRead;
+        private long _audioSourcePosition;
         private long _videoFrameCount;
         private long _lastKeyFrameTime = long.MinValue;
         private long _nextSliceTime;
@@ -715,6 +716,10 @@ public sealed class MediaRecorder : EventTarget
             _startTimestamp = _clock.GetTimestamp();
             _nextSliceTime = _timeslice ?? long.MaxValue;
 
+            // The audio is read from the current position of the source (e.g. a Web Audio graph that already played and only
+            // keeps its last second)
+            _audioSourcePosition = _audioTrack?.Source.AudioPosition ?? 0;
+
             // The first sample writes the header of the stream (delivered alone with a timeslice); the media is recorded from the next one
             _timer = _recorder._global.SetTimeout(Sample, 0);
         }
@@ -727,6 +732,10 @@ public sealed class MediaRecorder : EventTarget
             {
                 _pausedTicks += _clock.GetTimestamp() - pausedAt;
                 _pausedAt = null;
+
+                // The audio of the pause is not recorded: the reading continues from the live position of the source
+                if (_audioTrack is not null)
+                    _audioSourcePosition = _audioTrack.Source.AudioPosition;
             }
         }
 
@@ -850,15 +859,17 @@ public sealed class MediaRecorder : EventTarget
                 return;
 
             var samples = new float[frames * _audioChannels];
-            _audioTrack.ReadAudio(_audioFramesRead, samples);
+            _audioTrack.ReadAudio(_audioSourcePosition, samples);
             var bytes = new byte[samples.Length * 4];
             for (var i = 0; i < samples.Length; i++)
             {
                 BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(i * 4), samples[i]);
             }
 
+            // The timestamps of the recording are independent of the position of the source
             var timestamp = _audioFramesRead * 1_000_000 / _audioSampleRate;
             _audioFramesRead += frames;
+            _audioSourcePosition += frames;
             var data = new AudioData(new AudioDataInit { Format = AudioSampleFormat.F32, SampleRate = _audioSampleRate, NumberOfFrames = (uint)frames, NumberOfChannels = (uint)_audioChannels, Timestamp = timestamp, Data = bytes });
             try
             {

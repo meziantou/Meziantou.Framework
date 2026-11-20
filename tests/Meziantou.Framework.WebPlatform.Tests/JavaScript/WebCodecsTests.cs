@@ -1035,6 +1035,27 @@ internal static class WebMReader
 
     private static readonly HashSet<uint> Masters = [0x1A45DFA3, 0x18538067, 0x1654AE6B, 0xAE, 0xE0, 0xE1, 0x1F43B675, 0x1549A966];
 
+    /// <summary>Returns the track number and the frame of each <c>SimpleBlock</c>, in document order.</summary>
+    public static List<(int Track, byte[] Frame)> ReadBlocks(ReadOnlySpan<byte> data)
+    {
+        var result = new List<(int Track, byte[] Frame)>();
+        var position = 0;
+        while (position < data.Length)
+        {
+            var id = ReadVariableInteger(data, ref position, keepMarker: true);
+            var size = ReadVariableInteger(data, ref position, keepMarker: false);
+            if (Masters.Contains((uint)id))
+                continue;
+
+            var payload = data.Slice(position, (int)size);
+            position += (int)size;
+            if (id == 0xA3)
+                result.Add((payload[0] & 0x7F, payload[4..].ToArray()));
+        }
+
+        return result;
+    }
+
     public static List<string> ReadElements(ReadOnlySpan<byte> data)
     {
         var result = new List<string>();

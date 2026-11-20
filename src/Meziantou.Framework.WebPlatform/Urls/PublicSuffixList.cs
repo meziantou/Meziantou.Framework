@@ -38,6 +38,23 @@ internal static partial class PublicSuffixList
         return serialized[labelStart..];
     }
 
+    /// <summary>
+    /// Whether a host is a unique domain name: a domain with a registrable domain whose top-level domain is listed (the
+    /// default rule <c>*</c> of the list matches any label, so it does not count). Single-label hosts (<c>intranet</c>) and
+    /// the domains of the reserved or private top-level domains (<c>.test</c>, <c>.local</c>, <c>.internal</c>...) are not
+    /// unique: they resolve in a private network only (Chromium's <c>IsHostnameNonUnique</c>).
+    /// </summary>
+    public static bool IsUniqueDomain(UrlHost host)
+    {
+        if (GetRegistrableDomain(host) is null)
+            return false;
+
+        var domain = GetDomain(host.Serialized);
+        var topLevelDomain = domain[(domain.LastIndexOf('.') + 1)..];
+        var rules = AllRules.Value;
+        return rules.Normal.Contains(topLevelDomain) || rules.Wildcards.Contains(topLevelDomain);
+    }
+
     /// <summary>The host without its trailing dot.</summary>
     private static ReadOnlySpan<char> GetDomain(string host)
         => host.Length > 1 && host[^1] == '.' ? host.AsSpan(0, host.Length - 1) : host;

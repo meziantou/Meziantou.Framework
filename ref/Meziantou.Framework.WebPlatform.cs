@@ -3626,6 +3626,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions? GlobalPrivacyControl { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions? HttpsUpgrades { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IdleDetectionOptions? IdleDetection { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.KeyboardLockOptions? KeyboardLock { get => throw null; init { } }
@@ -8316,6 +8317,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint Width { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.VideoPlaybackQuality GetVideoPlaybackQuality() => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow> RequestPictureInPicture() => throw null;
+    }
+
+    public sealed class HttpsUpgradeOptions
+    {
+        public static Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions Default { get => throw null; }
+        public System.TimeSpan? FallbackTimeout { get => throw null; init { } }
+        public bool UpgradeNonDefaultPorts { get => throw null; init { } }
+        public bool UpgradeNonUniqueHosts { get => throw null; init { } }
     }
 
     public interface IChildNode

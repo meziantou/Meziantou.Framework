@@ -758,6 +758,22 @@ public sealed partial record BrowsingContextOptions
     /// </summary>
     public ProtocolHandlerOptions? ProtocolHandlers { get; init; }
 
+    /// <summary>
+    /// Gets or sets the HTTPS upgrades of the top-level navigations (https://github.com/whatwg/fetch/pull/1655): the
+    /// <c>http:</c> URL of a navigation is fetched over <c>https:</c> first (and so are the <c>http:</c> URLs of its
+    /// redirects), and over <c>http:</c> when the <c>https:</c> request fails or redirects back to the <c>http:</c> URL. The
+    /// IP addresses, <c>localhost</c>, the hosts of a private network and the non-default ports are not upgraded (see
+    /// <see cref="HttpsUpgradeOptions"/>). The default is null: the URLs are fetched as they are. The library loads the URLs
+    /// that the application gives it, often from local or test servers, and an upgrade sends a request that the application
+    /// did not ask for and changes the URL of the document; the feature is not part of the Fetch standard yet, and the browsers
+    /// that implement it do not all enable it in every mode. Set it to <see cref="HttpsUpgradeOptions.Default"/> to browse
+    /// the web as a browser that upgrades the navigations.
+    /// </summary>
+    public HttpsUpgradeOptions? HttpsUpgrades { get; init; }
+
+    /// <summary>The hosts whose HTTPS upgrade failed recently (see <see cref="HttpsUpgrades"/>): their navigations are not upgraded.</summary>
+    internal HttpsUpgradeAllowlist HttpsUpgradeAllowlist { get; } = new();
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<NotificationRecord> ShownNotifications { get; } = [];
 

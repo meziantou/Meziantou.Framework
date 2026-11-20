@@ -1,0 +1,20 @@
+{
+  "https-upgrades/tentative/fallback.sub.html": {
+    "total": 1
+  },
+  "https-upgrades/tentative/http-redirecting-to-http-redirecting-to-http.https.sub.html": {
+    "total": 1
+  },
+  "https-upgrades/tentative/http-redirecting-to-http.https.sub.html": {
+    "total": 1
+  },
+  "https-upgrades/tentative/http-redirecting-to-https.https.sub.html": {
+    "total": 1
+  },
+  "https-upgrades/tentative/referrer.https.sub.html": {
+    "total": 1
+  },
+  "https-upgrades/tentative/upgrade.https.sub.html": {
+    "total": 1
+  }
+}

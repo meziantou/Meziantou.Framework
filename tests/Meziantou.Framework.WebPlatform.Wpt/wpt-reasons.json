@@ -30,7 +30,6 @@
     "html-media-capture/*": [{ "kind": "REQUIRES", "features": ["hardware"], "description": "HTML Media Capture" }],
     "html/capability-delegation/*": [{ "kind": "NOT IMPLEMENTED", "description": "capability delegation (the `delegate` option of `postMessage()`)" }, { "kind": "REQUIRES", "features": ["user-input"], "description": "activation through `test_driver` clicks" }],
     "html/interaction/focus/focusgroup/*": [{ "kind": "NOT IMPLEMENTED", "description": "the tentative `focusgroup` attribute (arrow-key focus navigation)" }, { "kind": "REQUIRES", "features": ["user-input"], "description": "arrow keys" }],
-    "https-upgrades/*": [{ "kind": "NOT IMPLEMENTED", "description": "HTTPS Upgrades (automatic upgrade of the http navigations)" }],
     "infrastructure/*": [{ "kind": "OUT OF SCOPE", "description": "tests of the WPT infrastructure (testharness.js, testdriver and the server)" }],
     "input-device-capabilities/*": [{ "kind": "NOT IMPLEMENTED", "description": "InputDeviceCapabilities" }],
     "installedapp/*": [{ "kind": "NOT IMPLEMENTED", "description": "getInstalledRelatedApps()" }],

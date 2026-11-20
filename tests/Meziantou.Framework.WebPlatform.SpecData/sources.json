@@ -414,6 +414,7 @@
       "content-security-policy",
       "x-frame-options",
       "upgrade-insecure-requests",
+      "https-upgrades",
       "reporting",
       "deprecation-reporting",
       "network-error-logging",

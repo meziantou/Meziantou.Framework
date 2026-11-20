@@ -451,6 +451,18 @@ internal sealed partial class FetchRequest
     /// </summary>
     public bool LoaderFailed { get; set; }
 
+    /// <summary>
+    /// Whether the current URL of the request is the <c>https:</c> URL of an HTTPS upgrade (https://whatpr.org/fetch/1655.html#request-is-https-upgrade,
+    /// see <see cref="HttpsUpgrading"/>): a failure of the network falls back to <see cref="HttpsUpgradeFallbackUrl"/>.
+    /// </summary>
+    public bool IsHttpsUpgrade { get; set; }
+
+    /// <summary>
+    /// The <c>http:</c> URL that an HTTPS upgrade replaced (https://whatpr.org/fetch/1655.html#request-https-upgrade-fallback-url),
+    /// or null: the next URL of the request is not upgraded when it is this URL (the fallback, or a redirect back to it).
+    /// </summary>
+    public UrlRecord? HttpsUpgradeFallbackUrl { get; set; }
+
     /// <summary>https://fetch.spec.whatwg.org/#concept-request-clone (the body is immutable, so it is shared).</summary>
     public FetchRequest Clone()
     {

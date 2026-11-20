@@ -137,7 +137,8 @@ internal static class UpgradeInsecureRequests
     /// </summary>
     private static bool ShouldUpgrade(UrlRecord url) => url.Scheme == "http" && !ReferrerPolicies.IsPotentiallyTrustworthy(url);
 
-    private static UrlRecord Upgrade(UrlRecord url)
+    /// <summary>The <c>https:</c> URL of an <c>http:</c> URL: the default port of <c>http:</c> becomes the default port of <c>https:</c>, the other ports are kept.</summary>
+    public static UrlRecord Upgrade(UrlRecord url)
     {
         // Setting the scheme resets the port when it is the default port of https (443): the other ports are kept
         var upgraded = url.Clone();

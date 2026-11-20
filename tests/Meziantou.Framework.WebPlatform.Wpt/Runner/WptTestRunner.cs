@@ -338,6 +338,9 @@ internal sealed partial class WptTestRunner
                 // The pages of the forced-colors-mode directory are loaded in forced colors mode
                 Viewport = GetViewport(_test),
 
+                // The top-level navigations of the tests of HTTPS upgrades are upgraded (see GetHttpsUpgrades)
+                HttpsUpgrades = GetHttpsUpgrades(_test),
+
                 // The downloads are saved nowhere, but their whole body is read, as a browser does
                 DownloadStarted = (context, download) => _ = ReadDownloadAsync(download.Resource),
             });
@@ -454,6 +457,18 @@ internal sealed partial class WptTestRunner
     }
 
     private static readonly ViewportOptions DefaultViewport = new() { SmoothUserScrolling = true };
+
+    /// <summary>
+    /// The HTTPS upgrades of the tests of the https-upgrades directory (https://github.com/whatwg/fetch/pull/1655), as
+    /// Chromium runs them: the WPT server serves HTTPS on the https ports only, so the tests navigate to the http: URL of an
+    /// https port, which loads only when it is upgraded with its port (and fails on an http port, which tests the fallback).
+    /// The host of the WPT server (web-platform.test) is not unique (.test is a reserved top-level domain). The other tests
+    /// keep the default (no upgrade): they check the http: navigations of the mixed content and the referrer policies.
+    /// </summary>
+    private static HttpsUpgradeOptions? GetHttpsUpgrades(WptTest test)
+        => test.RelativePath.StartsWith("https-upgrades/", StringComparison.Ordinal) ? HttpsUpgradesForTests : null;
+
+    private static readonly HttpsUpgradeOptions HttpsUpgradesForTests = new() { UpgradeNonDefaultPorts = true, UpgradeNonUniqueHosts = true };
 
     private static readonly ViewportOptions ForcedColorsViewport = DefaultViewport with { ForcedColors = true };
 

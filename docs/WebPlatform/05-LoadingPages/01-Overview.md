@@ -70,6 +70,7 @@ Use a browsing context from one thread at a time, the thread that runs its event
 | Option | Allows |
 | --- | --- |
 | [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) | Network requests: documents, style sheets, images, frames, scripts, `fetch()` (see [Network requests](02-NetworkRequests.md)) |
+| [HttpsUpgrades](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.HttpsUpgrades) | The upgrade of the `http:` navigations to `https:`, with a fallback to `http:` (see [Network requests](02-NetworkRequests.md#upgrade-the-navigations-to-https)) |
 | [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar), [LocalStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.LocalStorage) | Cookies and storage (see [Cookies and storage](03-CookiesAndStorage.md)) |
 | [Viewport](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Viewport), [UserAgent](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UserAgent) | The size of the viewport and the emulated device (see [Viewport and devices](04-ViewportAndDevices.md)) |
 | [ScriptEngine](cref:Meziantou.Framework.WebPlatform.Scripting.ScriptEngine), [WebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime) | Scripts and WebAssembly (see [Scripting](../06-Scripting/01-Overview.md)) |

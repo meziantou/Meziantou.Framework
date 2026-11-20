@@ -6,8 +6,8 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs;
 /// <summary>The validation, the cloning and the comparison of the configurations of the codecs (https://w3c.github.io/webcodecs/#configurations).</summary>
 internal static class WebCodecsConfigs
 {
-    /// <summary>The frame durations of Opus, in microseconds (https://w3c.github.io/webcodecs/opus_codec_registration.html#dom-opusencoderconfig-frameduration).</summary>
-    private static readonly ulong[] OpusFrameDurations = [2500, 5000, 10000, 20000, 40000, 60000, 80000, 100000, 120000];
+    /// <summary>The complexity of the Opus encoder when the configuration does not give it (the default of libopus on desktop platforms).</summary>
+    private const uint DefaultOpusComplexity = 9;
 
     public static DomException CreateAbortError() => new("The codec was reset or closed", "AbortError");
 
@@ -42,7 +42,8 @@ internal static class WebCodecsConfigs
         {
             if (config.Opus is { } opus)
             {
-                if (opus.Complexity > 10 || opus.PacketLossPercentage > 100 || Array.IndexOf(OpusFrameDurations, opus.FrameDuration) < 0)
+                // https://w3c.github.io/webcodecs/opus_codec_registration.html#opus-encoder-config: a frame duration is a multiple of 2.5 ms up to 120 ms
+                if (opus.Complexity > 10 || opus.PacketLossPercentage > 100 || opus.FrameDuration is 0 or > 120000 || opus.FrameDuration % 2500 != 0)
                     return false;
             }
 
@@ -102,7 +103,7 @@ internal static class WebCodecsConfigs
         NumberOfChannels = config.NumberOfChannels,
         Bitrate = config.Bitrate,
         BitrateMode = config.BitrateMode,
-        Opus = config.Opus is { } opus ? new OpusEncoderConfig { Format = opus.Format, Signal = opus.Signal, Application = opus.Application, FrameDuration = opus.FrameDuration, Complexity = opus.Complexity, PacketLossPercentage = opus.PacketLossPercentage, UseInBandFec = opus.UseInBandFec, UseDtx = opus.UseDtx } : null,
+        Opus = config.Opus is { } opus ? new OpusEncoderConfig { Format = opus.Format, Signal = opus.Signal, Application = opus.Application, FrameDuration = opus.FrameDuration, Complexity = opus.Complexity ?? DefaultOpusComplexity, PacketLossPercentage = opus.PacketLossPercentage, UseInBandFec = opus.UseInBandFec, UseDtx = opus.UseDtx } : null,
         Aac = config.Aac is { } aac ? new AacEncoderConfig { Format = aac.Format } : null,
         Flac = config.Flac is { } flac ? new FlacEncoderConfig { BlockSize = flac.BlockSize, CompressLevel = flac.CompressLevel } : null,
     };

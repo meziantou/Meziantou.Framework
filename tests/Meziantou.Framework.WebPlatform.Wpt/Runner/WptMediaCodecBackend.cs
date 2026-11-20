@@ -10,7 +10,8 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 /// <summary>
 /// The codecs of the tests (<see cref="BrowsingContextOptions.MediaCodecs"/>): deterministic software codecs, real but
 /// simple. Audio: the linear PCM decoders (<c>pcm-u8</c>, <c>pcm-s16</c>, <c>pcm-s24</c>, <c>pcm-s32</c>, <c>pcm-f32</c>) and
-/// the G.711 decoders (<c>ulaw</c>, <c>alaw</c>). Video: VP8 (<c>vp8</c>) with key frames only: a frame is encoded as the
+/// the G.711 decoders (<c>ulaw</c>, <c>alaw</c>), and Opus (<c>opus</c>, mono and stereo, with the managed implementation
+/// of the Concentus package; the audio is resampled to 48 kHz). Video: VP8 (<c>vp8</c>) with key frames only: a frame is encoded as the
 /// VP8 bitstream of a lossy WebP image (Meziantou.Framework.Imaging), and a key frame is decoded as one. A delta frame of
 /// another encoder cannot be decoded.
 /// </summary>
@@ -24,10 +25,19 @@ internal sealed class WptMediaCodecBackend : MediaCodecBackend
         if (!MediaCodecString.TryParse(config.Codec, out var codec) || config.SampleRate is < 3000 or > 768000 || config.NumberOfChannels is 0 or > 8)
             return false;
 
-        return codec.Codec is MediaCodec.PcmU8 or MediaCodec.PcmS16 or MediaCodec.PcmS24 or MediaCodec.PcmS32 or MediaCodec.PcmF32 or MediaCodec.Ulaw or MediaCodec.Alaw;
+        return codec.Codec is MediaCodec.PcmU8 or MediaCodec.PcmS16 or MediaCodec.PcmS24 or MediaCodec.PcmS32 or MediaCodec.PcmF32 or MediaCodec.Ulaw or MediaCodec.Alaw or MediaCodec.Opus;
     }
 
-    public override MediaAudioDecoder? CreateAudioDecoder(AudioDecoderConfig config) => MediaCodecString.TryParse(config.Codec, out var codec) ? new PcmDecoder(codec.Codec, config) : null;
+    public override MediaAudioDecoder? CreateAudioDecoder(AudioDecoderConfig config) => config.Codec switch
+    {
+        "opus" => config.NumberOfChannels <= 2 ? new OpusAudioDecoder(config) : null,
+        _ => MediaCodecString.TryParse(config.Codec, out var codec) ? new PcmDecoder(codec.Codec, config) : null,
+    };
+
+    public override bool IsConfigSupported(AudioEncoderConfig config) => config.Codec == "opus" && config.SampleRate is >= 3000 and <= 384000 && config.NumberOfChannels is 1 or 2
+        && (config.Opus?.FrameDuration ?? 20000) is 2500 or 5000 or 10000 or 20000 or 40000 or 60000 or 80000 or 100000 or 120000;
+
+    public override MediaAudioEncoder? CreateAudioEncoder(AudioEncoderConfig config) => new OpusAudioEncoder(config);
 
     public override bool IsConfigSupported(VideoDecoderConfig config) => config.Codec == "vp8" && config.HardwareAcceleration != HardwareAcceleration.PreferHardware;
 
@@ -244,6 +254,215 @@ internal sealed class WptMediaCodecBackend : MediaCodecBackend
             var pixels = new byte[image.Width * image.Height * 4];
             image.Frames[0].CopyPixelBytesTo(pixels, image.Width * 4);
             return [new VideoFrame(pixels, new VideoFrameBufferInit { Format = VideoPixelFormat.RGBX, CodedWidth = (uint)image.Width, CodedHeight = (uint)image.Height, Timestamp = chunk.Timestamp, Duration = chunk.Duration })];
+        }
+    }
+
+    /// <summary>Resamples interleaved samples with a linear interpolation.</summary>
+    private static float[] Resample(ReadOnlySpan<float> samples, int channels, int sourceRate, int targetRate)
+    {
+        if (sourceRate == targetRate)
+            return samples.ToArray();
+
+        var sourceFrames = samples.Length / channels;
+        var targetFrames = (int)((long)sourceFrames * targetRate / sourceRate);
+        var output = new float[targetFrames * channels];
+        for (var frame = 0; frame < targetFrames; frame++)
+        {
+            var position = (double)frame * sourceRate / targetRate;
+            var index = (int)position;
+            var next = Math.Min(index + 1, sourceFrames - 1);
+            var fraction = (float)(position - index);
+            for (var channel = 0; channel < channels; channel++)
+            {
+                output[(frame * channels) + channel] = (samples[(index * channels) + channel] * (1 - fraction)) + (samples[(next * channels) + channel] * fraction);
+            }
+        }
+
+        return output;
+    }
+
+    private static byte[] ToBytes(float[] samples)
+    {
+        var bytes = new byte[samples.Length * 4];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(i * 4), samples[i]);
+        }
+
+        return bytes;
+    }
+
+    /// <summary>The identification header of an Ogg Opus stream (https://datatracker.ietf.org/doc/html/rfc7845#section-5.1): the description of the <c>ogg</c> format.</summary>
+    private static byte[] CreateOpusHead(int channels, int sampleRate, int preSkip)
+    {
+        var head = new byte[19];
+        "OpusHead"u8.CopyTo(head);
+        head[8] = 1;
+        head[9] = (byte)channels;
+        BinaryPrimitives.WriteUInt16LittleEndian(head.AsSpan(10), (ushort)preSkip);
+        BinaryPrimitives.WriteUInt32LittleEndian(head.AsSpan(12), (uint)sampleRate);
+        return head;
+    }
+
+    /// <summary>Encodes Opus at 48 kHz (the audio is resampled), with the frame duration of the configuration.</summary>
+    private sealed class OpusAudioEncoder : MediaAudioEncoder
+    {
+        private const int OpusSampleRate = 48000;
+
+        private readonly AudioEncoderConfig _config;
+        private readonly Concentus.IOpusEncoder _encoder;
+        private readonly int _channels;
+        private readonly int _frameSize;
+        private readonly List<float> _pending = [];
+        private long? _nextTimestamp;
+
+        public OpusAudioEncoder(AudioEncoderConfig config)
+        {
+            Concentus.OpusCodecFactory.AttemptToUseNativeLibrary = false;
+            _config = config;
+            _channels = (int)config.NumberOfChannels;
+            var application = config.Opus?.Application switch
+            {
+                OpusApplication.Voip => Concentus.Enums.OpusApplication.OPUS_APPLICATION_VOIP,
+                OpusApplication.LowDelay => Concentus.Enums.OpusApplication.OPUS_APPLICATION_RESTRICTED_LOWDELAY,
+                _ => Concentus.Enums.OpusApplication.OPUS_APPLICATION_AUDIO,
+            };
+            _encoder = Concentus.OpusCodecFactory.CreateEncoder(OpusSampleRate, _channels, application, null);
+            if (config.Bitrate is { } bitrate)
+                _encoder.Bitrate = (int)Math.Clamp(bitrate, 6000, 510000);
+
+            if (config.Opus?.Complexity is { } complexity)
+                _encoder.Complexity = (int)complexity;
+
+            _encoder.UseVBR = config.BitrateMode == BitrateMode.Variable;
+            _encoder.UseDTX = config.Opus?.UseDtx ?? false;
+            _encoder.UseInbandFEC = config.Opus?.UseInBandFec ?? false;
+            _encoder.PacketLossPercent = (int)(config.Opus?.PacketLossPercentage ?? 0);
+            _encoder.SignalType = config.Opus?.Signal switch
+            {
+                OpusSignal.Music => Concentus.Enums.OpusSignal.OPUS_SIGNAL_MUSIC,
+                OpusSignal.Voice => Concentus.Enums.OpusSignal.OPUS_SIGNAL_VOICE,
+                _ => Concentus.Enums.OpusSignal.OPUS_SIGNAL_AUTO,
+            };
+            _frameSize = (int)((config.Opus?.FrameDuration ?? 20000) * OpusSampleRate / 1_000_000);
+        }
+
+        public override IReadOnlyList<MediaEncodedAudio> Encode(AudioData data)
+        {
+            if ((uint)data.SampleRate != _config.SampleRate || data.NumberOfChannels != _config.NumberOfChannels)
+                throw new InvalidDataException("The audio data does not have the sample rate and the channels of the configuration");
+
+            var samples = new byte[data.NumberOfFrames * data.NumberOfChannels * 4];
+            data.CopyTo(samples, new AudioDataCopyToOptions { PlaneIndex = 0, Format = AudioSampleFormat.F32 });
+            var floats = new float[samples.Length / 4];
+            for (var i = 0; i < floats.Length; i++)
+            {
+                floats[i] = BinaryPrimitives.ReadSingleLittleEndian(samples.AsSpan(i * 4));
+            }
+
+            _nextTimestamp ??= data.Timestamp;
+            _pending.AddRange(Resample(floats, _channels, (int)_config.SampleRate, OpusSampleRate));
+            return EncodeFrames(flush: false);
+        }
+
+        public override IReadOnlyList<MediaEncodedAudio> Flush() => EncodeFrames(flush: true);
+
+        public override void Reset()
+        {
+            _pending.Clear();
+            _nextTimestamp = null;
+            _encoder.ResetState();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _encoder.Dispose();
+            base.Dispose(disposing);
+        }
+
+        private List<MediaEncodedAudio> EncodeFrames(bool flush)
+        {
+            var outputs = new List<MediaEncodedAudio>();
+            var frameSamples = _frameSize * _channels;
+            if (flush && _pending.Count > 0)
+            {
+                // The samples delayed by the look-ahead of the encoder are flushed: the decoder discards the pre-skip samples
+                _pending.AddRange(new float[_encoder.Lookahead * _channels]);
+                if (_pending.Count % frameSamples != 0)
+                    _pending.AddRange(new float[frameSamples - (_pending.Count % frameSamples)]);
+            }
+
+            var packet = new byte[4000];
+            var description = CreateOpusHead(_channels, (int)_config.SampleRate, _encoder.Lookahead);
+            var decoderConfig = new AudioDecoderConfig { Codec = "opus", SampleRate = _config.SampleRate, NumberOfChannels = _config.NumberOfChannels, Description = description };
+            var frameDuration = (long)_frameSize * 1_000_000 / OpusSampleRate;
+            while (_pending.Count >= frameSamples)
+            {
+                var frame = _pending.GetRange(0, frameSamples).ToArray();
+                _pending.RemoveRange(0, frameSamples);
+                var length = _encoder.Encode(frame, _frameSize, packet, packet.Length);
+                var timestamp = _nextTimestamp ?? 0;
+                _nextTimestamp = timestamp + frameDuration;
+                var chunk = new EncodedAudioChunk(new EncodedAudioChunkInit { Type = EncodedAudioChunkType.Key, Timestamp = timestamp, Duration = (ulong)frameDuration, Data = packet.AsSpan(0, length).ToArray() });
+                outputs.Add(new MediaEncodedAudio(chunk, decoderConfig));
+            }
+
+            return outputs;
+        }
+    }
+
+    /// <summary>Decodes Opus at 48 kHz: the pre-skip samples of the description (an <c>OpusHead</c>) are discarded.</summary>
+    private sealed class OpusAudioDecoder : MediaAudioDecoder
+    {
+        private const int OpusSampleRate = 48000;
+
+        private readonly Concentus.IOpusDecoder _decoder;
+        private readonly int _channels;
+        private readonly int _preSkip;
+        private int _remainingSkip;
+
+        public OpusAudioDecoder(AudioDecoderConfig config)
+        {
+            Concentus.OpusCodecFactory.AttemptToUseNativeLibrary = false;
+            _channels = (int)config.NumberOfChannels;
+            _decoder = Concentus.OpusCodecFactory.CreateDecoder(OpusSampleRate, _channels, null);
+            // The description of the configurations given to the backend is a byte array
+            if (config.Description is byte[] head && head.Length >= 19 && head.AsSpan(0, 8).SequenceEqual("OpusHead"u8))
+                _preSkip = BinaryPrimitives.ReadUInt16LittleEndian(head.AsSpan(10));
+
+            _remainingSkip = _preSkip;
+        }
+
+        public override IReadOnlyList<AudioData> Decode(EncodedAudioChunk chunk)
+        {
+            // The longest Opus packet lasts 120 ms
+            var samples = new float[5760 * _channels];
+            var frames = _decoder.Decode(chunk.Data.Span, samples, 5760, false);
+            if (frames <= 0)
+                throw new InvalidDataException("The Opus packet cannot be decoded");
+
+            var skipped = Math.Min(_remainingSkip, frames);
+            _remainingSkip -= skipped;
+            frames -= skipped;
+            if (frames == 0)
+                return [];
+
+            // The discarded pre-skip samples shift the timestamp of a stream that starts before 0 (as in Chromium)
+            var output = samples.AsSpan(skipped * _channels, frames * _channels).ToArray();
+            var timestamp = chunk.Timestamp < 0 ? chunk.Timestamp + ((long)skipped * 1_000_000 / OpusSampleRate) : chunk.Timestamp;
+            return [new AudioData(new AudioDataInit { Format = AudioSampleFormat.F32, SampleRate = OpusSampleRate, NumberOfFrames = (uint)frames, NumberOfChannels = (uint)_channels, Timestamp = timestamp, Data = ToBytes(output) })];
+        }
+
+        public override void Reset()
+        {
+            _decoder.ResetState();
+            _remainingSkip = _preSkip;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _decoder.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

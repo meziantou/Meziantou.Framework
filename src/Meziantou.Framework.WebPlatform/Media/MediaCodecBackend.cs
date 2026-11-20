@@ -19,8 +19,9 @@ namespace Meziantou.Framework.WebPlatform.Media;
 /// <para>
 /// A backend can be shared by several browsing contexts and by their workers: its methods may be called from several
 /// threads, each codec implementation being used by the thread of the event loop of its codec. The codec implementations
-/// run in the tasks of that event loop, one operation at a time. <see cref="MediaCodecString"/> parses the codec strings of
-/// the WebCodecs codec registry.
+/// run in the tasks of that event loop, one operation at a time. The configurations given to the backend are clones with
+/// the members recognized by the library: their <c>description</c> is a <see cref="byte"/> array.
+/// <see cref="MediaCodecString"/> parses the codec strings of the WebCodecs codec registry.
 /// </para>
 /// </remarks>
 public abstract class MediaCodecBackend

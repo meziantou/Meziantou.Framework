@@ -359,7 +359,14 @@ public static class GeoMapsFuzzTargets
 
     private sealed class TemporaryFolder : IDisposable
     {
-        public TemporaryFolder() => Path = Directory.CreateTempSubdirectory("mfw-geo-maps-fuzz-").FullName;
+        private const string SharedMemoryPath = "/dev/shm";
+
+        // Each input writes three SQLite files, which SQLite syncs to the disk. On the CI runners, tens of thousands of
+        // inputs exhaust the I/O budget of the disk, and an input then stalls for tens of seconds (a slow unit that
+        // replays in milliseconds). /dev/shm is a file system in memory, whose sync costs nothing.
+        public TemporaryFolder() => Path = Directory.Exists(SharedMemoryPath)
+            ? Directory.CreateDirectory(System.IO.Path.Combine(SharedMemoryPath, "mfw-geo-maps-fuzz-" + Guid.NewGuid().ToString("N"))).FullName
+            : Directory.CreateTempSubdirectory("mfw-geo-maps-fuzz-").FullName;
 
         public string Path { get; }
 

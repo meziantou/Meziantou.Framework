@@ -58,24 +58,17 @@ internal readonly ref struct JsTelemetryOperation
         return new JsTelemetryOperation(activity, histogram, kind, histogram is null ? 0 : Stopwatch.GetTimestamp());
     }
 
-    /// <summary>Completes the operation.</summary>
-    /// <param name="errorType">The type of the error when the operation failed without throwing (e.g. a module whose evaluation threw), or null.</param>
-    public void Stop(string? errorType = null)
+    /// <summary>Completes the operation successfully.</summary>
+    public void Stop()
     {
-        Record(errorType);
-        if (_activity is not null)
-        {
-            if (errorType is not null)
-            {
-                _activity.SetStatus(ActivityStatusCode.Error);
-                _activity.SetTag(JsEngineTelemetry.ErrorTypeTagName, errorType);
-            }
-
-            _activity.Stop();
-        }
+        Record(errorType: null);
+        _activity?.Stop();
     }
 
-    /// <summary>Completes the operation with an error. It returns false, to be used in an exception filter that never catches the exception.</summary>
+    /// <summary>
+    /// Completes the operation with an error (thrown, or reported otherwise, such as the error of a module evaluation). It
+    /// returns false, to be used in an exception filter that never catches the exception.
+    /// </summary>
     public bool Fail(Exception exception)
     {
         var errorType = exception.GetType().FullName;

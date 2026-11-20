@@ -12,6 +12,6 @@ public sealed partial class JsEngine
     {
         CheckLimits();
         if (Options.RegExpTimeout is { } timeout && matchStart != 0 && System.Diagnostics.Stopwatch.GetElapsedTime(matchStart) > timeout)
-            throw new JsTerminationException(JsTerminationReason.Timeout, "The regular expression exceeded its time limit");
+            ThrowTermination(JsTerminationReason.Timeout, "The regular expression exceeded its time limit");
     }
 }

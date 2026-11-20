@@ -3650,7 +3650,11 @@ public sealed class JsEngineTests
         Assert.True(module.HasEvaluationError);
         var evaluate = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ModuleEvaluateActivityName);
         Assert.Equal(ActivityStatusCode.Error, evaluate.Status);
+        Assert.Equal("Error: boom", evaluate.StatusDescription);
         Assert.Equal(typeof(JsException).FullName, evaluate.GetTagItem("error.type"));
+        var exceptionEvent = Assert.Single(evaluate.Events, activityEvent => activityEvent.Name == "exception");
+        Assert.Contains(exceptionEvent.Tags, tag => tag.Key == "exception.message" && (string?)tag.Value == "Error: boom");
+        Assert.Contains(exceptionEvent.Tags, tag => tag.Key == "exception.stacktrace" && tag.Value is string stack && stack.Contains("failing.js", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -3668,6 +3672,8 @@ public sealed class JsEngineTests
     [Fact]
     public void Telemetry_Metrics_MeasureEachKindOfCode()
     {
+        // The measurements are recorded on the thread that runs the code: the other tests run on other threads
+        var threadId = Environment.CurrentManagedThreadId;
         var durations = new ConcurrentQueue<(string Instrument, string? Kind)>();
         var terminations = new ConcurrentQueue<string?>();
         using var meterListener = new MeterListener
@@ -3682,9 +3688,18 @@ public sealed class JsEngineTests
         };
         meterListener.SetMeasurementEventCallback<double>((instrument, _, tags, _) =>
         {
-            durations.Enqueue((instrument.Name, GetTag(tags, "js.code.kind")));
+            if (Environment.CurrentManagedThreadId == threadId)
+            {
+                durations.Enqueue((instrument.Name, GetTag(tags, "js.code.kind")));
+            }
         });
-        meterListener.SetMeasurementEventCallback<long>((_, _, tags, _) => terminations.Enqueue(GetTag(tags, "js.termination.reason")));
+        meterListener.SetMeasurementEventCallback<long>((_, _, tags, _) =>
+        {
+            if (Environment.CurrentManagedThreadId == threadId)
+            {
+                terminations.Enqueue(GetTag(tags, "js.termination.reason"));
+            }
+        });
         meterListener.Start();
 
         using (var engine = new JsEngine())
@@ -3704,6 +3719,12 @@ public sealed class JsEngineTests
             Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute("for (;;) {}"));
         }
 
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromTicks(1) }))
+        {
+            var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute("/^(a+)+$/.test('a'.repeat(40) + 'b')"));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
         using (var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 1 }))
         {
             Assert.Equal(10, engine.CreateRealm().Execute("function g(x) { return x + 1; } let sum = 0; for (let i = 0; i < 4; i++) sum += g(i); sum").AsNumber());
@@ -3720,6 +3741,7 @@ public sealed class JsEngineTests
         Assert.Contains((JsEngineTelemetry.ExecutionDurationName, "script"), durations);
         Assert.Contains((JsEngineTelemetry.ExecutionDurationName, "module"), durations);
         Assert.Contains("statement_limit", terminations);
+        Assert.Contains("timeout", terminations);
 
         static string? GetTag(ReadOnlySpan<KeyValuePair<string, object?>> tags, string name)
         {

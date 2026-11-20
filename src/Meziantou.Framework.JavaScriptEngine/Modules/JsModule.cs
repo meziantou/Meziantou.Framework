@@ -88,8 +88,16 @@ public abstract class JsModule : JsScriptOrModule
             throw;
         }
 
-        // The error of the evaluation rejects the promise instead of being thrown
-        operation.Stop(HasEvaluationError ? typeof(JsException).FullName : null);
+        // The error of the evaluation rejects the promise instead of being thrown: it is recorded with its message and stack
+        if (HasEvaluationError)
+        {
+            _ = operation.Fail(new JsException(EvaluationError, EvaluationErrorLocation));
+        }
+        else
+        {
+            operation.Stop();
+        }
+
         return result;
     }
 

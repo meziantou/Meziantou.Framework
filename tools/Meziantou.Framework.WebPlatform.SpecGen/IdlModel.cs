@@ -412,7 +412,124 @@ internal sealed partial class IdlModel
         AddWebMcpPullRequests(model);
         AddHtmlInCanvas(model);
         AddFedCmNonce(model);
+        AddInsertableStreamsExtensions(model);
         return model;
+    }
+
+    /// <summary>
+    /// The exposure of the tracks in the dedicated workers, and the legacy API of the insertable streams of Chromium, which the
+    /// web-platform-tests of <c>mediacapture-insertable-streams</c> (<c>legacy/</c> and <c>tentative/</c>) test:
+    /// <list type="bullet">
+    /// <item>The empty partial interfaces of https://w3c.github.io/mediacapture-extensions/ that expose MediaStream,
+    /// MediaStreamTrack, MediaStreamTrackEvent and OverconstrainedError in the dedicated workers (e.g.
+    /// <c>[Exposed=(Window,DedicatedWorker), Transferable] partial interface MediaStreamTrack {}</c>) apply to the interfaces
+    /// (the tracks can be transferred to the dedicated workers), not only to the members of the partial interfaces.</item>
+    /// <item>MediaStreamTrackProcessor and VideoTrackGenerator are also exposed in the windows, and MediaStreamTrackProcessor
+    /// also has the constructor of Chromium: <c>constructor(MediaStreamTrack track, optional unsigned short maxBufferSize)</c>.</item>
+    /// <item>The MediaStreamTrackGenerator interface of Chromium (https://github.com/w3c/mediacapture-transform/blob/main/explainer.md):
+    /// <c>[Exposed=(Window,DedicatedWorker)] interface MediaStreamTrackGenerator : MediaStreamTrack { constructor(DOMString kind);
+    /// constructor(MediaStreamTrackGeneratorInit init); readonly attribute WritableStream writable; };
+    /// dictionary MediaStreamTrackGeneratorInit { required DOMString kind; };</c></item>
+    /// </list>
+    /// </summary>
+    private static void AddInsertableStreamsExtensions(IdlModel model)
+    {
+        const string Href = "https://github.com/w3c/mediacapture-transform/blob/main/explainer.md#mediastreamtrackgenerator";
+        const string ProcessorHref = "https://github.com/w3c/mediacapture-transform/blob/main/explainer.md#mediastreamtrackprocessor";
+        if (!model.Definitions.TryGetValue("MediaStreamTrack", out var track) || !model.Definitions.TryGetValue("MediaStreamTrackProcessor", out var processor)
+            || model.Definitions.ContainsKey("MediaStreamTrackGenerator"))
+        {
+            return;
+        }
+
+        foreach (var name in (string[])["MediaStream", "MediaStreamTrack", "MediaStreamTrackEvent", "OverconstrainedError", "MediaStreamTrackProcessor", "VideoTrackGenerator"])
+        {
+            if (!model.Definitions.TryGetValue(name, out var definition))
+                continue;
+
+            definition.ExtAttrs.RemoveAll(a => a.Name == "Exposed");
+            definition.ExtAttrs.Add(new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "DedicatedWorker"] });
+        }
+
+        if (!track.HasExtAttr("Transferable"))
+        {
+            track.ExtAttrs.Add(new IdlExtendedAttribute { Name = "Transferable" });
+        }
+
+        processor.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Constructor,
+            Arguments =
+            [
+                new IdlArgument { Name = "track", Type = new IdlType { Name = "MediaStreamTrack" } },
+                new IdlArgument { Name = "maxBufferSize", Type = new IdlType { Name = "unsigned short" }, Optional = true },
+            ],
+            Source = processor.Source,
+            DeclaringDefinition = "MediaStreamTrackProcessor",
+            Href = ProcessorHref,
+        });
+
+        model.Definitions["MediaStreamTrackGeneratorInit"] = new IdlDefinition
+        {
+            Name = "MediaStreamTrackGeneratorInit",
+            Kind = IdlDefinitionKind.Dictionary,
+            Members =
+            [
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Field,
+                    Name = "kind",
+                    Type = new IdlType { Name = "DOMString" },
+                    Required = true,
+                    Source = processor.Source,
+                    DeclaringDefinition = "MediaStreamTrackGeneratorInit",
+                    Href = Href,
+                },
+            ],
+            Source = processor.Source,
+            Href = Href,
+            SpecUrl = Href,
+        };
+
+        model.Definitions["MediaStreamTrackGenerator"] = new IdlDefinition
+        {
+            Name = "MediaStreamTrackGenerator",
+            Kind = IdlDefinitionKind.Interface,
+            Inheritance = "MediaStreamTrack",
+            Members =
+            [
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Constructor,
+                    Arguments = [new IdlArgument { Name = "kind", Type = new IdlType { Name = "DOMString" } }],
+                    Source = processor.Source,
+                    DeclaringDefinition = "MediaStreamTrackGenerator",
+                    Href = Href,
+                },
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Constructor,
+                    Arguments = [new IdlArgument { Name = "init", Type = new IdlType { Name = "MediaStreamTrackGeneratorInit" } }],
+                    Source = processor.Source,
+                    DeclaringDefinition = "MediaStreamTrackGenerator",
+                    Href = Href,
+                },
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Attribute,
+                    Name = "writable",
+                    Type = new IdlType { Name = "WritableStream" },
+                    Readonly = true,
+                    Source = processor.Source,
+                    DeclaringDefinition = "MediaStreamTrackGenerator",
+                    Href = Href,
+                },
+            ],
+            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "DedicatedWorker"] }],
+            Source = processor.Source,
+            Href = Href,
+            SpecUrl = Href,
+        };
     }
 
     /// <summary>

@@ -183,10 +183,7 @@
     "total": 2
   },
   "service-workers/service-worker/ServiceWorkerGlobalScope/error-message-event.https.html": {
-    "total": 1,
-    "failures": {
-      "Verify error event is received": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/ServiceWorkerGlobalScope/extendable-message-event-constructor.https.html": {
     "total": 10

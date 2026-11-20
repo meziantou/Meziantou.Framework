@@ -14,7 +14,7 @@ internal static class Binding_OverconstrainedError<TAdapter, TValue> where TAdap
         ParentName = "DOMException",
         ClrType = typeof(global::Meziantou.Framework.WebPlatform.Dom.OverconstrainedError),
         Flags = global::Meziantou.Framework.WebPlatform.Scripting.InterfaceBindingFlags.None,
-        Exposure = global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window,
+        Exposure = global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.DedicatedWorker,
         ConstructorLength = 1,
         Constructor = Construct,
         DefineMembers = DefineMembers,

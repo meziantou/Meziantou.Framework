@@ -1,0 +1,31 @@
+{
+  "video-rvfc/idlharness.window.js": {
+    "total": 18
+  },
+  "video-rvfc/request-video-frame-callback-before-xr-session.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "video-rvfc/request-video-frame-callback-dom.html": {
+    "total": 3
+  },
+  "video-rvfc/request-video-frame-callback-during-xr-session.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "video-rvfc/request-video-frame-callback-parallel.html": {
+    "total": 2
+  },
+  "video-rvfc/request-video-frame-callback-repeating.html": {
+    "total": 2
+  },
+  "video-rvfc/request-video-frame-callback-webrtc.https.html": {
+    "total": 1,
+    "failures": {
+      "Test video.requestVideoFrameCallback() parameters for WebRTC applications.": "FAIL"
+    }
+  },
+  "video-rvfc/request-video-frame-callback.html": {
+    "total": 5
+  }
+}

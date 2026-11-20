@@ -239,6 +239,39 @@ seeked, once a [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBa
 [Audio and video codecs](10-AudioAndVideoCodecs.md#record-a-stream)). The audio of the media elements is not decoded (the
 media backend gives no audio), so `createMediaElementSource()` outputs silence.
 
+### Processing the frames of a track
+
+The pages process the media of the tracks with the insertable streams (MediaStreamTrack Insertable Media Processing
+using Streams). They need no callback of the host:
+
+- `new MediaStreamTrackProcessor({ track })` reads a track as a `ReadableStream` of `VideoFrame` objects (or of
+  `AudioData` objects for an audio track). The frames that arrive while no read is pending are kept in a buffer of
+  `maxBufferSize` frames (1 by default, 64 at most): a new frame closes and discards the oldest one, which
+  `discardedFrames` counts. The stream is closed when the track ends.
+- `new VideoTrackGenerator()` creates a video track from the frames written to its `writable` stream: each frame is
+  delivered to the sinks of the track and of its clones, then closed. A frame written while `muted` is true is
+  discarded. Stopping the track and all its clones closes the stream, and closing or aborting the stream ends the
+  tracks.
+- The tracks of a camera, a canvas or a media element are read at the frame rate of the track (30 frames per second
+  when it has none, 60 at most) on the clock of the event loop, and the audio by blocks of 10 ms. The frames of a
+  `VideoTrackGenerator` are read as they are written.
+- A track can be transferred to a dedicated worker, or from a dedicated worker to its window:
+  `worker.postMessage(track, [track])` ends the track, and the worker gets a track of the same source. The source keeps
+  running on the thread where it was created, and the received track gets its frames (the last frame replaces a frame
+  that the receiver did not handle yet) and its state; the source stops when the received track stops or when the
+  worker is terminated. A `MediaStreamTrackHandle` transfers a reference to a track that stays live. The tracks and the
+  handles cannot leave their agent cluster: a cross-site frame, a shared worker or a service worker gets a
+  `messageerror` event.
+- `MediaStreamTrackProcessor` and `VideoTrackGenerator` are exposed in the windows too, and the legacy API of Chromium
+  is available: `new MediaStreamTrackGenerator({ kind })` is a track (audio or video) with a `writable` stream, and
+  `new MediaStreamTrackProcessor(track)` takes the track itself.
+
+`video.requestVideoFrameCallback()` runs a callback when the element presents a new frame: in the next rendering update,
+before the animation frame callbacks and with the same time. A frame is new when the element shows a frame of another
+media resource, or the frame at another position of the media timeline; the metadata gives the size of the frame, its
+position (`mediaTime`) and the number of frames presented by the element. The frames are the ones the
+[MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) gives, or the frames of the `srcObject` stream.
+
 ## Notifications
 
 Once the `notifications` permission is granted,

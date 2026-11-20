@@ -8,11 +8,10 @@
     }
   },
   "mediacapture-streams/BrowserCaptureMediaStreamTrack-restrictTo.https.html": {
-    "harness": "ERROR",
     "total": 3,
     "failures": {
-      "Tests that restricting MediaStreamTrack objects works as expected (FlattenedIn3D).": "NOTRUN",
-      "Tests that restricting MediaStreamTrack objects works as expected (OnlyOneBoxFragment).": "NOTRUN",
+      "Tests that restricting MediaStreamTrack objects works as expected (FlattenedIn3D).": "FAIL",
+      "Tests that restricting MediaStreamTrack objects works as expected (OnlyOneBoxFragment).": "FAIL",
       "Tests that restricting MediaStreamTrack objects works as expected (StackingContext).": "FAIL"
     }
   },
@@ -171,25 +170,13 @@
     "total": 1
   },
   "mediacapture-streams/MediaStreamTrack-transfer-cross-agent-cluster.https.html": {
-    "total": 3,
-    "failures": {
-      "MediaStreamTrack can be transferred to a same-origin iframe": "FAIL",
-      "MediaStreamTrack cannot be transferred to a cross-site iframe": "FAIL"
-    }
+    "total": 3
   },
   "mediacapture-streams/MediaStreamTrack-transfer-to-shared-and-service-workers.https.html": {
-    "total": 4,
-    "failures": {
-      "MediaStreamTrack cannot be transferred to a service worker": "FAIL",
-      "MediaStreamTrack cannot be transferred to a shared worker": "FAIL"
-    }
+    "total": 4
   },
   "mediacapture-streams/MediaStreamTrack-transfer-video.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "MediaStreamTrack transfer to iframe": "TIMEOUT"
-    }
+    "total": 1
   },
   "mediacapture-streams/MediaStreamTrack-transfer.https.html": {
     "total": 1,

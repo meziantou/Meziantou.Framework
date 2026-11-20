@@ -76,6 +76,7 @@ public partial class HtmlMediaElement
         var wasPotentiallyPlaying = IsPotentiallyPlaying;
         _readyState = value;
         ScheduleCaptureUpdate();
+        OnVideoFrameMayChange();
         NodeDocument.IncrementElementStateVersion();
         if (_mediaSource is { } source && _mediaSourceGlobal is { } sourceElementGlobal && (previous == HaveEnoughData || value == HaveEnoughData))
         {
@@ -630,6 +631,7 @@ public partial class HtmlMediaElement
             _playedRangeIsOpen = true;
             player.Play();
             SchedulePlaybackTimer();
+            OnVideoFrameMayChange();
         }
         else
         {

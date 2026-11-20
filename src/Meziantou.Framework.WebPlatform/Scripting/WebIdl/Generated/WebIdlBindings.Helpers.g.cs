@@ -38,8 +38,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.AddressErrors Defaults_Dom_AddressErrors = new();
 
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration Defaults_Dom_AudioConfiguration = new() { ContentType = default! };
-
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs Defaults_Dom_AuthenticationExtensionsClientInputs = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputsJson Defaults_Dom_AuthenticationExtensionsClientInputsJson = new();
@@ -162,17 +160,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions Defaults_Dom_MagnetometerSensorOptions = new();
 
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesKeySystemConfiguration Defaults_Dom_MediaCapabilitiesKeySystemConfiguration = new() { KeySystem = default! };
-
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration Defaults_Dom_MediaDecodingConfiguration = new() { Type = default! };
-
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingConfiguration Defaults_Dom_MediaEncodingConfiguration = new() { Type = default! };
-
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState Defaults_Dom_MediaPositionState = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions Defaults_Dom_MediaRecorderOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaStreamConstraints Defaults_Dom_MediaStreamConstraints = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackProcessorInit Defaults_Dom_MediaStreamTrackProcessorInit = new() { Track = default! };
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraintSet Defaults_Dom_MediaTrackConstraintSet = new();
 
@@ -280,8 +274,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ShowPopoverOptions Defaults_Dom_ShowPopoverOptions = new();
 
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions Defaults_Dom_StorageBucketOptions = new();
-
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions Defaults_Dom_TextClusterOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.TogglePopoverOptions Defaults_Dom_TogglePopoverOptions = new();
@@ -295,8 +287,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.UpdateElementGeometryOptions Defaults_Dom_UpdateElementGeometryOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.UrlPatternInit Defaults_Dom_UrlPatternInit = new();
-
-    private static readonly global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration Defaults_Dom_VideoConfiguration = new() { ContentType = default!, Width = default!, Height = default!, Bitrate = default!, Framerate = default! };
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.WheelEventInit Defaults_Dom_WheelEventInit = new();
 
@@ -436,8 +426,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_ClientType_Values = new[] { "window", "worker", "sharedworker", "all" };
 
-    internal static readonly string[] Enum_ColorGamut_Values = new[] { "srgb", "p3", "rec2020" };
-
     internal static readonly string[] Enum_ColorInterpolationMethod_Values = new[] { "srgb", "hsl", "hwb", "srgb-linear", "display-p3", "display-p3-linear", "a98-rgb", "prophoto-rgb", "rec2020", "lab", "oklab", "lch", "oklch", "xyz", "xyz-d50", "xyz-d65" };
 
     internal static readonly string[] Enum_ColorSpaceConversion_Values = new[] { "none", "default" };
@@ -476,8 +464,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_HardwareAcceleration_Values = new[] { "no-preference", "prefer-hardware", "prefer-software" };
 
-    internal static readonly string[] Enum_HdrMetadataType_Values = new[] { "smpteSt2086", "smpteSt2094-10", "smpteSt2094-40" };
-
     internal static readonly string[] Enum_HevcBitstreamFormat_Values = new[] { "annexb", "hevc" };
 
     internal static readonly string[] Enum_HighlightType_Values = new[] { "highlight", "spelling-error", "grammar-error" };
@@ -511,12 +497,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_LoginStatus_Values = new[] { "logged-in", "logged-out" };
 
     internal static readonly string[] Enum_MagnetometerLocalCoordinateSystem_Values = new[] { "device", "screen" };
-
-    internal static readonly string[] Enum_MediaDecodingType_Values = new[] { "file", "media-source", "webrtc" };
-
-    internal static readonly string[] Enum_MediaEncodingType_Values = new[] { "record", "webrtc" };
-
-    internal static readonly string[] Enum_MediaKeysRequirement_Values = new[] { "required", "optional", "not-allowed" };
 
     internal static readonly string[] Enum_MediaSessionAction_Values = new[] { "play", "pause", "seekbackward", "seekforward", "previoustrack", "nexttrack", "skipad", "stop", "seekto", "togglemicrophone", "togglecamera", "togglescreenshare", "hangup", "previousslide", "nextslide", "enterpictureinpicture", "voiceactivity" };
 
@@ -621,8 +601,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_TextTrackMode_Values = new[] { "disabled", "hidden", "showing" };
 
     internal static readonly string[] Enum_TouchType_Values = new[] { "direct", "stylus" };
-
-    internal static readonly string[] Enum_TransferFunction_Values = new[] { "srgb", "pq", "hlg" };
 
     internal static readonly string[] Enum_URLPatternComponent_Values = new[] { "protocol", "username", "password", "hostname", "port", "pathname", "search", "hash" };
 
@@ -999,17 +977,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         var result = r.CreateObject();
         r.SetMember(result, "flatten", r.FromBoolean(value.Flatten));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_AudioConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration value)
-    {
-        var result = r.CreateObject();
-        if (value.Bitrate is not null) r.SetMember(result, "bitrate", (value.Bitrate.HasValue ? r.FromNumber((double)value.Bitrate.GetValueOrDefault()) : r.Adapter.Null));
-        if (value.Channels is not null) r.SetMember(result, "channels", r.FromString(value.Channels));
-        r.SetMember(result, "contentType", r.FromString(value.ContentType));
-        if (value.Samplerate is not null) r.SetMember(result, "samplerate", (value.Samplerate.HasValue ? r.FromNumber((double)value.Samplerate.GetValueOrDefault()) : r.Adapter.Null));
-        if (value.SpatialRendering is not null) r.SetMember(result, "spatialRendering", r.FromBoolean(value.SpatialRendering));
         return result;
     }
 
@@ -2442,14 +2409,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
-    internal static TValue FromDictionary_Dom_KeySystemTrackConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration value)
-    {
-        var result = r.CreateObject();
-        r.SetMember(result, "encryptionScheme", r.FromString(value.EncryptionScheme));
-        r.SetMember(result, "robustness", r.FromString(value.Robustness));
-        return result;
-    }
-
     internal static TValue FromDictionary_Dom_KeyboardEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.KeyboardEventInit value)
     {
         var result = r.CreateObject();
@@ -2563,59 +2522,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
-    internal static TValue FromDictionary_Dom_MediaCapabilitiesDecodingInfo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesDecodingInfo value)
-    {
-        var result = r.CreateObject();
-        r.SetMember(result, "powerEfficient", r.FromBoolean(value.PowerEfficient));
-        r.SetMember(result, "smooth", r.FromBoolean(value.Smooth));
-        r.SetMember(result, "supported", r.FromBoolean(value.Supported));
-        r.SetMember(result, "configuration", (value.Configuration is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaDecodingConfiguration(r, dictionaryValue) : r.Adapter.Null));
-        r.SetMember(result, "keySystemAccess", r.ToJs((object?)value.KeySystemAccess));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MediaCapabilitiesEncodingInfo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesEncodingInfo value)
-    {
-        var result = r.CreateObject();
-        r.SetMember(result, "powerEfficient", r.FromBoolean(value.PowerEfficient));
-        r.SetMember(result, "smooth", r.FromBoolean(value.Smooth));
-        r.SetMember(result, "supported", r.FromBoolean(value.Supported));
-        r.SetMember(result, "configuration", (value.Configuration is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaEncodingConfiguration(r, dictionaryValue) : r.Adapter.Null));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MediaCapabilitiesKeySystemConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesKeySystemConfiguration value)
-    {
-        var result = r.CreateObject();
-        if (value.Audio is not null) r.SetMember(result, "audio", (value.Audio is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_KeySystemTrackConfiguration(r, dictionaryValue) : r.Adapter.Null));
-        r.SetMember(result, "distinctiveIdentifier", r.FromString(value.DistinctiveIdentifier));
-        r.SetMember(result, "initDataType", r.FromString(value.InitDataType));
-        r.SetMember(result, "keySystem", r.FromString(value.KeySystem));
-        r.SetMember(result, "persistentState", r.FromString(value.PersistentState));
-        if (value.SessionTypes is not null) r.SetMember(result, "sessionTypes", r.FromSequence(value.SessionTypes, static (r, e) => r.FromString(e)));
-        if (value.Video is not null) r.SetMember(result, "video", (value.Video is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_KeySystemTrackConfiguration(r, dictionaryValue2) : r.Adapter.Null));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MediaDecodingConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration value)
-    {
-        var result = r.CreateObject();
-        if (value.Audio is not null) r.SetMember(result, "audio", (value.Audio is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AudioConfiguration(r, dictionaryValue) : r.Adapter.Null));
-        if (value.Video is not null) r.SetMember(result, "video", (value.Video is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_VideoConfiguration(r, dictionaryValue2) : r.Adapter.Null));
-        if (value.KeySystemConfiguration is not null) r.SetMember(result, "keySystemConfiguration", (value.KeySystemConfiguration is { } dictionaryValue3 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaCapabilitiesKeySystemConfiguration(r, dictionaryValue3) : r.Adapter.Null));
-        r.SetMember(result, "type", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaDecodingType(value.Type)));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MediaEncodingConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingConfiguration value)
-    {
-        var result = r.CreateObject();
-        if (value.Audio is not null) r.SetMember(result, "audio", (value.Audio is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AudioConfiguration(r, dictionaryValue) : r.Adapter.Null));
-        if (value.Video is not null) r.SetMember(result, "video", (value.Video is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_VideoConfiguration(r, dictionaryValue2) : r.Adapter.Null));
-        r.SetMember(result, "type", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaEncodingType(value.Type)));
-        return result;
-    }
-
     internal static TValue FromDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaImage value)
     {
         var result = r.CreateObject();
@@ -2695,6 +2601,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
         r.SetMember(result, "composed", r.FromBoolean(value.Composed));
         r.SetMember(result, "track", r.Wrap(value.Track));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaStreamTrackGeneratorInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackGeneratorInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "kind", r.FromString(value.Kind));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaStreamTrackProcessorInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackProcessorInit value)
+    {
+        var result = r.CreateObject();
+        if (value.MaxBufferSize is not null) r.SetMember(result, "maxBufferSize", (value.MaxBufferSize.HasValue ? r.FromNumber((double)value.MaxBufferSize.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "track", r.ToJs((object?)value.Track));
         return result;
     }
 
@@ -2950,40 +2871,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "whiteBalanceMode", r.FromBoolean(value.WhiteBalanceMode));
         r.SetMember(result, "width", r.FromBoolean(value.Width));
         r.SetMember(result, "zoom", r.FromBoolean(value.Zoom));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MemoryAttribution(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryAttribution value)
-    {
-        var result = r.CreateObject();
-        if (value.Container is not null) r.SetMember(result, "container", (value.Container is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttributionContainer(r, dictionaryValue) : r.Adapter.Null));
-        if (value.Scope is not null) r.SetMember(result, "scope", r.FromString(value.Scope));
-        if (value.Url is not null) r.SetMember(result, "url", r.FromString(value.Url));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MemoryAttributionContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryAttributionContainer value)
-    {
-        var result = r.CreateObject();
-        if (value.Id is not null) r.SetMember(result, "id", r.FromString(value.Id));
-        if (value.Src is not null) r.SetMember(result, "src", r.FromString(value.Src));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MemoryBreakdownEntry(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryBreakdownEntry value)
-    {
-        var result = r.CreateObject();
-        if (value.Attribution is not null) r.SetMember(result, "attribution", r.FromSequence(value.Attribution, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttribution(r, dictionaryValue) : r.Adapter.Null)));
-        r.SetMember(result, "bytes", r.FromNumber((double)value.Bytes));
-        if (value.Types is not null) r.SetMember(result, "types", r.FromSequence(value.Types, static (r, e) => r.FromString(e)));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_MemoryMeasurement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement value)
-    {
-        var result = r.CreateObject();
-        if (value.Breakdown is not null) r.SetMember(result, "breakdown", r.FromSequence(value.Breakdown, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryBreakdownEntry(r, dictionaryValue) : r.Adapter.Null)));
-        r.SetMember(result, "bytes", r.FromNumber((double)value.Bytes));
         return result;
     }
 
@@ -4072,34 +3959,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
-    internal static TValue FromDictionary_Dom_StorageAccessTypes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes value)
-    {
-        var result = r.CreateObject();
-        r.SetMember(result, "BroadcastChannel", r.FromBoolean(value.BroadcastChannel));
-        r.SetMember(result, "SharedWorker", r.FromBoolean(value.SharedWorker));
-        r.SetMember(result, "all", r.FromBoolean(value.All));
-        r.SetMember(result, "caches", r.FromBoolean(value.Caches));
-        r.SetMember(result, "cookies", r.FromBoolean(value.Cookies));
-        r.SetMember(result, "createObjectURL", r.FromBoolean(value.CreateObjectUrl));
-        r.SetMember(result, "estimate", r.FromBoolean(value.Estimate));
-        r.SetMember(result, "getDirectory", r.FromBoolean(value.GetDirectory));
-        r.SetMember(result, "indexedDB", r.FromBoolean(value.IndexedDB));
-        r.SetMember(result, "localStorage", r.FromBoolean(value.LocalStorage));
-        r.SetMember(result, "locks", r.FromBoolean(value.Locks));
-        r.SetMember(result, "revokeObjectURL", r.FromBoolean(value.RevokeObjectUrl));
-        r.SetMember(result, "sessionStorage", r.FromBoolean(value.SessionStorage));
-        return result;
-    }
-
-    internal static TValue FromDictionary_Dom_StorageBucketOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions value)
-    {
-        var result = r.CreateObject();
-        if (value.Expires is not null) r.SetMember(result, "expires", (value.Expires.HasValue ? r.FromNumber((double)value.Expires.GetValueOrDefault()) : r.Adapter.Null));
-        r.SetMember(result, "persisted", r.FromBoolean(value.Persisted));
-        if (value.Quota is not null) r.SetMember(result, "quota", (value.Quota.HasValue ? r.FromNumber((double)value.Quota.GetValueOrDefault()) : r.Adapter.Null));
-        return result;
-    }
-
     internal static TValue FromDictionary_Dom_StorageEstimate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.StorageEstimate value)
     {
         var result = r.CreateObject();
@@ -4481,19 +4340,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
-    internal static TValue FromDictionary_Dom_VideoConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration value)
+    internal static TValue FromDictionary_Dom_VideoFrameCallbackMetadata(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.VideoFrameCallbackMetadata value)
     {
         var result = r.CreateObject();
-        r.SetMember(result, "bitrate", r.FromNumber((double)value.Bitrate));
-        if (value.ColorGamut is not null) r.SetMember(result, "colorGamut", (value.ColorGamut.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ColorGamut(value.ColorGamut.GetValueOrDefault())) : r.Adapter.Null));
-        r.SetMember(result, "contentType", r.FromString(value.ContentType));
-        r.SetMember(result, "framerate", r.FromNumber((double)value.Framerate));
-        if (value.HasAlphaChannel is not null) r.SetMember(result, "hasAlphaChannel", r.FromBoolean(value.HasAlphaChannel));
-        if (value.HdrMetadataType is not null) r.SetMember(result, "hdrMetadataType", (value.HdrMetadataType.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_HdrMetadataType(value.HdrMetadataType.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.CaptureTime is not null) r.SetMember(result, "captureTime", (value.CaptureTime.HasValue ? r.FromNumber((double)value.CaptureTime.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "expectedDisplayTime", r.FromNumber((double)value.ExpectedDisplayTime));
         r.SetMember(result, "height", r.FromNumber((double)value.Height));
-        if (value.ScalabilityMode is not null) r.SetMember(result, "scalabilityMode", r.FromString(value.ScalabilityMode));
-        if (value.SpatialScalability is not null) r.SetMember(result, "spatialScalability", r.FromBoolean(value.SpatialScalability));
-        if (value.TransferFunction is not null) r.SetMember(result, "transferFunction", (value.TransferFunction.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_TransferFunction(value.TransferFunction.GetValueOrDefault())) : r.Adapter.Null));
+        r.SetMember(result, "mediaTime", r.FromNumber((double)value.MediaTime));
+        r.SetMember(result, "presentationTime", r.FromNumber((double)value.PresentationTime));
+        r.SetMember(result, "presentedFrames", r.FromNumber((double)value.PresentedFrames));
+        if (value.ProcessingDuration is not null) r.SetMember(result, "processingDuration", (value.ProcessingDuration.HasValue ? r.FromNumber((double)value.ProcessingDuration.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ReceiveTime is not null) r.SetMember(result, "receiveTime", (value.ReceiveTime.HasValue ? r.FromNumber((double)value.ReceiveTime.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.RtpTimestamp is not null) r.SetMember(result, "rtpTimestamp", (value.RtpTimestamp.HasValue ? r.FromNumber((double)value.RtpTimestamp.GetValueOrDefault()) : r.Adapter.Null));
         r.SetMember(result, "width", r.FromNumber((double)value.Width));
         return result;
     }
@@ -5565,14 +5423,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
-    internal static string FromEnum_Dom_ColorGamut(global::Meziantou.Framework.WebPlatform.Dom.ColorGamut value) => value switch
-    {
-        global::Meziantou.Framework.WebPlatform.Dom.ColorGamut.Srgb => "srgb",
-        global::Meziantou.Framework.WebPlatform.Dom.ColorGamut.P3 => "p3",
-        global::Meziantou.Framework.WebPlatform.Dom.ColorGamut.Rec2020 => "rec2020",
-        _ => value.ToString(),
-    };
-
     internal static string FromEnum_Dom_ColorSpaceConversion(global::Meziantou.Framework.WebPlatform.Dom.ColorSpaceConversion value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.ColorSpaceConversion.None => "none",
@@ -5722,14 +5572,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
-    internal static string FromEnum_Dom_HdrMetadataType(global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType value) => value switch
-    {
-        global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2086 => "smpteSt2086",
-        global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2094Part10 => "smpteSt2094-10",
-        global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2094Part40 => "smpteSt2094-40",
-        _ => value.ToString(),
-    };
-
     internal static string FromEnum_Dom_IdbCursorDirection(global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection.Next => "next",
@@ -5836,26 +5678,11 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
-    internal static string FromEnum_Dom_MediaDecodingType(global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType value) => value switch
-    {
-        global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType.File => "file",
-        global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType.MediaSource => "media-source",
-        global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType.WebRtc => "webrtc",
-        _ => value.ToString(),
-    };
-
     internal static string FromEnum_Dom_MediaDeviceKind(global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind.AudioInput => "audioinput",
         global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind.AudioOutput => "audiooutput",
         global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind.VideoInput => "videoinput",
-        _ => value.ToString(),
-    };
-
-    internal static string FromEnum_Dom_MediaEncodingType(global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingType value) => value switch
-    {
-        global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingType.Record => "record",
-        global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingType.WebRtc => "webrtc",
         _ => value.ToString(),
     };
 
@@ -6328,14 +6155,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
-    internal static string FromEnum_Dom_TransferFunction(global::Meziantou.Framework.WebPlatform.Dom.TransferFunction value) => value switch
-    {
-        global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Srgb => "srgb",
-        global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Pq => "pq",
-        global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Hlg => "hlg",
-        _ => value.ToString(),
-    };
-
     internal static string FromEnum_Dom_UserIdleState(global::Meziantou.Framework.WebPlatform.Dom.UserIdleState value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.UserIdleState.Active => "active",
@@ -6703,6 +6522,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback ToDelegate_Dom_SchedulerPostTaskCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "SchedulerPostTaskCallback"); return result; }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallback ToDelegate_Dom_ToolExecuteCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.ToJs((object?)p0)); arguments.Add((p1 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolExecuteCallbackOptions(r, dictionaryValue) : r.Adapter.Null)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "ToolExecuteCallback"); return r.ToTask<object?>(result!, static (r, v) => r.ToAny(v)); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.VideoFrameRequestCallback ToDelegate_Dom_VideoFrameRequestCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.VideoFrameRequestCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromNumber((double)p0)); arguments.Add((p1 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_VideoFrameCallbackMetadata(r, dictionaryValue) : r.Adapter.Null)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "VideoFrameRequestCallback"); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback ToDelegate_Dom_ViewTransitionUpdateCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.AbortWhenInactive); return result; }));
 
@@ -7312,34 +7133,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.AssignedNodesOptions
         {
             Flatten = m0,
-        };
-    }
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration ToDictionary_Dom_AudioConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "AudioConfiguration");
-        var m0_value = r.GetDictionaryMember(value, "bitrate");
-        var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (ulong?)r.ToUnsignedLongLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
-        var m1_value = r.GetDictionaryMember(value, "channels");
-        var m1_present = !r.Adapter.IsUndefined(m1_value);
-        var m1 = m1_present ? (string?)r.ToDomString(m1_value) : default;
-        var m2_value = r.GetDictionaryMember(value, "contentType");
-        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("AudioConfiguration", "contentType");
-        var m2 = r.ToDomString(m2_value);
-        var m3_value = r.GetDictionaryMember(value, "samplerate");
-        var m3_present = !r.Adapter.IsUndefined(m3_value);
-        var m3 = m3_present ? (uint?)r.ToUnsignedLong(m3_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
-        var m4_value = r.GetDictionaryMember(value, "spatialRendering");
-        var m4_present = !r.Adapter.IsUndefined(m4_value);
-        var m4 = m4_present ? (bool?)r.ToBoolean(m4_value) : default;
-        return new global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration
-        {
-            Bitrate = m0_present ? m0 : Defaults_Dom_AudioConfiguration.Bitrate,
-            Channels = m1_present ? m1 : Defaults_Dom_AudioConfiguration.Channels,
-            ContentType = m2,
-            Samplerate = m3_present ? m3 : Defaults_Dom_AudioConfiguration.Samplerate,
-            SpatialRendering = m4_present ? m4 : Defaults_Dom_AudioConfiguration.SpatialRendering,
         };
     }
 
@@ -9876,20 +9669,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration ToDictionary_Dom_KeySystemTrackConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "KeySystemTrackConfiguration");
-        var m0_value = r.GetDictionaryMember(value, "encryptionScheme");
-        var m0 = r.Adapter.IsUndefined(m0_value) ? (string?)(string?)null : (r.IsNullOrUndefined(m0_value) ? (string?)null : r.ToDomString(m0_value));
-        var m1_value = r.GetDictionaryMember(value, "robustness");
-        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"" : r.ToDomString(m1_value);
-        return new global::Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration
-        {
-            EncryptionScheme = m0,
-            Robustness = m1,
-        };
-    }
-
     internal static global::Meziantou.Framework.WebPlatform.Dom.KeyboardEventInit ToDictionary_Dom_KeyboardEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "KeyboardEventInit");
@@ -10139,83 +9918,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesKeySystemConfiguration ToDictionary_Dom_MediaCapabilitiesKeySystemConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "MediaCapabilitiesKeySystemConfiguration");
-        var m0_value = r.GetDictionaryMember(value, "audio");
-        var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_KeySystemTrackConfiguration(r, m0_value) : default;
-        var m1_value = r.GetDictionaryMember(value, "distinctiveIdentifier");
-        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"optional" : r.ToEnumerationValue(m1_value, "MediaKeysRequirement", WebIdlHelpers<TAdapter, TValue>.Enum_MediaKeysRequirement_Values);
-        var m2_value = r.GetDictionaryMember(value, "initDataType");
-        var m2 = r.Adapter.IsUndefined(m2_value) ? (string)"" : r.ToDomString(m2_value);
-        var m3_value = r.GetDictionaryMember(value, "keySystem");
-        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("MediaCapabilitiesKeySystemConfiguration", "keySystem");
-        var m3 = r.ToDomString(m3_value);
-        var m4_value = r.GetDictionaryMember(value, "persistentState");
-        var m4 = r.Adapter.IsUndefined(m4_value) ? (string)"optional" : r.ToEnumerationValue(m4_value, "MediaKeysRequirement", WebIdlHelpers<TAdapter, TValue>.Enum_MediaKeysRequirement_Values);
-        var m5_value = r.GetDictionaryMember(value, "sessionTypes");
-        var m5_present = !r.Adapter.IsUndefined(m5_value);
-        var m5 = m5_present ? (global::System.Collections.Generic.List<string>?)r.ToSequence<string>(m5_value, static (r, e) => r.ToDomString(e)) : default;
-        var m6_value = r.GetDictionaryMember(value, "video");
-        var m6_present = !r.Adapter.IsUndefined(m6_value);
-        var m6 = m6_present ? (global::Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_KeySystemTrackConfiguration(r, m6_value) : default;
-        return new global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesKeySystemConfiguration
-        {
-            Audio = m0_present ? m0 : Defaults_Dom_MediaCapabilitiesKeySystemConfiguration.Audio,
-            DistinctiveIdentifier = m1,
-            InitDataType = m2,
-            KeySystem = m3,
-            PersistentState = m4,
-            SessionTypes = m5_present ? m5 : Defaults_Dom_MediaCapabilitiesKeySystemConfiguration.SessionTypes,
-            Video = m6_present ? m6 : Defaults_Dom_MediaCapabilitiesKeySystemConfiguration.Video,
-        };
-    }
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration ToDictionary_Dom_MediaDecodingConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "MediaDecodingConfiguration");
-        var m0_value = r.GetDictionaryMember(value, "audio");
-        var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AudioConfiguration(r, m0_value) : default;
-        var m1_value = r.GetDictionaryMember(value, "video");
-        var m1_present = !r.Adapter.IsUndefined(m1_value);
-        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_VideoConfiguration(r, m1_value) : default;
-        var m2_value = r.GetDictionaryMember(value, "keySystemConfiguration");
-        var m2_present = !r.Adapter.IsUndefined(m2_value);
-        var m2 = m2_present ? (global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesKeySystemConfiguration?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaCapabilitiesKeySystemConfiguration(r, m2_value) : default;
-        var m3_value = r.GetDictionaryMember(value, "type");
-        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("MediaDecodingConfiguration", "type");
-        var m3 = r.ToEnumerationValue(m3_value, "MediaDecodingType", WebIdlHelpers<TAdapter, TValue>.Enum_MediaDecodingType_Values);
-        return new global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration
-        {
-            Audio = m0_present ? m0 : Defaults_Dom_MediaDecodingConfiguration.Audio,
-            Video = m1_present ? m1 : Defaults_Dom_MediaDecodingConfiguration.Video,
-            KeySystemConfiguration = m2_present ? m2 : Defaults_Dom_MediaDecodingConfiguration.KeySystemConfiguration,
-            Type = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_MediaDecodingType(m3),
-        };
-    }
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingConfiguration ToDictionary_Dom_MediaEncodingConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "MediaEncodingConfiguration");
-        var m0_value = r.GetDictionaryMember(value, "audio");
-        var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AudioConfiguration(r, m0_value) : default;
-        var m1_value = r.GetDictionaryMember(value, "video");
-        var m1_present = !r.Adapter.IsUndefined(m1_value);
-        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_VideoConfiguration(r, m1_value) : default;
-        var m2_value = r.GetDictionaryMember(value, "type");
-        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("MediaEncodingConfiguration", "type");
-        var m2 = r.ToEnumerationValue(m2_value, "MediaEncodingType", WebIdlHelpers<TAdapter, TValue>.Enum_MediaEncodingType_Values);
-        return new global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingConfiguration
-        {
-            Audio = m0_present ? m0 : Defaults_Dom_MediaEncodingConfiguration.Audio,
-            Video = m1_present ? m1 : Defaults_Dom_MediaEncodingConfiguration.Video,
-            Type = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_MediaEncodingType(m2),
-        };
-    }
-
     internal static global::Meziantou.Framework.WebPlatform.Dom.MediaImage ToDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "MediaImage");
@@ -10347,6 +10049,34 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Cancelable = m1,
             Composed = m2,
             Track = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackGeneratorInit ToDictionary_Dom_MediaStreamTrackGeneratorInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaStreamTrackGeneratorInit");
+        var m0_value = r.GetDictionaryMember(value, "kind");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("MediaStreamTrackGeneratorInit", "kind");
+        var m0 = r.ToDomString(m0_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackGeneratorInit
+        {
+            Kind = m0,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackProcessorInit ToDictionary_Dom_MediaStreamTrackProcessorInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaStreamTrackProcessorInit");
+        var m0_value = r.GetDictionaryMember(value, "maxBufferSize");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (ushort?)r.ToUnsignedShort(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange) : default;
+        var m1_value = r.GetDictionaryMember(value, "track");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("MediaStreamTrackProcessorInit", "track");
+        var m1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_61576dbe(r, m1_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackProcessorInit
+        {
+            MaxBufferSize = m0_present ? m0 : Defaults_Dom_MediaStreamTrackProcessorInit.MaxBufferSize,
+            Track = m1,
         };
     }
 
@@ -12950,72 +12680,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes ToDictionary_Dom_StorageAccessTypes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "StorageAccessTypes");
-        var m0_value = r.GetDictionaryMember(value, "BroadcastChannel");
-        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
-        var m1_value = r.GetDictionaryMember(value, "SharedWorker");
-        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
-        var m2_value = r.GetDictionaryMember(value, "all");
-        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
-        var m3_value = r.GetDictionaryMember(value, "caches");
-        var m3 = r.Adapter.IsUndefined(m3_value) ? (bool)false : r.ToBoolean(m3_value);
-        var m4_value = r.GetDictionaryMember(value, "cookies");
-        var m4 = r.Adapter.IsUndefined(m4_value) ? (bool)false : r.ToBoolean(m4_value);
-        var m5_value = r.GetDictionaryMember(value, "createObjectURL");
-        var m5 = r.Adapter.IsUndefined(m5_value) ? (bool)false : r.ToBoolean(m5_value);
-        var m6_value = r.GetDictionaryMember(value, "estimate");
-        var m6 = r.Adapter.IsUndefined(m6_value) ? (bool)false : r.ToBoolean(m6_value);
-        var m7_value = r.GetDictionaryMember(value, "getDirectory");
-        var m7 = r.Adapter.IsUndefined(m7_value) ? (bool)false : r.ToBoolean(m7_value);
-        var m8_value = r.GetDictionaryMember(value, "indexedDB");
-        var m8 = r.Adapter.IsUndefined(m8_value) ? (bool)false : r.ToBoolean(m8_value);
-        var m9_value = r.GetDictionaryMember(value, "localStorage");
-        var m9 = r.Adapter.IsUndefined(m9_value) ? (bool)false : r.ToBoolean(m9_value);
-        var m10_value = r.GetDictionaryMember(value, "locks");
-        var m10 = r.Adapter.IsUndefined(m10_value) ? (bool)false : r.ToBoolean(m10_value);
-        var m11_value = r.GetDictionaryMember(value, "revokeObjectURL");
-        var m11 = r.Adapter.IsUndefined(m11_value) ? (bool)false : r.ToBoolean(m11_value);
-        var m12_value = r.GetDictionaryMember(value, "sessionStorage");
-        var m12 = r.Adapter.IsUndefined(m12_value) ? (bool)false : r.ToBoolean(m12_value);
-        return new global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes
-        {
-            BroadcastChannel = m0,
-            SharedWorker = m1,
-            All = m2,
-            Caches = m3,
-            Cookies = m4,
-            CreateObjectUrl = m5,
-            Estimate = m6,
-            GetDirectory = m7,
-            IndexedDB = m8,
-            LocalStorage = m9,
-            Locks = m10,
-            RevokeObjectUrl = m11,
-            SessionStorage = m12,
-        };
-    }
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions ToDictionary_Dom_StorageBucketOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "StorageBucketOptions");
-        var m0_value = r.GetDictionaryMember(value, "expires");
-        var m0_present = !r.Adapter.IsUndefined(m0_value);
-        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: true) : default;
-        var m1_value = r.GetDictionaryMember(value, "persisted");
-        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
-        var m2_value = r.GetDictionaryMember(value, "quota");
-        var m2_present = !r.Adapter.IsUndefined(m2_value);
-        var m2 = m2_present ? (ulong?)r.ToUnsignedLongLong(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
-        return new global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions
-        {
-            Expires = m0_present ? m0 : Defaults_Dom_StorageBucketOptions.Expires,
-            Persisted = m1,
-            Quota = m2_present ? m2 : Defaults_Dom_StorageBucketOptions.Quota,
-        };
-    }
-
     internal static global::Meziantou.Framework.WebPlatform.Dom.StorageEventInit ToDictionary_Dom_StorageEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "StorageEventInit");
@@ -13655,58 +13319,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             TooShort = m7,
             TypeMismatch = m8,
             ValueMissing = m9,
-        };
-    }
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration ToDictionary_Dom_VideoConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
-    {
-        r.CheckDictionary(value, "VideoConfiguration");
-        var m0_value = r.GetDictionaryMember(value, "bitrate");
-        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("VideoConfiguration", "bitrate");
-        var m0 = r.ToUnsignedLongLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-        var m1_value = r.GetDictionaryMember(value, "colorGamut");
-        var m1_present = !r.Adapter.IsUndefined(m1_value);
-        var m1 = m1_present ? (string?)r.ToEnumerationValue(m1_value, "ColorGamut", WebIdlHelpers<TAdapter, TValue>.Enum_ColorGamut_Values) : default;
-        var m2_value = r.GetDictionaryMember(value, "contentType");
-        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("VideoConfiguration", "contentType");
-        var m2 = r.ToDomString(m2_value);
-        var m3_value = r.GetDictionaryMember(value, "framerate");
-        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("VideoConfiguration", "framerate");
-        var m3 = r.ToDouble(m3_value, restricted: true);
-        var m4_value = r.GetDictionaryMember(value, "hasAlphaChannel");
-        var m4_present = !r.Adapter.IsUndefined(m4_value);
-        var m4 = m4_present ? (bool?)r.ToBoolean(m4_value) : default;
-        var m5_value = r.GetDictionaryMember(value, "hdrMetadataType");
-        var m5_present = !r.Adapter.IsUndefined(m5_value);
-        var m5 = m5_present ? (string?)r.ToEnumerationValue(m5_value, "HdrMetadataType", WebIdlHelpers<TAdapter, TValue>.Enum_HdrMetadataType_Values) : default;
-        var m6_value = r.GetDictionaryMember(value, "height");
-        if (r.Adapter.IsUndefined(m6_value)) throw r.MissingRequiredDictionaryMember("VideoConfiguration", "height");
-        var m6 = r.ToUnsignedLong(m6_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-        var m7_value = r.GetDictionaryMember(value, "scalabilityMode");
-        var m7_present = !r.Adapter.IsUndefined(m7_value);
-        var m7 = m7_present ? (string?)r.ToDomString(m7_value) : default;
-        var m8_value = r.GetDictionaryMember(value, "spatialScalability");
-        var m8_present = !r.Adapter.IsUndefined(m8_value);
-        var m8 = m8_present ? (bool?)r.ToBoolean(m8_value) : default;
-        var m9_value = r.GetDictionaryMember(value, "transferFunction");
-        var m9_present = !r.Adapter.IsUndefined(m9_value);
-        var m9 = m9_present ? (string?)r.ToEnumerationValue(m9_value, "TransferFunction", WebIdlHelpers<TAdapter, TValue>.Enum_TransferFunction_Values) : default;
-        var m10_value = r.GetDictionaryMember(value, "width");
-        if (r.Adapter.IsUndefined(m10_value)) throw r.MissingRequiredDictionaryMember("VideoConfiguration", "width");
-        var m10 = r.ToUnsignedLong(m10_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-        return new global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration
-        {
-            Bitrate = m0,
-            ColorGamut = m1_present ? (m1 is { } enumValue_m1 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_ColorGamut(enumValue_m1) : (global::Meziantou.Framework.WebPlatform.Dom.ColorGamut?)null) : Defaults_Dom_VideoConfiguration.ColorGamut,
-            ContentType = m2,
-            Framerate = m3,
-            HasAlphaChannel = m4_present ? m4 : Defaults_Dom_VideoConfiguration.HasAlphaChannel,
-            HdrMetadataType = m5_present ? (m5 is { } enumValue_m5 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_HdrMetadataType(enumValue_m5) : (global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType?)null) : Defaults_Dom_VideoConfiguration.HdrMetadataType,
-            Height = m6,
-            ScalabilityMode = m7_present ? m7 : Defaults_Dom_VideoConfiguration.ScalabilityMode,
-            SpatialScalability = m8_present ? m8 : Defaults_Dom_VideoConfiguration.SpatialScalability,
-            TransferFunction = m9_present ? (m9 is { } enumValue_m9 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_TransferFunction(enumValue_m9) : (global::Meziantou.Framework.WebPlatform.Dom.TransferFunction?)null) : Defaults_Dom_VideoConfiguration.TransferFunction,
-            Width = m10,
         };
     }
 
@@ -15492,14 +15104,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.ColorGamut ToEnum_Dom_ColorGamut(string value) => value switch
-    {
-        "srgb" => global::Meziantou.Framework.WebPlatform.Dom.ColorGamut.Srgb,
-        "p3" => global::Meziantou.Framework.WebPlatform.Dom.ColorGamut.P3,
-        "rec2020" => global::Meziantou.Framework.WebPlatform.Dom.ColorGamut.Rec2020,
-        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
-    };
-
     internal static global::Meziantou.Framework.WebPlatform.Dom.ColorSpaceConversion ToEnum_Dom_ColorSpaceConversion(string value) => value switch
     {
         "none" => global::Meziantou.Framework.WebPlatform.Dom.ColorSpaceConversion.None,
@@ -15595,14 +15199,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType ToEnum_Dom_HdrMetadataType(string value) => value switch
-    {
-        "smpteSt2086" => global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2086,
-        "smpteSt2094-10" => global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2094Part10,
-        "smpteSt2094-40" => global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2094Part40,
-        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
-    };
-
     internal static global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection ToEnum_Dom_IdbCursorDirection(string value) => value switch
     {
         "next" => global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection.Next,
@@ -15692,21 +15288,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "device" => global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Device,
         "screen" => global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Screen,
-        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
-    };
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType ToEnum_Dom_MediaDecodingType(string value) => value switch
-    {
-        "file" => global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType.File,
-        "media-source" => global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType.MediaSource,
-        "webrtc" => global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType.WebRtc,
-        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
-    };
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingType ToEnum_Dom_MediaEncodingType(string value) => value switch
-    {
-        "record" => global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingType.Record,
-        "webrtc" => global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingType.WebRtc,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
@@ -16046,14 +15627,6 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "direct" => global::Meziantou.Framework.WebPlatform.Dom.TouchType.Direct,
         "stylus" => global::Meziantou.Framework.WebPlatform.Dom.TouchType.Stylus,
-        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
-    };
-
-    internal static global::Meziantou.Framework.WebPlatform.Dom.TransferFunction ToEnum_Dom_TransferFunction(string value) => value switch
-    {
-        "srgb" => global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Srgb,
-        "pq" => global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Pq,
-        "hlg" => global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Hlg,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
@@ -17301,6 +16874,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SetHtmlUnsafeOptions(r, value);
         }
         throw r.CreateTypeError("The value cannot be converted to (SetHTMLUnsafeOptions or TrustedHTMLParserOptions)");
+    }
+
+    /// <summary>(MediaStreamTrack or MediaStreamTrackHandle)</summary>
+    internal static object? ToUnion_61576dbe(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackHandle) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        throw r.CreateTypeError("The value cannot be converted to (MediaStreamTrack or MediaStreamTrackHandle)");
     }
 
     /// <summary>(Document or (Blob or (ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or FormData or URLSearchParams or USVString))?</summary>

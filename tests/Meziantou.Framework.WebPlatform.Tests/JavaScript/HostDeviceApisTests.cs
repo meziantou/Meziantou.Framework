@@ -4365,6 +4365,103 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Contains("Cluster(unknown)", elements);
         Assert.Contains("SimpleBlock:2@0+key", elements);
         Assert.DoesNotContain("CodecID:V_VP8", elements);
+
+    // MediaStreamTrack Insertable Streams
+
+    [Fact]
+    public async Task VideoTrackGenerator_FramesAreReadByAProcessor()
+    {
+        var document = Load("""
+            <script>
+            const generator = new VideoTrackGenerator();
+            const processor = new MediaStreamTrackProcessor({ track: generator.track });
+            const reader = processor.readable.getReader();
+            const frame = new VideoFrame(new OffscreenCanvas(4, 2), { timestamp: 42 });
+            generator.writable.getWriter().write(frame).then(() => reader.read()).then(result => {
+              document.title = [result.value.timestamp, result.value.displayWidth, result.value.displayHeight, frame.format === null, processor.totalFrames].join();
+              result.value.close();
+            });
+            </script>
+            """);
+
+        Assert.Equal("42,4,2,true,1", await RunAsync(document));
+    }
+
+    [Fact]
+    public async Task VideoTrackGenerator_StoppedTrack_ClosesTheWritable()
+    {
+        var document = Load("""
+            <script>
+            const generator = new VideoTrackGenerator();
+            const writer = generator.writable.getWriter();
+            generator.track.stop();
+            writer.closed.then(() => writer.write(new VideoFrame(new OffscreenCanvas(1, 1), { timestamp: 0 }))).catch(e => document.title = e.name);
+            </script>
+            """);
+
+        Assert.Equal("TypeError", await RunAsync(document));
+    }
+
+    [Fact]
+    public void MediaStreamTrackProcessor_ReadsTheFramesOfACameraUntilTheTrackStops()
+    {
+        var clock = new FakeTimeProvider();
+        var document = Load("<script>window.go = async () => { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); const track = stream.getVideoTracks()[0]; const reader = new MediaStreamTrackProcessor({ track }).readable.getReader(); const { value } = await reader.read(); const result = [value instanceof VideoFrame, value.displayWidth, value.displayHeight]; value.close(); track.stop(); await reader.closed; document.title = result.join(); };</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        Run(document, "go()");
+
+        Assert.Equal("true,640,480", RunUntilTitle(document, clock));
+    }
+
+    [Fact]
+    public void MediaStreamTrack_Transfer_EndsTheTrackAndSharesTheSource()
+    {
+        var document = Load("""
+            <script>
+            const track = new VideoTrackGenerator().track;
+            const received = structuredClone(track, { transfer: [track] });
+            let error;
+            try { structuredClone(track, { transfer: [track] }); } catch (e) { error = e.name; }
+            document.title = [track.readyState, received.readyState, received.kind, received === track, error].join();
+            </script>
+            """);
+
+        Assert.Equal("ended,live,video,false,DataCloneError", Run(document));
+    }
+
+    [Fact]
+    public void RequestVideoFrameCallback_RunsWhenAFrameIsPresented()
+    {
+        var clock = new FakeTimeProvider();
+        var document = Load("""
+            <script>
+            const generator = new VideoTrackGenerator();
+            const video = document.createElement('video');
+            video.srcObject = new MediaStream([generator.track]);
+            const canceled = video.requestVideoFrameCallback(() => document.title = 'canceled');
+            video.cancelVideoFrameCallback(canceled);
+            video.requestVideoFrameCallback((now, metadata) => {
+              document.title = [now > 0, metadata.width, metadata.height, metadata.presentedFrames].join();
+              generator.track.stop();
+            });
+            video.play();
+            generator.writable.getWriter().write(new VideoFrame(new OffscreenCanvas(8, 6), { timestamp: 0 }));
+            </script>
+            """, new BrowsingContextOptions { MediaBackend = new NoMediaBackend(), TimeProvider = clock });
+
+        Assert.Equal("true,8,6,1", RunUntilTitle(document, clock));
+    }
+
+    /// <summary>Advances the clock (the timers and the rendering updates run) until the title of the document is set.</summary>
+    private string RunUntilTitle(Document document, FakeTimeProvider clock)
+    {
+        for (var i = 0; i < 100 && document.Title.Length == 0; i++)
+        {
+            clock.Advance(TimeSpan.FromMilliseconds(10));
+            _contexts.EventLoop.RunUntilIdle();
+        }
+
+        Assert.Empty(_errors);
+        return document.Title;
     }
 }
 

@@ -3382,6 +3382,55 @@
   }
 
   // ------------------------------------------------------------------------------------------------------------------
+  // The streams of the platform objects implemented in .NET (e.g. MediaStreamTrackProcessor.readable,
+  // VideoTrackGenerator.writable)
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // Calls a function of the library: an exception rejects the returned promise
+  function callPlatformAlgorithm(algorithm, argument) {
+    try {
+      algorithm(argument);
+    } catch (e) {
+      return promiseRejectedWith(e);
+    }
+
+    return promiseResolvedWith(undefined);
+  }
+
+  // A ReadableStream whose underlying source is implemented by the library: source.pull() and source.cancel(reason) are
+  // its pull and cancel algorithms. Returns the stream and the functions with which the library enqueues the chunks,
+  // closes or errors it (they do nothing once the stream is closed or errored).
+  function createPlatformReadableStream(source, highWaterMark) {
+    const stream = createReadableStream(realm, () => undefined, () => callPlatformAlgorithm(source.pull, undefined), (reason) => callPlatformAlgorithm(source.cancel, reason), highWaterMark);
+    const controller = ObjectCreate(null);
+    controller.enqueue = (chunk) => readableStreamDefaultControllerEnqueue(stream.controller, chunk);
+    controller.close = () => readableStreamDefaultControllerClose(stream.controller);
+    controller.error = (e) => readableStreamDefaultControllerError(stream.controller, e);
+    const result = ObjectCreate(null);
+    result.stream = stream.object;
+    result.controller = controller;
+    return result;
+  }
+
+  // A WritableStream whose underlying sink is implemented by the library: sink.write(chunk), sink.close() and
+  // sink.abort(reason) are its algorithms. Returns the stream and the functions with which the library closes the stream
+  // (as WritableStreamDefaultWriter.close() does: after the queued chunks are written) or errors it.
+  function createPlatformWritableStream(sink, highWaterMark) {
+    const stream = createWritableStream(realm, () => undefined, (chunk) => callPlatformAlgorithm(sink.write, chunk), () => callPlatformAlgorithm(sink.close, undefined), (reason) => callPlatformAlgorithm(sink.abort, reason), highWaterMark);
+    const controller = ObjectCreate(null);
+    controller.close = () => {
+      if (stream.state === 'writable' && !writableStreamCloseQueuedOrInFlight(stream)) setPromiseIsHandledToTrue(writableStreamClose(stream));
+    };
+    controller.error = (e) => {
+      if (stream.state === 'writable') writableStreamDefaultControllerErrorIfNeeded(stream.controller, e);
+    };
+    const result = ObjectCreate(null);
+    result.stream = stream.object;
+    result.controller = controller;
+    return result;
+  }
+
+  // ------------------------------------------------------------------------------------------------------------------
   // The File System Standard: FileSystemWritableFileStream (https://fs.spec.whatwg.org/#api-filesystemwritablefilestream)
   // ------------------------------------------------------------------------------------------------------------------
 
@@ -3892,6 +3941,8 @@
     createBlobStream,
     createBlobTextStream,
     createHtmlWritableStream,
+    createPlatformReadableStream,
+    createPlatformWritableStream,
     FileSystemWritableFileStream,
     createFileSystemWritableFileStream,
     fetchSupport,

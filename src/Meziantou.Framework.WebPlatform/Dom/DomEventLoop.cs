@@ -309,6 +309,57 @@ public sealed partial class DomEventLoop
         ScheduleRendering();
     }
 
+    private readonly List<HtmlVideoElement> _videosWithFrameCallbacks = [];
+
+    /// <summary>Schedules a rendering opportunity to run the video frame callbacks of a video element (https://wicg.github.io/video-rvfc/).</summary>
+    internal void RequestVideoFrameCallbacks(HtmlVideoElement video)
+    {
+        if (!_videosWithFrameCallbacks.Contains(video))
+        {
+            _videosWithFrameCallbacks.Add(video);
+        }
+
+        ScheduleRendering();
+    }
+
+    /// <summary>
+    /// https://wicg.github.io/video-rvfc/#video-rvfc-procedures: the video elements that presented a new frame run their
+    /// callbacks with the time of the frame. The elements whose callbacks wait for a frame stay registered, and a rendering
+    /// update is requested while a new frame is expected (the playback advances, or a frame was not presented yet).
+    /// </summary>
+    private void RunVideoFrameCallbacks(long frameTimestamp, long renderingUpdate)
+    {
+        var videos = _videosWithFrameCallbacks.ToArray();
+        _videosWithFrameCallbacks.Clear();
+        var expectsFrame = false;
+        foreach (var video in videos)
+        {
+            var document = video.NodeDocument;
+            if (!video.HasVideoFrameCallbacks || !document.IsFullyActive || document.RelevantWindow is not { } window)
+                continue;
+
+            if (!document.IsSkippedByRenderingUpdate(renderingUpdate) && !document.Prerendering)
+            {
+                video.RunVideoFrameCallbacks(window, frameTimestamp);
+            }
+
+            if (video.HasVideoFrameCallbacks)
+            {
+                if (!_videosWithFrameCallbacks.Contains(video))
+                {
+                    _videosWithFrameCallbacks.Add(video);
+                }
+
+                expectsFrame |= video.ExpectsNewVideoFrame;
+            }
+        }
+
+        if (expectsFrame)
+        {
+            ScheduleRendering();
+        }
+    }
+
     /// <summary>
     /// Schedules a rendering opportunity to run the steps of "update the rendering" that apply to a document: the flush of
     /// its autofocus candidates and the focus fixup rule.
@@ -782,6 +833,13 @@ public sealed partial class DomEventLoop
 
                 return depth;
             }
+        }
+
+        // https://wicg.github.io/video-rvfc/#video-rvfc-procedures: the video frame callbacks run before the animation frame
+        // callbacks, with the same time (the animation frame callbacks they request run in this rendering update)
+        if (_videosWithFrameCallbacks.Count > 0)
+        {
+            RunVideoFrameCallbacks(frameTimestamp, renderingUpdate);
         }
 
         var windows = _windowsWithAnimationFrameCallbacks.ToArray();
@@ -1518,6 +1576,7 @@ public sealed partial class DomEventLoop
         DisposeChildLoops();
         ReleaseOwner();
         _windowsWithAnimationFrameCallbacks.Clear();
+        _videosWithFrameCallbacks.Clear();
         ClearIdleCallbacks();
         _windowsWithEventTimingEntries.Clear();
         _framesAwaitingRendering = null;

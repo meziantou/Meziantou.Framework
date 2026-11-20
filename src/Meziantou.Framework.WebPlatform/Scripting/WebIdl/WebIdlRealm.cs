@@ -1690,6 +1690,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 return ParseJson(new JsonText(reportBody.ToJson()));
             case JsBufferSource source:
                 return FromBufferSource(source);
+            case PlatformReadableStream or PlatformWritableStream:
+                return GetPlatformStream(value);
             case byte[] bytes:
                 // An ArrayBuffer (e.g. FileReader.result), created once for the array
                 if (!Agent.Wrappers.TryGetValue(bytes, out var buffer))

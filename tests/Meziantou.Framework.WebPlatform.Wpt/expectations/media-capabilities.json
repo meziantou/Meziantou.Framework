@@ -22,9 +22,7 @@
     "total": 21,
     "failures": {
       "decodingInfo() supports 'cbcs' encryptionScheme and echoes it back.": "FAIL",
-      "decodingInfo() supports 'cbcs-1-9' encryptionScheme and echoes it back.": "FAIL",
-      "decodingInfo() supports 'cenc' encryptionScheme and echoes it back.": "FAIL",
-      "decodingInfo() with null encryptionScheme returns supported: true and echoes null.": "FAIL"
+      "decodingInfo() supports 'cbcs-1-9' encryptionScheme and echoes it back.": "FAIL"
     }
   },
   "media-capabilities/encodingInfo-webrtc.any.js": {

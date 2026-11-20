@@ -10,17 +10,17 @@ description: "The results of the web-platform-tests of websockets, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 197 | 204 | 0 | 97% |
-| [Tentative](#tentative-tests) | 0 | 12 | 0 | 0% |
+| [Tentative](#tentative-tests) | 9 | 12 | 0 | 75% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **197** | **216** | **0** | **91%** |
+| **All** | **206** | **216** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 14
+- **NOT IMPLEMENTED**: 5
 - **TEST RUNNER**: 2
 - **OUT OF SCOPE**: 2
 
@@ -240,12 +240,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`back-forward-cache-closes-open-websocket-connection.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-closes-open-websocket-connection.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative tests expect the behaviors of Chromium: a page served with `Cache-Control: no-store` is kept in the back/forward cache, and an open WebSocket is closed when its page enters it. As in the other browsers, a document whose response has `Cache-Control: no-store` is not cached, and a WebSocket that is still connecting or open once the `pagehide` event handlers ran makes the document unsalvageable (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps), so the BFCache executor reports a failed precondition |
 | [`back-forward-cache-with-closed-websocket-connection-ccns.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-closed-websocket-connection-ccns.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative tests expect the behaviors of Chromium: a page served with `Cache-Control: no-store` is kept in the back/forward cache, and an open WebSocket is closed when its page enters it. As in the other browsers, a document whose response has `Cache-Control: no-store` is not cached, and a WebSocket that is still connecting or open once the `pagehide` event handlers ran makes the document unsalvageable (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps), so the BFCache executor reports a failed precondition |
 | [`back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative tests expect the behaviors of Chromium: a page served with `Cache-Control: no-store` is kept in the back/forward cache, and an open WebSocket is closed when its page enters it. As in the other browsers, a document whose response has `Cache-Control: no-store` is not cached, and a WebSocket that is still connecting or open once the `pagehide` event handlers ran makes the document unsalvageable (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps), so the BFCache executor reports a failed precondition |
-| [`stream/tentative/abort.any.js`](https://wpt.fyi/results/websockets/stream/tentative/abort.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/backpressure-receive.any.js`](https://wpt.fyi/results/websockets/stream/tentative/backpressure-receive.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/backpressure-send.any.js`](https://wpt.fyi/results/websockets/stream/tentative/backpressure-send.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/close.any.js`](https://wpt.fyi/results/websockets/stream/tentative/close.any.js) | Fail | 0 / 243 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/constructor.any.js`](https://wpt.fyi/results/websockets/stream/tentative/constructor.any.js) | Fail | 0 / 48 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/read.any.js`](https://wpt.fyi/results/websockets/stream/tentative/read.any.js) | Fail | 0 / 9 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/remote-close.any.js`](https://wpt.fyi/results/websockets/stream/tentative/remote-close.any.js) | Fail | 0 / 63 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/websocket-error.any.js`](https://wpt.fyi/results/websockets/stream/tentative/websocket-error.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
-| [`stream/tentative/write.any.js`](https://wpt.fyi/results/websockets/stream/tentative/write.any.js) | Fail | 0 / 54 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
+| [`stream/tentative/abort.any.js`](https://wpt.fyi/results/websockets/stream/tentative/abort.any.js) | Pass | 30 / 30 |  |  |
+| [`stream/tentative/backpressure-receive.any.js`](https://wpt.fyi/results/websockets/stream/tentative/backpressure-receive.any.js) | Pass | 6 / 6 |  |  |
+| [`stream/tentative/backpressure-send.any.js`](https://wpt.fyi/results/websockets/stream/tentative/backpressure-send.any.js) | Pass | 6 / 6 |  |  |
+| [`stream/tentative/close.any.js`](https://wpt.fyi/results/websockets/stream/tentative/close.any.js) | Pass | 243 / 243 |  |  |
+| [`stream/tentative/constructor.any.js`](https://wpt.fyi/results/websockets/stream/tentative/constructor.any.js) | Pass | 48 / 48 |  |  |
+| [`stream/tentative/read.any.js`](https://wpt.fyi/results/websockets/stream/tentative/read.any.js) | Pass | 9 / 9 |  |  |
+| [`stream/tentative/remote-close.any.js`](https://wpt.fyi/results/websockets/stream/tentative/remote-close.any.js) | Pass | 63 / 63 |  |  |
+| [`stream/tentative/websocket-error.any.js`](https://wpt.fyi/results/websockets/stream/tentative/websocket-error.any.js) | Pass | 30 / 30 |  |  |
+| [`stream/tentative/write.any.js`](https://wpt.fyi/results/websockets/stream/tentative/write.any.js) | Pass | 54 / 54 |  |  |

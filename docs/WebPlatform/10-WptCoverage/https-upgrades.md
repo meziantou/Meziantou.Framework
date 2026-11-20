@@ -10,24 +10,18 @@ description: "The results of the web-platform-tests of https-upgrades, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 6 | 6 | – |
+| [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **6** | **6** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 6
+| **All** | **6** | **6** | **0** | **100%** |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/fallback.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/fallback.sub.html) | Disabled | – | NOT IMPLEMENTED | HTTPS Upgrades (automatic upgrade of the http navigations) |
-| [`tentative/http-redirecting-to-http-redirecting-to-http.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/http-redirecting-to-http-redirecting-to-http.https.sub.html) | Disabled | – | NOT IMPLEMENTED | HTTPS Upgrades (automatic upgrade of the http navigations) |
-| [`tentative/http-redirecting-to-http.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/http-redirecting-to-http.https.sub.html) | Disabled | – | NOT IMPLEMENTED | HTTPS Upgrades (automatic upgrade of the http navigations) |
-| [`tentative/http-redirecting-to-https.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/http-redirecting-to-https.https.sub.html) | Disabled | – | NOT IMPLEMENTED | HTTPS Upgrades (automatic upgrade of the http navigations) |
-| [`tentative/referrer.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/referrer.https.sub.html) | Disabled | – | NOT IMPLEMENTED | HTTPS Upgrades (automatic upgrade of the http navigations) |
-| [`tentative/upgrade.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/upgrade.https.sub.html) | Disabled | – | NOT IMPLEMENTED | HTTPS Upgrades (automatic upgrade of the http navigations) |
+| [`tentative/fallback.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/fallback.sub.html) | Pass | 1 / 1 |  |  |
+| [`tentative/http-redirecting-to-http-redirecting-to-http.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/http-redirecting-to-http-redirecting-to-http.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`tentative/http-redirecting-to-http.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/http-redirecting-to-http.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`tentative/http-redirecting-to-https.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/http-redirecting-to-https.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`tentative/referrer.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/referrer.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`tentative/upgrade.https.sub.html`](https://wpt.fyi/results/https-upgrades/tentative/upgrade.https.sub.html) | Pass | 1 / 1 |  |  |

@@ -912,7 +912,9 @@ public sealed class PdfNavigationTests
         document.FlattenAnnotations();
 
         Assert.Equal(expected, PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText().Trim());
+    }
 
+    [Fact]
     public void ActionsAreReadAsTheirTypes()
     {
         var file = new HandWrittenPdf()
@@ -1210,14 +1212,14 @@ public sealed class PdfNavigationTests
         Assert.Equal(1, root.Id);
         Assert.Equal(["A", "B"], root.Children.Select(folder => folder.Name));
 
-        // The cycle of the folders ends at the maximum depth
+        // The cycle of the folders ends at the folder already in the tree: A refers back to the root
         var depth = 0;
         for (var folder = root; folder.Children.Count > 0 && depth < 100; folder = folder.Children[0])
         {
             depth++;
         }
 
-        Assert.Equal(32, depth);
+        Assert.Equal(1, depth);
     }
 
     [Fact]
@@ -1267,6 +1269,140 @@ public sealed class PdfNavigationTests
         read.SaveIncremental(stream);
         var revisions = PdfDocument.Open(stream.ToArray()).Revisions;
         Assert.Equal([linearized.Length, stream.Length], revisions.Select(revision => revision.Length));
+    }
+
+    [Fact]
+    public void TheActionsThatFollowAScriptKeepTheirDocument()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /OpenAction << /S /JavaScript /JS (x) /Next << /S /GoTo /D [3 0 R /Fit] >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        var goTo = Assert.IsType<PdfGoToAction>(Assert.Single(document.OpenAction!.Next));
+
+        Assert.Same(document.Pages[0], goTo.Destination!.Page);
+    }
+
+    [Fact]
+    public void TheActionsOfASequenceAreChecked()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        var other = new PdfDocument();
+        var otherPage = other.Pages.Add(PdfSize.A4);
+        var first = PdfAction.Named("NextPage");
+        first.SetNext(PdfAction.GoTo(PdfDestination.Fit(otherPage)));
+
+        Assert.Throws<ArgumentException>(() => document.OpenAction = first);
+
+        var a = PdfAction.Named("NextPage");
+        var b = PdfAction.Named("PrevPage");
+        var c = PdfAction.Named("FirstPage");
+        a.SetNext(b);
+        b.SetNext(c);
+        Assert.Throws<ArgumentException>(() => c.SetNext(a));
+        Assert.Throws<ArgumentException>(() => a.SetNext(a));
+    }
+
+    [Fact]
+    public void AGroupIsHiddenInAConfigurationWithAnUnchangedBaseState()
+    {
+        var document = new PdfDocument();
+        var group = document.OptionalContent.AddGroup("Layer");
+        var configuration = document.OptionalContent.DefaultConfiguration!;
+        configuration.BaseState = PdfOptionalContentBaseState.Unchanged;
+
+        configuration.SetVisible(group, visible: false);
+
+        Assert.False(configuration.IsVisible(group));
+        Assert.Single(configuration.Dictionary.Get<PdfArray>(PdfName.Create("OFF"))!);
+    }
+
+    [Fact]
+    public void RemovingTheActionOfABookmarkRemovesIt()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Outlines.Add("Site").Action = PdfAction.OpenUri(new Uri("https://example.com"));
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        read.Outlines[0].Action = null;
+
+        var saved = PdfDocument.Open(read.ToByteArray());
+        Assert.Null(saved.Outlines[0].Action);
+        Assert.Null(saved.Outlines[0].Destination);
+    }
+
+    [Fact]
+    public void AnEndOfFileMarkerInATrailerStringDoesNotEndARevision()
+    {
+        var original = HandWrittenPdf.CreateSimple().ToArray();
+        var updated = HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Comment (%%EOF) /Prev {prev} >>");
+
+        var revisions = PdfDocument.Open(updated).Revisions;
+
+        Assert.Equal([original.Length, updated.Length], revisions.Select(revision => revision.Length));
+        Assert.Equal("T", revisions[1].Open().Information.Title);
+    }
+
+    [Fact]
+    public void FoldersReferredToSeveralTimesAreReadOnce()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Collection << /Type /Collection /Folders 4 0 R >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R >>")
+            .Add(4, "<< /Type /Folder /Name (Root) /Child 5 0 R >>")
+            .Add(5, "<< /Type /Folder /Name (A) /Child 7 0 R /Next 6 0 R >>")
+            .Add(6, "<< /Type /Folder /Name (B) /Child 7 0 R >>")
+            .Add(7, "<< /Type /Folder /Name (C) /Child 5 0 R >>");
+        var root = PdfDocument.Open(file.ToArray()).Portfolio!.RootFolder!;
+
+        var names = new List<string>();
+        void Walk(PdfPortfolioFolder folder)
+        {
+            names.Add(folder.Name);
+            foreach (var child in folder.Children)
+            {
+                Walk(child);
+            }
+        }
+
+        Walk(root);
+
+        Assert.Equal(["Root", "A", "C", "B"], names);
+    }
+
+    [Fact]
+    public void PortfolioValuesFollowTheTypesOfTheSchema()
+    {
+        var document = new PdfDocument();
+        var file = document.EmbeddedFiles.Add("a.txt", "a"u8);
+        var portfolio = document.CreatePortfolio();
+        portfolio.AddField("note", "Note");
+        portfolio.Fields[0].Order = 10;
+        portfolio.AddField("other", "Other").Order = 20;
+
+        file.SetPortfolioValue("note", "D:20260115000000Z");
+        var added = portfolio.AddField("date", "Date", PdfPortfolioFieldType.Date);
+        file.SetPortfolioValue("date", new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero));
+
+        Assert.Equal("D:20260115000000Z", file.GetPortfolioValue("note"));
+        Assert.IsType<DateTimeOffset>(file.GetPortfolioValue("date"));
+        Assert.Equal(21, added.Order);
+        Assert.Equal(["note", "other", "date"], portfolio.Fields.Select(field => field.Key));
+    }
+
+    [Fact]
+    public void OneCopyIsWritten()
+    {
+        var document = new PdfDocument();
+
+        document.ViewerPreferences.NumberOfCopies = 1;
+
+        Assert.Equal(1, PdfDocument.Open(document.ToByteArray()).ViewerPreferences.NumberOfCopies);
     }
 
     private static void AssertPixel(Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> image, int x, int y, int r, int g, int b, int tolerance = 3)

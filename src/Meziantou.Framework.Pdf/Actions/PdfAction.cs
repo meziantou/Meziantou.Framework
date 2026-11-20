@@ -69,13 +69,20 @@ public abstract class PdfAction
 
     /// <summary>Sets the actions run after this one (<c>/Next</c>); an empty sequence removes them.</summary>
     /// <param name="actions">The actions.</param>
-    /// <exception cref="ArgumentException">An action is this action.</exception>
+    /// <exception cref="ArgumentException">An action is null, or the sequence would lead back to this action (a cycle).</exception>
     public void SetNext(params IEnumerable<PdfAction> actions)
     {
         ArgumentNullException.ThrowIfNull(actions);
         var list = actions.ToList();
-        if (list.Any(action => action is null || ReferenceEquals(action.Dictionary, Dictionary)))
-            throw new ArgumentException("An action cannot be followed by itself or null", nameof(actions));
+        if (list.Any(action => action is null))
+            throw new ArgumentException("An action cannot be followed by null", nameof(actions));
+
+        // The actions that follow, and the actions they are followed by, must not lead back to this action
+        foreach (var action in list)
+        {
+            if (GetChain(action.Dictionary).Any(item => ReferenceEquals(item, Dictionary)))
+                throw new ArgumentException("An action cannot be followed by itself: the actions would be a cycle", nameof(actions));
+        }
 
         Dictionary[NextName] = list.Count switch
         {
@@ -276,7 +283,7 @@ public abstract class PdfAction
             "ImportData" => new PdfImportDataAction(dictionary, document),
             "Hide" => new PdfHideAction(dictionary, document),
             "SetOCGState" => new PdfSetOptionalContentStateAction(dictionary, document),
-            "JavaScript" => new PdfJavaScriptAction(dictionary, PdfJavaScriptAction.ReadScript(dictionary.GetResolved(PdfJavaScriptAction.JSName)) ?? ""),
+            "JavaScript" => new PdfJavaScriptAction(dictionary, PdfJavaScriptAction.ReadScript(dictionary.GetResolved(PdfJavaScriptAction.JSName)) ?? "", document),
             _ => new PdfUnknownAction(dictionary, document),
         };
     }
@@ -287,6 +294,76 @@ public abstract class PdfAction
         ArgumentNullException.ThrowIfNull(action, parameterName);
         if (action.Document is not null && action.Document != document)
             throw new ArgumentException("The action refers to objects of another document", parameterName);
+
+        // The actions that follow it too: their destinations and groups are references of the document
+        foreach (var item in GetChain(action.Dictionary))
+        {
+            if (HasForeignReference(item, document.Objects, depth: 0))
+                throw new ArgumentException("An action of the sequence refers to objects of another document", parameterName);
+        }
+    }
+
+    /// <summary>Gets an action dictionary and the actions that follow it (<c>/Next</c>), each once, in a bounded number.</summary>
+    internal static List<PdfDictionary> GetChain(PdfDictionary start)
+    {
+        var result = new List<PdfDictionary>();
+        var visited = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
+        var pending = new Stack<PdfDictionary>();
+        pending.Push(start);
+        while (pending.Count > 0 && result.Count < MaxActions)
+        {
+            var current = pending.Pop();
+            if (!visited.Add(current))
+                continue;
+
+            result.Add(current);
+            switch (current.GetResolved(PdfNames.Next))
+            {
+                case PdfDictionary next:
+                    pending.Push(next);
+                    break;
+                case PdfArray array:
+                    for (var i = array.Count - 1; i >= 0; i--)
+                    {
+                        if (array.GetResolved(i) is PdfDictionary item)
+                        {
+                            pending.Push(item);
+                        }
+                    }
+
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Indicates whether an action refers to an object of another document: a page of a destination, a group of a set-OCG-state action.</summary>
+    private static bool HasForeignReference(PdfObject value, PdfIndirectObjectCollection objects, int depth)
+    {
+        switch (value)
+        {
+            case PdfReference reference:
+                return !ReferenceEquals(reference.Owner, objects);
+            case PdfArray array when depth < 8:
+                foreach (var item in array.Take(4096))
+                {
+                    if (HasForeignReference(item, objects, depth + 1))
+                        return true;
+                }
+
+                return false;
+            case PdfDictionary dictionary when depth < 8:
+                foreach (var (key, item) in dictionary)
+                {
+                    if (key != PdfNames.Next && item is not null && HasForeignReference(item, objects, depth + 1))
+                        return true;
+                }
+
+                return false;
+            default:
+                return false;
+        }
     }
 
     /// <summary>Reads the path of a file specification (7.11): a string, or the <c>/UF</c> or <c>/F</c> of a dictionary.</summary>

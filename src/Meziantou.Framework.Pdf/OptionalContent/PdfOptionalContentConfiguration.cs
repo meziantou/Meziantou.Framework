@@ -108,7 +108,9 @@ public sealed class PdfOptionalContentConfiguration
         Remove(Dictionary.Get<PdfArray>(OnName), group);
         Remove(Dictionary.Get<PdfArray>(OffName), group);
         var key = visible ? OnName : OffName;
-        if (visible == (BaseState == PdfOptionalContentBaseState.On))
+        // A group in the state of the base state needs no entry; with an unchanged base state, it always does
+        var baseState = BaseState;
+        if (baseState != PdfOptionalContentBaseState.Unchanged && visible == (baseState == PdfOptionalContentBaseState.On))
             return;
 
         if (Dictionary.Get<PdfArray>(key) is not { } array)

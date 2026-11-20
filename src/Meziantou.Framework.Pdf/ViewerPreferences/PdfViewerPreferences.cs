@@ -172,7 +172,7 @@ public sealed class PdfViewerPreferences
         }
     }
 
-    /// <summary>Gets or sets the number of copies the print dialog selects (<c>/NumCopies</c>), from 2 to 5; <see langword="null"/> for the default.</summary>
+    /// <summary>Gets or sets the number of copies the print dialog selects (<c>/NumCopies</c>), from 1 to 5; <see langword="null"/> to let the print dialog choose.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 1 and 5.</exception>
     public int? NumberOfCopies
     {
@@ -182,7 +182,7 @@ public sealed class PdfViewerPreferences
             if (value is not (null or (>= 1 and <= 5)))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The number of copies must be between 1 and 5");
 
-            Set(NumCopiesName, value is { } copies and > 1 ? PdfInteger.Get(copies) : null);
+            Set(NumCopiesName, value is { } copies ? PdfInteger.Get(copies) : null);
         }
     }
 

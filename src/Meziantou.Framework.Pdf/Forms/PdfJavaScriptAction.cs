@@ -7,8 +7,8 @@ public sealed class PdfJavaScriptAction : PdfAction
 {
     internal static readonly PdfName JSName = PdfName.Create("JS");
 
-    internal PdfJavaScriptAction(PdfDictionary dictionary, string script)
-        : base(dictionary, document: null)
+    internal PdfJavaScriptAction(PdfDictionary dictionary, string script, PdfDocument? document = null)
+        : base(dictionary, document)
     {
         Script = script;
     }

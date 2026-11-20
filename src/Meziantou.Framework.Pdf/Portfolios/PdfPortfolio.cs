@@ -94,7 +94,7 @@ public sealed class PdfPortfolio
     };
 
     /// <summary>Gets the root of the folders (<c>/Folders</c>), or <see langword="null"/> when the files are not in folders.</summary>
-    public PdfPortfolioFolder? RootFolder => Dictionary.Get<PdfDictionary>(FoldersName) is { } root ? new PdfPortfolioFolder(root, depth: 0) : null;
+    public PdfPortfolioFolder? RootFolder => Dictionary.Get<PdfDictionary>(FoldersName) is { } root ? PdfPortfolioFolder.CreateRoot(root) : null;
 
     /// <summary>Adds a field to the schema, or replaces the field of the same key.</summary>
     /// <param name="key">The key of the field: the name of its values in the files.</param>
@@ -112,7 +112,9 @@ public sealed class PdfPortfolio
             Dictionary[SchemaName] = schema;
         }
 
-        var order = Fields.Count;
+        // After the fields of the schema: after the greatest order, the fields without an order counted
+        var fields = Fields;
+        var order = Math.Max(fields.Count, fields.Max(item => item.Order + 1) ?? 0);
         var field = new PdfDictionary
         {
             [PdfNames.Type] = CollectionFieldName,

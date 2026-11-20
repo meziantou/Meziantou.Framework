@@ -225,11 +225,9 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
                 }
                 else
                 {
+                    // No destination and no action: the item does nothing
                     dictionary.Remove(PdfNames.Dest);
-                    if (dictionary.Get<PdfDictionary>(PdfNames.A) is { } action && action.GetName(PdfNames.S) == PdfNames.GoTo)
-                    {
-                        dictionary.Remove(PdfNames.A);
-                    }
+                    dictionary.Remove(PdfNames.A);
                 }
             }
 

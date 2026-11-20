@@ -84,33 +84,34 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     /// <summary>Gets the offsets of the cross-reference sections of the file, from the newest to the oldest (the <c>/Prev</c> chain, 7.5.6).</summary>
     public List<long> CrossReferenceOffsets { get; } = [];
 
-    /// <summary>Gets the offset after the first end-of-file marker (<c>%%EOF</c>, 7.5.5) at or after an offset, and its end-of-line; the length of the file when there is none.</summary>
+    /// <summary>
+    /// Gets the end of the revision whose cross-reference section is at an offset: the offset after the first end of a file
+    /// trailer (<c>startxref</c>, an offset, then <c>%%EOF</c>, 7.5.5) after the section, and its end of line; the length of
+    /// the file when there is none. The bytes <c>%%EOF</c> elsewhere, such as in a string of the trailer, are not an end.
+    /// </summary>
     public long FindEndOfFile(long offset)
     {
-        var marker = "%%EOF"u8;
+        var keyword = "startxref"u8;
         const int ChunkSize = 64 * 1024;
-        var buffer = ArrayPool<byte>.Shared.Rent(ChunkSize + marker.Length + 2);
+        const int Overlap = 64;
+        var buffer = ArrayPool<byte>.Shared.Rent(ChunkSize + Overlap);
         try
         {
             for (var start = Math.Max(offset, 0); start < _input.Length; start += ChunkSize)
             {
-                var read = _input.Read(start, buffer.AsSpan(0, (int)Math.Min(ChunkSize + marker.Length + 2, _input.Length - start)));
-                var span = buffer.AsSpan(0, read);
-                var index = span.IndexOf(marker);
-                if (index >= 0 && index < ChunkSize)
+                var span = buffer.AsSpan(0, _input.Read(start, buffer.AsSpan(0, (int)Math.Min(ChunkSize + Overlap, _input.Length - start))));
+                var position = 0;
+                while (position < Math.Min(span.Length, ChunkSize))
                 {
-                    var end = index + marker.Length;
-                    if (end < span.Length && span[end] == (byte)'\r')
-                    {
-                        end++;
-                    }
+                    var index = span[position..].IndexOf(keyword);
+                    if (index < 0 || position + index >= ChunkSize)
+                        break;
 
-                    if (end < span.Length && span[end] == (byte)'\n')
-                    {
-                        end++;
-                    }
+                    var end = MatchFileTrailer(span, position + index + keyword.Length);
+                    if (end >= 0)
+                        return start + end;
 
-                    return start + end;
+                    position += index + keyword.Length;
                 }
             }
 
@@ -119,6 +120,47 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        // After startxref: white space, the digits of the offset, white space, %%EOF and its end of line
+        static int MatchFileTrailer(ReadOnlySpan<byte> span, int position)
+        {
+            position = SkipWhitespace(span, position);
+            var digits = position;
+            while (position < span.Length && char.IsAsciiDigit((char)span[position]))
+            {
+                position++;
+            }
+
+            if (position == digits)
+                return -1;
+
+            position = SkipWhitespace(span, position);
+            if (!span[position..].StartsWith("%%EOF"u8))
+                return -1;
+
+            position += 5;
+            if (position < span.Length && span[position] == (byte)'\r')
+            {
+                position++;
+            }
+
+            if (position < span.Length && span[position] == (byte)'\n')
+            {
+                position++;
+            }
+
+            return position;
+        }
+
+        static int SkipWhitespace(ReadOnlySpan<byte> span, int position)
+        {
+            while (position < span.Length && PdfLexer.IsWhitespace(span[position]))
+            {
+                position++;
+            }
+
+            return position;
         }
     }
 

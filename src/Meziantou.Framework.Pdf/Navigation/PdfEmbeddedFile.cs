@@ -165,7 +165,7 @@ public sealed class PdfEmbeddedFile
 
     private DateTimeOffset? GetDate(PdfName key) => PdfDate.TryParse(Parameters?.GetText(key), out var date) ? date : null;
 
-    /// <summary>Gets the value of a field of the portfolio for this file (<c>/CI</c>, ISO 32000-2, 12.3.5): a <see cref="string"/>, a <see cref="double"/> or a <see cref="DateTimeOffset"/>; <see langword="null"/> when the file has none.</summary>
+    /// <summary>Gets the value of a field of the portfolio for this file (<c>/CI</c>, ISO 32000-2, 12.3.5): a <see cref="string"/>, a <see cref="double"/>, or a <see cref="DateTimeOffset"/> for a date field of the schema; <see langword="null"/> when the file has none.</summary>
     /// <param name="key">The key of the field (<see cref="PdfPortfolioField.Key"/>).</param>
     /// <returns>The value.</returns>
     public object? GetPortfolioValue(string key)
@@ -177,10 +177,12 @@ public sealed class PdfEmbeddedFile
             value = subitem.GetResolved(PdfNames.D);
         }
 
+        // A string is a date when the schema declares a date field (12.3.5, table 155), not from its content
+        var isDate = Document.Portfolio?.Fields.FirstOrDefault(field => field.Key == key)?.Type is PdfPortfolioFieldType.Date or PdfPortfolioFieldType.ModificationDate or PdfPortfolioFieldType.CreationDate;
         return value switch
         {
             PdfNumber number => number.DoubleValue,
-            PdfString text when Text.PdfDate.TryParse(text.ToText(), out var date) && text.ToText().StartsWith("D:", StringComparison.Ordinal) => date,
+            PdfString text when isDate && Text.PdfDate.TryParse(text.ToText(), out var date) => date,
             PdfString text => text.ToText(),
             _ => null,
         };

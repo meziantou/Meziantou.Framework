@@ -109,6 +109,7 @@ public sealed class GraphvizDocumentTests
         Assert.Equal("(1, 11): The graph has too many edges: the limit is 2.", GetError("digraph { a -> {b c d} }", new GraphvizParseOptions { MaxEdges = 2 }));
         Assert.Equal("(1, 22): The subgraphs are nested too deeply: the limit is 1.", GetError("digraph { subgraph { subgraph { a } } }", new GraphvizParseOptions { MaxDepth = 1 }));
         Assert.Equal("(1, 37): The subgraphs are nested too deeply: the limit is 2.", GetError("digraph { subgraph s { subgraph s { subgraph s { a } } } }", new GraphvizParseOptions { MaxDepth = 2 }));
+        Assert.Equal("(1, 77): The subgraphs are nested too deeply: the limit is 2.", GetError("digraph { subgraph cluster_0 { subgraph cluster_1 {} } subgraph cluster_1 { subgraph cluster_2 {} } }", new GraphvizParseOptions { MaxDepth = 2 }));
         Assert.Equal("(1, 33): The default attributes are copied to too many nodes, edges and subgraphs: the limit is 5 attributes.", GetError("digraph { node [a=1 b=2]; x; y; z }", new GraphvizParseOptions { MaxInheritedAttributes = 5 }));
 
         static string GetError(string text, GraphvizParseOptions options)

@@ -393,6 +393,10 @@ internal sealed class DotParser
         if (name is not null && _subgraphsByName.TryGetValue(name, out var existing))
             return existing;
 
+        // A reopened subgraph keeps its parent: its new children extend that chain, so the depth of the tree is checked too, not only the open bodies
+        if (parent.Depth + 1 > _context.Options.MaxDepth)
+            throw _context.Error(position, string.Create(CultureInfo.InvariantCulture, $"The subgraphs are nested too deeply: the limit is {_context.Options.MaxDepth}."));
+
         // A subgraph starts with the attributes of its parent graph, as in Graphviz
         CountInheritedAttributes(parent.Attributes.Count, position);
         var subgraph = new DotSubgraph(name, parent, position, parent.Attributes.CloneInherited())

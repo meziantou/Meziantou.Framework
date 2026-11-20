@@ -268,6 +268,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ShowPopoverOptions Defaults_Dom_ShowPopoverOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions Defaults_Dom_StorageBucketOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.TextClusterOptions Defaults_Dom_TextClusterOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.TogglePopoverOptions Defaults_Dom_TogglePopoverOptions = new();
@@ -2771,6 +2773,40 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_MemoryAttribution(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryAttribution value)
+    {
+        var result = r.CreateObject();
+        if (value.Container is not null) r.SetMember(result, "container", (value.Container is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttributionContainer(r, dictionaryValue) : r.Adapter.Null));
+        if (value.Scope is not null) r.SetMember(result, "scope", r.FromString(value.Scope));
+        if (value.Url is not null) r.SetMember(result, "url", r.FromString(value.Url));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MemoryAttributionContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryAttributionContainer value)
+    {
+        var result = r.CreateObject();
+        if (value.Id is not null) r.SetMember(result, "id", r.FromString(value.Id));
+        if (value.Src is not null) r.SetMember(result, "src", r.FromString(value.Src));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MemoryBreakdownEntry(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryBreakdownEntry value)
+    {
+        var result = r.CreateObject();
+        if (value.Attribution is not null) r.SetMember(result, "attribution", r.FromSequence(value.Attribution, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttribution(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "bytes", r.FromNumber((double)value.Bytes));
+        if (value.Types is not null) r.SetMember(result, "types", r.FromSequence(value.Types, static (r, e) => r.FromString(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MemoryMeasurement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement value)
+    {
+        var result = r.CreateObject();
+        if (value.Breakdown is not null) r.SetMember(result, "breakdown", r.FromSequence(value.Breakdown, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryBreakdownEntry(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "bytes", r.FromNumber((double)value.Bytes));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_MessageEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MessageEventInit value)
     {
         var result = r.CreateObject();
@@ -3853,6 +3889,34 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "endOffset", r.FromNumber((double)value.EndOffset));
         r.SetMember(result, "startContainer", r.Wrap(value.StartContainer));
         r.SetMember(result, "startOffset", r.FromNumber((double)value.StartOffset));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_StorageAccessTypes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "BroadcastChannel", r.FromBoolean(value.BroadcastChannel));
+        r.SetMember(result, "SharedWorker", r.FromBoolean(value.SharedWorker));
+        r.SetMember(result, "all", r.FromBoolean(value.All));
+        r.SetMember(result, "caches", r.FromBoolean(value.Caches));
+        r.SetMember(result, "cookies", r.FromBoolean(value.Cookies));
+        r.SetMember(result, "createObjectURL", r.FromBoolean(value.CreateObjectUrl));
+        r.SetMember(result, "estimate", r.FromBoolean(value.Estimate));
+        r.SetMember(result, "getDirectory", r.FromBoolean(value.GetDirectory));
+        r.SetMember(result, "indexedDB", r.FromBoolean(value.IndexedDB));
+        r.SetMember(result, "localStorage", r.FromBoolean(value.LocalStorage));
+        r.SetMember(result, "locks", r.FromBoolean(value.Locks));
+        r.SetMember(result, "revokeObjectURL", r.FromBoolean(value.RevokeObjectUrl));
+        r.SetMember(result, "sessionStorage", r.FromBoolean(value.SessionStorage));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_StorageBucketOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Expires is not null) r.SetMember(result, "expires", (value.Expires.HasValue ? r.FromNumber((double)value.Expires.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "persisted", r.FromBoolean(value.Persisted));
+        if (value.Quota is not null) r.SetMember(result, "quota", (value.Quota.HasValue ? r.FromNumber((double)value.Quota.GetValueOrDefault()) : r.Adapter.Null));
         return result;
     }
 
@@ -12024,6 +12088,72 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             EndOffset = m1,
             StartContainer = m2,
             StartOffset = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes ToDictionary_Dom_StorageAccessTypes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "StorageAccessTypes");
+        var m0_value = r.GetDictionaryMember(value, "BroadcastChannel");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "SharedWorker");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "all");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "caches");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (bool)false : r.ToBoolean(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "cookies");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (bool)false : r.ToBoolean(m4_value);
+        var m5_value = r.GetDictionaryMember(value, "createObjectURL");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (bool)false : r.ToBoolean(m5_value);
+        var m6_value = r.GetDictionaryMember(value, "estimate");
+        var m6 = r.Adapter.IsUndefined(m6_value) ? (bool)false : r.ToBoolean(m6_value);
+        var m7_value = r.GetDictionaryMember(value, "getDirectory");
+        var m7 = r.Adapter.IsUndefined(m7_value) ? (bool)false : r.ToBoolean(m7_value);
+        var m8_value = r.GetDictionaryMember(value, "indexedDB");
+        var m8 = r.Adapter.IsUndefined(m8_value) ? (bool)false : r.ToBoolean(m8_value);
+        var m9_value = r.GetDictionaryMember(value, "localStorage");
+        var m9 = r.Adapter.IsUndefined(m9_value) ? (bool)false : r.ToBoolean(m9_value);
+        var m10_value = r.GetDictionaryMember(value, "locks");
+        var m10 = r.Adapter.IsUndefined(m10_value) ? (bool)false : r.ToBoolean(m10_value);
+        var m11_value = r.GetDictionaryMember(value, "revokeObjectURL");
+        var m11 = r.Adapter.IsUndefined(m11_value) ? (bool)false : r.ToBoolean(m11_value);
+        var m12_value = r.GetDictionaryMember(value, "sessionStorage");
+        var m12 = r.Adapter.IsUndefined(m12_value) ? (bool)false : r.ToBoolean(m12_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes
+        {
+            BroadcastChannel = m0,
+            SharedWorker = m1,
+            All = m2,
+            Caches = m3,
+            Cookies = m4,
+            CreateObjectUrl = m5,
+            Estimate = m6,
+            GetDirectory = m7,
+            IndexedDB = m8,
+            LocalStorage = m9,
+            Locks = m10,
+            RevokeObjectUrl = m11,
+            SessionStorage = m12,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions ToDictionary_Dom_StorageBucketOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "StorageBucketOptions");
+        var m0_value = r.GetDictionaryMember(value, "expires");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (double?)r.ToDouble(m0_value, restricted: true) : default;
+        var m1_value = r.GetDictionaryMember(value, "persisted");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "quota");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (ulong?)r.ToUnsignedLongLong(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions
+        {
+            Expires = m0_present ? m0 : Defaults_Dom_StorageBucketOptions.Expires,
+            Persisted = m1,
+            Quota = m2_present ? m2 : Defaults_Dom_StorageBucketOptions.Quota,
         };
     }
 

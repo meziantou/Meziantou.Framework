@@ -216,6 +216,27 @@ As in the browsers, a scroll of the user also stops the reporting of the `larges
 performance entries of the window, as a key press, a pointer press or a click does. The scrolls of the scripts do not
 stop them.
 
+## Memory measurement
+
+`performance.measureUserAgentSpecificMemory()` ([Measure Memory API](https://wicg.github.io/performance-measure-memory/),
+[Performance.MeasureUserAgentSpecificMemory](cref:Meziantou.Framework.WebPlatform.Dom.Performance.MeasureUserAgentSpecificMemory) from .NET) reports the memory of the windows and frames of the
+browser tab (its browsing context group) and of their dedicated workers:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/PerformanceTimelineTests.cs;region=WebPlatform_MeasureMemory;format=md-fenced-code-block;dedent=true -->
+```csharp
+var measurement = document.DefaultView!.Performance.MeasureUserAgentSpecificMemory();
+```
+<!-- endref -->
+
+- The scripts only see it in the cross-origin isolated windows, service workers and shared workers
+  (`Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`), and the .NET method
+  rejects its task with a `SecurityError` elsewhere: the measurement reveals the sizes of the frames of other origins.
+- Each realm has an entry: the realms of the origin of the page are attributed to their URL, the others to
+  `cross-origin-url`, with the `iframe` of the page that contains them as `container`. An empty entry is added, and the
+  entries are in a random order, as the specification requires.
+- The sizes are a deterministic estimate of the objects of the library (a base size per realm, the nodes and the text of
+  the documents), not a measurement of the .NET or JavaScript heaps: the same page always reports the same size.
+
 ## Run the event loop on your own thread
 
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is

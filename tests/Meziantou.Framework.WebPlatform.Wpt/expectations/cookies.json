@@ -264,20 +264,12 @@
   "cookies/third-party-cookies/third-party-cookie-heuristics.tentative.https.html": {
     "total": 6,
     "failures": {
-      "3P fetch: Cookies are not accessible via HTTP": "FAIL",
-      "3P fetch: Cross site window setting HTTP cookies": "FAIL"
+      "3P_fetch_with_heuristics: Cookies are accessible via HTTP": "FAIL",
+      "3P_fetch_with_heuristics: Cross site window setting HTTP cookies": "FAIL"
     }
   },
   "cookies/third-party-cookies/third-party-cookies.tentative.https.html": {
-    "total": 10,
-    "failures": {
-      "3P embed: Cookies are not accessible via CookieStore": "FAIL",
-      "3P embed: Cookies are not accessible via DOM": "FAIL",
-      "3P fetch: Cookies are not accessible via HTTP": "FAIL",
-      "3P fetch: Cross site window setting HTTP cookies": "FAIL",
-      "Cross site embed setting CookieStore cookies": "FAIL",
-      "Cross site embed setting DOM cookies": "FAIL"
-    }
+    "total": 10
   },
   "cookies/value/value-ctl.html": {
     "total": 66,

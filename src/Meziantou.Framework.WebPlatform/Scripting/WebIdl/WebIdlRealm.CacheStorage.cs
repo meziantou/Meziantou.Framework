@@ -80,34 +80,34 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Define("headerList", 1, (_, args) => FromHeaderList(((Headers)Unwrap(args[0])!).List));
 
             // CacheStorage (https://w3c.github.io/ServiceWorker/#cachestorage-interface)
-            Define("storageKeys", 0, (_, _) =>
+            Define("storageKeys", 1, (_, args) =>
             {
-                var (coordinator, origin) = ObtainCacheStorage();
+                var (coordinator, origin) = ObtainCacheStorage(args[0]);
                 return CreateArray([.. coordinator.Keys(origin).Select(Adapter.FromString)]);
             });
-            Define("storageHas", 1, (_, args) =>
+            Define("storageHas", 2, (_, args) =>
             {
-                var (coordinator, origin) = ObtainCacheStorage();
-                return Adapter.FromBoolean(coordinator.Has(origin, Adapter.ToString(args[0])));
+                var (coordinator, origin) = ObtainCacheStorage(args[0]);
+                return Adapter.FromBoolean(coordinator.Has(origin, Adapter.ToString(args[1])));
             });
-            Define("storageOpen", 1, (_, args) =>
+            Define("storageOpen", 2, (_, args) =>
             {
-                var (coordinator, origin) = ObtainCacheStorage();
-                return Adapter.FromNumber(coordinator.Open(origin, Adapter.ToString(args[0])));
+                var (coordinator, origin) = ObtainCacheStorage(args[0]);
+                return Adapter.FromNumber(coordinator.Open(origin, Adapter.ToString(args[1])));
             });
-            Define("storageDelete", 1, (_, args) =>
+            Define("storageDelete", 2, (_, args) =>
             {
-                var (coordinator, origin) = ObtainCacheStorage();
-                return Adapter.FromBoolean(coordinator.Delete(origin, Adapter.ToString(args[0])));
+                var (coordinator, origin) = ObtainCacheStorage(args[0]);
+                return Adapter.FromBoolean(coordinator.Delete(origin, Adapter.ToString(args[1])));
             });
 
             // https://w3c.github.io/ServiceWorker/#cache-storage-match: the first matching response of the caches (or of the named cache)
-            Define("storageMatch", 5, (_, args) =>
+            Define("storageMatch", 6, (_, args) =>
             {
-                var (coordinator, origin) = ObtainCacheStorage();
-                var query = ToCachedRequest(args[0]);
-                var options = ToCacheQueryOptions(args[2], args[3], args[4]);
-                IEnumerable<string> names = Adapter.IsUndefined(args[1]) ? coordinator.Keys(origin) : coordinator.Has(origin, Adapter.ToString(args[1])) ? [Adapter.ToString(args[1])] : [];
+                var (coordinator, origin) = ObtainCacheStorage(args[0]);
+                var query = ToCachedRequest(args[1]);
+                var options = ToCacheQueryOptions(args[3], args[4], args[5]);
+                IEnumerable<string> names = Adapter.IsUndefined(args[2]) ? coordinator.Keys(origin) : coordinator.Has(origin, Adapter.ToString(args[2])) ? [Adapter.ToString(args[2])] : [];
                 foreach (var name in names)
                 {
                     var handle = coordinator.GetHandle(coordinator.Open(origin, name));
@@ -160,11 +160,60 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     // https://w3c.github.io/ServiceWorker/#cache-storage: the caches of the storage key of the global object
-    private (CacheStorageCoordinator Coordinator, string Origin) ObtainCacheStorage()
+    private (CacheStorageCoordinator Coordinator, string Origin) ObtainCacheStorage() => ObtainCacheStorage(storageKey: null);
+
+    /// <summary>The caches of the partition of a CacheStorage object of CacheStorage.js: undefined for the caches of the global object, else a token of <see cref="_cacheStoragePartitions"/>.</summary>
+    private (CacheStorageCoordinator Coordinator, string Origin) ObtainCacheStorage(TValue partition)
     {
-        var (backend, origin) = StorageEndpoints.Resolve(GlobalScope, GlobalScope.Options.CacheStorage, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend())
+        if (Adapter.IsUndefined(partition))
+            return ObtainCacheStorage(storageKey: null);
+
+        var (storageKey, _, bucket) = _cacheStoragePartitions[Adapter.ToString(partition)];
+        if (bucket is { IsDeleted: true })
+            throw StorageBucket.Deleted();
+
+        return ObtainCacheStorage(storageKey);
+    }
+
+    private (CacheStorageCoordinator Coordinator, string Origin) ObtainCacheStorage(StorageKey? storageKey)
+    {
+        var (backend, origin) = StorageEndpoints.Resolve(GlobalScope, GlobalScope.Options.CacheStorage, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend(), storageKey)
             ?? throw new DomException("The origin of the document is opaque", "SecurityError");
         return (backend.Coordinator, origin);
+    }
+
+    /// <summary>
+    /// The CacheStorage objects of the storage keys other than the one of the global object (the unpartitioned storage of a
+    /// <see cref="StorageAccessHandle"/>, the storage buckets), by token (the serialized storage key): the
+    /// <c>caches</c> attribute of these objects returns the same object for a storage key ([SameObject]).
+    /// </summary>
+    private readonly Dictionary<string, (StorageKey Key, TValue CacheStorage, StorageBucket? Bucket)> _cacheStoragePartitions = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Defines the <c>caches</c> attribute of <c>StorageAccessHandle</c> (https://privacycg.github.io/saa-non-cookie-storage/#dom-storageaccesshandle-caches)
+    /// and of <c>StorageBucket</c> (https://wicg.github.io/storage-buckets/#dom-storagebucket-caches): the CacheStorage
+    /// object of their storage key, implemented by CacheStorage.js.
+    /// </summary>
+    private void DefinePartitionedCacheStorageAttribute(TValue prototype, string interfaceName)
+    {
+        var binding = WebIdlBindings<TAdapter, TValue>.Interfaces[interfaceName];
+        DefineAttribute(prototype, "caches", (realm, thisValue) =>
+        {
+            var target = realm.This<object>(thisValue, binding);
+            var (storageKey, token, bucket) = target switch
+            {
+                StorageAccessHandle handle => (handle.GetCachesStorageKey(), handle.GetCachesStorageKey().Serialize(), (StorageBucket?)null),
+                StorageBucket storageBucket => (storageBucket.StorageKey, storageBucket.CacheStorageToken, storageBucket),
+                _ => throw realm.CreateTypeError("Illegal invocation"),
+            };
+
+            if (realm._cacheStoragePartitions.TryGetValue(token, out var existing))
+                return existing.CacheStorage;
+
+            var cacheStorage = realm.Adapter.Call(realm.Adapter.Get(realm.GetCacheStorage(), realm.Key("createCacheStorage")), realm.Adapter.Undefined, [realm.Adapter.FromString(token)]);
+            realm._cacheStoragePartitions[token] = (storageKey, cacheStorage, bucket);
+            return cacheStorage;
+        }, setter: null);
     }
 
     /// <summary>

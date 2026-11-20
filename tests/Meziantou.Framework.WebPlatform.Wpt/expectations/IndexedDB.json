@@ -1626,25 +1626,13 @@
     "total": 3
   },
   "IndexedDB/storage-buckets.https.any.js": {
-    "total": 2,
-    "failures": {
-      "Basic test that buckets create independent databases.": "FAIL",
-      "Tests trying to use indexedDB in a deleted bucket.": "FAIL"
-    }
+    "total": 2
   },
   "IndexedDB/storage-buckets.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Basic test that buckets create independent databases.": "FAIL",
-      "Tests trying to use indexedDB in a deleted bucket.": "FAIL"
-    }
+    "total": 2
   },
   "IndexedDB/storage-buckets.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "Basic test that buckets create independent databases.": "FAIL",
-      "Tests trying to use indexedDB in a deleted bucket.": "FAIL"
-    }
+    "total": 2
   },
   "IndexedDB/string-list-ordering.any.js": {
     "total": 1

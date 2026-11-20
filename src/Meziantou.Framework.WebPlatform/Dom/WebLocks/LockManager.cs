@@ -126,9 +126,13 @@ public sealed class LockManager
 {
     private readonly GlobalScope _global;
 
-    internal LockManager(GlobalScope global)
+    // The storage key of the locks (the unpartitioned storage of a StorageAccessHandle), or null for the one of the global object
+    private readonly StorageKey? _storageKey;
+
+    internal LockManager(GlobalScope global, StorageKey? storageKey = null)
     {
         _global = global;
+        _storageKey = storageKey;
     }
 
     /// <summary>Requests an exclusive lock: see <see cref="Request(string, LockOptions, LockGrantedCallback)"/>.</summary>
@@ -165,7 +169,7 @@ public sealed class LockManager
         if (!_global.CanRunScript)
             return Task.FromException<object?>(DomException.InvalidState("The document is not fully active"));
 
-        if (WebLocks.ObtainLockManager(_global) is not { } manager)
+        if (WebLocks.ObtainLockManager(_global, _storageKey) is not { } manager)
             return Task.FromException<object?>(new DomException("The locks cannot be used by a document whose origin is opaque", "SecurityError"));
 
         if (name.StartsWith('-', StringComparison.Ordinal))
@@ -199,7 +203,7 @@ public sealed class LockManager
         if (!_global.CanRunScript)
             return Task.FromException<LockManagerSnapshot>(DomException.InvalidState("The document is not fully active"));
 
-        if (WebLocks.ObtainLockManager(_global) is not { } manager)
+        if (WebLocks.ObtainLockManager(_global, _storageKey) is not { } manager)
             return Task.FromException<LockManagerSnapshot>(new DomException("The locks cannot be used by a document whose origin is opaque", "SecurityError"));
 
         // The promise is resolved by a task, after the callbacks of the locks that are already granted
@@ -243,8 +247,18 @@ internal static class WebLocks
     /// https://w3c.github.io/web-locks/#obtain-a-lock-manager: the lock manager of the storage key of the environment in its
     /// browsing context group, or null (failure) when its origin is opaque or when the environment was discarded.
     /// </summary>
-    public static LockManagerState? ObtainLockManager(GlobalScope global)
+    public static LockManagerState? ObtainLockManager(GlobalScope global, StorageKey? explicitStorageKey = null)
     {
+        if (explicitStorageKey is { } explicitKey)
+        {
+            // The lock manager of another storage key: the first-party key of a StorageAccessHandle, which is not partitioned
+            var document = global.EnvironmentDocument;
+            if (document.EnvironmentBrowsingContext is not { } context || document.Origin.IsOpaque)
+                return null;
+
+            return context.LockManagers.Get(new LockManagerKey(explicitKey, document.Origin.GetSiteKey(), HasCrossSiteAncestor: false));
+        }
+
         if (global.LockManagerState is { } existing)
             return existing;
 

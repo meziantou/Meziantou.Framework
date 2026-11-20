@@ -674,7 +674,9 @@ internal sealed record CssResourceReferrer(string Url, string ReferrerPolicy, bo
     /// </summary>
     public void Apply(FetchRequest request, string requestPolicy)
     {
+        // The style sheet is the initiator of the fetch (PerformanceResourceTiming.InitiatorUrl)
         request.Referrer = Url;
+        request.InitiatorUrl = Url;
         if (requestPolicy.Length == 0 && ReferrerPolicy.Length > 0)
         {
             request.ReferrerPolicy = ReferrerPolicy;

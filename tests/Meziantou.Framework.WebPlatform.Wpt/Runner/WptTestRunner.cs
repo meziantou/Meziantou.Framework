@@ -169,12 +169,45 @@ internal sealed partial class WptTestRunner
         // Origin-bound cookies are an option of the jar (the browsers do not enable them by default): the tests of the
         // feature enable it, the other tests share the cookies of a host between its schemes and ports (e.g. the cookies
         // of the WebSocket tests, whose server listens on another port)
-        _cookieJar = new CookieJar(_clock) { OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal) };
+        _cookieJar = new CookieJar(_clock)
+        {
+            OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal),
+            BlockThirdPartyCookies = BlocksThirdPartyCookies(test.Id),
+        };
         _webSocketServer = new WptWebSocketServer(this);
     }
 
     /// <summary>Gets the cookie store of the browser (the cookies of the test driver).</summary>
     internal CookieJar CookieJar => _cookieJar;
+
+    /// <summary>
+    /// The tests that expect the user agent to block the unpartitioned third-party cookies by default, as the browsers that
+    /// block them (Safari, and Chromium in the configurations that test it, where these tests run): the tentative tests of
+    /// third-party cookie blocking, the <c>Sec-Fetch-Storage-Access</c> header of the Fetch Metadata tests (<c>none</c> for
+    /// the cross-site requests), and the Storage Access API tests that expect a request without user activation, or whose
+    /// permission is denied, to be rejected. The other tests run with the default of the library (<see cref="CookieJar.BlockThirdPartyCookies"/> is
+    /// false): the <c>SameSite</c> tests of <c>cookies/</c> expect the <c>SameSite=None</c> cookies to be sent and stored
+    /// in the cross-site contexts.
+    /// </summary>
+    private static readonly string[] ThirdPartyCookieBlockingTests =
+    [
+        "cookies/third-party-cookies/",
+        "fetch/metadata/",
+        "storage-access-api/requestStorageAccess-cross-site-iframe.",
+        "storage-access-api/requestStorageAccess-nested-cross-site-iframe.",
+        "storage-access-api/storage-access-beyond-cookies.",
+    ];
+
+    private static bool BlocksThirdPartyCookies(string testId)
+    {
+        foreach (var prefix in ThirdPartyCookieBlockingTests)
+        {
+            if (testId.StartsWith(prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
 
     // The testharness.js tests have the rendering backend of the reftests: the images are decoded (decode(), createImageBitmap())
     public static WptResult Run(WptTest test) => new WptTestRunner(test, WptReftestRunner.Backend, reftest: false).Run();
@@ -205,6 +238,9 @@ internal sealed partial class WptTestRunner
 
                 // The cookies of the responses of the WPT server, sent with the next requests (see GetRequestHeaders)
                 CookieJar = _cookieJar,
+
+                // Network Error Logging is enabled, as in Chromium: the network-error reports are sent to report.py
+                NetworkErrorLogging = new NetworkErrorLoggingCache(),
 
                 // The history of the visited links of the test, which starts empty: the page of the test is visited (as in the
                 // browsers, where the tests link to their own URL to get a visited link), the other URLs are not
@@ -446,6 +482,10 @@ internal sealed partial class WptTestRunner
         {
             if (cancellationToken.IsCancellationRequested)
                 return ValueTask.FromCanceled<DocumentResource?>(cancellationToken);
+
+            // The subdomain that does not resolve: the request fails with a DNS error (the type of the network-error reports)
+            if (WptServer.IsUnresolvedHost(new Url(request.Url)))
+                return ValueTask.FromException<DocumentResource?>(new HttpRequestException(HttpRequestError.NameResolutionError, "The host name does not resolve"));
 
             // The requests of fetch() and XMLHttpRequest, and the requests of FedCM to the identity providers
             if (request.Destination is RequestDestination.Empty or RequestDestination.WebIdentity)

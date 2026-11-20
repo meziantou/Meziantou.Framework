@@ -1273,8 +1273,9 @@ internal sealed partial class WebIdlBindingsGenerator
     private static int GetExposure(IdlDefinition definition) => GetExposure(definition.GetExtAttr("Exposed"));
 
     /// <summary>
-    /// Returns the condition (an <c>if</c> statement, or an empty string) under which a member is exposed: [SecureContext], and
-    /// its [Exposed] set when it is narrower than the one of its interface. Returns false when the member is never exposed.
+    /// Returns the condition (an <c>if</c> statement, or an empty string) under which a member is exposed: [SecureContext],
+    /// [CrossOriginIsolated] (https://webidl.spec.whatwg.org/#CrossOriginIsolated), and its [Exposed] set when it is narrower
+    /// than the one of its interface. Returns false when the member is never exposed.
     /// </summary>
     private static bool GetMemberExposureCondition(InterfaceModel model, IdlMember member, out string condition)
     {
@@ -1282,6 +1283,11 @@ internal sealed partial class WebIdlBindingsGenerator
         if (member.GetExtAttr("SecureContext") is not null)
         {
             conditions.Add("r.IsSecureContext");
+        }
+
+        if (member.GetExtAttr("CrossOriginIsolated") is not null)
+        {
+            conditions.Add("r.IsCrossOriginIsolated");
         }
 
         var interfaceExposure = GetExposure(model.Definition);

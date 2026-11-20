@@ -243,6 +243,37 @@ public sealed class FileSystemTests : IDisposable
     }
 
     [Fact]
+    public async Task StorageBuckets_KeepTheirFilesApartAndAreDeleted()
+    {
+        var document = Load("", scripting: false);
+        var buckets = document.DefaultView!.Navigator.StorageBuckets;
+
+        #region WebPlatform_StorageBuckets
+        // A bucket has its own databases, caches and file system, apart from the ones of the origin
+        var drafts = await Run(buckets.Open("drafts", new StorageBucketOptions { Quota = 1_000_000 }));
+        var root = await Run(drafts.GetDirectory());
+        await Run(root.GetFileHandle("draft.txt", new FileSystemGetFileOptions { Create = true }));
+        var originRoot = await Run(document.DefaultView!.Navigator.Storage.GetDirectory());
+        await Assert.ThrowsAsync<DomException>(() => Run(originRoot.GetFileHandle("draft.txt")));
+
+        Assert.Equal(1_000_000ul, (await Run(drafts.Estimate())).Quota);
+        Assert.Equal(["drafts"], await Run(buckets.Keys()));
+
+        // Deleting the bucket deletes its storage: its objects then fail with an UnknownError
+        await Run(buckets.Delete("drafts"));
+        Assert.Empty(await Run(buckets.Keys()));
+        Assert.Equal("UnknownError", (await Assert.ThrowsAsync<DomException>(() => Run(drafts.Persisted()))).Name);
+        #endregion
+
+        // The names are validated
+        await Assert.ThrowsAsync<TypeErrorException>(() => Run(buckets.Open("Drafts")));
+        await Assert.ThrowsAsync<TypeErrorException>(() => Run(buckets.Open("drafts", new StorageBucketOptions { Quota = 0 })));
+        var recreated = await Run(buckets.Open("drafts"));
+        var recreatedRoot = await Run(recreated.GetDirectory());
+        await Assert.ThrowsAsync<DomException>(() => Run(recreatedRoot.GetFileHandle("draft.txt")));
+    }
+
+    [Fact]
     public async Task StorageManager_PersistAsksTheHost()
     {
         var requests = new List<string>();

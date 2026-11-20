@@ -9,34 +9,35 @@ description: "The results of the web-platform-tests of measure-memory, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 15 | 15 | – |
+| [Stable](#stable-tests) | 11 | 15 | 0 | 73% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **15** | **15** | **–** |
+| **All** | **11** | **15** | **0** | **73%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 15
+- **TEST BUG**: 3
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`detached.https.window.js`](https://wpt.fyi/results/measure-memory/detached.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`idlharness.window.js`](https://wpt.fyi/results/measure-memory/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`iframe.cross-origin.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.cross-origin.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`iframe.cross-site.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.cross-site.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`iframe.same-origin.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.same-origin.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`main-frame-and-worker.https.window.js`](https://wpt.fyi/results/measure-memory/main-frame-and-worker.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`main-frame.https.window.js`](https://wpt.fyi/results/measure-memory/main-frame.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`randomized-breakdown.https.window.js`](https://wpt.fyi/results/measure-memory/randomized-breakdown.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`redirect.client.https.window.js`](https://wpt.fyi/results/measure-memory/redirect.client.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`redirect.server.https.window.js`](https://wpt.fyi/results/measure-memory/redirect.server.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`shared-worker.https.any.js`](https://wpt.fyi/results/measure-memory/shared-worker.https.any.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`window-open.cross-origin.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.cross-origin.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`window-open.cross-site.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.cross-site.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`window-open.mix.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.mix.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
-| [`window-open.same-origin.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.same-origin.https.window.js) | Disabled | – | NOT IMPLEMENTED | performance.measureUserAgentSpecificMemory() |
+| [`detached.https.window.js`](https://wpt.fyi/results/measure-memory/detached.https.window.js) | Timeout | 0 / 1 | TEST BUG, NOT IMPLEMENTED | the test waits for the messages of the same-origin popups opened by the cross-site and cross-origin frames (`same-origin-11`, `same-origin-13`), whose `Cross-Origin-Opener-Policy: same-origin` response switches them to another browsing context group, which removes their opener (as `window-open.mix.https.window.js`): the test times out; the realms of the detached frames and of the replaced documents that the scripts keep alive: the measurement only lists the documents of the navigables of the browsing context group |
+| [`idlharness.window.js`](https://wpt.fyi/results/measure-memory/idlharness.window.js) | Fail | 4 / 5 | TEST BUG | 1 subtest: `measureUserAgentSpecificMemory()` is declared `[CrossOriginIsolated]`, so it is only exposed when the global object is cross-origin isolated (https://webidl.spec.whatwg.org/#CrossOriginIsolated); the test page has no `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers, and idlharness.js does not implement `[CrossOriginIsolated]`: it expects the operation on the prototype of `Performance`, which Chromium hides too |
+| [`iframe.cross-origin.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.cross-origin.https.window.js) | Pass | 1 / 1 |  |  |
+| [`iframe.cross-site.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.cross-site.https.window.js) | Pass | 1 / 1 |  |  |
+| [`iframe.same-origin.https.window.js`](https://wpt.fyi/results/measure-memory/iframe.same-origin.https.window.js) | Pass | 1 / 1 |  |  |
+| [`main-frame-and-worker.https.window.js`](https://wpt.fyi/results/measure-memory/main-frame-and-worker.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the measurement of the JavaScript heap: the sizes are a deterministic estimate of the objects of the library (a base size per realm, the nodes and the text of the documents), so the 10 MB `Uint8Array` that the worker allocates is not counted, and `bytes` is below the 10 MB the test expects |
+| [`main-frame.https.window.js`](https://wpt.fyi/results/measure-memory/main-frame.https.window.js) | Pass | 1 / 1 |  |  |
+| [`randomized-breakdown.https.window.js`](https://wpt.fyi/results/measure-memory/randomized-breakdown.https.window.js) | Pass | 1 / 1 |  |  |
+| [`redirect.client.https.window.js`](https://wpt.fyi/results/measure-memory/redirect.client.https.window.js) | Pass | 1 / 1 |  |  |
+| [`redirect.server.https.window.js`](https://wpt.fyi/results/measure-memory/redirect.server.https.window.js) | Pass | 1 / 1 |  |  |
+| [`shared-worker.https.any.js`](https://wpt.fyi/results/measure-memory/shared-worker.https.any.js) | Pass | 1 / 1 |  |  |
+| [`window-open.cross-origin.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.cross-origin.https.window.js) | Pass | 1 / 1 |  |  |
+| [`window-open.cross-site.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.cross-site.https.window.js) | Pass | 1 / 1 |  |  |
+| [`window-open.mix.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.mix.https.window.js) | Timeout | 0 / 1 | TEST BUG | the test waits for the messages of the same-origin popups opened by the cross-origin frames (`same-origin-5`, `same-origin-7`): the initial `about:blank` document of a popup created by a frame whose origin is not the origin of its top-level document has the `unsafe-none` opener policy, so the `Cross-Origin-Opener-Policy: same-origin` response of the popup switches it to another browsing context group (https://html.spec.whatwg.org/multipage/browsers.html#check-browsing-context-group-switch-coop-value), which removes its opener: its messages never reach the frame that opened it, and the test times out |
+| [`window-open.same-origin.https.window.js`](https://wpt.fyi/results/measure-memory/window-open.same-origin.https.window.js) | Pass | 1 / 1 |  |  |

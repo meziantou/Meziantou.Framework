@@ -8,12 +8,20 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [IdlInterface("IDBFactory", "https://w3c.github.io/IndexedDB/#idbfactory")]
 public sealed class IdbFactory
 {
-    internal IdbFactory(GlobalScope global)
+    internal IdbFactory(GlobalScope global, StorageKey? storageKey = null, StorageBucketRecord? bucket = null)
     {
         Global = global;
+        StorageKey = storageKey;
+        _bucket = bucket;
     }
 
+    // The bucket of the databases: the requests of a deleted bucket fail with an UnknownError
+    private readonly StorageBucketRecord? _bucket;
+
     internal GlobalScope Global { get; }
+
+    /// <summary>The storage key of the databases (the unpartitioned storage of a <see cref="StorageAccessHandle"/>, or a storage bucket), or null for the storage key of <see cref="Global"/>.</summary>
+    internal StorageKey? StorageKey { get; }
 
     // The connections and the open requests of the global object, closed when it is destroyed
     private readonly List<IdbDatabase> _connections = [];
@@ -35,6 +43,9 @@ public sealed class IdbFactory
 
         var (backend, origin) = ObtainStorage();
         var request = new IdbOpenDBRequest(Global, IndexedDBStorage.GetOperations(Global));
+        if (_bucket is { IsDeleted: true })
+            return FailDeletedBucketRequest(request);
+
         var state = backend.Coordinator.GetDatabase(origin, name);
         var connectionRequest = new IndexedDBOpenRequest(state, request, version);
         Track(connectionRequest);
@@ -52,6 +63,9 @@ public sealed class IdbFactory
         ArgumentNullException.ThrowIfNull(name);
         var (backend, origin) = ObtainStorage();
         var request = new IdbOpenDBRequest(Global, IndexedDBStorage.GetOperations(Global));
+        if (_bucket is { IsDeleted: true })
+            return FailDeletedBucketRequest(request);
+
         var state = backend.Coordinator.GetDatabase(origin, name);
         var connectionRequest = new IndexedDBDeleteRequest(state, request);
         Track(connectionRequest);
@@ -64,7 +78,7 @@ public sealed class IdbFactory
     [IdlMember("databases", "https://w3c.github.io/IndexedDB/#dom-idbfactory-databases")]
     public Task<IReadOnlyList<IdbDatabaseInfo>> Databases()
     {
-        if (IndexedDBStorage.Resolve(Global) is not { } storage)
+        if (IndexedDBStorage.Resolve(Global, StorageKey) is not { } storage)
             return Task.FromException<IReadOnlyList<IdbDatabaseInfo>>(new DomException("The origin of the document is opaque", "SecurityError"));
 
         var (backend, origin) = storage;
@@ -162,14 +176,32 @@ public sealed class IdbFactory
         }
     }
 
+    /// <summary>
+    /// Tracks a pending open or delete request under the lifetime of the global object: the requests of every factory of the
+    /// global object (its own, and the ones of its storage buckets and of its storage access handles) are tracked by the
+    /// factory of the global object, which removes them when they complete and cancels them when the global object is
+    /// destroyed (<see cref="CloseConnections"/>).
+    /// </summary>
     private void Track(IndexedDBConnectionRequest request)
     {
-        lock (_lock)
+        var owner = Global.IndexedDB;
+        lock (owner._lock)
         {
-            _requests.Add(request);
+            owner._requests.Add(request);
         }
     }
 
+    /// <summary>The request of a deleted bucket fails with an <c>UnknownError</c>, from a task (https://wicg.github.io/storage-buckets/#storagebucket-indexeddb).</summary>
+    private IdbOpenDBRequest FailDeletedBucketRequest(IdbOpenDBRequest request)
+    {
+        Global.QueueGlobalTask(() =>
+        {
+            request.SetError(StorageBucket.Deleted());
+            request.FireEvent(new Event("error", new EventInit { Bubbles = true, Cancelable = true }));
+        });
+        return request;
+    }
+
     private (IndexedDBBackend Backend, string Origin) ObtainStorage()
-        => IndexedDBStorage.Resolve(Global) ?? throw new DomException("The origin of the document is opaque", "SecurityError");
+        => IndexedDBStorage.Resolve(Global, StorageKey) ?? throw new DomException("The origin of the document is opaque", "SecurityError");
 }

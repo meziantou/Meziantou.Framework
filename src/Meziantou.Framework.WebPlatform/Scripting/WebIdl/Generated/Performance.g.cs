@@ -45,6 +45,11 @@ internal static class Binding_Performance<TAdapter, TValue> where TAdapter : str
         r.SetMember(result, "timing", Get_timing(r.GetRelevantRealm(t), t));
         r.SetMember(result, "navigation", Get_navigation(r.GetRelevantRealm(t), t));
     }
+    private static TValue Op_measureUserAgentSpecificMemory(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Performance>(t, Binding);
+        var result = o.MeasureUserAgentSpecificMemory(); return r.ToPromise(result, static (r, value) => (value is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryMeasurement(r, dictionaryValue) : r.Adapter.Null));
+    }
     private static TValue Op_getEntries(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Performance>(t, Binding);
@@ -116,6 +121,7 @@ internal static class Binding_Performance<TAdapter, TValue> where TAdapter : str
         r.DefineAttribute(instanceTarget, "onresourcetimingbufferfull", Get_onresourcetimingbufferfull, Set_onresourcetimingbufferfull);
         r.DefineOperation(instanceTarget, "now", 0, Op_now);
         r.DefineOperation(instanceTarget, "toJSON", 0, Op_toJSON);
+        if (r.IsCrossOriginIsolated && r.IsExposed(global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.SharedWorker | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.ServiceWorker)) r.DefineOperation(instanceTarget, "measureUserAgentSpecificMemory", 0, Op_measureUserAgentSpecificMemory, returnsPromise: true);
         r.DefineOperation(instanceTarget, "getEntries", 0, Op_getEntries);
         r.DefineOperation(instanceTarget, "getEntriesByType", 1, Op_getEntriesByType);
         r.DefineOperation(instanceTarget, "getEntriesByName", 1, Op_getEntriesByName);

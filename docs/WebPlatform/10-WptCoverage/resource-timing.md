@@ -10,17 +10,18 @@ description: "The results of the web-platform-tests of resource-timing, and why 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 113 | 119 | 0 | 95% |
-| [Tentative](#tentative-tests) | 1 | 33 | 0 | 3% |
+| [Tentative](#tentative-tests) | 30 | 33 | 0 | 91% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **114** | **152** | **0** | **75%** |
+| **All** | **143** | **152** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 36
+- **NOT IMPLEMENTED**: 6
 
 ## Stable tests
 
@@ -152,34 +153,34 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`delivery-type.tentative.any.js`](https://wpt.fyi/results/resource-timing/delivery-type.tentative.any.js) | Pass | 12 / 12 |  |  |
 | [`resource-timing-failed-fetch-web-bundle.tentative.html`](https://wpt.fyi/results/resource-timing/resource-timing-failed-fetch-web-bundle.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | Web Bundles (`<script type="webbundle">`); `/web-bundle/resources/test-helpers.js` is not fetched |
-| [`tentative/initiator-url/dedicated-worker-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/dedicated-worker-script.html) | Fail | 0 / 6 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/direct.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/direct.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/event-handler-overwritten.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/event-handler-overwritten.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/event-handler.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/event-handler.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/external-script-in-posted-task.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/external-script-in-posted-task.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/external-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/external-script.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/iframe-post-message.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/iframe-post-message.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/inline-document-write.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/inline-document-write.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/inline-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/inline-script.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/module-script-from-document.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-document.html) | Fail | 0 / 5 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/module-script-from-dynamic-importer.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-dynamic-importer.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/module-script-from-static-importer.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-static-importer.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/module-script-from-worker.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-worker.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/post-message-shared-worker.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-message-shared-worker.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/post-message-worker.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-message-worker.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/post-task.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-task.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/post-task.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-task.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/promise.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/promise.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/promise.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/promise.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/queue-microtask.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/queue-microtask.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/queue-microtask.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/queue-microtask.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/request-animation-frame.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/request-animation-frame.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/request-idle-callback.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/request-idle-callback.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/set-interval.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-interval.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/set-interval.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-interval.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/set-timeout.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-timeout.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/set-timeout.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-timeout.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/static-resource.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/static-resource.html) | Fail | 0 / 10 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/stylesheet-dynamic.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/stylesheet-dynamic.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/stylesheet-static.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/stylesheet-static.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
-| [`tentative/initiator-url/xml-http-request.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/xml-http-request.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
+| [`tentative/initiator-url/dedicated-worker-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/dedicated-worker-script.html) | Pass | 6 / 6 |  |  |
+| [`tentative/initiator-url/direct.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/direct.any.js) | Pass | 4 / 4 |  |  |
+| [`tentative/initiator-url/event-handler-overwritten.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/event-handler-overwritten.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/event-handler.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/event-handler.html) | Pass | 2 / 2 |  |  |
+| [`tentative/initiator-url/external-script-in-posted-task.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/external-script-in-posted-task.html) | Pass | 4 / 4 |  |  |
+| [`tentative/initiator-url/external-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/external-script.html) | Pass | 4 / 4 |  |  |
+| [`tentative/initiator-url/iframe-post-message.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/iframe-post-message.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/inline-document-write.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/inline-document-write.html) | Pass | 3 / 3 |  |  |
+| [`tentative/initiator-url/inline-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/inline-script.html) | Pass | 3 / 3 |  |  |
+| [`tentative/initiator-url/module-script-from-document.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-document.html) | Pass | 5 / 5 |  |  |
+| [`tentative/initiator-url/module-script-from-dynamic-importer.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-dynamic-importer.html) | Fail | 2 / 3 | NOT IMPLEMENTED | 1 subtest: the task attribution of a module evaluated by `import()`: the JavaScript engine evaluates it, so the script element that it inserts is attributed to the classic script that called `import()` (the document) instead of the imported module; the modules run by a script element and the imports of a module are attributed to their module |
+| [`tentative/initiator-url/module-script-from-static-importer.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-static-importer.html) | Pass | 4 / 4 |  |  |
+| [`tentative/initiator-url/module-script-from-worker.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/module-script-from-worker.html) | Fail | 1 / 2 | BUG | 1 subtest: the resource timing entries of the static imports of a module worker are added to the performance timeline of the worker instead of the timeline of the document that created it (the client of the fetches of a module worker script graph is the settings object of the document), so the observer of the document never sees the entry |
+| [`tentative/initiator-url/post-message-shared-worker.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-message-shared-worker.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/post-message-worker.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-message-worker.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/post-task.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-task.any.js) | Pass | 2 / 2 |  |  |
+| [`tentative/initiator-url/post-task.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/post-task.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/promise.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/promise.any.js) | Pass | 2 / 2 |  |  |
+| [`tentative/initiator-url/promise.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/promise.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/queue-microtask.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/queue-microtask.any.js) | Pass | 2 / 2 |  |  |
+| [`tentative/initiator-url/queue-microtask.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/queue-microtask.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/request-animation-frame.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/request-animation-frame.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/request-idle-callback.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/request-idle-callback.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/set-interval.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-interval.any.js) | Pass | 2 / 2 |  |  |
+| [`tentative/initiator-url/set-interval.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-interval.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/set-timeout.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-timeout.any.js) | Pass | 2 / 2 |  |  |
+| [`tentative/initiator-url/set-timeout.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/set-timeout.html) | Pass | 1 / 1 |  |  |
+| [`tentative/initiator-url/static-resource.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/static-resource.html) | Pass | 10 / 10 |  |  |
+| [`tentative/initiator-url/stylesheet-dynamic.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/stylesheet-dynamic.html) | Pass | 4 / 4 |  |  |
+| [`tentative/initiator-url/stylesheet-static.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/stylesheet-static.html) | Pass | 3 / 3 |  |  |
+| [`tentative/initiator-url/xml-http-request.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/xml-http-request.html) | Pass | 1 / 1 |  |  |

@@ -61,7 +61,9 @@ and unregistering drops them.
 ## Third-party cookies and storage access
 
 By default, as in the browsers that do not block them, a frame of another site than the top-level page sends and stores
-the cookies of its site. Set [BlockThirdPartyCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.BlockThirdPartyCookies) to block them, and
+the cookies of its site. The default is deliberate: Safari blocks the third-party cookies, but Chrome keeps them, the
+cookie specification (RFC 6265bis) sends the `SameSite=None` cookies in the cross-site contexts, and many embedded
+pages (sign-in widgets, payment frames) need them. Set [BlockThirdPartyCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.BlockThirdPartyCookies) to block them, and
 [SetThirdPartyCookieAccess](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.SetThirdPartyCookieAccess) to block or allow the cookies of a site in the pages of another site (the settings of the
 user):
 
@@ -89,7 +91,8 @@ Assert.Equal("id=42", request.GetCookieHeader());
 
 - A context is third-party when its site is not the site of the top-level page, or when one of its parent frames is of
   another site. Its documents (`document.cookie`, `cookieStore`) and its requests (subresources, `fetch()`, WebSockets,
-  the navigations of its frames) neither see nor set the unpartitioned cookies of a blocked site. The cookies with the
+  the navigations of its frames) neither see nor set the unpartitioned cookies of a blocked site: `document.cookie`
+  ignores them, and `cookieStore.set()` rejects its promise with a `TypeError`. The cookies with the
   `Partitioned` attribute are not blocked: they are kept per top-level site.
 - [SetThirdPartyCookieAccess](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.SetThirdPartyCookieAccess) takes null for every top-level site or every embedded site. The rule of a pair of sites
   wins over the rule of every embedded site, which wins over the rule of every top-level site, which wins over
@@ -115,6 +118,41 @@ its scripts or from .NET ([Document.HasStorageAccess](cref:Meziantou.Framework.W
   `inactive` when the permission is granted but the request does not use it, `none` otherwise. A response with
   `Activate-Storage-Access: retry; allowed-origin="..."` makes an `inactive` request be sent again with the cookies, and
   the document of a frame whose response has `Activate-Storage-Access: load` gets storage access.
+
+### The other storages of a frame
+
+The other storages of a frame of another site than the top-level page are partitioned by the top-level site: its
+`localStorage`, `sessionStorage`, IndexedDB databases, caches, origin private file system, locks, broadcast channels and
+shared workers are not the ones its site gets as a top-level page. `document.requestStorageAccess(types)`
+([Extending Storage Access API to non-cookie storage](https://privacycg.github.io/saa-non-cookie-storage/), or
+[Document.RequestStorageAccess](cref:Meziantou.Framework.WebPlatform.Dom.Document.RequestStorageAccess) from .NET) is granted as `document.requestStorageAccess()`
+and returns a [StorageAccessHandle](cref:Meziantou.Framework.WebPlatform.Dom.StorageAccessHandle) whose members give the unpartitioned storages:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_StorageAccessHandle;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A frame of https://other.example in a page of another site: window.localStorage is partitioned by the top-level site
+frame.DefaultView!.LocalStorage.SetItem("partitioned", "1");
+
+// The handle gives the storage of https://other.example when it is not embedded by another site
+var request = frame.RequestStorageAccess(new StorageAccessTypes { LocalStorage = true, IndexedDB = true });
+context.EventLoop.RunUntilIdle();
+var handle = await request;
+handle.LocalStorage.SetItem("unpartitioned", "2");
+Assert.Null(handle.LocalStorage.GetItem("partitioned"));
+Assert.Null(frame.DefaultView.LocalStorage.GetItem("unpartitioned"));
+
+// The members that were not requested throw an InvalidStateError
+Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => handle.SessionStorage).Name);
+```
+<!-- endref -->
+
+- The [StorageAccessTypes](cref:Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes) select the members that can be used (`all` for every member); a request without
+  any type is rejected with an `InvalidStateError`. The frame gets its unpartitioned cookies only when `all` or
+  `cookies` is requested. `document.hasUnpartitionedCookieAccess()` is `document.hasStorageAccess()`.
+- A `storage` event of an area of a handle is fired at the window of the frame, with the handle's `Storage` object as
+  `storageArea`.
+- The blob URLs are not partitioned: `createObjectURL()` and `revokeObjectURL()` of a handle are the ones of `URL`. The
+  `sameSiteCookies` option of the shared workers is not implemented.
 
 ## Local storage and session storage
 
@@ -169,6 +207,49 @@ The other storage APIs of the browsers keep their data in backends that you can 
 
 These stores are used by the scripts of the pages: they need a [script engine](../06-Scripting/01-Overview.md).
 
+### Storage buckets
+
+`navigator.storageBuckets` ([Storage Buckets](https://wicg.github.io/storage-buckets/), [Navigator.StorageBuckets](cref:Meziantou.Framework.WebPlatform.Dom.Navigator.StorageBuckets)
+from .NET) creates named buckets of the origin. A [StorageBucket](cref:Meziantou.Framework.WebPlatform.Dom.StorageBucket) has its own IndexedDB databases, caches and origin private
+file system, kept in the same stores as the ones of the origin, but apart from them:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/FileSystemTests.cs;region=WebPlatform_StorageBuckets;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A bucket has its own databases, caches and file system, apart from the ones of the origin
+var drafts = await Run(buckets.Open("drafts", new StorageBucketOptions { Quota = 1_000_000 }));
+var root = await Run(drafts.GetDirectory());
+await Run(root.GetFileHandle("draft.txt", new FileSystemGetFileOptions { Create = true }));
+var originRoot = await Run(document.DefaultView!.Navigator.Storage.GetDirectory());
+await Assert.ThrowsAsync<DomException>(() => Run(originRoot.GetFileHandle("draft.txt")));
+
+Assert.Equal(1_000_000ul, (await Run(drafts.Estimate())).Quota);
+Assert.Equal(["drafts"], await Run(buckets.Keys()));
+
+// Deleting the bucket deletes its storage: its objects then fail with an UnknownError
+await Run(buckets.Delete("drafts"));
+Assert.Empty(await Run(buckets.Keys()));
+Assert.Equal("UnknownError", (await Assert.ThrowsAsync<DomException>(() => Run(drafts.Persisted()))).Name);
+```
+<!-- endref -->
+
+- A bucket name has 1 to 64 lowercase ASCII letters, digits, `-` and `_`, and starts with a letter or a digit.
+- The buckets of an origin are stored with their data, in the backends of [BrowsingContextOptions.IndexedDB](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IndexedDB),
+  [CacheStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CacheStorage) and [FileSystem](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.FileSystem), in the partition of the page (the buckets of a frame of
+  another site are not the ones of its site as a top-level page). With the default in-memory backends, they are shared
+  by the pages and the workers of a browser tab and the tabs it opens. Browser tabs that share a backend, or that use a
+  persistent backend again, see the same buckets, whatever the order in which they open them. Each backend stores the
+  buckets in a namespace of its own: the storage key prefixed by `storage-buckets `, as empty databases, caches and
+  directories named after the bucket, the order of its creation and a GUID, and a tombstone for its latest deletion.
+  When the backends disagree (a backend that a browser tab did not use when it deleted or created a bucket), the latest
+  creation or deletion wins: a deleted bucket stays deleted, and the storage of a bucket is only removed when it is
+  deleted (by `delete()`, its expiration or `Clear-Site-Data`), not when a backend has an older copy of it. The quota and
+  the expiration time of a bucket are only known by the browser tab that opened it.
+- `persist()` asks [StorageOptions.RequestPersistentStorage](cref:Meziantou.Framework.WebPlatform.Dom.StorageOptions.RequestPersistentStorage), as `navigator.storage.persist()`. `estimate()` reports
+  the usage of the bucket and its quota (the `quota` option, or the quota of the origin). The quota of a bucket limits
+  its file system, not its databases nor its caches.
+- A bucket whose `expires` time is past is deleted the next time the buckets are opened or listed. Deleting a bucket
+  deletes its caches, its file system and its databases that no page keeps open.
+
 ## Clear-Site-Data
 
 A site clears the data that the browser keeps for it with the `Clear-Site-Data` header of a response. The header is
@@ -178,7 +259,7 @@ honored on the responses of the secure URLs (`https`, and `http://localhost`), w
 | --- | --- |
 | `"cache"` | The responses of its URLs in the HTTP cache and its pages in the back/forward cache (for the tab's site only, as the browsers partition their caches), and its prefetched and prerendered pages |
 | `"cookies"` | The cookies of its registrable domain (`"cookies"` for `https://www.example.com` removes the cookies of `example.com` and of its subdomains) |
-| `"storage"` | Its local storage, its session storage, its IndexedDB databases, its caches of the Cache API, and its service worker registrations |
+| `"storage"` | Its local storage, its session storage, its IndexedDB databases, its caches of the Cache API, its storage buckets, and its service worker registrations |
 | `"executionContexts"` | Its pages are reloaded |
 | `"clientHints"` | The client hints it opted into (also cleared by `"cache"` and `"cookies"`) |
 | `"*"` | All of the above |
@@ -190,7 +271,9 @@ The cookies that the response sets are cleared too. As in the browsers, a respon
 (a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies, the caches,
 and the stores of the origin [partitioned](#storage-partitioning) by the site of that page. The stores of the origin as a
 top-level page are kept. So are they for a response loaded by a frame of the top-level site whose parent frame is of
-another site: it clears the stores of that frame's partition. Some data is always kept:
+another site: it clears the stores of that frame's partition. A response loaded by a credentialless iframe only clears the
+stores of the credentialless iframes of its page (their storage is kept apart from the storage of the origin). Some data
+is always kept:
 
 - An IndexedDB database that a page still has open.
 - The origin private file system.

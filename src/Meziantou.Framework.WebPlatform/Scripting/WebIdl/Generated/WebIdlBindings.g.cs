@@ -641,6 +641,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["StaticRange"] = Binding_StaticRange<TAdapter, TValue>.Binding,
             ["StereoPannerNode"] = Binding_StereoPannerNode<TAdapter, TValue>.Binding,
             ["Storage"] = Binding_Storage<TAdapter, TValue>.Binding,
+            ["StorageAccessHandle"] = Binding_StorageAccessHandle<TAdapter, TValue>.Binding,
+            ["StorageBucket"] = Binding_StorageBucket<TAdapter, TValue>.Binding,
+            ["StorageBucketManager"] = Binding_StorageBucketManager<TAdapter, TValue>.Binding,
             ["StorageEvent"] = Binding_StorageEvent<TAdapter, TValue>.Binding,
             ["StorageManager"] = Binding_StorageManager<TAdapter, TValue>.Binding,
             ["StylePropertyMap"] = Binding_StylePropertyMap<TAdapter, TValue>.Binding,
@@ -1521,6 +1524,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MediaTrackSupportedConstraints dictionaryDom_MediaTrackSupportedConstraints:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaTrackSupportedConstraints(r, dictionaryDom_MediaTrackSupportedConstraints);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryAttribution dictionaryDom_MemoryAttribution:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttribution(r, dictionaryDom_MemoryAttribution);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryAttributionContainer dictionaryDom_MemoryAttributionContainer:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryAttributionContainer(r, dictionaryDom_MemoryAttributionContainer);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryBreakdownEntry dictionaryDom_MemoryBreakdownEntry:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryBreakdownEntry(r, dictionaryDom_MemoryBreakdownEntry);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement dictionaryDom_MemoryMeasurement:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryMeasurement(r, dictionaryDom_MemoryMeasurement);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions dictionaryDom_ModelContextExecuteToolOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ModelContextExecuteToolOptions(r, dictionaryDom_ModelContextExecuteToolOptions);
                 return true;
@@ -1733,6 +1748,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.StaticRangeInit dictionaryDom_StaticRangeInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StaticRangeInit(r, dictionaryDom_StaticRangeInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes dictionaryDom_StorageAccessTypes:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StorageAccessTypes(r, dictionaryDom_StorageAccessTypes);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions dictionaryDom_StorageBucketOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StorageBucketOptions(r, dictionaryDom_StorageBucketOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.StorageEstimate dictionaryDom_StorageEstimate:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StorageEstimate(r, dictionaryDom_StorageEstimate);
@@ -2379,6 +2400,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaStream> taskSystem_Threading_Tasks_Task_Dom_MediaStream_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaStream_, static (r, v) => r.Wrap(v));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement> taskSystem_Threading_Tasks_Task_Dom_MemoryMeasurement_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MemoryMeasurement_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryMeasurement(r, dictionaryValue) : r.Adapter.Null));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.NavigationHistoryEntry> taskSystem_Threading_Tasks_Task_Dom_NavigationHistoryEntry_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_NavigationHistoryEntry_, static (r, v) => r.Wrap(v));
                 return true;
@@ -2411,6 +2435,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration> taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.StorageAccessHandle> taskSystem_Threading_Tasks_Task_Dom_StorageAccessHandle_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_StorageAccessHandle_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.StorageBucket> taskSystem_Threading_Tasks_Task_Dom_StorageBucket_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_StorageBucket_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.StorageEstimate> taskSystem_Threading_Tasks_Task_Dom_StorageEstimate_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_StorageEstimate_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_StorageEstimate(r, dictionaryValue) : r.Adapter.Null));
@@ -2480,6 +2510,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<string>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__, static (r, v) => r.FromSequence(v, static (r, e) => r.FromString(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<double?> taskSystem_Threading_Tasks_Task_double__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_double__, static (r, v) => (v.HasValue ? r.FromNumber((double)v.GetValueOrDefault()) : r.Adapter.Null));
                 return true;
             case global::System.Threading.Tasks.Task<object> taskSystem_Threading_Tasks_Task_object_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_object_, static (r, v) => r.ToJs((object?)v));

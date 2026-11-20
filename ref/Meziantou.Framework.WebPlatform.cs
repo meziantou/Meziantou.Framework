@@ -3635,6 +3635,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend? MediaCapture { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.MediaSessionOptions? MediaSession { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.NetworkErrorLoggingCache? NetworkErrorLogging { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformationOptions? NetworkInformation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PendingInputOptions? PendingInput { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
@@ -5417,6 +5418,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Selection? GetSelection() => throw null;
         public bool HasFocus() => throw null;
         public System.Threading.Tasks.Task<bool> HasStorageAccess() => throw null;
+        public System.Threading.Tasks.Task<bool> HasUnpartitionedCookieAccess() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Node ImportNode(Meziantou.Framework.WebPlatform.Dom.Node node, Meziantou.Framework.WebPlatform.Dom.ImportNodeOptions options) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Node ImportNode(Meziantou.Framework.WebPlatform.Dom.Node node, bool subtree = false) => throw null;
         public void MoveBefore(Meziantou.Framework.WebPlatform.Dom.Node node, Meziantou.Framework.WebPlatform.Dom.Node? child) { }
@@ -5442,6 +5444,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void ReleaseEvents() { }
         public void ReplaceChildren(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
         public System.Threading.Tasks.Task RequestStorageAccess() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageAccessHandle> RequestStorageAccess(Meziantou.Framework.WebPlatform.Dom.StorageAccessTypes types) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ViewTransition StartViewTransition(Meziantou.Framework.WebPlatform.Dom.StartViewTransitionOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.ViewTransition StartViewTransition(Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback callback) => throw null;
         public void Write(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.TrustedHtmlOrString> text) { }
@@ -10115,6 +10118,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Zoom { get => throw null; init { } }
     }
 
+    public sealed class MemoryAttribution
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MemoryAttributionContainer? Container { get => throw null; init { } }
+        public string Scope { get => throw null; init { } }
+        public string Url { get => throw null; init { } }
+    }
+
+    public sealed class MemoryAttributionContainer
+    {
+        public string Id { get => throw null; init { } }
+        public string Src { get => throw null; init { } }
+    }
+
+    public sealed class MemoryBreakdownEntry
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MemoryAttribution> Attribution { get => throw null; init { } }
+        public ulong Bytes { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Types { get => throw null; init { } }
+    }
+
+    public sealed class MemoryMeasurement
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MemoryBreakdownEntry> Breakdown { get => throw null; init { } }
+        public ulong Bytes { get => throw null; init { } }
+    }
+
     public sealed class MessageChannel
     {
         public Meziantou.Framework.WebPlatform.Dom.MessagePort Port1 { get => throw null; }
@@ -10524,6 +10553,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Scheduling Scheduling { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.UserActivation UserActivation { get => throw null; }
         public string UserAgent { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
@@ -10579,6 +10609,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? left, Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? left, Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus? right) => throw null;
+    }
+
+    public sealed class NetworkErrorLoggingCache
+    {
+        public void Clear() { }
+        public int GetPolicyCount(System.DateTimeOffset now) => throw null;
     }
 
     public sealed class NetworkInformation : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -11397,6 +11433,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PerformanceEntry> GetEntriesByType(string type) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.PerformanceMark Mark(string markName, Meziantou.Framework.WebPlatform.Dom.PerformanceMarkOptions? markOptions = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.PerformanceMeasure Measure(string measureName, object? startOrMeasureOptions = null, string? endMark = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement> MeasureUserAgentSpecificMemory() => throw null;
         public double Now() => throw null;
         public void SetResourceTimingBufferSize(uint maxSize) { }
     }
@@ -11579,6 +11616,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double FinalResponseHeadersStart { get => throw null; }
         public double FirstInterimResponseStart { get => throw null; }
         public string InitiatorType { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0026", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public string InitiatorUrl { get => throw null; init { } }
         public string NextHopProtocol { get => throw null; }
         public double RedirectEnd { get => throw null; }
         public double RedirectStart { get => throw null; }
@@ -13241,6 +13280,65 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Key(uint index) => throw null;
         public void RemoveItem(string key) { }
         public void SetItem(string key, string value) { }
+    }
+
+    public sealed class StorageAccessHandle
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdbFactory IndexedDB { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Storage LocalStorage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Storage SessionStorage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BroadcastChannel CreateBroadcastChannel(string name) => throw null;
+        public string CreateObjectUrl(Meziantou.Framework.WebPlatform.Dom.FileApi.Blob obj) => throw null;
+        public string CreateObjectUrl(Meziantou.Framework.WebPlatform.Dom.MediaSource obj) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.SharedWorker CreateSharedWorker(string scriptUrl, Meziantou.Framework.WebPlatform.Dom.SharedWorkerOptions? options = null) => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.SharedWorker CreateSharedWorker(string scriptUrl, string name) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageEstimate> Estimate() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.FileSystemDirectoryHandle> GetDirectory() => throw null;
+        public void RevokeObjectUrl(string url) { }
+    }
+
+    public sealed class StorageAccessTypes
+    {
+        public bool All { get => throw null; init { } }
+        public bool BroadcastChannel { get => throw null; init { } }
+        public bool Caches { get => throw null; init { } }
+        public bool Cookies { get => throw null; init { } }
+        public bool CreateObjectUrl { get => throw null; init { } }
+        public bool Estimate { get => throw null; init { } }
+        public bool GetDirectory { get => throw null; init { } }
+        public bool IndexedDB { get => throw null; init { } }
+        public bool LocalStorage { get => throw null; init { } }
+        public bool Locks { get => throw null; init { } }
+        public bool RevokeObjectUrl { get => throw null; init { } }
+        public bool SessionStorage { get => throw null; init { } }
+        public bool SharedWorker { get => throw null; init { } }
+    }
+
+    public sealed class StorageBucket
+    {
+        public Meziantou.Framework.WebPlatform.Dom.IdbFactory IndexedDB { get => throw null; }
+        public string Name { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageEstimate> Estimate() => throw null;
+        public System.Threading.Tasks.Task<double?> Expires() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.FileSystemDirectoryHandle> GetDirectory() => throw null;
+        public System.Threading.Tasks.Task<bool> Persist() => throw null;
+        public System.Threading.Tasks.Task<bool> Persisted() => throw null;
+        public System.Threading.Tasks.Task SetExpires(double expires) => throw null;
+    }
+
+    public sealed class StorageBucketManager
+    {
+        public System.Threading.Tasks.Task Delete(string name) => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string>> Keys() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.StorageBucket> Open(string name, Meziantou.Framework.WebPlatform.Dom.StorageBucketOptions? options = null) => throw null;
+    }
+
+    public sealed class StorageBucketOptions
+    {
+        public double? Expires { get => throw null; init { } }
+        public bool Persisted { get => throw null; init { } }
+        public ulong? Quota { get => throw null; init { } }
     }
 
     public sealed class StorageEstimate
@@ -16188,6 +16286,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string ProductSub { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
         public string UserAgent { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
         public string Vendor { get => throw null; }

@@ -144,6 +144,17 @@ public sealed class CrossOriginPolicyTests : IDisposable
     }
 
     [Fact]
+    public void CrossOriginIsolatedMembers_AreOnlyExposedInCrossOriginIsolatedWindows()
+    {
+        const string Script = "<script>document.title = typeof performance.measureUserAgentSpecificMemory + ',' + ('measureUserAgentSpecificMemory' in Performance.prototype);</script>";
+        var isolated = Load(Script, new("Cross-Origin-Opener-Policy", "same-origin"), new("Cross-Origin-Embedder-Policy", "require-corp"));
+        var notIsolated = Load(Script);
+
+        Assert.Equal("function,true", isolated.Title);
+        Assert.Equal("undefined,false", notIsolated.Title);
+    }
+
+    [Fact]
     public void EmbedderPolicy_BlocksCrossOriginNoCorsResponseWithoutResourcePolicy()
     {
         _loader.Resources["https://other.example/data"] = new DocumentResource("");

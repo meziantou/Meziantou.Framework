@@ -16,14 +16,22 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 public sealed class BroadcastChannel : EventTarget
 {
     private bool _closed;
+    private readonly StorageKey? _storageKey;
 
     /// <summary>https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel"/>
     [IdlMember("constructor", "https://html.spec.whatwg.org/multipage/web-messaging.html#dom-broadcastchannel")]
     public BroadcastChannel(string name)
+        : this(name, storageKey: null)
+    {
+    }
+
+    /// <summary>A channel of the storage key <paramref name="storageKey"/> (the unpartitioned storage of a <see cref="StorageAccessHandle"/>), or of the storage key of its global object.</summary>
+    internal BroadcastChannel(string name, StorageKey? storageKey)
     {
         ArgumentNullException.ThrowIfNull(name);
         Name = name;
+        _storageKey = storageKey;
         if (GetChannels() is { } channels)
         {
             lock (channels)
@@ -74,7 +82,7 @@ public sealed class BroadcastChannel : EventTarget
             return;
 
         var sourceOrigin = global.OriginRecord;
-        var sourceStorageKey = StorageKey.Obtain(global.EnvironmentDocument);
+        var sourceStorageKey = _storageKey ?? StorageKey.Obtain(global.EnvironmentDocument);
 
         // The destinations, in creation order: the other open channels of the same name whose global object can run
         // scripts (a fully active window, a worker that is not closing) and has the same storage key (the same origin, in
@@ -90,7 +98,7 @@ public sealed class BroadcastChannel : EventTarget
             if (ReferenceEquals(destination, this) || destination._closed || destination.Name != Name)
                 continue;
 
-            if (destination.RelevantGlobal is not { } destinationGlobal || !OriginRecord.IsSameOrigin(destinationGlobal.OriginRecord, sourceOrigin) || StorageKey.Obtain(destinationGlobal.EnvironmentDocument) != sourceStorageKey)
+            if (destination.RelevantGlobal is not { } destinationGlobal || !OriginRecord.IsSameOrigin(destinationGlobal.OriginRecord, sourceOrigin) || (destination._storageKey ?? StorageKey.Obtain(destinationGlobal.EnvironmentDocument)) != sourceStorageKey)
                 continue;
 
             if (!destinationGlobal.CanRunScript)

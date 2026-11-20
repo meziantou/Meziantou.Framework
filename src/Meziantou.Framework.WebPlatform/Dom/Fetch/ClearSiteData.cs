@@ -216,26 +216,24 @@ internal static class ClearSiteData
             topLevel.SessionStorageShed.ObtainArea(storageKey).Clear(persist: false);
         }
 
-        // The databases without open connection are deleted (an open connection keeps its database)
-        var indexedDB = browsingContext.IndexedDBBackend;
-        foreach (var database in indexedDB.GetDatabases(origin))
+        // The databases without open connection are deleted (an open connection keeps its database), in the backends of the
+        // partition of the storage key: a credentialless iframe clears its own storage, not the storage of its origin
+        if (StorageEndpoints.GetBackend(browsingContext, storageKey, static context => context.IndexedDBBackend, static () => new InMemoryIndexedDBBackend()) is { } indexedDB)
         {
-            var state = indexedDB.Coordinator.GetDatabase(origin, database.Name);
-            if (state.GetOpenConnections(except: null).Count > 0)
-                continue;
+            StorageBucketRegistry.ClearIndexedDB(indexedDB, origin);
+        }
 
-            state.CallBackend(backend =>
+        if (StorageEndpoints.GetBackend(browsingContext, storageKey, static context => context.CacheStorageBackend, static () => new InMemoryCacheStorageBackend()) is { } cacheStorageBackend)
+        {
+            var cacheStorage = cacheStorageBackend.Coordinator;
+            foreach (var name in cacheStorage.Keys(origin).ToArray())
             {
-                backend.DeleteDatabase(origin, database.Name);
-                return true;
-            });
+                cacheStorage.Delete(origin, name);
+            }
         }
 
-        var cacheStorage = browsingContext.CacheStorageBackend.Coordinator;
-        foreach (var name in cacheStorage.Keys(origin).ToArray())
-        {
-            cacheStorage.Delete(origin, name);
-        }
+        // The storage buckets (https://wicg.github.io/storage-buckets/) are deleted with their storage
+        browsingContext.StorageBuckets.DeleteAll(browsingContext, storageKey);
 
         // The service worker registrations are unregistered: the controlled clients keep their service worker until they are unloaded
         var registry = ServiceWorkerRegistry.Get(browsingContext.GroupOwner);

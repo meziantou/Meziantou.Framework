@@ -9,31 +9,25 @@ description: "The results of the web-platform-tests of network-error-logging, an
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 12 | 12 | – |
+| [Stable](#stable-tests) | 12 | 12 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **12** | **12** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 12
+| **All** | **12** | **12** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`no-report-on-failed-cors-preflight.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-failed-cors-preflight.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`no-report-on-subdomain-404.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-subdomain-404.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`no-report-on-subdomain-success.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-subdomain-success.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`no-report-on-unexpired-cached-response.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-unexpired-cached-response.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`reports-are-not-observable.https.html`](https://wpt.fyi/results/network-error-logging/reports-are-not-observable.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`sends-report-on-404.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-404.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`sends-report-on-cache-validation.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-cache-validation.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`sends-report-on-redirect.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-redirect.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`sends-report-on-subdomain-dns-failure.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-subdomain-dns-failure.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`sends-report-on-success-v1.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-success-v1.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`sends-report-on-success-with-subdomain-policy.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-success-with-subdomain-policy.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
-| [`sends-report-on-success.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-success.https.html) | Disabled | – | NOT IMPLEMENTED | Network Error Logging (Reporting API) |
+| [`no-report-on-failed-cors-preflight.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-failed-cors-preflight.https.html) | Pass | 1 / 1 |  |  |
+| [`no-report-on-subdomain-404.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-subdomain-404.https.html) | Pass | 1 / 1 |  |  |
+| [`no-report-on-subdomain-success.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-subdomain-success.https.html) | Pass | 1 / 1 |  |  |
+| [`no-report-on-unexpired-cached-response.https.html`](https://wpt.fyi/results/network-error-logging/no-report-on-unexpired-cached-response.https.html) | Pass | 1 / 1 |  |  |
+| [`reports-are-not-observable.https.html`](https://wpt.fyi/results/network-error-logging/reports-are-not-observable.https.html) | Pass | 1 / 1 |  |  |
+| [`sends-report-on-404.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-404.https.html) | Pass | 1 / 1 |  |  |
+| [`sends-report-on-cache-validation.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-cache-validation.https.html) | Pass | 1 / 1 |  |  |
+| [`sends-report-on-redirect.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-redirect.https.html) | Pass | 1 / 1 |  |  |
+| [`sends-report-on-subdomain-dns-failure.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-subdomain-dns-failure.https.html) | Pass | 1 / 1 |  |  |
+| [`sends-report-on-success-v1.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-success-v1.https.html) | Pass | 1 / 1 |  |  |
+| [`sends-report-on-success-with-subdomain-policy.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-success-with-subdomain-policy.https.html) | Pass | 1 / 1 |  |  |
+| [`sends-report-on-success.https.html`](https://wpt.fyi/results/network-error-logging/sends-report-on-success.https.html) | Pass | 1 / 1 |  |  |

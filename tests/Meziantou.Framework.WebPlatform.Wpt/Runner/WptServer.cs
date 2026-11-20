@@ -87,6 +87,16 @@ internal static partial class WptServer
         && (url.Port.Length == 0 || url.Port is var port && (url.Protocol == "http:" ? (int[])[.. Ports["http"], .. Ports["http-local"], .. Ports["http-public"]] : [.. Ports["https"], .. Ports["https-local"], .. Ports["https-public"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port));
 
     /// <summary>
+    /// Whether the host of a URL is the subdomain of the configuration of wptserve that does not resolve (<c>nonexistent</c>):
+    /// its requests fail with a DNS error.
+    /// </summary>
+    public static bool IsUnresolvedHost(Url url) => url.Protocol is "http:" or "https:"
+        && GetHostname(url) is var hostname
+        && hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
+        && hostname[(NotSubdomain.Length + 1)..] is var domain
+        && (domain is Domain or AltDomain || domain.EndsWith("." + Domain, StringComparison.Ordinal) || domain.EndsWith("." + AltDomain, StringComparison.Ordinal));
+
+    /// <summary>
     /// Whether a URL is served by the WebSocket server of wptserve: the hosts of <see cref="IsHost"/>, on the <c>ws</c> port for
     /// the <c>http:</c> URLs and on the <c>wss</c> and <c>h2</c> ports for the <c>https:</c> URLs (the URL of the opening
     /// handshake of a WebSocket has the <c>http</c> or <c>https</c> scheme).

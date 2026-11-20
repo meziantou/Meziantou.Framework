@@ -816,10 +816,17 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             return null;
 
         var lexer = new PdfLexer(objectStream.Data, (int)start);
-        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits, NameCache = _names };
+        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits, NameCache = _names, Notes = [] };
         try
         {
-            return parser.ParseObject();
+            var value = parser.ParseObject();
+            foreach (var note in parser.Notes)
+            {
+                // The offsets of an object stream are in its decoded data, not in the file
+                Diagnostics.Report(note.Kind, note.Message, offset: null, objectNumber: number);
+            }
+
+            return value;
         }
         catch (InvalidPdfContentException)
         {

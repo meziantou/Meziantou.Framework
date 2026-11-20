@@ -734,4 +734,83 @@ public sealed class PdfReaderTests
         Assert.True(document.IsRepaired);
         Assert.Contains("Warning CrossReferenceRebuilt: The cross-reference information was rebuilt by scanning the file: 5 objects found", problems);
     }
+
+    [Fact]
+    public void ValidateStructureReportsTheObjectStreamsBeyondTheLimits()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        for (var i = 0; i < 20; i++)
+        {
+            file.Add(10 + i, "(" + new string('x', 100) + ")");
+        }
+
+        file.Compress([.. Enumerable.Range(10, 20)]);
+        file.UseXrefStream = true;
+        file.CompressObjectStreams = true;
+        var document = PdfDocument.Open(file.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1000 });
+
+        var diagnostics = document.ValidateStructure();
+
+        Assert.Single(diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.UndecodableObjectStream);
+    }
+
+    [Fact]
+    public void TheRepairsOfTheObjectsOfObjectStreamsAreReported()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(10, "<< /A missing >>");
+        file.Compress(10);
+        file.UseXrefStream = true;
+
+        var diagnostics = PdfDocument.Open(file.ToArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics;
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.UnknownKeyword, ObjectNumber: 10, Offset: null });
+    }
+
+    [Fact]
+    public void ValidateStructureReportsTheReferencesWithAnotherGeneration()
+    {
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());
+        text = text[..text.IndexOf("xref", StringComparison.Ordinal)] + "6 0 obj\n(six)\nendobj\n7 0 obj\n<< /Ref 6 1 R >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n";
+
+        var diagnostics = PdfDocument.Open(Encoding.Latin1.GetBytes(text)).ValidateStructure();
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.GenerationMismatch, ObjectNumber: 6 });
+    }
+
+    [Fact]
+    public void AFlateStreamWithAWrongChecksumIsReported()
+    {
+        using var compressed = new MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(compressed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+        {
+            zlib.Write("Hello, world"u8);
+        }
+
+        var data = compressed.ToArray();
+        data[^1] ^= 0xFF;
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, HandWrittenPdf.Stream(Encoding.Latin1.GetString(data), " /Filter /FlateDecode"));
+
+        var diagnostics = PdfDocument.Open(file.ToArray()).ValidateStructure();
+
+        Assert.Equal(PdfDiagnosticKind.DamagedStreamData, Assert.Single(diagnostics).Kind);
+
+        // The streams the library writes have the right checksums
+        var written = new PdfDocument();
+        written.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 10, 10);
+        Assert.Empty(PdfDocument.Open(written.ToByteArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics);
+    }
+
+    [Fact]
+    public void TheRepairsOfAnObjectAreBounded()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, "<< " + string.Concat(Enumerable.Repeat("1 ", 5000)) + ">>");
+
+        var diagnostics = PdfDocument.Open(file.ToArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics;
+
+        Assert.True(diagnostics.Count <= 1000, diagnostics.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Contains(diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.InvalidDictionaryKey);
+    }
 }

@@ -60,7 +60,46 @@ internal static class FlateFilter
             throw new InvalidPdfContentException("The FlateDecode data is not valid", ex);
         }
 
-        return output.ToArray();
+        var result = output.ToArray();
+
+        // The deflate decoder does not check the Adler-32 checksum of the zlib data (RFC 1950, 2.2): the data is damaged
+        // or truncated when the checksum after it, before the white space some producers add, is another one
+        if (hasZlibHeader && !isDamaged)
+        {
+            var end = span.Length;
+            while (end > 2 && span[end - 1] is (byte)'\r' or (byte)'\n' or (byte)' ' or 0)
+            {
+                end--;
+            }
+
+            isDamaged = end < 6 || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(span[(end - 4)..end]) != Adler32(result);
+        }
+
+        return result;
+    }
+
+    /// <summary>Computes the Adler-32 checksum of data (RFC 1950, 8.2).</summary>
+    private static uint Adler32(ReadOnlySpan<byte> data)
+    {
+        const uint Modulus = 65521;
+        uint a = 1;
+        uint b = 0;
+        while (!data.IsEmpty)
+        {
+            // 5552 bytes keep the sums below 2^32 before the modulo
+            var chunk = data[..Math.Min(data.Length, 5552)];
+            foreach (var value in chunk)
+            {
+                a += value;
+                b += a;
+            }
+
+            a %= Modulus;
+            b %= Modulus;
+            data = data[chunk.Length..];
+        }
+
+        return (b << 16) | a;
     }
 
     public static byte[] Encode(ReadOnlySpan<byte> input, CompressionLevel level = CompressionLevel.Optimal)

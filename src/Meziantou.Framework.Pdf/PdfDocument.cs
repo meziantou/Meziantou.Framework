@@ -159,12 +159,33 @@ public sealed partial class PdfDocument
         if (Reader is not { } reader)
             return [];
 
+        var failedContainers = new HashSet<int>();
+        var visited = new HashSet<PdfObject>(ReferenceEqualityComparer.Instance);
         foreach (var entry in Objects.Entries.OrderBy(entry => entry.Reference.ObjectNumber).ToArray())
         {
             if (entry.State is not (IndirectObjectState.Unloaded or IndirectObjectState.Loaded))
                 continue;
 
-            if (Objects.Load(entry) is PdfStream stream)
+            // An object of an object stream that exceeds the limits cannot be loaded: it is reported once per container,
+            // and the other objects are validated
+            if (entry.ContainerNumber > 0 && failedContainers.Contains(entry.ContainerNumber))
+                continue;
+
+            PdfObject value;
+            try
+            {
+                value = Objects.Load(entry);
+            }
+            catch (PdfResourceLimitException ex) when (entry.ContainerNumber > 0)
+            {
+                failedContainers.Add(entry.ContainerNumber);
+                reader.Diagnostics.Report(PdfDiagnosticKind.UndecodableObjectStream, "The object stream cannot be decoded: " + ex.Message, objectNumber: entry.ContainerNumber);
+                continue;
+            }
+
+            // The references the object contains: a reference with another generation is reported when it is resolved
+            CheckReferences(value, visited, depth: 0);
+            if (value is PdfStream stream)
             {
                 try
                 {
@@ -179,6 +200,40 @@ public sealed partial class PdfDocument
 
         _ = Pages.Count;
         return Diagnostics;
+    }
+
+    /// <summary>Looks up the entries of the references of an object, so that the references with another generation than their object are reported (7.3.10).</summary>
+    private void CheckReferences(PdfObject value, HashSet<PdfObject> visited, int depth)
+    {
+        if (depth > (Reader?.Options.MaxNestingDepth ?? PdfReadOptions.Default.MaxNestingDepth))
+            return;
+
+        switch (value)
+        {
+            case PdfReference reference:
+                _ = Objects.GetEntry(reference);
+                break;
+            case PdfStream stream when visited.Add(stream):
+                CheckReferences(stream.Dictionary, visited, depth + 1);
+                break;
+            case PdfDictionary dictionary when visited.Add(dictionary):
+                foreach (var (_, item) in dictionary)
+                {
+                    if (item is not null)
+                    {
+                        CheckReferences(item, visited, depth + 1);
+                    }
+                }
+
+                break;
+            case PdfArray array when visited.Add(array):
+                foreach (var item in array)
+                {
+                    CheckReferences(item, visited, depth + 1);
+                }
+
+                break;
+        }
     }
 
     /// <summary>Gets the pages of the document.</summary>

@@ -426,7 +426,14 @@ internal sealed class PdfObjectParser
     /// </summary>
     private bool IsAtRecoveryBoundary() => Window is { } window && window.Limit < window.Input.Length && window.Offset + Lexer.Length >= window.Limit;
 
-    private void Note(PdfDiagnosticKind kind, string message, int position) => Notes?.Add(new ParserNote(kind, message, (Window?.Offset ?? 0) + position));
+    private void Note(PdfDiagnosticKind kind, string message, int position)
+    {
+        // The collector keeps a bounded number of diagnostics: the notes of one object are bounded the same way
+        if (Notes is { Count: < PdfDiagnosticCollector.MaxDiagnostics } notes)
+        {
+            notes.Add(new ParserNote(kind, message, (Window?.Offset ?? 0) + position));
+        }
+    }
 
     private PdfName ParseName(PdfToken token) => NameCache is { } cache ? cache.Get(Lexer, token) : PdfName.FromBytes(Lexer.DecodeName(token));
 

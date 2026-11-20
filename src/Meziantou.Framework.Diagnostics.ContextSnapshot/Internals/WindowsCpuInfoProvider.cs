@@ -43,81 +43,90 @@ internal static class WindowsCpuInfoProvider
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows6.1")]
-    private static unsafe bool TryGetProcessorCounts(out int physicalProcessorCount, out int physicalCoreCount, out int logicalCoreCount)
+    private static bool TryGetProcessorCounts(out int physicalProcessorCount, out int physicalCoreCount, out int logicalCoreCount)
     {
-        physicalProcessorCount = 0;
-        physicalCoreCount = 0;
-        logicalCoreCount = 0;
-
-        uint length = 0;
-        if (PInvoke.GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP.RelationAll, Buffer: null, &length) ||
-            (WIN32_ERROR)Marshal.GetLastPInvokeError() is not WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER ||
-            length is 0)
+        unsafe
         {
-            return false;
-        }
+            physicalProcessorCount = 0;
+            physicalCoreCount = 0;
+            logicalCoreCount = 0;
 
-        var buffer = (byte*)NativeMemory.AlignedAlloc(length, (nuint)sizeof(nuint));
-        try
-        {
-            if (!PInvoke.GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP.RelationAll, (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)buffer, &length))
+            uint length = 0;
+            if (PInvoke.GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP.RelationAll, Buffer: null, &length) ||
+                (WIN32_ERROR)Marshal.GetLastPInvokeError() is not WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER ||
+                length is 0)
+            {
                 return false;
+            }
 
-            CountProcessors(buffer, length, out physicalProcessorCount, out physicalCoreCount, out logicalCoreCount);
-        }
-        finally
-        {
-            NativeMemory.AlignedFree(buffer);
-        }
+            var buffer = (byte*)NativeMemory.AlignedAlloc(length, (nuint)sizeof(nuint));
+            try
+            {
+                if (!PInvoke.GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP.RelationAll, (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)buffer, &length))
+                    return false;
 
-        return true;
+                CountProcessors(buffer, length, out physicalProcessorCount, out physicalCoreCount, out logicalCoreCount);
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(buffer);
+            }
+
+            return true;
+        }
     }
 
     internal static unsafe void CountProcessors(byte* buffer, uint length, out int physicalProcessorCount, out int physicalCoreCount, out int logicalCoreCount)
     {
-        physicalProcessorCount = 0;
-        physicalCoreCount = 0;
-        logicalCoreCount = 0;
-
-        // The entries have a variable size, so they must be walked using the Size member of their common header
-        var headerSize = (uint)(sizeof(LOGICAL_PROCESSOR_RELATIONSHIP) + sizeof(uint));
-        for (var offset = 0u; offset + headerSize <= length;)
+        unsafe
         {
-            var info = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer + offset);
-            if (info->Size < headerSize || info->Size > length - offset)
-                break;
+            physicalProcessorCount = 0;
+            physicalCoreCount = 0;
+            logicalCoreCount = 0;
 
-            switch (info->Relationship)
+            // The entries have a variable size, so they must be walked using the Size member of their common header
+            var headerSize = (uint)(sizeof(LOGICAL_PROCESSOR_RELATIONSHIP) + sizeof(uint));
+            for (var offset = 0u; offset + headerSize <= length;)
             {
-                case LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorPackage:
-                    physicalProcessorCount++;
+                var info = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer + offset);
+                if (info->Size < headerSize || info->Size > length - offset)
                     break;
 
-                case LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore:
-                    // GroupMask is a variable-length array of GroupCount items: they must all be inside the entry
-                    var groupMaskOffset = (uint)((byte*)&info->Anonymous.Processor.GroupMask - (byte*)info);
-                    if (info->Size < groupMaskOffset || (info->Size - groupMaskOffset) / (uint)sizeof(GROUP_AFFINITY) < info->Anonymous.Processor.GroupCount)
-                        return;
+                switch (info->Relationship)
+                {
+                    case LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorPackage:
+                        physicalProcessorCount++;
+                        break;
 
-                    physicalCoreCount++;
-                    logicalCoreCount += CountLogicalProcessors(ref info->Anonymous.Processor);
-                    break;
+                    case LOGICAL_PROCESSOR_RELATIONSHIP.RelationProcessorCore:
+                        // GroupMask is a variable-length array of GroupCount items: they must all be inside the entry
+                        var groupMaskOffset = (uint)((byte*)&info->Anonymous.Processor.GroupMask - (byte*)info);
+                        if (info->Size < groupMaskOffset || (info->Size - groupMaskOffset) / (uint)sizeof(GROUP_AFFINITY) < info->Anonymous.Processor.GroupCount)
+                            return;
+
+                        physicalCoreCount++;
+                        logicalCoreCount += CountLogicalProcessors(ref info->Anonymous.Processor);
+                        break;
+                }
+
+                offset += info->Size;
             }
-
-            offset += info->Size;
         }
     }
 
     // The caller checks that the GroupCount items of GroupMask are inside the entry
     private static int CountLogicalProcessors(ref PROCESSOR_RELATIONSHIP processor)
     {
-        var count = 0;
-        foreach (var groupMask in processor.GroupMask.AsSpan(processor.GroupCount))
+        unsafe
         {
-            count += BitOperations.PopCount(groupMask.Mask);
-        }
+            var count = 0;
+            foreach (var groupMask in processor.GroupMask.AsSpan(processor.GroupCount))
+            {
+                count += BitOperations.PopCount(groupMask.Mask);
+            }
 
-        return count;
+            return count;
+        }
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]

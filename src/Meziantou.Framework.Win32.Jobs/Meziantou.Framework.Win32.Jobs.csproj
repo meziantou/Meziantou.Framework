@@ -7,19 +7,52 @@
     <Version>4.0.10</Version>
     <Description>.NET wrapper for Windows Job Objects</Description>
     <PackageTags>windows, win32, job-objects, process, resources</PackageTags>
-
-    <MeziantouPolyfill_ExcludedPolyfills>T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="../Meziantou.Framework/SafeHandleValue.cs" Link="SafeHandleValue.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.LUID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.WIN32_ERROR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.AssignProcessToJobObject.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CreateJobObject.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.IsProcessInJob.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.OpenJobObject.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.QueryInformationJobObject.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SetInformationJobObject.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.SetIoRateControlInformationJobObject.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.TerminateJobObject.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.LUID_AND_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.PSID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.SECURITY_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.SID_AND_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.TOKEN_GROUPS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.TOKEN_PRIVILEGES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.TOKEN_PRIVILEGES_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECTINFOCLASS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_BASIC_ACCOUNTING_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_BASIC_LIMIT_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_BASIC_UI_RESTRICTIONS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_CPU_RATE_CONTROL_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_EXTENDED_LIMIT_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_IO_RATE_CONTROL_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_NET_RATE_CONTROL_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOBOBJECT_SECURITY_LIMIT_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOB_OBJECT_CPU_RATE_CONTROL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOB_OBJECT_IO_RATE_CONTROL_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOB_OBJECT_LIMIT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOB_OBJECT_NET_RATE_CONTROL_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOB_OBJECT_SECURITY.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.JobObjects.JOB_OBJECT_UILIMIT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Threading.IO_COUNTERS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-2.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

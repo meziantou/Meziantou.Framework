@@ -14,10 +14,61 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOLEAN.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HRESULT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.InlineArrayIndexerExtensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.NativeOwnershipAttribute.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjAllocateAlignedBuffer.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjClearNegativePathCache.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjCompleteCommand.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjDeleteFile.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjFileNameCompare.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjFileNameMatch.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjFillDirEntryBuffer.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjFreeAlignedBuffer.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjGetOnDiskFileState.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjGetVirtualizationInstanceInfo.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjMarkDirectoryAsPlaceholder.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjStartVirtualizing.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjStopVirtualizing.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjUpdateFileIfNeeded.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjWriteFileData.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjWritePlaceholderInfo.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PrjStopVirtualizingSafeHandle.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_CALLBACKS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_CALLBACK_DATA.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_CALLBACK_DATA_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_COMPLETE_COMMAND_TYPE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_DIR_ENTRY_BUFFER_HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_FILE_BASIC_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_FILE_STATE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_NOTIFICATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_NOTIFICATION_MAPPING.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_NOTIFICATION_PARAMETERS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_NOTIFY_TYPES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_PLACEHOLDER_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_PLACEHOLDER_VERSION_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_STARTVIRTUALIZING_FLAGS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_STARTVIRTUALIZING_OPTIONS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_UPDATE_FAILURE_CAUSES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_UPDATE_TYPES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_VIRTUALIZATION_INSTANCE_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_128.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_16.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_18.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_20.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__byte_38.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_14.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_256.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_260.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__char_64.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.__ushort_3.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

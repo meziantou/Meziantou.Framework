@@ -8,95 +8,113 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows10.0.10240")]
 internal static partial class Amsi
 {
-    internal static unsafe HRESULT AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
+    internal static HRESULT AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
     {
-        HAMSICONTEXT context;
-        HRESULT result;
-        fixed (char* appNamePointer = appName)
+        unsafe
         {
-            result = PInvoke.AmsiInitialize(appNamePointer, &context);
-        }
+            HAMSICONTEXT context;
+            HRESULT result;
+            fixed (char* appNamePointer = appName)
+            {
+                result = PInvoke.AmsiInitialize(appNamePointer, &context);
+            }
 
-        // Only take ownership of the handle the call actually produced: on failure the out parameter
-        // carries no handle the caller is allowed to pass back to AmsiUninitialize.
-        amsiContext = result.Failed ? new AmsiContextSafeHandle() : new AmsiContextSafeHandle((nint)context);
-        return result;
+            // Only take ownership of the handle the call actually produced: on failure the out parameter
+            // carries no handle the caller is allowed to pass back to AmsiUninitialize.
+            amsiContext = result.Failed ? new AmsiContextSafeHandle() : new AmsiContextSafeHandle((nint)context);
+            return result;
+        }
     }
 
     internal static void AmsiUninitialize(IntPtr amsiContext)
     {
-        PInvoke.AmsiUninitialize((HAMSICONTEXT)amsiContext);
+        unsafe
+        {
+            PInvoke.AmsiUninitialize((HAMSICONTEXT)amsiContext);
+        }
     }
 
     internal static HRESULT AmsiOpenSession(AmsiContextSafeHandle amsiContext, out AmsiSessionSafeHandle session)
     {
-        var contextAddRef = false;
-        try
+        unsafe
         {
-            amsiContext.DangerousAddRef(ref contextAddRef);
-            var result = PInvoke.AmsiOpenSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), out var nativeSession);
-            session = result.Failed ? new AmsiSessionSafeHandle() : new AmsiSessionSafeHandle(amsiContext, (nint)nativeSession);
-            return result;
-        }
-        finally
-        {
-            if (contextAddRef)
-                amsiContext.DangerousRelease();
+            var contextAddRef = false;
+            try
+            {
+                amsiContext.DangerousAddRef(ref contextAddRef);
+                var result = PInvoke.AmsiOpenSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), out var nativeSession);
+                session = result.Failed ? new AmsiSessionSafeHandle() : new AmsiSessionSafeHandle(amsiContext, (nint)nativeSession);
+                return result;
+            }
+            finally
+            {
+                if (contextAddRef)
+                    amsiContext.DangerousRelease();
+            }
         }
     }
 
     internal static void AmsiCloseSession(AmsiContextSafeHandle amsiContext, IntPtr session)
     {
-        // Called from AmsiSessionSafeHandle.ReleaseHandle, which already holds a reference on the context.
-        PInvoke.AmsiCloseSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), (HAMSISESSION)session);
+        unsafe
+        {
+            // Called from AmsiSessionSafeHandle.ReleaseHandle, which already holds a reference on the context.
+            PInvoke.AmsiCloseSession((HAMSICONTEXT)amsiContext.DangerousGetHandle(), (HAMSISESSION)session);
+        }
     }
 
     internal static HRESULT AmsiScanString(AmsiContextSafeHandle amsiContext, string payload, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
     {
-        var contextAddRef = false;
-        var sessionAddRef = false;
-        try
+        unsafe
         {
-            // DangerousGetHandle opts out of the lifetime guarantees SafeHandle exists to provide: the handles
-            // are unreferenced in this frame once the raw pointers are read, so a collection during the scan
-            // could run the critical finalizer and uninitialize the context while the provider is still using it.
-            amsiContext.DangerousAddRef(ref contextAddRef);
-            session.DangerousAddRef(ref sessionAddRef);
+            var contextAddRef = false;
+            var sessionAddRef = false;
+            try
+            {
+                // DangerousGetHandle opts out of the lifetime guarantees SafeHandle exists to provide: the handles
+                // are unreferenced in this frame once the raw pointers are read, so a collection during the scan
+                // could run the critical finalizer and uninitialize the context while the provider is still using it.
+                amsiContext.DangerousAddRef(ref contextAddRef);
+                session.DangerousAddRef(ref sessionAddRef);
 
-            var returnValue = PInvoke.AmsiScanString((HAMSICONTEXT)amsiContext.DangerousGetHandle(), payload, contentName, (HAMSISESSION)session.DangerousGetHandle(), out var nativeResult);
-            result = (AmsiResult)nativeResult;
-            return returnValue;
-        }
-        finally
-        {
-            if (sessionAddRef)
-                session.DangerousRelease();
+                var returnValue = PInvoke.AmsiScanString((HAMSICONTEXT)amsiContext.DangerousGetHandle(), payload, contentName, (HAMSISESSION)session.DangerousGetHandle(), out var nativeResult);
+                result = (AmsiResult)nativeResult;
+                return returnValue;
+            }
+            finally
+            {
+                if (sessionAddRef)
+                    session.DangerousRelease();
 
-            if (contextAddRef)
-                amsiContext.DangerousRelease();
+                if (contextAddRef)
+                    amsiContext.DangerousRelease();
+            }
         }
     }
 
     internal static HRESULT AmsiScanBuffer(AmsiContextSafeHandle amsiContext, byte[] buffer, uint length, string contentName, AmsiSessionSafeHandle session, out AmsiResult result)
     {
-        var contextAddRef = false;
-        var sessionAddRef = false;
-        try
+        unsafe
         {
-            amsiContext.DangerousAddRef(ref contextAddRef);
-            session.DangerousAddRef(ref sessionAddRef);
+            var contextAddRef = false;
+            var sessionAddRef = false;
+            try
+            {
+                amsiContext.DangerousAddRef(ref contextAddRef);
+                session.DangerousAddRef(ref sessionAddRef);
 
-            var returnValue = PInvoke.AmsiScanBuffer((HAMSICONTEXT)amsiContext.DangerousGetHandle(), buffer.AsSpan(0, checked((int)length)), contentName, (HAMSISESSION)session.DangerousGetHandle(), out var nativeResult);
-            result = (AmsiResult)nativeResult;
-            return returnValue;
-        }
-        finally
-        {
-            if (sessionAddRef)
-                session.DangerousRelease();
+                var returnValue = PInvoke.AmsiScanBuffer((HAMSICONTEXT)amsiContext.DangerousGetHandle(), buffer.AsSpan(0, checked((int)length)), contentName, (HAMSISESSION)session.DangerousGetHandle(), out var nativeResult);
+                result = (AmsiResult)nativeResult;
+                return returnValue;
+            }
+            finally
+            {
+                if (sessionAddRef)
+                    session.DangerousRelease();
 
-            if (contextAddRef)
-                amsiContext.DangerousRelease();
+                if (contextAddRef)
+                    amsiContext.DangerousRelease();
+            }
         }
     }
 }

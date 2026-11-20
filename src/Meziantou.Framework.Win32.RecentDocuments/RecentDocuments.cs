@@ -19,19 +19,22 @@ public static class RecentDocuments
     /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="path"/> is empty or contains a null character.</exception>
     [SupportedOSPlatform("windows5.1.2600")]
-    public static unsafe void AddToRecentDocuments(string path)
+    public static void AddToRecentDocuments(string path)
     {
-        // A null pointer makes SHAddToRecentDocs clear all usage data on all items, so an unvalidated
-        // null path would silently erase the recent documents instead of adding one.
-        ArgumentException.ThrowIfNullOrEmpty(path);
-
-        // The shell does not know the current directory, and would stop reading at an embedded null character.
-        // GetFullPath resolves the former and rejects the latter.
-        path = Path.GetFullPath(path);
-
-        fixed (char* p = path)
+        unsafe
         {
-            PInvoke.SHAddToRecentDocs((uint)SHARD.SHARD_PATHW, p);
+            // A null pointer makes SHAddToRecentDocs clear all usage data on all items, so an unvalidated
+            // null path would silently erase the recent documents instead of adding one.
+            ArgumentException.ThrowIfNullOrEmpty(path);
+
+            // The shell does not know the current directory, and would stop reading at an embedded null character.
+            // GetFullPath resolves the former and rejects the latter.
+            path = Path.GetFullPath(path);
+
+            fixed (char* p = path)
+            {
+                PInvoke.SHAddToRecentDocs((uint)SHARD.SHARD_PATHW, p);
+            }
         }
     }
 
@@ -48,38 +51,41 @@ public static class RecentDocuments
     /// or <paramref name="applicationUserModelId"/> is empty, longer than 128 characters, or contains a space or a null character.
     /// </exception>
     [SupportedOSPlatform("windows6.1")]
-    public static unsafe void AddToRecentDocuments(string path, string applicationUserModelId)
+    public static void AddToRecentDocuments(string path, string applicationUserModelId)
     {
-        ArgumentException.ThrowIfNullOrEmpty(path);
-        ArgumentException.ThrowIfNullOrEmpty(applicationUserModelId);
-        if (applicationUserModelId.Length > MaxApplicationUserModelIdLength)
-            throw new ArgumentException($"The AppUserModelID cannot be longer than {MaxApplicationUserModelIdLength} characters.", nameof(applicationUserModelId));
-
-        if (applicationUserModelId.AsSpan().ContainsAny(' ', '\0'))
-            throw new ArgumentException("The AppUserModelID cannot contain a space or a null character.", nameof(applicationUserModelId));
-
-        path = Path.GetFullPath(path);
-
-        var pidl = PInvoke.ILCreateFromPath(path);
-        if (pidl is null)
-            throw new ArgumentException($"The path '{path}' does not identify an existing item.", nameof(path));
-
-        try
+        unsafe
         {
-            fixed (char* appId = applicationUserModelId)
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentException.ThrowIfNullOrEmpty(applicationUserModelId);
+            if (applicationUserModelId.Length > MaxApplicationUserModelIdLength)
+                throw new ArgumentException($"The AppUserModelID cannot be longer than {MaxApplicationUserModelIdLength} characters.", nameof(applicationUserModelId));
+
+            if (applicationUserModelId.AsSpan().ContainsAny(' ', '\0'))
+                throw new ArgumentException("The AppUserModelID cannot contain a space or a null character.", nameof(applicationUserModelId));
+
+            path = Path.GetFullPath(path);
+
+            var pidl = PInvoke.ILCreateFromPath(path);
+            if (pidl is null)
+                throw new ArgumentException($"The path '{path}' does not identify an existing item.", nameof(path));
+
+            try
             {
-                var info = new SHARDAPPIDINFOIDLIST
+                fixed (char* appId = applicationUserModelId)
                 {
-                    pidl = pidl,
-                    pszAppID = appId,
-                };
+                    var info = new SHARDAPPIDINFOIDLIST
+                    {
+                        pidl = pidl,
+                        pszAppID = appId,
+                    };
 
-                PInvoke.SHAddToRecentDocs((uint)SHARD.SHARD_APPIDINFOIDLIST, &info);
+                    PInvoke.SHAddToRecentDocs((uint)SHARD.SHARD_APPIDINFOIDLIST, &info);
+                }
             }
-        }
-        finally
-        {
-            PInvoke.ILFree(pidl);
+            finally
+            {
+                PInvoke.ILFree(pidl);
+            }
         }
     }
 
@@ -88,8 +94,11 @@ public static class RecentDocuments
     /// This is not limited to the calling application: it empties the user's Recent Items and the Recent and Frequent lists of every application's Jump List. It cannot be undone.
     /// </remarks>
     [SupportedOSPlatform("windows5.1.2600")]
-    public static unsafe void ClearRecentDocuments()
+    public static void ClearRecentDocuments()
     {
-        PInvoke.SHAddToRecentDocs((uint)SHARD.SHARD_PIDL, pv: null);
+        unsafe
+        {
+            PInvoke.SHAddToRecentDocs((uint)SHARD.SHARD_PIDL, pv: null);
+        }
     }
 }

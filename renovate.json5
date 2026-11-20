@@ -115,11 +115,6 @@
       "enabled": false
     },
     {
-      "matchPackageNames": [ "Microsoft.Windows.CsWin32" ],
-      "groupName": "cswin32",
-      "enabled": true
-    },
-    {
       "matchFileNames": [
         "tests/Meziantou.Framework.SyntaxHighlighting.Tests/DockerfileHighlighterTests.cs"
       ],

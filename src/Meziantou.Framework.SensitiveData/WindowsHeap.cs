@@ -16,20 +16,26 @@ internal static partial class WindowsHeap
 
     private static readonly HANDLE Heap = GetOrCreateHeap();
 
-    public static unsafe IntPtr Allocate(nuint length)
+    public static IntPtr Allocate(nuint length)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
-            throw new PlatformNotSupportedException();
+        unsafe
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+                throw new PlatformNotSupportedException();
 
-        return (IntPtr)PInvoke.HeapAlloc(Heap, (HEAP_FLAGS)0, length);
+            return (IntPtr)PInvoke.HeapAlloc(Heap, (HEAP_FLAGS)0, length);
+        }
     }
 
-    public static unsafe bool Free(IntPtr handle)
+    public static bool Free(IntPtr handle)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
-            throw new PlatformNotSupportedException();
+        unsafe
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+                throw new PlatformNotSupportedException();
 
-        return PInvoke.HeapFree(Heap, (HEAP_FLAGS)0, (void*)handle);
+            return PInvoke.HeapFree(Heap, (HEAP_FLAGS)0, (void*)handle);
+        }
     }
 
     public static nuint GetAlignedSize(nuint size)
@@ -40,69 +46,78 @@ internal static partial class WindowsHeap
         return checked(size + CRYPTPROTECTMEMORY_BLOCK_SIZE - 1) / CRYPTPROTECTMEMORY_BLOCK_SIZE * CRYPTPROTECTMEMORY_BLOCK_SIZE;
     }
 
-    public static unsafe void ProtectMemory(IntPtr pData, nuint cbData)
+    public static void ProtectMemory(IntPtr pData, nuint cbData)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
-            throw new PlatformNotSupportedException();
-
-        // CryptProtectMemory takes a 32-bit size. Narrowing a larger one would silently leave everything past
-        // the first 4 GB in clear, so the buffer is processed in chunks that are each a whole number of blocks.
-        var data = (byte*)pData;
-        while (cbData > 0)
+        unsafe
         {
-            var chunk = (uint)Math.Min(cbData, MaxChunkSize);
-            if (!PInvoke.CryptProtectMemory(data, chunk, CRYPTPROTECTMEMORY_SAME_PROCESS))
-            {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            }
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
+                throw new PlatformNotSupportedException();
 
-            data += chunk;
-            cbData -= chunk;
+            // CryptProtectMemory takes a 32-bit size. Narrowing a larger one would silently leave everything past
+            // the first 4 GB in clear, so the buffer is processed in chunks that are each a whole number of blocks.
+            var data = (byte*)pData;
+            while (cbData > 0)
+            {
+                var chunk = (uint)Math.Min(cbData, MaxChunkSize);
+                if (!PInvoke.CryptProtectMemory(data, chunk, CRYPTPROTECTMEMORY_SAME_PROCESS))
+                {
+                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                }
+
+                data += chunk;
+                cbData -= chunk;
+            }
         }
     }
 
-    public static unsafe void UnprotectMemory(IntPtr pData, nuint cbData)
+    public static void UnprotectMemory(IntPtr pData, nuint cbData)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
-            throw new PlatformNotSupportedException();
-
-        // Uses the same chunk boundaries as ProtectMemory.
-        var data = (byte*)pData;
-        while (cbData > 0)
+        unsafe
         {
-            var chunk = (uint)Math.Min(cbData, MaxChunkSize);
-            if (!PInvoke.CryptUnprotectMemory(data, chunk, CRYPTPROTECTMEMORY_SAME_PROCESS))
-            {
-                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            }
+            if (!OperatingSystem.IsWindowsVersionAtLeast(6, 0, 6000))
+                throw new PlatformNotSupportedException();
 
-            data += chunk;
-            cbData -= chunk;
+            // Uses the same chunk boundaries as ProtectMemory.
+            var data = (byte*)pData;
+            while (cbData > 0)
+            {
+                var chunk = (uint)Math.Min(cbData, MaxChunkSize);
+                if (!PInvoke.CryptUnprotectMemory(data, chunk, CRYPTPROTECTMEMORY_SAME_PROCESS))
+                {
+                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                }
+
+                data += chunk;
+                cbData -= chunk;
+            }
         }
     }
 
     private static HANDLE GetOrCreateHeap()
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
-            throw new PlatformNotSupportedException();
-
-        // In 64-bit processes where the virtual address space is larger,
-        // we use our own private heap to store the shrouded data. This
-        // somewhat isolates the shrouded data's storage space from that of
-        // the rest of the application, providing limited mitigation of a
-        // use-after-free elsewhere in the application accidentally pointing
-        // to an address used by a shrouded buffer instance.
-
-        var hHeap = (IntPtr.Size == 8) ? PInvoke.HeapCreate((HEAP_FLAGS)0, 0, 0) : PInvoke.GetProcessHeap();
-        if (hHeap == IntPtr.Zero)
+        unsafe
         {
-            // GetHRForLastWin32Error returns 0x80070000 | lastError, which is negative as an int even
-            // when lastError is 0, so ThrowExceptionForHR always throws. It is not annotated
-            // [DoesNotReturn], so say out loud that returning a null heap handle cannot happen.
-            Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            throw new UnreachableException();
-        }
+            if (!OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+                throw new PlatformNotSupportedException();
 
-        return hHeap;
+            // In 64-bit processes where the virtual address space is larger,
+            // we use our own private heap to store the shrouded data. This
+            // somewhat isolates the shrouded data's storage space from that of
+            // the rest of the application, providing limited mitigation of a
+            // use-after-free elsewhere in the application accidentally pointing
+            // to an address used by a shrouded buffer instance.
+
+            var hHeap = (IntPtr.Size == 8) ? PInvoke.HeapCreate((HEAP_FLAGS)0, 0, 0) : PInvoke.GetProcessHeap();
+            if (hHeap == IntPtr.Zero)
+            {
+                // GetHRForLastWin32Error returns 0x80070000 | lastError, which is negative as an int even
+                // when lastError is 0, so ThrowExceptionForHR always throws. It is not annotated
+                // [DoesNotReturn], so say out loud that returning a null heap handle cannot happen.
+                Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
+                throw new UnreachableException();
+            }
+
+            return hHeap;
+        }
     }
 }

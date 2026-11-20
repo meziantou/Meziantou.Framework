@@ -1,7 +1,0 @@
-AmsiInitialize
-AmsiUninitialize
-AmsiOpenSession
-AmsiCloseSession
-AmsiScanString
-AmsiScanBuffer
-AMSI_RESULT

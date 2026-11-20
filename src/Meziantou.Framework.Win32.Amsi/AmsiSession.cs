@@ -59,9 +59,12 @@ public sealed class AmsiSession : IDisposable
     /// <exception cref="ObjectDisposedException">Thrown when the session or its context has been disposed.</exception>
     public AmsiResult Scan(string payload, string contentName)
     {
-        ThrowIfDisposed();
-        Amsi.AmsiScanString(_context._handle, payload, contentName, _sessionHandle, out var result).ThrowOnFailure();
-        return result;
+        unsafe
+        {
+            ThrowIfDisposed();
+            Amsi.AmsiScanString(_context._handle, payload, contentName, _sessionHandle, out var result).ThrowOnFailure();
+            return result;
+        }
     }
 
     /// <summary>Scans a byte buffer for malware within this session.</summary>
@@ -72,9 +75,12 @@ public sealed class AmsiSession : IDisposable
     /// <exception cref="ObjectDisposedException">Thrown when the session or its context has been disposed.</exception>
     public AmsiResult Scan(byte[] payload, string contentName)
     {
-        ThrowIfDisposed();
-        Amsi.AmsiScanBuffer(_context._handle, payload, (uint)payload.Length, contentName, _sessionHandle, out var result).ThrowOnFailure();
-        return result;
+        unsafe
+        {
+            ThrowIfDisposed();
+            Amsi.AmsiScanBuffer(_context._handle, payload, (uint)payload.Length, contentName, _sessionHandle, out var result).ThrowOnFailure();
+            return result;
+        }
     }
 
     private void ThrowIfDisposed()

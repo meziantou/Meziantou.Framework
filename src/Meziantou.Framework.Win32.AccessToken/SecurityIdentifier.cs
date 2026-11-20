@@ -39,14 +39,17 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     private readonly byte[] _sid;
     private (string? Domain, string? Name)? _account;
 
-    internal unsafe SecurityIdentifier(PSID sid)
+    internal SecurityIdentifier(PSID sid)
     {
-        if (sid == default)
-            throw new ArgumentNullException(nameof(sid));
+        unsafe
+        {
+            if (sid == default)
+                throw new ArgumentNullException(nameof(sid));
 
-        // The SID is only valid for the lifetime of the caller's buffer, so keep a copy for the deferred lookup
-        _sid = new Span<byte>(sid.Value, (int)PInvoke.GetLengthSid(sid)).ToArray();
-        Sid = ConvertSidToStringSid(sid);
+            // The SID is only valid for the lifetime of the caller's buffer, so keep a copy for the deferred lookup
+            _sid = new Span<byte>(sid.Value, (int)PInvoke.GetLengthSid(sid)).ToArray();
+            Sid = ConvertSidToStringSid(sid);
+        }
     }
 
     /// <summary>Gets the domain name associated with the SID.</summary>
@@ -61,7 +64,7 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     /// <exception cref="Win32Exception">The account lookup failed.</exception>
     public string? Name => Account.Name;
 
-    private unsafe (string? Domain, string? Name) Account
+    private (string? Domain, string? Name) Account
     {
         get
         {
@@ -106,73 +109,82 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     /// Assert.Equal("S-1-5-18", systemSid.Sid);
     /// </code>
     /// </example>
-    public static unsafe SecurityIdentifier FromWellKnown(WellKnownSidType type)
+    public static SecurityIdentifier FromWellKnown(WellKnownSidType type)
     {
-        uint size = MaxBinaryLength * sizeof(byte);
-        var resultSid = new PSID((void*)Marshal.AllocHGlobal((int)size));
-
-        try
+        unsafe
         {
-            if (!PInvoke.CreateWellKnownSid((WELL_KNOWN_SID_TYPE)type, default, resultSid, &size))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+            uint size = MaxBinaryLength * sizeof(byte);
+            var resultSid = new PSID((void*)Marshal.AllocHGlobal((int)size));
 
-            return new SecurityIdentifier(resultSid);
-        }
-        finally
-        {
-            if (resultSid.Value is not null)
+            try
             {
-                Marshal.FreeHGlobal((nint)resultSid.Value);
+                if (!PInvoke.CreateWellKnownSid((WELL_KNOWN_SID_TYPE)type, default, resultSid, &size))
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+
+                return new SecurityIdentifier(resultSid);
+            }
+            finally
+            {
+                if (resultSid.Value is not null)
+                {
+                    Marshal.FreeHGlobal((nint)resultSid.Value);
+                }
             }
         }
     }
 
-    private static unsafe string ConvertSidToStringSid(PSID sid)
+    private static string ConvertSidToStringSid(PSID sid)
     {
-        PWSTR result = default;
-        if (!PInvoke.ConvertSidToStringSid(sid, &result))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+        unsafe
+        {
+            PWSTR result = default;
+            if (!PInvoke.ConvertSidToStringSid(sid, &result))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        try
-        {
-            return result.ToString();
-        }
-        finally
-        {
-            // ConvertSidToStringSid allocates the buffer with LocalAlloc
-            PInvoke.LocalFree((HLOCAL)result.Value);
+            try
+            {
+                return result.ToString();
+            }
+            finally
+            {
+                // ConvertSidToStringSid allocates the buffer with LocalAlloc
+                PInvoke.LocalFree((HLOCAL)result.Value);
+            }
         }
     }
 
-    private static unsafe void LookupName(PSID sid, out string? domain, out string? name)
+    private static void LookupName(PSID sid, out string? domain, out string? name)
     {
-        var userNameLen = 256u;
-        var domainNameLen = 256u;
-
-        // LookupAccountSid reports the required sizes when a buffer is too small, so retry once with them
-        for (var attempt = 0; ; attempt++)
+        unsafe
         {
-            fixed (char* userName = new char[userNameLen])
-            fixed (char* domainName = new char[domainNameLen])
+            var userNameLen = 256u;
+            var domainNameLen = 256u;
+
+            // LookupAccountSid reports the required sizes when a buffer is too small, so retry once with them
+            for (var attempt = 0; ; attempt++)
             {
-                SID_NAME_USE sidType;
-                if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, &userNameLen, domainName, &domainNameLen, &sidType) != 0)
+                fixed (char* userName = new char[userNameLen])
+                fixed (char* domainName = new char[domainNameLen])
                 {
-                    name = new string(userName, 0, (int)userNameLen);
-                    domain = new string(domainName, 0, (int)domainNameLen);
-                    return;
-                }
+                    SID_NAME_USE sidType;
+                    if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, &userNameLen, domainName, &domainNameLen, &sidType) != 0)
+                    {
+                        name = new string(userName, 0, (int)userNameLen);
+                        domain = new string(domainName, 0, (int)domainNameLen);
+                        return;
+                    }
 
-                var error = Marshal.GetLastWin32Error();
-                if (error == (int)WIN32_ERROR.ERROR_NONE_MAPPED)
-                {
-                    domain = default;
-                    name = default;
-                    return;
-                }
+                    var error = Marshal.GetLastWin32Error();
+                    if (error == (int)WIN32_ERROR.ERROR_NONE_MAPPED)
+                    {
+                        domain = default;
+                        name = default;
+                        return;
+                    }
 
-                if (error != (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER || attempt > 0)
-                    throw new Win32Exception(error);
+                    if (error != (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER || attempt > 0)
+                        throw new Win32Exception(error);
+                }
             }
         }
     }

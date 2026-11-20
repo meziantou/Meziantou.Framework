@@ -70,7 +70,8 @@ public static class MarkOfTheWeb
 
         try
         {
-            var securityManager = CreateSecurityManager();
+            using var comScope = ComInitializationScope.Enter();
+            var securityManager = unsafe(CreateSecurityManager());
             if (securityManager is null)
                 return UrlZone.Invalid;
 
@@ -78,11 +79,11 @@ public static class MarkOfTheWeb
             {
                 // Without this flag, Windows can skip the zone information of a file stored on a network share
                 // and report the zone of the share instead.
-                return (UrlZone)MapFileToZone(securityManager, filePath, PInvoke.MUTZ_REQUIRESAVEDFILECHECK);
+                return (UrlZone)unsafe(MapFileToZone(securityManager, filePath, PInvoke.MUTZ_REQUIRESAVEDFILECHECK));
             }
             finally
             {
-                Marshal.ReleaseComObject(securityManager);
+                _ = unsafe(securityManager->Release());
             }
         }
         catch (Exception exception) when (exception is COMException or ArgumentException or PlatformNotSupportedException)
@@ -215,17 +216,19 @@ public static class MarkOfTheWeb
 
         filePath = Path.GetFullPath(filePath);
 
-        var securityManager = CreateSecurityManager();
+        using var comScope = ComInitializationScope.Enter();
+
+        var securityManager = unsafe(CreateSecurityManager());
         if (securityManager is null)
             return true;
 
         try
         {
-            if (MapFileToZone(securityManager, filePath, PInvoke.MUTZ_NOSAVEDFILECHECK) >= (uint)UrlZone.Internet)
+            if (unsafe(MapFileToZone(securityManager, filePath, PInvoke.MUTZ_NOSAVEDFILECHECK)) >= (uint)UrlZone.Internet)
                 return true;
 
             // For files currently stored in trusted locations, ensure we also look for any MotW storing the original source location
-            return MapFileToZone(securityManager, filePath, PInvoke.MUTZ_REQUIRESAVEDFILECHECK) >= (uint)UrlZone.Internet;
+            return unsafe(MapFileToZone(securityManager, filePath, PInvoke.MUTZ_REQUIRESAVEDFILECHECK)) >= (uint)UrlZone.Internet;
         }
         catch (COMException)
         {
@@ -235,25 +238,29 @@ public static class MarkOfTheWeb
         }
         finally
         {
-            Marshal.ReleaseComObject(securityManager);
+            _ = unsafe(securityManager->Release());
         }
     }
 
-    private static IInternetSecurityManager? CreateSecurityManager()
+    private static unsafe IInternetSecurityManager* CreateSecurityManager()
     {
-        var hr = PInvoke.CoInternetCreateSecurityManager(pSP: null, out var securityManager, dwReserved: 0);
-        if (hr.Failed)
-            return null;
-
-        return securityManager;
+        unsafe
+        {
+            IInternetSecurityManager* securityManager;
+            var hr = PInvoke.CoInternetCreateSecurityManager(pSP: null, &securityManager, dwReserved: 0);
+            return hr.Failed ? null : securityManager;
+        }
     }
 
-    private static uint MapFileToZone(IInternetSecurityManager securityManager, string fullPath, uint flags)
+    private static unsafe uint MapFileToZone(IInternetSecurityManager* securityManager, string fullPath, uint flags)
     {
-        // MapUrlToZone expects a URL. Without these flags, a '%' in a file name is decoded as an escape sequence
-        // and a '#' starts a fragment, so Windows would evaluate a different path than the file being checked.
-        securityManager.MapUrlToZone(fullPath, out var zone, flags | PInvoke.MUTZ_ISFILE | PInvoke.MUTZ_DONT_UNESCAPE);
-        return zone;
+        unsafe
+        {
+            // MapUrlToZone expects a URL. Without these flags, a '%' in a file name is decoded as an escape sequence
+            // and a '#' starts a fragment, so Windows would evaluate a different path than the file being checked.
+            securityManager->MapUrlToZone(fullPath, out var zone, flags | PInvoke.MUTZ_ISFILE | PInvoke.MUTZ_DONT_UNESCAPE);
+            return zone;
+        }
     }
 
     // The read-only attribute applies to every stream of a file, so it also prevents changing Zone.Identifier.

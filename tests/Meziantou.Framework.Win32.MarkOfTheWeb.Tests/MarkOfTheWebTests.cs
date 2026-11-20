@@ -101,6 +101,46 @@ public sealed class MarkOfTheWebTests
         }
     }
 
+    [Theory, RunIf(TestOperatingSystems.Windows)]
+    [InlineData(ApartmentState.MTA)]
+    [InlineData(ApartmentState.STA)]
+    public void GetFileZone_WorksOnAThreadThatHasNotInitializedCom(ApartmentState apartmentState)
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            MarkOfTheWeb.SetFileZone(path, UrlZone.Internet);
+
+            // A new thread has not used COM yet, so the security manager is created before COM is initialized on it
+            UrlZone? zone = null;
+            var isUntrusted = false;
+            Exception? exception = null;
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    zone = MarkOfTheWeb.GetFileZone(path);
+                    isUntrusted = MarkOfTheWeb.IsUntrusted(path);
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+            });
+            thread.SetApartmentState(apartmentState);
+            thread.Start();
+            thread.Join();
+
+            Assert.Null(exception);
+            Assert.Equal(UrlZone.Internet, zone);
+            Assert.True(isUntrusted);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Set_Delete()
     {

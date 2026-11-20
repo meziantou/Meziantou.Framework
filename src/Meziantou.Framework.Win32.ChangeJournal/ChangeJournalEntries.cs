@@ -36,43 +36,46 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
         return GetEnumerator();
     }
 
-    internal static unsafe ChangeJournalEntry GetBufferedEntry(IntPtr bufferPointer, USN_RECORD_COMMON_HEADER header)
+    internal static ChangeJournalEntry GetBufferedEntry(IntPtr bufferPointer, USN_RECORD_COMMON_HEADER header)
     {
-        if (header is { MajorVersion: 2, MinorVersion: 0 })
+        unsafe
         {
-            EnsureRecordHoldsItsStructure(header, sizeof(USN_RECORD_V2));
-            var entry = Unsafe.ReadUnaligned<USN_RECORD_V2>((void*)bufferPointer);
-            return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
-        }
-        else if (header is { MajorVersion: 3, MinorVersion: 0 })
-        {
-            EnsureRecordHoldsItsStructure(header, sizeof(USN_RECORD_V3));
-            var entry = Unsafe.ReadUnaligned<USN_RECORD_V3>((void*)bufferPointer);
-            return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
-        }
-        else if (header is { MajorVersion: 4, MinorVersion: 0 })
-        {
-            EnsureRecordHoldsItsStructure(header, sizeof(USN_RECORD_V4));
-            var entry = Unsafe.ReadUnaligned<USN_RECORD_V4>((void*)bufferPointer);
-            var extendOffset = ExtentsOffset;
-
-            // The extents are stored inside the record, so they must not extend past the record's own length.
-            if (entry.ExtentSize < sizeof(USN_RECORD_EXTENT) || (long)extendOffset + ((long)entry.NumberOfExtents * entry.ExtentSize) > header.RecordLength)
-                throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} holding {entry.NumberOfExtents} extents of {entry.ExtentSize} bytes at offset {extendOffset}");
-
-            var extents = new ChangeJournalEntryExtent[entry.NumberOfExtents];
-            for (var i = 0; i < entry.NumberOfExtents; i++)
+            if (header is { MajorVersion: 2, MinorVersion: 0 })
             {
-                var extentPointer = bufferPointer + extendOffset + i * entry.ExtentSize;
-                var extent = Unsafe.ReadUnaligned<USN_RECORD_EXTENT>((void*)extentPointer);
-                extents[i] = new ChangeJournalEntryExtent(extent);
+                EnsureRecordHoldsItsStructure(header, sizeof(USN_RECORD_V2));
+                var entry = Unsafe.ReadUnaligned<USN_RECORD_V2>((void*)bufferPointer);
+                return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
             }
+            else if (header is { MajorVersion: 3, MinorVersion: 0 })
+            {
+                EnsureRecordHoldsItsStructure(header, sizeof(USN_RECORD_V3));
+                var entry = Unsafe.ReadUnaligned<USN_RECORD_V3>((void*)bufferPointer);
+                return new ChangeJournalEntryVersion2or3(entry, GetFileName(bufferPointer, header, entry.FileNameOffset, entry.FileNameLength));
+            }
+            else if (header is { MajorVersion: 4, MinorVersion: 0 })
+            {
+                EnsureRecordHoldsItsStructure(header, sizeof(USN_RECORD_V4));
+                var entry = Unsafe.ReadUnaligned<USN_RECORD_V4>((void*)bufferPointer);
+                var extendOffset = ExtentsOffset;
 
-            return new ChangeJournalEntryVersion4(entry, extents);
-        }
-        else
-        {
-            throw new NotSupportedException($"Record version {header.MajorVersion}.{header.MinorVersion} is not supported");
+                // The extents are stored inside the record, so they must not extend past the record's own length.
+                if (entry.ExtentSize < sizeof(USN_RECORD_EXTENT) || (long)extendOffset + ((long)entry.NumberOfExtents * entry.ExtentSize) > header.RecordLength)
+                    throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} holding {entry.NumberOfExtents} extents of {entry.ExtentSize} bytes at offset {extendOffset}");
+
+                var extents = new ChangeJournalEntryExtent[entry.NumberOfExtents];
+                for (var i = 0; i < entry.NumberOfExtents; i++)
+                {
+                    var extentPointer = bufferPointer + extendOffset + i * entry.ExtentSize;
+                    var extent = Unsafe.ReadUnaligned<USN_RECORD_EXTENT>((void*)extentPointer);
+                    extents[i] = new ChangeJournalEntryExtent(extent);
+                }
+
+                return new ChangeJournalEntryVersion4(entry, extents);
+            }
+            else
+            {
+                throw new NotSupportedException($"Record version {header.MajorVersion}.{header.MinorVersion} is not supported");
+            }
         }
     }
 
@@ -158,68 +161,71 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
             _entries.Clear();
         }
 
-        private unsafe bool Read()
+        private bool Read()
         {
-            const int CurrentUSNLength = sizeof(long);
-
-            var readData = new READ_USN_JOURNAL_DATA_V1
+            unsafe
             {
-                StartUsn = _currentUSN.Value,
-                ReasonMask = (uint)Options.ReasonFilter,
-                ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? 1u : 0u,
-                Timeout = Options.TimeoutInSeconds,
-                BytesToWaitFor = Options.BytesToWaitFor,
-                UsnJournalID = ChangeJournal.Data.ID,
-                MinMajorVersion = Options.MinimumMajorVersion,
-                MaxMajorVersion = Options.MaximumMajorVersion,
-            };
+                const int CurrentUSNLength = sizeof(long);
 
-            var handle = ChangeJournal.ChangeJournalHandle;
-
-            var controlCode = Options.Unprivileged ? Win32ControlCode.ReadUnprivilegedUsnJournal : Win32ControlCode.ReadUsnJournal;
-            var entryData = Win32DeviceControl.ControlWithInput(handle, controlCode, ref readData, BufferSize);
-            _entries.Clear();
-
-            if (entryData.Length > CurrentUSNLength) // There are more data than just data currentUSN.
-            {
-                var headerLength = sizeof(USN_RECORD_COMMON_HEADER);
-                fixed (byte* fixedBufferPointer = entryData)
+                var readData = new READ_USN_JOURNAL_DATA_V1
                 {
-                    var bufferPointer = (nint)fixedBufferPointer;
-                    _currentUSN = Marshal.ReadInt64(bufferPointer);
+                    StartUsn = _currentUSN.Value,
+                    ReasonMask = (uint)Options.ReasonFilter,
+                    ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? 1u : 0u,
+                    Timeout = Options.TimeoutInSeconds,
+                    BytesToWaitFor = Options.BytesToWaitFor,
+                    UsnJournalID = ChangeJournal.Data.ID,
+                    MinMajorVersion = Options.MinimumMajorVersion,
+                    MaxMajorVersion = Options.MaximumMajorVersion,
+                };
 
-                    // Enumerate entries
-                    var offset = CurrentUSNLength; // Skip currentUSN field
-                    while (offset < entryData.Length)
+                var handle = ChangeJournal.ChangeJournalHandle;
+
+                var controlCode = Options.Unprivileged ? Win32ControlCode.ReadUnprivilegedUsnJournal : Win32ControlCode.ReadUsnJournal;
+                var entryData = Win32DeviceControl.ControlWithInput(handle, controlCode, ref readData, BufferSize);
+                _entries.Clear();
+
+                if (entryData.Length > CurrentUSNLength) // There are more data than just data currentUSN.
+                {
+                    var headerLength = sizeof(USN_RECORD_COMMON_HEADER);
+                    fixed (byte* fixedBufferPointer = entryData)
                     {
-                        // The remaining bytes must hold a header before it can be read
-                        if (entryData.Length - offset < headerLength)
-                            throw new InvalidDataException($"The change journal returned {entryData.Length - offset} trailing bytes at offset {offset}, which cannot hold a record header");
+                        var bufferPointer = (nint)fixedBufferPointer;
+                        _currentUSN = Marshal.ReadInt64(bufferPointer);
 
-                        var entryPointer = bufferPointer + offset;
-                        var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>((void*)entryPointer);
+                        // Enumerate entries
+                        var offset = CurrentUSNLength; // Skip currentUSN field
+                        while (offset < entryData.Length)
+                        {
+                            // The remaining bytes must hold a header before it can be read
+                            if (entryData.Length - offset < headerLength)
+                                throw new InvalidDataException($"The change journal returned {entryData.Length - offset} trailing bytes at offset {offset}, which cannot hold a record header");
 
-                        // A record must be large enough to hold its own header and must not extend past the data that
-                        // was returned. Without this check, a length of 0 loops forever and an oversized length makes
-                        // the next iteration read past the end of the buffer.
-                        if (header.RecordLength < headerLength || header.RecordLength > (uint)(entryData.Length - offset))
-                            throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} at offset {offset}, which does not fit in the {entryData.Length}-byte buffer");
+                            var entryPointer = bufferPointer + offset;
+                            var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>((void*)entryPointer);
 
-                        _entries.Add(GetBufferedEntry(entryPointer, header));
-                        offset += (int)header.RecordLength;
+                            // A record must be large enough to hold its own header and must not extend past the data that
+                            // was returned. Without this check, a length of 0 loops forever and an oversized length makes
+                            // the next iteration read past the end of the buffer.
+                            if (header.RecordLength < headerLength || header.RecordLength > (uint)(entryData.Length - offset))
+                                throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} at offset {offset}, which does not fit in the {entryData.Length}-byte buffer");
+
+                            _entries.Add(GetBufferedEntry(entryPointer, header));
+                            offset += (int)header.RecordLength;
+                        }
                     }
                 }
-            }
 
-            // The buffer can hold the current USN without holding any record, in which case there is nothing to enumerate.
-            if (_entries.Count is 0)
-            {
-                _eof = true;
-                return false;
-            }
+                // The buffer can hold the current USN without holding any record, in which case there is nothing to enumerate.
+                if (_entries.Count is 0)
+                {
+                    _eof = true;
+                    return false;
+                }
 
-            _currentIndex = 0;
-            return true;
+                _currentIndex = 0;
+                return true;
+            }
         }
     }
 }

@@ -72,15 +72,18 @@ public sealed class AccessToken : IDisposable
 
     /// <summary>Gets the type of the token (primary or impersonation).</summary>
     /// <returns>A <see cref="TokenType"/> value indicating the token type.</returns>
-    public unsafe TokenType GetTokenType()
+    public TokenType GetTokenType()
     {
-        TokenType result;
-        uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(Token);
-        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)sizeof(TokenType), &returnedLength))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+        unsafe
+        {
+            TokenType result;
+            uint returnedLength;
+            using var safeHandleValue = new SafeHandleValue(Token);
+            if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)sizeof(TokenType), &returnedLength))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        return result;
+            return result;
+        }
     }
 
     /// <summary>Gets the elevation type of the token.</summary>
@@ -89,15 +92,18 @@ public sealed class AccessToken : IDisposable
     /// The elevation type indicates whether the token is elevated, limited, or default. This is useful
     /// for User Account Control (UAC) scenarios.
     /// </remarks>
-    public unsafe TokenElevationType GetElevationType()
+    public TokenElevationType GetElevationType()
     {
-        TokenElevationType result;
-        uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(Token);
-        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)sizeof(TokenElevationType), &returnedLength))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+        unsafe
+        {
+            TokenElevationType result;
+            uint returnedLength;
+            using var safeHandleValue = new SafeHandleValue(Token);
+            if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)sizeof(TokenElevationType), &returnedLength))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        return result;
+            return result;
+        }
     }
 
     /// <summary>Determines whether the token is elevated (running with administrative privileges).</summary>
@@ -113,7 +119,11 @@ public sealed class AccessToken : IDisposable
     /// In UAC scenarios, an administrator account has two tokens: a limited token for normal operations
     /// and an elevated token for administrative tasks. This method retrieves the linked token.
     /// </remarks>
-    public AccessToken? GetLinkedToken() => GetTokenInformation<TOKEN_LINKED_TOKEN, AccessToken?>(
+    public AccessToken? GetLinkedToken()
+    {
+        unsafe
+        {
+            return GetTokenInformation<TOKEN_LINKED_TOKEN, AccessToken?>(
             TOKEN_INFORMATION_CLASS.TokenLinkedToken,
             linkedToken =>
             {
@@ -122,6 +132,8 @@ public sealed class AccessToken : IDisposable
 
                 return new AccessToken(new SafeFileHandle(linkedToken.LinkedToken, ownsHandle: true));
             });
+        }
+    }
 
     /// <summary>Gets the mandatory integrity level of the token.</summary>
     /// <returns>A <see cref="TokenEntry"/> containing the integrity level SID.</returns>
@@ -196,7 +208,7 @@ public sealed class AccessToken : IDisposable
             });
     }
 
-    private static unsafe string LookupPrivilegeName(LUID luid)
+    private static string LookupPrivilegeName(LUID luid)
     {
         var luidNameLen = 0u;
         PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, lpName: null, ref luidNameLen);
@@ -235,46 +247,49 @@ public sealed class AccessToken : IDisposable
         return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg));
     }
 
-    private unsafe TResult GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
+    private TResult GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
         where T : unmanaged
     {
-        uint returnedLength;
-        using var safeHandleValue = new SafeHandleValue(Token);
-        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, TokenInformation: null, 0u, &returnedLength))
+        unsafe
         {
-            var errorCode = Marshal.GetLastWin32Error();
-            switch (errorCode)
+            uint returnedLength;
+            using var safeHandleValue = new SafeHandleValue(Token);
+            if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, TokenInformation: null, 0u, &returnedLength))
             {
-                case (int)WIN32_ERROR.ERROR_BAD_LENGTH:
-                // special case for TokenSessionId. Falling through
-                case (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
-                    var handle = Marshal.AllocHGlobal((int)returnedLength);
-                    try
-                    {
-                        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, (void*)handle, returnedLength, &returnedLength))
-                            throw new Win32Exception(Marshal.GetLastWin32Error());
-
-                        var s = Marshal.PtrToStructure<T>(handle);
-                        return func(handle, s);
-                    }
-                    finally
-                    {
-                        if (handle != IntPtr.Zero)
+                var errorCode = Marshal.GetLastWin32Error();
+                switch (errorCode)
+                {
+                    case (int)WIN32_ERROR.ERROR_BAD_LENGTH:
+                    // special case for TokenSessionId. Falling through
+                    case (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
+                        var handle = Marshal.AllocHGlobal((int)returnedLength);
+                        try
                         {
-                            Marshal.FreeHGlobal(handle);
+                            if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, (void*)handle, returnedLength, &returnedLength))
+                                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+                            var s = Marshal.PtrToStructure<T>(handle);
+                            return func(handle, s);
                         }
-                    }
+                        finally
+                        {
+                            if (handle != IntPtr.Zero)
+                            {
+                                Marshal.FreeHGlobal(handle);
+                            }
+                        }
 
-                case (int)WIN32_ERROR.ERROR_INVALID_HANDLE:
-                    throw new Win32Exception(errorCode, "Invalid impersonation token");
+                    case (int)WIN32_ERROR.ERROR_INVALID_HANDLE:
+                        throw new Win32Exception(errorCode, "Invalid impersonation token");
 
-                default:
-                    throw new Win32Exception(errorCode);
+                    default:
+                        throw new Win32Exception(errorCode);
+                }
             }
-        }
 
-        // The sizing call above asks for zero bytes, so it only succeeds if the information class carries no data
-        throw new InvalidOperationException(FormattableString.Invariant($"GetTokenInformation({type}) returned no data"));
+            // The sizing call above asks for zero bytes, so it only succeeds if the information class carries no data
+            throw new InvalidOperationException(FormattableString.Invariant($"GetTokenInformation({type}) returned no data"));
+        }
     }
 
     /// <summary>Enables a privilege for this token.</summary>
@@ -301,14 +316,17 @@ public sealed class AccessToken : IDisposable
 
     /// <summary>Disables all privileges for this token.</summary>
     /// <exception cref="Win32Exception">The operation failed.</exception>
-    public unsafe void DisableAllPrivileges()
+    public void DisableAllPrivileges()
     {
-        uint returnSize = 0;
-        using var safeHandleValue = new SafeHandleValue(Token);
-        if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+        unsafe
+        {
+            uint returnSize = 0;
+            using var safeHandleValue = new SafeHandleValue(Token);
+            if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        ThrowIfNotAllPrivilegesAssigned();
+            ThrowIfNotAllPrivilegesAssigned();
+        }
     }
 
     /// <summary>Removes a privilege from this token.</summary>
@@ -323,34 +341,37 @@ public sealed class AccessToken : IDisposable
     }
 
     [SuppressMessage("Usage", "MA0099:Use Explicit enum value instead of 0", Justification = "The constant doesn't exist")]
-    private unsafe void AdjustPrivilege(string privilegeName, PrivilegeOperation operation)
+    private void AdjustPrivilege(string privilegeName, PrivilegeOperation operation)
     {
-        if (!PInvoke.LookupPrivilegeValue(lpSystemName: null, privilegeName, out var luid))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
-
-        var privileges = new VariableLengthInlineArray<LUID_AND_ATTRIBUTES>();
-        privileges[0] = new LUID_AND_ATTRIBUTES
+        unsafe
         {
-            Luid = luid,
-            Attributes = operation switch
+            if (!PInvoke.LookupPrivilegeValue(lpSystemName: null, privilegeName, out var luid))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            var privileges = new VariableLengthInlineArray<LUID_AND_ATTRIBUTES>();
+            privileges[0] = new LUID_AND_ATTRIBUTES
             {
-                PrivilegeOperation.Enable => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED,
-                PrivilegeOperation.Remove => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_REMOVED,
-                _ => 0,
-            },
-        };
-        var tp = new TOKEN_PRIVILEGES
-        {
-            PrivilegeCount = 1,
-            Privileges = privileges,
-        };
+                Luid = luid,
+                Attributes = operation switch
+                {
+                    PrivilegeOperation.Enable => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED,
+                    PrivilegeOperation.Remove => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_REMOVED,
+                    _ => 0,
+                },
+            };
+            var tp = new TOKEN_PRIVILEGES
+            {
+                PrivilegeCount = 1,
+                Privileges = privileges,
+            };
 
-        uint returnSize = 0;
-        using var safeHandleValue = new SafeHandleValue(Token);
-        if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+            uint returnSize = 0;
+            using var safeHandleValue = new SafeHandleValue(Token);
+            if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        ThrowIfNotAllPrivilegesAssigned();
+            ThrowIfNotAllPrivilegesAssigned();
+        }
     }
 
     /// <remarks>

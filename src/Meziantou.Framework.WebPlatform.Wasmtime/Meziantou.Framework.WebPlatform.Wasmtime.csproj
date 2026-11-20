@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- The package is a binding of the C API of Wasmtime: [LibraryImport] declarations, pointers and explicit layout
          structures. The [LibraryImport] generator of .NET 10 emits code that the updated memory safety rules reject
-         (CS9377), so the project keeps the previous rules, as the projects that reference CsWin32 do. -->
+         (CS9377), so the project keeps the previous rules. -->
     <MeziantouUpdatedMemorySafetyRules>false</MeziantouUpdatedMemorySafetyRules>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <Description>Runs the WebAssembly modules of the scripts of Meziantou.Framework.WebPlatform with Wasmtime (a WebAssemblyRuntime for the WebAssembly JavaScript API).</Description>

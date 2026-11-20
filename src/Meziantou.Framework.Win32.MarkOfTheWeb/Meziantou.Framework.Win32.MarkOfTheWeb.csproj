@@ -9,10 +9,37 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/ComInitializationScope.cs" Link="ComInitializationScope.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../common/Win32/Windows.Win32.ComHelpers.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HRESULT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HWND.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IComIID.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IVTable-2.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.IVTable.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoInitializeEx.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoInternetCreateSecurityManager.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CoUninitialize.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.MUTZ_DONT_UNESCAPE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.MUTZ_ISFILE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.MUTZ_NOSAVEDFILECHECK.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.MUTZ_REQUIRESAVEDFILECHECK.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.COINIT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IEnumString.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IServiceProvider.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.IUnknown.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.Urlmon.IInternetSecurityManager.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Com.Urlmon.IInternetSecurityMgrSite.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IEnumString_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_IServiceProvider_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_Urlmon_IInternetSecurityManager_Extensions.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System_Com_Urlmon_IInternetSecurityMgrSite_Extensions.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

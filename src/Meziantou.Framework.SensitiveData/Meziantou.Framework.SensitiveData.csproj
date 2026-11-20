@@ -8,20 +8,21 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <AdditionalFiles Include="NativeMethods.json" />
-    <AdditionalFiles Include="NativeMethods.txt" />
-  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SensitiveData.Tests" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CryptProtectMemory.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CryptUnprotectMemory.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.GetProcessHeap.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.HeapAlloc.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.HeapCreate.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.HeapFree.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.Memory.HEAP_FLAGS.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

@@ -39,80 +39,84 @@ public sealed class SecurityProvidersSnapshot
     [SupportedOSPlatform("windows8.0")]
     private static ImmutableArray<SecurityProviderSnapshot> Get(WSC_SECURITY_PROVIDER provider)
     {
-        var wscProductListType = Type.GetTypeFromCLSID(typeof(WSCProductList).GUID, throwOnError: false);
-        if (wscProductListType is null)
-            return ImmutableArray<SecurityProviderSnapshot>.Empty;
-
-        var wscProductList = Utils.SafeGet(() => Activator.CreateInstance(wscProductListType));
-        if (wscProductList is null)
-            return ImmutableArray<SecurityProviderSnapshot>.Empty;
-
-        var pWSCProductList = (IWSCProductList)wscProductList;
-        try
+        unsafe
         {
-            pWSCProductList.Initialize(provider);
-            var nProductCount = pWSCProductList.Count;
+            using var comScope = ComInitializationScope.Enter();
+            if (WSCProductList.CreateInstance<IWSCProductList>(out var pWSCProductList).Failed || pWSCProductList is null)
+                return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
-            var products = ImmutableArray.CreateBuilder<SecurityProviderSnapshot>(initialCapacity: nProductCount);
-            for (var i = 0u; i < (uint)nProductCount; i++)
+            try
             {
-                string? productName = null;
-                string? productState = null;
-                string? productStatus = null;
-                string? remediationPath = null;
-                string? stateTimestamp = null;
+                pWSCProductList->Initialize((uint)provider);
+                var nProductCount = pWSCProductList->Count;
 
-                var index = i;
-                var pWscProduct = Utils.SafeGet(() =>
+                var products = ImmutableArray.CreateBuilder<SecurityProviderSnapshot>(initialCapacity: nProductCount);
+                for (var i = 0u; i < (uint)nProductCount; i++)
                 {
-                    pWSCProductList.get_Item(index, out var product);
-                    return product;
-                });
+                    string? productName = null;
+                    string? productState = null;
+                    string? productStatus = null;
+                    string? remediationPath = null;
+                    string? stateTimestamp = null;
 
-                if (pWscProduct is not null)
-                {
+                    IWscProduct* item = null;
                     try
                     {
-                        productName = GetString(() => pWscProduct.ProductName);
-                        productState = Utils.SafeGet<WSC_SECURITY_PRODUCT_STATE?>(() => pWscProduct.ProductState) switch
-                        {
-                            WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_ON => "On",
-                            WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_OFF => "Off",
-                            WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_SNOOZED => "Snoozed",
-                            null => null,
-                            _ => "Expired",
-                        };
-
-                        if (provider != WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL)
-                        {
-                            productStatus = Utils.SafeGet<WSC_SECURITY_SIGNATURE_STATUS?>(() => pWscProduct.SignatureStatus) switch
-                            {
-                                WSC_SECURITY_SIGNATURE_STATUS.WSC_SECURITY_PRODUCT_UP_TO_DATE => "Up-to-date",
-                                null => null,
-                                _ => "Out-of-date",
-                            };
-                        }
-
-                        remediationPath = GetString(() => pWscProduct.RemediationPath);
-                        if (provider == WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS)
-                        {
-                            stateTimestamp = GetString(() => pWscProduct.ProductStateTimestamp);
-                        }
+                        pWSCProductList->get_Item(i, &item);
                     }
-                    finally
+                    catch
                     {
-                        Marshal.ReleaseComObject(pWscProduct);
+                        item = null;
                     }
+
+                    // The lambdas below capture the pointer, so it is copied out of the local whose address was taken
+                    var pWscProduct = item;
+
+                    if (pWscProduct is not null)
+                    {
+                        try
+                        {
+                            productName = GetString(() => pWscProduct->ProductName);
+                            productState = Utils.SafeGet<WSC_SECURITY_PRODUCT_STATE?>(() => pWscProduct->ProductState) switch
+                            {
+                                WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_ON => "On",
+                                WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_OFF => "Off",
+                                WSC_SECURITY_PRODUCT_STATE.WSC_SECURITY_PRODUCT_STATE_SNOOZED => "Snoozed",
+                                null => null,
+                                _ => "Expired",
+                            };
+
+                            if (provider != WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL)
+                            {
+                                productStatus = Utils.SafeGet<WSC_SECURITY_SIGNATURE_STATUS?>(() => pWscProduct->SignatureStatus) switch
+                                {
+                                    WSC_SECURITY_SIGNATURE_STATUS.WSC_SECURITY_PRODUCT_UP_TO_DATE => "Up-to-date",
+                                    null => null,
+                                    _ => "Out-of-date",
+                                };
+                            }
+
+                            remediationPath = GetString(() => pWscProduct->RemediationPath);
+                            if (provider == WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS)
+                            {
+                                stateTimestamp = GetString(() => pWscProduct->ProductStateTimestamp);
+                            }
+                        }
+                        finally
+                        {
+                            pWscProduct->Release();
+                        }
+                    }
+
+                    products.Add(new SecurityProviderSnapshot(productName, remediationPath, productStatus, productState, stateTimestamp));
                 }
 
-                products.Add(new SecurityProviderSnapshot(productName, remediationPath, productStatus, productState, stateTimestamp));
+                return products.ToImmutable();
             }
-
-            return products.ToImmutable();
-        }
-        finally
-        {
-            Marshal.ReleaseComObject(pWSCProductList);
+            finally
+            {
+                pWSCProductList->Release();
+            }
         }
     }
 

@@ -70,7 +70,7 @@ public sealed class JobObject : IDisposable
     /// Initializes a new instance of the <see cref="JobObject"/> class.
     /// </summary>
     /// <param name="name">The job object name. May be null.</param>
-    public unsafe JobObject(string? name)
+    public JobObject(string? name)
         : this(name, inheritHandle: false)
     {
     }
@@ -84,24 +84,27 @@ public sealed class JobObject : IDisposable
     /// When <paramref name="name"/> matches a job object that already exists, this attaches to that job
     /// object instead of creating a new one. Inspect <see cref="CreatedNew"/> to tell the two apart.
     /// </remarks>
-    public unsafe JobObject(string? name, bool inheritHandle)
+    public JobObject(string? name, bool inheritHandle)
     {
-        var atts = new Windows.Win32.Security.SECURITY_ATTRIBUTES
+        unsafe
         {
-            bInheritHandle = inheritHandle,
-            lpSecurityDescriptor = IntPtr.Zero.ToPointer(),
-            nLength = (uint)sizeof(Windows.Win32.Security.SECURITY_ATTRIBUTES),
-        };
+            var atts = new Windows.Win32.Security.SECURITY_ATTRIBUTES
+            {
+                bInheritHandle = inheritHandle,
+                lpSecurityDescriptor = IntPtr.Zero.ToPointer(),
+                nLength = (uint)sizeof(Windows.Win32.Security.SECURITY_ATTRIBUTES),
+            };
 
-        _jobHandle = Windows.Win32.PInvoke.CreateJobObject(atts, name);
-        var lastError = Marshal.GetLastWin32Error();
-        if (_jobHandle.IsInvalid)
-        {
-            _jobHandle.Dispose();
-            throw new Win32Exception(lastError);
+            _jobHandle = Windows.Win32.PInvoke.CreateJobObject(atts, name);
+            var lastError = Marshal.GetLastWin32Error();
+            if (_jobHandle.IsInvalid)
+            {
+                _jobHandle.Dispose();
+                throw new Win32Exception(lastError);
+            }
+
+            CreatedNew = lastError != (int)WIN32_ERROR.ERROR_ALREADY_EXISTS;
         }
-
-        CreatedNew = lastError != (int)WIN32_ERROR.ERROR_ALREADY_EXISTS;
     }
 
     /// <summary>Opens an existing job object.</summary>
@@ -190,71 +193,80 @@ public sealed class JobObject : IDisposable
     /// <remarks>The caller must keep <paramref name="processHandle"/> open for the duration of the call. Prefer <see cref="AssignProcess(Process)"/> when a <see cref="Process"/> instance is available.</remarks>
     public void AssignProcess(IntPtr processHandle)
     {
-        var addedRef = false;
-        try
+        unsafe
         {
-            _jobHandle.DangerousAddRef(ref addedRef);
-            if (!Windows.Win32.PInvoke.AssignProcessToJobObject((HANDLE)_jobHandle.DangerousGetHandle(), (HANDLE)processHandle))
+            var addedRef = false;
+            try
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+                _jobHandle.DangerousAddRef(ref addedRef);
+                if (!Windows.Win32.PInvoke.AssignProcessToJobObject((HANDLE)_jobHandle.DangerousGetHandle(), (HANDLE)processHandle))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
             }
-        }
-        finally
-        {
-            if (addedRef)
+            finally
             {
-                _jobHandle.DangerousRelease();
+                if (addedRef)
+                {
+                    _jobHandle.DangerousRelease();
+                }
             }
         }
     }
 
     /// <summary>Sets limits to the job.</summary>
     /// <param name="limits">The limits. May not be null.</param>
-    public unsafe void SetLimits(JobObjectLimits limits)
+    public void SetLimits(JobObjectLimits limits)
     {
-        ArgumentNullException.ThrowIfNull(limits);
-
-        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        unsafe
         {
-            BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+            ArgumentNullException.ThrowIfNull(limits);
+
+            var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
             {
-                ActiveProcessLimit = limits.ActiveProcessLimit.GetValueOrDefault(),
-                Affinity = limits.Affinity.GetValueOrDefault(),
-                MaximumWorkingSetSize = limits.MaximumWorkingSetSize.GetValueOrDefault(),
-                MinimumWorkingSetSize = limits.MinimumWorkingSetSize.GetValueOrDefault(),
-                PerJobUserTimeLimit = limits.PerJobUserTimeLimit.GetValueOrDefault(),
-                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit.GetValueOrDefault(),
-                PriorityClass = limits.PriorityClass.GetValueOrDefault(),
-                SchedulingClass = limits.SchedulingClass.GetValueOrDefault(),
-                LimitFlags = limits.ComputeLimitFlags(),
-            },
-            ProcessMemoryLimit = limits.ProcessMemoryLimit.GetValueOrDefault(),
-            JobMemoryLimit = limits.JobMemoryLimit.GetValueOrDefault(),
-        };
+                BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+                {
+                    ActiveProcessLimit = limits.ActiveProcessLimit.GetValueOrDefault(),
+                    Affinity = limits.Affinity.GetValueOrDefault(),
+                    MaximumWorkingSetSize = limits.MaximumWorkingSetSize.GetValueOrDefault(),
+                    MinimumWorkingSetSize = limits.MinimumWorkingSetSize.GetValueOrDefault(),
+                    PerJobUserTimeLimit = limits.PerJobUserTimeLimit.GetValueOrDefault(),
+                    PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit.GetValueOrDefault(),
+                    PriorityClass = limits.PriorityClass.GetValueOrDefault(),
+                    SchedulingClass = limits.SchedulingClass.GetValueOrDefault(),
+                    LimitFlags = limits.ComputeLimitFlags(),
+                },
+                ProcessMemoryLimit = limits.ProcessMemoryLimit.GetValueOrDefault(),
+                JobMemoryLimit = limits.JobMemoryLimit.GetValueOrDefault(),
+            };
 
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION)))
-        {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
     /// <summary>Sets UI restrictions for processes in the job.</summary>
     /// <param name="limits">The UI restrictions to apply to the job.</param>
     /// <exception cref="Win32Exception">The UI restrictions could not be set.</exception>
-    public unsafe void SetUIRestrictions(JobObjectUILimit limits)
+    public void SetUIRestrictions(JobObjectUILimit limits)
     {
-        var restriction = new JOBOBJECT_BASIC_UI_RESTRICTIONS
+        unsafe
         {
-            UIRestrictionsClass = (JOB_OBJECT_UILIMIT)limits,
-        };
+            var restriction = new JOBOBJECT_BASIC_UI_RESTRICTIONS
+            {
+                UIRestrictionsClass = (JOB_OBJECT_UILIMIT)limits,
+            };
 
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicUIRestrictions, &restriction, (uint)sizeof(JOBOBJECT_BASIC_UI_RESTRICTIONS)))
-        {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicUIRestrictions, &restriction, (uint)sizeof(JOBOBJECT_BASIC_UI_RESTRICTIONS)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
@@ -269,25 +281,28 @@ public sealed class JobObject : IDisposable
     /// For example, to let the job use 20% of the CPU, set CpuRate to 20 times 100, or 2,000.
     /// </param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="cpuRate"/> is not between 1 and 10,000.</exception>
-    public unsafe void SetCpuRateHardCap(int cpuRate)
+    public void SetCpuRateHardCap(int cpuRate)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(cpuRate, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(cpuRate, MaxCpuRate);
-
-        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+        unsafe
         {
-            ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
-            Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+            ArgumentOutOfRangeException.ThrowIfLessThan(cpuRate, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(cpuRate, MaxCpuRate);
+
+            var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
             {
-                CpuRate = (uint)cpuRate,
-            },
-        };
+                ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
+                Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+                {
+                    CpuRate = (uint)cpuRate,
+                },
+            };
 
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
-        {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
@@ -298,64 +313,70 @@ public sealed class JobObject : IDisposable
     /// <see cref="JobObjectCpuHardCap.Mode"/> carry a meaningful value.
     /// </returns>
     /// <exception cref="Win32Exception">The operation failed.</exception>
-    public unsafe JobObjectCpuHardCap GetCpuRateHardCap()
+    public JobObjectCpuHardCap GetCpuRateHardCap()
     {
-        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
-
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION), null))
+        unsafe
         {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
+
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION), null))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
+
+            var mode = restriction.ControlFlags switch
+            {
+                var flags when !flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE) => JobObjectCpuRateControlMode.Disabled,
+                var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED) => JobObjectCpuRateControlMode.Weight,
+                var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE) => JobObjectCpuRateControlMode.MinMaxRate,
+                _ => JobObjectCpuRateControlMode.HardCap,
+            };
+
+            return mode switch
+            {
+                JobObjectCpuRateControlMode.Weight => new JobObjectCpuHardCap
+                {
+                    Enabled = true,
+                    Mode = mode,
+                    Weight = (int)restriction.Anonymous.Weight,
+                },
+                JobObjectCpuRateControlMode.MinMaxRate => new JobObjectCpuHardCap
+                {
+                    Enabled = true,
+                    Mode = mode,
+                    MinRate = restriction.Anonymous.Anonymous.MinRate,
+                    MaxRate = restriction.Anonymous.Anonymous.MaxRate,
+                },
+                JobObjectCpuRateControlMode.HardCap => new JobObjectCpuHardCap
+                {
+                    Enabled = true,
+                    Mode = mode,
+                    Rate = (int)restriction.Anonymous.CpuRate,
+                },
+                _ => new JobObjectCpuHardCap
+                {
+                    Enabled = false,
+                    Mode = JobObjectCpuRateControlMode.Disabled,
+                },
+            };
         }
-
-        var mode = restriction.ControlFlags switch
-        {
-            var flags when !flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE) => JobObjectCpuRateControlMode.Disabled,
-            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED) => JobObjectCpuRateControlMode.Weight,
-            var flags when flags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE) => JobObjectCpuRateControlMode.MinMaxRate,
-            _ => JobObjectCpuRateControlMode.HardCap,
-        };
-
-        return mode switch
-        {
-            JobObjectCpuRateControlMode.Weight => new JobObjectCpuHardCap
-            {
-                Enabled = true,
-                Mode = mode,
-                Weight = (int)restriction.Anonymous.Weight,
-            },
-            JobObjectCpuRateControlMode.MinMaxRate => new JobObjectCpuHardCap
-            {
-                Enabled = true,
-                Mode = mode,
-                MinRate = restriction.Anonymous.Anonymous.MinRate,
-                MaxRate = restriction.Anonymous.Anonymous.MaxRate,
-            },
-            JobObjectCpuRateControlMode.HardCap => new JobObjectCpuHardCap
-            {
-                Enabled = true,
-                Mode = mode,
-                Rate = (int)restriction.Anonymous.CpuRate,
-            },
-            _ => new JobObjectCpuHardCap
-            {
-                Enabled = false,
-                Mode = JobObjectCpuRateControlMode.Disabled,
-            },
-        };
     }
 
     /// <summary>Disables the job's CPU rate limit.</summary>
-    public unsafe void DisableCpuRateHardCap()
+    public void DisableCpuRateHardCap()
     {
-        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
-
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
+        unsafe
         {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
+
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
@@ -365,25 +386,28 @@ public sealed class JobObject : IDisposable
     /// This member can be a value from 1 through 9, where 1 is the smallest share and 9 is the largest share.The default is 5, which should be used for most workloads.
     /// </param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="weight"/> is not between 1 and 9.</exception>
-    public unsafe void SetCpuRateWeight(int weight)
+    public void SetCpuRateWeight(int weight)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(weight, MinCpuWeight);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, MaxCpuWeight);
-
-        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+        unsafe
         {
-            ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED,
-            Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+            ArgumentOutOfRangeException.ThrowIfLessThan(weight, MinCpuWeight);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, MaxCpuWeight);
+
+            var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
             {
-                Weight = (uint)weight,
-            },
-        };
+                ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED,
+                Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+                {
+                    Weight = (uint)weight,
+                },
+            };
 
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
-        {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
@@ -399,72 +423,81 @@ public sealed class JobObject : IDisposable
     /// After the job reaches this limit for a scheduling interval, no threads associated with the job can run until the next scheduling interval.
     /// </param>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="minRate"/> or <paramref name="maxRate"/> is not between 1 and 10,000, or <paramref name="minRate"/> is greater than <paramref name="maxRate"/>.</exception>
-    public unsafe void SetCpuRate(int minRate, int maxRate)
+    public void SetCpuRate(int minRate, int maxRate)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(minRate, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, MaxCpuRate);
-        ArgumentOutOfRangeException.ThrowIfLessThan(maxRate, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(maxRate, MaxCpuRate);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, maxRate);
-
-        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+        unsafe
         {
-            ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE,
-            Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+            ArgumentOutOfRangeException.ThrowIfLessThan(minRate, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, MaxCpuRate);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maxRate, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(maxRate, MaxCpuRate);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(minRate, maxRate);
+
+            var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
             {
-                Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union._Anonymous_e__Struct
+                ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE,
+                Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
                 {
-                    MinRate = (ushort)minRate,
-                    MaxRate = (ushort)maxRate,
+                    Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union._Anonymous_e__Struct
+                    {
+                        MinRate = (ushort)minRate,
+                        MaxRate = (ushort)maxRate,
+                    },
                 },
-            },
-        };
+            };
 
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
-        {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_CPU_RATE_CONTROL_INFORMATION)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
     /// <summary>Set bandwidth limits for the job.</summary>
     /// <param name="maxBandwidth">The maximum bandwidth for outgoing network traffic for the job, in bytes.</param>
-    public unsafe void SetNetRateLimits(ulong maxBandwidth)
+    public void SetNetRateLimits(ulong maxBandwidth)
     {
-        var restriction = new JOBOBJECT_NET_RATE_CONTROL_INFORMATION
+        unsafe
         {
-            ControlFlags = JOB_OBJECT_NET_RATE_CONTROL_FLAGS.JOB_OBJECT_NET_RATE_CONTROL_ENABLE | JOB_OBJECT_NET_RATE_CONTROL_FLAGS.JOB_OBJECT_NET_RATE_CONTROL_MAX_BANDWIDTH,
-            MaxBandwidth = maxBandwidth,
-        };
+            var restriction = new JOBOBJECT_NET_RATE_CONTROL_INFORMATION
+            {
+                ControlFlags = JOB_OBJECT_NET_RATE_CONTROL_FLAGS.JOB_OBJECT_NET_RATE_CONTROL_ENABLE | JOB_OBJECT_NET_RATE_CONTROL_FLAGS.JOB_OBJECT_NET_RATE_CONTROL_MAX_BANDWIDTH,
+                MaxBandwidth = maxBandwidth,
+            };
 
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectNetRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_NET_RATE_CONTROL_INFORMATION)))
-        {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectNetRateControlInformation, &restriction, (uint)sizeof(JOBOBJECT_NET_RATE_CONTROL_INFORMATION)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
     /// <summary>Set security limits for the job.</summary>
-    public unsafe void SetSecurityLimits(JobObjectSecurityLimit securityLimit)
+    public void SetSecurityLimits(JobObjectSecurityLimit securityLimit)
     {
-        var restriction = new JOBOBJECT_SECURITY_LIMIT_INFORMATION
+        unsafe
         {
-            SecurityLimitFlags = (JOB_OBJECT_SECURITY)securityLimit,
-        };
+            var restriction = new JOBOBJECT_SECURITY_LIMIT_INFORMATION
+            {
+                SecurityLimitFlags = (JOB_OBJECT_SECURITY)securityLimit,
+            };
 
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectSecurityLimitInformation, &restriction, (uint)sizeof(JOBOBJECT_SECURITY_LIMIT_INFORMATION)))
-        {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectSecurityLimitInformation, &restriction, (uint)sizeof(JOBOBJECT_SECURITY_LIMIT_INFORMATION)))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
         }
     }
 
     /// <summary>Sets I/O limits on a job object.</summary>
     [SupportedOSPlatform("windows10.0.10240")]
-    public unsafe void SetIoLimits(JobIoRateLimits limits)
+    public void SetIoLimits(JobIoRateLimits limits)
     {
         fixed (char* volumeNamePtr = limits.VolumeName)
         {
@@ -489,88 +522,97 @@ public sealed class JobObject : IDisposable
     /// <summary>Get the job's basic accounting information.</summary>
     /// <returns><see cref="JobObjectBasicAccountingInformation"/> record containing basic accounting information.</returns>
     /// <exception cref="Win32Exception">The operation failed.</exception>
-    public unsafe JobObjectBasicAccountingInformation GetBasicAccountingInformation()
+    public JobObjectBasicAccountingInformation GetBasicAccountingInformation()
     {
-        var info = new JOBOBJECT_BASIC_ACCOUNTING_INFORMATION();
-
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicAccountingInformation, &info, (uint)sizeof(JOBOBJECT_BASIC_ACCOUNTING_INFORMATION), null))
+        unsafe
         {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            var info = new JOBOBJECT_BASIC_ACCOUNTING_INFORMATION();
+
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicAccountingInformation, &info, (uint)sizeof(JOBOBJECT_BASIC_ACCOUNTING_INFORMATION), null))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
+
+            return new JobObjectBasicAccountingInformation
+            {
+                TotalUserTime = new(info.TotalUserTime),
+                TotalKernelTime = new(info.TotalKernelTime),
+                ThisPeriodTotalUserTime = new(info.ThisPeriodTotalUserTime),
+                ThisPeriodTotalKernelTime = new(info.ThisPeriodTotalKernelTime),
+                TotalPageFaultCount = info.TotalPageFaultCount,
+                TotalProcesses = info.TotalProcesses,
+                ActiveProcesses = info.ActiveProcesses,
+                TotalTerminatedProcesses = info.TotalTerminatedProcesses,
+            };
         }
-
-        return new JobObjectBasicAccountingInformation
-        {
-            TotalUserTime = new(info.TotalUserTime),
-            TotalKernelTime = new(info.TotalKernelTime),
-            ThisPeriodTotalUserTime = new(info.ThisPeriodTotalUserTime),
-            ThisPeriodTotalKernelTime = new(info.ThisPeriodTotalKernelTime),
-            TotalPageFaultCount = info.TotalPageFaultCount,
-            TotalProcesses = info.TotalProcesses,
-            ActiveProcesses = info.ActiveProcesses,
-            TotalTerminatedProcesses = info.TotalTerminatedProcesses,
-        };
     }
 
     /// <summary>Get the job's basic and IO accounting information.</summary>
     /// <returns><see cref="JobObjectBasicAndIoAccountingInformation"/> record containing both basic and IO accounting information.</returns>
     /// <exception cref="Win32Exception">The operation failed.</exception>
-    public unsafe JobObjectBasicAndIoAccountingInformation GetBasicAndIoAccountingInformation()
+    public JobObjectBasicAndIoAccountingInformation GetBasicAndIoAccountingInformation()
     {
-        var info = new JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION();
-
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicAndIoAccountingInformation, &info, (uint)sizeof(JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION), null))
+        unsafe
         {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            var info = new JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION();
+
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicAndIoAccountingInformation, &info, (uint)sizeof(JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION), null))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
+
+            return new JobObjectBasicAndIoAccountingInformation
+            {
+                BasicInfo = new JobObjectBasicAccountingInformation
+                {
+                    TotalUserTime = new(info.BasicInfo.TotalUserTime),
+                    TotalKernelTime = new(info.BasicInfo.TotalKernelTime),
+                    ThisPeriodTotalUserTime = new(info.BasicInfo.ThisPeriodTotalUserTime),
+                    ThisPeriodTotalKernelTime = new(info.BasicInfo.ThisPeriodTotalKernelTime),
+                    TotalPageFaultCount = info.BasicInfo.TotalPageFaultCount,
+                    TotalProcesses = info.BasicInfo.TotalProcesses,
+                    ActiveProcesses = info.BasicInfo.ActiveProcesses,
+                    TotalTerminatedProcesses = info.BasicInfo.TotalTerminatedProcesses,
+                },
+                IoInfo = new JobObjectIoCounters
+                {
+                    ReadOperationCount = info.IoInfo.ReadOperationCount,
+                    WriteOperationCount = info.IoInfo.WriteOperationCount,
+                    OtherOperationCount = info.IoInfo.OtherOperationCount,
+                    ReadTransferCount = info.IoInfo.ReadTransferCount,
+                    WriteTransferCount = info.IoInfo.WriteTransferCount,
+                    OtherTransferCount = info.IoInfo.OtherTransferCount,
+                },
+            };
         }
-
-        return new JobObjectBasicAndIoAccountingInformation
-        {
-            BasicInfo = new JobObjectBasicAccountingInformation
-            {
-                TotalUserTime = new(info.BasicInfo.TotalUserTime),
-                TotalKernelTime = new(info.BasicInfo.TotalKernelTime),
-                ThisPeriodTotalUserTime = new(info.BasicInfo.ThisPeriodTotalUserTime),
-                ThisPeriodTotalKernelTime = new(info.BasicInfo.ThisPeriodTotalKernelTime),
-                TotalPageFaultCount = info.BasicInfo.TotalPageFaultCount,
-                TotalProcesses = info.BasicInfo.TotalProcesses,
-                ActiveProcesses = info.BasicInfo.ActiveProcesses,
-                TotalTerminatedProcesses = info.BasicInfo.TotalTerminatedProcesses,
-            },
-            IoInfo = new JobObjectIoCounters
-            {
-                ReadOperationCount = info.IoInfo.ReadOperationCount,
-                WriteOperationCount = info.IoInfo.WriteOperationCount,
-                OtherOperationCount = info.IoInfo.OtherOperationCount,
-                ReadTransferCount = info.IoInfo.ReadTransferCount,
-                WriteTransferCount = info.IoInfo.WriteTransferCount,
-                OtherTransferCount = info.IoInfo.OtherTransferCount,
-            },
-        };
     }
 
     /// <summary>Get the job's memory accounting information.</summary>
     /// <returns><see cref="JobObjectMemoryAccountingInformation"/> record containing memory accounting information.</returns>
     /// <exception cref="Win32Exception">The operation failed.</exception>
-    public unsafe JobObjectMemoryAccountingInformation GetMemoryAccountingInformation()
+    public JobObjectMemoryAccountingInformation GetMemoryAccountingInformation()
     {
-        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
-
-        using var handleScope = new SafeHandleValue(_jobHandle);
-        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION), null))
+        unsafe
         {
-            var err = Marshal.GetLastWin32Error();
-            throw new Win32Exception(err);
+            var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
+
+            using var handleScope = new SafeHandleValue(_jobHandle);
+            if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION), null))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
+
+            return new JobObjectMemoryAccountingInformation
+            {
+                PeakProcessMemoryUsed = info.PeakProcessMemoryUsed,
+                PeakJobMemoryUsed = info.PeakJobMemoryUsed,
+            };
         }
-
-        return new JobObjectMemoryAccountingInformation
-        {
-            PeakProcessMemoryUsed = info.PeakProcessMemoryUsed,
-            PeakJobMemoryUsed = info.PeakJobMemoryUsed,
-        };
     }
 
     /// <summary>Determines whether the specified process is assigned to this job object.</summary>

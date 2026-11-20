@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- The Win32 declarations of common/Win32 are also compiled into Meziantou.Framework.Win32.ProjectedFileSystem,
+         whose internals are visible to this project. The declarations compiled into this project take precedence. -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,10 +13,35 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.369">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <Compile Include="../../common/Win32/Windows.Wdk.PInvoke.NtQueryDirectoryFile.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Wdk.Storage.FileSystem.FILE_DIRECTORY_INFORMATION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Wdk.Storage.FileSystem.FILE_INFORMATION_CLASS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOL.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.BOOLEAN.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HANDLE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.HRESULT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.NTSTATUS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PCWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.PWSTR.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Foundation.UNICODE_STRING.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.CreateFile.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjClearNegativePathCache.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjDeleteFile.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.PInvoke.PrjGetVirtualizationInstanceInfo.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Security.SECURITY_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_ACCESS_RIGHTS.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_CREATION_DISPOSITION.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_FLAGS_AND_ATTRIBUTES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.FileSystem.FILE_SHARE_MODE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_FILE_STATE.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_NOTIFY_TYPES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_UPDATE_FAILURE_CAUSES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_UPDATE_TYPES.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.Storage.ProjectedFileSystem.PRJ_VIRTUALIZATION_INSTANCE_INFO.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.System.IO.IO_STATUS_BLOCK.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-1.g.cs" LinkBase="Win32" />
+    <Compile Include="../../common/Win32/Windows.Win32.VariableLengthInlineArray-2.g.cs" LinkBase="Win32" />
   </ItemGroup>
 
 </Project>

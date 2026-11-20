@@ -1,6 +1,0 @@
-GetProcessHeap
-HeapCreate
-HeapAlloc
-HeapFree
-CryptProtectMemory
-CryptUnprotectMemory

@@ -32,6 +32,9 @@ internal sealed class RestartManagerSessionHandle : SafeHandle
 
     protected override bool ReleaseHandle()
     {
-        return PInvoke.RmEndSession((uint)handle) == WIN32_ERROR.ERROR_SUCCESS;
+        unsafe
+        {
+            return PInvoke.RmEndSession((uint)handle) == WIN32_ERROR.ERROR_SUCCESS;
+        }
     }
 }

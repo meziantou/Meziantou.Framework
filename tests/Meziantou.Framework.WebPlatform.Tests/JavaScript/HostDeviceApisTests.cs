@@ -4365,6 +4365,7 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Contains("Cluster(unknown)", elements);
         Assert.Contains("SimpleBlock:2@0+key", elements);
         Assert.DoesNotContain("CodecID:V_VP8", elements);
+    }
 
     // MediaStreamTrack Insertable Streams
 

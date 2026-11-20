@@ -14,7 +14,7 @@ internal static class Binding_MediaStreamTrackEvent<TAdapter, TValue> where TAda
         ParentName = "Event",
         ClrType = typeof(global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackEvent),
         Flags = global::Meziantou.Framework.WebPlatform.Scripting.InterfaceBindingFlags.None,
-        Exposure = global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window,
+        Exposure = global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.DedicatedWorker,
         ConstructorLength = 2,
         Constructor = Construct,
         DefineMembers = DefineMembers,

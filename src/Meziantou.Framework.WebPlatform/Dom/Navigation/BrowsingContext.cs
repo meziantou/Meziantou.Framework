@@ -99,6 +99,7 @@ public sealed partial class BrowsingContext : IDisposable
     private IndexedDBBackend? _indexedDBBackend;
     private CacheStorageBackend? _cacheStorageBackend;
     private FileSystemBackend? _fileSystemBackend;
+    private MediaKeysStorageBackend? _mediaKeysStorageBackend;
     private StoragePersistenceState? _storagePersistence;
     private StorageShed? _sessionStorageShed;
     private ServiceWorkerBackend? _serviceWorkerBackend;
@@ -286,6 +287,12 @@ public sealed partial class BrowsingContext : IDisposable
     /// backend of the browsing context created by the application that owns the group.
     /// </summary>
     internal CacheStorageBackend CacheStorageBackend => Options.CacheStorage ?? (ReferenceEquals(GroupOwner, this) ? LazyInitializer.EnsureInitialized(ref _cacheStorageBackend, static () => new InMemoryCacheStorageBackend()) : GroupOwner.CacheStorageBackend);
+
+    /// <summary>
+    /// The storage of the persistent key sessions: <see cref="BrowsingContextOptions.MediaKeysStorage"/>, or the in-memory
+    /// backend of the browsing context created by the application that owns the group.
+    /// </summary>
+    internal MediaKeysStorageBackend MediaKeysStorageBackend => Options.MediaKeysStorage ?? (ReferenceEquals(GroupOwner, this) ? LazyInitializer.EnsureInitialized(ref _mediaKeysStorageBackend, static () => new InMemoryMediaKeysStorageBackend()) : GroupOwner.MediaKeysStorageBackend);
 
     /// <summary>
     /// The storage of the origin private file systems: <see cref="BrowsingContextOptions.FileSystem"/>, or the in-memory
@@ -1518,6 +1525,18 @@ public sealed partial class BrowsingContext : IDisposable
         if (Parent is not null && (traversalEntry is null || initialInsertion))
         {
             IsDelayingLoadEvents = true;
+        }
+
+        // https://wicg.github.io/document-picture-in-picture/#close-on-navigation: the Picture-in-Picture window of the top-level
+        // window is closed, and a Picture-in-Picture window that navigates to another document is closed instead
+        if (DocumentPictureInPictureModel.OnNavigate(this))
+        {
+            if (_ongoingNavigation == navigationId)
+            {
+                EndNavigationWithoutDocument();
+            }
+
+            return;
         }
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, step 23.3: the active document stops loading
@@ -3565,7 +3584,9 @@ public sealed partial class BrowsingContext : IDisposable
             // (https://fullscreen.spec.whatwg.org/#unloading-document-cleanup-steps: the document fully exits fullscreen; the
             // pointer lock of one of its elements is exited; https://w3c.github.io/web-locks/#lock-termination: its locks are
             // released and its lock requests are aborted)
+            // (https://w3c.github.io/picture-in-picture/#exit-pip: its video leaves Picture-in-Picture)
             FullscreenModel.FullyExit(document);
+            PictureInPictureModel.OnDocumentUnloaded(document);
             PointerLockModel.OnDocumentUnloaded(document);
             ReleaseDeviceLocks(document);
             ModelContext.RunUnloadingDocumentCleanupSteps(document);
@@ -3623,6 +3644,7 @@ public sealed partial class BrowsingContext : IDisposable
         // https://webmachinelearning.github.io/webmcp/#unloading-document-cleanup-steps (the documents that are destroyed without being unloaded, e.g. an initial about:blank document)
         ModelContext.RunUnloadingDocumentCleanupSteps(document);
         PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
+        PictureInPictureModel.OnDocumentUnloaded(document);
 
         // The pointer lock of an element of the document is exited (https://w3c.github.io/pointerlock/#requirements), and
         // the locks of its window are released (https://w3c.github.io/web-locks/#lock-termination)
@@ -3632,6 +3654,9 @@ public sealed partial class BrowsingContext : IDisposable
         {
             WebLocks.OnEnvironmentDiscarded(destroyedWindow);
             destroyedWindow.ReleaseFileSystemResources();
+
+            // The key sessions of the document are closed: the persistent licenses they loaded can be loaded again
+            MediaKeySession.CloseSessionsOfDestroyedDocument(destroyedWindow);
         }
         if (document.ChildNavigables is { } children)
         {
@@ -3852,7 +3877,8 @@ public sealed partial class BrowsingContext : IDisposable
         if (IsDestroyed)
             return;
 
-        if (FireBeforeUnload())
+        // https://wicg.github.io/document-picture-in-picture/#close-window: the unloading of a Picture-in-Picture window cannot be canceled
+        if (!IsDocumentPictureInPicture && FireBeforeUnload())
             return;
 
         Destroy();
@@ -3892,9 +3918,13 @@ public sealed partial class BrowsingContext : IDisposable
             return;
 
         var window = Document.RelevantWindow;
+
+        // https://wicg.github.io/document-picture-in-picture/#close-on-destroy: the Picture-in-Picture window of the window is closed
+        DocumentPictureInPictureModel.OnDestroyed(this);
         ClearBackForwardCache();
         UnloadAndDestroy(Document);
         IsDestroyed = true;
+        OnDocumentPictureInPictureWindowDestroyed();
         _groupOwner?._auxiliaryBrowsingContexts?.Remove(this);
 
         // The window of the opener (else the first window of the group) is the active window again

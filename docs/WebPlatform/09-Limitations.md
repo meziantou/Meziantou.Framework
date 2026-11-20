@@ -52,7 +52,13 @@ fails.
   whose color profile has lookup tables and the `cICP` descriptions other than Display P3 are clipped to sRGB there too).
 - **Audio and video are not decoded.** The media elements run on a media backend that your application provides
   ([BrowsingContextOptions.MediaBackend](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaBackend)); without it, they have no media. The Media Source Extensions parse the segments
-  with the backend but do not decode the frames. The media controls and Encrypted Media are not implemented.
+  with the backend but do not decode the frames. The media controls are not implemented, and Encrypted Media
+  Extensions only implement the Clear Key key system, for the media data of the Media Source Extensions.
+- **There is no audio or video codec.** WebCodecs (`AudioDecoder`, `VideoDecoder`, `AudioEncoder`, `VideoEncoder`) and
+  `MediaRecorder` use the codecs of a backend that your application provides
+  ([BrowsingContextOptions.MediaCodecs](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCodecs), see
+  [Audio and video codecs](05-LoadingPages/10-AudioAndVideoCodecs.md)); without it, `configure()` fails with a
+  `NotSupportedError`. `MediaRecorder` records WebM streams of VP8 and Opus only.
 
 ## Network and security
 

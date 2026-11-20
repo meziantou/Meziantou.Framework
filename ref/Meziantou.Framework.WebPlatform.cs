@@ -3144,6 +3144,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Value { get => throw null; set { } }
     }
 
+    public sealed class AudioConfiguration
+    {
+        public ulong? Bitrate { get => throw null; init { } }
+        public string? Channels { get => throw null; init { } }
+        public required string ContentType { get => throw null; init { } }
+        public uint? Samplerate { get => throw null; init { } }
+        public bool? SpatialRendering { get => throw null; init { } }
+    }
+
     public enum AudioSelectionPreference
     {
         Preferred = 0,
@@ -3434,6 +3443,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public delegate void BlobCallback(Meziantou.Framework.WebPlatform.Dom.FileApi.Blob? blob);
 
+    public sealed class BlobEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.FileApi.Blob Data { get => throw null; }
+        public double Timecode { get => throw null; }
+        public BlobEvent(string type, Meziantou.Framework.WebPlatform.Dom.BlobEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class BlobEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.FileApi.Blob Data { get => throw null; init { } }
+        public double Timecode { get => throw null; init { } }
+    }
+
     public enum BlockFragmentationType
     {
         None = 0,
@@ -3563,6 +3585,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.UserInput Input { get => throw null; }
         public bool IsAuxiliary { get => throw null; }
         public bool IsDestroyed { get => throw null; }
+        public bool IsDocumentPictureInPicture { get => throw null; }
         public bool IsFrozen { get => throw null; set { } }
         public bool IsNavigating { get => throw null; }
         public bool IsOffline { get => throw null; set { } }
@@ -3625,6 +3648,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions? GlobalPrivacyControl { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions? HttpsUpgrades { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IdleDetectionOptions? IdleDetection { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.KeyboardLockOptions? KeyboardLock { get => throw null; init { } }
@@ -3634,6 +3658,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Media.MediaAutoplayPolicy MediaAutoplayPolicy { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend? MediaCapture { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Media.MediaCodecBackend? MediaCodecs { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeysStorageBackend? MediaKeysStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.MediaSessionOptions? MediaSession { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.NetworkErrorLoggingCache? NetworkErrorLogging { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformationOptions? NetworkInformation { get => throw null; init { } }
@@ -4302,6 +4328,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class CloseWatcherOptions
     {
         public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public enum ColorGamut
+    {
+        Srgb = 0,
+        P3 = 1,
+        Rec2020 = 2,
     }
 
     public enum ColorSpaceConversion
@@ -5355,6 +5388,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnWheel { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.Worklet PaintWorklet { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PermissionsPolicy PermissionsPolicy { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Element? PictureInPictureElement { get => throw null; }
+        public bool PictureInPictureEnabled { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.HtmlCollection Plugins { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? PointerLockElement { get => throw null; }
         public bool Prerendering { get => throw null; }
@@ -5406,6 +5441,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ExecCommand(string commandId, bool showUI, Meziantou.Framework.WebPlatform.Dom.TrustedHtml value) => throw null;
         public bool ExecCommand(string commandId, bool showUI = false, string value = "") => throw null;
         public System.Threading.Tasks.Task ExitFullscreen() => throw null;
+        public System.Threading.Tasks.Task ExitPictureInPicture() => throw null;
         public void ExitPointerLock() { }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Animations.Animation> GetAnimations() => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DomQuad> GetBoxQuads(Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions? options = null) => throw null;
@@ -5481,6 +5517,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DocumentResource?> ConnectWebSocketAsync(Meziantou.Framework.WebPlatform.Dom.DocumentRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
         public static Meziantou.Framework.WebPlatform.Dom.DocumentLoader Create(System.Net.Http.HttpClient? httpClient = null) => throw null;
         public abstract System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DocumentResource?> LoadAsync(Meziantou.Framework.WebPlatform.Dom.DocumentRequest request, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class DocumentPictureInPicture : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEnter { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.Window? Window { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Window> RequestWindow(Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureOptions? options = null) => throw null;
+    }
+
+    public sealed class DocumentPictureInPictureEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Window Window { get => throw null; }
+        public DocumentPictureInPictureEvent(string type, Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class DocumentPictureInPictureEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.Window Window { get => throw null; init { } }
+    }
+
+    public sealed class DocumentPictureInPictureOptions
+    {
+        public bool DisallowReturnToOpener { get => throw null; init { } }
+        public ulong Height { get => throw null; init { } }
+        public bool PreferInitialWindowPlacement { get => throw null; init { } }
+        public ulong Width { get => throw null; init { } }
     }
 
     public sealed class DocumentPolicyViolationReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
@@ -7063,6 +7125,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string OldUrl { get => throw null; init { } }
     }
 
+    public enum HdrMetadataType
+    {
+        SmpteSt2086 = 0,
+        SmpteSt2094Part10 = 1,
+        SmpteSt2094Part40 = 2,
+    }
+
     public sealed class Headers : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Collections.IEnumerable
     {
         public Headers(System.Collections.Generic.IEnumerable<System.Collections.Generic.IReadOnlyList<string>> init) { }
@@ -7828,8 +7897,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.MediaError? Error { get => throw null; }
         public string Loading { get => throw null; set { } }
         public bool Loop { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeys? MediaKeys { get => throw null; }
         public bool Muted { get => throw null; set { } }
         public ushort NetworkState { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEncrypted { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnWaitingForKey { get => throw null; set { } }
         public bool Paused { get => throw null; }
         public double PlaybackRate { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.TimeRanges Played { get => throw null; }
@@ -7851,6 +7923,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Load() { }
         public void Pause() { }
         public System.Threading.Tasks.Task Play() => throw null;
+        public System.Threading.Tasks.Task SetMediaKeys(Meziantou.Framework.WebPlatform.Dom.MediaKeys? mediaKeys) => throw null;
     }
 
     public sealed class HtmlMenuElement : Meziantou.Framework.WebPlatform.Dom.HtmlElement
@@ -8273,13 +8346,27 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class HtmlVideoElement : Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement
     {
+        public bool DisablePictureInPicture { get => throw null; set { } }
         public uint Height { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEnterPictureInPicture { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLeavePictureInPicture { get => throw null; set { } }
         public bool PlaysInline { get => throw null; set { } }
         public string Poster { get => throw null; set { } }
         public uint VideoHeight { get => throw null; }
         public uint VideoWidth { get => throw null; }
         public uint Width { get => throw null; set { } }
+        public void CancelVideoFrameCallback(uint handle) { }
         public Meziantou.Framework.WebPlatform.Dom.VideoPlaybackQuality GetVideoPlaybackQuality() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow> RequestPictureInPicture() => throw null;
+        public uint RequestVideoFrameCallback(Meziantou.Framework.WebPlatform.Dom.VideoFrameRequestCallback callback) => throw null;
+    }
+
+    public sealed class HttpsUpgradeOptions
+    {
+        public static Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions Default { get => throw null; }
+        public System.TimeSpan? FallbackTimeout { get => throw null; init { } }
+        public bool UpgradeNonDefaultPorts { get => throw null; init { } }
+        public bool UpgradeNonUniqueHosts { get => throw null; init { } }
     }
 
     public interface IChildNode
@@ -8857,6 +8944,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override long GetUsage(string origin) => throw null;
     }
 
+    public sealed class InMemoryMediaKeysStorageBackend : Meziantou.Framework.WebPlatform.Dom.MediaKeysStorageBackend
+    {
+        public override bool Delete(string origin, string keySystem, string sessionId) => throw null;
+        public override bool Exists(string origin, string keySystem, string sessionId) => throw null;
+        public override byte[]? Load(string origin, string keySystem, string sessionId) => throw null;
+        public override void Save(string origin, string keySystem, string sessionId, System.ReadOnlySpan<byte> data) { }
+    }
+
     public sealed class InMemoryServiceWorkerBackend : Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend
     {
         public override bool DeleteRegistration(string origin, string scopeUrl) => throw null;
@@ -9196,6 +9291,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public JavaScriptSyntaxErrorException(string? message) { }
         public JavaScriptSyntaxErrorException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class KeySystemTrackConfiguration
+    {
+        public string? EncryptionScheme { get => throw null; init { } }
+        public string Robustness { get => throw null; init { } }
     }
 
     public sealed class Keyboard : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -9659,6 +9760,60 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Focus(Meziantou.Framework.WebPlatform.Dom.FocusOptions? options = null) { }
     }
 
+    public sealed class MediaCapabilities
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesDecodingInfo> DecodingInfo(Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration configuration) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesEncodingInfo> EncodingInfo(Meziantou.Framework.WebPlatform.Dom.MediaEncodingConfiguration configuration) => throw null;
+    }
+
+    public sealed class MediaCapabilitiesDecodingInfo : Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesInfo
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration Configuration { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeySystemAccess? KeySystemAccess { get => throw null; init { } }
+    }
+
+    public sealed class MediaCapabilitiesEncodingInfo : Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesInfo
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.MediaEncodingConfiguration Configuration { get => throw null; init { } }
+    }
+
+    public abstract class MediaCapabilitiesInfo
+    {
+        public bool PowerEfficient { get => throw null; init { } }
+        public bool Smooth { get => throw null; init { } }
+        public bool Supported { get => throw null; init { } }
+    }
+
+    public sealed class MediaCapabilitiesKeySystemConfiguration
+    {
+        public Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration? Audio { get => throw null; init { } }
+        public string DistinctiveIdentifier { get => throw null; init { } }
+        public string InitDataType { get => throw null; init { } }
+        public required string KeySystem { get => throw null; init { } }
+        public string PersistentState { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? SessionTypes { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration? Video { get => throw null; init { } }
+    }
+
+    public abstract class MediaConfiguration
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AudioConfiguration? Audio { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.VideoConfiguration? Video { get => throw null; init { } }
+    }
+
+    public sealed class MediaDecodingConfiguration : Meziantou.Framework.WebPlatform.Dom.MediaConfiguration
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesKeySystemConfiguration? KeySystemConfiguration { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.MediaDecodingType Type { get => throw null; init { } }
+    }
+
+    public enum MediaDecodingType
+    {
+        File = 0,
+        MediaSource = 1,
+        WebRtc = 2,
+    }
+
     public class MediaDeviceInfo
     {
         public string DeviceId { get => throw null; }
@@ -9685,6 +9840,31 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void SetCaptureHandleConfig(Meziantou.Framework.WebPlatform.Dom.CaptureHandleConfig? config = null) { }
     }
 
+    public sealed class MediaEncodingConfiguration : Meziantou.Framework.WebPlatform.Dom.MediaConfiguration
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.MediaEncodingType Type { get => throw null; init { } }
+    }
+
+    public enum MediaEncodingType
+    {
+        Record = 0,
+        WebRtc = 1,
+    }
+
+    public sealed class MediaEncryptedEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public System.ReadOnlyMemory<byte>? InitData { get => throw null; }
+        public object? InitDataBuffer { get => throw null; }
+        public string InitDataType { get => throw null; }
+        public MediaEncryptedEvent(string type, Meziantou.Framework.WebPlatform.Dom.MediaEncryptedEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class MediaEncryptedEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public System.ReadOnlyMemory<byte>? InitData { get => throw null; init { } }
+        public string InitDataType { get => throw null; init { } }
+    }
+
     public sealed class MediaError
     {
         public const ushort MediaErrAborted = 1;
@@ -9700,6 +9880,131 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Sizes { get => throw null; init { } }
         public required string Src { get => throw null; init { } }
         public string Type { get => throw null; init { } }
+    }
+
+    public sealed class MediaKeyMessageEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public System.ReadOnlyMemory<byte> Message { get => throw null; }
+        public object MessageBuffer { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType MessageType { get => throw null; }
+        public MediaKeyMessageEvent(string type, Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class MediaKeyMessageEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required System.ReadOnlyMemory<byte> Message { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType MessageType { get => throw null; init { } }
+    }
+
+    public enum MediaKeyMessageType
+    {
+        LicenseRequest = 0,
+        LicenseRenewal = 1,
+        LicenseRelease = 2,
+        IndividualizationRequest = 3,
+    }
+
+    public sealed class MediaKeySession : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason> Closed { get => throw null; }
+        public double Expiration { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeyStatusMap KeyStatuses { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnKeyStatusesChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessage { get => throw null; set { } }
+        public string SessionId { get => throw null; }
+        public System.Threading.Tasks.Task Close() => throw null;
+        public System.Threading.Tasks.Task GenerateRequest(string initDataType, System.ReadOnlySpan<byte> initData) => throw null;
+        public System.Threading.Tasks.Task<bool> Load(string sessionId) => throw null;
+        public System.Threading.Tasks.Task Remove() => throw null;
+        public System.Threading.Tasks.Task Update(System.ReadOnlySpan<byte> response) => throw null;
+    }
+
+    public enum MediaKeySessionClosedReason
+    {
+        InternalError = 0,
+        ClosedByApplication = 1,
+        ReleaseAcknowledged = 2,
+        HardwareContextReset = 3,
+        ResourceEvicted = 4,
+    }
+
+    public enum MediaKeySessionType
+    {
+        Temporary = 0,
+        PersistentLicense = 1,
+    }
+
+    public enum MediaKeyStatus
+    {
+        Usable = 0,
+        Expired = 1,
+        Released = 2,
+        OutputRestricted = 3,
+        OutputDownscaled = 4,
+        UsableInFuture = 5,
+        StatusPending = 6,
+        InternalError = 7,
+    }
+
+    public sealed class MediaKeyStatusMap : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<byte[], Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus>>, System.Collections.IEnumerable
+    {
+        public uint Size { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus? Get(System.ReadOnlySpan<byte> keyId) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<byte[], Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Has(System.ReadOnlySpan<byte> keyId) => throw null;
+    }
+
+    public sealed class MediaKeySystemAccess
+    {
+        public string KeySystem { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaKeys> CreateMediaKeys() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration GetConfiguration() => throw null;
+    }
+
+    public sealed class MediaKeySystemConfiguration
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability> AudioCapabilities { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement DistinctiveIdentifier { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> InitDataTypes { get => throw null; init { } }
+        public string Label { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement PersistentState { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? SessionTypes { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability> VideoCapabilities { get => throw null; init { } }
+    }
+
+    public sealed class MediaKeySystemMediaCapability
+    {
+        public string ContentType { get => throw null; init { } }
+        public string? EncryptionScheme { get => throw null; init { } }
+        public string Robustness { get => throw null; init { } }
+    }
+
+    public sealed class MediaKeys
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeySession CreateSession(Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType sessionType = Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType.Temporary) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus> GetStatusForPolicy(Meziantou.Framework.WebPlatform.Dom.MediaKeysPolicy? policy = null) => throw null;
+        public System.Threading.Tasks.Task<bool> SetServerCertificate(System.ReadOnlySpan<byte> serverCertificate) => throw null;
+    }
+
+    public sealed class MediaKeysPolicy
+    {
+        public string? MinHdcpVersion { get => throw null; init { } }
+    }
+
+    public enum MediaKeysRequirement
+    {
+        Required = 0,
+        Optional = 1,
+        NotAllowed = 2,
+    }
+
+    public abstract class MediaKeysStorageBackend
+    {
+        public abstract bool Delete(string origin, string keySystem, string sessionId);
+        public virtual bool Exists(string origin, string keySystem, string sessionId) => throw null;
+        public abstract byte[]? Load(string origin, string keySystem, string sessionId);
+        public abstract void Save(string origin, string keySystem, string sessionId, System.ReadOnlySpan<byte> data);
     }
 
     public sealed class MediaMetadata
@@ -9726,6 +10031,40 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double? Duration { get => throw null; init { } }
         public double? PlaybackRate { get => throw null; init { } }
         public double? Position { get => throw null; init { } }
+    }
+
+    public sealed class MediaRecorder : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.BitrateMode AudioBitrateMode { get => throw null; }
+        public uint AudioBitsPerSecond { get => throw null; }
+        public string MimeType { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDataAvailable { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnError { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnPause { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnResume { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnStart { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnStop { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.RecordingState State { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaStream Stream { get => throw null; }
+        public uint VideoBitsPerSecond { get => throw null; }
+        public MediaRecorder(Meziantou.Framework.WebPlatform.Dom.MediaStream stream, Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions? options = null) { }
+        public static bool IsTypeSupported(string type) => throw null;
+        public void Pause() { }
+        public void RequestData() { }
+        public void Resume() { }
+        public void Start(uint? timeslice = null) { }
+        public void Stop() { }
+    }
+
+    public sealed class MediaRecorderOptions
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.BitrateMode AudioBitrateMode { get => throw null; init { } }
+        public uint? AudioBitsPerSecond { get => throw null; init { } }
+        public uint? BitsPerSecond { get => throw null; init { } }
+        public string MimeType { get => throw null; init { } }
+        public uint? VideoBitsPerSecond { get => throw null; init { } }
+        public uint? VideoKeyFrameIntervalCount { get => throw null; init { } }
+        public double? VideoKeyFrameIntervalDuration { get => throw null; init { } }
     }
 
     public sealed class MediaSession
@@ -9902,6 +10241,38 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class MediaStreamTrackEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
     {
         public required Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack Track { get => throw null; init { } }
+    }
+
+    public sealed class MediaStreamTrackGenerator : Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack
+    {
+        public object Writable { get => throw null; }
+        public MediaStreamTrackGenerator(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackGeneratorInit init) { }
+        public MediaStreamTrackGenerator(string kind) { }
+    }
+
+    public sealed class MediaStreamTrackGeneratorInit
+    {
+        public required string Kind { get => throw null; init { } }
+    }
+
+    public sealed class MediaStreamTrackHandle
+    {
+        public MediaStreamTrackHandle(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack track) { }
+    }
+
+    public sealed class MediaStreamTrackProcessor
+    {
+        public ulong DiscardedFrames { get => throw null; }
+        public object Readable { get => throw null; }
+        public ulong TotalFrames { get => throw null; }
+        public MediaStreamTrackProcessor(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackProcessorInit init) { }
+        public MediaStreamTrackProcessor(Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack track, ushort? maxBufferSize = null) { }
+    }
+
+    public sealed class MediaStreamTrackProcessorInit
+    {
+        public ushort? MaxBufferSize { get => throw null; init { } }
+        public required object? Track { get => throw null; init { } }
     }
 
     public enum MediaStreamTrackState
@@ -10539,6 +10910,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorLogin Login { get => throw null; }
         public int MaxTouchPoints { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaCapabilities MediaCapabilities { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.MediaDevices MediaDevices { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.MediaSession MediaSession { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PluginMimeTypeArray MimeTypes { get => throw null; }
@@ -10566,6 +10938,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BatteryManager> GetBattery() => throw null;
         public bool JavaEnabled() => throw null;
         public void RegisterProtocolHandler(string scheme, string url) { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemAccess> RequestMediaKeySystemAccess(string keySystem, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration> supportedConfigurations) => throw null;
         public bool SendBeacon(string url, object? data = null) => throw null;
         public System.Threading.Tasks.Task SetAppBadge(ulong? contents = null) => throw null;
         public System.Threading.Tasks.Task Share(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
@@ -11782,6 +12155,58 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool? RedEyeReduction { get => throw null; init { } }
     }
 
+    public sealed class PictureInPictureEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow PictureInPictureWindow { get => throw null; }
+        public PictureInPictureEvent(string type, Meziantou.Framework.WebPlatform.Dom.PictureInPictureEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class PictureInPictureEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow PictureInPictureWindow { get => throw null; init { } }
+    }
+
+    public sealed class PictureInPictureWindow : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public int Height { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnResize { get => throw null; set { } }
+        public int Width { get => throw null; }
+    }
+
+    public sealed class PictureInPictureWindowHandle
+    {
+        public System.Threading.Tasks.Task Closed { get => throw null; }
+        public bool IsClosed { get => throw null; }
+        public void Close() { }
+        public void Resize(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize size) { }
+    }
+
+    public sealed class PictureInPictureWindowRequest : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize DefaultSize { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowHandle Handle { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize? RequestedSize { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement? Video { get => throw null; }
+    }
+
+    public readonly struct PictureInPictureWindowSize : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize>
+    {
+        public int Height { get => throw null; init { } }
+        public int Width { get => throw null; init { } }
+        public PictureInPictureWindowSize(int Width, int Height) { }
+        public void Deconstruct(out int Width, out int Height) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize left, Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize left, Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize right) => throw null;
+    }
+
     public sealed class Plugin
     {
         public string Description { get => throw null; }
@@ -12342,6 +12767,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public RangeErrorException(string? message) { }
         public RangeErrorException(string? message, System.Exception? innerException) { }
+    }
+
+    public enum RecordingState
+    {
+        Inactive = 0,
+        Recording = 1,
+        Paused = 2,
     }
 
     public enum RedEyeReduction
@@ -13108,6 +13540,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string InnerHtml { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.ShadowRootMode Mode { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnSlotChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.Element? PictureInPictureElement { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? PointerLockElement { get => throw null; }
         public bool Serializable { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SlotAssignmentMode SlotAssignment { get => throw null; }
@@ -15116,6 +15549,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public object? Track { get => throw null; init { } }
     }
 
+    public enum TransferFunction
+    {
+        Srgb = 0,
+        Pq = 1,
+        Hlg = 2,
+    }
+
     public sealed class TreeWalker
     {
         public Meziantou.Framework.WebPlatform.Dom.Node CurrentNode { get => throw null; set { } }
@@ -15439,6 +15879,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public virtual System.Threading.Tasks.ValueTask<bool> ConfirmIdentityProviderLoginAsync(Meziantou.Framework.WebPlatform.Dom.IdentityProviderLoginPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<bool> HasPaymentHandlerAsync(Meziantou.Framework.WebPlatform.Dom.PaymentHandlerQuery query, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask IngestPaymentMethodManifestAsync(Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifestRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize? OpenDocumentPictureInPictureWindow(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest request) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize?> OpenPictureInPictureWindowAsync(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse?> RequestDigitalCredentialAsync(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PaymentSheetResponse?> RetryPaymentAsync(Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<bool> ShowIdentityAutoReauthenticationAsync(Meziantou.Framework.WebPlatform.Dom.IdentityAutoReauthenticationPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
@@ -15522,6 +15964,37 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ValueMissing { get => throw null; init { } }
     }
 
+    public sealed class VideoConfiguration
+    {
+        public required ulong Bitrate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ColorGamut? ColorGamut { get => throw null; init { } }
+        public required string ContentType { get => throw null; init { } }
+        public required double Framerate { get => throw null; init { } }
+        public bool? HasAlphaChannel { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.HdrMetadataType? HdrMetadataType { get => throw null; init { } }
+        public required uint Height { get => throw null; init { } }
+        public string? ScalabilityMode { get => throw null; init { } }
+        public bool? SpatialScalability { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.TransferFunction? TransferFunction { get => throw null; init { } }
+        public required uint Width { get => throw null; init { } }
+    }
+
+    public sealed class VideoFrameCallbackMetadata
+    {
+        public double? CaptureTime { get => throw null; init { } }
+        public required double ExpectedDisplayTime { get => throw null; init { } }
+        public required uint Height { get => throw null; init { } }
+        public required double MediaTime { get => throw null; init { } }
+        public required double PresentationTime { get => throw null; init { } }
+        public required uint PresentedFrames { get => throw null; init { } }
+        public double? ProcessingDuration { get => throw null; init { } }
+        public double? ReceiveTime { get => throw null; init { } }
+        public uint? RtpTimestamp { get => throw null; init { } }
+        public required uint Width { get => throw null; init { } }
+    }
+
+    public delegate void VideoFrameRequestCallback(double now, Meziantou.Framework.WebPlatform.Dom.VideoFrameCallbackMetadata metadata);
+
     public sealed class VideoPlaybackQuality
     {
         public uint CorruptedVideoFrames { get => throw null; }
@@ -15538,6 +16011,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Language { get => throw null; }
         public bool Selected { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.SourceBuffer? SourceBuffer { get => throw null; }
+    }
+
+    public sealed class VideoTrackGenerator
+    {
+        public bool Muted { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaStreamTrack Track { get => throw null; }
+        public object Writable { get => throw null; }
     }
 
     public sealed class VideoTrackList : Meziantou.Framework.WebPlatform.Dom.EventTarget, System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Dom.VideoTrack>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Dom.VideoTrack>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.VideoTrack>, System.Collections.IEnumerable
@@ -15962,6 +16442,47 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Send(string data) { }
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0027", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketCloseInfo
+    {
+        public ushort? CloseCode { get => throw null; init { } }
+        public string Reason { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0027", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketError : Meziantou.Framework.WebPlatform.Dom.DomException
+    {
+        public ushort? CloseCode { get => throw null; }
+        public string Reason { get => throw null; }
+        public WebSocketError(string? message) { }
+        public WebSocketError(string message, Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo? init) { }
+        public WebSocketError(string? message, System.Exception? innerException) { }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0027", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketOpenInfo
+    {
+        public string Extensions { get => throw null; init { } }
+        public string Protocol { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0027", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketStream
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo> Closed { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.WebSocketOpenInfo> Opened { get => throw null; }
+        public string Url { get => throw null; }
+        public WebSocketStream(string url, Meziantou.Framework.WebPlatform.Dom.WebSocketStreamOptions? options = null) { }
+        public void Close(Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo? closeInfo = null) { }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0027", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketStreamOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? Protocols { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
     public abstract class WebStoragePersistence
     {
         public abstract void ClearAll();
@@ -16003,6 +16524,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.CustomElementRegistry CustomElements { get => throw null; }
         public double DevicePixelRatio { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPicture DocumentPictureInPicture { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Event? Event { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.External External { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? FrameElement { get => throw null; }
@@ -16279,6 +16801,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Language { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MediaCapabilities MediaCapabilities { get => throw null; }
         public bool OnLine { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Permissions Permissions { get => throw null; }
         public string Platform { get => throw null; }
@@ -16723,6 +17246,18 @@ namespace Meziantou.Framework.WebPlatform.Media
         public static bool operator !=(Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? left, Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? right) => throw null;
     }
 
+    public abstract class MediaAudioDecoder : Meziantou.Framework.WebPlatform.Media.MediaCodecImplementation
+    {
+        public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.AudioData> Decode(Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunk chunk);
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.AudioData> Flush() => throw null;
+    }
+
+    public abstract class MediaAudioEncoder : Meziantou.Framework.WebPlatform.Media.MediaCodecImplementation
+    {
+        public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio> Encode(Meziantou.Framework.WebPlatform.WebCodecs.AudioData data);
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio> Flush() => throw null;
+    }
+
     public enum MediaAutoplayPolicy
     {
         Allowed = 0,
@@ -16794,10 +17329,65 @@ namespace Meziantou.Framework.WebPlatform.Media
         public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode? left, Meziantou.Framework.WebPlatform.Media.MediaCaptureVideoMode? right) => throw null;
     }
 
+    public enum MediaCodec
+    {
+        Flac = 0,
+        Mp3 = 1,
+        Aac = 2,
+        Opus = 3,
+        Vorbis = 4,
+        Ulaw = 5,
+        Alaw = 6,
+        PcmU8 = 7,
+        PcmS16 = 8,
+        PcmS24 = 9,
+        PcmS32 = 10,
+        PcmF32 = 11,
+        Av1 = 12,
+        Avc = 13,
+        Hevc = 14,
+        Vp8 = 15,
+        Vp9 = 16,
+    }
+
+    public abstract class MediaCodecBackend
+    {
+        public virtual Meziantou.Framework.WebPlatform.Media.MediaAudioDecoder? CreateAudioDecoder(Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig config) => throw null;
+        public virtual Meziantou.Framework.WebPlatform.Media.MediaAudioEncoder? CreateAudioEncoder(Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderConfig config) => throw null;
+        public virtual Meziantou.Framework.WebPlatform.Media.MediaVideoDecoder? CreateVideoDecoder(Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig config) => throw null;
+        public virtual Meziantou.Framework.WebPlatform.Media.MediaVideoEncoder? CreateVideoEncoder(Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderConfig config) => throw null;
+        public virtual bool IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig config) => throw null;
+        public virtual bool IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderConfig config) => throw null;
+        public virtual bool IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig config) => throw null;
+        public virtual bool IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderConfig config) => throw null;
+    }
+
+    public abstract class MediaCodecImplementation : System.IDisposable
+    {
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public virtual void Reset() { }
+    }
+
+    public sealed class MediaCodecString
+    {
+        public int BitDepth { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Media.MediaCodec Codec { get => throw null; }
+        public bool IsAudio { get => throw null; }
+        public bool IsHighTier { get => throw null; }
+        public int Level { get => throw null; }
+        public int Profile { get => throw null; }
+        public string Value { get => throw null; }
+        public override string ToString() => throw null;
+        public static bool TryParse(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.WebPlatform.Media.MediaCodecString? result) => throw null;
+    }
+
     public readonly struct MediaCodedFrame : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaCodedFrame>
     {
+        public System.ReadOnlyMemory<byte> Data { get => throw null; init { } }
         public double DecodeTimestamp { get => throw null; init { } }
         public double Duration { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Media.MediaSampleEncryption? Encryption { get => throw null; init { } }
         public bool IsRandomAccessPoint { get => throw null; init { } }
         public double PresentationTimestamp { get => throw null; init { } }
         public long TrackId { get => throw null; init { } }
@@ -16815,9 +17405,59 @@ namespace Meziantou.Framework.WebPlatform.Media
         public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaCodedFrame left, Meziantou.Framework.WebPlatform.Media.MediaCodedFrame right) => throw null;
     }
 
+    public sealed class MediaEncodedAudio : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio>
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunk Chunk { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig? DecoderConfig { get => throw null; init { } }
+        public MediaEncodedAudio(Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunk Chunk, Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig? DecoderConfig = null) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunk Chunk, out Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig? DecoderConfig) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio? left, Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio? left, Meziantou.Framework.WebPlatform.Media.MediaEncodedAudio? right) => throw null;
+    }
+
+    public sealed class MediaEncodedVideo : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo>
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunk Chunk { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig? DecoderConfig { get => throw null; init { } }
+        public uint? TemporalLayerId { get => throw null; init { } }
+        public MediaEncodedVideo(Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunk Chunk, Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig? DecoderConfig = null, uint? TemporalLayerId = null) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunk Chunk, out Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig? DecoderConfig, out uint? TemporalLayerId) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo? left, Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo? left, Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo? right) => throw null;
+    }
+
+    public sealed class MediaEncryptionInitData : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaEncryptionInitData>
+    {
+        public System.ReadOnlyMemory<byte> Data { get => throw null; init { } }
+        public string InitDataType { get => throw null; init { } }
+        public MediaEncryptionInitData(string InitDataType, System.ReadOnlyMemory<byte> Data) { }
+        public void Deconstruct(out string InitDataType, out System.ReadOnlyMemory<byte> Data) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Media.MediaEncryptionInitData? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Media.MediaEncryptionInitData? left, Meziantou.Framework.WebPlatform.Media.MediaEncryptionInitData? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaEncryptionInitData? left, Meziantou.Framework.WebPlatform.Media.MediaEncryptionInitData? right) => throw null;
+    }
+
+    public enum MediaEncryptionScheme
+    {
+        Cenc = 0,
+        Cbcs = 1,
+    }
+
     public sealed class MediaInitializationSegment
     {
         public double Duration { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaEncryptionInitData> InitData { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaSegmentTrack> Tracks { get => throw null; }
         public MediaInitializationSegment(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaSegmentTrack> tracks, double duration = double.NaN) { }
     }
@@ -16883,6 +17523,18 @@ namespace Meziantou.Framework.WebPlatform.Media
         public string Url { get => throw null; }
     }
 
+    public sealed class MediaSampleEncryption
+    {
+        public const int KeyIdLength = 16;
+        public int CryptByteBlock { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte> InitializationVector { get => throw null; }
+        public System.ReadOnlyMemory<byte> KeyId { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Media.MediaEncryptionScheme Scheme { get => throw null; }
+        public int SkipByteBlock { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaSubsample> Subsamples { get => throw null; }
+        public MediaSampleEncryption(Meziantou.Framework.WebPlatform.Media.MediaEncryptionScheme scheme, System.ReadOnlyMemory<byte> keyId, System.ReadOnlyMemory<byte> initializationVector, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaSubsample>? subsamples = null) { }
+    }
+
     public sealed class MediaSegmentParseResult
     {
         public int ByteCount { get => throw null; }
@@ -16934,6 +17586,24 @@ namespace Meziantou.Framework.WebPlatform.Media
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.WebPlatform.Media.MediaSegmentTrack? left, Meziantou.Framework.WebPlatform.Media.MediaSegmentTrack? right) => throw null;
         public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaSegmentTrack? left, Meziantou.Framework.WebPlatform.Media.MediaSegmentTrack? right) => throw null;
+    }
+
+    public readonly struct MediaSubsample : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaSubsample>
+    {
+        public int ClearBytes { get => throw null; init { } }
+        public int ProtectedBytes { get => throw null; init { } }
+        public MediaSubsample(int ClearBytes, int ProtectedBytes) { }
+        public void Deconstruct(out int ClearBytes, out int ProtectedBytes) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Media.MediaSubsample other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Media.MediaSubsample left, Meziantou.Framework.WebPlatform.Media.MediaSubsample right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Media.MediaSubsample left, Meziantou.Framework.WebPlatform.Media.MediaSubsample right) => throw null;
     }
 
     public sealed class MediaTextTrackCue : System.IEquatable<Meziantou.Framework.WebPlatform.Media.MediaTextTrackCue>
@@ -17010,6 +17680,18 @@ namespace Meziantou.Framework.WebPlatform.Media
         NotSupported = 0,
         Maybe = 1,
         Probably = 2,
+    }
+
+    public abstract class MediaVideoDecoder : Meziantou.Framework.WebPlatform.Media.MediaCodecImplementation
+    {
+        public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame> Decode(Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunk chunk);
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame> Flush() => throw null;
+    }
+
+    public abstract class MediaVideoEncoder : Meziantou.Framework.WebPlatform.Media.MediaCodecImplementation
+    {
+        public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo> Encode(Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame frame, Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptions options);
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaEncodedVideo> Flush() => throw null;
     }
 
     public sealed class MediaVideoFrame
@@ -18268,6 +18950,259 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
 }
 namespace Meziantou.Framework.WebPlatform.WebCodecs
 {
+    public enum AacBitstreamFormat
+    {
+        Aac = 0,
+        Adts = 1,
+    }
+
+    public sealed class AacEncoderConfig
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AacBitstreamFormat Format { get => throw null; init { } }
+    }
+
+    public enum AlphaOption
+    {
+        Keep = 0,
+        Discard = 1,
+    }
+
+    public sealed class AudioData
+    {
+        public ulong Duration { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.AudioSampleFormat? Format { get => throw null; }
+        public uint NumberOfChannels { get => throw null; }
+        public uint NumberOfFrames { get => throw null; }
+        public float SampleRate { get => throw null; }
+        public long Timestamp { get => throw null; }
+        public AudioData(Meziantou.Framework.WebPlatform.WebCodecs.AudioDataInit init) { }
+        public uint AllocationSize(Meziantou.Framework.WebPlatform.WebCodecs.AudioDataCopyToOptions options) => throw null;
+        public Meziantou.Framework.WebPlatform.WebCodecs.AudioData Clone() => throw null;
+        public void Close() { }
+        public void CopyTo(System.Span<byte> destination, Meziantou.Framework.WebPlatform.WebCodecs.AudioDataCopyToOptions options) { }
+    }
+
+    public sealed class AudioDataCopyToOptions
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AudioSampleFormat? Format { get => throw null; init { } }
+        public uint? FrameCount { get => throw null; init { } }
+        public uint FrameOffset { get => throw null; init { } }
+        public required uint PlaneIndex { get => throw null; init { } }
+    }
+
+    public sealed class AudioDataInit
+    {
+        public required object Data { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.AudioSampleFormat Format { get => throw null; init { } }
+        public required uint NumberOfChannels { get => throw null; init { } }
+        public required uint NumberOfFrames { get => throw null; init { } }
+        public required float SampleRate { get => throw null; init { } }
+        public required long Timestamp { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<object>? Transfer { get => throw null; init { } }
+    }
+
+    public delegate void AudioDataOutputCallback(Meziantou.Framework.WebPlatform.WebCodecs.AudioData output);
+
+    public sealed class AudioDecoder : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public uint DecodeQueueSize { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDequeue { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.CodecState State { get => throw null; }
+        public AudioDecoder(Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderInit init) { }
+        public void Close() { }
+        public void Configure(Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig config) { }
+        public void Decode(Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunk chunk) { }
+        public System.Threading.Tasks.Task Flush() => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderSupport> IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig config) => throw null;
+        public void Reset() { }
+    }
+
+    public sealed class AudioDecoderConfig
+    {
+        public required string Codec { get => throw null; init { } }
+        public object? Description { get => throw null; init { } }
+        public required uint NumberOfChannels { get => throw null; init { } }
+        public required uint SampleRate { get => throw null; init { } }
+    }
+
+    public sealed class AudioDecoderInit
+    {
+        public required Meziantou.Framework.WebPlatform.WebCodecs.WebCodecsErrorCallback Error { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.AudioDataOutputCallback Output { get => throw null; init { } }
+    }
+
+    public sealed class AudioDecoderSupport
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig? Config { get => throw null; init { } }
+        public bool? Supported { get => throw null; init { } }
+    }
+
+    public sealed class AudioEncoder : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public uint EncodeQueueSize { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDequeue { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.CodecState State { get => throw null; }
+        public AudioEncoder(Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderInit init) { }
+        public void Close() { }
+        public void Configure(Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderConfig config) { }
+        public void Encode(Meziantou.Framework.WebPlatform.WebCodecs.AudioData data) { }
+        public System.Threading.Tasks.Task Flush() => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderSupport> IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderConfig config) => throw null;
+        public void Reset() { }
+    }
+
+    public sealed class AudioEncoderConfig
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AacEncoderConfig? Aac { get => throw null; init { } }
+        public ulong? Bitrate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.BitrateMode BitrateMode { get => throw null; init { } }
+        public required string Codec { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.FlacEncoderConfig? Flac { get => throw null; init { } }
+        public required uint NumberOfChannels { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.OpusEncoderConfig? Opus { get => throw null; init { } }
+        public required uint SampleRate { get => throw null; init { } }
+    }
+
+    public sealed class AudioEncoderInit
+    {
+        public required Meziantou.Framework.WebPlatform.WebCodecs.WebCodecsErrorCallback Error { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkOutputCallback Output { get => throw null; init { } }
+    }
+
+    public sealed class AudioEncoderSupport
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderConfig? Config { get => throw null; init { } }
+        public bool? Supported { get => throw null; init { } }
+    }
+
+    public enum AudioSampleFormat
+    {
+        U8 = 0,
+        S16 = 1,
+        S32 = 2,
+        F32 = 3,
+        U8Planar = 4,
+        S16Planar = 5,
+        S32Planar = 6,
+        F32Planar = 7,
+    }
+
+    public enum AvcBitstreamFormat
+    {
+        AnnexB = 0,
+        Avc = 1,
+    }
+
+    public sealed class AvcEncoderConfig
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AvcBitstreamFormat Format { get => throw null; init { } }
+    }
+
+    public enum BitrateMode
+    {
+        Constant = 0,
+        Variable = 1,
+    }
+
+    public enum CodecState
+    {
+        Unconfigured = 0,
+        Configured = 1,
+        Closed = 2,
+    }
+
+    public sealed class EncodedAudioChunk
+    {
+        public uint ByteLength { get => throw null; }
+        public System.ReadOnlyMemory<byte> Data { get => throw null; }
+        public ulong? Duration { get => throw null; }
+        public long Timestamp { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkType Type { get => throw null; }
+        public EncodedAudioChunk(Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkInit init) { }
+        public void CopyTo(System.Span<byte> destination) { }
+    }
+
+    public sealed class EncodedAudioChunkInit
+    {
+        public required object Data { get => throw null; init { } }
+        public ulong? Duration { get => throw null; init { } }
+        public required long Timestamp { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<object>? Transfer { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkType Type { get => throw null; init { } }
+    }
+
+    public sealed class EncodedAudioChunkMetadata
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig? DecoderConfig { get => throw null; init { } }
+    }
+
+    public delegate void EncodedAudioChunkOutputCallback(Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunk output, Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkMetadata metadata);
+
+    public enum EncodedAudioChunkType
+    {
+        Key = 0,
+        Delta = 1,
+    }
+
+    public sealed class EncodedVideoChunk
+    {
+        public uint ByteLength { get => throw null; }
+        public System.ReadOnlyMemory<byte> Data { get => throw null; }
+        public ulong? Duration { get => throw null; }
+        public long Timestamp { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkType Type { get => throw null; }
+        public EncodedVideoChunk(Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkInit init) { }
+        public void CopyTo(System.Span<byte> destination) { }
+    }
+
+    public sealed class EncodedVideoChunkInit
+    {
+        public required object Data { get => throw null; init { } }
+        public ulong? Duration { get => throw null; init { } }
+        public required long Timestamp { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<object>? Transfer { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkType Type { get => throw null; init { } }
+    }
+
+    public sealed class EncodedVideoChunkMetadata
+    {
+        public object? AlphaSideData { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig? DecoderConfig { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.SvcOutputMetadata? Svc { get => throw null; init { } }
+    }
+
+    public delegate void EncodedVideoChunkOutputCallback(Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunk chunk, Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkMetadata metadata);
+
+    public enum EncodedVideoChunkType
+    {
+        Key = 0,
+        Delta = 1,
+    }
+
+    public sealed class FlacEncoderConfig
+    {
+        public uint BlockSize { get => throw null; init { } }
+        public uint CompressLevel { get => throw null; init { } }
+    }
+
+    public enum HardwareAcceleration
+    {
+        NoPreference = 0,
+        PreferHardware = 1,
+        PreferSoftware = 2,
+    }
+
+    public enum HevcBitstreamFormat
+    {
+        AnnexB = 0,
+        Hevc = 1,
+    }
+
+    public sealed class HevcEncoderConfig
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.HevcBitstreamFormat Format { get => throw null; init { } }
+    }
+
     public sealed class ImageDecodeOptions
     {
         public bool CompleteFramesOnly { get => throw null; init { } }
@@ -18301,6 +19236,7 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs
         public uint? DesiredHeight { get => throw null; init { } }
         public uint? DesiredWidth { get => throw null; init { } }
         public bool? PreferAnimation { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<object>? Transfer { get => throw null; init { } }
         public required string Type { get => throw null; init { } }
     }
 
@@ -18321,10 +19257,53 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs
         public Meziantou.Framework.WebPlatform.WebCodecs.ImageTrack? SelectedTrack { get => throw null; }
     }
 
+    public enum LatencyMode
+    {
+        Quality = 0,
+        Realtime = 1,
+    }
+
+    public enum OpusApplication
+    {
+        Voip = 0,
+        Audio = 1,
+        LowDelay = 2,
+    }
+
+    public enum OpusBitstreamFormat
+    {
+        Opus = 0,
+        Ogg = 1,
+    }
+
+    public sealed class OpusEncoderConfig
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.OpusApplication Application { get => throw null; init { } }
+        public uint? Complexity { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.OpusBitstreamFormat Format { get => throw null; init { } }
+        public ulong FrameDuration { get => throw null; init { } }
+        public uint PacketLossPercentage { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.OpusSignal Signal { get => throw null; init { } }
+        public bool UseDtx { get => throw null; init { } }
+        public bool UseInBandFec { get => throw null; init { } }
+    }
+
+    public enum OpusSignal
+    {
+        Auto = 0,
+        Music = 1,
+        Voice = 2,
+    }
+
     public sealed class PlaneLayout
     {
         public required uint Offset { get => throw null; init { } }
         public required uint Stride { get => throw null; init { } }
+    }
+
+    public sealed class SvcOutputMetadata
+    {
+        public uint? TemporalLayerId { get => throw null; init { } }
     }
 
     public enum VideoColorPrimaries
@@ -18354,6 +19333,128 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs
         public Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics? Transfer { get => throw null; init { } }
     }
 
+    public sealed class VideoDecoder : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public uint DecodeQueueSize { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDequeue { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.CodecState State { get => throw null; }
+        public VideoDecoder(Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderInit init) { }
+        public void Close() { }
+        public void Configure(Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig config) { }
+        public void Decode(Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunk chunk) { }
+        public System.Threading.Tasks.Task Flush() => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderSupport> IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig config) => throw null;
+        public void Reset() { }
+    }
+
+    public sealed class VideoDecoderConfig
+    {
+        public required string Codec { get => throw null; init { } }
+        public uint? CodedHeight { get => throw null; init { } }
+        public uint? CodedWidth { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit? ColorSpace { get => throw null; init { } }
+        public object? Description { get => throw null; init { } }
+        public uint? DisplayAspectHeight { get => throw null; init { } }
+        public uint? DisplayAspectWidth { get => throw null; init { } }
+        public bool Flip { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.HardwareAcceleration HardwareAcceleration { get => throw null; init { } }
+        public bool OptimizeForLatency { get => throw null; init { } }
+        public double Rotation { get => throw null; init { } }
+    }
+
+    public sealed class VideoDecoderInit
+    {
+        public required Meziantou.Framework.WebPlatform.WebCodecs.WebCodecsErrorCallback Error { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameOutputCallback Output { get => throw null; init { } }
+    }
+
+    public sealed class VideoDecoderSupport
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig? Config { get => throw null; init { } }
+        public bool? Supported { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoder : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public uint EncodeQueueSize { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDequeue { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.CodecState State { get => throw null; }
+        public VideoEncoder(Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderInit init) { }
+        public void Close() { }
+        public void Configure(Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderConfig config) { }
+        public void Encode(Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame frame, Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptions? options = null) { }
+        public System.Threading.Tasks.Task Flush() => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderSupport> IsConfigSupported(Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderConfig config) => throw null;
+        public void Reset() { }
+    }
+
+    public enum VideoEncoderBitrateMode
+    {
+        Constant = 0,
+        Variable = 1,
+        Quantizer = 2,
+    }
+
+    public sealed class VideoEncoderConfig
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AlphaOption Alpha { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.AvcEncoderConfig? Avc { get => throw null; init { } }
+        public ulong? Bitrate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderBitrateMode BitrateMode { get => throw null; init { } }
+        public required string Codec { get => throw null; init { } }
+        public string? ContentHint { get => throw null; init { } }
+        public uint? DisplayHeight { get => throw null; init { } }
+        public uint? DisplayWidth { get => throw null; init { } }
+        public double? Framerate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.HardwareAcceleration HardwareAcceleration { get => throw null; init { } }
+        public required uint Height { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.HevcEncoderConfig? Hevc { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.LatencyMode LatencyMode { get => throw null; init { } }
+        public string? ScalabilityMode { get => throw null; init { } }
+        public required uint Width { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoderEncodeOptions
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForAv1? Av1 { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForAvc? Avc { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForHevc? Hevc { get => throw null; init { } }
+        public bool KeyFrame { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForVp9? Vp9 { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoderEncodeOptionsForAv1
+    {
+        public ushort? Quantizer { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoderEncodeOptionsForAvc
+    {
+        public ushort? Quantizer { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoderEncodeOptionsForHevc
+    {
+        public ushort? Quantizer { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoderEncodeOptionsForVp9
+    {
+        public ushort? Quantizer { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoderInit
+    {
+        public required Meziantou.Framework.WebPlatform.WebCodecs.WebCodecsErrorCallback Error { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkOutputCallback Output { get => throw null; init { } }
+    }
+
+    public sealed class VideoEncoderSupport
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderConfig? Config { get => throw null; init { } }
+        public bool? Supported { get => throw null; init { } }
+    }
+
     public sealed class VideoFrame
     {
         public uint CodedHeight { get => throw null; }
@@ -18368,11 +19469,32 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs
         public double Rotation { get => throw null; }
         public long Timestamp { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly? VisibleRect { get => throw null; }
+        public VideoFrame(object data, Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameBufferInit init) { }
+        public VideoFrame(object? image, Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameInit? init = null) { }
         public uint AllocationSize(Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame Clone() => throw null;
         public void Close() { }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout> CopyPixelsTo(System.Span<byte> destination, Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions? options = null) => throw null;
         public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>> CopyTo(System.Memory<byte> destination, Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameMetadata Metadata() => throw null;
+    }
+
+    public sealed class VideoFrameBufferInit
+    {
+        public required uint CodedHeight { get => throw null; init { } }
+        public required uint CodedWidth { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit? ColorSpace { get => throw null; init { } }
+        public uint? DisplayHeight { get => throw null; init { } }
+        public uint? DisplayWidth { get => throw null; init { } }
+        public ulong? Duration { get => throw null; init { } }
+        public bool Flip { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat Format { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>? Layout { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameMetadata? Metadata { get => throw null; init { } }
+        public double Rotation { get => throw null; init { } }
+        public required long Timestamp { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<object>? Transfer { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectInit? VisibleRect { get => throw null; init { } }
     }
 
     public sealed class VideoFrameCopyToOptions
@@ -18383,9 +19505,24 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs
         public Meziantou.Framework.WebPlatform.Dom.DomRectInit? Rect { get => throw null; init { } }
     }
 
+    public sealed class VideoFrameInit
+    {
+        public Meziantou.Framework.WebPlatform.WebCodecs.AlphaOption Alpha { get => throw null; init { } }
+        public uint? DisplayHeight { get => throw null; init { } }
+        public uint? DisplayWidth { get => throw null; init { } }
+        public ulong? Duration { get => throw null; init { } }
+        public bool Flip { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameMetadata? Metadata { get => throw null; init { } }
+        public double Rotation { get => throw null; init { } }
+        public long? Timestamp { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectInit? VisibleRect { get => throw null; init { } }
+    }
+
     public sealed class VideoFrameMetadata
     {
     }
+
+    public delegate void VideoFrameOutputCallback(Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame output);
 
     public enum VideoMatrixCoefficients
     {
@@ -18432,4 +19569,6 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs
         Pq = 4,
         Hlg = 5,
     }
+
+    public delegate void WebCodecsErrorCallback(Meziantou.Framework.WebPlatform.Dom.DomException error);
 }

@@ -9,37 +9,31 @@ description: "The results of the web-platform-tests of picture-in-picture, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 18 | 18 | – |
+| [Stable](#stable-tests) | 18 | 18 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **18** | **18** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 18
+| **All** | **18** | **18** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`css-selector.html`](https://wpt.fyi/results/picture-in-picture/css-selector.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`disable-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/disable-picture-in-picture.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`enter-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/enter-picture-in-picture.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`exit-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/exit-picture-in-picture.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`idlharness.window.js`](https://wpt.fyi/results/picture-in-picture/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`leave-picture-in-picture-disable-attribute.optional.html`](https://wpt.fyi/results/picture-in-picture/leave-picture-in-picture-disable-attribute.optional.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`leave-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/leave-picture-in-picture.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`mediastream.html`](https://wpt.fyi/results/picture-in-picture/mediastream.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`permissions-policy.https.sub.html`](https://wpt.fyi/results/picture-in-picture/permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`picture-in-picture-element.html`](https://wpt.fyi/results/picture-in-picture/picture-in-picture-element.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`picture-in-picture-window.html`](https://wpt.fyi/results/picture-in-picture/picture-in-picture-window.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`removed-from-document.html`](https://wpt.fyi/results/picture-in-picture/removed-from-document.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`request-picture-in-picture-consumes-user-activation.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture-consumes-user-activation.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`request-picture-in-picture-exits-existing.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture-exits-existing.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`request-picture-in-picture-twice.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture-twice.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`request-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`shadow-dom.html`](https://wpt.fyi/results/picture-in-picture/shadow-dom.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
-| [`unload-document-exits-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/unload-document-exits-picture-in-picture.html) | Disabled | – | NOT IMPLEMENTED | Picture-in-Picture API |
+| [`css-selector.html`](https://wpt.fyi/results/picture-in-picture/css-selector.html) | Pass | 1 / 1 |  |  |
+| [`disable-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/disable-picture-in-picture.html) | Pass | 6 / 6 |  |  |
+| [`enter-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/enter-picture-in-picture.html) | Pass | 1 / 1 |  |  |
+| [`exit-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/exit-picture-in-picture.html) | Pass | 2 / 2 |  |  |
+| [`idlharness.window.js`](https://wpt.fyi/results/picture-in-picture/idlharness.window.js) | Pass | 67 / 67 |  |  |
+| [`leave-picture-in-picture-disable-attribute.optional.html`](https://wpt.fyi/results/picture-in-picture/leave-picture-in-picture-disable-attribute.optional.html) | Pass | 1 / 1 |  |  |
+| [`leave-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/leave-picture-in-picture.html) | Pass | 1 / 1 |  |  |
+| [`mediastream.html`](https://wpt.fyi/results/picture-in-picture/mediastream.html) | Pass | 1 / 1 |  |  |
+| [`permissions-policy.https.sub.html`](https://wpt.fyi/results/picture-in-picture/permissions-policy.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`picture-in-picture-element.html`](https://wpt.fyi/results/picture-in-picture/picture-in-picture-element.html) | Pass | 1 / 1 |  |  |
+| [`picture-in-picture-window.html`](https://wpt.fyi/results/picture-in-picture/picture-in-picture-window.html) | Pass | 5 / 5 |  |  |
+| [`removed-from-document.html`](https://wpt.fyi/results/picture-in-picture/removed-from-document.html) | Pass | 1 / 1 |  |  |
+| [`request-picture-in-picture-consumes-user-activation.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture-consumes-user-activation.html) | Pass | 1 / 1 |  |  |
+| [`request-picture-in-picture-exits-existing.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture-exits-existing.html) | Pass | 4 / 4 |  |  |
+| [`request-picture-in-picture-twice.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture-twice.html) | Pass | 2 / 2 |  |  |
+| [`request-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/request-picture-in-picture.html) | Pass | 4 / 4 |  |  |
+| [`shadow-dom.html`](https://wpt.fyi/results/picture-in-picture/shadow-dom.html) | Pass | 5 / 5 |  |  |
+| [`unload-document-exits-picture-in-picture.html`](https://wpt.fyi/results/picture-in-picture/unload-document-exits-picture-in-picture.html) | Pass | 1 / 1 |  |  |

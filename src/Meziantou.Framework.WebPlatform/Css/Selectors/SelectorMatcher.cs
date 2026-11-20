@@ -965,7 +965,11 @@ internal static class SelectorMatcher
             case PseudoClass.Fullscreen:
                 return FullscreenModel.MatchesFullscreen(element);
 
-            // Autofill, picture-in-picture, the locked volume and view transitions are not modeled: these
+            // https://w3c.github.io/picture-in-picture/#css-pseudo-class: the Picture-in-Picture element (not its shadow hosts)
+            case PseudoClass.PictureInPicture:
+                return element is HtmlVideoElement { IsPictureInPictureElement: true };
+
+            // Autofill, the locked volume and view transitions are not modeled: these
             // pseudo-classes never match
             default:
                 return false;

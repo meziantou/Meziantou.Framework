@@ -2542,6 +2542,8 @@ internal sealed partial class StyleEngine
             keyboardInsets = Dom.VirtualKeyboard.GetKeyboardInsets(document);
         }
 
+        // https://wicg.github.io/document-picture-in-picture/#display-mode: the documents of a Document Picture-in-Picture window
+        var displayMode = top.IsDocumentPictureInPicture ? "picture-in-picture" : "browser";
         if (document.LastMediaEnvironment is { } last
             && last.Width == width
             && last.Height == height
@@ -2561,7 +2563,8 @@ internal sealed partial class StyleEngine
             && last.ScriptingEnabled == scriptingEnabled
             && last.DevicePosture == devicePosture
             && Equals(last.ViewportSegments, segments)
-            && last.KeyboardInsets == keyboardInsets)
+            && last.KeyboardInsets == keyboardInsets
+            && last.DisplayMode == displayMode)
         {
             return last;
         }
@@ -2587,6 +2590,7 @@ internal sealed partial class StyleEngine
             DevicePosture = devicePosture,
             ViewportSegments = segments,
             KeyboardInsets = keyboardInsets,
+            DisplayMode = displayMode,
         };
         document.LastMediaEnvironment = environment;
         return environment;

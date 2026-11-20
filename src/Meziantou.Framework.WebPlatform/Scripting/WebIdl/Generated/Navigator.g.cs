@@ -27,6 +27,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static TValue Get_scheduling(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Scheduling); }
     private static TValue Get_keyboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Keyboard); }
     private static TValue Get_login(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Login); }
+    private static TValue Get_mediaCapabilities(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.MediaCapabilities); }
     private static TValue Get_mediaDevices(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.MediaDevices); }
     private static TValue Get_mediaSession(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.MediaSession); }
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Permissions); }
@@ -70,6 +71,14 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         var a0 = r.ToUsvString(a[0]);
         var a1 = r.IsMissing(a, 1) ? (object?)(object?)null : WebIdlHelpers<TAdapter, TValue>.ToUnion_7b4e93c7(r, a[1]);
         var result = o.SendBeacon(a0, a1); return r.FromBoolean(result);
+    }
+    private static TValue Op_requestMediaKeySystemAccess(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        if (a.Length < 2) throw r.NotEnoughArguments("requestMediaKeySystemAccess", 2, a.Length);
+        var a0 = r.ToDomString(a[0]);
+        var a1 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaKeySystemConfiguration(r, e));
+        var result = o.RequestMediaKeySystemAccess(a0, a1); return r.ToPromise(result, static (r, value) => r.Wrap(value));
     }
     private static TValue Op_vibrate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -140,6 +149,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         r.DefineAttribute(instanceTarget, "scheduling", Get_scheduling, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "keyboard", Get_keyboard, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "login", Get_login, null);
+        r.DefineAttribute(instanceTarget, "mediaCapabilities", Get_mediaCapabilities, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "mediaDevices", Get_mediaDevices, null);
         r.DefineAttribute(instanceTarget, "mediaSession", Get_mediaSession, null);
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
@@ -173,6 +183,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "locks", Get_locks, null);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "getBattery", 0, Op_getBattery, returnsPromise: true);
         r.DefineOperation(instanceTarget, "sendBeacon", 1, Op_sendBeacon);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "requestMediaKeySystemAccess", 2, Op_requestMediaKeySystemAccess, returnsPromise: true);
         r.DefineOperation(instanceTarget, "vibrate", 1, Op_vibrate);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "share", 0, Op_share, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "canShare", 0, Op_canShare);

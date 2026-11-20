@@ -85,7 +85,7 @@ internal static class ImageBitmapFactory
     /// Returns the bitmap data of a source, after the check of its usability
     /// (https://html.spec.whatwg.org/multipage/canvas.html#check-the-usability-of-the-image-argument), or throws an <c>InvalidStateError</c>.
     /// </summary>
-    private static BitmapPixels GetSourceBitmap(GlobalScope global, object image, ImageBitmapOptions options)
+    internal static BitmapPixels GetSourceBitmap(GlobalScope global, object image, ImageBitmapOptions options)
     {
         var convertColors = options.ColorSpaceConversion != ColorSpaceConversion.None;
         switch (image)

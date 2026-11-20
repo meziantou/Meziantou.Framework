@@ -1,0 +1,56 @@
+{
+  "picture-in-picture/css-selector.html": {
+    "total": 1
+  },
+  "picture-in-picture/disable-picture-in-picture.html": {
+    "total": 6
+  },
+  "picture-in-picture/enter-picture-in-picture.html": {
+    "total": 1
+  },
+  "picture-in-picture/exit-picture-in-picture.html": {
+    "total": 2
+  },
+  "picture-in-picture/idlharness.window.js": {
+    "total": 67
+  },
+  "picture-in-picture/leave-picture-in-picture-disable-attribute.optional.html": {
+    "total": 1
+  },
+  "picture-in-picture/leave-picture-in-picture.html": {
+    "total": 1
+  },
+  "picture-in-picture/mediastream.html": {
+    "total": 1
+  },
+  "picture-in-picture/permissions-policy.https.sub.html": {
+    "total": 5
+  },
+  "picture-in-picture/picture-in-picture-element.html": {
+    "total": 1
+  },
+  "picture-in-picture/picture-in-picture-window.html": {
+    "total": 5
+  },
+  "picture-in-picture/removed-from-document.html": {
+    "total": 1
+  },
+  "picture-in-picture/request-picture-in-picture-consumes-user-activation.html": {
+    "total": 1
+  },
+  "picture-in-picture/request-picture-in-picture-exits-existing.html": {
+    "total": 4
+  },
+  "picture-in-picture/request-picture-in-picture-twice.html": {
+    "total": 2
+  },
+  "picture-in-picture/request-picture-in-picture.html": {
+    "total": 4
+  },
+  "picture-in-picture/shadow-dom.html": {
+    "total": 5
+  },
+  "picture-in-picture/unload-document-exits-picture-in-picture.html": {
+    "total": 1
+  }
+}

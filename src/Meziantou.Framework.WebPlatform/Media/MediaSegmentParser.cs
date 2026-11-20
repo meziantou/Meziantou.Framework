@@ -173,6 +173,17 @@ public sealed class MediaInitializationSegment
 
     /// <summary>Gets the duration of the presentation in seconds, or NaN.</summary>
     public double Duration { get; }
+
+    /// <summary>
+    /// Gets the Initialization Data of the segment (e.g. the <c>pssh</c> boxes of the movie box of an MP4 file, as one
+    /// <c>cenc</c> Initialization Data), or an empty list. Each one fires an <c>encrypted</c> event at the media element
+    /// (https://w3c.github.io/encrypted-media/#initdata-encountered).
+    /// </summary>
+    public IReadOnlyList<MediaEncryptionInitData> InitData
+    {
+        get;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = [];
 }
 
 /// <summary>A track of an initialization segment (<see cref="MediaInitializationSegment"/>).</summary>
@@ -192,4 +203,18 @@ public sealed record MediaSegmentTrack(long Id, bool IsVideo, string Kind = "", 
 /// <param name="Duration">The duration of the frame, in seconds.</param>
 /// <param name="IsRandomAccessPoint">Whether the frame can be decoded without the previous frames (a key frame; every audio frame of most codecs).</param>
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
-public readonly record struct MediaCodedFrame(long TrackId, double PresentationTimestamp, double DecodeTimestamp, double Duration, bool IsRandomAccessPoint);
+public readonly record struct MediaCodedFrame(long TrackId, double PresentationTimestamp, double DecodeTimestamp, double Duration, bool IsRandomAccessPoint)
+{
+    /// <summary>
+    /// Gets how the frame is encrypted, or null for a clear frame. The library decrypts an encrypted frame (whose
+    /// <see cref="Data"/> is then required) with the keys of the <c>MediaKeys</c> of the media element: the playback of the
+    /// frame waits until a key session has its key (https://w3c.github.io/encrypted-media/#attempt-to-decrypt).
+    /// </summary>
+    public MediaSampleEncryption? Encryption { get; init; }
+
+    /// <summary>
+    /// Gets the bytes of the frame. The library only reads them for an encrypted frame (see <see cref="Encryption"/>), and
+    /// copies them: the memory can be a slice of the input of <see cref="MediaSegmentParser.Parse"/>.
+    /// </summary>
+    public ReadOnlyMemory<byte> Data { get; init; }
+}

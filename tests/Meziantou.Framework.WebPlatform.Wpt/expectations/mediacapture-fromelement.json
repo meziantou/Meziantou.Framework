@@ -16,20 +16,10 @@
     }
   },
   "mediacapture-fromelement/capture-muted.html": {
-    "total": 3,
-    "failures": {
-      "audio-only": "FAIL",
-      "video+audio": "FAIL",
-      "video-only.": "FAIL"
-    }
+    "total": 3
   },
   "mediacapture-fromelement/capture.html": {
-    "total": 6,
-    "failures": {
-      "capture": "FAIL",
-      "capture 1": "FAIL",
-      "capture 2": "FAIL"
-    }
+    "total": 6
   },
   "mediacapture-fromelement/creation.html": {
     "total": 6

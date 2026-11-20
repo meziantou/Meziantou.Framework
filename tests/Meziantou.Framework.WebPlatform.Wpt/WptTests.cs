@@ -334,6 +334,10 @@ public sealed class WptTests
 
     public static TheoryData<string> IntersectionObserverTests => GetTests("intersection-observer");
 
+    public static TheoryData<string> PictureInPictureTests => GetTests("picture-in-picture");
+
+    public static TheoryData<string> DocumentPictureInPictureTests => GetTests("document-picture-in-picture");
+
     public static TheoryData<string> LoadingTests => GetTests("loading");
 
     public static TheoryData<string> LayoutInstabilityTests => GetTests("layout-instability");
@@ -377,6 +381,12 @@ public sealed class WptTests
     public static TheoryData<string> MediaCaptureHandleTests => GetTests("mediacapture-handle");
 
     public static TheoryData<string> MediaCaptureRegionTests => GetTests("mediacapture-region");
+
+    public static TheoryData<string> MediaCaptureRecordTests => GetTests("mediacapture-record");
+
+    public static TheoryData<string> VideoRvfcTests => GetTests("video-rvfc");
+
+    public static TheoryData<string> MediaCapabilitiesTests => GetTests("media-capabilities");
 
     public static TheoryData<string> ScreenCaptureTests => GetTests("screen-capture");
 
@@ -431,6 +441,8 @@ public sealed class WptTests
     public static TheoryData<string> MediaSourceTests => GetTests("media-source");
 
     public static TheoryData<string> MediaPlaybackQualityTests => GetTests("media-playback-quality");
+
+    public static TheoryData<string> EncryptedMediaTests => GetTests("encrypted-media");
 
     public static TheoryData<string> ConsoleTests => GetTests("console");
 
@@ -559,6 +571,8 @@ public sealed class WptTests
     public static TheoryData<string> ContentSecurityPolicyXsltTests => GetTests("content-security-policy/xslt");
 
     public static TheoryData<string> UpgradeInsecureRequestsTests => GetTests("upgrade-insecure-requests");
+
+    public static TheoryData<string> HttpsUpgradesTests => GetTests("https-upgrades");
 
     public static TheoryData<string> CssColorTests => GetTests("css/css-color", "css/css-color/parsing");
 
@@ -1444,6 +1458,14 @@ public sealed class WptTests
     public void IntersectionObserver(string test) => Run("intersection-observer", test);
 
     [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PictureInPictureTests))]
+    public void PictureInPicture(string test) => Run("picture-in-picture", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DocumentPictureInPictureTests))]
+    public void DocumentPictureInPicture(string test) => Run("document-picture-in-picture", test);
+
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(LoadingTests))]
     public void Loading(string test) => Run("loading", test);
 
@@ -1530,6 +1552,18 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MediaCaptureRegionTests))]
     public void MediaCaptureRegion(string test) => Run("mediacapture-region", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureRecordTests))]
+    public void MediaCaptureRecord(string test) => Run("mediacapture-record", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(VideoRvfcTests))]
+    public void VideoRvfc(string test) => Run("video-rvfc", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCapabilitiesTests))]
+    public void MediaCapabilities(string test) => Run("media-capabilities", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ScreenCaptureTests))]
@@ -1646,6 +1680,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MediaPlaybackQualityTests))]
     public void MediaPlaybackQuality(string test) => Run("media-playback-quality", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(EncryptedMediaTests))]
+    public void EncryptedMedia(string test) => Run("encrypted-media", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ConsoleTests))]
@@ -1902,6 +1940,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(UpgradeInsecureRequestsTests))]
     public void UpgradeInsecureRequests(string test) => Run("upgrade-insecure-requests", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(HttpsUpgradesTests))]
+    public void HttpsUpgrades(string test) => Run("https-upgrades", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssColorTests))]

@@ -60,5 +60,5 @@ decoder.Close();
 - The frames are always RGBA: the YUV formats (`I420`, `I422`, `I444`...) are not used, even for the images encoded in YUV.
 - A frame is decoded when its data is complete: `completeFramesOnly: false` does not decode the progressive images
   partially.
-- The audio and video codecs of WebCodecs (`VideoDecoder`, `AudioDecoder`, the encoders) and the constructors of
-  `VideoFrame` are not implemented.
+- The audio and video codecs of WebCodecs (`VideoDecoder`, `AudioDecoder`, the encoders) are not part of the rendering
+  backend: they run on a codec backend (see [Audio and video codecs](../05-LoadingPages/10-AudioAndVideoCodecs.md)).

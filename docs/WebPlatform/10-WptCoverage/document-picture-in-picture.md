@@ -9,41 +9,35 @@ description: "The results of the web-platform-tests of document-picture-in-pictu
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 22 | 22 | – |
+| [Stable](#stable-tests) | 22 | 22 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **22** | **22** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 22
+| **All** | **22** | **22** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`base-uri.https.html`](https://wpt.fyi/results/document-picture-in-picture/base-uri.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`beforeunload-is-disabled.https.html`](https://wpt.fyi/results/document-picture-in-picture/beforeunload-is-disabled.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`clears-session-on-close.https.html`](https://wpt.fyi/results/document-picture-in-picture/clears-session-on-close.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`closes-on-navigation-or-destroy.https.html`](https://wpt.fyi/results/document-picture-in-picture/closes-on-navigation-or-destroy.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`copy-document-mode-quirks.https.html`](https://wpt.fyi/results/document-picture-in-picture/copy-document-mode-quirks.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`copy-document-mode.https.html`](https://wpt.fyi/results/document-picture-in-picture/copy-document-mode.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`display-mode.https.html`](https://wpt.fyi/results/document-picture-in-picture/display-mode.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`enter-event.https.html`](https://wpt.fyi/results/document-picture-in-picture/enter-event.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`focus-opener.https.html`](https://wpt.fyi/results/document-picture-in-picture/focus-opener.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`iframe-document-pip.https.html`](https://wpt.fyi/results/document-picture-in-picture/iframe-document-pip.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`open-pip-window-from-pip-window.https.html`](https://wpt.fyi/results/document-picture-in-picture/open-pip-window-from-pip-window.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`pip-fullscreen.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-fullscreen.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`pip-move.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-move.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`pip-receives-focus.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-receives-focus.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`pip-resize.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-resize.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`pip-size.optional.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-size.optional.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`propagate-user-activation-from-opener.https.html`](https://wpt.fyi/results/document-picture-in-picture/propagate-user-activation-from-opener.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`propagate-user-activation-to-opener.https.html`](https://wpt.fyi/results/document-picture-in-picture/propagate-user-activation-to-opener.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`requires-secure-context.html`](https://wpt.fyi/results/document-picture-in-picture/requires-secure-context.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`requires-user-gesture.https.html`](https://wpt.fyi/results/document-picture-in-picture/requires-user-gesture.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`requires-width-and-height-to-both-be-specified.https.html`](https://wpt.fyi/results/document-picture-in-picture/requires-width-and-height-to-both-be-specified.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
-| [`returns-window-with-document.https.html`](https://wpt.fyi/results/document-picture-in-picture/returns-window-with-document.https.html) | Disabled | – | NOT IMPLEMENTED | Document Picture-in-Picture API |
+| [`base-uri.https.html`](https://wpt.fyi/results/document-picture-in-picture/base-uri.https.html) | Pass | 1 / 1 |  |  |
+| [`beforeunload-is-disabled.https.html`](https://wpt.fyi/results/document-picture-in-picture/beforeunload-is-disabled.https.html) | Pass | 1 / 1 |  |  |
+| [`clears-session-on-close.https.html`](https://wpt.fyi/results/document-picture-in-picture/clears-session-on-close.https.html) | Pass | 1 / 1 |  |  |
+| [`closes-on-navigation-or-destroy.https.html`](https://wpt.fyi/results/document-picture-in-picture/closes-on-navigation-or-destroy.https.html) | Pass | 6 / 6 |  |  |
+| [`copy-document-mode-quirks.https.html`](https://wpt.fyi/results/document-picture-in-picture/copy-document-mode-quirks.https.html) | Pass | 1 / 1 |  |  |
+| [`copy-document-mode.https.html`](https://wpt.fyi/results/document-picture-in-picture/copy-document-mode.https.html) | Pass | 1 / 1 |  |  |
+| [`display-mode.https.html`](https://wpt.fyi/results/document-picture-in-picture/display-mode.https.html) | Pass | 1 / 1 |  |  |
+| [`enter-event.https.html`](https://wpt.fyi/results/document-picture-in-picture/enter-event.https.html) | Pass | 1 / 1 |  |  |
+| [`focus-opener.https.html`](https://wpt.fyi/results/document-picture-in-picture/focus-opener.https.html) | Pass | 1 / 1 |  |  |
+| [`iframe-document-pip.https.html`](https://wpt.fyi/results/document-picture-in-picture/iframe-document-pip.https.html) | Pass | 1 / 1 |  |  |
+| [`open-pip-window-from-pip-window.https.html`](https://wpt.fyi/results/document-picture-in-picture/open-pip-window-from-pip-window.https.html) | Pass | 1 / 1 |  |  |
+| [`pip-fullscreen.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-fullscreen.https.html) | Pass | 2 / 2 |  |  |
+| [`pip-move.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-move.https.html) | Pass | 1 / 1 |  |  |
+| [`pip-receives-focus.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-receives-focus.https.html) | Pass | 1 / 1 |  |  |
+| [`pip-resize.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-resize.https.html) | Pass | 2 / 2 |  |  |
+| [`pip-size.optional.https.html`](https://wpt.fyi/results/document-picture-in-picture/pip-size.optional.https.html) | Pass | 3 / 3 |  |  |
+| [`propagate-user-activation-from-opener.https.html`](https://wpt.fyi/results/document-picture-in-picture/propagate-user-activation-from-opener.https.html) | Pass | 3 / 3 |  |  |
+| [`propagate-user-activation-to-opener.https.html`](https://wpt.fyi/results/document-picture-in-picture/propagate-user-activation-to-opener.https.html) | Pass | 4 / 4 |  |  |
+| [`requires-secure-context.html`](https://wpt.fyi/results/document-picture-in-picture/requires-secure-context.html) | Pass | 1 / 1 |  |  |
+| [`requires-user-gesture.https.html`](https://wpt.fyi/results/document-picture-in-picture/requires-user-gesture.https.html) | Pass | 1 / 1 |  |  |
+| [`requires-width-and-height-to-both-be-specified.https.html`](https://wpt.fyi/results/document-picture-in-picture/requires-width-and-height-to-both-be-specified.https.html) | Pass | 2 / 2 |  |  |
+| [`returns-window-with-document.https.html`](https://wpt.fyi/results/document-picture-in-picture/returns-window-with-document.https.html) | Pass | 4 / 4 |  |  |

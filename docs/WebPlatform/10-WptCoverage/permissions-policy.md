@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 59 | 94 | 0 | 63% |
+| [Stable](#stable-tests) | 68 | 94 | 0 | 72% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **73** | **118** | **0** | **62%** |
+| **All** | **82** | **118** | **0** | **69%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 32
+- **NOT IMPLEMENTED**: 23
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -76,11 +76,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`permissions-policy-nested-local-frame-delegation.https.sub.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-nested-local-frame-delegation.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`permissions-policy-opaque-origin-history.https.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-opaque-origin-history.https.html) | Pass | 1 / 1 |  |  |
 | [`permissions-policy-opaque-origin.https.html`](https://wpt.fyi/results/permissions-policy/permissions-policy-opaque-origin.https.html) | Fail | 0 / 1 | BUG | the `'src'` keyword of the `allow` attribute of a sandboxed iframe matches every opaque origin, as in Chromium (where the test fails too): the document that the iframe navigates to still gets the feature, although it is not the document of the `src` attribute |
-| [`picture-in-picture-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
-| [`picture-in-picture-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute.https.sub.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
-| [`picture-in-picture-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-allowed-by-permissions-policy.https.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
-| [`picture-in-picture-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-default-permissions-policy.https.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
-| [`picture-in-picture-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-disabled-by-permissions-policy.https.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
+| [`picture-in-picture-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Pass | 2 / 2 |  |  |
+| [`picture-in-picture-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute.https.sub.html) | Pass | 2 / 2 |  |  |
+| [`picture-in-picture-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-allowed-by-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`picture-in-picture-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-default-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`picture-in-picture-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-disabled-by-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`picture-in-picture-supported-by-permissions-policy.html`](https://wpt.fyi/results/permissions-policy/picture-in-picture-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
 | [`policy-extends-to-data-url-all.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-data-url-all.html) | Pass | 1 / 1 |  |  |
 | [`policy-extends-to-sandbox-all.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-sandbox-all.html) | Pass | 1 / 1 |  |  |
@@ -91,8 +91,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/camera-potential-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-report-only.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/encrypted-media-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`) |
-| [`reporting/encrypted-media-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`) |
+| [`reporting/encrypted-media-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/encrypted-media-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/fullscreen-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-report-only.html) | Pass | 1 / 1 |  |  |
 | [`reporting/fullscreen-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-reporting.html) | Pass | 1 / 1 |  |  |
 | [`reporting/generic-sensor-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-report-only.https.html) | Pass | 1 / 1 |  |  |
@@ -105,8 +105,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/midi-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |
 | [`reporting/payment-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-report-only.https.html) | Fail | 0 / 1 | TEST BUG | the test rethrows the rejection of `show()` after checking the report, so it passes only when the user accepts a payment with `https://example.com/pay`, a payment method that the user agent does not support (`NotSupportedError`, https://w3c.github.io/payment-request/#show-method); Chromium fails it too |
 | [`reporting/payment-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/picture-in-picture-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-report-only.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
-| [`reporting/picture-in-picture-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-reporting.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Picture-in-Picture API (`document.pictureInPictureEnabled`, `requestPictureInPicture()`) |
+| [`reporting/picture-in-picture-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-report-only.html) | Pass | 1 / 1 |  |  |
+| [`reporting/picture-in-picture-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-reporting.html) | Pass | 1 / 1 |  |  |
 | [`reporting/report-only-and-enforce.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-only-and-enforce.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/report-only-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-only-single-endpoint.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/report-to-multiple-endpoints.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html) | Pass | 1 / 1 |  |  |

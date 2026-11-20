@@ -1,4 +1,557 @@
 {
+  "webcodecs/audio-data-copyTo.any.js": {
+    "total": 4
+  },
+  "webcodecs/audio-data-copyTo.any.js#dedicatedworker": {
+    "total": 4
+  },
+  "webcodecs/audio-data-copyto-offset.any.js": {
+    "total": 6
+  },
+  "webcodecs/audio-data-copyto-offset.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "webcodecs/audio-data-copyto-oversized.any.js": {
+    "total": 8
+  },
+  "webcodecs/audio-data-copyto-oversized.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "webcodecs/audio-data-serialization.any.js": {
+    "total": 3
+  },
+  "webcodecs/audio-data.any.js": {
+    "total": 22
+  },
+  "webcodecs/audio-data.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "webcodecs/audio-data.crossOriginIsolated.https.any.js": {
+    "total": 2
+  },
+  "webcodecs/audio-decoder.crossOriginIsolated.https.any.js": {
+    "total": 2,
+    "failures": {
+      "Test isConfigSupported() and configure() using a SharedArrayBuffer": "PRECONDITION_FAILED",
+      "Test isConfigSupported() and configure() using a Uint8Array(SharedArrayBuffer)": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/audio-decoder.crossOriginIsolated.https.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Test isConfigSupported() and configure() using a SharedArrayBuffer": "PRECONDITION_FAILED",
+      "Test isConfigSupported() and configure() using a Uint8Array(SharedArrayBuffer)": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/audio-decoder.https.any.js": {
+    "total": 34,
+    "failures": {
+      "Test that AudioDecoder.configure() doesn't support config: flac requires a description": "PRECONDITION_FAILED",
+      "Test that AudioDecoder.configure() doesn't support config: vorbis requires a description": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/audio-decoder.https.any.js#dedicatedworker": {
+    "total": 34,
+    "failures": {
+      "Test that AudioDecoder.configure() doesn't support config: flac requires a description": "PRECONDITION_FAILED",
+      "Test that AudioDecoder.configure() doesn't support config: vorbis requires a description": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/audio-encoder-aac-description.html": {
+    "total": 3,
+    "failures": {
+      "The decoderConfig of an AAC encoder can be used to configure an AudioDecoder": "FAIL",
+      "The description of a 44100Hz stereo AAC encoder is an AudioSpecificConfig": "FAIL",
+      "The description of a 48000Hz mono AAC encoder is an AudioSpecificConfig": "FAIL"
+    }
+  },
+  "webcodecs/audio-encoder-codec-specific.https.any.js": {
+    "harness": "ERROR",
+    "total": 4,
+    "failures": {
+      "Test Opus valid frame durations.": "FAIL",
+      "Test the AAC bitrateMode flag works.": "PRECONDITION_FAILED",
+      "Test the Opus DTX flag works.": "FAIL"
+    }
+  },
+  "webcodecs/audio-encoder-config.https.any.js": {
+    "total": 51,
+    "failures": {
+      "AudioEncoder.isConfigSupported() supports: {\"codec\":\"opus\",\"sampleRate\":48000,\"numberOfChannels\":2,\"opus\":{\"frameDuration\":7500}}": "FAIL"
+    }
+  },
+  "webcodecs/audio-encoder-config.https.any.js#dedicatedworker": {
+    "total": 51,
+    "failures": {
+      "AudioEncoder.isConfigSupported() supports: {\"codec\":\"opus\",\"sampleRate\":48000,\"numberOfChannels\":2,\"opus\":{\"frameDuration\":7500}}": "FAIL"
+    }
+  },
+  "webcodecs/audio-encoder.https.any.js": {
+    "total": 24
+  },
+  "webcodecs/audio-serialization.crossAgentCluster.https.html": {
+    "total": 7
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?adts_aac": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?flac": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?mp3": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?mp4_aac": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?opus": {
+    "total": 11
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?pcm_alaw": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?pcm_f32": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?pcm_s16": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?pcm_s24": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?pcm_s32": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?pcm_u8": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?pcm_ulaw": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js#dedicatedworker?vorbis": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?adts_aac": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?flac": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?mp3": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?mp4_aac": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?opus": {
+    "total": 11
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?pcm_alaw": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?pcm_f32": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?pcm_s16": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?pcm_s24": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?pcm_s32": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?pcm_u8": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?pcm_ulaw": {
+    "total": 10
+  },
+  "webcodecs/audioDecoder-codec-specific.https.any.js?vorbis": {
+    "harness": "ERROR",
+    "total": 10,
+    "failures": {
+      "AudioDecoder decodeQueueSize test": "NOTRUN",
+      "Test configure()": "NOTRUN",
+      "Test decoding": "NOTRUN",
+      "Test decoding a with a negative timestamp": "NOTRUN",
+      "Test decoding a with a positive timestamp": "NOTRUN",
+      "Test decoding after flush": "NOTRUN",
+      "Test isConfigSupported()": "NOTRUN",
+      "Test reset during flush": "NOTRUN",
+      "Test that AudioDecoder.isConfigSupported() returns a parsed configuration": "NOTRUN",
+      "Verify closed AudioDecoder operations": "NOTRUN"
+    }
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js#dedicatedworker?pcm-f32": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js#dedicatedworker?pcm-s16": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js#dedicatedworker?pcm-s24": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js#dedicatedworker?pcm-s32": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js#dedicatedworker?pcm-u8": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js?pcm-f32": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js?pcm-s16": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js?pcm-s24": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js?pcm-s32": {
+    "total": 1
+  },
+  "webcodecs/audioDecoder-pcm-output.https.any.js?pcm-u8": {
+    "total": 1
+  },
+  "webcodecs/chunk-serialization.any.js": {
+    "total": 3
+  },
+  "webcodecs/encoded-audio-chunk.any.js": {
+    "total": 2
+  },
+  "webcodecs/encoded-audio-chunk.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/encoded-audio-chunk.crossOriginIsolated.https.any.js": {
+    "total": 2
+  },
+  "webcodecs/encoded-audio-chunk.crossOriginIsolated.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/encoded-video-chunk.any.js": {
+    "total": 3
+  },
+  "webcodecs/encoded-video-chunk.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "webcodecs/encoded-video-chunk.crossOriginIsolated.https.any.js": {
+    "total": 2
+  },
+  "webcodecs/encoded-video-chunk.crossOriginIsolated.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/encodedVideoChunk-serialization.crossAgentCluster.https.html": {
+    "total": 8
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?av1": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?av1_444_high": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?h264_annexb": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?h264_avc": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?h265_annexb": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?h265_hevc": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?vp8": {
+    "total": 4
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?vp9_444_p1": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?vp9_444_p3": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?vp9_p0": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js#dedicatedworker?vp9_p2": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?av1": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?av1_444_high": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?h264_annexb": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?h264_avc": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?h265_annexb": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?h265_hevc": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?vp8": {
+    "total": 4
+  },
+  "webcodecs/full-cycle-test.https.any.js?vp9_444_p1": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?vp9_444_p3": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?vp9_p0": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/full-cycle-test.https.any.js?vp9_p2": {
+    "total": 4,
+    "failures": {
+      "Encoding and decoding cycle": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ rate control": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle w/ stripped color space": "PRECONDITION_FAILED",
+      "Encoding and decoding cycle with realtime latency mode": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/idlharness.https.any.js": {
+    "total": 315
+  },
+  "webcodecs/idlharness.https.any.js#dedicatedworker": {
+    "total": 315
+  },
   "webcodecs/image-decoder-animated-zero-delay.https.any.js": {
     "total": 2
   },
@@ -81,5 +634,1688 @@
       "Test multi-track AVIF image decoding w/ preferAnimation=true.": "FAIL",
       "Test track selection in multi track image.": "FAIL"
     }
+  },
+  "webcodecs/imagedecoder-bmp-in-ico-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "webcodecs/imagedecoder-zero-length-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "webcodecs/opus-multichannel.https.any.js": {
+    "total": 3,
+    "failures": {
+      "Encoding 16ch Opus produces a valid OpusHead decoderConfig description.": "FAIL",
+      "Encoding then decoding 16ch Opus produces frames with 16 channels.": "FAIL"
+    }
+  },
+  "webcodecs/per-frame-qp-encoding.https.any.js#dedicatedworker?av1": {
+    "total": 2,
+    "failures": {
+      "Frame QP encoding, full range": "PRECONDITION_FAILED",
+      "Frame QP encoding, good range with validation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/per-frame-qp-encoding.https.any.js#dedicatedworker?vp9_p0": {
+    "total": 2,
+    "failures": {
+      "Frame QP encoding, full range": "PRECONDITION_FAILED",
+      "Frame QP encoding, good range with validation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/per-frame-qp-encoding.https.any.js#dedicatedworker?vp9_p2": {
+    "total": 2,
+    "failures": {
+      "Frame QP encoding, full range": "PRECONDITION_FAILED",
+      "Frame QP encoding, good range with validation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/per-frame-qp-encoding.https.any.js?av1": {
+    "total": 2,
+    "failures": {
+      "Frame QP encoding, full range": "PRECONDITION_FAILED",
+      "Frame QP encoding, good range with validation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/per-frame-qp-encoding.https.any.js?vp9_p0": {
+    "total": 2,
+    "failures": {
+      "Frame QP encoding, full range": "PRECONDITION_FAILED",
+      "Frame QP encoding, good range with validation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/per-frame-qp-encoding.https.any.js?vp9_p2": {
+    "total": 2,
+    "failures": {
+      "Frame QP encoding, full range": "PRECONDITION_FAILED",
+      "Frame QP encoding, good range with validation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js#dedicatedworker?av1": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js#dedicatedworker?h264_annexb": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js#dedicatedworker?h264_avc": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js#dedicatedworker?vp8": {
+    "total": 1
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js#dedicatedworker?vp9_p0": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js#dedicatedworker?vp9_p2": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js?av1": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js?h264_annexb": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js?h264_avc": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js?vp8": {
+    "total": 1
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js?vp9_p0": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/reconfiguring-encoder.https.any.js?vp9_p2": {
+    "total": 1,
+    "failures": {
+      "Reconfiguring encoder": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/serialization-to-shared-and-service-workers.https.html": {
+    "total": 14
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js#dedicatedworker?av1": {
+    "total": 2,
+    "failures": {
+      "SVC L1T2": "PRECONDITION_FAILED",
+      "SVC L1T3": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js#dedicatedworker?h264": {
+    "total": 2,
+    "failures": {
+      "SVC L1T2": "PRECONDITION_FAILED",
+      "SVC L1T3": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js#dedicatedworker?vp8": {
+    "total": 2
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js#dedicatedworker?vp9": {
+    "total": 2,
+    "failures": {
+      "SVC L1T2": "PRECONDITION_FAILED",
+      "SVC L1T3": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js?av1": {
+    "total": 2,
+    "failures": {
+      "SVC L1T2": "PRECONDITION_FAILED",
+      "SVC L1T3": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js?h264": {
+    "total": 2,
+    "failures": {
+      "SVC L1T2": "PRECONDITION_FAILED",
+      "SVC L1T3": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js?vp8": {
+    "total": 2
+  },
+  "webcodecs/temporal-svc-encoding.https.any.js?vp9": {
+    "total": 2,
+    "failures": {
+      "SVC L1T2": "PRECONDITION_FAILED",
+      "SVC L1T3": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/transfering.https.any.js": {
+    "total": 14
+  },
+  "webcodecs/transfering.https.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js#dedicatedworker?av1": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js#dedicatedworker?h264_annexb": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js#dedicatedworker?h264_avc": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js#dedicatedworker?vp8": {
+    "total": 1
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js#dedicatedworker?vp9_p0": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js?av1": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js?h264_annexb": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js?h264_avc": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js?vp8": {
+    "total": 1
+  },
+  "webcodecs/video-decoder-no-size-in-configure.https.any.js?vp9_p0": {
+    "total": 1,
+    "failures": {
+      "Test configure() without setting width and height": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder.crossOriginIsolated.https.any.js": {
+    "total": 2,
+    "failures": {
+      "Test isConfigSupported() and configure() using a SharedArrayBuffer": "PRECONDITION_FAILED",
+      "Test isConfigSupported() and configure() using a Uint8Array(SharedArrayBuffer)": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder.crossOriginIsolated.https.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "Test isConfigSupported() and configure() using a SharedArrayBuffer": "PRECONDITION_FAILED",
+      "Test isConfigSupported() and configure() using a Uint8Array(SharedArrayBuffer)": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-decoder.https.any.js": {
+    "total": 33,
+    "failures": {
+      "Test that VideoDecoder.isConfigSupported() accepts config:variant 1 of h264 codec string": "FAIL",
+      "Test that VideoDecoder.isConfigSupported() accepts config:variant 2 of h264 codec string": "FAIL"
+    }
+  },
+  "webcodecs/video-decoder.https.any.js#dedicatedworker": {
+    "total": 33,
+    "failures": {
+      "Test that VideoDecoder.isConfigSupported() accepts config:variant 1 of h264 codec string": "FAIL",
+      "Test that VideoDecoder.isConfigSupported() accepts config:variant 2 of h264 codec string": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-canvasImageSource.https.html": {
+    "total": 6
+  },
+  "webcodecs/video-encoder-config.https.any.js": {
+    "total": 43,
+    "failures": {
+      "VideoEncoder.isConfigSupported() supports:{\"codec\":\"avc1.42001E\",\"hardwareAcceleration\":\"no-preference\",\"width\":640,\"height\":480,\"bitrate\":5000000,\"framerate\":24,\"avc\":{\"format\":\"annexb\"},\"futureConfigFeature\":\"foo\"}": "PRECONDITION_FAILED",
+      "VideoEncoder.isConfigSupported() supports:{\"codec\":\"vp09.00.10.08\",\"hardwareAcceleration\":\"no-preference\",\"width\":1280,\"height\":720,\"bitrate\":7000000,\"bitrateMode\":\"constant\",\"framerate\":25,\"futureConfigFeature\":\"foo\",\"latencyMode\":\"realtime\",\"alpha\":\"discard\"}": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-config.https.any.js#dedicatedworker": {
+    "total": 43,
+    "failures": {
+      "VideoEncoder.isConfigSupported() supports:{\"codec\":\"avc1.42001E\",\"hardwareAcceleration\":\"no-preference\",\"width\":640,\"height\":480,\"bitrate\":5000000,\"framerate\":24,\"avc\":{\"format\":\"annexb\"},\"futureConfigFeature\":\"foo\"}": "PRECONDITION_FAILED",
+      "VideoEncoder.isConfigSupported() supports:{\"codec\":\"vp09.00.10.08\",\"hardwareAcceleration\":\"no-preference\",\"width\":1280,\"height\":720,\"bitrate\":7000000,\"bitrateMode\":\"constant\",\"framerate\":25,\"futureConfigFeature\":\"foo\",\"latencyMode\":\"realtime\",\"alpha\":\"discard\"}": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-content-hint.https.any.js": {
+    "total": 1
+  },
+  "webcodecs/video-encoder-content-hint.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "webcodecs/video-encoder-flush.https.any.js#dedicatedworker?av1": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Test new flush after reset in a flush callback": "TIMEOUT",
+      "Test reset during flush": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-flush.https.any.js#dedicatedworker?h264_avc": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Test new flush after reset in a flush callback": "TIMEOUT",
+      "Test reset during flush": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-flush.https.any.js#dedicatedworker?vp8": {
+    "total": 2
+  },
+  "webcodecs/video-encoder-flush.https.any.js?av1": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Test new flush after reset in a flush callback": "TIMEOUT",
+      "Test reset during flush": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-flush.https.any.js?h264_avc": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Test new flush after reset in a flush callback": "TIMEOUT",
+      "Test reset during flush": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-flush.https.any.js?vp8": {
+    "total": 2
+  },
+  "webcodecs/video-encoder-h264.https.any.js#dedicatedworker?baseline": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h264.https.any.js#dedicatedworker?high": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h264.https.any.js#dedicatedworker?high-6.2": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h264.https.any.js#dedicatedworker?main": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h264.https.any.js?baseline": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h264.https.any.js?high": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h264.https.any.js?high-6.2": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h264.https.any.js?main": {
+    "total": 1,
+    "failures": {
+      "Test that encoding with a specific H264 profile actually produces that profile.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js#dedicatedworker?h264_annexb_hardware": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js#dedicatedworker?h264_annexb_software": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js#dedicatedworker?h265_annexb_hardware": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js#dedicatedworker?h265_annexb_software": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js?h264_annexb_hardware": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js?h264_annexb_software": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js?h265_annexb_hardware": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-h26x-annexb.https.any.js?h265_annexb_software": {
+    "total": 1,
+    "failures": {
+      "Verify stream compliance h26x annexb": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js#dedicatedworker?av1": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js#dedicatedworker?h264": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js#dedicatedworker?vp8": {
+    "total": 9
+  },
+  "webcodecs/video-encoder-hbd.https.any.js#dedicatedworker?vp9": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js#dedicatedworker?vp9_p1": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js#dedicatedworker?vp9_p2": {
+    "total": 9,
+    "failures": {
+      "Test 16-bit high-bit-depth encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js#dedicatedworker?vp9_p3": {
+    "total": 9,
+    "failures": {
+      "Test 16-bit high-bit-depth encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js?av1": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js?h264": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js?vp8": {
+    "total": 9
+  },
+  "webcodecs/video-encoder-hbd.https.any.js?vp9": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js?vp9_p1": {
+    "total": 9,
+    "failures": {
+      "Test 16-to-8 bit conversion encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-to-8 bit conversion encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js?vp9_p2": {
+    "total": 9,
+    "failures": {
+      "Test 16-bit high-bit-depth encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-hbd.https.any.js?vp9_p3": {
+    "total": 9,
+    "failures": {
+      "Test 16-bit high-bit-depth encoding of I420AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I420P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I422P12": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444AP10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P10": "PRECONDITION_FAILED",
+      "Test 16-bit high-bit-depth encoding of I444P12": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/video-encoder-orientation.https.any.js": {
+    "total": 23
+  },
+  "webcodecs/video-encoder-orientation.https.any.js#dedicatedworker": {
+    "total": 23
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?av1&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?av1&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?av1&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?h264_annexb&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?h264_annexb&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?h264_annexb&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?h264_avc&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?h264_avc&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?h264_avc&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?vp8&aspect": {
+    "total": 6
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?vp8&downscale": {
+    "total": 6
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?vp8&upscale": {
+    "total": 6
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?vp9_p0&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?vp9_p0&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js#dedicatedworker?vp9_p0&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?av1&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?av1&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?av1&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?h264_annexb&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?h264_annexb&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?h264_annexb&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?h264_avc&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?h264_avc&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?h264_avc&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?vp8&aspect": {
+    "total": 6
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?vp8&downscale": {
+    "total": 6
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?vp8&upscale": {
+    "total": 6
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?vp9_p0&aspect": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 128 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 192 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 192 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?vp9_p0&downscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 128 to 64 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 128 x 256 to 64 x 128 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 192 x 192 to 64 x 64 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder-rescaling.https.any.js?vp9_p0&upscale": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 32 x 32 to 96 x 96 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 32 to 128 x 64 Format: RGBX": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: I420": "FAIL",
+      "Scaling Image in Encoding from 64 x 64 to 128 x 128 Format: RGBX": "FAIL"
+    }
+  },
+  "webcodecs/video-encoder.https.any.js": {
+    "total": 10
+  },
+  "webcodecs/video-encoder.https.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "webcodecs/video-frame-serialization.any.js": {
+    "total": 7
+  },
+  "webcodecs/video-frame-serialization.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "webcodecs/videoColorSpace.any.js": {
+    "total": 1
+  },
+  "webcodecs/videoColorSpace.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "webcodecs/videoDecoder-444-h264.https.any.js#dedicatedworker?h264_444_avc": {
+    "total": 1,
+    "failures": {
+      "Test decoding h.264 4:4:4 content": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-444-h264.https.any.js?h264_444_avc": {
+    "total": 1,
+    "failures": {
+      "Test decoding h.264 4:4:4 content": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js#dedicatedworker?av1": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js#dedicatedworker?h264_annexb": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js#dedicatedworker?h264_avc": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js#dedicatedworker?h265_annexb": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js#dedicatedworker?h265_hevc": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js#dedicatedworker?vp8": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "FAIL"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js#dedicatedworker?vp9": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js?av1": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js?h264_annexb": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js?h264_avc": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js?h265_annexb": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js?h265_hevc": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js?vp8": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "FAIL"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific-orientation.https.any.js?vp9": {
+    "total": 2,
+    "failures": {
+      "Decode frames with orientation metadata": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() with orientation": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js#dedicatedworker?av1": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js#dedicatedworker?h264_annexb": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js#dedicatedworker?h264_avc": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js#dedicatedworker?h265_annexb": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js#dedicatedworker?h265_hevc": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js#dedicatedworker?vp8": {
+    "total": 23,
+    "failures": {
+      "VideoDecoder decodeQueueSize test": "FAIL"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js#dedicatedworker?vp9": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js?av1": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js?h264_annexb": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js?h264_avc": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js?h265_annexb": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js?h265_hevc": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js?vp8": {
+    "total": 23,
+    "failures": {
+      "VideoDecoder decodeQueueSize test": "FAIL"
+    }
+  },
+  "webcodecs/videoDecoder-codec-specific.https.any.js?vp9": {
+    "total": 23,
+    "failures": {
+      "Close while decoding corrupt frame": "PRECONDITION_FAILED",
+      "Decode a key frame": "PRECONDITION_FAILED",
+      "Decode a key frame marked as delta fails": "PRECONDITION_FAILED",
+      "Decode a non key frame first fails": "PRECONDITION_FAILED",
+      "Decode corrupt frame": "PRECONDITION_FAILED",
+      "Decode empty frame": "PRECONDITION_FAILED",
+      "Test closed VideoDecoder operations": "PRECONDITION_FAILED",
+      "Test configure()": "PRECONDITION_FAILED",
+      "Test configure, reset, configure does not stall": "PRECONDITION_FAILED",
+      "Test decoding a corrupt frame after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test decoding a with negative timestamp": "PRECONDITION_FAILED",
+      "Test decoding after flush": "PRECONDITION_FAILED",
+      "Test decoding chunks with duplicate timestamps preserves durations": "PRECONDITION_FAILED",
+      "Test invalid configs": "PRECONDITION_FAILED",
+      "Test isConfigSupported()": "PRECONDITION_FAILED",
+      "Test isConfigSupported() with 1080p crop": "PRECONDITION_FAILED",
+      "Test low-latency decoding": "PRECONDITION_FAILED",
+      "Test new flush after reset in a flush callback": "PRECONDITION_FAILED",
+      "Test reset during flush": "PRECONDITION_FAILED",
+      "Test that isConfigSupported() returns a parsed configuration": "PRECONDITION_FAILED",
+      "Test unconfigured VideoDecoder operations": "PRECONDITION_FAILED",
+      "Verify reset() suppresses outputs": "PRECONDITION_FAILED",
+      "VideoDecoder decodeQueueSize test": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-h264-sei.https.any.js#dedicatedworker?h264_sei_annexb": {
+    "total": 1,
+    "failures": {
+      "H.264 SEI recovery point frames are treated as keyframes.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-h264-sei.https.any.js#dedicatedworker?h264_sei_avc": {
+    "total": 1,
+    "failures": {
+      "H.264 SEI recovery point frames are treated as keyframes.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-h264-sei.https.any.js?h264_sei_annexb": {
+    "total": 1,
+    "failures": {
+      "H.264 SEI recovery point frames are treated as keyframes.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-h264-sei.https.any.js?h264_sei_avc": {
+    "total": 1,
+    "failures": {
+      "H.264 SEI recovery point frames are treated as keyframes.": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-interlaced-h264.https.any.js#dedicatedworker?h264_interlaced_avc": {
+    "total": 1,
+    "failures": {
+      "Test decoding h.264 interlaced content": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoDecoder-interlaced-h264.https.any.js?h264_interlaced_avc": {
+    "total": 1,
+    "failures": {
+      "Test decoding h.264 interlaced content": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoFrame-alpha-discard.any.js": {
+    "total": 14
+  },
+  "webcodecs/videoFrame-alpha-discard.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "webcodecs/videoFrame-alpha-discard.window.js": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-alpha.any.js": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-alpha.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-canvasImageSource.html": {
+    "total": 7,
+    "failures": {
+      "<video> and VideoFrame constructed VideoFrame": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-construction.any.js": {
+    "total": 52
+  },
+  "webcodecs/videoFrame-construction.any.js#dedicatedworker": {
+    "total": 52
+  },
+  "webcodecs/videoFrame-construction.crossOriginIsolated.https.any.js": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-construction.crossOriginIsolated.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-construction.crossOriginSource.sub.html": {
+    "total": 13
+  },
+  "webcodecs/videoFrame-construction.window.js": {
+    "total": 3
+  },
+  "webcodecs/videoFrame-copyTo-canvas.window.js": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-copyTo-chroma-subsampling.any.js": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-copyTo-chroma-subsampling.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-copyTo-opaque-swizzle.https.any.js": {
+    "total": 10
+  },
+  "webcodecs/videoFrame-copyTo-opaque-swizzle.https.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "webcodecs/videoFrame-copyTo-rgb.any.js": {
+    "total": 354
+  },
+  "webcodecs/videoFrame-copyTo-rgb.any.js#dedicatedworker": {
+    "total": 354
+  },
+  "webcodecs/videoFrame-copyTo-rgbx.any.js": {
+    "total": 10
+  },
+  "webcodecs/videoFrame-copyTo-rgbx.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "webcodecs/videoFrame-copyTo.any.js": {
+    "total": 22
+  },
+  "webcodecs/videoFrame-copyTo.any.js#dedicatedworker": {
+    "total": 22
+  },
+  "webcodecs/videoFrame-copyTo.crossOriginIsolated.https.any.js": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-copyTo.crossOriginIsolated.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-createImageBitmap.any.js": {
+    "total": 3
+  },
+  "webcodecs/videoFrame-createImageBitmap.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "webcodecs/videoFrame-createImageBitmap.https.any.js": {
+    "total": 1,
+    "failures": {
+      "Create ImageBitmap for a VideoFrame from VP9 decoder.": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-createImageBitmap.https.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "Create ImageBitmap for a VideoFrame from VP9 decoder.": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-drawImage-hbd.any.js": {
+    "total": 1
+  },
+  "webcodecs/videoFrame-drawImage-hbd.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "webcodecs/videoFrame-drawImage-rgbx.any.js": {
+    "total": 7
+  },
+  "webcodecs/videoFrame-drawImage-rgbx.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "webcodecs/videoFrame-drawImage.any.js": {
+    "total": 7
+  },
+  "webcodecs/videoFrame-drawImage.any.js#dedicatedworker": {
+    "total": 7
+  },
+  "webcodecs/videoFrame-encode-preserves-input.crossOrigin.https.html": {
+    "total": 6,
+    "failures": {
+      "A I420 VideoFrame encoded with avc1.42001E in a same-site cross-origin child must not mutate the parent's retained frame": "PRECONDITION_FAILED",
+      "A NV12 VideoFrame encoded with avc1.42001E in a same-site cross-origin child must not mutate the parent's retained frame": "PRECONDITION_FAILED",
+      "A RGBA VideoFrame encoded with avc1.42001E in a same-site cross-origin child must not mutate the parent's retained frame": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoFrame-encode-preserves-input.https.any.js": {
+    "total": 6,
+    "failures": {
+      "Encoding a I420 VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED",
+      "Encoding a NV12 VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED",
+      "Encoding a RGBA VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoFrame-encode-preserves-input.https.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "Encoding a I420 VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED",
+      "Encoding a NV12 VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED",
+      "Encoding a RGBA VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED"
+    }
+  },
+  "webcodecs/videoFrame-metadata-rtpTimestamp.https.html": {
+    "total": 1,
+    "failures": {
+      "Check VideoFrame.metadata.rtpTimestamp only when feature is enabled": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-odd-size.any.js": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-odd-size.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-orientation-drawImage.any.js": {
+    "total": 14
+  },
+  "webcodecs/videoFrame-orientation-drawImage.any.js#dedicatedworker": {
+    "total": 14
+  },
+  "webcodecs/videoFrame-orientation-imageBitmap.any.js": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-orientation-imageBitmap.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-orientation-webgl-i420.window.js": {
+    "total": 8,
+    "failures": {
+      "texImage2D() of a 0 degrees rotated I420 VideoFrame": "FAIL",
+      "texImage2D() of a 0 degrees rotated and flipped I420 VideoFrame": "FAIL",
+      "texImage2D() of a 180 degrees rotated I420 VideoFrame": "FAIL",
+      "texImage2D() of a 180 degrees rotated and flipped I420 VideoFrame": "FAIL",
+      "texImage2D() of a 270 degrees rotated I420 VideoFrame": "FAIL",
+      "texImage2D() of a 270 degrees rotated and flipped I420 VideoFrame": "FAIL",
+      "texImage2D() of a 90 degrees rotated I420 VideoFrame": "FAIL",
+      "texImage2D() of a 90 degrees rotated and flipped I420 VideoFrame": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-orientation-webgl.window.js": {
+    "total": 8,
+    "failures": {
+      "texImage2D() of a 0 degrees rotated VideoFrame": "FAIL",
+      "texImage2D() of a 0 degrees rotated and flipped VideoFrame": "FAIL",
+      "texImage2D() of a 180 degrees rotated VideoFrame": "FAIL",
+      "texImage2D() of a 180 degrees rotated and flipped VideoFrame": "FAIL",
+      "texImage2D() of a 270 degrees rotated VideoFrame": "FAIL",
+      "texImage2D() of a 270 degrees rotated and flipped VideoFrame": "FAIL",
+      "texImage2D() of a 90 degrees rotated VideoFrame": "FAIL",
+      "texImage2D() of a 90 degrees rotated and flipped VideoFrame": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-orientation.any.js": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-orientation.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-rgbx-imageBitmap.any.js": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-rgbx-imageBitmap.any.js#dedicatedworker": {
+    "total": 8
+  },
+  "webcodecs/videoFrame-rgbx-webgl.window.js": {
+    "total": 25,
+    "failures": {
+      "texImage2D() (premultiplyAlpha=false) of a BGRX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=false) of a BGRX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=false) of a BGRX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=false) of a RGBX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=false) of a RGBX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=false) of a RGBX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=true) of a BGRX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=true) of a BGRX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=true) of a BGRX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=true) of a RGBX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=true) of a RGBX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() (premultiplyAlpha=true) of a RGBX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=false) of a BGRX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=false) of a BGRX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=false) of a BGRX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=false) of a RGBX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=false) of a RGBX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=false) of a RGBX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=true) of a BGRX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=true) of a BGRX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=true) of a BGRX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=true) of a RGBX VideoFrame with padding byte 0 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=true) of a RGBX VideoFrame with padding byte 127 is opaque with correct RGB": "FAIL",
+      "texImage2D() as RGB (premultiplyAlpha=true) of a RGBX VideoFrame with padding byte 255 is opaque with correct RGB": "FAIL",
+      "texImage2D() of a cloned RGBX VideoFrame is opaque": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-rotation.any.js": {
+    "total": 112
+  },
+  "webcodecs/videoFrame-rotation.any.js#dedicatedworker": {
+    "total": 112
+  },
+  "webcodecs/videoFrame-serialization.crossAgentCluster.https.html": {
+    "total": 2
+  },
+  "webcodecs/videoFrame-serialization.https.html": {
+    "total": 12
+  },
+  "webcodecs/videoFrame-texImage.any.js": {
+    "total": 6,
+    "failures": {
+      "texImage2D with 480x360 srgb VideoFrame.": "FAIL",
+      "texImage2D with 48x36 srgb VideoFrame.": "FAIL",
+      "texImage2D with a closed VideoFrame.": "FAIL",
+      "texSubImage2D with 480x360 srgb VideoFrame.": "FAIL",
+      "texSubImage2D with 48x36 srgb VideoFrame.": "FAIL",
+      "texSubImage2D with a closed VideoFrame.": "FAIL"
+    }
+  },
+  "webcodecs/videoFrame-texImage.any.js#dedicatedworker": {
+    "total": 6,
+    "failures": {
+      "texImage2D with 480x360 srgb VideoFrame.": "FAIL",
+      "texImage2D with 48x36 srgb VideoFrame.": "FAIL",
+      "texImage2D with a closed VideoFrame.": "FAIL",
+      "texSubImage2D with 480x360 srgb VideoFrame.": "FAIL",
+      "texSubImage2D with 48x36 srgb VideoFrame.": "FAIL",
+      "texSubImage2D with a closed VideoFrame.": "FAIL"
+    }
+  },
+  "webcodecs/vp9-codec-string-profile-constraints.https.any.js": {
+    "total": 20
+  },
+  "webcodecs/vp9-codec-string-profile-constraints.https.any.js#dedicatedworker": {
+    "total": 20
   }
 }

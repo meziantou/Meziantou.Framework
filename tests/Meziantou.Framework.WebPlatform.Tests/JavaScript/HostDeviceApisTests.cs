@@ -1,9 +1,11 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Media;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Meziantou.Framework.WebPlatform.WebCodecs;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
@@ -49,6 +51,7 @@ public sealed class HostDeviceApisTests : IDisposable
             Geolocation = options.Geolocation,
             MediaCapture = options.MediaCapture,
             MediaBackend = options.MediaBackend,
+            MediaCodecs = options.MediaCodecs,
             ShowNotification = options.ShowNotification,
             CloseNotification = options.CloseNotification,
             Badging = options.Badging,
@@ -1766,6 +1769,97 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.True(backend.Closed);
         Assert.True(backend.CancellationToken.IsCancellationRequested);
         Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    // Document Picture-in-Picture
+
+    [Fact]
+    public async Task DocumentPictureInPicture_RequestWindow_OpensAWindowWithTheModeAndBaseUrlOfTheOpener()
+    {
+        var document = Load("<base href='https://example.com/assets/'><p>quirks</p>");
+        var window = document.DefaultView!;
+        var api = window.DocumentPictureInPicture;
+        var entered = new List<Window>();
+        api.AddEventListener("enter", e => entered.Add(((DocumentPictureInPictureEvent)e).Window));
+
+        var rejected = api.RequestWindow();
+        Assert.Equal("NotAllowedError", Assert.IsType<DomException>(rejected.Exception?.InnerException).Name);
+
+        Activate(document);
+        Assert.IsType<RangeErrorException>(api.RequestWindow(new DocumentPictureInPictureOptions { Width = 300 }).Exception?.InnerException);
+        var request = api.RequestWindow(new DocumentPictureInPictureOptions { Width = 320, Height = 200 });
+        Assert.True(request.IsCompletedSuccessfully);
+        var pipWindow = await request;
+        Assert.True(pipWindow.BrowsingContext!.IsDocumentPictureInPicture);
+        Assert.Same(window, pipWindow.Opener);
+        Assert.Same(pipWindow, api.Window);
+        Assert.Equal((320, 200), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+        Assert.Equal(document.CompatMode, pipWindow.Document.CompatMode);
+        Assert.Equal("https://example.com/assets/", pipWindow.Document.BaseUri);
+        Assert.True(pipWindow.MatchMedia("(display-mode: picture-in-picture)").Matches);
+        Assert.False(pipWindow.Document.FullscreenEnabled);
+        Assert.Empty(entered);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Same(pipWindow, Assert.Single(entered));
+
+        // Resizing a Picture-in-Picture window needs a user activation, and it cannot open a Picture-in-Picture window
+        Assert.Equal("NotAllowedError", Assert.Throws<DomException>(() => pipWindow.ResizeBy(10, 10)).Name);
+        Activate(pipWindow.Document);
+        Assert.Equal("NotAllowedError", Assert.IsType<DomException>(pipWindow.DocumentPictureInPicture.RequestWindow().Exception?.InnerException).Name);
+        pipWindow.ResizeBy(10, 10);
+        Assert.Equal((330, 210), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+
+        // The window is closed when its opener navigates to another document
+        window.BrowsingContext!.Navigate("https://example.com/other");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(pipWindow.Closed);
+    }
+
+    [Fact]
+    public async Task DocumentPictureInPicture_TheBackendSizesResizesAndClosesTheWindow()
+    {
+        #region WebPlatform_UserAgentUI_DocumentPictureInPicture
+        var backend = new FloatingDocumentWindows();
+        var options = new BrowsingContextOptions
+        {
+            // documentPictureInPicture.requestWindow() opens the windows of the backend
+            UserAgentUI = backend,
+        };
+        #endregion
+
+        var document = Load("<p>hello</p>", options);
+        Activate(document);
+        var pipWindow = await document.DefaultView!.DocumentPictureInPicture.RequestWindow();
+        Assert.Equal((480, 270), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+        var handle = backend.LastRequest!.Handle;
+
+        handle.Resize(new PictureInPictureWindowSize(500, 300));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal((500, 300), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+
+        handle.Close();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(pipWindow.Closed);
+        Assert.True(handle.IsClosed);
+        Assert.Null(document.DefaultView.DocumentPictureInPicture.Window);
+
+        // The next window opens at the size of the previous one
+        Activate(document);
+        await document.DefaultView.DocumentPictureInPicture.RequestWindow();
+        Assert.Equal(new PictureInPictureWindowSize(500, 300), backend.LastRequest.DefaultSize);
+    }
+
+    private sealed class FloatingDocumentWindows : UserAgentUIBackend
+    {
+        public PictureInPictureWindowRequest? LastRequest { get; private set; }
+
+        // A 16:9 window, unless the page requests a size; the handle resizes and closes the window later
+        public override PictureInPictureWindowSize? OpenDocumentPictureInPictureWindow(PictureInPictureWindowRequest request)
+        {
+            var isFirstWindow = LastRequest is null;
+            LastRequest = request;
+            return request.RequestedSize ?? (isFirstWindow ? new PictureInPictureWindowSize(480, 270) : request.DefaultSize);
+        }
     }
 
     private sealed class TabClosingCredentialChooser : UserAgentUIBackend
@@ -3659,6 +3753,189 @@ public sealed class HostDeviceApisTests : IDisposable
         return request.Result;
     }
 
+    // Media Capabilities
+
+    private const string MediaCapabilitiesScript = """
+        window.video = (contentType, extra) => ({ contentType, width: 640, height: 480, bitrate: 1000000, framerate: 30, ...extra });
+        window.describe = info => [info.supported, info.smooth, info.powerEfficient, info.keySystemAccess].join();
+        window.decode = configs => Promise.all(configs.map(c => navigator.mediaCapabilities.decodingInfo(c).then(describe, e => e.name))).then(r => document.title = r.join('|'));
+        window.encode = configs => Promise.all(configs.map(c => navigator.mediaCapabilities.encodingInfo(c).then(describe, e => e.name))).then(r => document.title = r.join('|'));
+        """;
+
+    [Fact]
+    public async Task MediaCapabilities_WithoutBackends_NothingIsSupported()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>");
+
+        Assert.Equal("false,false,false,|false,false,false,", await RunAsync(document, """decode([{ type: 'file', video: video('video/webm; codecs="vp8"') }, { type: 'webrtc', audio: { contentType: 'audio/opus' } }])"""));
+        Assert.Equal("false,false,false,|false,false,false,", await RunAsync(document, """encode([{ type: 'record', audio: { contentType: 'audio/webm; codecs="opus"' } }, { type: 'webrtc', video: video('video/VP8') }])"""));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_InvalidConfigurations_AreRejected()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>");
+
+        // No track, an invalid frame rate, a content type that is not valid, of the other kind, with another parameter, a
+        // container without codecs or with two codecs, a codec of the other kind, a trailing semicolon, HDR for webrtc
+        Assert.Equal(string.Join('|', Enumerable.Repeat("TypeError", 12)), await RunAsync(document, """
+            decode([
+                { type: 'file' },
+                { type: 'file', video: video('video/webm; codecs="vp8"', { framerate: 0 }) },
+                { type: 'file', video: video('fgeoa') },
+                { type: 'file', video: video('audio/webm; codecs="opus"') },
+                { type: 'file', video: video('video/webm; codecs="vp8"; foo=bar') },
+                { type: 'file', video: video('video/webm') },
+                { type: 'file', video: video('video/webm; codecs="vp8, vp09.00.10.08"') },
+                { type: 'file', video: video('application/ogg; codecs=vorbis') },
+                { type: 'file', audio: { contentType: 'audio/mpeg;' } },
+                { type: 'file', audio: { contentType: 'audio/mpeg; codecs=mp3' } },
+                { type: 'webrtc', video: video('video/VP8', { colorGamut: 'srgb' }) },
+                { type: 'webrtc', video: video('video/VP8'), keySystemConfiguration: { keySystem: 'org.w3.clearkey' } },
+            ])
+            """));
+
+        // A scalability mode only applies to webrtc, the spatial scalability only to the decoding types
+        Assert.Equal("TypeError|TypeError|TypeError", await RunAsync(document, """
+            encode([
+                { type: 'record', video: video('video/webm; codecs="vp8"', { scalabilityMode: 'L1T2' }) },
+                { type: 'record', video: video('video/webm; codecs="vp8"', { spatialScalability: true }) },
+                { type: 'webrtc', video: video('video/VP8', { colorGamut: 'srgb' }) },
+            ])
+            """));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_DecodingInfo_AsksTheMediaBackend()
+    {
+        #region WebPlatform_MediaCapabilities
+        var options = new BrowsingContextOptions
+        {
+            // Answers navigator.mediaCapabilities.decodingInfo() for the "file" and "media-source" types
+            MediaBackend = new WebMMediaBackend(),
+
+            // Answers the "webrtc" types, and the "record" type (what MediaRecorder records)
+            MediaCodecs = new Vp8OpusCodecs(),
+        };
+        #endregion
+
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", options);
+
+        // A media source needs a byte stream parser, which the backend does not create
+        Assert.Equal("true,true,false,|false,false,false,|false,false,false,|true,true,false,|false,false,false,", await RunAsync(document, """
+            decode([
+                { type: 'file', video: video('video/webm; codecs="vp8"'), audio: { contentType: 'audio/webm; codecs="opus"' } },
+                { type: 'file', video: video('video/webm; codecs="av01.0.04M.08"') },
+                { type: 'media-source', video: video('video/webm; codecs="vp8"') },
+                { type: 'file', audio: { contentType: 'audio/mpeg' } },
+                { type: 'file', audio: { contentType: 'audio/flac' } },
+            ])
+            """));
+
+        var task = document.DefaultView!.Navigator.MediaCapabilities.DecodingInfo(new MediaDecodingConfiguration
+        {
+            Type = MediaDecodingType.WebRtc,
+            Video = new VideoConfiguration { ContentType = "video/VP8", Width = 1280, Height = 720, Bitrate = 2_000_000, Framerate = 30 },
+        });
+        _contexts.EventLoop.RunUntilIdle();
+        var info = await task;
+
+        Assert.True(info.Supported);
+        Assert.True(info.Smooth);
+        Assert.False(info.PowerEfficient);
+        Assert.Null(info.KeySystemAccess);
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_WebRtcAndRecord_AskTheCodecs()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaCodecs = new Vp8OpusCodecs() });
+
+        // The RTP payload formats are converted to the codecs of WebCodecs; a container is not an RTP payload format
+        Assert.Equal("true,true,false,|true,true,false,|false,false,false,|false,false,false,", await RunAsync(document, """
+            decode([
+                { type: 'webrtc', video: video('video/VP8'), audio: { contentType: 'audio/opus' } },
+                { type: 'webrtc', audio: { contentType: 'audio/OPUS' } },
+                { type: 'webrtc', video: video('video/VP9; profile-id=0') },
+                { type: 'webrtc', audio: { contentType: 'audio/webm; codecs="opus"' } },
+            ])
+            """));
+
+        // MediaRecorder records VP8 and Opus in WebM or Matroska; the scalability mode is checked by the codecs
+        Assert.Equal("true,true,false,|true,true,false,|false,false,false,|false,false,false,|true,true,false,|false,false,false,", await RunAsync(document, """
+            encode([
+                { type: 'record', video: video('video/webm; codecs="vp8"'), audio: { contentType: 'audio/webm; codecs="opus"', channels: '2', samplerate: 48000 } },
+                { type: 'record', video: video('video/x-matroska; codecs="vp8"') },
+                { type: 'record', video: video('video/mp4; codecs="avc1.42001E"') },
+                { type: 'record', audio: { contentType: 'audio/matroska; codecs="pcm"' } },
+                { type: 'webrtc', video: video('video/VP8', { scalabilityMode: 'L1T1' }) },
+                { type: 'webrtc', video: video('video/VP8', { scalabilityMode: 'L3T3' }) },
+            ])
+            """));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_ColorSpace_MustMatchTheCodecString()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() });
+
+        // vp09.00.10.08 is BT.709; the color primaries 09 and the transfer characteristics 16 are BT.2020 and PQ
+        Assert.Equal("true,true,false,|false,false,false,|true,true,false,|false,false,false,", await RunAsync(document, """
+            decode([
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08"', { colorGamut: 'srgb', transferFunction: 'srgb' }) },
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08"', { colorGamut: 'rec2020', transferFunction: 'pq' }) },
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08.00.09.16.09.00"', { colorGamut: 'rec2020', transferFunction: 'pq' }) },
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08.00.09.16.09.00"', { hdrMetadataType: 'smpteSt2086' }) },
+            ])
+            """));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_KeySystem_IsCheckedByEncryptedMediaExtensions()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() });
+        const string Script = """
+            decode([
+              { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey' } },
+              { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'com.example.unknown' } },
+              { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey', audio: {} } },
+            ])
+            """;
+
+        // Clear Key gives the access to the key system that requestMediaKeySystemAccess() gives; another key system is not supported
+        Assert.Equal("true,true,false,[object MediaKeySystemAccess]|false,false,false,|TypeError", await RunAsync(document, Script));
+        var insecure = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() }, url: "http://example.com/");
+        Assert.Equal("SecurityError|SecurityError|TypeError", await RunAsync(insecure, Script));
+    }
+
+    #region WebPlatform_MediaCapabilitiesBackend
+    // Plays WebM files with VP8 and Opus, and MP3 files
+    private sealed class WebMMediaBackend : MediaBackend
+    {
+        public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => mimeType switch
+        {
+            "video/webm" or "audio/webm" when codecs.Count == 0 => MediaTypeSupport.Maybe,
+            "video/webm" or "audio/webm" => codecs.All(codec => codec is "vp8" or "opus" || codec.StartsWith("vp09.", StringComparison.Ordinal)) ? MediaTypeSupport.Probably : MediaTypeSupport.NotSupported,
+            "audio/mpeg" => MediaTypeSupport.Probably,
+            _ => MediaTypeSupport.NotSupported,
+        };
+
+        public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
+    }
+    #endregion
+
+    // The codecs of the webrtc and record types: VP8 and Opus
+    private sealed class Vp8OpusCodecs : MediaCodecBackend
+    {
+        public override bool IsConfigSupported(AudioDecoderConfig config) => config.Codec == "opus";
+
+        public override bool IsConfigSupported(VideoDecoderConfig config) => config.Codec == "vp8";
+
+        public override bool IsConfigSupported(AudioEncoderConfig config) => config.Codec == "opus" && config.NumberOfChannels <= 2;
+
+        public override bool IsConfigSupported(VideoEncoderConfig config) => config.Codec == "vp8" && config.ScalabilityMode is null or "L1T1";
+    }
+
     // The media elements play the streams once a media backend enables their processing model
     private sealed class NoMediaBackend : MediaBackend
     {
@@ -4015,6 +4292,435 @@ public sealed class HostDeviceApisTests : IDisposable
         var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");
 
         Assert.Equal("true,true,80,30,10", Run(document));
+    }
+
+    // MediaStream Recording
+
+    private const string RecorderScript = """
+        window.log = [];
+        window.blobs = [];
+        window.record = (stream, options, timeslice) => {
+          window.recorder = new MediaRecorder(stream, options);
+          recorder.onstart = () => log.push('start ' + recorder.mimeType);
+          recorder.onpause = () => log.push('pause');
+          recorder.onresume = () => log.push('resume');
+          recorder.onerror = e => log.push('error ' + e.error.name);
+          recorder.ondataavailable = e => { blobs.push(e.data); log.push('data ' + e.data.type + ' ' + (e.data.size > 0) + ' ' + e.timecode); };
+          recorder.onstop = () => log.push('stop ' + recorder.state);
+          recorder.start(timeslice);
+          log.push(recorder.state);
+        };
+        window.done = () => document.title = log.join('|');
+        """;
+
+    /// <summary>Advances the clock of the recording by steps of 10 ms, running the tasks of each step.</summary>
+    private void Advance(FakeTimeProvider clock, Document document, int milliseconds)
+    {
+        for (var elapsed = 0; elapsed < milliseconds; elapsed += 10)
+        {
+            clock.Advance(TimeSpan.FromMilliseconds(10));
+            Run(document);
+        }
+    }
+
+    [Fact]
+    public void MediaRecorder_IsTypeSupported_DependsOnTheCodecs()
+    {
+        const string Script = """
+            document.title = ['', 'video/webm', 'audio/webm', 'video/webm;codecs=vp8', 'video/webm;codecs="vp8,opus"', 'audio/webm;codecs=opus', 'video/x-matroska;codecs=vp8.0,opus',
+              'video/webm;codecs=vp9', 'audio/webm;codecs=vp8', 'video/webm;codecs=unknown', 'video/mp4', 'text/plain', 'video/webm;'].map(type => MediaRecorder.isTypeSupported(type)).join();
+            """;
+
+        Assert.Equal("true,true,true,true,true,true,true,false,false,false,false,false,true", Run(Load("<script>" + Script + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend() })));
+
+        // Without codecs, only the empty type is supported
+        Assert.Equal("true,false,false,false,false,false,false,false,false,false,false,false,false", Run(Load("<script>" + Script + "</script>")));
+    }
+
+    [Fact]
+    public void MediaRecorder_Constructor()
+    {
+        var document = Load("""
+            <script>
+              const results = [];
+              const stream = new MediaStream();
+              const recorder = new MediaRecorder(stream);
+              results.push(recorder.stream === stream, recorder.state, recorder.mimeType, recorder.audioBitsPerSecond, recorder.videoBitsPerSecond, recorder.audioBitrateMode);
+              const shared = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', bitsPerSecond: 1000000, audioBitrateMode: 'constant' });
+              results.push(shared.mimeType, shared.audioBitsPerSecond, shared.videoBitsPerSecond, shared.audioBitrateMode);
+              for (const options of [{ mimeType: 'video/mp4' }, { mimeType: 'video/webm;codecs=vp9' }, { videoKeyFrameIntervalDuration: 100, videoKeyFrameIntervalCount: 10 }]) {
+                try { new MediaRecorder(stream, options); results.push('created'); } catch (e) { results.push(e.name); }
+              }
+
+              // A type whose codecs the recorder does not know is checked when the recording starts
+              results.push(new MediaRecorder(stream, { mimeType: 'video/webm;codecs=unknown' }).mimeType);
+              try { recorder.start(); } catch (e) { results.push(e.name); }
+              for (const method of ['pause', 'resume', 'requestData']) {
+                try { recorder[method](); } catch (e) { results.push(e.name); }
+              }
+
+              recorder.stop();
+              const event = new BlobEvent('dataavailable', { data: new Blob(['abc']), timecode: 5 });
+              results.push(event.data.size, event.timecode);
+              try { new BlobEvent('dataavailable', {}); } catch (e) { results.push(e.name); }
+              document.title = results.join();
+            </script>
+            """, new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend() });
+
+        Assert.Equal("true,inactive,,128000,2500000,variable,video/webm;codecs=vp8,100000,900000,constant,NotSupportedError,NotSupportedError,NotSupportedError,video/webm;codecs=unknown,NotSupportedError,InvalidStateError,InvalidStateError,InvalidStateError,3,5,TypeError", Run(document));
+    }
+
+    [Fact]
+    public void MediaRecorder_StartAfterStop_CompletesTheStoppedRecording()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=4 height=2></canvas><script>" + RecorderScript + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+        Run(document, "window.stream = document.querySelector('canvas').captureStream(); stream.getVideoTracks()[0].requestFrame(); record(stream);");
+        Advance(clock, document, 50);
+
+        // The stopped recording delivers its data and fires its stop event, although another recording started before its task runs
+        Run(document, "recorder.stop(); recorder.start(); log.push(recorder.state);");
+        Advance(clock, document, 50);
+        Run(document, "recorder.stop();");
+
+        Assert.Equal("recording|start video/webm;codecs=vp8|recording|data video/webm;codecs=vp8 true 0|stop recording|start video/webm;codecs=vp8|data video/webm;codecs=vp8 true 0|stop inactive", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void MediaRecorder_Stop_UnsubscribesFromTheTracks()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=4 height=2></canvas><script>" + RecorderScript + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+        Run(document, "window.stream = document.querySelector('canvas').captureStream(); stream.getVideoTracks()[0].requestFrame();");
+        var track = GetPlatformObject<MediaStreamTrack>(document, "stream.getVideoTracks()[0]");
+        Assert.False(track.HasStateChangedCallbacks);
+
+        Run(document, "record(stream);");
+        Advance(clock, document, 50);
+        Assert.True(track.HasStateChangedCallbacks);
+
+        Run(document, "recorder.stop();");
+        Advance(clock, document, 10);
+        Assert.False(track.HasStateChangedCallbacks);
+    }
+
+    /// <summary>Returns the .NET platform object of the value of a script.</summary>
+    private T GetPlatformObject<T>(Document document, string script)
+    {
+        var value = ((Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngine)_engine).Evaluate(document.DefaultView!, script);
+        return (T)((Meziantou.Framework.WebPlatform.JavaScript.JavaScriptPlatformObject)value.AsObject()).Target;
+    }
+
+    [Fact]
+    public void MediaRecorder_StateTransitions()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=4 height=2></canvas><script>" + RecorderScript + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+
+        Run(document, "window.stream = document.querySelector('canvas').captureStream(); stream.getVideoTracks()[0].requestFrame(); record(stream);");
+        Run(document, """
+            try { recorder.start(); } catch (e) { log.push(e.name); }
+            recorder.pause();
+            recorder.pause();
+            log.push(recorder.state);
+            recorder.resume();
+            log.push(recorder.state);
+            recorder.requestData();
+            """);
+        Advance(clock, document, 50);
+        Run(document, "recorder.stop(); log.push(recorder.state); recorder.stop();");
+
+        Assert.Equal("recording|start video/webm;codecs=vp8|InvalidStateError|paused|recording|pause|resume|data video/webm;codecs=vp8 true 0|inactive|data video/webm;codecs=vp8 true 40|stop inactive", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void MediaRecorder_Errors()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+
+        // Without codecs, the recording fails when it starts
+        var withoutCodecs = Load("<canvas></canvas><script>" + RecorderScript + "record(document.querySelector('canvas').captureStream());</script>", new BrowsingContextOptions { TimeProvider = clock });
+        Assert.Equal("recording|error NotSupportedError|inactive", Run(withoutCodecs, "log.push(recorder.state); done()"));
+
+        // A track added to the stream stops the recording, in a task (a recorder stopped before it fires no error)
+        var document = Load("<canvas></canvas><script>" + RecorderScript + "window.stream = document.querySelector('canvas').captureStream(); record(stream);</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+        Run(document, "stream.addTrack(document.createElement('canvas').captureStream().getVideoTracks()[0]); log.push(recorder.state);");
+        Assert.Equal("recording|start video/webm;codecs=vp8|recording|error InvalidModificationError|data video/webm;codecs=vp8 true 0|stop inactive", Run(document, "done()"));
+    }
+
+    [Fact]
+    public async Task MediaRecorder_RecordsTheVideoOfACamera()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new SolidColorCamera(),
+            Permissions = GrantedPermissions("camera"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ video: { width: 320 } }).then(stream => { window.stream = stream; record(stream, {}, 100); });");
+        Advance(clock, document, 250);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await new Blob(blobs).arrayBuffer());
+              const second = new Uint8Array(await blobs[1].arrayBuffer());
+              log.push('stop', bytes.slice(0, 4).join(' '), second.slice(0, 4).join(' '), new TextDecoder().decode(bytes.slice(0, 200)).includes('V_VP8'));
+              done();
+            };
+            stream.getTracks()[0].stop();
+            """);
+
+        // The first blob starts with the header of the stream, the next ones with a cluster
+        Assert.Equal("recording|start video/webm;codecs=vp8|data video/webm;codecs=vp8 true 0|data video/webm;codecs=vp8 true 160|data video/webm;codecs=vp8 false 250|stop|26 69 223 163|31 67 182 117|true", document.Title);
+    }
+
+    [Fact]
+    public async Task MediaRecorder_RecordsTheAudioOfAMicrophone()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { window.stream = stream; record(stream, { mimeType: 'audio/webm;codecs=opus' }); });");
+        Advance(clock, document, 100);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await blobs[0].arrayBuffer());
+              let binary = '';
+              for (const b of bytes) binary += String.fromCharCode(b);
+              document.title = log.join('|') + '|' + btoa(binary);
+            };
+            recorder.stop();
+            """);
+
+        var parts = document.Title.Split('|');
+        Assert.Equal(["recording", "start audio/webm;codecs=opus", "data audio/webm;codecs=opus true 0"], parts[..^1]);
+        var elements = WebMReader.ReadElements(Convert.FromBase64String(parts[^1]));
+        Assert.Contains("CodecID:A_OPUS", elements);
+        Assert.Contains("Cluster(unknown)", elements);
+        Assert.Contains("SimpleBlock:2@0+key", elements);
+        Assert.DoesNotContain("CodecID:V_VP8", elements);
+    }
+
+    [Fact]
+    public async Task MediaRecorder_ReadsTheAudioFromTheCurrentPositionOfTheSource()
+    {
+        // The samples of the microphone are their position / 1000: the recorded samples tell where the recorder read
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => window.stream = stream);");
+
+        // The source plays for 2 s before the recording starts, then the recording is paused for 1 s
+        Advance(clock, document, 2000);
+        Run(document, "record(stream, { mimeType: 'audio/webm;codecs=opus' });");
+        Advance(clock, document, 100);
+        Run(document, "recorder.pause();");
+        Advance(clock, document, 1000);
+        Run(document, "recorder.resume();");
+        Advance(clock, document, 100);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await blobs[0].arrayBuffer());
+              let binary = '';
+              for (const b of bytes) binary += String.fromCharCode(b);
+              document.title = btoa(binary);
+            };
+            recorder.stop();
+            """);
+
+        var samples = WebMReader.ReadBlocks(Convert.FromBase64String(document.Title))
+            .Where(block => block.Track == 2)
+            .SelectMany(block => Enumerable.Range(0, block.Frame.Length / 4).Select(i => BinaryPrimitives.ReadSingleLittleEndian(block.Frame.AsSpan(i * 4))))
+            .ToArray();
+
+        // 2 s at 48 kHz: the first sample is at the position 96000 of the source, not at 0
+        Assert.InRange(samples[0], 96f, 97f);
+
+        // The audio is continuous before the pause, and continues from the live position of the source after it (3.1 s)
+        var jump = Enumerable.Range(1, samples.Length - 1).First(i => samples[i] - samples[i - 1] > 1);
+        Assert.InRange(jump, 3000, 5500);
+        Assert.InRange(samples[jump], 148f, 150f);
+    }
+
+    [Fact]
+    public async Task MediaRecorder_PauseBetweenTwoSamples_KeepsTheAudioAndTheSourceTogether()
+    {
+        // The samples of the microphone are their position / 1000 (48 per millisecond): the recorded samples tell where the recorder read
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => window.stream = stream);");
+
+        // The tracks are sampled every 34 ms: the recording is paused at 50 ms, between two samples, for 1 s, then records 400 ms more
+        Run(document, "record(stream, { mimeType: 'audio/webm;codecs=opus' });");
+        Advance(clock, document, 50);
+        Run(document, "recorder.pause();");
+        Advance(clock, document, 1000);
+        Run(document, "recorder.resume();");
+        Advance(clock, document, 400);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await blobs[0].arrayBuffer());
+              let binary = '';
+              for (const b of bytes) binary += String.fromCharCode(b);
+              document.title = btoa(binary);
+            };
+            recorder.stop();
+            """);
+
+        var samples = WebMReader.ReadBlocks(Convert.FromBase64String(document.Title))
+            .Where(block => block.Track == 2)
+            .SelectMany(block => Enumerable.Range(0, block.Frame.Length / 4).Select(i => BinaryPrimitives.ReadSingleLittleEndian(block.Frame.AsSpan(i * 4))))
+            .ToArray();
+
+        // The audio before the pause is recorded up to the pause (50 ms), and continues from the live position of the source at the resume (1050 ms)
+        var jump = Enumerable.Range(1, samples.Length - 1).Single(i => samples[i] - samples[i - 1] > 1);
+        Assert.Equal(50 * 48, jump);
+        Assert.InRange(samples[jump], 1050 * 48 / 1000f, (1050 * 48 / 1000f) + 0.1f);
+
+        // After the resume, the reads never get ahead of the live position of the source (1450 ms when the recording stops),
+        // and the recorded audio lasts as long as the time recorded, without the pause
+        Assert.True(samples[^1] < 1450 * 48 / 1000f, FormattableString.Invariant($"The last sample is ahead of the source: {samples[^1]}"));
+        Assert.InRange(samples.Length, (50 + 400 - 34) * 48, (50 + 400) * 48);
+        Assert.All(Enumerable.Range(jump + 1, samples.Length - jump - 1), i => Assert.Equal(samples[i - 1] + 0.001f, samples[i], 0.0005f));
+    }
+
+    [Fact]
+    public async Task MediaRecorder_Pause_EncodingErrorStopsTheRecordingWithoutPausing()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var codecs = new TestMediaCodecBackend();
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = codecs,
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => record(stream, { mimeType: 'audio/webm;codecs=opus' }));");
+
+        // The audio recorded since the last sample (at 40 ms) is encoded when pausing at 50 ms, and the encoder fails
+        Advance(clock, document, 50);
+        codecs.FailAudioEncoding = true;
+        Run(document, "recorder.pause(); log.push('paused ' + recorder.state);");
+        Advance(clock, document, 100);
+        Run(document, "done();");
+
+        Assert.Equal("recording|start audio/webm;codecs=opus|paused inactive|error UnknownError|data audio/webm;codecs=opus true 0|stop inactive", document.Title);
+    }
+
+    // MediaStreamTrack Insertable Streams
+
+    [Fact]
+    public async Task VideoTrackGenerator_FramesAreReadByAProcessor()
+    {
+        var document = Load("""
+            <script>
+            const generator = new VideoTrackGenerator();
+            const processor = new MediaStreamTrackProcessor({ track: generator.track });
+            const reader = processor.readable.getReader();
+            const frame = new VideoFrame(new OffscreenCanvas(4, 2), { timestamp: 42 });
+            generator.writable.getWriter().write(frame).then(() => reader.read()).then(result => {
+              document.title = [result.value.timestamp, result.value.displayWidth, result.value.displayHeight, frame.format === null, processor.totalFrames].join();
+              result.value.close();
+            });
+            </script>
+            """);
+
+        Assert.Equal("42,4,2,true,1", await RunAsync(document));
+    }
+
+    [Fact]
+    public async Task VideoTrackGenerator_StoppedTrack_ClosesTheWritable()
+    {
+        var document = Load("""
+            <script>
+            const generator = new VideoTrackGenerator();
+            const writer = generator.writable.getWriter();
+            generator.track.stop();
+            writer.closed.then(() => writer.write(new VideoFrame(new OffscreenCanvas(1, 1), { timestamp: 0 }))).catch(e => document.title = e.name);
+            </script>
+            """);
+
+        Assert.Equal("TypeError", await RunAsync(document));
+    }
+
+    [Fact]
+    public void MediaStreamTrackProcessor_ReadsTheFramesOfACameraUntilTheTrackStops()
+    {
+        var clock = new FakeTimeProvider();
+        var document = Load("<script>window.go = async () => { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); const track = stream.getVideoTracks()[0]; const reader = new MediaStreamTrackProcessor({ track }).readable.getReader(); const { value } = await reader.read(); const result = [value instanceof VideoFrame, value.displayWidth, value.displayHeight]; value.close(); track.stop(); await reader.closed; document.title = result.join(); };</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        Run(document, "go()");
+
+        Assert.Equal("true,640,480", RunUntilTitle(document, clock));
+    }
+
+    [Fact]
+    public void MediaStreamTrack_Transfer_EndsTheTrackAndSharesTheSource()
+    {
+        var document = Load("""
+            <script>
+            const track = new VideoTrackGenerator().track;
+            const received = structuredClone(track, { transfer: [track] });
+            let error;
+            try { structuredClone(track, { transfer: [track] }); } catch (e) { error = e.name; }
+            document.title = [track.readyState, received.readyState, received.kind, received === track, error].join();
+            </script>
+            """);
+
+        Assert.Equal("ended,live,video,false,DataCloneError", Run(document));
+    }
+
+    [Fact]
+    public void RequestVideoFrameCallback_RunsWhenAFrameIsPresented()
+    {
+        var clock = new FakeTimeProvider();
+        var document = Load("""
+            <script>
+            const generator = new VideoTrackGenerator();
+            const video = document.createElement('video');
+            video.srcObject = new MediaStream([generator.track]);
+            const canceled = video.requestVideoFrameCallback(() => document.title = 'canceled');
+            video.cancelVideoFrameCallback(canceled);
+            video.requestVideoFrameCallback((now, metadata) => {
+              document.title = [now > 0, metadata.width, metadata.height, metadata.presentedFrames].join();
+              generator.track.stop();
+            });
+            video.play();
+            generator.writable.getWriter().write(new VideoFrame(new OffscreenCanvas(8, 6), { timestamp: 0 }));
+            </script>
+            """, new BrowsingContextOptions { MediaBackend = new NoMediaBackend(), TimeProvider = clock });
+
+        Assert.Equal("true,8,6,1", RunUntilTitle(document, clock));
+    }
+
+    /// <summary>Advances the clock (the timers and the rendering updates run) until the title of the document is set.</summary>
+    private string RunUntilTitle(Document document, FakeTimeProvider clock)
+    {
+        for (var i = 0; i < 100 && document.Title.Length == 0; i++)
+        {
+            clock.Advance(TimeSpan.FromMilliseconds(10));
+            _contexts.EventLoop.RunUntilIdle();
+        }
+
+        Assert.Empty(_errors);
+        return document.Title;
     }
 }
 

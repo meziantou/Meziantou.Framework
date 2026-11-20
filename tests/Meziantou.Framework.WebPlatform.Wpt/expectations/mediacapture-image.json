@@ -158,10 +158,7 @@
     }
   },
   "mediacapture-image/takePhoto-without-PhotoCapabilities.https.window.js": {
-    "total": 1,
-    "failures": {
-      "exercise takePhoto() on a track without PhotoCapabilities": "FAIL"
-    }
+    "total": 1
   },
   "mediacapture-image/takePhoto.https.html": {
     "harness": "ERROR",

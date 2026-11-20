@@ -101,11 +101,19 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-hyphenation", Hyphenation) { Seeds = GetHyphenationSeeds, Dictionary = HyphenationTokens },
         new("webplatform-paged-inline-size", PagedInlineSize) { Seeds = GetPagedInlineSizeSeeds, Dictionary = PagedInlineSizeTokens },
         new("webplatform-videoframe-copyto", VideoFrameCopyTo) { Seeds = GetVideoFrameCopyToSeeds },
+        new("webplatform-videoframe-buffer", VideoFrameBuffer) { Seeds = GetVideoFrameBufferSeeds },
+        new("webplatform-audiodata", AudioDataTarget) { Seeds = GetAudioDataSeeds },
+        new("webplatform-media-codec-string", data => MediaCodecStringTarget(FuzzText.Decode(data))) { Seeds = GetMediaCodecStringSeeds, Dictionary = MediaCodecStringTokens },
+        new("webplatform-webm-writer", WebMWriterTarget) { Seeds = GetWebMWriterSeeds },
         new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
         new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },
         new("webplatform-image-metadata", ImageMetadataTarget) { Seeds = GetImageMetadataSeeds, Dictionary = ImageMetadataTokens },
         new("webplatform-webauthn", WebAuthentication) { Seeds = GetWebAuthnSeeds, Dictionary = WebAuthnTokens },
         new("webplatform-media-constraints", MediaConstraints) { Seeds = GetMediaConstraintsSeeds, Dictionary = MediaConstraintsTokens },
+        new("webplatform-clearkey-initdata", ClearKeyInitData) { Seeds = GetClearKeyInitDataSeeds, Dictionary = ClearKeyTokens },
+        new("webplatform-clearkey-response", ClearKeyResponse) { Seeds = GetClearKeyResponseSeeds, Dictionary = ClearKeyTokens },
+        new("webplatform-cenc-decrypt", CencDecrypt) { Seeds = GetCencDecryptSeeds },
+        new("webplatform-clearkey-stored-session", ClearKeyStoredSession) { Seeds = GetClearKeyStoredSessionSeeds, Dictionary = ClearKeyTokens },
         new("webplatform-use-as-dictionary", data => UseAsDictionary(FuzzText.Decode(data))) { Seeds = GetUseAsDictionarySeeds, Dictionary = StructuredFieldTokens },
         new("webplatform-dictionary-decompression", DictionaryDecompression) { Seeds = GetDictionaryDecompressionSeeds },
         new("webplatform-integrity-signatures", data => IntegritySignatureVerification(FuzzText.Decode(data))) { Seeds = GetIntegritySignatureSeeds, Dictionary = StructuredFieldTokens },
@@ -118,6 +126,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-link-header", data => LinkHeaderTarget(FuzzText.Decode(data))) { Seeds = GetLinkHeaderSeeds, Dictionary = LinkHeaderTokens },
         new("webplatform-fedcm", FedCm) { Seeds = GetFedCmSeeds, Dictionary = FedCmTokens },
         new("webplatform-nel-header", data => NetworkErrorLoggingHeader(FuzzText.Decode(data))) { Seeds = GetNetworkErrorLoggingSeeds, Dictionary = NetworkErrorLoggingTokens },
+        new("webplatform-media-content-type", data => MediaContentTypeTarget(FuzzText.Decode(data))) { Seeds = GetMediaContentTypeSeeds, Dictionary = MediaContentTypeTokens },
     ];
 
     /// <summary>
@@ -590,6 +599,35 @@ public static partial class WebPlatformFuzzTargets
             var reparsed = DomUrl.Parse(href) ?? throw new InvalidOperationException($"The serialization of a URL is not a valid URL: '{href}' (input '{input}', base '{@base}')");
             if (!string.Equals(reparsed.Href, href, StringComparison.Ordinal))
                 throw new InvalidOperationException($"The serialization of a URL is not idempotent: '{href}' is parsed as '{reparsed.Href}' (input '{input}', base '{@base}')");
+
+            CheckHostAndUpgrade(url.Record);
+        }
+    }
+
+    /// <summary>
+    /// Checks the public suffix of the host of a URL against its registrable domain and its uniqueness (the exemptions of the
+    /// HTTPS upgrades), and the <c>https:</c> upgrade of an <c>http:</c> URL against the parse of its serialization with the
+    /// <c>https</c> scheme.
+    /// </summary>
+    private static void CheckHostAndUpgrade(Urls.UrlRecord record)
+    {
+        if (record.Host is { } host)
+        {
+            var publicSuffix = Urls.PublicSuffixList.GetPublicSuffix(host);
+            var registrableDomain = Urls.PublicSuffixList.GetRegistrableDomain(host);
+            if (Urls.PublicSuffixList.IsUniqueDomain(host))
+            {
+                FuzzAssert.True(publicSuffix is not null && registrableDomain is not null && registrableDomain.EndsWith(publicSuffix, StringComparison.Ordinal) && registrableDomain.Length > publicSuffix.Length, $"The unique host {FuzzAssert.Format(host.Serialized)} has the registrable domain {FuzzAssert.Format(registrableDomain ?? "(null)")} and the public suffix {FuzzAssert.Format(publicSuffix ?? "(null)")}");
+            }
+        }
+
+        if (record.Scheme == "http")
+        {
+            var serialized = record.Serialize();
+            var upgraded = Dom.UpgradeInsecureRequests.Upgrade(record).Serialize();
+            var expected = Urls.UrlParser.Parse("https" + serialized["http".Length..], baseUrl: null)?.Serialize();
+            FuzzAssert.Equal(expected ?? "(null)", upgraded, $"The https: upgrade of {FuzzAssert.Format(serialized)}");
+            FuzzAssert.Equal(serialized, record.Serialize(), $"The upgrade of {FuzzAssert.Format(serialized)} changed it");
         }
     }
 

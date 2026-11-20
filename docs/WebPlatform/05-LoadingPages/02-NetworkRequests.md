@@ -37,6 +37,48 @@ var document = context.Document;
   credentials (`https://user:password@example.com/`), they answer the challenge, as in the browsers, also for the
   subresources (images, scripts...). Once accepted, they are used for the other requests to the same origin.
 
+## Upgrade the navigations to HTTPS
+
+A browser that implements HTTPS upgrades (a proposal for the Fetch standard, https://github.com/whatwg/fetch/pull/1655)
+requests the `https:` URL of an `http:` link, and falls back to the `http:` URL when the `https:` request fails. Set
+[HttpsUpgrades](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.HttpsUpgrades) to do the same:
+
+<!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_HttpsUpgrades;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    DocumentLoader = DocumentLoader.Create(),
+    HttpsUpgrades = new HttpsUpgradeOptions
+    {
+        FallbackTimeout = TimeSpan.FromSeconds(3), // optional: do not wait for the timeout of the network
+    },
+});
+
+context.Navigate("http://example.com/"); // requests https://example.com/, then http://example.com/ if it fails
+await context.EventLoop.RunUntilIdleAsync();
+```
+<!-- endref -->
+
+- Only the `GET` navigations of the top-level browsing contexts are upgraded, including the `http:` URLs of their
+  redirects. The navigations of the `iframe` elements, the form submissions that post data and the subresources keep their
+  URL (the `upgrade-insecure-requests` directive of a page and the mixed content checks upgrade or block the subresources).
+- The navigation falls back to the `http:` URL when the loader returns no response or throws (the connection or the
+  certificate is refused), when [FallbackTimeout](cref:Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions.FallbackTimeout)
+  expires before the response, or when the `https:` URL redirects back to the `http:` URL. An HTTP error (`404`, `500`)
+  is a response: it does not fall back. The host of a failed upgrade is not upgraded again for 7 days by the browsing
+  contexts that share the options.
+- The referrer is computed for the `https:` URL, so a `no-referrer-when-downgrade` policy sends it, and the document has
+  the `https:` URL.
+- The IP addresses, `localhost`, the hosts of a private network (`intranet`, `printer.local`, `*.test`, the top-level
+  domains that are not in the public suffix list) and the ports other than 80 are not upgraded.
+  [UpgradeNonUniqueHosts](cref:Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions.UpgradeNonUniqueHosts) and
+  [UpgradeNonDefaultPorts](cref:Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions.UpgradeNonDefaultPorts) upgrade
+  them too, keeping the port: use them for a test server that serves HTTPS on the port of the `http:` URL.
+
+The option is off by default. The library loads the URLs your application gives it, often from local or test servers, and
+an upgrade sends a request you did not ask for and changes the URL of the document. The feature is not part of the Fetch
+standard yet, and the browsers that implement it do not all enable it in every mode.
+
 ## Protect your network from untrusted pages
 
 [DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) requests any URL that a page navigates to or references. With an untrusted page, the requests
@@ -301,3 +343,38 @@ Assert.Equal(["https://example.com/export.csv report.csv: id,name\n1,Ada\n", "ht
   rest of the file, or dispose its enumerator to cancel the download.
 - Without a callback, the downloads are ignored: the hyperlinks with a `download` attribute fetch nothing. The documents
   sandboxed without `allow-downloads` do not download, and the listeners of the `navigate` event can cancel a download.
+
+## WebSockets
+
+The `WebSocket` connections of the scripts are opened by [DocumentLoader.ConnectWebSocketAsync](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.ConnectWebSocketAsync): the loader of
+[DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) connects to the server, and a custom loader can filter the connections or return
+an in-memory connection. The scripts can also use `WebSocketStream`, the
+[proposal](https://github.com/whatwg/websockets/pull/48) that Chromium ships, whose connection is opened the same way:
+
+- The `opened` promise gives a `ReadableStream` of the received messages (a string for a text message, a `Uint8Array` for
+  a binary message) and a `WritableStream` that sends a string as a text message and a `BufferSource` as a binary message.
+  A write is fulfilled once the message is sent.
+- The readable stream applies backpressure: the next message is read from the network only when the page has read the
+  previous one, so a server that sends faster than the page reads is slowed down.
+- `close()`, `cancel()` of the readable stream and `abort()` of the writable stream close the connection; the `closed`
+  promise gives the status code and the reason of the closing handshake. A connection that cannot be established or is not
+  closed cleanly rejects the promises with a `WebSocketError`, and the `signal` option aborts the opening handshake.
+- As a `WebSocket`, the connection is closed when its document is unloaded or its worker ends.
+
+The .NET types ([WebSocketStream](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketStream), [WebSocketError](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketError)) are
+[experimental](../09-Limitations.md#experimental-apis) (`WEBPLATEXP0027`). A [WebSocketError](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketError) gives the status code and the reason of
+the Close frame:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/WebSocketTests.cs;region=WebPlatform_WebSocketError;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A reason without status code gives the 1000 (normal closure) status code
+var error = new WebSocketError("The chat is closed", new WebSocketCloseInfo { Reason = "maintenance" });
+Assert.Equal("WebSocketError", error.Name);
+Assert.Equal((ushort)1000, error.CloseCode);
+Assert.Equal("maintenance", error.Reason);
+
+// The status code must be 1000 or between 3000 and 4999, and the reason at most 123 bytes in UTF-8
+var invalid = Assert.Throws<DomException>(() => new WebSocketError("", new WebSocketCloseInfo { CloseCode = 1001 }));
+Assert.Equal("InvalidAccessError", invalid.Name);
+```
+<!-- endref -->

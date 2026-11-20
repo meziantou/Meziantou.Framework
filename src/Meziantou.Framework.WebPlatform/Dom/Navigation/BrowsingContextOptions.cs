@@ -91,6 +91,14 @@ public sealed partial record BrowsingContextOptions
     public FileSystemBackend? FileSystem { get; init; }
 
     /// <summary>
+    /// Gets or sets the storage of the persistent key sessions of Encrypted Media Extensions (the <c>persistent-license</c>
+    /// sessions of Clear Key, and their records of license destruction), e.g. a database or a
+    /// <see cref="InMemoryMediaKeysStorageBackend"/> shared by several browsing contexts. The default is null: each browsing
+    /// context created by the application has its own in-memory storage, shared by its auxiliary browsing contexts.
+    /// </summary>
+    public MediaKeysStorageBackend? MediaKeysStorage { get; init; }
+
+    /// <summary>
     /// Gets or sets the options of the storage of the origins (<c>navigator.storage</c>): the quota that
     /// <c>estimate()</c> reports and that the origin private file system enforces, and the answer to <c>persist()</c>. The
     /// default is null: the quota is <see cref="StorageOptions.DefaultQuota"/>, and the storage is never persistent.
@@ -173,6 +181,16 @@ public sealed partial record BrowsingContextOptions
     /// is rejected with a <c>NotFoundError</c>).
     /// </summary>
     public Media.MediaCaptureBackend? MediaCapture { get; init; }
+
+    /// <summary>
+    /// Gets or sets the audio and video codecs of the browsing contexts and their workers (see
+    /// <see cref="Media.MediaCodecBackend"/>): the decoders and the encoders of WebCodecs (<c>AudioDecoder</c>,
+    /// <c>VideoDecoder</c>, <c>AudioEncoder</c>, <c>VideoEncoder</c>) and of <c>MediaRecorder</c>. The library implements
+    /// the processing model of the codecs; the backend decodes and encodes. The default is null: there is no codec
+    /// (<c>isConfigSupported()</c> resolves with <c>supported: false</c> and <c>configure()</c> closes the codec with a
+    /// <c>NotSupportedError</c>).
+    /// </summary>
+    public Media.MediaCodecBackend? MediaCodecs { get; init; }
 
     /// <summary>
     /// Gets or sets whether the media elements are allowed to play without a user gesture
@@ -739,6 +757,22 @@ public sealed partial record BrowsingContextOptions
     /// registered, and the URLs whose scheme is not a fetch scheme are handed off to external software.
     /// </summary>
     public ProtocolHandlerOptions? ProtocolHandlers { get; init; }
+
+    /// <summary>
+    /// Gets or sets the HTTPS upgrades of the top-level navigations (https://github.com/whatwg/fetch/pull/1655): the
+    /// <c>http:</c> URL of a navigation is fetched over <c>https:</c> first (and so are the <c>http:</c> URLs of its
+    /// redirects), and over <c>http:</c> when the <c>https:</c> request fails or redirects back to the <c>http:</c> URL. The
+    /// IP addresses, <c>localhost</c>, the hosts of a private network and the non-default ports are not upgraded (see
+    /// <see cref="HttpsUpgradeOptions"/>). The default is null: the URLs are fetched as they are. The library loads the URLs
+    /// that the application gives it, often from local or test servers, and an upgrade sends a request that the application
+    /// did not ask for and changes the URL of the document; the feature is not part of the Fetch standard yet, and the browsers
+    /// that implement it do not all enable it in every mode. Set it to <see cref="HttpsUpgradeOptions.Default"/> to browse
+    /// the web as a browser that upgrades the navigations.
+    /// </summary>
+    public HttpsUpgradeOptions? HttpsUpgrades { get; init; }
+
+    /// <summary>The hosts whose HTTPS upgrade failed recently (see <see cref="HttpsUpgrades"/>): their navigations are not upgraded.</summary>
+    internal HttpsUpgradeAllowlist HttpsUpgradeAllowlist { get; } = new();
 
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<NotificationRecord> ShownNotifications { get; } = [];

@@ -1,10 +1,14 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
 
-/// <summary>Upgrade Insecure Requests (https://w3c.github.io/webappsec-upgrade-insecure-requests/): the <c>upgrade-insecure-requests</c> directive.</summary>
+/// <summary>
+/// Upgrade Insecure Requests (https://w3c.github.io/webappsec-upgrade-insecure-requests/): the <c>upgrade-insecure-requests</c>
+/// directive; and the HTTPS upgrades of the top-level navigations (https://github.com/whatwg/fetch/pull/1655).
+/// </summary>
 public sealed class UpgradeInsecureRequestsTests : IDisposable
 {
     private const string Meta = "<meta http-equiv=Content-Security-Policy content=upgrade-insecure-requests>";
@@ -15,6 +19,9 @@ public sealed class UpgradeInsecureRequestsTests : IDisposable
     private readonly BrowsingContextScope _contexts = new();
     private readonly ScriptEngine _engine = TestScriptEngines.Create();
     private readonly List<DocumentRequest> _requests = [];
+
+    /// <summary>The responses of the loader for some URLs (a null response is a network error).</summary>
+    private readonly Dictionary<string, Func<CancellationToken, Task<DocumentResource?>>> _responses = new(StringComparer.Ordinal);
 
     public void Dispose()
     {
@@ -30,6 +37,17 @@ public sealed class UpgradeInsecureRequestsTests : IDisposable
         return document;
     }
 
+    /// <summary>Navigates a new browsing context to <paramref name="url"/> with the loader, whose responses are synchronous.</summary>
+    private BrowsingContext Navigate(string url, HttpsUpgradeOptions? httpsUpgrades, TimeProvider? timeProvider = null)
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this), HttpsUpgrades = httpsUpgrades, TimeProvider = timeProvider });
+        context.Navigate(url);
+        _contexts.EventLoop.RunUntilIdle();
+        return context;
+    }
+
+    private static DocumentResource Redirect(string location) => new("") { StatusCode = 302, Headers = [new("Location", location)] };
+
     private List<string> Requests => [.. _requests.Select(r => r.Destination + " " + r.Url)];
 
     /// <summary>Serves a script for the .js URLs, a PNG for the .png URLs, a text for the .txt URLs and a document for the other URLs.</summary>
@@ -38,6 +56,9 @@ public sealed class UpgradeInsecureRequestsTests : IDisposable
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
             test._requests.Add(request);
+            if (test._responses.TryGetValue(request.Url, out var response))
+                return new ValueTask<DocumentResource?>(response(cancellationToken));
+
             var path = request.Url.Split('?')[0];
             var resource = path switch
             {
@@ -198,5 +219,145 @@ public sealed class UpgradeInsecureRequestsTests : IDisposable
         // upgrade-insecure-requests directive is initialized for the popup (without it, the script is blocked as mixed content)
         Load(Meta + "<script>var w = window.open(); var script = w.document.createElement('script'); script.src = 'http://other.example/a.js'; w.document.body.appendChild(script);</script>");
         Assert.Equal(["Script https://other.example/a.js"], Requests);
+    }
+
+    [Fact]
+    public void HttpsUpgrades_AreDisabledByDefault()
+    {
+        var context = Navigate("http://example.com/page.html", httpsUpgrades: null);
+        Assert.Equal(["Document http://example.com/page.html"], Requests);
+        Assert.Equal("http://example.com/page.html", context.Document.Url);
+    }
+
+    [Fact]
+    public void HttpsUpgrades_UpgradeTheTopLevelNavigation()
+    {
+        var context = Navigate("http://example.com/page.html#top", HttpsUpgradeOptions.Default);
+        Assert.Equal(["Document https://example.com/page.html#top"], Requests);
+        Assert.Equal("https://example.com/page.html#top", context.Document.Url);
+    }
+
+    [Fact]
+    public void HttpsUpgrades_FallBackToHttp_WhenTheUpgradedRequestFails()
+    {
+        _responses["https://http-only.example.com/"] = _ => Task.FromResult<DocumentResource?>(null);
+        var context = Navigate("http://http-only.example.com/", HttpsUpgradeOptions.Default);
+        Assert.Equal(["Document https://http-only.example.com/", "Document http://http-only.example.com/"], Requests);
+        Assert.Equal("http://http-only.example.com/", context.Document.Url);
+        Assert.Equal("page", context.Document.Title);
+
+        // The host is in the allowlist of the failed upgrades: its next navigations are not upgraded
+        _requests.Clear();
+        context.Navigate("http://http-only.example.com/other.html");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["Document http://http-only.example.com/other.html"], Requests);
+    }
+
+    [Fact]
+    public void HttpsUpgrades_FallBackToHttp_WhenTheHttpsUrlRedirectsToTheHttpUrl()
+    {
+        _responses["https://loop.example.com/"] = _ => Task.FromResult<DocumentResource?>(Redirect("http://loop.example.com/"));
+        var context = Navigate("http://loop.example.com/", HttpsUpgradeOptions.Default);
+        Assert.Equal(["Document https://loop.example.com/", "Document http://loop.example.com/"], Requests);
+        Assert.Equal("http://loop.example.com/", context.Document.Url);
+    }
+
+    [Fact]
+    public void HttpsUpgrades_UpgradeEachUrlOfTheRedirectChain()
+    {
+        _responses["https://a.example.com/"] = _ => Task.FromResult<DocumentResource?>(Redirect("http://b.example.com/"));
+        _responses["https://b.example.com/"] = _ => Task.FromResult<DocumentResource?>(Redirect("https://c.example.com/"));
+        var context = Navigate("http://a.example.com/", HttpsUpgradeOptions.Default);
+        Assert.Equal(["Document https://a.example.com/", "Document https://b.example.com/", "Document https://c.example.com/"], Requests);
+        Assert.Equal("https://c.example.com/", context.Document.Url);
+    }
+
+    [Fact]
+    public async Task HttpsUpgrades_FallBackToHttp_AfterTheFallbackTimeout()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        _responses["https://slow.example.com/"] = async cancellationToken =>
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return null;
+        };
+
+        var context = Navigate("http://slow.example.com/", new HttpsUpgradeOptions { FallbackTimeout = TimeSpan.FromSeconds(3) }, clock);
+        Assert.Equal(["Document https://slow.example.com/"], Requests);
+
+        clock.Advance(TimeSpan.FromSeconds(3));
+        await context.EventLoop.RunUntilIdleAsync();
+        Assert.Equal(["Document https://slow.example.com/", "Document http://slow.example.com/"], Requests);
+        Assert.Equal("http://slow.example.com/", context.Document.Url);
+    }
+
+    [Theory]
+    [InlineData("http://192.168.1.10/")]
+    [InlineData("http://[2001:db8::1]/")]
+    [InlineData("http://localhost/")]
+    [InlineData("http://intranet/")]
+    [InlineData("http://printer.local/")]
+    [InlineData("http://web-platform.test/")]
+    [InlineData("http://example.com:8080/")]
+    [InlineData("https://example.com/")]
+    public void HttpsUpgrades_DoNotUpgradeTheExemptedUrls(string url)
+    {
+        Navigate(url, HttpsUpgradeOptions.Default);
+        Assert.Equal(["Document " + url], Requests);
+    }
+
+    [Theory]
+    [InlineData("http://intranet/", "https://intranet/")]
+    [InlineData("http://web-platform.test:8443/", "https://web-platform.test:8443/")]
+    [InlineData("http://example.com:443/", "https://example.com/")]
+    public void HttpsUpgrades_CanUpgradeTheNonUniqueHostsAndTheNonDefaultPorts(string url, string expected)
+    {
+        Navigate(url, new HttpsUpgradeOptions { UpgradeNonDefaultPorts = true, UpgradeNonUniqueHosts = true });
+        Assert.Equal(["Document " + expected], Requests);
+    }
+
+    [Fact]
+    public void HttpsUpgrades_DoNotUpgradeTheNavigationsOfNestedNavigables()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this), HttpsUpgrades = HttpsUpgradeOptions.Default });
+        context.Navigate("http://example.com/", _ => DocumentResource.Create("<iframe src=http://other.example.com/frame.html></iframe><form method=post action=http://other.example.com/post.html></form>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        ((HtmlFormElement)context.Document.QuerySelector("form")!).Submit();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["Iframe http://other.example.com/frame.html", "Document http://other.example.com/post.html"], Requests);
+    }
+
+    [Fact]
+    public void HttpsUpgrades_TheReferrerIsDeterminedForTheUpgradedUrl()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this), HttpsUpgrades = HttpsUpgradeOptions.Default });
+        context.Navigate("https://example.com/page.html", _ => DocumentResource.Create("<meta name=referrer content=no-referrer-when-downgrade><a href=http://other.example.com/>link</a>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        ((HtmlElement)context.Document.QuerySelector("a")!).Click();
+        _contexts.EventLoop.RunUntilIdle();
+        var request = Assert.Single(_requests);
+        Assert.Equal("https://other.example.com/", request.Url);
+        Assert.Equal("https://example.com/page.html", request.Referrer);
+        Assert.Equal("https://example.com/page.html", context.Document.Referrer);
+    }
+
+    [Fact]
+    public void HttpsUpgradeAllowlist_IsBoundedAndExpires()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var allowlist = new HttpsUpgradeAllowlist();
+        for (var i = 0; i <= HttpsUpgradeAllowlist.MaxCount; i++)
+        {
+            allowlist.Add("host" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".example", clock);
+            clock.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        Assert.Equal(HttpsUpgradeAllowlist.MaxCount, allowlist.Count);
+        Assert.False(allowlist.Contains("host0.example", clock));
+        Assert.True(allowlist.Contains("host1.example", clock));
+
+        clock.Advance(TimeSpan.FromDays(7) - TimeSpan.FromSeconds(1));
+        Assert.True(allowlist.Contains("host1.example", clock)); // extended by the previous lookup
+        Assert.False(allowlist.Contains("host2.example", clock));
     }
 }

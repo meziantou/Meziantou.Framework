@@ -1,0 +1,1 @@
+http://web-platform.test:8443/https-upgrades/resources/pass.html

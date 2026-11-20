@@ -2,10 +2,21 @@ using Meziantou.Framework.WebPlatform.Media;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>A coded frame stored in a track buffer: its position on the media timeline, and the description of its track when it was appended.</summary>
-internal readonly record struct BufferedFrame(double PresentationTimestamp, double DecodeTimestamp, double Duration, bool IsRandomAccessPoint, int Width, int Height, long ByteCount)
+/// <summary>
+/// A coded frame stored in a track buffer: its position on the media timeline, the description of its track when it was
+/// appended, and the encrypted data of a frame that is not decrypted yet (Encrypted Media Extensions).
+/// </summary>
+internal readonly record struct BufferedFrame(double PresentationTimestamp, double DecodeTimestamp, double Duration, bool IsRandomAccessPoint, int Width, int Height, long ByteCount, EncryptedFrameData? Encrypted = null)
 {
     public double EndTimestamp => PresentationTimestamp + Duration;
+}
+
+/// <summary>The encryption and the data of a frame that waits for its key: the frame is decrypted once a key session of the media element has the key.</summary>
+internal sealed class EncryptedFrameData(MediaSampleEncryption encryption, byte[] data)
+{
+    public MediaSampleEncryption Encryption { get; } = encryption;
+
+    public byte[] Data { get; } = data;
 }
 
 /// <summary>
@@ -50,6 +61,9 @@ internal sealed class TrackBuffer(long trackId, bool isVideo)
 
     /// <summary>The number of bytes of the media segments of the frames of the track buffer.</summary>
     public long ByteCount { get; private set; }
+
+    /// <summary>The number of frames that wait for their key (Encrypted Media Extensions).</summary>
+    public int EncryptedFrameCount { get; private set; }
 
     /// <summary>Unsets the variables of the current coded frame group.</summary>
     public void ResetGroup()
@@ -137,6 +151,7 @@ internal sealed class TrackBuffer(long trackId, bool isVideo)
 
         _frames.Insert(index, frame);
         ByteCount += frame.ByteCount;
+        EncryptedFrameCount += frame.Encrypted is null ? 0 : 1;
         _maxFrameDuration = Math.Max(_maxFrameDuration, frame.Duration);
         _maxReorderDistance = Math.Max(_maxReorderDistance, Math.Abs(frame.PresentationTimestamp - frame.DecodeTimestamp));
         _ranges = null;
@@ -145,6 +160,7 @@ internal sealed class TrackBuffer(long trackId, bool isVideo)
     public void RemoveAt(int index)
     {
         ByteCount -= _frames[index].ByteCount;
+        EncryptedFrameCount -= _frames[index].Encrypted is null ? 0 : 1;
         _frames.RemoveAt(index);
         _ranges = null;
     }
@@ -152,6 +168,7 @@ internal sealed class TrackBuffer(long trackId, bool isVideo)
     public void Replace(int index, BufferedFrame frame)
     {
         ByteCount += frame.ByteCount - _frames[index].ByteCount;
+        EncryptedFrameCount += (frame.Encrypted is null ? 0 : 1) - (_frames[index].Encrypted is null ? 0 : 1);
         _frames[index] = frame;
         _ranges = null;
     }
@@ -190,6 +207,7 @@ internal sealed class TrackBuffer(long trackId, bool isVideo)
 
             (removed ??= []).Add(i);
             ByteCount -= frame.ByteCount;
+            EncryptedFrameCount -= frame.Encrypted is null ? 0 : 1;
             if (LastDecodeTimestamp is { } decodeTimestamp && frame.DecodeTimestamp == decodeTimestamp)
             {
                 lastDecodedFrameTimestamp = frame.PresentationTimestamp;
@@ -301,6 +319,69 @@ internal sealed class TrackBuffer(long trackId, bool isVideo)
             _highestPresentationTimestamp = highest;
             return _ranges = [.. merged];
         }
+    }
+
+    /// <summary>
+    /// Decrypts the frames whose key is available (https://w3c.github.io/encrypted-media/#attempt-to-decrypt): a decrypted
+    /// frame is a clear frame, and its data is released (the library does not decode the coded frames). Returns false when
+    /// the encryption of a frame does not match its data (the media data is corrupted).
+    /// </summary>
+    /// <param name="keys">The usable keys of the <c>MediaKeys</c> of the media element.</param>
+    /// <param name="changed">Whether frames were decrypted.</param>
+    public bool DecryptFrames(MediaKeysDecryptionKeys keys, out bool changed)
+    {
+        changed = false;
+        if (EncryptedFrameCount == 0)
+            return true;
+
+        for (var i = 0; i < _frames.Count; i++)
+        {
+            var frame = _frames[i];
+            if (frame.Encrypted is not { } encrypted || keys.FindKey(encrypted.Encryption.KeyId.Span) is not { } key)
+                continue;
+
+            if (!MediaSampleDecryptor.TryDecrypt(encrypted.Encryption, key, encrypted.Data, encrypted.Data))
+                return false;
+
+            _frames[i] = frame with { Encrypted = null };
+            EncryptedFrameCount--;
+            changed = true;
+        }
+
+        return true;
+    }
+
+    /// <summary>The presentation time ranges of the frames that wait for their key, coalesced as the track buffer ranges.</summary>
+    public MediaTimeRange[] GetEncryptedRanges()
+    {
+        if (EncryptedFrameCount == 0)
+            return [];
+
+        var ranges = new List<MediaTimeRange>(EncryptedFrameCount);
+        foreach (var frame in _frames)
+        {
+            if (frame.Encrypted is not null)
+            {
+                ranges.Add(new MediaTimeRange(frame.PresentationTimestamp, frame.EndTimestamp));
+            }
+        }
+
+        ranges.Sort((a, b) => a.Start.CompareTo(b.Start));
+        var fudge = GapTolerance;
+        var merged = new List<MediaTimeRange>(ranges.Count);
+        foreach (var range in ranges)
+        {
+            if (merged.Count > 0 && range.Start - merged[^1].End < fudge)
+            {
+                merged[^1] = new MediaTimeRange(merged[^1].Start, Math.Max(merged[^1].End, range.End));
+            }
+            else
+            {
+                merged.Add(range);
+            }
+        }
+
+        return [.. merged];
     }
 
     /// <summary>The end time of the last range, or 0 when the track buffer is empty.</summary>

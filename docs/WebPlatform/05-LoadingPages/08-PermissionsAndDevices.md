@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -17,6 +17,7 @@ the device in a test, or to connect the API to your application.
 | [Vibrate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Vibrate) | `navigator.vibrate()` | Nothing vibrates |
 | [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation) | `navigator.geolocation` | The position is unavailable |
 | [MediaCapture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCapture) | `navigator.mediaDevices.getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()` | There is no camera, microphone nor screen: `getUserMedia()` fails with a `NotFoundError` |
+| [MediaKeysStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaKeysStorage) | The `persistent-license` sessions of `navigator.requestMediaKeySystemAccess()` (Clear Key) | The sessions are stored in memory, for the browsing contexts of the group |
 | [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()`, `registration.showNotification()` | The notifications are displayed nowhere |
 | [Badging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Badging) | `navigator.setAppBadge()`, `navigator.clearAppBadge()` | The badge is shown nowhere |
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
@@ -235,8 +236,42 @@ captures the frames of a media element, and `AudioContext.createMediaStreamDesti
 with the channel count of the node. `createMediaStreamSource()` and `createMediaStreamTrackSource()` play the audio of a
 track in a Web Audio graph. The media elements play a stream assigned to `srcObject` as a live timeline that cannot be
 seeked, once a [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) enables their processing model.
-`MediaRecorder` is not implemented, and the audio of the media elements is not decoded (the media backend gives no
-audio), so `createMediaElementSource()` outputs silence.
+`MediaRecorder` records the streams with the codecs of a codec backend (see
+[Audio and video codecs](10-AudioAndVideoCodecs.md#record-a-stream)). The audio of the media elements is not decoded (the
+media backend gives no audio), so `createMediaElementSource()` outputs silence.
+
+### Processing the frames of a track
+
+The pages process the media of the tracks with the insertable streams (MediaStreamTrack Insertable Media Processing
+using Streams). They need no callback of the host:
+
+- `new MediaStreamTrackProcessor({ track })` reads a track as a `ReadableStream` of `VideoFrame` objects (or of
+  `AudioData` objects for an audio track). The frames that arrive while no read is pending are kept in a buffer of
+  `maxBufferSize` frames (1 by default, 64 at most): a new frame closes and discards the oldest one, which
+  `discardedFrames` counts. The stream is closed when the track ends.
+- `new VideoTrackGenerator()` creates a video track from the frames written to its `writable` stream: each frame is
+  delivered to the sinks of the track and of its clones, then closed. A frame written while `muted` is true is
+  discarded. Stopping the track and all its clones closes the stream, and closing or aborting the stream ends the
+  tracks.
+- The tracks of a camera, a canvas or a media element are read at the frame rate of the track (30 frames per second
+  when it has none, 60 at most) on the clock of the event loop, and the audio by blocks of 10 ms. The frames of a
+  `VideoTrackGenerator` are read as they are written.
+- A track can be transferred to a dedicated worker, or from a dedicated worker to its window:
+  `worker.postMessage(track, [track])` ends the track, and the worker gets a track of the same source. The source keeps
+  running on the thread where it was created, and the received track gets its frames (the last frame replaces a frame
+  that the receiver did not handle yet) and its state; the source stops when the received track stops or when the
+  worker is terminated. A `MediaStreamTrackHandle` transfers a reference to a track that stays live. The tracks and the
+  handles cannot leave their agent cluster: a cross-site frame, a shared worker or a service worker gets a
+  `messageerror` event.
+- `MediaStreamTrackProcessor` and `VideoTrackGenerator` are exposed in the windows too, and the legacy API of Chromium
+  is available: `new MediaStreamTrackGenerator({ kind })` is a track (audio or video) with a `writable` stream, and
+  `new MediaStreamTrackProcessor(track)` takes the track itself.
+
+`video.requestVideoFrameCallback()` runs a callback when the element presents a new frame: in the next rendering update,
+before the animation frame callbacks and with the same time. A frame is new when the element shows a frame of another
+media resource, or the frame at another position of the media timeline; the metadata gives the size of the frame, its
+position (`mediaTime`) and the number of frames presented by the element. The frames are the ones the
+[MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) gives, or the frames of the `srcObject` stream.
 
 ## Notifications
 
@@ -752,6 +787,69 @@ Without provider, the keyboard is a US QWERTY keyboard
 letters, the digits and the punctuation) are given to the pages. The frames that their permissions policy does not allow
 (`keyboard-map`) get a `SecurityError`.
 
+## Encrypted media
+
+Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`, `MediaKeys`, `MediaKeySession`,
+`video.setMediaKeys()`) implement the Clear Key key system (`org.w3.clearkey`): the license request lists the key IDs of the
+Initialization Data (`keyids`, `cenc` and `webm`), and the license is a JSON Web Key Set that the page gives to
+`update()`. The commercial key systems (Widevine, PlayReady, FairPlay) are not supported. A configuration is supported
+when the [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) of the browsing context plays its MP4 or
+WebM types; Clear Key supports the `cenc`, `cbcs` and `cbcs-1-9` encryption schemes, the empty robustness, no
+distinctive identifier, and the `temporary` and `persistent-license` sessions.
+
+The media data comes from the Media Source Extensions: the segment parser of the backend reports the Initialization Data
+of the initialization segments (each one fires an `encrypted` event at the media element) and how each coded frame is
+encrypted. The library decrypts the frames with the usable keys of the sessions of the `MediaKeys` of the element
+(AES-CTR for `cenc`, AES-CBC with its pattern for `cbcs`); the playback stops before a frame whose key no session has, fires
+`waitingforkey`, and resumes when `update()` provides the key. A frame whose subsamples do not match its data is a decode
+error. For instance, the parser of an MP4 byte stream reads the `tenc`, `senc` (or `saiz` and `saio`) and `seig` sample
+group boxes of the fragments:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/MediaSourceTests.cs;region=WebPlatform_EncryptedMediaFrames;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A frame of a media segment encrypted with the Common Encryption (cenc): AES-CTR on the bytes after the clear header of
+// each subsample. The library decrypts it with the keys of the sessions of the MediaKeys of the media element, and the
+// playback waits until a session has the key.
+byte[] keyId = [0xad, 0x13, 0xf9, 0xea, 0x2b, 0xe6, 0x98, 0xb8, 0x75, 0xf5, 0x04, 0xa8, 0xe3, 0xcc, 0xea, 0x64];
+byte[] initializationVector = [0, 0, 0, 0, 0, 0, 0, 1];
+byte[] data = new byte[100];
+var frame = new MediaCodedFrame(TrackId: 1, PresentationTimestamp: 0, DecodeTimestamp: 0, Duration: 0.04, IsRandomAccessPoint: true)
+{
+    Encryption = new MediaSampleEncryption(MediaEncryptionScheme.Cenc, keyId, initializationVector, [new MediaSubsample(ClearBytes: 5, ProtectedBytes: 95)]),
+    Data = data,
+};
+```
+<!-- endref -->
+
+The `persistent-license` sessions need a configuration whose `persistentState` is `required`. `update()` stores their keys
+in [MediaKeysStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaKeysStorage), `load()` reads them
+back in another document, and `remove()` replaces them with a record of license destruction, sent as a `license-release`
+message until the page gives its acknowledgement to `update()`. The sessions are partitioned by storage key: a document
+only loads the sessions of its origin, in the same top-level site. A stored session is loaded by one document at a time,
+until the session is closed or its document is destroyed (a document that holds one is not kept in the back/forward
+cache). The data contains the keys: a persistent
+[MediaKeysStorageBackend](cref:Meziantou.Framework.WebPlatform.Dom.MediaKeysStorageBackend) should protect it.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/MediaSourceTests.cs;region=WebPlatform_EncryptedMediaStorage;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The persistent-license sessions of Clear Key, shared by the browsing contexts (e.g. a database to keep them between runs)
+var storage = new InMemoryMediaKeysStorageBackend();
+var options = new BrowsingContextOptions
+{
+    MediaKeysStorage = storage,
+};
+```
+<!-- endref -->
+
+- `requestMediaKeySystemAccess()` needs a secure context and the `encrypted-media` permissions policy feature (allowed to
+  the same-origin frames by default); a document whose origin is opaque gets a `NotSupportedError`. A prerendering page
+  waits for its activation.
+- The Initialization Data and the responses of `update()` are limited to 64 KiB, a key ID to 512 bytes, and the keys to
+  16 bytes (AES-128). A session has at most 1,024 keys: the keys that several `update()` calls add to a persistent session
+  are stored in a record of up to 1 MiB, which `load()` reads back. The keys never leave the library: the page only sees the key IDs and their statuses.
+- The media resources played by URL (without Media Source Extensions) are not decrypted: the backend that plays them has
+  no access to the keys.
+
 ## Media session
 
 A page that plays media describes it with `navigator.mediaSession`: the title, the artist, the album and the artwork of
@@ -781,6 +879,72 @@ var options = new BrowsingContextOptions
 Call [HandleAction](cref:Meziantou.Framework.WebPlatform.Dom.MediaSession.HandleAction) when the user presses a media
 control: the handler that the page registered with `setActionHandler()` runs from a task, and the method returns false
 when the page has no handler for the action. The URLs of the artwork are absolute; the library does not fetch the images.
+
+## Media capabilities
+
+A page asks `navigator.mediaCapabilities.decodingInfo()` and `encodingInfo()` (in a window or a worker) whether it can
+play, receive, record or send media with a configuration: a content type, the size and frame rate of the video, the
+channels of the audio. The library validates the configurations (the promise is rejected with a `TypeError` for a
+content type that is not valid, a container without a single codec, a codec of the other kind, a member that does not
+apply to the type...), and the backends of the browsing context answer:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCapabilities;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new BrowsingContextOptions
+{
+    // Answers navigator.mediaCapabilities.decodingInfo() for the "file" and "media-source" types
+    MediaBackend = new WebMMediaBackend(),
+
+    // Answers the "webrtc" types, and the "record" type (what MediaRecorder records)
+    MediaCodecs = new Vp8OpusCodecs(),
+};
+```
+<!-- endref -->
+
+- `file` asks [CanPlayType](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend.CanPlayType) of the
+  [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend): a container with a codec is supported when the
+  answer is [MediaTypeSupport.Probably](cref:Meziantou.Framework.WebPlatform.Media.MediaTypeSupport.Probably), a type of a
+  single codec such as `audio/mpeg` when it is not
+  [MediaTypeSupport.NotSupported](cref:Meziantou.Framework.WebPlatform.Media.MediaTypeSupport.NotSupported).
+  `media-source` also needs a byte stream parser from
+  [CreateSegmentParser](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend.CreateSegmentParser).
+- `webrtc` takes the RTP payload formats (`audio/opus`, `audio/PCMU`, `audio/PCMA`, `video/VP8`, `video/VP9`,
+  `video/H264`, `video/AV1`, `video/H265`, with their format parameters such as `profile-id`), converts them to the
+  configurations of the WebCodecs decoders and encoders, and asks the
+  [MediaCodecBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaCodecBackend).
+- `record` is what `MediaRecorder` records: VP8 and Opus in WebM or Matroska, when the encoders of the
+  [MediaCodecBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaCodecBackend) support the size, the frame rate
+  and the bitrate.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCapabilitiesBackend;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Plays WebM files with VP8 and Opus, and MP3 files
+private sealed class WebMMediaBackend : MediaBackend
+{
+    public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => mimeType switch
+    {
+        "video/webm" or "audio/webm" when codecs.Count == 0 => MediaTypeSupport.Maybe,
+        "video/webm" or "audio/webm" => codecs.All(codec => codec is "vp8" or "opus" || codec.StartsWith("vp09.", StringComparison.Ordinal)) ? MediaTypeSupport.Probably : MediaTypeSupport.NotSupported,
+        "audio/mpeg" => MediaTypeSupport.Probably,
+        _ => MediaTypeSupport.NotSupported,
+    };
+
+    public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
+}
+```
+<!-- endref -->
+
+Without a backend, nothing is supported. The library has no performance model: a supported configuration is `smooth`,
+and it is not `powerEfficient`, since the library cannot tell whether a backend uses hardware codecs. A `colorGamut` or
+a `transferFunction` must match the color space of a VP9 or AV1 codec string (BT.709 when the string does not give it),
+and a video with HDR metadata (`hdrMetadataType`) is not supported, as the rendering is in sRGB. A configuration with
+a `keySystemConfiguration` is rejected with a `SecurityError` in a context that is not secure, and with an
+`InvalidStateError` in a worker; otherwise it is checked by Encrypted Media Extensions (the Clear Key key system, with
+the media types that the media backend plays): a supported configuration has a `keySystemAccess`, the
+`MediaKeySystemAccess` that `requestMediaKeySystemAccess()` would give. .NET code calls
+[DecodingInfo](cref:Meziantou.Framework.WebPlatform.Dom.MediaCapabilities.DecodingInfo) and
+[EncodingInfo](cref:Meziantou.Framework.WebPlatform.Dom.MediaCapabilities.EncodingInfo) on
+[Navigator.MediaCapabilities](cref:Meziantou.Framework.WebPlatform.Dom.Navigator.MediaCapabilities).
 
 ## Sensors
 

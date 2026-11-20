@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 254 | 283 | 4 | 91% |
+| [Stable](#stable-tests) | 255 | 283 | 4 | 91% |
 | [Tentative](#tentative-tests) | 7 | 11 | 0 | 64% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 3 | 0 | 67% |
-| **All** | **264** | **298** | **4** | **90%** |
+| **All** | **265** | **298** | **4** | **90%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **TEST BUG**: 15
-- **NOT IMPLEMENTED**: 12
+- **NOT IMPLEMENTED**: 11
 - **TEST RUNNER**: 5
 
 ## Stable tests
@@ -47,7 +47,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`idlharness.https.any.js`](https://wpt.fyi/results/service-workers/idlharness.https.any.js) | Pass | 787 / 787 |  |  |
 | [`service-worker/Service-Worker-Allowed-header.https.html`](https://wpt.fyi/results/service-workers/service-worker/Service-Worker-Allowed-header.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/close.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/close.https.html) | Pass | 2 / 2 |  |  |
-| [`service-worker/ServiceWorkerGlobalScope/error-message-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/error-message-event.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `HTMLCanvasElement.captureStream()` (a `MediaStream` cannot be posted) |
+| [`service-worker/ServiceWorkerGlobalScope/error-message-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/error-message-event.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/extendable-message-event-constructor.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/extendable-message-event-constructor.https.html) | Pass | 10 / 10 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/extendable-message-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/extendable-message-event.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/fetch-on-the-right-interface.https.any.js`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/fetch-on-the-right-interface.https.any.js) | Pass | 1 / 1 |  |  |

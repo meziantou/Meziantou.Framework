@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of intersection-observer, an
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 141 | 154 | 0 | 92% |
+| [Stable](#stable-tests) | 152 | 154 | 0 | 99% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **145** | **158** | **0** | **92%** |
+| **All** | **156** | **158** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 12
+- **TEST BUG**: 1
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -139,12 +139,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`unclipped-root.html`](https://wpt.fyi/results/intersection-observer/unclipped-root.html) | Pass | 3 / 3 |  |  |
 | [`v2/3d-transform-flattened-preserve-3d-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/3d-transform-flattened-preserve-3d-occlusion.html) | Pass | 1 / 1 |  |  |
 | [`v2/3d-transform-occlusion-2.html`](https://wpt.fyi/results/intersection-observer/v2/3d-transform-occlusion-2.html) | Pass | 1 / 1 |  |  |
-| [`v2/3d-transform-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/3d-transform-occlusion.html) | Error | 0 / 1 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 in a 3D rendering context (`transform-style: preserve-3d`): the occluders are tested in paint order, without the plane sorting of the painter |
+| [`v2/3d-transform-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/3d-transform-occlusion.html) | Pass | 1 / 1 |  |  |
 | [`v2/3d-transform-overflow-control-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/3d-transform-overflow-control-occlusion.html) | Pass | 1 / 1 |  |  |
 | [`v2/3d-transform-z-order-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/3d-transform-z-order-occlusion.html) | Pass | 1 / 1 |  |  |
 | [`v2/animated-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/animated-occlusion.html) | Pass | 2 / 2 |  |  |
 | [`v2/animated-opacity.html`](https://wpt.fyi/results/intersection-observer/v2/animated-opacity.html) | Pass | 1 / 1 |  |  |
-| [`v2/blur-filter.html`](https://wpt.fyi/results/intersection-observer/v2/blur-filter.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 is tested with the border boxes of the occluders: their ink overflow (shadows, filters, border shapes) is ignored |
+| [`v2/blur-filter.html`](https://wpt.fyi/results/intersection-observer/v2/blur-filter.html) | Pass | 3 / 3 |  |  |
 | [`v2/border-radius-shadow-occlusion-replaced.html`](https://wpt.fyi/results/intersection-observer/v2/border-radius-shadow-occlusion-replaced.html) | Pass | 1 / 1 |  |  |
 | [`v2/border-radius-shadow-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/border-radius-shadow-occlusion.html) | Pass | 1 / 1 |  |  |
 | [`v2/border-shape-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/border-shape-occlusion.html) | Pass | 1 / 1 |  |  |
@@ -154,7 +154,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`v2/cross-origin-effects.sub.html`](https://wpt.fyi/results/intersection-observer/v2/cross-origin-effects.sub.html) | Pass | 1 / 1 |  |  |
 | [`v2/cross-origin-occlusion.sub.html`](https://wpt.fyi/results/intersection-observer/v2/cross-origin-occlusion.sub.html) | Pass | 1 / 1 |  |  |
 | [`v2/delay-test.html`](https://wpt.fyi/results/intersection-observer/v2/delay-test.html) | Fail | 0 / 1 | TEST RUNNER | the frames of the virtual clock are exactly 1/60 s apart: the time between two notifications is exactly the delay (100ms), the test expects more |
-| [`v2/drop-shadow-filter-vertical-rl.html`](https://wpt.fyi/results/intersection-observer/v2/drop-shadow-filter-vertical-rl.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 is tested with the border boxes of the occluders: their ink overflow (shadows, filters, border shapes) is ignored |
+| [`v2/drop-shadow-filter-vertical-rl.html`](https://wpt.fyi/results/intersection-observer/v2/drop-shadow-filter-vertical-rl.html) | Pass | 3 / 3 |  |  |
 | [`v2/fragmented-occluder.html`](https://wpt.fyi/results/intersection-observer/v2/fragmented-occluder.html) | Pass | 3 / 3 |  |  |
 | [`v2/iframe-target.html`](https://wpt.fyi/results/intersection-observer/v2/iframe-target.html) | Pass | 2 / 2 |  |  |
 | [`v2/inline-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/inline-occlusion.html) | Pass | 4 / 4 |  |  |
@@ -165,16 +165,16 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`v2/simple-effects.html`](https://wpt.fyi/results/intersection-observer/v2/simple-effects.html) | Pass | 5 / 5 |  |  |
 | [`v2/simple-occlusion-svg-foreign-object.html`](https://wpt.fyi/results/intersection-observer/v2/simple-occlusion-svg-foreign-object.html) | Pass | 4 / 4 |  |  |
 | [`v2/simple-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/simple-occlusion.html) | Pass | 4 / 4 |  |  |
-| [`v2/svg-drop-shadow-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-drop-shadow-occlusion.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
-| [`v2/svg-foreign-object-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-foreign-object-filter-occlusion.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
-| [`v2/svg-group-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-group-filter-occlusion.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
-| [`v2/svg-image-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-image-filter-occlusion.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
-| [`v2/svg-reference-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-reference-filter-occlusion.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
-| [`v2/svg-root-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-root-filter-occlusion.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
-| [`v2/svg-shape-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-shape-filter-occlusion.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
-| [`v2/svg-text-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-text-filter-occlusion.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 by SVG content: the elements inside an `<svg>` are not boxes of the paint order, and the ink overflow of their filters is ignored |
+| [`v2/svg-drop-shadow-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-drop-shadow-occlusion.html) | Pass | 1 / 1 |  |  |
+| [`v2/svg-foreign-object-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-foreign-object-filter-occlusion.html) | Pass | 1 / 1 |  |  |
+| [`v2/svg-group-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-group-filter-occlusion.html) | Pass | 1 / 1 |  |  |
+| [`v2/svg-image-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-image-filter-occlusion.html) | Pass | 1 / 1 |  |  |
+| [`v2/svg-reference-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-reference-filter-occlusion.html) | Pass | 1 / 1 |  |  |
+| [`v2/svg-root-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-root-filter-occlusion.html) | Pass | 2 / 2 |  |  |
+| [`v2/svg-shape-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-shape-filter-occlusion.html) | Pass | 1 / 1 |  |  |
+| [`v2/svg-text-filter-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/svg-text-filter-occlusion.html) | Timeout | 1 / 2 | TEST BUG | the second subtest expects a `filter` on a `tspan` element to occlude the target, but the filter property does not apply to the text content child elements (https://drafts.fxtf.org/filter-effects/#FilterProperty applies to the container elements, the graphics elements and `use`): the library does not paint it, so nothing covers the target and the subtest waits for a notification that never comes (the filter on the `text` element occludes) |
 | [`v2/text-editor-occlusion.html`](https://wpt.fyi/results/intersection-observer/v2/text-editor-occlusion.html) | Pass | 4 / 4 |  |  |
-| [`v2/text-shadow.html`](https://wpt.fyi/results/intersection-observer/v2/text-shadow.html) | Fail | 1 / 4 | NOT IMPLEMENTED | the occlusion of IntersectionObserver v2 is tested with the border boxes of the occluders: their ink overflow (shadows, filters, border shapes) is ignored |
+| [`v2/text-shadow.html`](https://wpt.fyi/results/intersection-observer/v2/text-shadow.html) | Pass | 4 / 4 |  |  |
 | [`v2/z-index-changes.html`](https://wpt.fyi/results/intersection-observer/v2/z-index-changes.html) | Pass | 1 / 1 |  |  |
 | [`visibility-hidden.html`](https://wpt.fyi/results/intersection-observer/visibility-hidden.html) | Pass | 3 / 3 |  |  |
 | [`zero-area-element-hidden.html`](https://wpt.fyi/results/intersection-observer/zero-area-element-hidden.html) | Pass | 2 / 2 |  |  |

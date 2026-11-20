@@ -23,9 +23,23 @@ internal sealed partial class WptWebSocketServer(WptTestRunner runner)
 {
     private readonly Lock _lock = new();
     private readonly List<WptWebSocketConnection> _connections = [];
+    private int _timerCount;
 
     /// <summary>Gets the runner (the virtual clock, the stash and the log).</summary>
     public WptTestRunner Runner => runner;
+
+    /// <summary>
+    /// Gets the number of timers queued by the handlers (<c>time.sleep()</c>): a handler queues its timer, then stops being busy,
+    /// so the runner must not advance the clock to a next timer computed before (see <see cref="WptWebSocketRequest.SleepAsync"/>).
+    /// </summary>
+    public int TimerCount => Volatile.Read(ref _timerCount);
+
+    /// <summary>Queues a timer of a handler on the virtual clock.</summary>
+    public void QueueTimer(TimeSpan delay, Action callback)
+    {
+        runner.QueueTimer(delay, callback);
+        Interlocked.Increment(ref _timerCount);
+    }
 
     /// <summary>Whether a connection is busy: the runner must not advance the virtual clock (the handler is about to respond).</summary>
     public bool IsBusy
@@ -334,10 +348,16 @@ internal sealed class WptWebSocketConnection
 
     public bool IsClosed => ClientToServer.IsDetached && ServerToClient.IsDetached;
 
-    public bool IsBusy => ServerToClient.IsBusy || (!Sleeping && ClientToServer.IsBusy) || (ServerSentCloseFrame && !ClientToServer.IsDetached && !ServerToClient.IsDetached);
+    /// <summary>
+    /// Whether the connection is busy. The handler does not read while it sleeps or waits for the browser to read the bytes it
+    /// writes (the buffer is full), and the browser does not read while the readable stream of a WebSocketStream is full.
+    /// </summary>
+    public bool IsBusy => ServerToClient.IsBusy
+        || (!Sleeping && !ServerToClient.IsWriterWaiting && ClientToServer.IsBusy)
+        || (ServerSentCloseFrame && !ServerToClient.IsReaderPaused && !ClientToServer.IsDetached && !ServerToClient.IsDetached);
 
-    /// <summary>Writes bytes to the browser (<c>request.connection.write()</c>).</summary>
-    public void WriteRaw(ReadOnlySpan<byte> bytes) => ServerToClient.Write(bytes);
+    /// <summary>Writes bytes to the browser (<c>request.connection.write()</c>), waiting while the buffer of the connection is full.</summary>
+    public void WriteRaw(ReadOnlySpan<byte> bytes) => ServerToClient.WriteAsync(bytes.ToArray(), CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
     /// <summary>The server closes the TCP connection: the browser reads the end of the stream, and the handler no longer reads.</summary>
     public void CloseServer()
@@ -361,11 +381,21 @@ internal sealed class WptWebSocketConnection
 /// </summary>
 internal sealed class WptWebSocketPipe
 {
+    /// <summary>
+    /// The number of bytes a pipe buffers, as the buffers of a TCP connection: <see cref="WriteAsync"/> waits while the pipe
+    /// is full (e.g. the backpressure of a WebSocketStream slows down the server, and a large message is not sent until the
+    /// server reads it).
+    /// </summary>
+    public const int Capacity = 64 * 1024;
+
     private readonly Lock _lock = new();
-    private readonly Queue<byte> _bytes = new();
+    private readonly ByteQueue _bytes = new();
     private TaskCompletionSource? _waiter;
+    private TaskCompletionSource? _spaceWaiter;
     private bool _completed;
     private bool _readerProcessing;
+    private bool _readerPaused;
+    private int _pendingWrites;
     private volatile bool _detached;
 
     /// <summary>Whether the reader has read bytes and has not asked for more yet (initially, whether the reader is running).</summary>
@@ -383,7 +413,97 @@ internal sealed class WptWebSocketPipe
         {
             lock (_lock)
             {
-                return !_detached && (_bytes.Count > 0 || _readerProcessing);
+                // A writer that waited for the reader is about to write the rest of its bytes
+                return !_detached && !_readerPaused && (_bytes.Count > 0 || _readerProcessing || _pendingWrites > 0);
+            }
+        }
+    }
+
+    /// <summary>Whether the reader stopped reading until the page reads the messages it received (the backpressure of a WebSocketStream).</summary>
+    public bool IsReaderPaused
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _readerPaused;
+            }
+        }
+
+        set
+        {
+            lock (_lock)
+            {
+                _readerPaused = value;
+            }
+        }
+    }
+
+    /// <summary>Whether a writer waits for the reader to read bytes (the pipe is full).</summary>
+    public bool IsWriterWaiting
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _spaceWaiter is not null && !_detached && !_completed;
+            }
+        }
+    }
+
+    /// <summary>Writes bytes, waiting while the pipe holds <see cref="Capacity"/> bytes. The bytes written once the reader is detached are lost.</summary>
+    public async ValueTask WriteAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            _pendingWrites++;
+        }
+
+        try
+        {
+            await WriteCoreAsync(bytes, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            lock (_lock)
+            {
+                _pendingWrites--;
+            }
+        }
+    }
+
+    private async ValueTask WriteCoreAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
+    {
+        var offset = 0;
+        while (offset < bytes.Length)
+        {
+            TaskCompletionSource? waiter = null;
+            Task? wait = null;
+            lock (_lock)
+            {
+                if (_completed || _detached)
+                    return;
+
+                var count = Math.Min(Capacity - _bytes.Count, bytes.Length - offset);
+                if (count > 0)
+                {
+                    _bytes.Enqueue(bytes.Span.Slice(offset, count));
+
+                    offset += count;
+                    waiter = _waiter;
+                    _waiter = null;
+                }
+                else
+                {
+                    _spaceWaiter ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    wait = _spaceWaiter.Task;
+                }
+            }
+
+            waiter?.TrySetResult();
+            if (wait is not null)
+            {
+                await wait.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -396,10 +516,7 @@ internal sealed class WptWebSocketPipe
             if (_completed || _detached)
                 return;
 
-            foreach (var b in bytes)
-            {
-                _bytes.Enqueue(b);
-            }
+            _bytes.Enqueue(bytes);
 
             waiter = _waiter;
             _waiter = null;
@@ -412,6 +529,7 @@ internal sealed class WptWebSocketPipe
     public void Complete()
     {
         TaskCompletionSource? waiter;
+        TaskCompletionSource? spaceWaiter;
         lock (_lock)
         {
             // The reader processes the end of the stream (a waiting reader is woken up asynchronously)
@@ -419,24 +537,31 @@ internal sealed class WptWebSocketPipe
             _readerProcessing = !_detached;
             waiter = _waiter;
             _waiter = null;
+            spaceWaiter = _spaceWaiter;
+            _spaceWaiter = null;
         }
 
         waiter?.TrySetResult();
+        spaceWaiter?.TrySetResult();
     }
 
     /// <summary>The reader no longer reads.</summary>
     public void Detach()
     {
         TaskCompletionSource? waiter;
+        TaskCompletionSource? spaceWaiter;
         lock (_lock)
         {
             _detached = true;
             _bytes.Clear();
             waiter = _waiter;
             _waiter = null;
+            spaceWaiter = _spaceWaiter;
+            _spaceWaiter = null;
         }
 
         waiter?.TrySetResult();
+        spaceWaiter?.TrySetResult();
     }
 
     /// <summary>Reads the bytes that are available, or waits for bytes. Returns 0 at the end of the stream.</summary>
@@ -444,39 +569,91 @@ internal sealed class WptWebSocketPipe
     {
         while (true)
         {
-            Task wait;
+            Task? wait = null;
+            TaskCompletionSource? spaceWaiter = null;
+            var count = 0;
             lock (_lock)
             {
                 if (_bytes.Count > 0 && !_detached)
                 {
-                    var count = Math.Min(buffer.Length, _bytes.Count);
-                    var span = buffer.Span;
-                    for (var i = 0; i < count; i++)
-                    {
-                        span[i] = _bytes.Dequeue();
-                    }
+                    count = _bytes.Dequeue(buffer.Span);
 
+                    // A writer waiting for the reader can write again
                     _readerProcessing = true;
-                    return count;
+                    spaceWaiter = _spaceWaiter;
+                    _spaceWaiter = null;
                 }
+                else
+                {
+                    // The end of the stream is processed by the reader until it detaches (e.g. the browser closes the connection)
+                    _readerProcessing = _completed && !_detached;
+                    if (_completed || _detached)
+                        return 0;
 
-                // The end of the stream is processed by the reader until it detaches (e.g. the browser closes the connection)
-                _readerProcessing = _completed && !_detached;
-                if (_completed || _detached)
-                    return 0;
+                    _waiter ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    wait = _waiter.Task;
+                }
+            }
 
-                _waiter ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                wait = _waiter.Task;
+            if (wait is null)
+            {
+                spaceWaiter?.TrySetResult();
+                return count;
             }
 
             await wait.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 
+
+    /// <summary>The bytes of a pipe, in chunks (a large message is copied once in each direction).</summary>
+    private sealed class ByteQueue
+    {
+        private readonly Queue<byte[]> _chunks = new();
+        private int _headOffset;
+
+        public int Count { get; private set; }
+
+        public void Enqueue(ReadOnlySpan<byte> bytes)
+        {
+            if (bytes.IsEmpty)
+                return;
+
+            _chunks.Enqueue(bytes.ToArray());
+            Count += bytes.Length;
+        }
+
+        public int Dequeue(Span<byte> destination)
+        {
+            var written = 0;
+            while (written < destination.Length && _chunks.TryPeek(out var chunk))
+            {
+                var count = Math.Min(destination.Length - written, chunk.Length - _headOffset);
+                chunk.AsSpan(_headOffset, count).CopyTo(destination[written..]);
+                written += count;
+                _headOffset += count;
+                if (_headOffset == chunk.Length)
+                {
+                    _chunks.Dequeue();
+                    _headOffset = 0;
+                }
+            }
+
+            Count -= written;
+            return written;
+        }
+
+        public void Clear()
+        {
+            _chunks.Clear();
+            _headOffset = 0;
+            Count = 0;
+        }
+    }
 }
 
 /// <summary>The stream of the browser: it reads the bytes of the server and writes the bytes of the browser.</summary>
-internal sealed class WptWebSocketClientStream(WptWebSocketConnection connection) : Stream
+internal sealed class WptWebSocketClientStream(WptWebSocketConnection connection) : Stream, IWebSocketReceiveFlowControl
 {
     public override bool CanRead => true;
 
@@ -498,17 +675,12 @@ internal sealed class WptWebSocketClientStream(WptWebSocketConnection connection
 
     public override void Write(ReadOnlySpan<byte> buffer) => connection.ClientToServer.Write(buffer);
 
-    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-    {
-        connection.ClientToServer.Write(buffer.Span);
-        return ValueTask.CompletedTask;
-    }
+    public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => connection.ClientToServer.WriteAsync(buffer, cancellationToken);
 
-    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-    {
-        connection.ClientToServer.Write(buffer.AsSpan(offset, count));
-        return Task.CompletedTask;
-    }
+    public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+    /// <summary>The WebSocket of a WebSocketStream stops reading while its readable stream is full: the bytes of the server are not waiting to be processed.</summary>
+    void IWebSocketReceiveFlowControl.SetReceivePaused(bool paused) => connection.ServerToClient.IsReaderPaused = paused;
 
     public override void Flush()
     {
@@ -647,7 +819,7 @@ internal sealed partial class WptWebSocketRequest(WptWebSocketConnection connect
     {
         // The timer is queued before the connection is idle, so that the runner advances the clock to it
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        connection.Server.Runner.QueueTimer(TimeSpan.FromSeconds(seconds), () =>
+        connection.Server.QueueTimer(TimeSpan.FromSeconds(seconds), () =>
         {
             // The handler is running again before the runner checks whether the connection is busy
             connection.Sleeping = false;

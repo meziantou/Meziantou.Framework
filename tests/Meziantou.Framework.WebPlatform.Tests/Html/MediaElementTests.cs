@@ -32,10 +32,11 @@ public sealed class MediaElementTests : IDisposable
 
     public void Dispose() => _contexts.Dispose();
 
-    private Document Load(string html, MediaBackend? backend = null, bool noBackend = false, MediaAutoplayPolicy autoplayPolicy = MediaAutoplayPolicy.Allowed, Action<Document>? setup = null)
+    private Document Load(string html, MediaBackend? backend = null, bool noBackend = false, MediaAutoplayPolicy autoplayPolicy = MediaAutoplayPolicy.Allowed, Action<Document>? setup = null, UserAgentUIBackend? userAgentUI = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
+            UserAgentUI = userAgentUI,
             DocumentLoader = new MediaLoader(this),
             MediaBackend = noBackend ? null : backend ?? new FakeMediaBackend(),
             MediaAutoplayPolicy = autoplayPolicy,
@@ -822,5 +823,148 @@ public sealed class MediaElementTests : IDisposable
         Assert.Equal(["audio", "video"], changes);
         Assert.Equal([true, true], video.AudioTracks.Select(track => track.Enabled));
         Assert.Equal(1, video.VideoTracks.SelectedIndex);
+    }
+
+    [Fact]
+    public async Task PictureInPicture_EnterAndExit()
+    {
+        var document = Load("<video src='/movie?duration=5&width=320&height=240&video=1'></video>");
+        var video = Media<HtmlVideoElement>(document);
+        var events = new List<string>();
+        video.AddEventListener("enterpictureinpicture", e => events.Add(e.Type + " " + ((PictureInPictureEvent)e).PictureInPictureWindow.Width));
+        video.AddEventListener("leavepictureinpicture", e => events.Add(e.Type + " " + ((PictureInPictureEvent)e).PictureInPictureWindow.Width));
+        Advance(0.1);
+        Assert.True(document.PictureInPictureEnabled);
+
+        // A user activation is required, and consumed
+        var rejected = video.RequestPictureInPicture();
+        Assert.Equal("NotAllowedError", Assert.IsType<DomException>(rejected.Exception?.InnerException).Name);
+
+        Window.NotifyActivation(document);
+        var request = video.RequestPictureInPicture();
+        Assert.False(document.DefaultView!.HasTransientActivation);
+        Advance(0.1);
+        Assert.True(request.IsCompletedSuccessfully);
+        var pipWindow = await request;
+        Assert.Equal((400, 300), (pipWindow.Width, pipWindow.Height));
+        Assert.Same(video, document.PictureInPictureElement);
+        Assert.Same(video, document.QuerySelector(":picture-in-picture"));
+        Assert.Equal(["enterpictureinpicture 400"], events);
+
+        // A second request of the video resolves with the same window, without a user activation
+        var again = video.RequestPictureInPicture();
+        Assert.True(again.IsCompletedSuccessfully);
+        Assert.Same(pipWindow, await again);
+
+        var exit = document.ExitPictureInPicture();
+        Advance(0.1);
+        Assert.True(exit.IsCompletedSuccessfully);
+        Assert.Equal((0, 0), (pipWindow.Width, pipWindow.Height));
+        Assert.Null(document.PictureInPictureElement);
+        Assert.Null(document.QuerySelector(":picture-in-picture"));
+        Assert.Equal(["enterpictureinpicture 400", "leavepictureinpicture 0"], events);
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(document.ExitPictureInPicture().Exception?.InnerException).Name);
+    }
+
+    [Fact]
+    public void PictureInPicture_RequiresTheVideoMetadata()
+    {
+        var document = Load("<video></video><video src='/movie?duration=5&audio=1'></video>");
+        var videos = document.QuerySelectorAll("video").Cast<HtmlVideoElement>().ToArray();
+        Advance(0.1);
+        Window.NotifyActivation(document);
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(videos[0].RequestPictureInPicture().Exception?.InnerException).Name);
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(videos[1].RequestPictureInPicture().Exception?.InnerException).Name);
+    }
+
+    [Fact]
+    public async Task PictureInPicture_DisableAttributeRejectsThePendingRequestAndLeaves()
+    {
+        var document = Load("<video src='/movie?duration=5&width=320&height=240&video=1'></video>");
+        var video = Media<HtmlVideoElement>(document);
+        Advance(0.1);
+        Window.NotifyActivation(document);
+        var pending = video.RequestPictureInPicture();
+        video.DisablePictureInPicture = true;
+        Assert.Equal("", video.GetAttribute("disablepictureinpicture"));
+        Advance(0.1);
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(pending.Exception?.InnerException).Name);
+        Assert.Null(document.PictureInPictureElement);
+
+        video.DisablePictureInPicture = false;
+        Window.NotifyActivation(document);
+        var request = video.RequestPictureInPicture();
+        Advance(0.1);
+        var left = false;
+        video.AddEventListener("leavepictureinpicture", _ => left = true);
+        video.DisablePictureInPicture = true;
+        Assert.Null(document.PictureInPictureElement);
+        Assert.Equal(0, (await request).Width);
+        Advance(0.1);
+        Assert.True(left);
+    }
+
+    [Fact]
+    public async Task PictureInPicture_TheBackendOpensResizesAndClosesTheWindow()
+    {
+        var backend = new FloatingVideoWindows();
+        var document = Load("<video src='/movie?duration=5&width=320&height=240&video=1'></video>", userAgentUI: backend);
+        var video = Media<HtmlVideoElement>(document);
+        Advance(0.1);
+        Window.NotifyActivation(document);
+        var request = video.RequestPictureInPicture();
+        Advance(0.1);
+        Assert.True(request.IsCompletedSuccessfully);
+        var pipWindow = await request;
+        Assert.Equal((160, 120), (pipWindow.Width, pipWindow.Height));
+        Assert.Same(video, backend.LastRequest!.Video);
+
+        var resizes = 0;
+        pipWindow.AddEventListener("resize", _ => resizes++);
+        backend.LastRequest.Handle.Resize(new PictureInPictureWindowSize(200, 150));
+        Advance(0.1);
+        Assert.Equal((200, 150, 1), (pipWindow.Width, pipWindow.Height, resizes));
+
+        // The user closes the window
+        backend.LastRequest.Handle.Close();
+        Advance(0.1);
+        Assert.Null(document.PictureInPictureElement);
+        Assert.True(backend.LastRequest.Handle.IsClosed);
+        Assert.True(backend.LastRequest.Handle.Closed.IsCompleted);
+    }
+
+    [Fact]
+    public void PictureInPicture_TheBackendCannotOpenTheWindow()
+    {
+        var document = Load("<video src='/movie?duration=5&width=320&height=240&video=1'></video>", userAgentUI: new NoPictureInPictureWindows());
+        var video = Media<HtmlVideoElement>(document);
+        Advance(0.1);
+        Window.NotifyActivation(document);
+        var request = video.RequestPictureInPicture();
+        Advance(0.1);
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(request.Exception?.InnerException).Name);
+        Assert.Null(document.PictureInPictureElement);
+    }
+
+    #region WebPlatform_UserAgentUI_PictureInPicture
+    private sealed class FloatingVideoWindows : UserAgentUIBackend
+    {
+        public PictureInPictureWindowRequest? LastRequest { get; private set; }
+
+        public override ValueTask<PictureInPictureWindowSize?> OpenPictureInPictureWindowAsync(PictureInPictureWindowRequest request, CancellationToken cancellationToken)
+        {
+            // The window shows the video at half its natural size. The handle of the request resizes and closes the window
+            // later, e.g. when the user resizes or closes it
+            LastRequest = request;
+            var video = request.Video!;
+            return ValueTask.FromResult<PictureInPictureWindowSize?>(new PictureInPictureWindowSize((int)video.VideoWidth / 2, (int)video.VideoHeight / 2));
+        }
+    }
+    #endregion
+
+    private sealed class NoPictureInPictureWindows : UserAgentUIBackend
+    {
+        public override ValueTask<PictureInPictureWindowSize?> OpenPictureInPictureWindowAsync(PictureInPictureWindowRequest request, CancellationToken cancellationToken)
+            => ValueTask.FromResult<PictureInPictureWindowSize?>(null);
     }
 }

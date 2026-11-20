@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of mediacapture-image, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 10 | 23 | 0 | 43% |
+| [Stable](#stable-tests) | 11 | 23 | 0 | 48% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **11** | **24** | **0** | **46%** |
+| **All** | **12** | **24** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 2
-- **NOT IMPLEMENTED**: 1
 - **TEST RUNNER**: 12
 
 ## Stable tests
@@ -48,7 +47,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`idlharness.https.window.js`](https://wpt.fyi/results/mediacapture-image/idlharness.https.window.js) | Pass | 29 / 29 |  |  |
 | [`takePhoto-reject.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto-reject.https.html) | Error | 0 / 6 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
 | [`takePhoto-with-PhotoSettings.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto-with-PhotoSettings.https.html) | Fail | 0 / 1 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
-| [`takePhoto-without-PhotoCapabilities.https.window.js`](https://wpt.fyi/results/mediacapture-image/takePhoto-without-PhotoCapabilities.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the legacy `MediaStreamTrackGenerator` of MediaStreamTrack Insertable Streams, which the test uses to create a track without photo capabilities |
+| [`takePhoto-without-PhotoCapabilities.https.window.js`](https://wpt.fyi/results/mediacapture-image/takePhoto-without-PhotoCapabilities.https.window.js) | Pass | 1 / 1 |  |  |
 | [`takePhoto.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto.https.html) | Error | 1 / 3 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
 
 ## Crash tests

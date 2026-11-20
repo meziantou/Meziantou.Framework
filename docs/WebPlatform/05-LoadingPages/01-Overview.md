@@ -70,6 +70,7 @@ Use a browsing context from one thread at a time, the thread that runs its event
 | Option | Allows |
 | --- | --- |
 | [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) | Network requests: documents, style sheets, images, frames, scripts, `fetch()` (see [Network requests](02-NetworkRequests.md)) |
+| [HttpsUpgrades](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.HttpsUpgrades) | The upgrade of the `http:` navigations to `https:`, with a fallback to `http:` (see [Network requests](02-NetworkRequests.md#upgrade-the-navigations-to-https)) |
 | [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar), [LocalStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.LocalStorage) | Cookies and storage (see [Cookies and storage](03-CookiesAndStorage.md)) |
 | [Viewport](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Viewport), [UserAgent](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UserAgent) | The size of the viewport and the emulated device (see [Viewport and devices](04-ViewportAndDevices.md)) |
 | [ScriptEngine](cref:Meziantou.Framework.WebPlatform.Scripting.ScriptEngine), [WebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime) | Scripts and WebAssembly (see [Scripting](../06-Scripting/01-Overview.md)) |
@@ -77,6 +78,7 @@ Use a browsing context from one thread at a time, the thread that runs its event
 | [TimeProvider](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.TimeProvider) | The clock of the event loop (see [Time and the event loop](07-TimeAndTheEventLoop.md)) |
 | [UseSystemFonts](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UseSystemFonts) | The fonts installed on the machine (see [Fonts](../07-Rendering/06-Fonts.md)) |
 | [Permissions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Permissions), [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation), [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification)... | The permissions, the clipboard, sharing, vibration, geolocation, notifications, the badge, the battery, the wake lock, the keyboard lock, the keyboard layout, the media session, the screen orientation, the virtual keyboard, the viewport segments, the compute pressure, the idle state and the device posture (see [Permissions and devices](08-PermissionsAndDevices.md)) |
+| [MediaCodecs](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCodecs) | The audio and video codecs of WebCodecs and `MediaRecorder` (see [Audio and video codecs](10-AudioAndVideoCodecs.md)) |
 | [UserAgentUI](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UserAgentUI) | The prompts of the user agent: the credential chooser of the password and federated credentials, the account chooser of FedCM, the payment sheet of the Payment Request API, the wallet of the digital credentials (see [User agent UI](09-UserAgentUI.md)) |
 
 The callbacks of the options report what happens in the pages: [ConsoleMessage](cref:Meziantou.Framework.WebPlatform.Scripting.ConsoleMessage) and [UnhandledScriptError](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UnhandledScriptError) for the
@@ -137,3 +139,5 @@ requests are canceled, and the pending tasks and timers are dropped. No event is
   layout, the media session, the screen orientation, the virtual keyboard, the viewport segments, the compute pressure,
   the idle state and the device posture.
 - [User agent UI](09-UserAgentUI.md): answer the prompts of the user agent: the credential and account choosers, the payment sheet and the wallet.
+- [Audio and video codecs](10-AudioAndVideoCodecs.md): plug the codecs of WebCodecs and `MediaRecorder`, create video
+  frames and audio data, parse codec strings, and record streams.

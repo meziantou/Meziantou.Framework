@@ -12,7 +12,9 @@ namespace Meziantou.Framework.WebPlatform.Tests.Html;
 /// The Media Source Extensions (https://w3c.github.io/media-source/) with a fake media backend whose byte stream format is
 /// made of lines: <c>init duration=4 a=1 v=2:320x240</c> is an initialization segment (an audio track 1 and a video track 2),
 /// and <c>media 1:0:1:k 2:0.5:0.5</c> is a media segment (track:timestamp:duration, <c>k</c> for a key frame; the audio
-/// frames are always key frames).
+/// frames are always key frames). For Encrypted Media Extensions, <c>keyids=0101...</c> adds a <c>keyids</c>
+/// Initialization Data to an initialization segment, and <c>e=0101...</c> encrypts a frame with the key ID (<c>e=0101...!</c>
+/// gives it subsamples that do not match its data).
 /// </summary>
 public sealed class MediaSourceTests : IDisposable
 {
@@ -44,17 +46,18 @@ public sealed class MediaSourceTests : IDisposable
         </script>
         """;
 
-    private Document Load(string script, MediaBackend? backend = null, WebPlatformFeatures? features = null, bool prelude = true)
+    private Document Load(string script, MediaBackend? backend = null, WebPlatformFeatures? features = null, bool prelude = true, string url = "https://example.com/", MediaKeysStorageBackend? mediaKeysStorage = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = _engine,
             MediaBackend = backend ?? new FakeBackend(),
+            MediaKeysStorage = mediaKeysStorage,
             TimeProvider = _clock,
             Features = features ?? WebPlatformFeatures.Default,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
-        var document = context.Navigate("https://example.com/", _ => (prelude ? Prelude : "") + "<script>(async () => {" + script + "})().catch(e => document.title = 'FAILED: ' + e);</script>");
+        var document = context.Navigate(url, _ => (prelude ? Prelude : "") + "<script>(async () => {" + script + "})().catch(e => document.title = 'FAILED: ' + e);</script>");
         Advance(0.01);
         Assert.True(_errors.Count == 0, string.Join("\n", _errors.Select(error => error.Message)));
         return document;
@@ -361,6 +364,353 @@ public sealed class MediaSourceTests : IDisposable
         Assert.Equal("undefined|undefined|undefined|undefined|false", document.Title);
     }
 
+    private const string EncryptedMediaPrelude = """
+        const keyId = new Uint8Array(16).fill(1);
+        const key = new Uint8Array(16).fill(2);
+        const base64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const decode = buffer => new TextDecoder().decode(buffer);
+        const keyIdsInitData = encode(JSON.stringify({ kids: [base64url(keyId)] }));
+        const license = type => encode(JSON.stringify({ keys: [{ kty: 'oct', kid: base64url(keyId), k: base64url(key) }], type }));
+        const configuration = { initDataTypes: ['keyids'], videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.4d401e"' }] };
+        """;
+
+    [Fact]
+    public void EncryptedMedia_RequestMediaKeySystemAccess_SelectsTheFirstSupportedConfiguration()
+    {
+        var document = Load(EncryptedMediaPrelude + """
+            for (const [keySystem, configurations] of [['', [configuration]], ['org.w3.clearkey', []], ['com.widevine.alpha', [configuration]], ['ORG.W3.CLEARKEY', [configuration]], ['org.w3.clearkey', [{}]]]) {
+              try { await navigator.requestMediaKeySystemAccess(keySystem, configurations); } catch (e) { log.push(e.name); }
+            }
+
+            const access = await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [
+              { initDataTypes: ['fake'], videoCapabilities: configuration.videoCapabilities },
+              { label: 'second', initDataTypes: ['webm', 'keyids'], videoCapabilities: [{ contentType: 'video/mp4; codecs="AVC1.4D401E"' }, { contentType: 'video/mp4; codecs="avc1.4d401e"', encryptionScheme: 'cbcs' }], sessionTypes: ['temporary', 'persistent-license'] },
+            ]);
+            const result = access.getConfiguration();
+            log.push(access.keySystem, result.label, result.initDataTypes.join(','), result.videoCapabilities.map(c => c.contentType + ':' + c.encryptionScheme).join(','), result.persistentState, result.distinctiveIdentifier, result.sessionTypes.join(','));
+            log.push(access.getConfiguration() !== result);
+            done();
+            """);
+
+        Assert.Equal("TypeError|TypeError|NotSupportedError|NotSupportedError|NotSupportedError|org.w3.clearkey|second|webm,keyids|video/mp4; codecs=\"avc1.4d401e\":cbcs|required|not-allowed|temporary,persistent-license|true", document.Title);
+    }
+
+    [Fact]
+    public void EncryptedMedia_ClearKeySession_SendsTheLicenseRequestAndUsesTheKeysOfTheLicense()
+    {
+        var document = Load(EncryptedMediaPrelude + """
+            const access = await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [configuration]);
+            const keys = await access.createMediaKeys();
+            try { keys.createSession('persistent-license'); } catch (e) { log.push(e.name); }
+            log.push(await keys.setServerCertificate(new Uint8Array(4)), await keys.getStatusForPolicy({ minHdcpVersion: '1.0' }));
+
+            const session = keys.createSession();
+            try { await session.update(license()); } catch (e) { log.push(e.name); }
+            try { await session.generateRequest('keyids', encode('{"kids":["not base64url!"]}')); } catch (e) { log.push(e.name); }
+
+            const other = keys.createSession();
+            other.generateRequest('keyids', keyIdsInitData);
+            const message = await event(other, 'message');
+            log.push(message.messageType, decode(message.message), /^[0-9]+$/.test(other.sessionId), String(other.expiration));
+            try { await other.update(encode('{"keys":[{"kty":"oct","kid":"AQ","k":"AQ"}]}')); } catch (e) { log.push(e.name); }
+
+            const statuses = event(other, 'keystatuseschange');
+            await other.update(license());
+            await statuses;
+            log.push(other.keyStatuses.size, other.keyStatuses.get(keyId), other.keyStatuses.has(new Uint8Array(16)), [...other.keyStatuses.keys()].map(k => base64url(new Uint8Array(k))).join(','));
+
+            await other.close();
+            log.push(await other.closed, other.keyStatuses.size);
+            try { await other.update(license()); } catch (e) { log.push(e.name); }
+            done();
+            """);
+
+        Assert.Equal("NotSupportedError|false|usable|InvalidStateError|TypeError|license-request|{\"kids\":[\"AQEBAQEBAQEBAQEBAQEBAQ\"],\"type\":\"temporary\"}|true|NaN|TypeError|1|usable|false|AQEBAQEBAQEBAQEBAQEBAQ|closed-by-application|0|InvalidStateError", document.Title);
+    }
+
+    [Fact]
+    public void EncryptedMedia_Playback_WaitsForTheKeyOfTheEncryptedFrames()
+    {
+        var document = Load(EncryptedMediaPrelude + """
+            const keys = await (await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [configuration])).createMediaKeys();
+            await video.setMediaKeys(keys);
+            log.push(video.mediaKeys === keys);
+            video.onencrypted = e => log.push('encrypted:' + e.initDataType + ':' + decode(e.initData));
+            video.onwaitingforkey = () => log.push('waitingforkey:' + video.currentTime + ':' + video.readyState);
+            await open();
+            const buffer = source.addSourceBuffer('video/mp4; codecs="avc1.4d401e"');
+            await append(buffer, 'init duration=3 v=1:10x10 keyids=01010101010101010101010101010101\nmedia 1:0:1:k 1:1:1:k:e=01010101010101010101010101010101 1:2:1:e=01010101010101010101010101010101\n');
+            source.endOfStream();
+            video.play();
+            await event(video, 'waitingforkey');
+            log.push('buffered=' + ranges(video.buffered));
+            const session = keys.createSession();
+            session.generateRequest('keyids', keyIdsInitData);
+            await event(session, 'message');
+            await session.update(license());
+            await event(video, 'ended');
+            log.push('t=' + video.currentTime);
+            done();
+            """);
+
+        Advance(5);
+
+        // The playback stops at the first encrypted frame, with the data of the current position (HAVE_CURRENT_DATA), and
+        // resumes once a session has the key
+        Assert.Equal("true|durationchange|loadedmetadata|encrypted:keyids:{\"kids\":[\"AQEBAQEBAQEBAQEBAQEBAQ\"]}|waiting|loadeddata|canplay|playing|canplaythrough|waitingforkey:1:2|buffered=[0,3)|waiting|canplay|playing|canplaythrough|ended|t=3", document.Title);
+    }
+
+    [Fact]
+    public void EncryptedMedia_FrameThatCannotBeDecrypted_IsADecodeError()
+    {
+        var document = Load(EncryptedMediaPrelude + """
+            const keys = await (await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [configuration])).createMediaKeys();
+            const session = keys.createSession();
+            session.generateRequest('keyids', keyIdsInitData);
+            await event(session, 'message');
+            await session.update(license());
+            await video.setMediaKeys(keys);
+            await open();
+            const buffer = source.addSourceBuffer('video/mp4; codecs="avc1.4d401e"');
+            const error = event(video, 'error');
+            await append(buffer, 'init duration=2 v=1:10x10\nmedia 1:0:1:k:e=01010101010101010101010101010101!\n');
+            await error;
+            log.push('code=' + video.error.code);
+            done();
+            """);
+
+        Assert.Equal("durationchange|loadedmetadata|error|code=3", document.Title);
+    }
+
+    [Fact]
+    public void EncryptedMedia_PersistentLicense_LoadsTheKeysOfSeveralUpdates()
+    {
+        const string PersistentPrelude = EncryptedMediaPrelude + """
+            const persistentConfiguration = { ...configuration, persistentState: 'required', sessionTypes: ['persistent-license'] };
+            const keys = await (await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [persistentConfiguration])).createMediaKeys();
+            """;
+        var storage = new InMemoryMediaKeysStorageBackend();
+
+        // Two licenses of 80 keys whose IDs have 512 bytes: each one is smaller than 64 KiB, the stored record of the 160 keys is not
+        var first = Load(PersistentPrelude + """
+            const licenseOf = (from, count) => encode(JSON.stringify({ type: 'persistent-license', keys: Array.from({ length: count }, (_, i) => {
+              const id = new Uint8Array(512).fill(7);
+              id[0] = (from + i) & 255;
+              id[1] = (from + i) >> 8;
+              return { kty: 'oct', kid: base64url(id), k: base64url(key) };
+            }) }));
+            const session = keys.createSession('persistent-license');
+            session.generateRequest('keyids', keyIdsInitData);
+            await event(session, 'message');
+            const licenses = [licenseOf(0, 80), licenseOf(80, 80)];
+            log.push(licenses.every(l => l.byteLength < 65536));
+            await session.update(licenses[0]);
+            await session.update(licenses[1]);
+            log.push(session.keyStatuses.size);
+            await session.close();
+            log.push(session.sessionId);
+            done();
+            """, mediaKeysStorage: storage);
+        var parts = first.Title.Split('|');
+        Assert.Equal("true|160", string.Join('|', parts[..^1]));
+
+        var second = Load(PersistentPrelude + "const session = keys.createSession('persistent-license'); log.push(await session.load('" + parts[^1] + "'), session.keyStatuses.size); done();", mediaKeysStorage: storage);
+        Assert.Equal("true|160", second.Title);
+
+        // The largest session (1024 keys whose IDs have 512 bytes) fits in the limit of the stored records
+        var largest = Enumerable.Range(0, ClearKey.MaxKeyCount).Select(i =>
+        {
+            var keyId = new byte[ClearKey.MaxKeyIdLength];
+            keyId[0] = (byte)i;
+            keyId[1] = (byte)(i >> 8);
+            return new ClearKeyKey(keyId, new byte[ClearKey.KeyLength]);
+        }).ToList();
+        var record = ClearKey.SerializeStoredSession(largest, releasedKeyIds: null);
+        Assert.InRange(record.Length, ClearKey.MaxResponseLength + 1, ClearKey.MaxStoredSessionLength);
+        Assert.Equal(ClearKey.MaxKeyCount, ClearKey.ParseStoredSession(record)?.Keys?.Count);
+        Assert.Null(ClearKey.ParseResponse(record));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EncryptedMedia_PersistentLicense_IsReleasedWhenItsDocumentIsDestroyed(bool navigate)
+    {
+        const string PersistentPrelude = EncryptedMediaPrelude + """
+            const persistentConfiguration = { ...configuration, persistentState: 'required', sessionTypes: ['persistent-license'] };
+            const keys = await (await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [persistentConfiguration])).createMediaKeys();
+            """;
+        var storage = new InMemoryMediaKeysStorageBackend();
+
+        // The session is stored, and never closed
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, MediaBackend = new FakeBackend(), MediaKeysStorage = storage, TimeProvider = _clock, UnhandledScriptError = (_, error) => _errors.Add(error) });
+        var first = context.Navigate("https://example.com/", _ => Prelude + "<script>(async () => {" + PersistentPrelude + """
+            const session = keys.createSession('persistent-license');
+            session.generateRequest('keyids', keyIdsInitData);
+            await event(session, 'message');
+            await session.update(license('persistent-license'));
+            log.push(session.sessionId);
+            done();
+            """ + "})().catch(e => document.title = 'FAILED: ' + e);</script>");
+        Advance(0.01);
+        var sessionId = first.Title;
+        Assert.Matches("^[0-9]+$", sessionId);
+
+        // A navigation does not keep the document in the back/forward cache (it holds the license): it is destroyed, as when its browsing context is closed
+        if (navigate)
+        {
+            context.Navigate("https://example.com/next", _ => "<p>next</p>");
+        }
+        else
+        {
+            context.Dispose();
+        }
+
+        Advance(0.01);
+        var second = Load(PersistentPrelude + "log.push(await keys.createSession('persistent-license').load('" + sessionId + "')); done();", mediaKeysStorage: storage);
+        Assert.Equal("true", second.Title);
+    }
+
+    [Fact]
+    public void EncryptedMedia_PersistentLicense_IsOnlyLoadedInItsStoragePartition()
+    {
+        #region WebPlatform_EncryptedMediaStorage
+        // The persistent-license sessions of Clear Key, shared by the browsing contexts (e.g. a database to keep them between runs)
+        var storage = new InMemoryMediaKeysStorageBackend();
+        var options = new BrowsingContextOptions
+        {
+            MediaKeysStorage = storage,
+        };
+        #endregion
+
+        Assert.Same(storage, options.MediaKeysStorage);
+
+        const string PersistentPrelude = EncryptedMediaPrelude + """
+            const persistentConfiguration = { ...configuration, persistentState: 'required', sessionTypes: ['persistent-license'] };
+            const keys = await (await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [persistentConfiguration])).createMediaKeys();
+            """;
+        var first = Load(PersistentPrelude + """
+            const session = keys.createSession('persistent-license');
+            session.generateRequest('keyids', keyIdsInitData);
+            const message = await event(session, 'message');
+            log.push(decode(message.message));
+            try { await session.update(license('temporary')); } catch (e) { log.push(e.name); }
+            await session.update(license('persistent-license'));
+            await session.close();
+            log.push(session.sessionId);
+            done();
+            """, mediaKeysStorage: storage);
+        var parts = first.Title.Split('|');
+        Assert.Equal("{\"kids\":[\"AQEBAQEBAQEBAQEBAQEBAQ\"],\"type\":\"persistent-license\"}|TypeError", string.Join('|', parts[..^1]));
+        var sessionId = parts[^1];
+
+        // Another origin cannot load the session
+        var other = Load(PersistentPrelude + "log.push(await keys.createSession('persistent-license').load('" + sessionId + "')); done();", url: "https://other.example/", mediaKeysStorage: storage);
+        Assert.Equal("false", other.Title);
+
+        // The origin of the session loads it: its key is usable, until remove() destroys the license and the acknowledgement of the release clears the session
+        var second = Load(PersistentPrelude + """
+            const session = keys.createSession('persistent-license');
+            try { await keys.createSession().load('SESSION'); } catch (e) { log.push(e.name); }
+            log.push(await session.load('
+            """ + sessionId + """
+            '), session.keyStatuses.get(keyId));
+            await session.remove();
+            const message = await event(session, 'message');
+            log.push(message.messageType, decode(message.message), session.keyStatuses.size);
+            await session.update(message.message);
+            log.push(await session.closed, await keys.createSession('persistent-license').load(session.sessionId));
+            done();
+            """, mediaKeysStorage: storage);
+        Assert.Equal("NotSupportedError|true|usable|license-release|{\"kids\":[\"AQEBAQEBAQEBAQEBAQEBAQ\"]}|0|release-acknowledged|false", second.Title);
+    }
+
+    [Fact]
+    public void EncryptedMedia_CodedFrame_DescribesTheCommonEncryption()
+    {
+        #region WebPlatform_EncryptedMediaFrames
+        // A frame of a media segment encrypted with the Common Encryption (cenc): AES-CTR on the bytes after the clear header of
+        // each subsample. The library decrypts it with the keys of the sessions of the MediaKeys of the media element, and the
+        // playback waits until a session has the key.
+        byte[] keyId = [0xad, 0x13, 0xf9, 0xea, 0x2b, 0xe6, 0x98, 0xb8, 0x75, 0xf5, 0x04, 0xa8, 0xe3, 0xcc, 0xea, 0x64];
+        byte[] initializationVector = [0, 0, 0, 0, 0, 0, 0, 1];
+        byte[] data = new byte[100];
+        var frame = new MediaCodedFrame(TrackId: 1, PresentationTimestamp: 0, DecodeTimestamp: 0, Duration: 0.04, IsRandomAccessPoint: true)
+        {
+            Encryption = new MediaSampleEncryption(MediaEncryptionScheme.Cenc, keyId, initializationVector, [new MediaSubsample(ClearBytes: 5, ProtectedBytes: 95)]),
+            Data = data,
+        };
+        #endregion
+
+        Assert.Equal(MediaEncryptionScheme.Cenc, frame.Encryption.Scheme);
+        Assert.Equal(95, frame.Encryption.Subsamples[0].ProtectedBytes);
+        Assert.Throws<ArgumentException>(() => new MediaSampleEncryption(MediaEncryptionScheme.Cbcs, keyId, initializationVector));
+    }
+
+    [Theory]
+    [InlineData(0, 1, 32)]
+    [InlineData(0, 9, 16)]
+    [InlineData(0, 15, 160)]
+    public void EncryptedMedia_SampleDecryptor_RejectsAPatternWithoutEncryptedBlocks(int crypt, int skip, int length)
+    {
+        var encryption = new MediaSampleEncryption(MediaEncryptionScheme.Cbcs, new byte[16], new byte[16]) { CryptByteBlock = crypt, SkipByteBlock = skip };
+        var sample = new byte[length];
+        Assert.False(MediaSampleDecryptor.TryDecrypt(encryption, new byte[16], sample, sample));
+    }
+
+    [Fact]
+    public void EncryptedMedia_SampleDecryptor_DecryptsCencAndCbcs()
+    {
+        // NIST SP 800-38A F.5.1 (CTR-AES128) and F.2.1 (CBC-AES128)
+        var key = Convert.FromHexString("2b7e151628aed2a6abf7158809cf4f3c");
+        var keyId = new byte[16];
+        var counter = Convert.FromHexString("f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff");
+        var ctrCiphertext = Convert.FromHexString("874d6191b620e3261bef6864990db6ce9806f66b7970fdff8617187bb9fffdff");
+        var plaintext = Convert.FromHexString("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51");
+
+        var whole = ctrCiphertext.ToArray();
+        Assert.True(MediaSampleDecryptor.TryDecrypt(new MediaSampleEncryption(MediaEncryptionScheme.Cenc, keyId, counter), key, whole, whole));
+        Assert.Equal(plaintext, whole);
+
+        // The protected ranges of the subsamples form one key stream; the clear bytes are kept
+        byte[] sample = [0xAA, .. ctrCiphertext[..10], 0xBB, 0xCC, .. ctrCiphertext[10..]];
+        var decrypted = new byte[sample.Length];
+        Assert.True(MediaSampleDecryptor.TryDecrypt(new MediaSampleEncryption(MediaEncryptionScheme.Cenc, keyId, counter, [new MediaSubsample(1, 10), new MediaSubsample(2, 22)]), key, sample, decrypted));
+        Assert.Equal([0xAA, .. plaintext[..10], 0xBB, 0xCC, .. plaintext[10..]], decrypted);
+        Assert.False(MediaSampleDecryptor.TryDecrypt(new MediaSampleEncryption(MediaEncryptionScheme.Cenc, keyId, counter, [new MediaSubsample(1, 10)]), key, sample, decrypted));
+
+        // cbcs with the pattern 1:1: the first block is decrypted, the second one is clear, the last partial block is clear
+        var iv = Convert.FromHexString("000102030405060708090a0b0c0d0e0f");
+        byte[] cbcs = [.. Convert.FromHexString("7649abac8119b246cee98e9b12e9197d"), .. plaintext[16..], 1, 2, 3];
+        Assert.True(MediaSampleDecryptor.TryDecrypt(new MediaSampleEncryption(MediaEncryptionScheme.Cbcs, keyId, iv) { CryptByteBlock = 1, SkipByteBlock = 1 }, key, cbcs, cbcs));
+        Assert.Equal([.. plaintext, 1, 2, 3], cbcs);
+    }
+
+    [Fact]
+    public void EncryptedMedia_ClearKeyInitData_IsValidatedAndBounded()
+    {
+        byte[] commonPssh = [0x00, 0x00, 0x00, 0x34, .. "pssh"u8, 0x01, 0x00, 0x00, 0x00, 0x10, 0x77, 0xEF, 0xEC, 0xC0, 0xB2, 0x4D, 0x02, 0xAC, 0xE3, 0x3C, 0x1E, 0x52, 0xE2, 0xFB, 0x4B, 0x00, 0x00, 0x00, 0x01, .. new byte[16], 0x00, 0x00, 0x00, 0x00];
+        Assert.Equal([new byte[16]], ClearKey.ExtractKeyIds("cenc", commonPssh));
+
+        // The pssh box of another key system is valid but gives no key ID; a box whose size does not match is not valid
+        byte[] otherPssh = [0x00, 0x00, 0x00, 0x20, .. "pssh"u8, 0x00, 0x00, 0x00, 0x00, .. Enumerable.Repeat((byte)0x55, 16), 0x00, 0x00, 0x00, 0x00];
+        Assert.Empty(ClearKey.ExtractKeyIds("cenc", otherPssh)!);
+        Assert.Null(ClearKey.ExtractKeyIds("cenc", [0x00, 0x00, 0xFF, 0xFF, .. commonPssh[4..]]));
+        Assert.Null(ClearKey.ExtractKeyIds("cenc", [.. commonPssh, 0x00]));
+
+        Assert.Equal([[1, 2]], ClearKey.ExtractKeyIds("keyids", """{"kids":["AQI"]}"""u8));
+        Assert.Null(ClearKey.ExtractKeyIds("keyids", """{"kids":["AQI="]}"""u8));
+        Assert.Null(ClearKey.ExtractKeyIds("keyids", """{"kids":[]}"""u8));
+        Assert.Null(ClearKey.ExtractKeyIds("keyids", Encoding.UTF8.GetBytes("{\"kids\":[\"" + new string('A', 800) + "\"]}")));
+        Assert.Equal([[7]], ClearKey.ExtractKeyIds("webm", [7]));
+        Assert.Null(ClearKey.ExtractKeyIds("webm", new byte[ClearKey.MaxInitDataLength + 1]));
+
+        Assert.Equal(16, ClearKey.ParseResponse("""{"keys":[{"kty":"oct","kid":"AQI","k":"AAAAAAAAAAAAAAAAAAAAAA"}],"type":"persistent-license"}"""u8)!.Keys![0].Key.Length);
+        Assert.Null(ClearKey.ParseResponse("""{"keys":[{"kty":"RSA","kid":"AQI","k":"AAAAAAAAAAAAAAAAAAAAAA"}]}"""u8));
+        Assert.Equal([[1, 2]], ClearKey.ParseResponse("""{"kids":["AQI"]}"""u8)!.ReleasedKeyIds);
+        Assert.Null(ClearKey.ParseResponse("[]"u8));
+    }
+
     private sealed class BackendWithoutMediaSource : MediaBackend
     {
         public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => MediaTypeSupport.Probably;
@@ -372,7 +722,7 @@ public sealed class MediaSourceTests : IDisposable
     {
         public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs)
         {
-            if (mimeType is not ("video/fake" or "audio/fake"))
+            if (mimeType is not ("video/fake" or "audio/fake" or "video/mp4" or "audio/mp4"))
                 return MediaTypeSupport.NotSupported;
 
             return codecs.Count == 0 ? MediaTypeSupport.Maybe : MediaTypeSupport.Probably;
@@ -380,7 +730,7 @@ public sealed class MediaSourceTests : IDisposable
 
         public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
 
-        public override MediaSegmentParser? CreateSegmentParser(string mimeType, IReadOnlyList<string> codecs) => mimeType is "video/fake" or "audio/fake" ? new FakeParser() : null;
+        public override MediaSegmentParser? CreateSegmentParser(string mimeType, IReadOnlyList<string> codecs) => mimeType is "video/fake" or "audio/fake" or "video/mp4" or "audio/mp4" ? new FakeParser() : null;
     }
 
     /// <summary>Each line of the byte stream is a segment.</summary>
@@ -405,10 +755,15 @@ public sealed class MediaSourceTests : IDisposable
                 {
                     var duration = double.NaN;
                     var tracks = new List<MediaSegmentTrack>();
+                    var initData = new List<MediaEncryptionInitData>();
                     foreach (var part in parts.Skip(1))
                     {
                         var value = part[(part.IndexOf('=', StringComparison.Ordinal) + 1)..];
-                        if (part.StartsWith("duration=", StringComparison.Ordinal))
+                        if (part.StartsWith("keyids=", StringComparison.Ordinal))
+                        {
+                            initData.Add(new MediaEncryptionInitData("keyids", Encoding.UTF8.GetBytes("{\"kids\":[\"" + System.Buffers.Text.Base64Url.EncodeToString(Convert.FromHexString(value)) + "\"]}")));
+                        }
+                        else if (part.StartsWith("duration=", StringComparison.Ordinal))
                         {
                             duration = double.Parse(value, CultureInfo.InvariantCulture);
                         }
@@ -424,7 +779,7 @@ public sealed class MediaSourceTests : IDisposable
                         }
                     }
 
-                    return MediaSegmentParseResult.Initialization(end + 1, new MediaInitializationSegment(tracks, duration));
+                    return MediaSegmentParseResult.Initialization(end + 1, new MediaInitializationSegment(tracks, duration) { InitData = initData });
                 }
 
                 case "media":
@@ -435,7 +790,20 @@ public sealed class MediaSourceTests : IDisposable
                         var fields = part.Split(':');
                         var track = long.Parse(fields[0], CultureInfo.InvariantCulture);
                         var timestamp = double.Parse(fields[1], CultureInfo.InvariantCulture);
-                        frames.Add(new MediaCodedFrame(track, timestamp, timestamp, double.Parse(fields[2], CultureInfo.InvariantCulture), IsRandomAccessPoint: fields.Length > 3 || _audioTracks.Contains(track)));
+                        var frame = new MediaCodedFrame(track, timestamp, timestamp, double.Parse(fields[2], CultureInfo.InvariantCulture), IsRandomAccessPoint: fields.Contains("k") || _audioTracks.Contains(track));
+                        if (fields.FirstOrDefault(field => field.StartsWith("e=", StringComparison.Ordinal)) is { } encrypted)
+                        {
+                            // A frame of 16 bytes encrypted with AES-CTR; "!" gives subsamples that do not cover the frame
+                            var corrupted = encrypted.EndsWith('!', StringComparison.Ordinal);
+                            var keyId = Convert.FromHexString(encrypted[2..].TrimEnd('!'));
+                            frame = frame with
+                            {
+                                Encryption = new MediaSampleEncryption(MediaEncryptionScheme.Cenc, keyId, new byte[8], corrupted ? [new MediaSubsample(1, 1)] : null),
+                                Data = new byte[16],
+                            };
+                        }
+
+                        frames.Add(frame);
                     }
 
                     return MediaSegmentParseResult.Media(end + 1, frames);

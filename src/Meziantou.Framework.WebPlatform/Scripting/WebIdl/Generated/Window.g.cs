@@ -65,6 +65,7 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
     private static TValue Get_outerWidth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.FromNumber((double)o.OuterWidth); }
     private static TValue Get_outerHeight(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.FromNumber((double)o.OuterHeight); }
     private static TValue Get_devicePixelRatio(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.FromNumber((double)o.DevicePixelRatio); }
+    private static TValue Get_documentPictureInPicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.Wrap(o.DocumentPictureInPicture); }
     private static TValue Get_event(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return o.Event is { } value ? r.Wrap(value) : r.Adapter.Undefined; }
     private static TValue Get_external(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.Wrap(o.External); }
     private static TValue Get_ondeviceorientation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "deviceorientation");
@@ -710,6 +711,7 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineReplaceableAttribute(instanceTarget, "outerWidth", Get_outerWidth);
         r.DefineReplaceableAttribute(instanceTarget, "outerHeight", Get_outerHeight);
         r.DefineReplaceableAttribute(instanceTarget, "devicePixelRatio", Get_devicePixelRatio);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "documentPictureInPicture", Get_documentPictureInPicture, null);
         r.DefineReplaceableAttribute(instanceTarget, "event", Get_event);
         r.DefineReplaceableAttribute(instanceTarget, "external", Get_external);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "ondeviceorientation", Get_ondeviceorientation, Set_ondeviceorientation);

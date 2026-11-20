@@ -98,6 +98,15 @@ public sealed class WebIdlConversionTests : IDisposable
         Assert.Equal("TypeError", ThrowsJsError(() => _realm.ToLongLong(Number(9007199254740992), IntegerConversion.EnforceRange)));
     }
 
+    // A small negative value used to become 0: adding 2^64 to it rounded it to 2^64 (a double has 53 bits of precision)
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-10.9)]
+    [InlineData(-9007199254740991)]
+    [InlineData(-9223372036854775808)]
+    public void LongLong_KeepsTheNegativeValuesOfItsRange(double value)
+        => Assert.Equal((long)Math.Truncate(value), _realm.ToLongLong(Number(value)));
+
     [Fact]
     public void Integer_ConvertsStringsAndBooleans()
     {

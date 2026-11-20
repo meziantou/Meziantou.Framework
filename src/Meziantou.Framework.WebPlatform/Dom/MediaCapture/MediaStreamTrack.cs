@@ -74,7 +74,7 @@ public partial class MediaStreamTrack : EventTarget
     /// <summary>Gets the identifier of the track (a UUID).</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-id"/>
     [IdlMember("id", "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-id")]
-    public string Id { get; }
+    public string Id { get; private init; }
 
     /// <summary>Gets the label of the source of the track (e.g. the name of the camera), or an empty string.</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-main/#dom-mediastreamtrack-label"/>

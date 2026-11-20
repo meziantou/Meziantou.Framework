@@ -47,6 +47,9 @@ public enum EndOfStreamError
 /// </summary>
 internal sealed record MediaSourceSnapshot(double Duration, MediaTimeRange[] Buffered, double GapTolerance, MediaTimeRange? LiveSeekableRange, bool IsEnded, bool HasVideo, int VideoWidth, int VideoHeight, (double Time, int Width, int Height)[] VideoSizes)
 {
+    /// <summary>The ranges of the media timeline whose frames of the active tracks wait for their key (Encrypted Media Extensions): the playback cannot enter them.</summary>
+    public MediaTimeRange[] EncryptedRanges { get; init; } = [];
+
     public static MediaSourceSnapshot Empty { get; } = new(double.NaN, [], 0, null, IsEnded: false, HasVideo: false, 0, 0, []);
 
     /// <summary>The natural size of the video at a position: the size of the frame of the selected video track, else the size of its track description.</summary>
@@ -153,6 +156,63 @@ public class MediaSource : EventTarget
         ElementCanPlayUninterrupted = value;
         OnElementCanPlayUninterruptedChanged(value);
     });
+
+    /// <summary>The usable keys of the <c>MediaKeys</c> of the media element, read by the thread of the source to decrypt the encrypted frames, or null.</summary>
+    internal MediaKeysDecryptionKeys? DecryptionKeys { get; private set; }
+
+    /// <summary>
+    /// The <c>MediaKeys</c> of the media element changed (<c>setMediaKeys()</c>, or the source is attached): the encrypted
+    /// frames are decrypted with its keys.
+    /// </summary>
+    internal void SetDecryptionKeys(GlobalScope elementGlobal, MediaKeysDecryptionKeys? keys) => RunOnSource(elementGlobal, () =>
+    {
+        DecryptionKeys = keys;
+        DecryptFrames();
+    });
+
+    /// <summary>The keys of the sessions of the <c>MediaKeys</c> of the media element changed: the frames that wait for a key are decrypted.</summary>
+    internal void OnDecryptionKeysChanged(GlobalScope elementGlobal) => RunOnSource(elementGlobal, DecryptFrames);
+
+    /// <summary>https://w3c.github.io/encrypted-media/#attempt-to-decrypt for the frames of the source buffers.</summary>
+    private void DecryptFrames()
+    {
+        if (DecryptionKeys is not { } keys || _readyState == MediaSourceReadyState.Closed)
+            return;
+
+        var changed = false;
+        SourceBuffer[] buffers;
+        lock (_lock)
+        {
+            buffers = [.. SourceBuffers];
+        }
+
+        foreach (var buffer in buffers)
+        {
+            bool decrypted;
+            bool bufferChanged;
+            lock (_lock)
+            {
+                decrypted = buffer.DecryptFrames(keys, out bufferChanged);
+            }
+
+            if (!decrypted)
+            {
+                OnMediaDataCorrupted();
+                return;
+            }
+
+            changed |= bufferChanged;
+        }
+
+        if (changed)
+        {
+            OnStateChanged();
+            ScheduleMonitoring();
+        }
+    }
+
+    /// <summary>An encrypted frame cannot be decrypted: the media element runs the "media data is corrupted" steps (<c>MEDIA_ERR_DECODE</c>).</summary>
+    internal void OnMediaDataCorrupted() => RunOnElement(element => element.OnMediaSourceError(isNetworkError: false));
 
     /// <summary>The global object that created the source: its tasks are queued on its event loop.</summary>
     internal GlobalScope? Global => _global;
@@ -543,6 +603,7 @@ public class MediaSource : EventTarget
             var videoWidth = 0;
             var videoHeight = 0;
             (double Time, int Width, int Height)[] videoSizes = [];
+            var encryptedRanges = new List<MediaTimeRange>();
             if (ActiveSourceBuffers.Count > 0)
             {
                 var highestEndTime = 0d;
@@ -555,6 +616,14 @@ public class MediaSource : EventTarget
                     if (ranges.Length > 0)
                     {
                         highestEndTime = Math.Max(highestEndTime, ranges[^1].End);
+                    }
+
+                    foreach (var track in buffer.Tracks)
+                    {
+                        if (track.IsActive)
+                        {
+                            encryptedRanges.AddRange(track.Buffer.GetEncryptedRanges());
+                        }
                     }
 
                     if (!hasVideo && buffer.SelectedVideoTrackBuffer is { } video)
@@ -580,8 +649,34 @@ public class MediaSource : EventTarget
                 }
             }
 
-            Volatile.Write(ref _snapshot, new MediaSourceSnapshot(_readyState == MediaSourceReadyState.Closed ? double.NaN : _duration, buffered, gapTolerance, _liveSeekableRange, isEnded, hasVideo, videoWidth, videoHeight, videoSizes));
+            Volatile.Write(ref _snapshot, new MediaSourceSnapshot(_readyState == MediaSourceReadyState.Closed ? double.NaN : _duration, buffered, gapTolerance, _liveSeekableRange, isEnded, hasVideo, videoWidth, videoHeight, videoSizes)
+            {
+                EncryptedRanges = MergeRanges(encryptedRanges),
+            });
         }
+    }
+
+    /// <summary>The union of time ranges.</summary>
+    private static MediaTimeRange[] MergeRanges(List<MediaTimeRange> ranges)
+    {
+        if (ranges.Count == 0)
+            return [];
+
+        ranges.Sort((a, b) => a.Start.CompareTo(b.Start));
+        var merged = new List<MediaTimeRange>(ranges.Count);
+        foreach (var range in ranges)
+        {
+            if (merged.Count > 0 && range.Start <= merged[^1].End)
+            {
+                merged[^1] = new MediaTimeRange(merged[^1].Start, Math.Max(merged[^1].End, range.End));
+            }
+            else
+            {
+                merged.Add(range);
+            }
+        }
+
+        return [.. merged];
     }
 
     /// <summary>The positions of the media timeline where the size of the frames of a video track changes.</summary>

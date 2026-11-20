@@ -46,6 +46,9 @@ public partial class HtmlMediaElement
     {
         if (_player is { } player && _readyState != HaveNothing)
         {
+            // The waitingforkey event is queued before the events of the ready state (https://w3c.github.io/encrypted-media/#wait-for-key)
+            UpdateWaitingForKey();
+
             var state = Math.Max((int)player.ReadyState, HaveMetadata);
             if (!AreTextTracksReady)
             {
@@ -76,6 +79,7 @@ public partial class HtmlMediaElement
         var wasPotentiallyPlaying = IsPotentiallyPlaying;
         _readyState = value;
         ScheduleCaptureUpdate();
+        OnVideoFrameMayChange();
         NodeDocument.IncrementElementStateVersion();
         if (_mediaSource is { } source && _mediaSourceGlobal is { } sourceElementGlobal && (previous == HaveEnoughData || value == HaveEnoughData))
         {
@@ -630,6 +634,7 @@ public partial class HtmlMediaElement
             _playedRangeIsOpen = true;
             player.Play();
             SchedulePlaybackTimer();
+            OnVideoFrameMayChange();
         }
         else
         {
@@ -730,12 +735,16 @@ public partial class HtmlMediaElement
         {
             // The ready state follows the data buffered at the new position (https://w3c.github.io/media-source/#buffer-monitoring):
             // the playback is suspended when it reaches the end of the buffered data
+            var previousReadyState = _readyState;
+            var wasPotentiallyPlaying = IsPotentiallyPlaying;
             UpdateReadyStateFromPlayer();
             if (!_isAdvancing)
             {
                 if (position != previous)
                 {
-                    TimeMarchesOn(normalPlayback: true);
+                    // The change of the ready state already fired a timeupdate event for the new position
+                    var firedTimeUpdate = wasPotentiallyPlaying && previousReadyState >= HaveFutureData && _readyState <= HaveCurrentData;
+                    TimeMarchesOn(normalPlayback: !firedTimeUpdate);
                 }
 
                 return;
@@ -831,6 +840,7 @@ public partial class HtmlMediaElement
     /// <summary>https://html.spec.whatwg.org/multipage/media.html#dom-media-seek</summary>
     private void Seek(double newPlaybackPosition)
     {
+        ResetWaitingForKey();
         SetShowPoster(false);
         if (_readyState == HaveNothing || _player is not { } player)
             return;

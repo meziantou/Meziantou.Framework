@@ -9,26 +9,28 @@ description: "The results of the web-platform-tests of media-capabilities, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 7 | 7 | – |
+| [Stable](#stable-tests) | 4 | 7 | 0 | 57% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **7** | **7** | **–** |
+| **All** | **4** | **7** | **0** | **57%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 7
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 2
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`decodingInfo-webrtc.any.js`](https://wpt.fyi/results/media-capabilities/decodingInfo-webrtc.any.js) | Disabled | – | NOT IMPLEMENTED | Media Capabilities API (`navigator.mediaCapabilities`) |
-| [`decodingInfo.any.js`](https://wpt.fyi/results/media-capabilities/decodingInfo.any.js) | Disabled | – | NOT IMPLEMENTED | Media Capabilities API (`navigator.mediaCapabilities`) |
-| [`decodingInfoEncryptedMedia.http.html`](https://wpt.fyi/results/media-capabilities/decodingInfoEncryptedMedia.http.html) | Disabled | – | NOT IMPLEMENTED | Media Capabilities API (`navigator.mediaCapabilities`) |
-| [`decodingInfoEncryptedMedia.https.html`](https://wpt.fyi/results/media-capabilities/decodingInfoEncryptedMedia.https.html) | Disabled | – | NOT IMPLEMENTED | Media Capabilities API (`navigator.mediaCapabilities`) |
-| [`encodingInfo-webrtc.any.js`](https://wpt.fyi/results/media-capabilities/encodingInfo-webrtc.any.js) | Disabled | – | NOT IMPLEMENTED | Media Capabilities API (`navigator.mediaCapabilities`) |
-| [`encodingInfo.any.js`](https://wpt.fyi/results/media-capabilities/encodingInfo.any.js) | Disabled | – | NOT IMPLEMENTED | Media Capabilities API (`navigator.mediaCapabilities`) |
-| [`idlharness.any.js`](https://wpt.fyi/results/media-capabilities/idlharness.any.js) | Disabled | – | NOT IMPLEMENTED | Media Capabilities API (`navigator.mediaCapabilities`) |
+| [`decodingInfo-webrtc.any.js`](https://wpt.fyi/results/media-capabilities/decodingInfo-webrtc.any.js) | Error | 39 / 40 | NOT IMPLEMENTED, TEST RUNNER | WebRTC: the script calls `RTCRtpReceiver.getCapabilities()` at the top level in a window, which throws a ReferenceError after the subtests are defined (harness ERROR); the codecs of the test runner (`WptMediaCodecBackend`) have no VP9 decoder, so `video/VP9` is not supported (in the worker) |
+| [`decodingInfo.any.js`](https://wpt.fyi/results/media-capabilities/decodingInfo.any.js) | Pass | 74 / 74 |  |  |
+| [`decodingInfoEncryptedMedia.http.html`](https://wpt.fyi/results/media-capabilities/decodingInfoEncryptedMedia.http.html) | Pass | 1 / 1 |  |  |
+| [`decodingInfoEncryptedMedia.https.html`](https://wpt.fyi/results/media-capabilities/decodingInfoEncryptedMedia.https.html) | Fail | 19 / 21 | TEST BUG | 2 subtests expect the `cbcs` and `cbcs-1-9` encryption schemes with WebM content (`video/webm; codecs="vp09.00.10.08"`, `audio/webm; codecs="opus"`): the WebM encryption is AES-CTR only (https://www.webmproject.org/docs/webm-encryption/), so Clear Key supports the `cbcs` schemes for MP4 only |
+| [`encodingInfo-webrtc.any.js`](https://wpt.fyi/results/media-capabilities/encodingInfo-webrtc.any.js) | Error | 34 / 36 | NOT IMPLEMENTED, TEST RUNNER | WebRTC: the script calls `RTCRtpSender.getCapabilities()` at the top level in a window, which throws a ReferenceError after the subtests are defined (harness ERROR); the codecs of the test runner (`WptMediaCodecBackend`) have no VP9 encoder, so `video/VP9` (with or without a scalability mode) is not supported (in the worker) |
+| [`encodingInfo.any.js`](https://wpt.fyi/results/media-capabilities/encodingInfo.any.js) | Pass | 60 / 60 |  |  |
+| [`idlharness.any.js`](https://wpt.fyi/results/media-capabilities/idlharness.any.js) | Pass | 76 / 76 |  |  |

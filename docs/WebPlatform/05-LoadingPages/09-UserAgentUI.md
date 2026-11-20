@@ -1,6 +1,6 @@
 ---
 title: User agent UI
-description: Answer the prompts that the web APIs show to the user: the credential chooser, the FedCM account chooser, the payment sheet, the Secure Payment Confirmation dialog and the wallet of the digital credentials.
+description: Answer the prompts that the web APIs show to the user: the credential chooser, the FedCM account chooser, the payment sheet, the Secure Payment Confirmation dialog and the wallet of the digital credentials, and open the Picture-in-Picture windows of the videos and the documents.
 ---
 
 Some web APIs show a prompt of the browser and wait for the user: a browser asks which saved password to use, or whether
@@ -31,6 +31,8 @@ method that a backend does not override, the prompt behaves as if the user dismi
 | [ShowIdentityCredentialErrorAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowIdentityCredentialErrorAsync) | FedCM: the identity provider did not mint a token | Closed at once: the promise is rejected with the `IdentityCredentialError` |
 | [ShowIdentityAutoReauthenticationAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowIdentityAutoReauthenticationAsync) | FedCM: the returning account is signed in without the account chooser | The reauthentication continues |
 | [ShowSecurePaymentConfirmationAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.ShowSecurePaymentConfirmationAsync) | `PaymentRequest.show()` with the `secure-payment-confirmation` payment method | The user declines the transaction: the promise rejects with an `AbortError` |
+| [OpenPictureInPictureWindowAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.OpenPictureInPictureWindowAsync) | `HTMLVideoElement.requestPictureInPicture()` | Not a prompt: the window opens at its default size |
+| [OpenDocumentPictureInPictureWindow](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.OpenDocumentPictureInPictureWindow) | `documentPictureInPicture.requestWindow()` (synchronous) | Not a prompt: the window opens at its default size |
 
 The methods are called on the thread of the event loop. The task they return can complete later, on any thread: the
 library settles the promise of the page on its event loop, and the event loop is not idle while a prompt is open. The
@@ -441,3 +443,91 @@ The library applies the rules of the specification and of the browsers:
 - A request needs the `identity-credentials-get` permissions policy feature in a cross-origin frame, an `active` request
   needs a transient activation, and a page has one pending request at a time (an `active` request replaces a pending
   `passive` one). The library does not delay the rejection of a request that showed no dialog.
+
+## Picture-in-Picture
+
+[Picture-in-Picture](https://w3c.github.io/picture-in-picture/) shows a video in a floating window:
+`video.requestPictureInPicture()` (or [HtmlVideoElement.RequestPictureInPicture](cref:Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement.RequestPictureInPicture)
+in .NET), `document.exitPictureInPicture()`, `document.pictureInPictureElement`, `document.pictureInPictureEnabled`, the
+`enterpictureinpicture` and `leavepictureinpicture` events, the `disablePictureInPicture` attribute and the
+`:picture-in-picture` pseudo-class. The library applies the rules of the specification:
+
+- The video needs its metadata and a video track, so the browsing context needs a
+  [media backend](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaBackend).
+- The `picture-in-picture` permissions policy feature (allowed everywhere by default) must allow it: otherwise the request
+  fails with a `SecurityError` and a violation is reported.
+- When no video of the document is in Picture-in-Picture, the request needs a transient activation, which it consumes.
+- A document has one video in Picture-in-Picture: a request of another video makes the previous one leave first, and
+  setting `disablePictureInPicture` makes the video leave and rejects its pending requests. The video leaves when its
+  document is unloaded, and keeps playing when it is removed from the document.
+
+Opening the window does not ask the user, so it is not a prompt: without a backend, and with the default implementation
+of [OpenPictureInPictureWindowAsync](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.OpenPictureInPictureWindowAsync),
+the window opens at [DefaultSize](cref:Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest.DefaultSize) (the
+natural size of the video scaled to fit 400×300 CSS pixels). A backend returns the size of the window it shows, or `null`
+when it cannot show one (the request fails with an `InvalidStateError`). The
+[Handle](cref:Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest.Handle) of the request resizes the window
+(the page receives a `resize` event at its `PictureInPictureWindow`) and closes it (the video leaves Picture-in-Picture),
+from any thread; its [Closed](cref:Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowHandle.Closed) task completes
+once the window is closed, by the page or by the backend:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/MediaElementTests.cs;region=WebPlatform_UserAgentUI_PictureInPicture;format=md-fenced-code-block;dedent=true -->
+```csharp
+private sealed class FloatingVideoWindows : UserAgentUIBackend
+{
+    public PictureInPictureWindowRequest? LastRequest { get; private set; }
+
+    public override ValueTask<PictureInPictureWindowSize?> OpenPictureInPictureWindowAsync(PictureInPictureWindowRequest request, CancellationToken cancellationToken)
+    {
+        // The window shows the video at half its natural size. The handle of the request resizes and closes the window
+        // later, e.g. when the user resizes or closes it
+        LastRequest = request;
+        var video = request.Video!;
+        return ValueTask.FromResult<PictureInPictureWindowSize?>(new PictureInPictureWindowSize((int)video.VideoWidth / 2, (int)video.VideoHeight / 2));
+    }
+}
+```
+<!-- endref -->
+
+## Document Picture-in-Picture
+
+[Document Picture-in-Picture](https://wicg.github.io/document-picture-in-picture/) opens an always-on-top window whose
+document the page fills with any content: `documentPictureInPicture.requestWindow()` (or
+[DocumentPictureInPicture.RequestWindow](cref:Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPicture.RequestWindow)
+in .NET, from [Window.DocumentPictureInPicture](cref:Meziantou.Framework.WebPlatform.Dom.Window.DocumentPictureInPicture)),
+`documentPictureInPicture.window` and the `enter` event. The window is a new top-level browsing context
+([IsDocumentPictureInPicture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.IsDocumentPictureInPicture)) whose
+opener is the window that requested it, with an about:blank document that has the mode (quirks or not) and the base URL of
+the opener. The library applies the rules of the specification:
+
+- The API is only exposed in secure contexts, only a top-level window that is not itself a Picture-in-Picture window can
+  request one, and the request needs a transient activation, which it consumes. `width` and `height` go together.
+- A window has one Picture-in-Picture window: a new request closes the previous one. The window is closed when its opener
+  is closed or navigates to another document, and when it navigates to another document itself. Closing it never fires
+  `beforeunload`.
+- A user activation in the window or in its opener applies to both, and consuming it in one consumes it in both. A
+  Picture-in-Picture window that has a transient activation can focus its opener with `opener.focus()`.
+- `resizeTo()` and `resizeBy()` resize the window when it has a transient activation (they throw a `NotAllowedError`
+  otherwise), `moveTo()` and `moveBy()` do nothing, the documents of the window match `(display-mode: picture-in-picture)`,
+  and they cannot be displayed fullscreen.
+
+The window has no decoration: its size is the size of its viewport, at most 80% of the screen. Without a backend, and with
+the default implementation of
+[OpenDocumentPictureInPictureWindow](cref:Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend.OpenDocumentPictureInPictureWindow),
+it opens at [DefaultSize](cref:Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest.DefaultSize): the size the
+page requested, the size of the previous window of the opener (unless the page sets `preferInitialWindowPlacement`), or
+400×300 CSS pixels. The method is synchronous, since `requestWindow()` returns the window at once: it returns the size of
+the window, or `null` when the backend cannot open one (the request fails with a `NotAllowedError`). As for the windows of
+the videos, the [Handle](cref:Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest.Handle) of the request
+resizes the window (the page receives a `resize` event) and closes it:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UserAgentUI_DocumentPictureInPicture;format=md-fenced-code-block;dedent=true -->
+```csharp
+var backend = new FloatingDocumentWindows();
+var options = new BrowsingContextOptions
+{
+    // documentPictureInPicture.requestWindow() opens the windows of the backend
+    UserAgentUI = backend,
+};
+```
+<!-- endref -->

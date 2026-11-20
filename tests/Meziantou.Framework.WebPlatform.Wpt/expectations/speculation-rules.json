@@ -1461,16 +1461,10 @@
     }
   },
   "speculation-rules/prerender/restriction-encrypted-media-unsupported-config.https.html": {
-    "total": 1,
-    "failures": {
-      "the access to the Encrypted Media API should be deferred with the\n    unsupported configurations until the prerendered page is activated": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-encrypted-media.https.html": {
-    "total": 1,
-    "failures": {
-      "the access to the Encrypted Media API should be deferred until the\n    prerendered page is activated": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-focus.https.html": {
     "total": 1
@@ -1505,32 +1499,16 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-media-capabilities-decoding-info.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "The access to the MediaCapabilities decodingInfo API should be granted\n    during prerendering": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-media-capabilities-decoding-info.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "The access to the MediaCapabilities decodingInfo API should be granted\n    during prerendering": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-media-capabilities-encoding-info.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "The access to the MediaCapabilities encodingInfo API should be granted\n    during prerendering": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-media-capabilities-encoding-info.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "The access to the MediaCapabilities encodingInfo API should be granted\n    during prerendering": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-media-device-info.https.html?target_hint=_blank": {
     "total": 1

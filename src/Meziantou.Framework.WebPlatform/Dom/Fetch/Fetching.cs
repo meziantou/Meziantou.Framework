@@ -235,6 +235,10 @@ internal static class Fetching
             request.UrlList[^1] = MixedContent.UpgradeRequestUrl(upgradeClient, request.CurrentUrl, request.Destination, request.ImageSetInitiator);
         }
 
+        // https://whatpr.org/fetch/1655.html#main-fetch: the HTTPS upgrade of a top-level navigation, before the referrer is
+        // determined for the upgraded URL
+        HttpsUpgrading.UpgradeRequest(request);
+
         if (IsBlocked(request))
             return FetchResponse.NetworkError();
 
@@ -1361,7 +1365,30 @@ internal static class Fetching
         }
 
         var isWebSocket = request.Mode == RequestMode.WebSocket;
-        var resource = await LoadAsync(eventLoop, isWebSocket ? loader.ConnectWebSocketAsync : loader.LoadAsync, documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
+        DocumentResource? resource;
+
+        // The fast fallback of an upgraded request (https://whatpr.org/fetch/1655.html#https-upgrade-fallback): the request is
+        // canceled when it has no response after the fallback timeout, which is then a failure of the network
+        if (request.IsHttpsUpgrade && request.Navigable?.Options.HttpsUpgrades?.FallbackTimeout is { } fallbackTimeout)
+        {
+            // The loader may keep the token to read the rest of the body: the linked source is not disposed (it is canceled with
+            // the request), the timer is
+            var timeout = new CancellationTokenSource(fallbackTimeout, eventLoop.TimeProvider);
+#pragma warning disable CA2000 // The token is used after the response is returned
+            var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+#pragma warning restore CA2000
+            resource = await LoadAsync(eventLoop, loader.LoadAsync, documentRequest, request.Synchronous, linked.Token).ConfigureAwait(false);
+            timeout.Dispose();
+            if (linked.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                DisposeConnection(resource);
+                resource = null;
+            }
+        }
+        else
+        {
+            resource = await LoadAsync(eventLoop, isWebSocket ? loader.ConnectWebSocketAsync : loader.LoadAsync, documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
+        }
 
         // https://w3c.github.io/network-error-logging/: the response (or the failure) of the request generates a network-error
         // report when its origin has a NEL policy, from a task of the event loop of the request (only when a policy exists or
@@ -1426,7 +1453,7 @@ internal static class Fetching
 
         request.LoaderFailed = resource is null;
         if (resource is null)
-            return FetchResponse.NetworkError();
+            return HttpsUpgrading.Fallback(request, FetchResponse.NetworkError());
 
         // Only the response of the opening handshake of a WebSocket that switches the protocol has a connection
         if (resource.Connection is not null && (!isWebSocket || resource.StatusCode != 101))

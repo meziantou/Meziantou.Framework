@@ -90,6 +90,31 @@ internal abstract class MediaStreamTrackSource
     /// <summary>The position of the audio of the source now, in sample frames since its start.</summary>
     public virtual long AudioPosition => 0;
 
+    /// <summary>
+    /// Whether the source pushes each frame or each block of audio samples it produces to the sinks of its tracks
+    /// (<see cref="DeliverVideoFrame"/>, <see cref="DeliverAudioData"/>), e.g. a <c>VideoTrackGenerator</c>. The sinks
+    /// sample the media of the other sources on their own clock (<see cref="GetVideoFrame"/>, <see cref="ReadAudio"/>).
+    /// </summary>
+    public virtual bool PushesMedia => false;
+
+    /// <summary>Pushes a frame to the sinks of the tracks (they clone it to keep it).</summary>
+    protected void DeliverVideoFrame(WebCodecs.VideoFrame frame)
+    {
+        foreach (var track in _tracks.ToArray())
+        {
+            track.OnSourceVideoFrame(frame);
+        }
+    }
+
+    /// <summary>Pushes audio samples to the sinks of the tracks (they clone them to keep them).</summary>
+    protected void DeliverAudioData(WebCodecs.AudioData data)
+    {
+        foreach (var track in _tracks.ToArray())
+        {
+            track.OnSourceAudioData(data);
+        }
+    }
+
     internal void AddTrack(MediaStreamTrack track) => _tracks.Add(track);
 
     /// <summary>A track of the source ended: the source stops when it was the last one (https://w3c.github.io/mediacapture-main/#source-stopped).</summary>

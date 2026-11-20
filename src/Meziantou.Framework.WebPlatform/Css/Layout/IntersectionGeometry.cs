@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -497,18 +498,32 @@ internal static class IntersectionGeometry
 
     /// <summary>
     /// https://w3c.github.io/IntersectionObserver/#calculate-visibility-algo for an intersecting target: false when the target or
-    /// an ancestor up to the root (the containers of the nested browsing contexts included) has a transform other than a 2D
-    /// translation or a proportional upscaling, an opacity other than 1 or a filter, or when the intersection of the target is
-    /// occluded by a box painted above it or above one of its containers (a box of another element that paints a background, a
-    /// border, an outer shadow, an image, a form control or text, and whose border box, border shaped by <c>border-shape</c> or
-    /// shadow intersects it). The rest of the ink overflow (filters, outlines) is not taken into account.
+    /// an ancestor up to the root (the SVG ancestors of an SVG element and the containers of the nested browsing contexts
+    /// included) has a transform other than a 2D translation or a proportional upscaling, an opacity other than 1 or a filter,
+    /// or when the intersection of the target is occluded by content painted above it or above one of its containers (see
+    /// <see cref="OcclusionScanner"/>: the operations of the display list of the document painted after the target, with their
+    /// ink overflow: shadows, filters, outlines, glyph outlines, the content of the SVG elements).
     /// </summary>
     private static bool ComputeVisibility(LayoutEngine engine, Element target, PhysicalRect intersection, Element? rootElement, Document rootDocument)
     {
-        if (intersection.IsEmpty || engine.GetFragments(target) is not { Count: > 0 } fragments)
+        if (intersection.IsEmpty)
             return false;
 
+        // An element in an svg element has no box: its ancestors are the SVG elements up to its outermost svg element, then the
+        // ancestors of the box of the outermost svg element
+        if (engine.GetFragments(target) is not { Count: > 0 } fragments)
+        {
+            if (target is not SvgElement svg || SvgUserSpace.GetOutermostSvgElement(svg) is not { } outermost || engine.GetFragments(outermost) is not { Count: > 0 } outermostFragments
+                || !IsSvgContentVisible(svg, outermost))
+            {
+                return false;
+            }
+
+            fragments = outermostFragments;
+        }
+
         IReadOnlyList<Fragment> subject = fragments;
+        var subjectElement = target;
         var rect = intersection;
         while (true)
         {
@@ -524,14 +539,11 @@ internal static class IntersectionGeometry
                 if (LayoutEngine.GetTransform(box) is { } matrix && !IsTranslationOrUpscale(matrix))
                     return false;
 
-                if (double.TryParse(style.GetComputedValue("opacity"), NumberStyles.Float, CultureInfo.InvariantCulture, out var opacity) && opacity < 1)
-                    return false;
-
-                if (style.GetComputedValue("filter") is { } filter && filter != "none")
+                if (IsTranslucentOrFiltered(style))
                     return false;
             }
 
-            if (IsOccluded(engine, subject, rect))
+            if (IsOccluded(engine, subjectElement, subject, rect))
                 return false;
 
             if (rootElement is not null || ReferenceEquals(engine.Document, rootDocument))
@@ -543,13 +555,43 @@ internal static class IntersectionGeometry
 
             rect = parentEngine.ToViewport(LayoutEngine.MapToRoot(containerFragment, rect.Translate(LayoutEngine.GetNestedViewportRect(containerFragment).Offset))).Bounds;
             subject = [containerFragment];
+            subjectElement = container;
             engine = parentEngine;
         }
     }
 
-    /// <summary>Whether a box painted after the fragments of an element (excluding their descendants) covers a part of a rectangle (in the coordinates of the viewport).</summary>
-    private static bool IsOccluded(LayoutEngine engine, IReadOnlyList<Fragment> fragments, PhysicalRect rect)
+    /// <summary>Whether an opacity below 1 or a filter applies to the content of an element.</summary>
+    private static bool IsTranslucentOrFiltered(ComputedStyle style)
+        => (double.TryParse(style.GetComputedValue("opacity"), NumberStyles.Float, CultureInfo.InvariantCulture, out var opacity) && opacity < 1)
+            || (style.GetComputedValue("filter") is { } filter && filter != "none");
+
+    /// <summary>
+    /// Whether the effects of an SVG element and of its SVG ancestors below its outermost svg element keep it visible: no opacity
+    /// below 1 nor filter, and a transform to the content box of the outermost svg element (the viewBox included) that is a
+    /// translation or a proportional upscaling.
+    /// </summary>
+    private static bool IsSvgContentVisible(SvgElement element, SvgSvgElement outermost)
     {
+        for (var current = element as Element; current is not null && !ReferenceEquals(current, outermost); current = current.ParentNode as Element)
+        {
+            if (IsTranslucentOrFiltered(current.NodeDocument.GetStyleEngine().GetStyle(current)))
+                return false;
+        }
+
+        return SvgUserSpace.GetTransformToOutermostContentBox(element, out _) is not { } transform
+            || (transform.B == 0 && transform.C == 0 && transform.A == transform.D && transform.A >= 1);
+    }
+
+    /// <summary>
+    /// Whether content painted after an element (excluding its descendants) covers a part of a rectangle (in the coordinates of the
+    /// viewport): the operations of the display list of the document painted after the first operation of the element. When
+    /// the element paints nothing, the boxes painted after its fragments in the painting order (their border boxes and shadows).
+    /// </summary>
+    private static bool IsOccluded(LayoutEngine engine, Element element, IReadOnlyList<Fragment> fragments, PhysicalRect rect)
+    {
+        if (engine.GetDisplayList() is { } list && OcclusionScanner.IsOccluded(list, engine.Document, element, rect) is { } occluded)
+            return occluded;
+
         var subject = new HashSet<Fragment>(fragments, ReferenceEqualityComparer.Instance);
         var paintOrder = engine.GetPaintOrder();
         var index = paintOrder.FindIndex(item => subject.Contains(item.Fragment));

@@ -180,7 +180,7 @@
     "total": 3
   },
   "trusted-types/TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative.html": {
-    "total": 93,
+    "total": 95,
     "failures": {
       "getAttributeType(\"dummy\", \"onbegin\", \"dummyNs\", attrNs)": "FAIL",
       "getAttributeType(\"dummy\", \"onend\", \"dummyNs\", attrNs)": "FAIL",
@@ -497,10 +497,9 @@
     "total": 264
   },
   "trusted-types/set-event-handlers-content-attributes.tentative.html": {
-    "total": 527,
+    "total": 535,
     "failures": {
       "DIV.setAttribute(\"onbegin\", \"unsafe_handler()\") calls default policy": "FAIL",
-      "DIV.setAttribute(\"onwaitingforkey\", \"unsafe_handler()\") calls default policy": "FAIL",
       "animation.setAttribute(onbegin, \"unsafe_handler()\") calls default policy": "FAIL",
       "animation.setAttribute(onend, \"unsafe_handler()\") calls default policy": "FAIL",
       "animation.setAttribute(onrepeat, \"unsafe_handler()\") calls default policy": "FAIL",

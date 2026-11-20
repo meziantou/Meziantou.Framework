@@ -71,6 +71,28 @@ public partial class Window
                     descendantWindow.CloseWatcherManager.NotifyAboutUserActivation();
                 }
             }
+
+            // https://wicg.github.io/document-picture-in-picture/#user-activation-propagation: the activation of a Document
+            // Picture-in-Picture window activates the window of its opener, and the activation of an opener activates its
+            // Picture-in-Picture window and the same-origin windows of its navigables
+            var top = browsingContext.Top;
+            if (top.IsDocumentPictureInPicture && top.PictureInPictureOpener is { IsDestroyed: false } opener && opener.Document.RelevantWindow is { } openerWindow)
+            {
+                openerWindow._lastActivationTimestamp = now;
+                openerWindow.CloseWatcherManager.NotifyAboutUserActivation();
+            }
+
+            if (top.DocumentPictureInPictureWindow is { IsDestroyed: false } pip)
+            {
+                foreach (var navigable in pip.GetInclusiveDescendantNavigables())
+                {
+                    if (navigable.Document.RelevantWindow is { } pipWindow && OriginRecord.IsSameOrigin(navigable.Document.Origin, pip.Document.Origin))
+                    {
+                        pipWindow._lastActivationTimestamp = now;
+                        pipWindow.CloseWatcherManager.NotifyAboutUserActivation();
+                    }
+                }
+            }
         }
     }
 
@@ -89,7 +111,21 @@ public partial class Window
             top = parent;
         }
 
-        foreach (var navigable in top.GetDescendantNavigables().Prepend(top))
+        // https://wicg.github.io/document-picture-in-picture/#user-activation-propagation: the activation is also consumed in
+        // the navigables of the opener of a Document Picture-in-Picture window, and in the ones of the Picture-in-Picture window
+        // of an opener
+        var navigables = top.GetDescendantNavigables().Prepend(top);
+        if (top.IsDocumentPictureInPicture && top.PictureInPictureOpener is { IsDestroyed: false } opener)
+        {
+            navigables = navigables.Concat(opener.GetInclusiveDescendantNavigables());
+        }
+
+        if (top.DocumentPictureInPictureWindow is { IsDestroyed: false } pip)
+        {
+            navigables = navigables.Concat(pip.GetInclusiveDescendantNavigables());
+        }
+
+        foreach (var navigable in navigables)
         {
             if (navigable.Document.RelevantWindow is { } window && window._lastActivationTimestamp != long.MaxValue)
             {

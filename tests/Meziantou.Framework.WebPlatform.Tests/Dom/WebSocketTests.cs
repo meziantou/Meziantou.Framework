@@ -394,6 +394,150 @@ public sealed class WebSocketTests : IDisposable
         Assert.Equal(WebSocketCloseStatus.EndpointUnavailable, status);
     }
 
+    [Fact]
+    public async Task WebSocketStream_ExchangesMessagesWithAServer()
+    {
+        using var server = new LoopbackServer();
+        var context = CreateContext(DocumentLoader.Create());
+        var serverTask = Task.Run(async () =>
+        {
+            var (socket, _) = await server.AcceptAsync(protocol: "chat");
+            using (socket)
+            {
+                // Echo a text message and a binary message, then close the connection
+                var text = await ReceiveAsync(socket);
+                await socket.SendAsync(text.Data, WebSocketMessageType.Text, endOfMessage: true, CancellationToken.None);
+                var binary = await ReceiveAsync(socket);
+                await socket.SendAsync(binary.Data, WebSocketMessageType.Binary, endOfMessage: true, CancellationToken.None);
+                await socket.CloseOutputAsync((WebSocketCloseStatus)4000, "bye", CancellationToken.None);
+                await ReceiveAsync(socket);
+            }
+        }, TestContext.Current.CancellationToken);
+
+        var document = Load(context, $$"""
+            <script>
+              (async () => {
+                const log = [];
+                const wss = new WebSocketStream('ws://127.0.0.1:{{server.Port}}/', { protocols: ['chat', 'other'] });
+                const { readable, writable, protocol, extensions } = await wss.opened;
+                log.push('open:' + protocol + ':' + extensions);
+                const writer = writable.getWriter();
+                const reader = readable.getReader();
+                await writer.write('hello');
+                await writer.write(new Uint8Array([1, 2, 3]));
+                let result = await reader.read();
+                log.push('text:' + result.value);
+                result = await reader.read();
+                log.push('binary:' + (result.value instanceof Uint8Array) + ':' + result.value.join(','));
+                const { closeCode, reason } = await wss.closed;
+                log.push('closed:' + closeCode + ':' + reason);
+                result = await reader.read();
+                log.push('done:' + result.done);
+                await writer.ready.catch(e => log.push('writable:' + e.name));
+                document.title = log.join('|');
+              })().catch(e => document.title = 'error:' + e);
+            </script>
+            """, "http://127.0.0.1/");
+
+        await WaitUntilAsync(() => document.Title.Length > 0, () => document.Title);
+        Assert.Equal("open:chat:|text:hello|binary:true:1,2,3|closed:4000:bye|done:true|writable:InvalidStateError", document.Title);
+        await serverTask;
+    }
+
+    [Fact]
+    public async Task WebSocketStream_CloseSendsTheCodeAndTheReason()
+    {
+        using var server = new LoopbackServer();
+        var context = CreateContext(DocumentLoader.Create());
+        var serverTask = Task.Run(async () =>
+        {
+            var (socket, _) = await server.AcceptAsync();
+            using (socket)
+            {
+                // The server echoes the Close frame
+                var message = await ReceiveAsync(socket);
+                Assert.Equal(WebSocketMessageType.Close, message.Type);
+                await socket.CloseOutputAsync(socket.CloseStatus!.Value, socket.CloseStatusDescription, CancellationToken.None);
+                return (socket.CloseStatus, socket.CloseStatusDescription);
+            }
+        }, TestContext.Current.CancellationToken);
+
+        var document = Load(context, $$"""
+            <script>
+              (async () => {
+                const results = [];
+                function test(f) {
+                  try { f(); results.push('ok'); } catch (e) { results.push(e.name); }
+                }
+                const wss = new WebSocketStream('ws://127.0.0.1:{{server.Port}}/');
+                await wss.opened;
+                test(() => wss.close({ closeCode: 1001 }));
+                test(() => wss.close({ reason: 'x'.repeat(124) }));
+                test(() => wss.close({ reason: 'done' }));
+                const { closeCode, reason } = await wss.closed;
+                results.push(closeCode + ':' + reason);
+                document.title = results.join('|');
+              })().catch(e => document.title = 'error:' + e);
+            </script>
+            """);
+
+        await WaitUntilAsync(() => document.Title.Length > 0, () => document.Title);
+
+        // A reason without close code is sent with the 1000 status code
+        Assert.Equal("InvalidAccessError|SyntaxError|ok|1000:done", document.Title);
+        var (status, description) = await serverTask;
+        Assert.Equal(WebSocketCloseStatus.NormalClosure, status);
+        Assert.Equal("done", description);
+    }
+
+    [Fact]
+    public void WebSocketStream_RejectsItsPromisesWithWebSocketErrors()
+    {
+        var loader = new StubLoader();
+        var context = CreateContext(loader);
+        var document = Load(context, """
+            <script>
+              const results = [];
+              function test(f) {
+                try { f(); results.push('ok'); } catch (e) { results.push(e.name); }
+              }
+              test(() => new WebSocketStream('ftp://example.com/'));
+              test(() => new WebSocketStream('ws://example.com/', { protocols: 'chat' }));
+              test(() => new WebSocketError('', { closeCode: 1001 }));
+              test(() => new WebSocketError('', { reason: 'x'.repeat(124) }));
+              const error = new WebSocketError('message', { reason: 'r' });
+              results.push(error.name + ':' + error.code + ':' + error.message + ':' + error.closeCode + ':' + error.reason + ':' + (error instanceof DOMException));
+              const aborted = new WebSocketStream('ws://example.com/aborted', { signal: AbortSignal.abort() });
+              const failed = new WebSocketStream('ws://example.com/failed');
+              Promise.allSettled([aborted.opened, aborted.closed, failed.opened, failed.closed]).then(settled => {
+                results.push(settled.map(r => r.status + ':' + r.reason.name + ':' + r.reason.closeCode).join(','));
+                document.title = results.join('|');
+              });
+            </script>
+            """);
+
+        Assert.Equal("SyntaxError|TypeError|InvalidAccessError|SyntaxError|WebSocketError:0:message:1000:r:true|rejected:AbortError:undefined,rejected:AbortError:undefined,rejected:WebSocketError:null,rejected:WebSocketError:1006", document.Title);
+
+        // The aborted stream does not connect
+        Assert.Equal("http://example.com/failed", Assert.Single(loader.WebSocketRequests).Url);
+    }
+
+    [Fact]
+    public void WebSocketError_DefaultsTheCloseCode()
+    {
+        #region WebPlatform_WebSocketError
+        // A reason without status code gives the 1000 (normal closure) status code
+        var error = new WebSocketError("The chat is closed", new WebSocketCloseInfo { Reason = "maintenance" });
+        Assert.Equal("WebSocketError", error.Name);
+        Assert.Equal((ushort)1000, error.CloseCode);
+        Assert.Equal("maintenance", error.Reason);
+
+        // The status code must be 1000 or between 3000 and 4999, and the reason at most 123 bytes in UTF-8
+        var invalid = Assert.Throws<DomException>(() => new WebSocketError("", new WebSocketCloseInfo { CloseCode = 1001 }));
+        Assert.Equal("InvalidAccessError", invalid.Name);
+        #endregion
+    }
+
     private static async Task<(WebSocketMessageType Type, byte[] Data)> ReceiveAsync(NetWebSocket socket)
     {
         var buffer = new byte[64 * 1024];

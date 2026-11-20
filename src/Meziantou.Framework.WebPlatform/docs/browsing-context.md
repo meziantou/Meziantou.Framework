@@ -552,8 +552,11 @@ sealed class MyPlayer(MediaResource resource) : MediaPlayer(resource.TimeProvide
 - **Playback quality** ([Media Playback Quality](https://w3c.github.io/media-playback-quality/)):
   `HTMLVideoElement.getVideoPlaybackQuality()` returns the numbers of frames the player reports
   (`MediaPlayer.TotalVideoFrames`, `DroppedVideoFrames`: 0 by default, as nothing is decoded) at the current time.
+- **Picture-in-Picture** ([Picture-in-Picture](https://w3c.github.io/picture-in-picture/)): `requestPictureInPicture()`,
+  `exitPictureInPicture()`, `pictureInPictureElement`, the events and `:picture-in-picture`; the window is opened by
+  `UserAgentUIBackend.OpenPictureInPictureWindowAsync` (at its default size without a backend).
 - **Not implemented**: Encrypted Media, `MediaRecorder`, the controls, `controlsList`, the pause
-  of the videos that are not visible, Media Session and Picture-in-Picture.
+  of the videos that are not visible, and Media Session.
 
 ### Media capture
 

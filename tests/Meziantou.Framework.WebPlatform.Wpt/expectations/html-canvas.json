@@ -3104,11 +3104,7 @@
     }
   },
   "html/canvas/element/manual/drawing-images-to-the-canvas/desynchronized-crossorigin-snapshot-isolation.html": {
-    "total": 10,
-    "failures": {
-      "WebCodecs VideoFrame drawImage snapshot isolation (alpha=false)": "FAIL",
-      "WebCodecs VideoFrame drawImage snapshot isolation (alpha=true)": "FAIL"
-    }
+    "total": 10
   },
   "html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_canvas.html": {
     "total": 151,

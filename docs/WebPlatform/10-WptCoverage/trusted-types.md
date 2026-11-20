@@ -256,11 +256,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`Element-setAttribute-setAttributeNS-sinks.tentative.html`](https://wpt.fyi/results/trusted-types/Element-setAttribute-setAttributeNS-sinks.tentative.html) | Pass | 7 / 7 |  |  |
 | [`HTMLScriptElement-in-xhtml-document.tentative.https.xhtml`](https://wpt.fyi/results/trusted-types/HTMLScriptElement-in-xhtml-document.tentative.https.xhtml) | Pass | 1 / 1 |  |  |
-| [`TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative.html`](https://wpt.fyi/results/trusted-types/TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative.html) | Fail | 90 / 93 | NOT IMPLEMENTED | the SVG animation event handler content attributes (`onbegin`, `onend`, `onrepeat`) |
+| [`TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative.html`](https://wpt.fyi/results/trusted-types/TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative.html) | Fail | 92 / 95 | NOT IMPLEMENTED | the SVG animation event handler content attributes (`onbegin`, `onend`, `onrepeat`) |
 | [`TrustedTypePolicyFactory-getPropertyType.tentative.html`](https://wpt.fyi/results/trusted-types/TrustedTypePolicyFactory-getPropertyType.tentative.html) | Pass | 28 / 28 |  |  |
 | [`TrustedTypePolicyFactory-metadata.tentative.html`](https://wpt.fyi/results/trusted-types/TrustedTypePolicyFactory-metadata.tentative.html) | Pass | 64 / 64 |  |  |
 | [`set-attributes-mutations-in-callback.tentative.html`](https://wpt.fyi/results/trusted-types/set-attributes-mutations-in-callback.tentative.html) | Pass | 248 / 248 |  |  |
-| [`set-event-handlers-content-attributes.tentative.html`](https://wpt.fyi/results/trusted-types/set-event-handlers-content-attributes.tentative.html) | Fail | 519 / 527 | NOT IMPLEMENTED | the SVG animation event handler content attributes (`onbegin`, `onend`, `onrepeat`) |
+| [`set-event-handlers-content-attributes.tentative.html`](https://wpt.fyi/results/trusted-types/set-event-handlers-content-attributes.tentative.html) | Fail | 528 / 535 | NOT IMPLEMENTED | the SVG animation event handler content attributes (`onbegin`, `onend`, `onrepeat`) |
 | [`trusted-types-from-literal.tentative.html`](https://wpt.fyi/results/trusted-types/trusted-types-from-literal.tentative.html) | Fail | 24 / 45 | NOT IMPLEMENTED | `TrustedHTML.fromLiteral()`, `TrustedScript.fromLiteral()` and `TrustedScriptURL.fromLiteral()` (tentative) |
 | [`trusted-types-reporting-clipping-of-sample.tentative.html`](https://wpt.fyi/results/trusted-types/trusted-types-reporting-clipping-of-sample.tentative.html) | Pass | 8 / 8 |  |  |
 

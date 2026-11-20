@@ -246,6 +246,15 @@ public sealed partial class Window : GlobalScope
         {
             FocusModel.FocusNavigable(Document);
         }
+
+        // https://wicg.github.io/document-picture-in-picture/#focus-opener: a Document Picture-in-Picture window that has a
+        // transient activation can give the system focus back to its opener
+        if (BrowsingContext is { Parent: null, DocumentPictureInPictureWindow: { IsDestroyed: false } pip } opener && ReferenceEquals(opener.Document, Document)
+            && pip.Document.RelevantWindow is { HasTransientActivation: true } pipWindow)
+        {
+            pipWindow.ConsumeUserActivation();
+            opener.HasSystemFocus = true;
+        }
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#dom-window-blur: does nothing.</summary>

@@ -14,6 +14,23 @@ internal interface IStructuredSerializable
 }
 
 /// <summary>
+/// A serializable platform object whose serialized form cannot be stored (e.g. in IndexedDB) and can only be deserialized
+/// in the agent cluster where it was serialized, e.g. a <c>VideoFrame</c> or an <c>AudioData</c>
+/// (https://w3c.github.io/webcodecs/#videoframe-transfer-and-serialization): its media resource is not copied.
+/// </summary>
+internal interface IAgentClusterSerializable : IStructuredSerializable
+{
+}
+
+/// <summary>The serialized form of an <see cref="IAgentClusterSerializable"/> object, with the agent cluster where it was serialized.</summary>
+internal sealed class AgentClusterSerializedObject(object value, object? agentCluster)
+{
+    public object Value { get; } = value;
+
+    public object? AgentCluster { get; } = agentCluster;
+}
+
+/// <summary>
 /// A transferable platform object (https://html.spec.whatwg.org/multipage/structured-data.html#transferable-objects), e.g.
 /// a <see cref="MessagePort"/>.
 /// </summary>

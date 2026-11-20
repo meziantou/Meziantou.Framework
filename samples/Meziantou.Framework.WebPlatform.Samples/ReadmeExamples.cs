@@ -35,6 +35,25 @@ internal static class ReadmeExamples
         Console.WriteLine($"Loaded {context.Document.Url} without requesting the other hosts");
     }
 
+    public static async Task UpgradeNavigationsToHttps()
+    {
+        #region WebPlatform_HttpsUpgrades
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = DocumentLoader.Create(),
+            HttpsUpgrades = new HttpsUpgradeOptions
+            {
+                FallbackTimeout = TimeSpan.FromSeconds(3), // optional: do not wait for the timeout of the network
+            },
+        });
+
+        context.Navigate("http://example.com/"); // requests https://example.com/, then http://example.com/ if it fails
+        await context.EventLoop.RunUntilIdleAsync();
+        #endregion
+
+        Console.WriteLine($"Loaded {context.Document.Url}");
+    }
+
     public static async Task TakeScreenshots()
     {
         #region WebPlatform_TakeScreenshots

@@ -1,0 +1,480 @@
+{
+  "mediacapture-record/BlobEvent-constructor.html": {
+    "total": 5
+  },
+  "mediacapture-record/MediaRecorder-bitrate.https.html": {
+    "total": 18
+  },
+  "mediacapture-record/MediaRecorder-blob-timecode.https.html": {
+    "total": 3
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=''": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=av01,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=av01,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=avc1.64003E,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=avc3.64003E,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/mp4;codecs=vp9,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/webm;codecs=av1,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/webm;codecs=vp8,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/webm;codecs=vp9,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/x-matroska;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-canvas-media-source.https.html?mimeType=video/x-matroska;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-creation.https.html": {
+    "total": 3
+  },
+  "mediacapture-record/MediaRecorder-destroy-script-execution.html": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-detached-context.html": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-disabled-tracks.https.html": {
+    "total": 3
+  },
+  "mediacapture-record/MediaRecorder-error.html": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=''": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=av01,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=av01,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=avc1.64003E,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=avc3.64003E,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/mp4;codecs=vp9,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/webm;codecs=av1,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/webm;codecs=vp8,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/webm;codecs=vp9,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/x-matroska;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-events-and-exceptions.html?mimeType=video/x-matroska;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-mimetype.html": {
+    "total": 261
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=''": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=av01,mp4a.40.2": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=av01,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=avc1.64003E,mp4a.40.2": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=avc1.64003E,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=avc3.64003E,mp4a.40.2": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=avc3.64003E,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=vp9,mp4a.40.2": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/mp4;codecs=vp9,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/webm;codecs=av1,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/webm;codecs=vp8,opus": {
+    "total": 2
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/webm;codecs=vp9,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/x-matroska;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-pause-resume.html?mimeType=video/x-matroska;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 4
+  },
+  "mediacapture-record/MediaRecorder-peerconnection-no-sink.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=audio&mimeType=''": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"audio \"mimeType \"''\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"audio \"mimeType \"''\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=audio&mimeType=audio/mp4;codecs=opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"audio \"mimeType \"audio/mp4;codecs=opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"audio \"mimeType \"audio/mp4;codecs=opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=audio&mimeType=audio/webm;codecs=opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"audio \"mimeType \"audio/webm;codecs=opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"audio \"mimeType \"audio/webm;codecs=opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video&mimeType=''": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video \"mimeType \"''\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video \"mimeType \"''\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video&mimeType=video/mp4;codecs=vp9": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video \"mimeType \"video/mp4;codecs=vp9\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video \"mimeType \"video/mp4;codecs=vp9\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video&mimeType=video/webm;codecs=vp8": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video \"mimeType \"video/webm;codecs=vp8\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video \"mimeType \"video/webm;codecs=vp8\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video&mimeType=video/webm;codecs=vp9": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video \"mimeType \"video/webm;codecs=vp9\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video \"mimeType \"video/webm;codecs=vp9\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=''": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"''\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"''\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=av01,mp4a.40.2": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=av01,mp4a.40.2\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=av01,mp4a.40.2\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=av01,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=av01,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=av01,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=avc1.64003E,mp4a.40.2": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=avc1.64003E,mp4a.40.2\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=avc1.64003E,mp4a.40.2\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=avc3.64003E,mp4a.40.2": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=avc3.64003E,mp4a.40.2\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=avc3.64003E,mp4a.40.2\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=hev1.1.6.L186.B0,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=hev1.1.6.L186.B0,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=hev1.1.6.L186.B0,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=hvc1.1.6.L186.B0,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=hvc1.1.6.L186.B0,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/mp4;codecs=vp9,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/mp4;codecs=vp9,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/mp4;codecs=vp9,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/webm;codecs=vp8,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/webm;codecs=vp8,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/webm;codecs=vp8,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/webm;codecs=vp9,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/webm;codecs=vp9,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/webm;codecs=vp9,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/x-matroska;codecs=hev1.1.6.L186.B0,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/x-matroska;codecs=hev1.1.6.L186.B0,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/x-matroska;codecs=hev1.1.6.L186.B0,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-peerconnection.https.html?kinds=video,audio&mimeType=video/x-matroska;codecs=hvc1.1.6.L186.B0,opus": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "PeerConnection MediaRecorder gets ondata on stopping tracks, kinds \"video,audio \"mimeType \"video/x-matroska;codecs=hvc1.1.6.L186.B0,opus\"": "NOTRUN",
+      "PeerConnection MediaRecorder receives data after onstart, kinds \"video,audio \"mimeType \"video/x-matroska;codecs=hvc1.1.6.L186.B0,opus\"": "NOTRUN"
+    }
+  },
+  "mediacapture-record/MediaRecorder-requestData.html": {
+    "total": 6
+  },
+  "mediacapture-record/MediaRecorder-start.html": {
+    "total": 1
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=''": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=av01,mp4a.40.2": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=av01,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=avc1.64003E,mp4a.40.2": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=avc3.64003E,mp4a.40.2": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/mp4;codecs=vp9,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/webm;codecs=av1,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/webm;codecs=vp8,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/webm;codecs=vp9,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/x-matroska;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-stop.html?mimeType=video/x-matroska;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 11
+  },
+  "mediacapture-record/MediaRecorder-video-key-frame-distance.html": {
+    "total": 2
+  },
+  "mediacapture-record/idlharness.window.js": {
+    "total": 60
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=''": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=av01,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=av01,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=avc1.64003E,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=avc3.64003E,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/mp4;codecs=vp9,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/webm;codecs=av1,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/webm;codecs=vp8,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/webm;codecs=vp9,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/x-matroska;codecs=hev1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html?mimeType=video/x-matroska;codecs=hvc1.1.6.L186.B0,opus": {
+    "total": 1
+  },
+  "mediacapture-record/passthrough/MediaRecorder-passthrough.https.html": {
+    "total": 5,
+    "failures": {
+      "PeerConnection passthrough MediaRecorder receives VP8 after onstart with a audio/video stream.": "FAIL",
+      "PeerConnection passthrough MediaRecorder receives VP8 after onstart with a video stream.": "FAIL",
+      "PeerConnection passthrough MediaRecorder receives VP9 after onstart with a audio/video stream.": "FAIL",
+      "PeerConnection passthrough MediaRecorder receives VP9 after onstart with a video stream.": "FAIL",
+      "PeerConnection passthrough MediaRecorder should be prepared to handle the codec switching from VP8 to VP9": "FAIL"
+    }
+  }
+}

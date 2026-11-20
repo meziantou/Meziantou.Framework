@@ -9,25 +9,25 @@ description: "The results of the web-platform-tests of mediacapture-streams, and
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 49 | 59 | 0 | 83% |
+| [Stable](#stable-tests) | 52 | 59 | 0 | 88% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **50** | **60** | **0** | **83%** |
+| **All** | **53** | **60** | **0** | **88%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 9
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`BrowserCaptureMediaStreamTrack-cropTo.https.html`](https://wpt.fyi/results/mediacapture-streams/BrowserCaptureMediaStreamTrack-cropTo.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Region Capture and Element Capture (`BrowserCaptureMediaStreamTrack`: `cropTo()`, `restrictTo()`, `RestrictionTarget`): the capture backend captures no tab of the library, so the capture of the current tab cannot be cropped |
-| [`BrowserCaptureMediaStreamTrack-restrictTo.https.html`](https://wpt.fyi/results/mediacapture-streams/BrowserCaptureMediaStreamTrack-restrictTo.https.html) | Error | 0 / 3 | NOT IMPLEMENTED | Region Capture and Element Capture (`BrowserCaptureMediaStreamTrack`: `cropTo()`, `restrictTo()`, `RestrictionTarget`): the capture backend captures no tab of the library, so the capture of the current tab cannot be cropped |
+| [`BrowserCaptureMediaStreamTrack-restrictTo.https.html`](https://wpt.fyi/results/mediacapture-streams/BrowserCaptureMediaStreamTrack-restrictTo.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Region Capture and Element Capture (`BrowserCaptureMediaStreamTrack`: `cropTo()`, `restrictTo()`, `RestrictionTarget`): the capture backend captures no tab of the library, so the capture of the current tab cannot be cropped |
 | [`GUM-api.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-api.https.html) | Pass | 1 / 1 |  |  |
 | [`GUM-deny.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-deny.https.html) | Pass | 1 / 1 |  |  |
 | [`GUM-echoCancellation-all.https.html`](https://wpt.fyi/results/mediacapture-streams/GUM-echoCancellation-all.https.html) | Pass | 1 / 1 |  |  |
@@ -72,13 +72,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`MediaStreamTrack-getCapabilities.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-getCapabilities.https.html) | Pass | 112 / 112 |  |  |
 | [`MediaStreamTrack-getSettings.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-getSettings.https.html) | Pass | 18 / 18 |  |  |
 | [`MediaStreamTrack-id.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-id.https.html) | Pass | 1 / 1 |  |  |
-| [`MediaStreamTrack-iframe-audio-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-audio-transfer.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-iframe-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-transfer.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-iframe-audio-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-audio-transfer.https.html) | Error | 0 / 1 | TEST BUG | the test posts the track to the frame without a transfer list (`iframe.contentWindow.postMessage(track)`): `MediaStreamTrack` is transferable, not serializable (https://w3c.github.io/mediacapture-extensions/), so `postMessage()` throws a `DataCloneError` (in the `load` listener of the audio test, which then times out) |
+| [`MediaStreamTrack-iframe-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-iframe-transfer.https.html) | Fail | 0 / 1 | TEST BUG | the test posts the track to the frame without a transfer list (`iframe.contentWindow.postMessage(track)`): `MediaStreamTrack` is transferable, not serializable (https://w3c.github.io/mediacapture-extensions/), so `postMessage()` throws a `DataCloneError` (in the `load` listener of the audio test, which then times out) |
 | [`MediaStreamTrack-init.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-init.https.html) | Pass | 1 / 1 |  |  |
-| [`MediaStreamTrack-transfer-cross-agent-cluster.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-cross-agent-cluster.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-to-shared-and-service-workers.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-to-shared-and-service-workers.https.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-video.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-video.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-transfer-cross-agent-cluster.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-cross-agent-cluster.https.html) | Pass | 3 / 3 |  |  |
+| [`MediaStreamTrack-transfer-to-shared-and-service-workers.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-to-shared-and-service-workers.https.html) | Pass | 4 / 4 |  |  |
+| [`MediaStreamTrack-transfer-video.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer-video.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-transfer.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrack-transfer.https.html) | Fail | 0 / 1 | TEST BUG | the test calls `getDisplayMedia()` without a user activation (it does not call `test_driver.bless()`), so the promise is rejected with an `InvalidStateError` (https://w3c.github.io/mediacapture-screen-share/#dom-mediadevices-getdisplaymedia) |
 | [`MediaStreamTrackEvent-constructor.https.html`](https://wpt.fyi/results/mediacapture-streams/MediaStreamTrackEvent-constructor.https.html) | Pass | 3 / 3 |  |  |
 | [`enumerateDevices-with-navigation.https.html`](https://wpt.fyi/results/mediacapture-streams/enumerateDevices-with-navigation.https.html) | Pass | 1 / 1 |  |  |
 | [`historical.https.html`](https://wpt.fyi/results/mediacapture-streams/historical.https.html) | Pass | 7 / 7 |  |  |

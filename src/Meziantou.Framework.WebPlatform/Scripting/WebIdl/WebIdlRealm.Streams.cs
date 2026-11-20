@@ -418,6 +418,102 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
     }
 
+    // The streams of the scripts of the platform streams converted in this realm (the same object for each conversion). The
+    // values are typed object: a ConditionalWeakTable<object, TValue> requires a TValue with a public parameterless
+    // constructor for the trimming (IL2091), which the values of the engines do not have
+    private readonly ConditionalWeakTable<object, object> _platformStreams = [];
+
+    /// <summary>
+    /// Returns the stream of the scripts of a <see cref="PlatformReadableStream"/> or a <see cref="PlatformWritableStream"/>
+    /// (createPlatformReadableStream and createPlatformWritableStream of Streams.js), created in this realm when it is first
+    /// converted.
+    /// </summary>
+    private TValue GetPlatformStream(object stream)
+    {
+        if (_platformStreams.TryGetValue(stream, out var existing))
+            return (TValue)existing;
+
+        return Adapter.RunInRealm(EngineRealm, () =>
+        {
+            var adapter = Adapter;
+            var hooks = CreateObject();
+            TValue created;
+            if (stream is PlatformReadableStream readable)
+            {
+                SetMember(hooks, "pull", adapter.CreateFunction("pull", 0, (_, _) => Invoke(readable.Pull)));
+                SetMember(hooks, "cancel", adapter.CreateFunction("cancel", 1, (_, args) =>
+                {
+                    var reason = args.Length > 0 ? ToAny(args[0]) : null;
+                    return Invoke(() => readable.Cancel(reason));
+                }));
+                created = adapter.Call(adapter.Get(GetStreams(), Key("createPlatformReadableStream")), adapter.Undefined, [hooks, adapter.FromNumber(0)]);
+            }
+            else
+            {
+                var writable = (PlatformWritableStream)stream;
+                SetMember(hooks, "write", adapter.CreateFunction("write", 1, (_, args) =>
+                {
+                    var chunk = ToPlatformChunk(args.Length > 0 ? args[0] : adapter.Undefined);
+                    return Invoke(() => writable.Write(chunk));
+                }));
+                SetMember(hooks, "close", adapter.CreateFunction("close", 0, (_, _) => Invoke(writable.CloseAlgorithm)));
+                SetMember(hooks, "abort", adapter.CreateFunction("abort", 1, (_, args) =>
+                {
+                    var reason = args.Length > 0 ? ToAny(args[0]) : null;
+                    return Invoke(() => writable.Abort(reason));
+                }));
+                created = adapter.Call(adapter.Get(GetStreams(), Key("createPlatformWritableStream")), adapter.Undefined, [hooks, adapter.FromNumber(1)]);
+            }
+
+            var result = adapter.Get(created, Key("stream"));
+            _platformStreams.AddOrUpdate(stream, result);
+            var controller = new PlatformStreamController(this, adapter.Get(created, Key("controller")));
+            if (stream is PlatformReadableStream readableStream)
+            {
+                readableStream.Attach(controller);
+            }
+            else
+            {
+                ((PlatformWritableStream)stream).Attach(controller);
+            }
+
+            return result;
+        });
+
+        // The exceptions of the library are the errors of the scripts
+        TValue Invoke(Action action)
+        {
+            try
+            {
+                action();
+                return Adapter.Undefined;
+            }
+            catch (Exception ex) when (!Adapter.TryGetThrownValue(ex, out TValue? _))
+            {
+                throw ToJsException(ex);
+            }
+        }
+
+        // A chunk written to a platform stream: the platform object, or the value of another type
+        object? ToPlatformChunk(TValue value) => Adapter.IsObject(value) && Unwrap(value) is { } platformObject ? platformObject : ToAny(value);
+    }
+
+    /// <summary>The functions of Streams.js that control the stream of a platform stream.</summary>
+    private sealed class PlatformStreamController(WebIdlRealm<TAdapter, TValue> realm, TValue controller) : IPlatformStreamController
+    {
+        public void Enqueue(object chunk) => Call("enqueue", () => realm.ToJs(chunk));
+
+        public void Close() => Call("close", () => realm.Adapter.Undefined);
+
+        public void Error(Exception error) => Call("error", () => realm.ToJsError(error));
+
+        private void Call(string name, Func<TValue> argument)
+        {
+            var adapter = realm.Adapter;
+            adapter.RunInRealm(realm.EngineRealm, () => adapter.Call(adapter.Get(controller, realm.Key(name)), adapter.Undefined, [argument()]));
+        }
+    }
+
     /// <summary>Defines Blob.prototype.stream() and Blob.prototype.textStream() (https://w3c.github.io/FileAPI/#blob-section).</summary>
     private void DefineBlobStreamMethods(TValue prototype)
     {

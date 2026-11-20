@@ -52,6 +52,9 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://w3c.github.io/mediacapture-screen-share/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature DisplayCapture { get; } = new("display-capture", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/encrypted-media/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature EncryptedMedia { get; } = new("encrypted-media", isAllowedForAllByDefault: false);
+
     /// <summary>https://wicg.github.io/page-lifecycle/#feature-policies: its default allowlist is *.</summary>
     public static PolicyControlledFeature ExecutionWhileNotRendered { get; } = new("execution-while-not-rendered", isAllowedForAllByDefault: true);
 
@@ -98,6 +101,9 @@ internal sealed partial class PolicyControlledFeature
 
     /// <summary>https://w3c.github.io/payment-request/#permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature Payment { get; } = new("payment", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/picture-in-picture/#permissions-policy: its default allowlist is *.</summary>
+    public static PolicyControlledFeature PictureInPicture { get; } = new("picture-in-picture", isAllowedForAllByDefault: true);
 
     /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature PublicKeyCredentialsCreate { get; } = new("publickey-credentials-create", isAllowedForAllByDefault: false);
@@ -152,7 +158,7 @@ internal sealed partial class PolicyControlledFeature
         DigitalCredentialsCreate,
         DigitalCredentialsGet,
         DisplayCapture,
-        new("encrypted-media", isAllowedForAllByDefault: false),
+        EncryptedMedia,
         ExecutionWhileNotRendered,
         ExecutionWhileOutOfViewport,
         FocusWithoutUserActivation,
@@ -168,7 +174,7 @@ internal sealed partial class PolicyControlledFeature
         Microphone,
         new("midi", isAllowedForAllByDefault: false),
         Payment,
-        new("picture-in-picture", isAllowedForAllByDefault: true),
+        PictureInPicture,
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
         new("private-state-token-redemption", isAllowedForAllByDefault: false),
         ProximitySensor,

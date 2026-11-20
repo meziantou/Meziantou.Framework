@@ -1,0 +1,51 @@
+{
+  "media-capabilities/decodingInfo-webrtc.any.js": {
+    "harness": "ERROR",
+    "total": 16
+  },
+  "media-capabilities/decodingInfo-webrtc.any.js#dedicatedworker": {
+    "total": 24,
+    "failures": {
+      "Test that decodingInfo returns supported true for the codec video/VP9; profile-level=\"0\"": "FAIL"
+    }
+  },
+  "media-capabilities/decodingInfo.any.js": {
+    "total": 37
+  },
+  "media-capabilities/decodingInfo.any.js#dedicatedworker": {
+    "total": 37
+  },
+  "media-capabilities/decodingInfoEncryptedMedia.http.html": {
+    "total": 1
+  },
+  "media-capabilities/decodingInfoEncryptedMedia.https.html": {
+    "total": 21,
+    "failures": {
+      "decodingInfo() supports 'cbcs' encryptionScheme and echoes it back.": "FAIL",
+      "decodingInfo() supports 'cbcs-1-9' encryptionScheme and echoes it back.": "FAIL"
+    }
+  },
+  "media-capabilities/encodingInfo-webrtc.any.js": {
+    "harness": "ERROR",
+    "total": 15
+  },
+  "media-capabilities/encodingInfo-webrtc.any.js#dedicatedworker": {
+    "total": 21,
+    "failures": {
+      "Test that encodingInfo accepts scalabilityMode for webrtc video configuration": "FAIL",
+      "Test that encodingInfo returns supported true for the codec video/VP9; profile-level=\"0\"": "FAIL"
+    }
+  },
+  "media-capabilities/encodingInfo.any.js": {
+    "total": 30
+  },
+  "media-capabilities/encodingInfo.any.js#dedicatedworker": {
+    "total": 30
+  },
+  "media-capabilities/idlharness.any.js": {
+    "total": 38
+  },
+  "media-capabilities/idlharness.any.js#dedicatedworker": {
+    "total": 38
+  }
+}

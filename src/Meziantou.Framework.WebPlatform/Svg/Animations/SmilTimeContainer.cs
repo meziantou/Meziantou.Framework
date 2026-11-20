@@ -150,6 +150,9 @@ internal sealed class SmilTimeContainer(SvgSvgElement owner)
         }
 
         UpdateTimings(target, events: false);
+
+        // The repeat conditions resolved for the skipped iterations add instance times to their dependents
+        ProcessAt(target, events: false);
         for (var i = 0; i < elements.Length; i++)
         {
             // An element that is active in another interval ended and began

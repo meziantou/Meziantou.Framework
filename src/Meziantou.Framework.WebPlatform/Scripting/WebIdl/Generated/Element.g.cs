@@ -724,6 +724,14 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
         o.Remove(); return r.Adapter.Undefined;
     }
+    private static TValue Op_ariaNotify(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("ariaNotify", 1, a.Length);
+        var a0 = r.ToDomString(a[0]);
+        var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AriaNotificationOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AriaNotificationOptions(r, a[1]);
+        o.AriaNotify(a0, a1); return r.Adapter.Undefined;
+    }
     private static TValue Op_animate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
@@ -898,6 +906,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         r.DefineOperation(instanceTarget, "after", 0, Op_after, ceReactions: true);
         r.DefineOperation(instanceTarget, "replaceWith", 0, Op_replaceWith, ceReactions: true);
         r.DefineOperation(instanceTarget, "remove", 0, Op_remove, ceReactions: true);
+        r.DefineOperation(instanceTarget, "ariaNotify", 1, Op_ariaNotify);
         r.DefineOperation(instanceTarget, "animate", 1, Op_animate);
         r.DefineOperation(instanceTarget, "getAnimations", 0, Op_getAnimations);
     }

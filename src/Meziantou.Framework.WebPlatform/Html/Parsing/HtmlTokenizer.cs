@@ -2618,6 +2618,11 @@ internal sealed class HtmlTokenizer
                         ReportError("eof-in-processing-instruction");
                         EmitEndOfFile();
                         break;
+                    case '\0':
+                        // As in the comment states, U+0000 NULL is replaced with U+FFFD
+                        ReportError("unexpected-null-character");
+                        _piData.Append('�');
+                        break;
                     default:
                         _piData.Append((char)c);
                         break;

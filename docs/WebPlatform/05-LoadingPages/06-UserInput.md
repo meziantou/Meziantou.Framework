@@ -159,7 +159,8 @@ clicked. To click a position of a screenshot taken while the page is zoomed in, 
 A move of the mouse with the primary button pressed on a draggable element (`draggable="true"`, a link, an image) or on
 the selection drags it, as in a browser: `dragstart` is fired at the element, then each move fires `drag`, `dragenter`,
 `dragleave` and `dragover`, and the release fires `drop` (when the `dragover` event of the target was canceled) and
-`dragend`. The pointer and mouse events are suppressed during the drag, and Escape cancels it. The events are trusted,
+`dragend`. The selected text of a text field is dragged too: a press in its selection keeps it, and the field is the
+source of the drag. The pointer and mouse events are suppressed during the drag, and Escape cancels it. The events are trusted,
 the `DataTransfer` object follows the modes of the specification (the data set in `dragstart` can only be read in
 `drop`), and a text dropped in a text field or in editable content is inserted.
 
@@ -247,6 +248,15 @@ instead of the order of the document. A grid lanes container (`display: grid-lan
 `grid-lanes-order` (the `order` property, then the order of the document), `grid-lanes-track` (one track after the
 other, each from its start edge) and `grid-lanes-flow` (across the tracks, row by row of items). The way
 `grid-lanes-flow` groups the items into rows is not specified yet: the library groups them as Chromium does.
+
+The text inserted by a key (a character, Enter in a `textarea` or in editable content) fires the legacy `textInput`
+event after `beforeinput`, as in the browsers: canceling it cancels the insertion.
+
+The date and time fields (`<input type=date>`, `month`, `week`, `time`, `datetime-local`) are edited field by field, in
+the order of their US format (month, day, year, hour, minute, AM/PM): the typed digits fill the focused field and move to
+the next one when it is full, Tab and Shift+Tab move between the fields before leaving the control, the left and right
+arrow keys move between them too, the up and down arrow keys step the focused field, and Backspace or Delete clears it.
+The value is set, and `input` and `change` are fired, when every field has a value (the value is empty otherwise).
 
 ## Pending input
 

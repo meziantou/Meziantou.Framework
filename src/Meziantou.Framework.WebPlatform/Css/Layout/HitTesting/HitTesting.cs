@@ -7,9 +7,11 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// <summary>
 /// A fragment hit at a point, and the point in the coordinates of the fragment (its border box origin, before its transform).
 /// <see cref="Target"/> is the element hit in a replaced box: an element of the SVG document fragment of an outermost svg
-/// element, an area of the image map of an image.
+/// element, an area of the image map of an image. <see cref="UseInstance"/> is the element of the content referenced by a
+/// use element that is hit when <see cref="Target"/> is the use element (the element of its shadow tree, whose instance is
+/// retargeted to the use element).
 /// </summary>
-internal readonly record struct HitTestResult(Fragment Fragment, PhysicalOffset LocalPoint, Element? Target = null)
+internal readonly record struct HitTestResult(Fragment Fragment, PhysicalOffset LocalPoint, Element? Target = null, Element? UseInstance = null)
 {
     /// <summary>
     /// The element associated with the hit box (https://drafts.csswg.org/cssom-view/#hit-testing): the element of a box, the
@@ -492,7 +494,7 @@ internal static class HitTesting
                     return true;
 
                 // https://svgwg.org/svg2-draft/interact.html#PointerEventsProperty: bounding-box hits the bounding box of a container
-                return (pointerEvents == "bounding-box" && IsInBoundingBox(context, svgElement, toContent) && AddSvgResult(context, useElement ?? element)) || childHit;
+                return (pointerEvents == "bounding-box" && IsInBoundingBox(context, svgElement, toContent) && AddSvgResult(context, element, useElement)) || childHit;
             }
 
             case "use":
@@ -517,7 +519,7 @@ internal static class HitTesting
                     return false;
 
                 if (pointerEvents == "bounding-box")
-                    return IsInBoundingBox(context, svgElement, toContent) && AddSvgResult(context, useElement ?? element);
+                    return IsInBoundingBox(context, svgElement, toContent) && AddSvgResult(context, element, useElement);
 
                 var visible = style.Layout.Visibility == Visibility.Visible;
                 var (fill, stroke) = GetHitAreas(pointerEvents, visible, style.GetComputedValue("fill") != "none", style.GetComputedValue("stroke") != "none");
@@ -535,7 +537,7 @@ internal static class HitTesting
                     isHit = geometry.IsPointInStroke(point, strokeStyle, strokeStyle.NonScaling ? toContent with { E = 0, F = 0 } : SvgAffine.Identity);
                 }
 
-                return isHit && AddSvgResult(context, useElement ?? element);
+                return isHit && AddSvgResult(context, element, useElement);
             }
 
             case "image":
@@ -545,7 +547,7 @@ internal static class HitTesting
 
                 var visible = style.Layout.Visibility == Visibility.Visible;
                 var (fill, stroke) = GetHitAreas(pointerEvents == "bounding-box" ? "all" : pointerEvents, visible, isFillPainted: true, isStrokePainted: true);
-                return (fill || stroke) && IsInBoundingBox(context, svgElement, toContent) && IsInClipPath(context, element, toContent) && AddSvgResult(context, useElement ?? element);
+                return (fill || stroke) && IsInBoundingBox(context, svgElement, toContent) && IsInClipPath(context, element, toContent) && AddSvgResult(context, element, useElement);
             }
 
             case "text":
@@ -576,7 +578,7 @@ internal static class HitTesting
             if (GetPointerEvents(elementStyle) == "bounding-box" && layout.GetBoundingBox(element) is { } box
                 && point.X >= box.MinX && point.X <= box.MaxX && point.Y >= box.MinY && point.Y <= box.MaxY)
             {
-                return AddSvgResult(context, useElement ?? element);
+                return AddSvgResult(context, element, useElement);
             }
         }
 
@@ -603,7 +605,7 @@ internal static class HitTesting
             if (ReferenceEquals(target, lastHit))
                 continue;
 
-            context.Parent.Results.Add(new HitTestResult(context.Fragment, context.Point + context.Fragment.ContentBoxRect.Offset, target));
+            context.Parent.Results.Add(new HitTestResult(context.Fragment, context.Point + context.Fragment.ContentBoxRect.Offset, target, useElement is null ? null : character.Element));
             lastHit = target;
             hit = true;
             if (!context.Parent.All)
@@ -642,13 +644,17 @@ internal static class HitTesting
     private static bool IsInClipPath(SvgHitTestContext context, Element element, SvgAffine toContent)
         => toContent.Invert() is { } inverse && SvgClipping.Contains(element, inverse.Apply(context.Point.X, context.Point.Y), context.Viewport);
 
-    /// <summary>Adds an element of an SVG document fragment to the results (an inert element is not hit).</summary>
-    private static bool AddSvgResult(SvgHitTestContext context, Element target)
+    /// <summary>
+    /// Adds an element of an SVG document fragment to the results (an inert element is not hit): the use element whose
+    /// referenced content contains the element, or the element.
+    /// </summary>
+    private static bool AddSvgResult(SvgHitTestContext context, Element element, Element? useElement)
     {
+        var target = useElement ?? element;
         if (FocusModel.IsInert(target))
             return false;
 
-        context.Parent.Results.Add(new HitTestResult(context.Fragment, context.Point + context.Fragment.ContentBoxRect.Offset, target));
+        context.Parent.Results.Add(new HitTestResult(context.Fragment, context.Point + context.Fragment.ContentBoxRect.Offset, target, useElement is null ? null : element));
         return true;
     }
 

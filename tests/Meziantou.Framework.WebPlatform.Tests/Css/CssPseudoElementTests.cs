@@ -73,14 +73,30 @@ public sealed class CssPseudoElementTests : IDisposable
     }
 
     [Fact]
-    public void Pseudo_ScrollButtonOfAPhysicalDirectionIsTheButtonOfItsFlowRelativeDirection()
+    public void Pseudo_ScrollButtonOfAPhysicalDirectionIsDistinctFromTheButtonOfItsFlowRelativeDirection()
     {
-        var document = Load("<div id=target style='writing-mode: vertical-rl'></div>");
+        var document = Load("""
+            <style>
+              #target { overflow: auto; width: 100px; height: 100px; }
+              #target::scroll-button(*) { content: ''; display: inline-block; height: 10px; padding: 0; border: none; }
+              #target::scroll-button(inline-start) { width: 20px; }
+              #target::scroll-button(block-start) { width: 30px; }
+            </style>
+            <div id=target style='writing-mode: vertical-rl'><div style='height: 300px'></div></div>
+            """);
         var target = document.GetElementById("target")!;
 
-        Assert.Same(target.Pseudo("::scroll-button(inline-start)"), target.Pseudo("::scroll-button(up)"));
-        Assert.Equal("::scroll-button(inline-start)", target.Pseudo("::scroll-button(UP)")!.SelectorText);
-        Assert.Equal("::scroll-button", target.Pseudo("::scroll-button(up)")!.Type);
+        var up = target.Pseudo("::scroll-button(up)")!;
+        Assert.NotSame(target.Pseudo("::scroll-button(inline-start)"), up);
+        Assert.Same(up, target.Pseudo("::scroll-button(UP)"));
+        Assert.Equal("::scroll-button(up)", up.SelectorText);
+        Assert.Equal("::scroll-button", up.Type);
+
+        // The box of the button is the one of the flow-relative direction it maps to in the current writing mode
+        Assert.Equal(20d, Assert.Single(up.GetBoxQuads()).GetBounds().Width);
+        target.SetAttribute("style", "writing-mode: horizontal-tb");
+        Assert.Equal(30d, Assert.Single(up.GetBoxQuads()).GetBounds().Width);
+        Assert.Equal("::scroll-button(up)", up.SelectorText);
     }
 
     [Fact]

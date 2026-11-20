@@ -1602,6 +1602,8 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string TextAlignLast { get => throw null; set { } }
         public string TextAnchor { get => throw null; set { } }
         public string TextAutospace { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0013", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public string TextAutospaceSize { get => throw null; set { } }
         public string TextBox { get => throw null; set { } }
         public string TextBoxEdge { get => throw null; set { } }
         public string TextBoxTrim { get => throw null; set { } }
@@ -3124,6 +3126,24 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Sequence = 1,
     }
 
+    public sealed class AriaNotification
+    {
+        public string Announcement { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority Priority { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Node Source { get => throw null; }
+    }
+
+    public sealed class AriaNotificationOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority Priority { get => throw null; init { } }
+    }
+
+    public enum AriaNotifyPriority
+    {
+        Normal = 0,
+        High = 1,
+    }
+
     public sealed class AssignedNodesOptions
     {
         public bool Flatten { get => throw null; init { } }
@@ -3621,6 +3641,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class BrowsingContextOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions>
     {
         public Meziantou.Framework.WebPlatform.Dom.AcceptCHCache? AcceptCHCache { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.AriaNotification>? AriaNotification { get => throw null; init { } }
         public int BackForwardCacheSize { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.BadgingOptions? Badging { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.BatteryStatusOptions? BatteryStatus { get => throw null; init { } }
@@ -3763,6 +3784,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.ReadOnlyMemory<byte>? Body { get => throw null; init { } }
         public string? CrossOriginResourcePolicy { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Headers { get => throw null; init { } }
+        public bool RangeRequested { get => throw null; init { } }
         public bool RequestIncludesCredentials { get => throw null; init { } }
         public int Status { get => throw null; init { } }
         public string StatusText { get => throw null; init { } }
@@ -5411,6 +5433,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool WasDiscarded { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Node AdoptNode(Meziantou.Framework.WebPlatform.Dom.Node node) => throw null;
         public void Append(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
+        public void AriaNotify(string announcement, Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions? options = null) { }
         public void CaptureEvents() { }
         public Meziantou.Framework.WebPlatform.Dom.CaretPosition? CaretPositionFromPoint(double x, double y, Meziantou.Framework.WebPlatform.Dom.CaretPositionFromPointOptions? options = null) => throw null;
         public void Clear() { }
@@ -6170,6 +6193,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void AppendHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
         public void AppendHtmlUnsafe(Meziantou.Framework.WebPlatform.Dom.TrustedHtml html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
         public void AppendHtmlUnsafe(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null) { }
+        public void AriaNotify(string announcement, Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions? options = null) { }
         public Meziantou.Framework.WebPlatform.Dom.ShadowRoot AttachShadow(Meziantou.Framework.WebPlatform.Dom.ShadowRootInit init) => throw null;
         public void Before(params System.ReadOnlySpan<Meziantou.Framework.WebPlatform.Dom.NodeOrString> nodes) { }
         public void BeforeHtml(string html, Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions? options = null) { }
@@ -10606,6 +10630,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double ClientX { get => throw null; }
         public double ClientY { get => throw null; }
         public bool CtrlKey { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0029", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.Node? FromElement { get => throw null; }
         public int LayerX { get => throw null; }
         public int LayerY { get => throw null; }
         public bool MetaKey { get => throw null; }
@@ -10619,6 +10645,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double ScreenX { get => throw null; }
         public double ScreenY { get => throw null; }
         public bool ShiftKey { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0029", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public Meziantou.Framework.WebPlatform.Dom.Node? ToElement { get => throw null; }
         public double X { get => throw null; }
         public double Y { get => throw null; }
         public MouseEvent(string type, Meziantou.Framework.WebPlatform.Dom.MouseEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.UIEventInit)) { }
@@ -16693,6 +16721,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void CaptureEvents() { }
         public void Close() { }
         public bool Confirm(string message = "") => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0028", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public bool Find(string text = "", bool caseSensitive = false, bool backwards = false, bool wrapAround = false, bool wholeWord = false, bool searchInFrames = false, bool showDialog = false) => throw null;
         public void Focus() { }
         public Meziantou.Framework.WebPlatform.Css.Om.CssStyleProperties GetComputedStyle(Meziantou.Framework.WebPlatform.Dom.Element elt, string? pseudoElt = null) => throw null;
         public object? GetNamedItem(string name) => throw null;
@@ -18501,6 +18531,7 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     {
         public ulong CurrentFrame { get => throw null; }
         public double CurrentTime { get => throw null; }
+        public new Meziantou.Framework.WebPlatform.WebAudio.WorkletPerformance Performance { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.MessagePort Port { get => throw null; }
         public uint RenderQuantumSize { get => throw null; }
         public float SampleRate { get => throw null; }
@@ -18683,6 +18714,7 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     {
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Attack { get => throw null; }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Knee { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam MakeupGain { get => throw null; }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Ratio { get => throw null; }
         public float Reduction { get => throw null; }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Release { get => throw null; }
@@ -18694,9 +18726,26 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     {
         public float Attack { get => throw null; init { } }
         public float Knee { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions MakeupGain { get => throw null; init { } }
         public float Ratio { get => throw null; init { } }
         public float Release { get => throw null; init { } }
         public float Threshold { get => throw null; init { } }
+    }
+
+    public readonly struct FloatOrMakeupGainOptions : System.IEquatable<Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions>
+    {
+        public float? Decibels { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions? Option { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions FromMakeupGainOptions(Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions value) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions FromSingle(float value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions left, Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions left, Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions(Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions(float value) => throw null;
     }
 
     public sealed class GainNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
@@ -18720,6 +18769,11 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     {
         public required System.Collections.Generic.IReadOnlyList<double> Feedback { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<double> Feedforward { get => throw null; init { } }
+    }
+
+    public enum MakeupGainOptions
+    {
+        Automatic = 0,
     }
 
     public sealed class MediaElementAudioSourceNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
@@ -18946,6 +19000,11 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     {
         public System.Collections.Generic.IReadOnlyList<float>? Curve { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAudio.OverSampleType Oversample { get => throw null; init { } }
+    }
+
+    public sealed class WorkletPerformance
+    {
+        public double Now() => throw null;
     }
 }
 namespace Meziantou.Framework.WebPlatform.WebCodecs

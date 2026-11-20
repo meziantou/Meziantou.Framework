@@ -151,6 +151,20 @@ public sealed class LinkedResourceTests : IDisposable
     }
 
     [Fact]
+    public void MetaDefaultStyle_SelectsThePreferredStyleSheetSet()
+    {
+        var document = Load("<!doctype html><style title=a>p { color: red }</style><style title=b>p { color: green }</style><p>text</p>");
+        var paragraph = document.QuerySelector("p")!;
+        Assert.Equal("rgb(255, 0, 0)", document.DefaultView!.GetComputedStyle(paragraph).Color);
+
+        var meta = document.CreateElement("meta");
+        meta.SetAttribute("http-equiv", "default-style");
+        meta.SetAttribute("content", "b");
+        document.Head!.AppendChild(meta);
+        Assert.Equal("rgb(0, 128, 0)", document.DefaultView!.GetComputedStyle(paragraph).Color);
+    }
+
+    [Fact]
     public void StyleSheet_InQuirksMode_SameOriginResponsesAreStyleSheets()
     {
         var document = Load("<link rel=stylesheet href=a.txt onload=\"document.title = 'load'\">");
@@ -210,12 +224,20 @@ public sealed class LinkedResourceTests : IDisposable
     [InlineData("rel=stylesheet disabled")]
     [InlineData("rel=stylesheet type=text/plain")]
     [InlineData("rel=preload as=style media=\"not all\"")]
-    [InlineData("rel=icon")]
     [InlineData("rel=preload as=video")]
     public void NotFetched(string attributes)
     {
         Load($"<!doctype html><link {attributes} href=a.css>");
         Assert.Empty(_requests);
+    }
+
+    [Fact]
+    public void Icon_IsFetchedAsAnImage_WithoutLoadEvent()
+    {
+        var document = Load("<!doctype html><link rel=icon href=icon.png onload=\"document.title = 'load'\" onerror=\"document.title = 'error'\"><link rel=icon href=cors.png crossorigin>");
+        Assert.Equal(["Image https://example.com/icon.png", "Image https://example.com/cors.png"], Requests);
+        Assert.Equal([RequestMode.NoCors, RequestMode.Cors], _requests.Select(request => request.Mode));
+        Assert.Equal("", document.Title);
     }
 
     [Fact]

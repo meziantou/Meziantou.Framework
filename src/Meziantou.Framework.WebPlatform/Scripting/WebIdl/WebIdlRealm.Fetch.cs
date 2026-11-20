@@ -14,6 +14,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     internal static readonly string[] FetchGlobalNames = ["Request", "Response", "fetch"];
 
     private static string? s_fetchScript;
+
+    // The blob URL entries of the Request objects (https://fetch.spec.whatwg.org/#concept-request-url, the blob URL entry of
+    // the parsed URL), held by opaque objects: the entry keeps the blob and the partition of the URL when it is revoked after
+    // the creation of the request. The table is shared by the realms: a Request created in a window can be fetched by
+    // another one (e.g. a same-origin frame)
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<TValue, BlobUrlEntry> RequestBlobUrlEntries = [];
     private TValue? _fetch;
 
     private void DefineFetchGlobals()
@@ -136,8 +142,17 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 SetMember(result, "danglingMarkup", Adapter.FromBoolean(url.PotentiallyDanglingMarkup));
                 return result;
             });
-            // https://url.spec.whatwg.org/#concept-url-blob-entry: the blob of a blob: URL, resolved when the URL is parsed
-            Define("resolveBlobUrl", 1, (_, args) => UrlParser.Parse(Adapter.ToString(args[0]), baseUrl: null) is { Scheme: "blob" } blobUrl && BlobUrlStore.Get(GlobalScope.EnvironmentDocument).Resolve(blobUrl) is { } entry ? Wrap(entry.Object) : adapter.Null);
+            // https://url.spec.whatwg.org/#concept-url-blob-entry: the blob URL entry of a blob: URL, resolved when the URL is
+            // parsed (an opaque object that holds the entry: its blob, its environment and its partition)
+            Define("resolveBlobUrl", 1, (_, args) =>
+            {
+                if (UrlParser.Parse(Adapter.ToString(args[0]), baseUrl: null) is not { Scheme: "blob" } blobUrl || BlobUrlStore.Get(GlobalScope.EnvironmentDocument).Resolve(blobUrl) is not { } entry)
+                    return adapter.Null;
+
+                var handle = CreateObject();
+                RequestBlobUrlEntries.AddOrUpdate(handle, entry);
+                return handle;
+            });
             Define("origin", 0, (_, _) => Adapter.FromString(GlobalScope.Origin));
             Define("queueTask", 1, (_, args) =>
             {
@@ -278,7 +293,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             // https://fetch.spec.whatwg.org/#fetch-method: the requests of a service worker are not handled by service workers
             ServiceWorkersMode = GlobalScope is ServiceWorkerGlobalScope ? ServiceWorkersMode.None : ServiceWorkersMode.All,
             Integrity = Adapter.ToString(Adapter.Get(serialized, Key("integrity"))),
-            BlobUrlEntry = Unwrap(Adapter.Get(serialized, Key("blob"))) is Blob blob ? new BlobUrlEntry(blob, document) : null,
+            BlobUrlEntry = Adapter.Get(serialized, Key("blob")) is var blobHandle && RequestBlobUrlEntries.TryGetValue(blobHandle, out var blobUrlEntry) ? blobUrlEntry : null,
             RedirectMode = Adapter.ToString(Adapter.Get(serialized, Key("redirect"))) switch
             {
                 "error" => FetchRedirectMode.Error,
@@ -561,6 +576,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         SetMember(result, "headers", FromHeaderList(response.HeaderList));
         SetMember(result, "body", !streamed && response.Body is { } body ? FromBuffer(JsBufferKind.Uint8Array, body) : Adapter.Null);
         SetMember(result, "urlList", CreateArray(response.UrlList.Select(url => Adapter.FromString(url.Serialize())).ToArray()));
+        SetMember(result, "rangeRequested", Adapter.FromBoolean(response.RangeRequested));
         return result;
     }
 

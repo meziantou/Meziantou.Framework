@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of uievents, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 62 | 66 | 0 | 94% |
+| [Stable](#stable-tests) | 64 | 66 | 0 | 97% |
 | [Tentative](#tentative-tests) | 1 | 3 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **64** | **70** | **0** | **91%** |
+| **All** | **66** | **70** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 2
 - **REQUIRES**: 1
   - `layout`: 1
 
@@ -88,11 +88,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`order-of-events/mouse-events/wheel-scrolling.html`](https://wpt.fyi/results/uievents/order-of-events/mouse-events/wheel-scrolling.html) | Pass | 1 / 1 |  |  |
 | [`textInput/api.html`](https://wpt.fyi/results/uievents/textInput/api.html) | Pass | 9 / 9 |  |  |
 | [`textInput/backspace.html`](https://wpt.fyi/results/uievents/textInput/backspace.html) | Pass | 3 / 3 |  |  |
-| [`textInput/basic.html`](https://wpt.fyi/results/uievents/textInput/basic.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the legacy `textInput` event is not fired before the text typed by the user is inserted (5 subtests of `basic.html` and `enter-textarea-contenteditable.html`: `expected 1 but got 0` events; the tests that only check the `beforeinput`/`input` events and the value pass) |
+| [`textInput/basic.html`](https://wpt.fyi/results/uievents/textInput/basic.html) | Pass | 3 / 3 |  |  |
 | [`textInput/delete-selection.html`](https://wpt.fyi/results/uievents/textInput/delete-selection.html) | Pass | 3 / 3 |  |  |
 | [`textInput/delete.html`](https://wpt.fyi/results/uievents/textInput/delete.html) | Pass | 3 / 3 |  |  |
 | [`textInput/enter-input.html`](https://wpt.fyi/results/uievents/textInput/enter-input.html) | Pass | 1 / 1 |  |  |
-| [`textInput/enter-textarea-contenteditable.html`](https://wpt.fyi/results/uievents/textInput/enter-textarea-contenteditable.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the legacy `textInput` event is not fired before the text typed by the user is inserted (5 subtests of `basic.html` and `enter-textarea-contenteditable.html`: `expected 1 but got 0` events; the tests that only check the `beforeinput`/`input` events and the value pass) |
+| [`textInput/enter-textarea-contenteditable.html`](https://wpt.fyi/results/uievents/textInput/enter-textarea-contenteditable.html) | Pass | 2 / 2 |  |  |
 | [`ui_event_pseudo_target.html`](https://wpt.fyi/results/uievents/ui_event_pseudo_target.html) | Pass | 2 / 2 |  |  |
 
 ## Tentative tests

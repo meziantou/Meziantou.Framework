@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of resource-timing, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 113 | 119 | 0 | 95% |
+| [Stable](#stable-tests) | 114 | 119 | 0 | 96% |
 | [Tentative](#tentative-tests) | 30 | 33 | 0 | 91% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **143** | **152** | **0** | **94%** |
+| **All** | **144** | **152** | **0** | **95%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 6
+- **NOT IMPLEMENTED**: 5
 
 ## Stable tests
 
@@ -143,7 +143,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`test_resource_timing.html`](https://wpt.fyi/results/resource-timing/test_resource_timing.html) | Pass | 28 / 28 |  |  |
 | [`test_resource_timing.https.html`](https://wpt.fyi/results/resource-timing/test_resource_timing.https.html) | Pass | 28 / 28 |  |  |
 | [`tojson.html`](https://wpt.fyi/results/resource-timing/tojson.html) | Pass | 1 / 1 |  |  |
-| [`workerStart-tao-protected.https.html`](https://wpt.fyi/results/resource-timing/workerStart-tao-protected.https.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the service worker timing (`workerStart` is always 0), and the timing allow check of the responses given by a service worker (the entry of a cross-origin response without `Timing-Allow-Origin` is not opaque) |
+| [`workerStart-tao-protected.https.html`](https://wpt.fyi/results/resource-timing/workerStart-tao-protected.https.html) | Pass | 3 / 3 |  |  |
 | [`worklet-rt-entries.https.html`](https://wpt.fyi/results/resource-timing/worklet-rt-entries.https.html) | Pass | 1 / 1 |  |  |
 | [`xhr-resource-timing.html`](https://wpt.fyi/results/resource-timing/xhr-resource-timing.html) | Pass | 2 / 2 |  |  |
 

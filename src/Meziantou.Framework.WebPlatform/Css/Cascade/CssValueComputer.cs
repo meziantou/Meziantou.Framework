@@ -39,7 +39,6 @@ internal static partial class CssValueComputer
         ["font-palette"] = "normal",
         ["text-size-adjust"] = "auto",
         ["-webkit-text-size-adjust"] = "auto",
-        ["glyph-orientation-vertical"] = "auto",
         ["background-tbd"] = "none",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 

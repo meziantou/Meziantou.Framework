@@ -3365,20 +3365,23 @@
 
       return promiseResolvedWith(undefined);
     };
+    // The close promise settles once the parser stops parsing (after a pending parsing-blocking script)
     const closeAlgorithm = () => {
       try {
-        sink.close();
+        return promiseResolvedWith(sink.close());
       } catch (e) {
         return promiseRejectedWith(e);
       }
-
-      return promiseResolvedWith(undefined);
     };
     const abortAlgorithm = () => {
       sink.abort();
       return promiseResolvedWith(undefined);
     };
-    return createWritableStream(realm, () => undefined, writeAlgorithm, closeAlgorithm, abortAlgorithm).object;
+    const stream = createWritableStream(realm, () => undefined, writeAlgorithm, closeAlgorithm, abortAlgorithm);
+
+    // The parser errors the stream when the reference child is no longer a child of the target
+    sink.setErrorStream((e) => writableStreamDefaultControllerErrorIfNeeded(stream.controller, e));
+    return stream.object;
   }
 
   // ------------------------------------------------------------------------------------------------------------------

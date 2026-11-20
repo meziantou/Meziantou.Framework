@@ -1041,8 +1041,14 @@
         });
       };
 
-      // The body of the request is read before the request is sent (the requests are not streamed)
+      // The body of the request is read before the request is sent (the requests are not streamed: as with "duplex: 'half'",
+      // the response is only received once the body is sent). Only an HTTP(S) request sends its body: the scheme fetch of the
+      // other schemes (e.g. a data: URL) ignores it, so a stream that never closes does not stop the fetch.
+      const url = request.urlList[0];
+      const isHttpRequest = url[0] === 'h' && url[1] === 't' && url[2] === 't' && url[3] === 'p' && (url[4] === ':' || (url[4] === 's' && url[5] === ':'));
       if (request.body === null) {
+        start(null);
+      } else if (request.body.source === null && !isHttpRequest) {
         start(null);
       } else if (request.body.source !== null) {
         streams.lock(request.body.stream);
@@ -1240,6 +1246,17 @@
     request.navigation = serialized.navigation;
     request.body = serialized.body === null ? null : bodyFromBytes(serialized.body);
     return createRequestObject(realm, request, hooks.createHeaders(serialized.headers, 'immutable'), signal);
+  };
+
+  // https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch: the body of the Request object of a fetch event that
+  // was not responded to, whose body was a stream, is canceled (a later clone() throws). Returns false when the body is
+  // unusable (the service worker read it): the request cannot fall back to the network.
+  cacheSupport.cancelFetchEventRequestBody = (requestObject) => {
+    const record = getRecord(requestObject, 'Request');
+    if (record === undefined || record.body === null) return true;
+    if (cacheSupport.isDisturbedOrLocked(record)) return false;
+    streams.cancel(record.body.stream, undefined);
+    return true;
   };
 
   // The response of the value given to respondWith() (https://w3c.github.io/ServiceWorker/#dom-fetchevent-respondwith): the

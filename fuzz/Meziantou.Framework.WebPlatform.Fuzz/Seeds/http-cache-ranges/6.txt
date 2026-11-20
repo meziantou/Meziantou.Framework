@@ -1,0 +1,3 @@
+bytes 0-2/10
+1bc
+bytes=2-5

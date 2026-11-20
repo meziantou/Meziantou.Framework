@@ -212,6 +212,17 @@ public sealed class TextLayoutTests : IDisposable
         Assert.Equal(width, GetRect(document, "s").Width);
     }
 
+    [Theory]
+    [InlineData("0.25", 22.5)]
+    [InlineData("0", 20)]
+    [InlineData("-0.25", 17.5)]
+    public void TextAutospaceSize(string size, double width)
+    {
+        // The spacing is text-autospace-size times the ic (https://github.com/w3c/csswg-drafts/issues/8510)
+        var document = Parse($"<div style='text-autospace-size: {size}'><span id=s>\u6C34X</span></div>");
+        Assert.Equal(width, GetRect(document, "s").Width);
+    }
+
     [Fact]
     public void TextAutospace_NotAtTheEndOfTheLine()
     {

@@ -613,18 +613,10 @@
     "total": 1
   },
   "css/css-animations/revert-rule-keyframes-dynamic.html": {
-    "total": 2,
-    "failures": {
-      "revert-rule in keyframes, reverted-to value changing (custom property)": "FAIL",
-      "revert-rule in keyframes, reverted-to value changing (standard property)": "FAIL"
-    }
+    "total": 2
   },
   "css/css-animations/revert-rule-keyframes.html": {
-    "total": 2,
-    "failures": {
-      "revert-rule in keyframes (--x)": "FAIL",
-      "revert-rule in keyframes (width)": "FAIL"
-    }
+    "total": 2
   },
   "css/css-animations/sample-on-last-keyframe.html": {
     "total": 1

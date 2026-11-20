@@ -1136,7 +1136,7 @@ document while it waits for a parsing-blocking script, as a browser does
 the input is parsed into a copy of the document, starting from the state of the parser (the open elements, the
 insertion mode...), without running its scripts, and the resources that its elements would fetch are requested from
 the loader with `DocumentRequest.IsSpeculative` set to true (`DocumentRequest.Initiator` is null): the external scripts,
-the images (`img`, `picture`, SVG `image`, `poster`), the style sheets and the preloads, but not the resources that the
+the images (`img`, `picture`, SVG `image`, `poster`) and the preloads, but not the resources that the
 parser would not fetch (the contents of a `template` that is not a declarative shadow root, the lazy images, the scripts
 whose type is not supported...). The `base` elements, the `<meta name="referrer">` elements and the
 `<meta http-equiv="Content-Security-Policy">` elements found speculatively apply to the subsequent speculative requests
@@ -1152,6 +1152,11 @@ preloaded, as by the preload scanners of the browsers: the request is sent at on
 with a resource timing entry (`initiatorType` is `css`), and the `@import` rule consumes its response when the parser
 reaches the element (see [Preloads](#preloads)), so the imported style sheet does not wait for the style sheet that
 blocks the script.
+
+The style sheets of the `link` elements found speculatively whose media match are preloaded the same way (the
+request is sent at once, without `DocumentRequest.IsSpeculative`, with a resource timing entry whose `initiatorType` is
+`link`), and the element consumes the response when the parser reaches it: the style sheets whose media do not match
+(e.g. `media=print`) are fetched later, when the parser reaches their element, as in the browsers.
 
 The responses of the other speculative requests are ignored: the parser requests the resources again when it reaches the
 elements, so the loader should cache the responses to benefit from them (a `<link rel=preload>` found speculatively is

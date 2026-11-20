@@ -543,7 +543,8 @@ internal sealed partial class ComputedStyle
 
     /// <summary>
     /// Computes the value of a property in a keyframe: revert-layer is the underlying value (the animation origin has no layer),
-    /// and revert rolls back the cascade to the user origin, as in the author origin (https://drafts.csswg.org/css-cascade-5/#default).
+    /// revert-rule too (https://drafts.csswg.org/css-cascade-5/#revert-rule-keyword: the keyframe has no previous declaration in
+    /// the animation origin, so the cascade rolls back to the value of the property without the animation), and revert rolls back the cascade to the user origin, as in the author origin (https://drafts.csswg.org/css-cascade-5/#default).
     /// </summary>
     private string? ComputeKeyframeValue(CssPropertyDefinition property, ProcessedKeyframe keyframe, CssLonghandValue value, string? underlying)
     {
@@ -577,7 +578,7 @@ internal sealed partial class ComputedStyle
         }
     }
 
-    private static bool IsRevertKeyword(string value) => InfraAscii.ToAsciiLowercase(value.Trim()) is "revert" or "revert-layer";
+    private static bool IsRevertKeyword(string value) => InfraAscii.ToAsciiLowercase(value.Trim()) is "revert" or "revert-layer" or "revert-rule";
 
     /// <summary>
     /// Computes the effect value of a keyframe effect for a property (https://drafts.csswg.org/web-animations-1/#the-effect-value-of-a-keyframe-animation-effect):

@@ -211,6 +211,7 @@ public abstract class AudioNode : EventTarget
         if (output >= NumberOfOutputs)
             throw new DomException($"The output {output} does not exist", "IndexSizeError");
 
+        destinationParam.ThrowIfNotModifiable();
         var connections = _outputs[output].Params;
         if (!connections.Contains(destinationParam))
         {

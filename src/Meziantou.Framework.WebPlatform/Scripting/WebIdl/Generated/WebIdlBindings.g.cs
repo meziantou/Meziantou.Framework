@@ -746,6 +746,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["WorkletAnimationEffect"] = Binding_WorkletAnimationEffect<TAdapter, TValue>.Binding,
             ["WorkletGlobalScope"] = Binding_WorkletGlobalScope<TAdapter, TValue>.Binding,
             ["WorkletGroupEffect"] = Binding_WorkletGroupEffect<TAdapter, TValue>.Binding,
+            ["WorkletPerformance"] = Binding_WorkletPerformance<TAdapter, TValue>.Binding,
             ["XMLDocument"] = Binding_XMLDocument<TAdapter, TValue>.Binding,
             ["XMLHttpRequest"] = Binding_XMLHttpRequest<TAdapter, TValue>.Binding,
             ["XMLHttpRequestEventTarget"] = Binding_XMLHttpRequestEventTarget<TAdapter, TValue>.Binding,
@@ -1213,6 +1214,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AllAcceptedCredentialsOptions dictionaryDom_AllAcceptedCredentialsOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AllAcceptedCredentialsOptions(r, dictionaryDom_AllAcceptedCredentialsOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions dictionaryDom_AriaNotificationOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AriaNotificationOptions(r, dictionaryDom_AriaNotificationOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AssignedNodesOptions dictionaryDom_AssignedNodesOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AssignedNodesOptions(r, dictionaryDom_AssignedNodesOptions);
@@ -2132,6 +2136,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.AppendMode enumDom_AppendMode:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_AppendMode(enumDom_AppendMode));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority enumDom_AriaNotifyPriority:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_AriaNotifyPriority(enumDom_AriaNotifyPriority));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AudioSelectionPreference enumDom_AudioSelectionPreference:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_AudioSelectionPreference(enumDom_AudioSelectionPreference));
                 return true;
@@ -2530,6 +2537,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.DistanceModelType enumWebAudio_DistanceModelType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_DistanceModelType(enumWebAudio_DistanceModelType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions enumWebAudio_MakeupGainOptions:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_MakeupGainOptions(enumWebAudio_MakeupGainOptions));
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.OscillatorType enumWebAudio_OscillatorType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_OscillatorType(enumWebAudio_OscillatorType));

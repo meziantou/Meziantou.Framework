@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of css/css-animations, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 96 | 101 | 0 | 95% |
+| [Stable](#stable-tests) | 98 | 101 | 0 | 97% |
 | [Tentative](#tentative-tests) | 28 | 29 | 0 | 97% |
 | [Reftests](#reftests) | 36 | 36 | 0 | 100% |
 | [Crash tests](#crash-tests) | 46 | 46 | 0 | 100% |
-| **All** | **206** | **212** | **0** | **97%** |
+| **All** | **208** | **212** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
@@ -118,8 +118,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`responsive/column-width-001.html`](https://wpt.fyi/results/css/css-animations/responsive/column-width-001.html) | Pass | 3 / 3 |  |  |
 | [`responsive/fill-forwards-viewport-units.html`](https://wpt.fyi/results/css/css-animations/responsive/fill-forwards-viewport-units.html) | Pass | 1 / 1 |  |  |
 | [`responsive/line-height.html`](https://wpt.fyi/results/css/css-animations/responsive/line-height.html) | Pass | 1 / 1 |  |  |
-| [`revert-rule-keyframes-dynamic.html`](https://wpt.fyi/results/css/css-animations/revert-rule-keyframes-dynamic.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `revert-rule` in keyframes |
-| [`revert-rule-keyframes.html`](https://wpt.fyi/results/css/css-animations/revert-rule-keyframes.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `revert-rule` in keyframes |
+| [`revert-rule-keyframes-dynamic.html`](https://wpt.fyi/results/css/css-animations/revert-rule-keyframes-dynamic.html) | Pass | 2 / 2 |  |  |
+| [`revert-rule-keyframes.html`](https://wpt.fyi/results/css/css-animations/revert-rule-keyframes.html) | Pass | 2 / 2 |  |  |
 | [`sample-on-last-keyframe.html`](https://wpt.fyi/results/css/css-animations/sample-on-last-keyframe.html) | Pass | 1 / 1 |  |  |
 | [`stability/animation-event-destroy-renderer.html`](https://wpt.fyi/results/css/css-animations/stability/animation-event-destroy-renderer.html) | Pass | 2 / 2 |  |  |
 | [`style-animation-parsing.html`](https://wpt.fyi/results/css/css-animations/style-animation-parsing.html) | Pass | 5 / 5 |  |  |

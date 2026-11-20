@@ -434,6 +434,9 @@ internal static partial class PresentationalHints
     /// <summary>Whether an attribute is a presentation attribute of all the SVG elements (the geometry properties only apply to some elements).</summary>
     public static bool IsSvgPresentationAttribute(string name) => SvgPresentationAttributes.Contains(name);
 
+    /// <summary>Whether an attribute is a presentation attribute of the SVG element (the geometry properties included).</summary>
+    public static bool IsSvgPresentationAttribute(Element element, string name) => SvgPresentationAttributes.Contains(name) || IsSvgGeometryAttribute(element.LocalName, name);
+
     private static void AddSvgDeclarations(Element element, string name, string value, ref List<CssDeclarationEntry>? declarations)
     {
         if (IsSvgTransformAttribute(element.LocalName, name))

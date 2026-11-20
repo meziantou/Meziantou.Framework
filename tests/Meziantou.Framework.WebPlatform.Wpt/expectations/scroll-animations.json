@@ -581,10 +581,7 @@
     }
   },
   "scroll-animations/css/scroll-timeline-on-pseudo.html": {
-    "total": 1,
-    "failures": {
-      "timeline.source does not expose pseudo-element": "FAIL"
-    }
+    "total": 1
   },
   "scroll-animations/css/scroll-timeline-paused-animations.html": {
     "total": 2
@@ -653,10 +650,7 @@
     "total": 2
   },
   "scroll-animations/css/timeline-scope-on-pseudo.html": {
-    "total": 3,
-    "failures": {
-      "timeline-scope on ::before is honoured when the pseudo-element starts animating later": "FAIL"
-    }
+    "total": 3
   },
   "scroll-animations/css/timeline-scope-parsing.html": {
     "total": 25
@@ -715,7 +709,7 @@
     "total": 1
   },
   "scroll-animations/css/view-timeline-pseudo-on-scroller-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "scroll-animations/css/view-timeline-pseudo-on-scroller.html": {
     "total": 1,

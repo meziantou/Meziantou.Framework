@@ -13,6 +13,12 @@ public partial class Document
     internal bool EnvironmentHasStorageAccess { get; set; }
 
     /// <summary>
+    /// Whether <see cref="RequestStorageAccess(StorageAccessTypes)"/> or <see cref="RequestStorageAccess()"/> was granted to
+    /// the document, whatever the requested types (the blob URLs of the first-party contexts, see <see cref="FileApi.BlobUrlStore.IsSamePartition"/>).
+    /// </summary>
+    internal bool StorageAccessGranted { get; set; }
+
+    /// <summary>
     /// Returns whether the document has access to its unpartitioned cookies
     /// (https://privacycg.github.io/storage-access/#dom-document-hasstorageaccess): true in a first-party context (a top-level
     /// document, or a document that is same site with its top-level document and its ancestors) or when the user allows
@@ -141,6 +147,7 @@ public partial class Document
             {
                 if (state == PermissionState.Granted)
                 {
+                    StorageAccessGranted = true;
                     if (requestUnpartitionedCookieAccess)
                     {
                         EnvironmentHasStorageAccess = true;

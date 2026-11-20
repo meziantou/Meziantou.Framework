@@ -169,6 +169,50 @@ public sealed class HtmlInsertionTests
     }
 
     [Fact]
+    public void StreamHtml_WithRunScripts_IntoADisconnectedElement_MakesTheScriptsAsync()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>", new HtmlParserOptions { ScriptingEnabled = true });
+        var element = document.CreateElement("div");
+        var writer = element.StreamAppendHtmlUnsafe(new SetHtmlUnsafeOptions { RunScripts = true });
+        writer.Write("<script src=a.js></script><script>window.x = 1;</script><p>after</p>");
+        writer.Close();
+
+        Assert.NotNull(element.QuerySelector("p"));
+        Assert.All(element.QuerySelectorAll("script"), script => Assert.True(((HtmlScriptElement)script).Async));
+    }
+
+    [Theory]
+    [InlineData("a=\"b\" x=\"yy\"", "a=b;x=yy;")]
+    [InlineData("a='b'   c = \"d\"", "a=b;c=d;")]
+    [InlineData("name=\"p\" name=\"q\"", "")]
+    [InlineData("name=\"a\0b\"", "")]
+    [InlineData("a=b", "")]
+    public void ProcessingInstruction_PseudoAttributes(string data, string expected)
+    {
+        var pi = new Document().CreateProcessingInstruction("t", data);
+        Assert.Equal(expected, string.Concat(pi.GetAttributeNames().Select(name => name + "=" + pi.GetAttribute(name) + ";")));
+        Assert.Equal(data, pi.Data);
+    }
+
+    [Fact]
+    public void HtmlParser_ReplacesNullInProcessingInstructionData()
+    {
+        var container = CreateContainer();
+        container.InnerHtml = "<?target name=\"a\0b\"?>";
+        var pi = (ProcessingInstruction)container.FirstChild!;
+        Assert.Equal("name=\"a\uFFFDb\"", pi.Data);
+        Assert.Equal("a\uFFFDb", pi.GetAttribute("name"));
+    }
+
+    [Fact]
+    public void SelectedContent_OmitsTheScriptsFramesAndPluginsOfTheOption()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><select><button><selectedcontent></selectedcontent></button><option selected><span>one</span><iframe></iframe><embed><object></object><svg><script></script></svg><script>x()</script></option></select>");
+        var selectedContent = document.QuerySelector("selectedcontent")!;
+        Assert.Equal("<span>one</span><svg></svg>", selectedContent.InnerHtml);
+    }
+
+    [Fact]
     public void StreamHtml_IntoATemplate_ParsesNoscriptWithTheScriptingOfTheDocument()
     {
         var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><template></template>", new HtmlParserOptions { ScriptingEnabled = true });

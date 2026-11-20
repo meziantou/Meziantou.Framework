@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
@@ -233,6 +234,58 @@ public sealed class UserInputTests : IDisposable
     }
 
     [Fact]
+    public void Mouse_ClickOnTheInstanceOfAnSvgHyperlinkFollowsIt()
+    {
+        var document = Load("<svg width=300 height=100><defs><a id=link href='#target'><rect width=100 height=100 /></a></defs><rect id=other x=200 width=100 height=100 /><use id=use href='#link' x=100 /></svg>");
+        var use = document.GetElementById("use")!;
+        var navigations = new List<string>();
+        document.DefaultView!.Navigation.AddEventListener("navigate", e =>
+        {
+            var navigate = (NavigateEvent)e;
+            navigations.Add(navigate.Destination.Url + " " + ((Element?)navigate.SourceElement)?.Id);
+            e.PreventDefault();
+        });
+
+        // The use element has no shadow tree: the click on the instance of the hyperlink follows the referenced hyperlink, and
+        // the source element is the use element, the target of the events of its instances
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(150, 50);
+        mouse.Down();
+        mouse.Up();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["https://example.com/#target use"], navigations);
+
+        // A synthetic click on the use element is not dispatched to its shadow tree
+        use.DispatchEvent(new MouseEvent("click", new MouseEventInit { Bubbles = true, Cancelable = true, ClientX = 150, ClientY = 50 }));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Single(navigations);
+    }
+
+    [Fact]
+    public void Mouse_ClickOnTheInstanceOfAnExternalSvgHyperlinkFollowsIt()
+    {
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/icons/sprite.svg#link"] = new DocumentResource("<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><a id='link' href='page.html'><rect width='100' height='100'/></a></svg>") { Headers = [new("Content-Type", "image/svg+xml")] };
+        var document = _contexts.Create(new BrowsingContextOptions { DocumentLoader = loader }).Navigate("https://example.com/", _ => "<!DOCTYPE html>" + Style + "<svg width=200 height=100><use href='icons/sprite.svg#link' x=100 /></svg>");
+        _contexts.EventLoop.RunUntilIdle();
+        var navigations = new List<string>();
+        document.DefaultView!.Navigation.AddEventListener("navigate", e =>
+        {
+            navigations.Add(((NavigateEvent)e).Destination.Url);
+            e.PreventDefault();
+        });
+
+        // The hyperlink of the resource document (which has no browsing context) is followed by the document of the use
+        // element, and its URL is resolved against the resource document
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(150, 50);
+        mouse.Down();
+        mouse.Up();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["https://example.com/icons/page.html"], navigations);
+    }
+
+    [Fact]
     public void Slider_DragSetsTheValue()
     {
         var document = Load("<input id=range type=range min=0 max=10 value=5 style='width: 116px; margin: 0; padding: 0; border: 0'>");
@@ -449,6 +502,97 @@ public sealed class UserInputTests : IDisposable
         keyboard.Press("Enter");
 
         Assert.Equal("a\nd", textArea.Value);
+    }
+
+    [Fact]
+    public void Keyboard_DateControl_EditsTheFields()
+    {
+        var document = Load("<input id=date type=date required><input id=next>");
+        var date = (HtmlInputElement)document.GetElementById("date")!;
+        var events = new List<string>();
+        date.AddEventListener("input", _ => events.Add("input " + date.Value));
+        date.AddEventListener("change", _ => events.Add("change " + date.Value));
+        date.Focus();
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+
+        // Tab moves to the next field (month, day, year), then to the next control
+        keyboard.Type("1");
+        keyboard.Press("Tab");
+        keyboard.Type("1");
+        keyboard.Press("Tab");
+        keyboard.Type("1234");
+        Assert.Equal("1234-01-01", date.Value);
+        Assert.Equal(["input 0001-01-01", "change 0001-01-01", "input 0012-01-01", "change 0012-01-01"], events[..4]);
+        Assert.Equal(["input 1234-01-01", "change 1234-01-01"], events[^2..]);
+        Assert.True(date.Matches(":user-valid"));
+        keyboard.Press("Tab");
+        Assert.Same(document.GetElementById("next"), document.ActiveElement);
+
+        // The digits fill a field and move to the next one; Backspace clears the focused field (the first one after a focus)
+        date.Focus();
+        keyboard.Type("1231");
+        Assert.Equal("1234-12-31", date.Value);
+        keyboard.Press("ArrowUp");
+        Assert.Equal("1235-12-31", date.Value);
+        date.Focus();
+        ((HtmlElement)document.GetElementById("next")!).Focus();
+        date.Focus();
+        keyboard.Press("Backspace");
+        Assert.Equal("", date.Value);
+        Assert.True(date.Matches(":user-invalid"));
+    }
+
+    [Fact]
+    public void Keyboard_TimeControl_EditsTheFields()
+    {
+        var document = Load("<input id=time type=time>");
+        var time = (HtmlInputElement)document.GetElementById("time")!;
+        time.Focus();
+
+        document.BrowsingContext!.Input.Keyboard.Type("0930p");
+
+        Assert.Equal("21:30", time.Value);
+    }
+
+    [Fact]
+    public void Keyboard_TimeControl_KeepsTheSecondsOfTheValue()
+    {
+        var document = Load("<input id=time type=time step=0.001 value=12:34:56.789><input id=local type=datetime-local value=2026-01-14T08:15:30>");
+        var time = (HtmlInputElement)document.GetElementById("time")!;
+        var local = (HtmlInputElement)document.GetElementById("local")!;
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+
+        time.Focus();
+        keyboard.Press("Tab");
+        keyboard.Press("ArrowUp");
+        local.Focus();
+        keyboard.Type("02");
+
+        Assert.Equal("12:35:56.789", time.Value);
+        Assert.Equal("2026-02-14T08:15:30", local.Value);
+    }
+
+    [Fact]
+    public void Keyboard_DateControl_ValueSetByAScript_ClearsThePartiallyFilledFields()
+    {
+        var document = Load("<input id=date type=date>");
+        var date = (HtmlInputElement)document.GetElementById("date")!;
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+        date.Focus();
+        keyboard.Type("03");
+        Assert.Equal("", date.Value);
+
+        // The month field is complete: the day field has the focus
+        date.Value = "";
+        keyboard.Type("05");
+        keyboard.Type("2026");
+        Assert.Equal("", date.Value);
+        keyboard.Press("ArrowLeft");
+        keyboard.Press("ArrowLeft");
+        keyboard.Type("07");
+
+        // The month typed before the value was set is gone: it is the month typed after it
+        Assert.Equal("2026-07-05", date.Value);
     }
 
     [Fact]

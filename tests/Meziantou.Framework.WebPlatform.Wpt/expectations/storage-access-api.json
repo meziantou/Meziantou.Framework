@@ -108,10 +108,7 @@
     }
   },
   "storage-access-api/storage-access-beyond-cookies.blobStorage.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for Blob Storage": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.caches.sub.https.window.js": {
     "total": 1
@@ -141,10 +138,7 @@
     "total": 1
   },
   "storage-access-api/storage-access-beyond-cookies.thirdPartyBlobStorage.sub.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verify StorageAccessAPIBeyondCookies for third-party context accessing first-party Blob URLs": "FAIL"
-    }
+    "total": 1
   },
   "storage-access-api/storage-access-headers.tentative.https.sub.window.js": {
     "total": 4

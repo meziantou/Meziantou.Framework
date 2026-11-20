@@ -19,8 +19,8 @@ description: "The results of the web-platform-tests of html/user-activation, and
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 5
+- **TEST BUG**: 3
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
@@ -36,9 +36,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`consumption-sameorigin.html`](https://wpt.fyi/results/html/user-activation/consumption-sameorigin.html) | Pass | 9 / 9 |  |  |
 | [`detached-iframe.html`](https://wpt.fyi/results/html/user-activation/detached-iframe.html) | Pass | 1 / 1 |  |  |
 | [`navigate-to-crossorigin-redirect.html`](https://wpt.fyi/results/html/user-activation/navigate-to-crossorigin-redirect.html) | Pass | 1 / 1 |  |  |
-| [`navigate-to-sameorigin.html`](https://wpt.fyi/results/html/user-activation/navigate-to-sameorigin.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the sticky activation is not carried to the document of a same-origin navigation: the window of the new document starts without activation, as in the HTML Standard (the test documents the behavior of Blink; Gecko and WebKit fail it too) |
+| [`navigate-to-sameorigin.html`](https://wpt.fyi/results/html/user-activation/navigate-to-sameorigin.html) | Fail | 0 / 1 | TEST BUG | the test expects the sticky activation to be carried to the document of a same-origin navigation (a Blink behavior): in the HTML Standard, the activation state belongs to the `Window`, and the new `Window` of the navigated document starts without activation (its last activation timestamp is positive infinity, https://html.spec.whatwg.org/multipage/interaction.html#last-activation-timestamp); Firefox and Safari fail it too |
 | [`navigation-state-reset-crossorigin.sub.html`](https://wpt.fyi/results/html/user-activation/navigation-state-reset-crossorigin.sub.html) | Pass | 1 / 1 |  |  |
-| [`navigation-state-reset-sameorigin.html`](https://wpt.fyi/results/html/user-activation/navigation-state-reset-sameorigin.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the sticky activation is not carried to the document of a same-origin navigation: the window of the new document starts without activation, as in the HTML Standard (the test documents the behavior of Blink; Gecko and WebKit fail it too) |
+| [`navigation-state-reset-sameorigin.html`](https://wpt.fyi/results/html/user-activation/navigation-state-reset-sameorigin.html) | Fail | 0 / 1 | TEST BUG | the test expects the sticky activation to be carried to the document of a same-origin navigation (a Blink behavior): in the HTML Standard, the activation state belongs to the `Window`, and the new `Window` of the navigated document starts without activation (its last activation timestamp is positive infinity, https://html.spec.whatwg.org/multipage/interaction.html#last-activation-timestamp); Firefox and Safari fail it too |
 | [`no-activation-thru-escape-key.html`](https://wpt.fyi/results/html/user-activation/no-activation-thru-escape-key.html) | Pass | 1 / 1 |  |  |
 | [`propagation-crossorigin.sub.html`](https://wpt.fyi/results/html/user-activation/propagation-crossorigin.sub.html) | Pass | 9 / 9 |  |  |
 | [`propagation-same-and-cross-origin.sub.html`](https://wpt.fyi/results/html/user-activation/propagation-same-and-cross-origin.sub.html) | Pass | 3 / 3 |  |  |

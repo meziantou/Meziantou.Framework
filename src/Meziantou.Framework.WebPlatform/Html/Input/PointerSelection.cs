@@ -41,6 +41,9 @@ namespace Meziantou.Framework.WebPlatform.Html
             /// <summary>Whether the press was in the selection: the selection is collapsed at the position when the button is released without a move.</summary>
             public bool InSelection { get; init; }
 
+            /// <summary>Whether the release collapses the selection of the text control that was pressed in its selection (it was focused).</summary>
+            public bool CollapseOnRelease { get; init; }
+
             /// <summary>The pressed element when the position of the press is not in a text (e.g. a replaced element): the selection is not extended while the pointer stays over it.</summary>
             public Element? PressedElement { get; init; }
 
@@ -93,6 +96,18 @@ namespace Meziantou.Framework.WebPlatform.Html
                 else if (extend)
                 {
                     ExtendInTextControl(textControl, GetAnchor(textControl), position);
+                }
+                else if (textControl.EditSelectionStart < textControl.EditSelectionEnd && textControl.EditSelectionStart <= position && position <= textControl.EditSelectionEnd)
+                {
+                    // A press in the selection (or at its edges, e.g. after the text of a fully selected value) does not change
+                    // it: the selection may be dragged. The release collapses it when the control was focused (a press that
+                    // focuses the control keeps the selection, e.g. the value that its focus event listener selects)
+                    if (primary)
+                    {
+                        topDocument.PointerSelectionState = new State(document) { TextControl = control, AnchorOffset = (uint)position, InSelection = true, CollapseOnRelease = ReferenceEquals(document.FocusedArea, control) };
+                    }
+
+                    return;
                 }
                 else
                 {
@@ -251,7 +266,12 @@ namespace Meziantou.Framework.WebPlatform.Html
                 return;
 
             topDocument.PointerSelectionState = null;
-            if (state is { InSelection: true, AnchorNode: { IsConnected: true } node } && state.Document.GetSelection() is { } selection && Selection.FireSelectStart(node))
+            if (state is { InSelection: true, CollapseOnRelease: true, TextControl: IEditableTextControl { IsTextEditor: true } textControl })
+            {
+                var position = (int)Math.Min(state.AnchorOffset, (uint)textControl.EditValue.Length);
+                textControl.SetUserSelection(position, position, "none");
+            }
+            else if (state is { InSelection: true, TextControl: null, AnchorNode: { IsConnected: true } node } && state.Document.GetSelection() is { } selection && Selection.FireSelectStart(node))
             {
                 selection.CollapseCore(node, Math.Min(state.AnchorOffset, DomRange.GetNodeLength(node)));
             }

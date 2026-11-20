@@ -203,6 +203,10 @@ internal static class TextControlEditing
     /// <param name="fireBeforeInput">False for the cut and paste actions that a script triggers (<c>document.execCommand()</c>): as the commands, they fire no beforeinput event.</param>
     public static bool UserEdit(Element target, string inputType, string? data, bool fireBeforeInput)
     {
+        // The value of a date and time control is edited field by field
+        if (target is HtmlInputElement { IsDateTimeControl: true } dateTimeControl)
+            return dateTimeControl.EditDateTimeFieldsByUser(inputType, data);
+
         if (target is not HtmlElement element || !CanBeEditedByUser(element))
             return false;
 
@@ -224,6 +228,11 @@ internal static class TextControlEditing
         var eventData = inputType is "insertText" or "insertFromPaste" ? data : null;
         // The listeners may make the control read-only, remove it or hide it
         if (fireBeforeInput && (!FireBeforeInputEvent(element, inputType, eventData) || !CanBeEditedByUser(element)))
+            return false;
+
+        // The legacy textInput event of the inserted text (a line break is only inserted in a multiline control)
+        if (fireBeforeInput && TextEvent.CreateTextInputEvent(inputType, data, element.NodeDocument.DefaultView) is { } textInput
+            && (!element.FireEvent(textInput) || !CanBeEditedByUser(element)))
             return false;
 
         switch (inputType)

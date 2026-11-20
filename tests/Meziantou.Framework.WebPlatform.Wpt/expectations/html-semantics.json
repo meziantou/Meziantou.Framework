@@ -5863,11 +5863,7 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-omits-scripts-frames-and-plugins.html": {
-    "total": 2,
-    "failures": {
-      "Cloning a selected option into selectedcontent omits script, frame, iframe, embed, and object elements": "FAIL",
-      "Selecting an option does not clone its frame and iframe elements into selectedcontent": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html": {
     "total": 10
@@ -5885,10 +5881,7 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html": {
-    "total": 1,
-    "failures": {
-      "A parser-inserted script in a selected option isn't cloned into selectedcontent before it runs": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
     "total": 10

@@ -388,6 +388,25 @@ public partial class Document
 
     /// <summary>https://drafts.csswg.org/cssom/#preferred-css-style-sheet-set-name</summary>
     internal string PreferredStyleSheetSetName { get; set; } = "";
+
+    /// <summary>The style sheet set selected by <c>&lt;meta http-equiv=default-style&gt;</c>, whose alternative style sheets apply, or null.</summary>
+    internal string? SelectedStyleSheetSetName { get; private set; }
+
+    /// <summary>
+    /// https://drafts.csswg.org/cssom/#change-the-preferred-css-style-sheet-set-name (e.g. by
+    /// <c>&lt;meta http-equiv=default-style&gt;</c>): the style sheets whose title is the name apply, the alternative ones
+    /// included, and the other style sheets with a title do not.
+    /// </summary>
+    internal void ChangePreferredStyleSheetSetName(string name)
+    {
+        if (PreferredStyleSheetSetName == name && SelectedStyleSheetSetName == name)
+            return;
+
+        PreferredStyleSheetSetName = name;
+        SelectedStyleSheetSetName = name;
+        Css.Cascade.CssStyleVersion.Increment(this);
+        RequestCssResourcesUpdate();
+    }
     private AdoptedStyleSheetList? _adoptedStyleSheets;
 
     /// <summary>Gets the list of the style sheets of the document.</summary>

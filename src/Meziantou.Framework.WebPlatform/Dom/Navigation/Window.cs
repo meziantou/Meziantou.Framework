@@ -368,6 +368,14 @@ public sealed partial class Window : GlobalScope
         var tokenizedFeatures = WindowFeatures.Tokenize(features);
         var noreferrer = tokenizedFeatures.Remove("noreferrer", out var noreferrerValue) && WindowFeatures.ParseBoolean(noreferrerValue);
         var noopener = tokenizedFeatures.Remove("noopener", out var noopenerValue) && WindowFeatures.ParseBoolean(noopenerValue);
+
+        // https://html.spec.whatwg.org/multipage/nav-history-apis.html#get-noopener-for-window-open: the blob URL of an origin
+        // that is not same site with the top-level origin is opened without opener
+        if (Html.HyperlinkElementUtils.IsCrossSiteBlobUrl(sourceDocument, urlRecord))
+        {
+            noopener = true;
+        }
+
         var referrerPolicy = "";
         if (noreferrer)
         {
@@ -377,8 +385,12 @@ public sealed partial class Window : GlobalScope
 
         // The creation of a popup consumes the user activation: the navigation is initiated with the activation of the call
         var hasTransientActivation = sourceDocument.RelevantWindow?.HasTransientActivation ?? false;
-        sourceNavigable ??= sourceDocument.BrowsingContext;
-        if (sourceNavigable is null || sourceNavigable.ChooseNavigable(target, noopener, out var windowType) is not { } targetNavigable)
+
+        // The target (e.g. _self) is chosen from the navigable of this window, which is the opener, as in the browsers: the
+        // entry document (e.g. the page that runs frames[0].open() in a promise job) resolves the URL, initiates the
+        // navigation and creates the initial about:blank document of a new popup (its origin and its base URL)
+        sourceNavigable ??= Document.BrowsingContext;
+        if (sourceNavigable is null || sourceNavigable.ChooseNavigable(target, noopener, out var windowType, creatorDocument: sourceDocument) is not { } targetNavigable)
             return null;
 
         if (windowType is WindowType.NewAndUnrestricted or WindowType.NewWithNoOpener)
@@ -387,6 +399,7 @@ public sealed partial class Window : GlobalScope
             // the size and the position of its client window
             targetNavigable.IsPopup = WindowFeatures.IsPopupRequested(tokenizedFeatures);
             targetNavigable.SetUpFeatures(tokenizedFeatures);
+            targetNavigable.IsCreatedByScript = true;
 
             // The client window is sized after its creation: a resize event is fired at the listeners added meanwhile
             var newWindow = targetNavigable.Window;

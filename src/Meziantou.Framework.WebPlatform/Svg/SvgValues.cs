@@ -163,8 +163,14 @@ public sealed class SvgLength
     private float _value;
     private ushort _unitType = SvgLengthTypeNumber;
 
-    // The unit of lengths whose unit is not one of the SVG_LENGTHTYPE constants (e.g. "rem")
+    // The unit of lengths whose unit is not one of the SVG_LENGTHTYPE constants (e.g. "rem"), or the text of a value that
+    // contains a substitution function (see _isSubstitution)
     private string _unknownUnit = "";
+
+    // https://github.com/w3c/svgwg/issues/1038: a value with a substitution function (var()...), allowed in the presentation
+    // attributes (https://github.com/w3c/svgwg/issues/1031), is a length of unknown unit whose value is 0 and which serializes
+    // as the text of the value
+    private bool _isSubstitution;
 
     internal SvgLength(ISvgValueOwner? owner = null)
     {
@@ -196,12 +202,24 @@ public sealed class SvgLength
         get
         {
             Owner?.Sync();
+            if (_isSubstitution)
+                return 0;
+
             return (float)(_value * GetUserUnitsFactor(_unitType));
         }
         set
         {
             Owner.BeginChange();
-            _value = (float)(value / GetUserUnitsFactor(_unitType));
+            if (_isSubstitution)
+            {
+                // The value of a substitution cannot be converted: the length becomes a number of user units
+                SetRaw(value, SvgLengthTypeNumber, "");
+            }
+            else
+            {
+                _value = (float)(value / GetUserUnitsFactor(_unitType));
+            }
+
             Owner?.Commit();
         }
     }
@@ -219,7 +237,15 @@ public sealed class SvgLength
         set
         {
             Owner.BeginChange();
-            _value = value;
+            if (_isSubstitution)
+            {
+                SetRaw(value, SvgLengthTypeNumber, "");
+            }
+            else
+            {
+                _value = value;
+            }
+
             Owner?.Commit();
         }
     }
@@ -240,12 +266,18 @@ public sealed class SvgLength
         {
             ArgumentNullException.ThrowIfNull(value);
             Owner.BeginChange();
-            if (!TryParse(value, out var number, out var unitType, out var unknownUnit))
-                throw DomException.Syntax($"'{value}' is not a valid length");
+            if (TryParseSubstitution(value, out var substitution))
+            {
+                SetSubstitution(substitution);
+            }
+            else
+            {
+                if (!TryParse(value, out var number, out var unitType, out var unknownUnit))
+                    throw DomException.Syntax($"'{value}' is not a valid length");
 
-            _value = number;
-            _unitType = unitType;
-            _unknownUnit = unknownUnit;
+                SetRaw(number, unitType, unknownUnit);
+            }
+
             Owner?.Commit();
         }
     }
@@ -259,9 +291,7 @@ public sealed class SvgLength
         if (unitType is SvgLengthTypeUnknown or > SvgLengthTypePc)
             throw DomException.NotSupported("The unit type is not supported");
 
-        _value = valueInSpecifiedUnits;
-        _unitType = unitType;
-        _unknownUnit = "";
+        SetRaw(valueInSpecifiedUnits, unitType, "");
         Owner?.Commit();
     }
 
@@ -274,10 +304,12 @@ public sealed class SvgLength
         if (unitType is SvgLengthTypeUnknown or > SvgLengthTypePc)
             throw DomException.NotSupported("The unit type is not supported");
 
+        // The value of a substitution cannot be converted (https://github.com/w3c/svgwg/issues/1038)
+        if (_isSubstitution)
+            throw DomException.NotSupported($"The length '{_unknownUnit}' cannot be converted");
+
         var userUnits = _value * GetUserUnitsFactor(_unitType);
-        _value = (float)(userUnits / GetUserUnitsFactor(unitType));
-        _unitType = unitType;
-        _unknownUnit = "";
+        SetRaw((float)(userUnits / GetUserUnitsFactor(unitType)), unitType, "");
         Owner?.Commit();
     }
 
@@ -285,7 +317,8 @@ public sealed class SvgLength
     /// The number of user units of one unit (https://svgwg.org/svg2-draft/types.html#InterfaceSVGLength): the relative units are
     /// resolved for the element the length reflects (its font, its SVG viewport for the percentages, see
     /// <see cref="SvgUserSpace.GetUnitSize"/>). A length without element uses the initial values: a font size of 16px (1em),
-    /// 1ex = 0.5em; its percentages and its other relative units cannot be resolved.
+    /// 1ex = 0.5em, and its percentages are resolved against a viewport size of 100
+    /// (https://svgwg.org/svg2-draft/types.html#__svg__SVGLength__value); its other relative units cannot be resolved.
     /// </summary>
     private double GetUserUnitsFactor(ushort unitType)
     {
@@ -298,6 +331,7 @@ public sealed class SvgLength
     private double GetDefaultUserUnitsFactor(ushort unitType) => unitType switch
     {
         SvgLengthTypeNumber or SvgLengthTypePx => 1,
+        SvgLengthTypePercentage when Context is null => 1,
         SvgLengthTypeCm => 96 / 2.54,
         SvgLengthTypeMm => 96 / 25.4,
         SvgLengthTypeIn => 96,
@@ -314,18 +348,63 @@ public sealed class SvgLength
         _value = value;
         _unitType = unitType;
         _unknownUnit = unknownUnit;
+        _isSubstitution = false;
     }
 
-    internal void AssignFrom(SvgLength source) => SetRaw(source._value, source._unitType, source._unknownUnit);
+    /// <summary>Sets the length to a value that contains a substitution function (see <see cref="TryParseSubstitution"/>).</summary>
+    internal void SetSubstitution(string text)
+    {
+        SetRaw(0, SvgLengthTypeUnknown, text);
+        _isSubstitution = true;
+    }
+
+    internal void AssignFrom(SvgLength source)
+    {
+        SetRaw(source._value, source._unitType, source._unknownUnit);
+        _isSubstitution = source._isSubstitution;
+    }
 
     internal SvgLength Copy()
     {
         var copy = new SvgLength();
-        copy.SetRaw(_value, _unitType, _unknownUnit);
+        copy.AssignFrom(this);
         return copy;
     }
 
-    internal string Serialize() => SvgParsing.FormatNumber(_value) + (_unitType == SvgLengthTypeUnknown ? _unknownUnit : Units[_unitType]);
+    internal string Serialize()
+    {
+        if (_isSubstitution)
+            return _unknownUnit;
+
+        return SvgParsing.FormatNumber(_value) + (_unitType == SvgLengthTypeUnknown ? _unknownUnit : Units[_unitType]);
+    }
+
+    /// <summary>
+    /// Whether a length value contains a substitution function (<c>var()</c>, <c>env()</c>, <c>attr()</c>), which the
+    /// presentation attributes accept (https://github.com/w3c/svgwg/issues/1031): its text, without the surrounding white
+    /// space, is the value of the length (https://github.com/w3c/svgwg/issues/1038).
+    /// </summary>
+    internal static bool TryParseSubstitution(string value, out string text)
+    {
+        text = InfraAscii.StripLeadingAndTrailingAsciiWhitespace(value).ToString();
+        foreach (var function in (ReadOnlySpan<string>)["var(", "env(", "attr("])
+        {
+            var index = text.IndexOf(function, StringComparison.OrdinalIgnoreCase);
+            while (index >= 0)
+            {
+                // The name of the function is not the end of a longer identifier (e.g. "--my-var(")
+                if (index == 0 || !IsIdentifierCharacter(text[index - 1]))
+                    return true;
+
+                index = text.IndexOf(function, index + 1, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        text = "";
+        return false;
+
+        static bool IsIdentifierCharacter(char c) => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or >= '\u0080';
+    }
 
     /// <summary>https://svgwg.org/svg2-draft/types.html#DataTypeLength</summary>
     internal static bool TryParse(string value, out float number, out ushort unitType, out string unknownUnit)

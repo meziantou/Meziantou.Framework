@@ -63,10 +63,7 @@
     "crashtest": "PASS"
   },
   "preload/link-url-encoding.html": {
-    "total": 3,
-    "failures": {
-      "windows-1252 favicon href": "FAIL"
-    }
+    "total": 3
   },
   "preload/modulepreload-already-in-module-map.html": {
     "total": 5

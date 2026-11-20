@@ -211,8 +211,9 @@ internal static class TextDirectives
     /// The text of the document that the text directives are searched in: the data of the searchable text nodes, with the
     /// white space collapsed to a single space, and the block of each character (a match of a text does not span blocks).
     /// </summary>
-    private sealed class SearchableText
+    internal sealed class SearchableText
     {
+        private readonly bool _skipInert;
         private readonly StringBuilder _text = new();
         private readonly List<(Text Node, int Offset)> _positions = [];
         private readonly List<int> _blocks = [];
@@ -228,9 +229,12 @@ internal static class TextDirectives
         private bool _blockBoundary;
         private bool[]? _wordBoundaries;
 
-        public static SearchableText Create(Document document)
+        private SearchableText(bool skipInert) => _skipInert = skipInert;
+
+        /// <summary>Collects the searchable text of a document; <paramref name="skipInert"/> excludes the text of the inert nodes (find-in-page).</summary>
+        public static SearchableText Create(Document document, bool skipInert = false)
         {
-            var result = new SearchableText();
+            var result = new SearchableText(skipInert);
             var engine = document.GetStyleEngine();
             if (document.DocumentElement is { } root)
             {
@@ -303,6 +307,10 @@ internal static class TextDirectives
 
         private void AppendText(Text text)
         {
+            // https://html.spec.whatwg.org/multipage/interaction.html#inert-subtrees: the find-in-page feature ignores the inert nodes
+            if (_skipInert && FocusModel.IsInert(text))
+                return;
+
             var data = text.Data;
             for (var i = 0; i < data.Length; i++)
             {
@@ -399,6 +407,75 @@ internal static class TextDirectives
                 return null;
 
             return (!wordEndBounded || IsWordBoundary(end)) && IsInOneBlock(position, end) ? end : null;
+        }
+
+        /// <summary>
+        /// The first match (or the last one, <paramref name="backwards"/>) of a text in the range [<paramref name="start"/>,
+        /// <paramref name="end"/>) of the text, as the find-in-page feature searches it: case-insensitively unless
+        /// <paramref name="caseSensitive"/>, at word boundaries when <paramref name="wholeWord"/>, in one block.
+        /// </summary>
+        public (int Start, int End)? FindInRange(string query, int start, int end, bool caseSensitive, bool wholeWord, bool backwards)
+        {
+            query = Normalize(query);
+            if (query.Length == 0 || start < 0 || end > Length || end - start < query.Length)
+                return null;
+
+            var value = Value;
+            var comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            if (backwards)
+            {
+                for (var index = end - query.Length; index >= start; index--)
+                {
+                    index = value.LastIndexOf(query, index + query.Length - 1, index + query.Length - start, comparison);
+                    if (index < 0)
+                        return null;
+
+                    if (IsFindMatch(index, index + query.Length, wholeWord))
+                        return (index, index + query.Length);
+                }
+
+                return null;
+            }
+
+            for (var index = start; index <= end - query.Length; index++)
+            {
+                index = value.IndexOf(query, index, end - index, comparison);
+                if (index < 0)
+                    return null;
+
+                if (IsFindMatch(index, index + query.Length, wholeWord))
+                    return (index, index + query.Length);
+            }
+
+            return null;
+        }
+
+        private bool IsFindMatch(int start, int end, bool wholeWord) => IsInOneBlock(start, end) && (!wholeWord || (IsWordBoundary(start) && IsWordBoundary(end)));
+
+        /// <summary>The index of the first character of the text that is at or after a boundary point (<see cref="Length"/> when there is none).</summary>
+        public int GetIndexAfter(Node node, uint offset)
+        {
+            for (var i = 0; i < _positions.Count; i++)
+            {
+                var (text, textOffset) = _positions[i];
+                if (AbstractRange.CompareComposedPoints(text, (uint)textOffset, node, offset) != AbstractRange.BoundaryPointPosition.Before)
+                    return i;
+            }
+
+            return _positions.Count;
+        }
+
+        /// <summary>The index after the last character of the text that ends at or before a boundary point (0 when there is none).</summary>
+        public int GetIndexBefore(Node node, uint offset)
+        {
+            for (var i = _positions.Count - 1; i >= 0; i--)
+            {
+                var (text, textOffset) = _positions[i];
+                if (AbstractRange.CompareComposedPoints(text, (uint)textOffset + 1, node, offset) != AbstractRange.BoundaryPointPosition.After)
+                    return i + 1;
+            }
+
+            return 0;
         }
 
         private static string Normalize(string query)

@@ -221,7 +221,11 @@ public sealed class StorageAccessHandle
     public string CreateObjectUrl(Blob obj)
     {
         CheckType(_types.CreateObjectUrl, "createObjectURL");
-        return Url.CreateObjectUrl(obj);
+        ArgumentNullException.ThrowIfNull(obj);
+
+        // The URL is in the partition of the first-party contexts of the origin
+        var environment = Document.CurrentGlobalDocument;
+        return BlobUrlStore.Get(environment).Add(obj, environment, _storageKey);
     }
 
     /// <summary>Creates a <c>blob:</c> URL referencing a media source (see <see cref="Url.CreateObjectUrl(MediaSource)"/>).</summary>
@@ -241,7 +245,14 @@ public sealed class StorageAccessHandle
     public void RevokeObjectUrl(string url)
     {
         CheckType(_types.RevokeObjectUrl, "revokeObjectURL");
-        Url.RevokeObjectUrl(url);
+        ArgumentNullException.ThrowIfNull(url);
+
+        // The URLs of the partition of the first-party contexts of the origin are revoked
+        if (UrlParser.Parse(url, baseUrl: null) is { Scheme: "blob" } urlRecord)
+        {
+            var environment = Document.CurrentGlobalDocument;
+            BlobUrlStore.Get(environment).Remove(urlRecord, environment, _storageKey);
+        }
     }
 
     /// <summary>

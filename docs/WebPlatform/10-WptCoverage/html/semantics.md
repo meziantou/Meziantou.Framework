@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,125 | 2,214 | 30 | 97% |
+| [Stable](#stable-tests) | 2,127 | 2,214 | 30 | 97% |
 | [Tentative](#tentative-tests) | 62 | 223 | 32 | 32% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,658** | **3,014** | **131** | **92%** |
+| **All** | **2,660** | **3,014** | **131** | **92%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 57
-- **NOT IMPLEMENTED**: 294
+- **NOT IMPLEMENTED**: 292
 - **REQUIRES**: 2
   - `layout`: 1
   - `media`: 1
@@ -1282,13 +1282,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/the-select-element/customizable-select/selectedcontent-mutations.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-mutations.html) | Fail | 6 / 8 | TEST BUG | test6 expects the `selectedcontent` elements of a `<select multiple>` to be cleared; the HTML Standard returns early for a select element with the `multiple` attribute (https://html.spec.whatwg.org/multipage/form-elements.html#update-a-select's-selectedcontent) |
 | [`forms/the-select-element/customizable-select/selectedcontent-nested-select.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested-select.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-nested.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/selectedcontent-omits-scripts-frames-and-plugins.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-omits-scripts-frames-and-plugins.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the removal of the `script`, SVG `script`, `frame`, `iframe`, `embed` and `object` elements of the clone of an option (https://html.spec.whatwg.org/multipage/form-elements.html#clone-an-option-into-a-selectedcontent): every child of the option is cloned into the `selectedcontent` |
+| [`forms/the-select-element/customizable-select/selectedcontent-omits-scripts-frames-and-plugins.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-omits-scripts-frames-and-plugins.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-option-insertion.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html) | Pass | 10 / 10 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-adoption-agency.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-adoption-agency.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the removal of the `script`, SVG `script`, `frame`, `iframe`, `embed` and `object` elements of the clone of an option (https://html.spec.whatwg.org/multipage/form-elements.html#clone-an-option-into-a-selectedcontent): every child of the option is cloned into the `selectedcontent` |
+| [`forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-queued-update.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html) | Pass | 10 / 10 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-restore.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html) | Pass | 3 / 3 |  |  |

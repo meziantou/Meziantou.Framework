@@ -1619,6 +1619,21 @@ public sealed partial class CssStyleProperties : CssStyleDeclaration
         get => GetPropertyValue("flow-tolerance");
         set => SetProperty("flow-tolerance", value ?? "");
     }
+
+    /// <summary>
+    /// Gets or sets the <c>text-autospace-size</c> property of the declaration block: the amount of the inter-script spacing of
+    /// <c>text-autospace</c>, in <c>ic</c> (a resolution of the CSS Working Group, https://github.com/w3c/csswg-drafts/issues/8510).
+    /// </summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
+    [IdlMember("textAutospaceSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
+    [IdlMember("text-autospace-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    [Experimental(ExperimentalApis.NonStandardCssProperties, UrlFormat = ExperimentalApis.UrlFormat)]
+    public string TextAutospaceSize
+    {
+        get => GetPropertyValue("text-autospace-size");
+        set => SetProperty("text-autospace-size", value ?? "");
+    }
 }
 
 /// <summary>https://drafts.csswg.org/css-fonts-5/#cssfontfacedescriptors</summary>

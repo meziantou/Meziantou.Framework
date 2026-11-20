@@ -387,7 +387,8 @@ public sealed class WindowClient : Client
 
     /// <summary>
     /// Navigates the window of the client to <paramref name="url"/> (https://w3c.github.io/ServiceWorker/#client-navigate):
-    /// returns its window client, or null when the new document does not have the origin of the service worker.
+    /// returns its window client, or null when the new document does not have the origin of the service worker. A
+    /// prerendering page (not its frames) is not navigated: the promise is rejected with a <c>TypeError</c>.
     /// </summary>
     /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-windowclient-navigate"/>
     [IdlMember("navigate", "https://w3c.github.io/ServiceWorker/#dom-windowclient-navigate")]
@@ -412,6 +413,11 @@ public sealed class WindowClient : Client
             {
                 if (Entry.Global is not Window { BrowsingContext: { } browsingContext } window || !ReferenceEquals(browsingContext.Document, window.Document) || !window.Document.IsFullyActive)
                     return (Error: (Exception?)new TypeErrorException("The document of the client is not fully active"), Client: (ServiceWorkerClientEntry?)null, Data: (WindowData?)null);
+
+                // A prerendering page is not navigated by its service worker (the patch of WindowClient.navigate() of
+                // https://wicg.github.io/nav-speculation/prerendering.html, as the browsers that prerender); its frames are
+                if (browsingContext is { Parent: null, IsPrerendering: true })
+                    return (Error: new TypeErrorException("The client is prerendering"), Client: null, Data: null);
 
                 Document document;
                 try

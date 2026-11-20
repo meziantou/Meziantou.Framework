@@ -9,19 +9,19 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 255 | 283 | 4 | 91% |
+| [Stable](#stable-tests) | 257 | 283 | 4 | 92% |
 | [Tentative](#tentative-tests) | 7 | 11 | 0 | 64% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 3 | 0 | 67% |
-| **All** | **265** | **298** | **4** | **90%** |
+| **All** | **267** | **298** | **4** | **91%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 2
-- **TEST BUG**: 15
-- **NOT IMPLEMENTED**: 11
+- **TEST BUG**: 17
+- **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 5
 
 ## Stable tests
@@ -88,7 +88,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/clients-matchall-order.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall-order.https.html) | Fail | 4 / 7 | TEST RUNNER | the three subtests of the uncontrolled windows expect the window of the WPT harness (`/testharness_runner.html`) among the clients; the subtests of the controlled windows pass |
 | [`service-worker/clients-matchall.https.html`](https://wpt.fyi/results/service-workers/service-worker/clients-matchall.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/controlled-dedicatedworker-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-dedicatedworker-postMessage.https.html) | Disabled | – | TEST RUNNER | the fetch handler of the service worker answers the script of the dedicated worker after a `setTimeout(1000)` of the service worker: the event loop of the runner does not advance the virtual clock while the dispatch of the fetch event and the fetch of the script of the worker are running, so the clock only advances by the 100 µs of each of its reads, between the waits of the loop; it exceeded the 60 s limit on Windows (15.6 ms timer period, now 1 ms) and on a loaded macOS machine when the whole suite ran. When it completes, 2 of its 4 subtests fail: the messages that the service worker posts to the client of `resultingClientId` during the fetch event do not reach the worker |
-| [`service-worker/controlled-iframe-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-iframe-postMessage.https.html) | Fail | 3 / 5 | NOT IMPLEMENTED | `clients.get(event.resultingClientId)` resolves with undefined until the document or the worker of the request exists (the reserved clients are not exposed), so the messages that the service worker posts while it handles the request are not sent. The specification waits for the client to be execution ready, which the test prevents (Chrome fails these subtests); Firefox and Safari give the reserved client and queue its messages |
+| [`service-worker/controlled-iframe-postMessage.https.html`](https://wpt.fyi/results/service-workers/service-worker/controlled-iframe-postMessage.https.html) | Fail | 3 / 5 | TEST BUG | the service worker calls `clients.get(event.resultingClientId)` while it handles the navigation, and only starts the timer that resolves its `respondWith()` once `get()` settles: the Service Workers specification waits for the client to be execution ready (https://w3c.github.io/ServiceWorker/#clients-get, step 2.1.2), i.e. for the document that the response creates, so the frame would never load (Chrome fails these subtests); the library resolves `get()` with undefined at once for a reserved client, and Firefox and Safari resolve it with the reserved client and queue its messages |
 | [`service-worker/controller-on-disconnect.https.html`](https://wpt.fyi/results/service-workers/service-worker/controller-on-disconnect.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/controller-on-load.https.html`](https://wpt.fyi/results/service-workers/service-worker/controller-on-load.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/controller-on-reload.https.html`](https://wpt.fyi/results/service-workers/service-worker/controller-on-reload.https.html) | Pass | 1 / 1 |  |  |
@@ -130,7 +130,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/fetch-event-respond-with-stops-propagation.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-stops-propagation.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-throws-after-respond-with.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-throws-after-respond-with.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-within-sw.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-within-sw.https.html) | Pass | 2 / 2 |  |  |
-| [`service-worker/fetch-event.https.h2.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event.https.h2.html) | Fail | 5 / 7 | NOT IMPLEMENTED | the bodies are not streamed: the streaming request bodies (HTTP/2) |
+| [`service-worker/fetch-event.https.h2.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event.https.h2.html) | Pass | 7 / 7 |  |  |
 | [`service-worker/fetch-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event.https.html) | Fail | 42 / 43 | TEST BUG | the `Service Worker responds to fetch event with an existing client id` subtest expects `event.clientId` to be the empty string for the navigation request of an iframe; Create Fetch Event and Dispatch (https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch, step 8) initializes it to the id of the client of the request, which for a navigation is the environment of the document that starts it (https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching), as speculation-rules/prefetch/tentative/service-worker expects; Chrome, Firefox and Safari give the empty string; the other subtests pass |
 | [`service-worker/fetch-frame-resource.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-frame-resource.https.html) | Pass | 6 / 6 |  |  |
 | [`service-worker/fetch-header-visibility.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-header-visibility.https.html) | Pass | 1 / 1 |  |  |
@@ -188,7 +188,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/navigation-preload/navigationPreload.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/navigationPreload.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/navigation-preload/redirect.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/redirect.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/navigation-preload/request-headers.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/request-headers.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/navigation-preload/resource-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/resource-timing.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the resource timing entry of the navigation preload request |
+| [`service-worker/navigation-preload/resource-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/resource-timing.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/navigation-preload/samesite-cookies.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/samesite-cookies.https.html) | Pass | 5 / 5 |  |  |
 | [`service-worker/navigation-preload/samesite-iframe.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-preload/samesite-iframe.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/navigation-redirect-body.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-redirect-body.https.html) | Pass | 1 / 1 |  |  |
@@ -200,7 +200,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/navigation-timing-sizes.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-timing-sizes.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/navigation-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/navigation-timing.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/nested-blob-url-workers.https.html`](https://wpt.fyi/results/service-workers/service-worker/nested-blob-url-workers.https.html) | Pass | 3 / 3 |  |  |
-| [`service-worker/next-hop-protocol.https.html`](https://wpt.fyi/results/service-workers/service-worker/next-hop-protocol.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the protocol of the connection is not reported by the loader: `nextHopProtocol` is `http/1.1` for the HTTP/2 resource of the network (the H1 subtest passes) |
+| [`service-worker/next-hop-protocol.https.html`](https://wpt.fyi/results/service-workers/service-worker/next-hop-protocol.https.html) | Fail | 1 / 2 | TEST BUG | `resources/empty.h2.js` is fetched from the origin of the test, the HTTP/1.1 server of port 8443: the `.h2.` of a resource name does not select the HTTP/2 server of wptserve (only the flags of the test file do), so `nextHopProtocol` is `http/1.1`, as the test comment anticipates (Edge passes only the H1 subtest on wpt.fyi) |
 | [`service-worker/no-dynamic-import-in-module.any.js`](https://wpt.fyi/results/service-workers/service-worker/no-dynamic-import-in-module.any.js) | Pass | 3 / 3 |  |  |
 | [`service-worker/no-dynamic-import.any.js`](https://wpt.fyi/results/service-workers/service-worker/no-dynamic-import.any.js) | Pass | 3 / 3 |  |  |
 | [`service-worker/onactivate-script-error.https.html`](https://wpt.fyi/results/service-workers/service-worker/onactivate-script-error.https.html) | Pass | 5 / 5 |  |  |

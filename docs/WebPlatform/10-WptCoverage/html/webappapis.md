@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 333 | 340 | 1 | 98% |
+| [Stable](#stable-tests) | 335 | 340 | 1 | 99% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **338** | **349** | **1** | **97%** |
+| **All** | **340** | **349** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 7
+- **NOT IMPLEMENTED**: 5
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -288,8 +288,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-failure.https.any.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the Window agent's [[CanBlock]] is not false, so `Atomics.wait()` does not throw a `TypeError` on the main thread |
 | [`scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-agent-formalism/requires-success.any.js) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-detached-iframe.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-detached-iframe.html) | Pass | 14 / 14 |  |  |
-| [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html) | Fail | 0 / 5 | NOT IMPLEMENTED | the entry settings object of promise jobs, so `window.open()` URLs in promise reactions are resolved against the wrong document |
-| [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html) | Fail | 1 / 6 | NOT IMPLEMENTED | the entry settings object of promise jobs, so `window.open()` URLs in promise reactions are resolved against the wrong document |
+| [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html) | Pass | 5 / 5 |  |  |
+| [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html) | Pass | 6 / 6 |  |  |
 | [`scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html) | Pass | 11 / 11 |  |  |
 | [`scripting/processing-model-2/runtime-error-cross-origin-setInterval.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-cross-origin-setInterval.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/runtime-error-cross-origin-setTimeout.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-cross-origin-setTimeout.html) | Pass | 1 / 1 |  |  |

@@ -153,10 +153,7 @@
     "total": 1
   },
   "loading/preloader-link-media.html": {
-    "total": 1,
-    "failures": {
-      "Non-matching link media is not preloaded": "FAIL"
-    }
+    "total": 1
   },
   "loading/preloader-template.html": {
     "total": 1

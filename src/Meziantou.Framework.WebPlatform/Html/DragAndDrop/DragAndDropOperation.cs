@@ -53,7 +53,7 @@ public sealed class DragAndDropOperation
         External,
     }
 
-    /// <summary>The source node: the dragged element, the first Text node of the dragged selection, or null for a drag from outside the user agent.</summary>
+    /// <summary>The source node: the dragged element, the first Text node of the dragged selection (the text control of a selection of its value), or null for a drag from outside the user agent.</summary>
     public Node? SourceNode { get; }
 
     /// <summary>Whether the operation ended (the button was released, or the drag event was canceled).</summary>
@@ -128,7 +128,18 @@ public sealed class DragAndDropOperation
         Node? sourceNode;
         var sourceKind = DragSourceKind.Element;
         var store = new DragDataStore();
-        if (dragSelection && node.IsConnected && node.NodeDocument.GetSelection() is { IsCollapsed: false } selection && selection.ContainsNode(node) && GetFirstSelectedText(selection) is { } text)
+        if (dragSelection && node.IsConnected && node is HtmlElement and IEditableTextControl { IsTextEditor: true } textControl && textControl.EditSelectionStart < textControl.EditSelectionEnd)
+        {
+            // The selection of a text control: the control is the source node. As the copy and the cut, the obscured value of a
+            // password field is not dragged
+            if (textControl.IsPassword)
+                return null;
+
+            sourceNode = node;
+            sourceKind = DragSourceKind.Selection;
+            store.Items.Add(new DragDataItem(DragDataItemKind.Text, "text/plain", textControl.EditValue[textControl.EditSelectionStart..textControl.EditSelectionEnd]));
+        }
+        else if (dragSelection && node.IsConnected && node.NodeDocument.GetSelection() is { IsCollapsed: false } selection && selection.ContainsNode(node) && GetFirstSelectedText(selection) is { } text)
         {
             sourceNode = text;
             sourceKind = DragSourceKind.Selection;

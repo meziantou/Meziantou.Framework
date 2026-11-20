@@ -9,19 +9,19 @@ description: "The results of the web-platform-tests of css/css-view-transitions,
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 156 | 165 | 0 | 95% |
+| [Stable](#stable-tests) | 158 | 165 | 0 | 96% |
 | [Tentative](#tentative-tests) | 4 | 7 | 0 | 57% |
 | [Reftests](#reftests) | 318 | 333 | 0 | 95% |
 | [Crash tests](#crash-tests) | 34 | 34 | 0 | 100% |
-| **All** | **512** | **539** | **0** | **95%** |
+| **All** | **514** | **539** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 14
-- **TEST RUNNER**: 3
 - **OUT OF SCOPE**: 1
 
 ## Stable tests
@@ -65,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`navigation/at-rule-opt-in-none-in-new.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/at-rule-opt-in-none-in-new.html) | Pass | 1 / 1 |  |  |
 | [`navigation/at-rule-opt-in-none-in-old.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/at-rule-opt-in-none-in-old.html) | Pass | 1 / 1 |  |  |
 | [`navigation/hide-before-reveal.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/hide-before-reveal.html) | Pass | 1 / 1 |  |  |
-| [`navigation/mismatched-snapshot-containing-block-size-skips.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/mismatched-snapshot-containing-block-size-skips.html) | Timeout | 0 / 1 | TEST RUNNER | the popups cannot be opened with a size (`width=…,height=…` features): the snapshot containing block of the popup never differs, and the transition waits for its render-blocking style sheet (`render-blocking-stylesheet.py`, emulated) until the test times out |
+| [`navigation/mismatched-snapshot-containing-block-size-skips.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/mismatched-snapshot-containing-block-size-skips.html) | Pass | 1 / 1 |  |  |
 | [`navigation/navigation-auto-excludes-reload.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/navigation-auto-excludes-reload.html) | Pass | 1 / 1 |  |  |
 | [`navigation/no-view-transition-with-cross-origin-redirect.sub.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/no-view-transition-with-cross-origin-redirect.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the cross-origin redirects of a navigation are not tracked ("was created via cross-origin redirects"): a same-origin navigation through a cross-origin redirect has a view transition |
 | [`navigation/no-view-transition-with-csp-sandbox.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/no-view-transition-with-csp-sandbox.html) | Pass | 1 / 1 |  |  |
@@ -191,8 +191,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`view-transition-types-mutable.html`](https://wpt.fyi/results/css/css-view-transitions/view-transition-types-mutable.html) | Pass | 3 / 3 |  |  |
 | [`view-transition-waituntil-finished-promise.html`](https://wpt.fyi/results/css/css-view-transitions/view-transition-waituntil-finished-promise.html) | Pass | 3 / 3 |  |  |
 | [`web-animation-pseudo-incorrect-name.html`](https://wpt.fyi/results/css/css-view-transitions/web-animation-pseudo-incorrect-name.html) | Pass | 1 / 1 |  |  |
-| [`window-resize-aborts-transition-before-ready.html`](https://wpt.fyi/results/css/css-view-transitions/window-resize-aborts-transition-before-ready.html) | Fail | 0 / 1 | TEST RUNNER | the popup opened by `window.open(url, name, "width=300,height=300")` has the viewport of the test window and `resizeTo()` does not resize it: the `resize` the update callback waits for never comes, so the callback times out |
-| [`window-resize-aborts-transition.html`](https://wpt.fyi/results/css/css-view-transitions/window-resize-aborts-transition.html) | Timeout | 0 / 1 | TEST RUNNER | the popup opened by `window.open()` cannot be resized (`resizeTo()` has no effect on the viewport), so the transition is never skipped by a change of the snapshot containing block size |
+| [`window-resize-aborts-transition-before-ready.html`](https://wpt.fyi/results/css/css-view-transitions/window-resize-aborts-transition-before-ready.html) | Pass | 1 / 1 |  |  |
+| [`window-resize-aborts-transition.html`](https://wpt.fyi/results/css/css-view-transitions/window-resize-aborts-transition.html) | Timeout | 0 / 1 | BUG | the popup is resized by `resizeTo()` (its `innerWidth` is 150 after `resizeTo(150, 150)`), but the `resize` event that the test waits for is not fired at its window while its view transition is animating, so the test times out before checking that the transition is skipped (the `-before-ready` variant, which resizes before the transition is ready, passes) |
 
 ## Tentative tests
 

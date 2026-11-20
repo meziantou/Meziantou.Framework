@@ -811,6 +811,25 @@ public partial class HtmlSelectedContentElement
             fragment.AppendChildCore(child.Clone(document: null, subtree: true, parent: null, fallbackRegistry: null));
         }
 
+        // The script, frame, iframe, embed and object elements of the clone (shadow trees included) are removed before the
+        // fragment is inserted: they would run their scripts again or create nested navigables
+        List<Node>? omitted = null;
+        foreach (var node in fragment.ShadowIncludingInclusiveDescendants())
+        {
+            if (node is HtmlScriptElement or SvgScriptElement or HtmlFrameElement or HtmlIFrameElement or HtmlEmbedElement or HtmlObjectElement)
+            {
+                (omitted ??= []).Add(node);
+            }
+        }
+
+        if (omitted is not null)
+        {
+            foreach (var node in omitted)
+            {
+                node.ParentNode?.RemoveChildCore(node, suppressObservers: true);
+            }
+        }
+
         ReplaceAll(fragment);
     }
 }

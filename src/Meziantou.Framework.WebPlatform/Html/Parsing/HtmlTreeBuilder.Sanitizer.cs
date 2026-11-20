@@ -86,6 +86,12 @@ internal sealed partial class HtmlTreeBuilder
         {
             case SanitizerElementAction.Keep:
                 var (parent, referenceChild) = location;
+
+                // When streaming, a node is not moved to a location that is dropped (e.g. by the adoption agency algorithm): it
+                // stays where it is
+                if (IsStreaming && IsDisplaced(parent, referenceChild))
+                    break;
+
                 element.RemoveFromParent();
 
                 // A custom element reaction may have inserted the element in the tree (e.g. in one of its descendants): the

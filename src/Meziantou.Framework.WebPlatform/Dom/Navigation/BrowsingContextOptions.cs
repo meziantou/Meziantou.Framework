@@ -595,6 +595,15 @@ public sealed partial record BrowsingContextOptions
     public Action<CallbackContext, IReadOnlyList<TimeSpan>>? Vibrate { get; init; }
 
     /// <summary>
+    /// Gets or sets the callback that receives the notifications that the pages send to the assistive technologies with
+    /// <c>ariaNotify()</c> (https://w3c.github.io/aria/#ARIANotifyMixin): the text to announce, its priority, and the element
+    /// or the document that sent it. The callback is invoked on the thread of the event loop, and must not block it. The
+    /// default is null: the notifications are ignored, as when no assistive technology is running.
+    /// The first argument is the context of the window (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Window"/> is never null.
+    /// </summary>
+    public Action<CallbackContext, AriaNotification>? AriaNotification { get; init; }
+
+    /// <summary>
     /// Gets or sets the source of the positions of the device (https://w3c.github.io/geolocation/,
     /// <c>navigator.geolocation</c>), e.g. a <see cref="GeolocationProvider"/> whose <see cref="GeolocationProvider.Position"/>
     /// is set by the application, or a subclass that reads the location of the operating system. The library checks the

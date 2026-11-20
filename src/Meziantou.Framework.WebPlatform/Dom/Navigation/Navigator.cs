@@ -122,37 +122,45 @@ public sealed partial class Navigator
     /// <c>registerProtocolHandler()</c> automation mode of the document (<see cref="Document.ProtocolHandlerAutomationMode"/>)
     /// or the user (<see cref="ProtocolHandlerOptions.RequestRegistration"/>) accepts it
     /// (https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler). Without
-    /// <see cref="BrowsingContextOptions.ProtocolHandlers"/>, the handlers are not registered.
+    /// <see cref="BrowsingContextOptions.ProtocolHandlers"/>, the handlers are not registered. The registration of a
+    /// prerendering document is deferred until its activation (https://wicg.github.io/nav-speculation/prerendering.html#patch-rph).
     /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler"/>
     [IdlMember("registerProtocolHandler", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-registerprotocolhandler")]
     public void RegisterProtocolHandler(string scheme, string url)
     {
         var (normalizedScheme, normalizedUrl) = NormalizeProtocolHandlerParameters(scheme, url);
-        if (_window.Options.ProtocolHandlers is not { } options)
-            return;
-
-        var document = _window.Document;
-        var accepted = document.ProtocolHandlerAutomationMode switch
+        _window.Document.RunAfterPrerendering(() =>
         {
-            ProtocolHandlerAutomationMode.AutoAccept => true,
-            ProtocolHandlerAutomationMode.AutoReject => false,
-            _ => options.RequestRegistration?.Invoke(new ProtocolHandlerRegistration(document, normalizedScheme, normalizedUrl)) is true,
-        };
+            if (_window.Options.ProtocolHandlers is not { } options)
+                return;
 
-        if (accepted)
-        {
-            options.Registry.Register(normalizedScheme, normalizedUrl);
-        }
+            var document = _window.Document;
+            var accepted = document.ProtocolHandlerAutomationMode switch
+            {
+                ProtocolHandlerAutomationMode.AutoAccept => true,
+                ProtocolHandlerAutomationMode.AutoReject => false,
+                _ => options.RequestRegistration?.Invoke(new ProtocolHandlerRegistration(document, normalizedScheme, normalizedUrl)) is true,
+            };
+
+            if (accepted)
+            {
+                options.Registry.Register(normalizedScheme, normalizedUrl);
+            }
+        });
     }
 
-    /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler: removes the handler from <see cref="ProtocolHandlerOptions.Registry"/>.</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler: removes the handler from
+    /// <see cref="ProtocolHandlerOptions.Registry"/>. The removal of a prerendering document is deferred until its activation
+    /// (https://wicg.github.io/nav-speculation/prerendering.html#patch-rph).
+    /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler"/>
     [IdlMember("unregisterProtocolHandler", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-unregisterprotocolhandler")]
     public void UnregisterProtocolHandler(string scheme, string url)
     {
         var (normalizedScheme, normalizedUrl) = NormalizeProtocolHandlerParameters(scheme, url);
-        _window.Options.ProtocolHandlers?.Registry.Unregister(normalizedScheme, normalizedUrl);
+        _window.Document.RunAfterPrerendering(() => _window.Options.ProtocolHandlers?.Registry.Unregister(normalizedScheme, normalizedUrl));
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/system-state.html#normalize-protocol-handler-parameters</summary>

@@ -226,6 +226,21 @@ internal sealed partial class HtmlTreeBuilder
     /// <summary>Gets whether the parser has stopped (https://html.spec.whatwg.org/multipage/parsing.html#stop-parsing).</summary>
     public bool IsStopped => _stopped;
 
+    /// <summary>Gets whether the parser was aborted (https://html.spec.whatwg.org/multipage/parsing.html#abort-a-parser), or an abort is requested while it runs.</summary>
+    public bool IsAborted => _aborted || _abortRequested;
+
+    /// <summary>Gets the document of the parser (the document of a fragment parser is not the document into which the nodes are inserted).</summary>
+    internal Document Document => _document;
+
+    /// <summary>Gets the node document of the target of the streamed HTML when the stream started (the intended document of the streamed scripts).</summary>
+    internal Document? StreamingScriptDocument => _streamingScriptDocument;
+
+    /// <summary>
+    /// https://whatpr.org/html/12758/parsing.html#invalid-reference-child-steps: called with the reference child of the root
+    /// insertion location when the parser detects that it is no longer a child of the target.
+    /// </summary>
+    internal Action<Node>? InvalidReferenceChildSteps { get; set; }
+
     /// <summary>
     /// Processes the characters inserted before the insertion point, stopping when the tokenizer reaches the insertion
     /// point or when the tree construction aborts the processing (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#document-write-steps, step 11).
@@ -459,6 +474,18 @@ internal sealed partial class HtmlTreeBuilder
         if (_stopped)
             return;
 
+        // The script elements that are open never run, even the one whose end tag is being processed
+        // (https://whatpr.org/html/12758/parsing.html#abort-a-fragment-parser)
+        foreach (var element in _openElements)
+        {
+            if (GetScriptCore(element) is { } script)
+            {
+                script.AlreadyStarted = true;
+                script.ParserDocument = null;
+                script.IntendedDocument = null;
+            }
+        }
+
         // A script run by the tree construction (e.g. window.stop()) aborts the parser once the current token is processed
         if (_runDepth > 0)
         {
@@ -466,31 +493,31 @@ internal sealed partial class HtmlTreeBuilder
             return;
         }
 
-        foreach (var element in _openElements)
-        {
-            if (GetScriptCore(element) is { } script)
-            {
-                script.AlreadyStarted = true;
-            }
-        }
+        _aborted = true;
 
-        // The streamed scripts that have not run yet would be the pending parsing-blocking script of the parser, which pauses
-        // until they run: they never run, and they no longer block the rendering
+        // The streamed scripts that have not run yet (the pending parsing-blocking script and the scripts that will execute when
+        // the stream is closed) never run, and they no longer block the rendering
         if (_streamedScripts is not null)
         {
-            foreach (var script in _streamedScripts)
+            if (_document.PendingParsingBlockingScript is { } pendingScript)
             {
-                if (script.Element.NodeDocument.ScriptsToExecuteInOrderAsSoonAsPossible.Contains(script))
-                {
-                    script.DiscardScriptOfAbortedParser();
-                }
+                _document.PendingParsingBlockingScript = null;
+                pendingScript.DiscardScriptOfAbortedParser();
             }
 
+            foreach (var script in _document.ScriptsToExecuteWhenParsingFinished)
+            {
+                script.DiscardScriptOfAbortedParser();
+            }
+
+            _document.ScriptsToExecuteWhenParsingFinished.Clear();
             _streamedScripts = null;
         }
 
         StopParsing();
     }
+
+    private bool _aborted;
 
     /// <summary>The script elements streamed by the parser with runScripts (see <see cref="Abort"/>).</summary>
     private List<ScriptElementCore>? _streamedScripts;
@@ -968,7 +995,16 @@ internal sealed partial class HtmlTreeBuilder
     private (Node Parent, Node? Before) AdjustInsertionLocation((Node Parent, Node? Before) location)
     {
         if (RootInsertionTarget is not null && ReferenceEquals(location.Parent, _openElements[0]))
+        {
+            // The reference child was moved or removed (e.g. by a script or a custom element reaction run by the parser): the
+            // stream is errored and the parser is aborted (the node is not inserted)
+            if (RootInsertionReferenceChild is { } referenceChild && !ReferenceEquals(referenceChild.ParentNode, RootInsertionTarget) && InvalidReferenceChildSteps is { } invalidReferenceChildSteps)
+            {
+                invalidReferenceChildSteps(referenceChild);
+            }
+
             return (RootInsertionTarget, RootInsertionReferenceChild);
+        }
 
         return location;
     }
@@ -978,6 +1014,17 @@ internal sealed partial class HtmlTreeBuilder
     {
         if (MaxElementCount is { } maxElementCount && ++_createdElementCount > maxElementCount)
             throw new HtmlParserLimitExceededException($"The markup creates more than {maxElementCount.ToString(CultureInfo.InvariantCulture)} elements");
+
+        // When streaming, an element that will not be inserted (the reference child is no longer a child of the target, or the
+        // parser is being aborted) is dropped: it is created in an inert document without custom element registry, so that it
+        // has no side effect (https://whatpr.org/html/12758/parsing.html#create-an-element-for-the-token)
+        var isDropped = false;
+        if (IsStreaming)
+        {
+            var location = _sanitizerActions is null ? (intendedParent, null) : GetChildInsertionLocation(intendedParent);
+            location = AdjustInsertionLocation(location);
+            isDropped = _abortRequested || IsDisplaced(location.Parent, location.Before);
+        }
 
         // When streaming, the elements of the root are created in the node document of the node into which they are inserted,
         // as their descendants (https://whatpr.org/html/12758/parsing.html#create-an-element-for-the-token)
@@ -993,7 +1040,7 @@ internal sealed partial class HtmlTreeBuilder
 
         // The elements removed or replaced by the sanitizer are created in an inert document, so their descendants (created in
         // their node document) have no side effect, e.g. an image fetch (https://whatpr.org/html/12758/parsing.html#create-an-element-for-the-token)
-        if (sanitizerAction != SanitizerElementAction.Keep)
+        if (sanitizerAction != SanitizerElementAction.Keep || isDropped)
         {
             document = document.GetAppropriateTemplateContentsOwnerDocument();
         }
@@ -1002,7 +1049,8 @@ internal sealed partial class HtmlTreeBuilder
         CustomElementRegistry? registry = null;
 
         // The elements removed or replaced by their children by the sanitizer are never inserted: they are not custom elements
-        // and have no attributes. So are their descendants created in a removed element.
+        // and have no attributes. So are their descendants created in a removed element. A dropped element keeps its
+        // attributes, but has no custom element registry.
         if (sanitizerAction == SanitizerElementAction.Keep)
         {
             // A single pass over the attributes finds the is and customelementregistry attributes
@@ -1032,7 +1080,7 @@ internal sealed partial class HtmlTreeBuilder
             // An element parsed with the customelementregistry attribute has the null registry, and so have its descendants (the
             // registry of their intended parent), as in the browsers (the attribute is not specified yet). Setting the attribute
             // later has no effect.
-            registry = hasRegistryAttribute ? null : CustomElementRegistry.LookUp(registryParent);
+            registry = hasRegistryAttribute || isDropped ? null : CustomElementRegistry.LookUp(registryParent);
         }
 
 
@@ -1179,9 +1227,10 @@ internal sealed partial class HtmlTreeBuilder
 
     /// <summary>
     /// Whether the reference child of an insertion location is no longer a child of its parent (e.g. a script or a custom
-    /// element reaction moved it while HTML is streamed): the node is not inserted (https://whatpr.org/html/12758/parsing.html#insert-a-character).
+    /// element reaction moved it while HTML is streamed), or the streaming parser is being aborted (an abort requested by a
+    /// script or a custom element reaction that the parser runs): the node is not inserted (https://whatpr.org/html/12758/parsing.html#insert-a-character).
     /// </summary>
-    private static bool IsDisplaced(Node targetParent, Node? referenceChild) => referenceChild is not null && !ReferenceEquals(referenceChild.ParentNode, targetParent);
+    private bool IsDisplaced(Node targetParent, Node? referenceChild) => (IsStreaming && _abortRequested) || (referenceChild is not null && !ReferenceEquals(referenceChild.ParentNode, targetParent));
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element</summary>
     private Element InsertForeignElement(HtmlTagToken token, string @namespace, bool onlyAddToElementStack)

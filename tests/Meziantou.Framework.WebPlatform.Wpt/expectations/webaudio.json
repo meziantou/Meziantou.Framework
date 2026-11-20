@@ -3,11 +3,7 @@
     "total": 7
   },
   "webaudio/idlharness.https.window.js": {
-    "total": 1168,
-    "failures": {
-      "DynamicsCompressorNode interface: attribute makeupGain": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"makeupGain\" with the proper type": "FAIL"
-    }
+    "total": 1168
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
     "total": 1,
@@ -563,7 +559,10 @@
     "total": 3
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-nominal-range.html": {
-    "total": 327
+    "total": 325,
+    "failures": {
+      "Executing \"Offline createDynamicsCompressor\"": "FAIL"
+    }
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-setTargetAtTime.html": {
     "total": 6

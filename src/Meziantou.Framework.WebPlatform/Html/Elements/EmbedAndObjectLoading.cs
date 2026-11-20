@@ -186,7 +186,12 @@ internal static class EmbeddedResources
         naturalSize = naturalSize.WithContentDpr(response);
 
         ReadOnlyMemory<byte> bytes = response.ContentBytes ?? System.Text.Encoding.UTF8.GetBytes(response.Content ?? "");
-        image = element.NodeDocument.CreatePaintImage(response.Url ?? url.Serialize(), naturalSize, bytes, MimeType.Parse(type)?.Essence);
+        var imageUrl = response.Url ?? url.Serialize();
+        image = element.NodeDocument.CreatePaintImage(imageUrl, naturalSize, bytes, MimeType.Parse(type)?.Essence);
+
+        // The image is a candidate of the element timing and of the largest contentful paint, as the image of an img element
+        // (https://w3c.github.io/paint-timing/#process-image-that-finished-loading)
+        element.NodeDocument.ProcessImageThatFinishedLoading(element, imageUrl, naturalSize, bytes.Length);
         return true;
     }
 

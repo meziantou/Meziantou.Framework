@@ -410,6 +410,41 @@ public sealed partial class BrowsingContext : IDisposable
     }
 
     /// <summary>
+    /// Whether the top-level browsing context was created by <c>window.open()</c> (with or without opener): the scripts of its
+    /// documents may move and resize its client window (https://drafts.csswg.org/cssom-view/#dom-window-moveto).
+    /// </summary>
+    internal bool IsCreatedByScript { get; set; }
+
+    /// <summary>Moves the client window (<c>window.moveTo()</c>): the position is not negative, the window is not kept inside the screen.</summary>
+    internal void MoveClientWindow(int x, int y)
+    {
+        ClientWindowLeft = Math.Max(0, x);
+        ClientWindowTop = Math.Max(0, y);
+    }
+
+    /// <summary>
+    /// Resizes the client window (<c>window.resizeTo()</c>): the client window has no decoration, so its viewport gets the
+    /// size, not smaller than the one of the popups of the browsers. The media queries are evaluated again, and the
+    /// <c>resize</c> event is fired at its window by the next rendering update.
+    /// </summary>
+    internal void ResizeClientWindow(int width, int height)
+    {
+        width = Math.Max(MinimumPopupViewportSize, width);
+        height = Math.Max(MinimumPopupViewportSize, height);
+        if (IsDestroyed || (ClientWindowViewportWidth == width && ClientWindowViewportHeight == height))
+            return;
+
+        ClientWindowViewportWidth = width;
+        ClientWindowViewportHeight = height;
+        foreach (var navigable in GetInclusiveDescendantNavigables())
+        {
+            navigable.Document.InvalidateLayout();
+        }
+
+        EventLoop.RequestRenderingOpportunity(Document);
+    }
+
+    /// <summary>
     /// The size of the viewport while the documents of the top-level browsing context are displayed fullscreen (the answer of
     /// <see cref="BrowsingContextOptions.EnterFullscreen"/>), or null: the viewport of the options.
     /// </summary>
@@ -607,10 +642,10 @@ public sealed partial class BrowsingContext : IDisposable
     /// (https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context): its
     /// initial about:blank document has the origin of the opener, or an opaque origin without opener.
     /// </summary>
-    internal BrowsingContext CreateAuxiliaryBrowsingContext(string name, Document? opener, SandboxingFlags popupSandboxingFlags = SandboxingFlags.None, BrowsingContext? creator = null)
+    internal BrowsingContext CreateAuxiliaryBrowsingContext(string name, Document? opener, SandboxingFlags popupSandboxingFlags = SandboxingFlags.None, BrowsingContext? creator = null, Document? initialDocumentCreator = null)
     {
         var owner = GroupOwner;
-        var context = new BrowsingContext(Options, parent: null, container: null, owner, opener, name, popupSandboxingFlags)
+        var context = new BrowsingContext(Options, parent: null, container: null, owner, opener is null ? null : initialDocumentCreator ?? opener, name, popupSandboxingFlags)
         {
             Opener = opener?.BrowsingContext,
             CreatorBrowsingContext = creator ?? opener?.BrowsingContext,
@@ -1110,9 +1145,11 @@ public sealed partial class BrowsingContext : IDisposable
     /// https://html.spec.whatwg.org/multipage/document-sequences.html#the-rules-for-choosing-a-navigable: returns the navigable
     /// that a hyperlink, a form or <c>window.open()</c> targeting <paramref name="name"/> navigates. For <c>_blank</c> and the
     /// names that are not found, a new auxiliary browsing context is created (with this browsing context as opener, unless
-    /// <paramref name="noopener"/> is true).
+    /// <paramref name="noopener"/> is true). The initial about:blank document of a new one gets its origin, its base URL and
+    /// its policies from <paramref name="creatorDocument"/> when it is given (e.g. the entry document of <c>window.open()</c>),
+    /// else from the document of the opener.
     /// </summary>
-    internal BrowsingContext? ChooseNavigable(string name, bool noopener, out WindowType windowType)
+    internal BrowsingContext? ChooseNavigable(string name, bool noopener, out WindowType windowType, Document? creatorDocument = null)
     {
         windowType = WindowType.ExistingOrNone;
         if (name.Length == 0 || Infra.InfraAscii.EqualsIgnoreAsciiCase(name, "_self"))
@@ -1155,7 +1192,7 @@ public sealed partial class BrowsingContext : IDisposable
         // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the sandboxing
         // flags of the document propagate to the popup, unless it uses allow-popups-to-escape-sandbox
         var popupSandboxingFlags = (currentDocument.ActiveSandboxingFlags & SandboxingFlags.PropagatesToAuxiliaryBrowsingContexts) != SandboxingFlags.None ? currentDocument.ActiveSandboxingFlags : SandboxingFlags.None;
-        var popup = CreateAuxiliaryBrowsingContext(targetName, noopener ? null : Document, popupSandboxingFlags, creator: this);
+        var popup = CreateAuxiliaryBrowsingContext(targetName, noopener ? null : Document, popupSandboxingFlags, creator: this, creatorDocument);
         popup._isNewTopLevelTraversable = true;
 
         // The window of the new top-level browsing context is the active window of the user: it takes the system focus from
@@ -1554,6 +1591,18 @@ public sealed partial class BrowsingContext : IDisposable
         // The blob URL entry is resolved when the URL is parsed (https://url.spec.whatwg.org/#concept-url-blob-entry): the
         // navigation loads the blob even if the URL is revoked before the document is loaded
         var blobUrlEntry = url.Scheme == "blob" ? BlobUrls.Resolve(url) : null;
+
+        // https://fetch.spec.whatwg.org/#concept-scheme-fetch: the navigation of a child navigable obtains the blob in the
+        // partition of its reserved environment (https://w3c.github.io/FileAPI/#check-for-same-partition-blob-url-usage); a
+        // top-level navigation is not checked. A blob of another partition is a network error.
+        if (blobUrlEntry is { Environment.Origin: { IsOpaque: false } blobOrigin } && Parent is not null)
+        {
+            var nonce = IsCredentiallessNavigable && Top.Window is { } topLevelWindow ? topLevelWindow.PageCredentiallessNonce : (Guid?)null;
+            if (blobUrlEntry.StorageKey != StorageKey.Create(blobOrigin, nonce, this, isNavigable: true))
+            {
+                blobUrlEntry = null;
+            }
+        }
 
         // A traversal (e.g. a reload) uses the URL of the session history entry, whose blob URL entry was resolved when the
         // document was loaded: the document is loaded again even if the URL was revoked since
@@ -2335,6 +2384,7 @@ public sealed partial class BrowsingContext : IDisposable
             timing.WorkerMatchedRouterSource = request.Timing.ServiceWorkerMatchedRouterSource;
             timing.WorkerFinalRouterSource = request.Timing.ServiceWorkerFinalRouterSource;
             timing.IsAnsweredByServiceWorker = request.IsAnsweredByServiceWorker;
+            timing.CacheState = internalResponse.CacheState;
 
             timing.ResponseStart = timing.PrefetchResponseStart != 0 ? timing.PrefetchResponseStart : EventLoop.TimeProvider.GetTimestamp();
             timing.FirstInterimResponseStart = timing.PrefetchResponseStart != 0 ? 0 : request.Timing.FirstInterimNetworkResponseStart;
@@ -3122,6 +3172,7 @@ public sealed partial class BrowsingContext : IDisposable
             EndTime = ToRelativeTime(timing.ResponseEnd),
             FinalConnectionTimingInfo = new ConnectionTimingInfo(fetchStart, fetchStart, fetchStart, fetchStart, isSecure ? fetchStart : 0, isFetched ? "http/1.1" : "") { IsSecure = isSecure },
             TimingAllowPassed = true,
+            CacheState = timing.CacheState,
         };
 
         var bodyInfo = new ResponseBodyInfo(ResourceTiming.GetEncodedBodySize(headers, bodySize ?? 0, timing.IsAnsweredByServiceWorker), bodySize ?? 0, ResourceTiming.MinimizeSupportedMimeType(HeaderList.ExtractMimeType(headers)));

@@ -379,6 +379,8 @@ internal sealed partial class IdlModel
         SetMouseEventCoordinateTypes(model);
         AddShadowRootGetSelection(model);
         AddShadowRootElementFromPoint(model);
+        AddWindowFind(model);
+        AddMouseEventFromToElement(model);
         AddTrustedHtmlParserOptions(model);
         AddFontFaceStretch(model);
         AddFontFaceDescriptorsSizeAdjust(model);
@@ -1293,6 +1295,80 @@ internal sealed partial class IdlModel
             DeclaringDefinition = definition.Name,
             ExperimentalApi = "ShadowRootExtensions",
         });
+    }
+
+    /// <summary>
+    /// window.find() (https://developer.mozilla.org/docs/Web/API/Window/find), the find-in-page API that the browsers
+    /// implement and that the inert tests use, but that no specification defines:
+    /// <code>
+    /// partial interface Window {
+    ///   boolean find(optional DOMString string = "", optional boolean caseSensitive = false, optional boolean backwards = false,
+    ///                optional boolean wrapAround = false, optional boolean wholeWord = false, optional boolean searchInFrames = false,
+    ///                optional boolean showDialog = false);
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddWindowFind(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("Window", out var definition))
+            return;
+
+        using var emptyString = JsonDocument.Parse("""{"type":"string","value":""}""");
+        using var falseValue = JsonDocument.Parse("""{"type":"boolean","value":false}""");
+        var emptyStringDefault = emptyString.RootElement.Clone();
+        var falseDefault = falseValue.RootElement.Clone();
+        IdlArgument Boolean(string name) => new() { Name = name, Type = new IdlType { Name = "boolean" }, Optional = true, Default = falseDefault };
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Operation,
+            Name = "find",
+            Type = new IdlType { Name = "boolean" },
+            Arguments =
+            [
+                new IdlArgument { Name = "string", Type = new IdlType { Name = "DOMString" }, Optional = true, Default = emptyStringDefault },
+                Boolean("caseSensitive"),
+                Boolean("backwards"),
+                Boolean("wrapAround"),
+                Boolean("wholeWord"),
+                Boolean("searchInFrames"),
+                Boolean("showDialog"),
+            ],
+            Href = "https://developer.mozilla.org/docs/Web/API/Window/find#syntax",
+            Source = "html",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "WindowFind",
+        });
+    }
+
+    /// <summary>
+    /// The legacy fromElement and toElement attributes of MouseEvent, which Blink and WebKit implement (the pointer events
+    /// tests check that they are null for the pointer events, https://w3c.github.io/pointerevents/#attributes-and-default-actions),
+    /// but that no specification defines:
+    /// <code>
+    /// partial interface MouseEvent {
+    ///   readonly attribute Node? fromElement;
+    ///   readonly attribute Node? toElement;
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddMouseEventFromToElement(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("MouseEvent", out var definition))
+            return;
+
+        foreach (var name in (string[])["fromElement", "toElement"])
+        {
+            definition.Members.Add(new IdlMember
+            {
+                Kind = IdlMemberKind.Attribute,
+                Name = name,
+                Type = new IdlType { Name = "Node", Nullable = true },
+                Readonly = true,
+                Source = "uievents",
+                DeclaringDefinition = definition.Name,
+                ExperimentalApi = "MouseEventFromToElement",
+            });
+        }
     }
 
     /// <summary>

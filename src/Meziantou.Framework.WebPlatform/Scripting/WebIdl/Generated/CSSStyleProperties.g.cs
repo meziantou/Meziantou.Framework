@@ -50,6 +50,8 @@ internal static class Binding_CSSStyleProperties<TAdapter, TValue> where TAdapte
         ("grid-lanes-pack", "grid-lanes-pack"),
         ("flowTolerance", "flow-tolerance"),
         ("flow-tolerance", "flow-tolerance"),
+        ("textAutospaceSize", "text-autospace-size"),
+        ("text-autospace-size", "text-autospace-size"),
         ("accentColor", "accent-color"),
         ("accent-color", "accent-color"),
         ("alignContent", "align-content"),

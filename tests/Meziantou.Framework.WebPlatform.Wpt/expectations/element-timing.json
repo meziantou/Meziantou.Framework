@@ -90,11 +90,7 @@
     "total": 1
   },
   "element-timing/object.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Element with an object containing an image.": "TIMEOUT"
-    }
+    "total": 1
   },
   "element-timing/observe-background-image.html": {
     "total": 1

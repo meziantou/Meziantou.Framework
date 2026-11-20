@@ -12,8 +12,8 @@ description: "The results of the web-platform-tests of editing, and why the test
 | [Stable](#stable-tests) | 76 | 133 | 0 | 57% |
 | [Tentative](#tentative-tests) | 27 | 62 | 0 | 44% |
 | [Reftests](#reftests) | 1 | 2 | 0 | 50% |
-| [Crash tests](#crash-tests) | 147 | 152 | 0 | 97% |
-| **All** | **251** | **349** | **0** | **72%** |
+| [Crash tests](#crash-tests) | 148 | 152 | 0 | 97% |
+| **All** | **252** | **349** | **0** | **72%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 8
 - **TEST BUG**: 71
-- **NOT IMPLEMENTED**: 26
+- **NOT IMPLEMENTED**: 25
 
 ## Stable tests
 
@@ -321,7 +321,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`crashtests/inserthtml-only-non-editable-nodes.html`](https://wpt.fyi/results/editing/crashtests/inserthtml-only-non-editable-nodes.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/inserthtml-selecting-across-dialog.html`](https://wpt.fyi/results/editing/crashtests/inserthtml-selecting-across-dialog.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/inserthtml-to-replace-root-list-element-in-designMode.html`](https://wpt.fyi/results/editing/crashtests/inserthtml-to-replace-root-list-element-in-designMode.html) | Pass | 1 / 1 |  |  |
-| [`crashtests/insertimage-with-replacing-selection-in-picture-element.html`](https://wpt.fyi/results/editing/crashtests/insertimage-with-replacing-selection-in-picture-element.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | `window.find()`: the script throws a ReferenceError and the test-wait class is never removed |
+| [`crashtests/insertimage-with-replacing-selection-in-picture-element.html`](https://wpt.fyi/results/editing/crashtests/insertimage-with-replacing-selection-in-picture-element.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/insertlinebreak-around-comment-node.html`](https://wpt.fyi/results/editing/crashtests/insertlinebreak-around-comment-node.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/insertlinebreak-in-map-element-editing-host.html`](https://wpt.fyi/results/editing/crashtests/insertlinebreak-in-map-element-editing-host.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/insertorderedlist-in-focused-inline-editing-host.html`](https://wpt.fyi/results/editing/crashtests/insertorderedlist-in-focused-inline-editing-host.html) | Pass | 1 / 1 |  |  |

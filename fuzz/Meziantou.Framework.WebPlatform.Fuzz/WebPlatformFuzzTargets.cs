@@ -102,6 +102,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-canvas-drawables", data => CanvasDrawElements(FuzzText.Decode(data.Length > CanvasDrawablesMaxLength ? data[..CanvasDrawablesMaxLength] : data))) { Seeds = () => GetSeeds("canvas-drawable"), Dictionary = CanvasDrawablesTokens },
         new("webplatform-canvas-filter", CanvasFilterDescription) { Seeds = GetCanvasFilterSeeds, Dictionary = CanvasFilterTokens },
         new("webplatform-svg-text-shapes", SvgTextShapes) { Seeds = GetSvgTextShapesSeeds, Dictionary = SvgTextShapeTokens },
+        new("webplatform-svg-length", data => SvgLengthValue(FuzzText.Decode(data.Length > SvgLengthMaxLength ? data[..SvgLengthMaxLength] : data))) { Seeds = GetSvgLengthSeeds, Dictionary = SvgLengthTokens },
         new("webplatform-hyphenation", Hyphenation) { Seeds = GetHyphenationSeeds, Dictionary = HyphenationTokens },
         new("webplatform-paged-inline-size", PagedInlineSize) { Seeds = GetPagedInlineSizeSeeds, Dictionary = PagedInlineSizeTokens },
         new("webplatform-videoframe-copyto", VideoFrameCopyTo) { Seeds = GetVideoFrameCopyToSeeds },
@@ -111,6 +112,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-webm-writer", WebMWriterTarget) { Seeds = GetWebMWriterSeeds },
         new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
         new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },
+        new("webplatform-http-cache-ranges", data => CacheRanges(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache-ranges"), Dictionary = HttpCacheRangeTokens },
         new("webplatform-image-metadata", ImageMetadataTarget) { Seeds = GetImageMetadataSeeds, Dictionary = ImageMetadataTokens },
         new("webplatform-webauthn", WebAuthentication) { Seeds = GetWebAuthnSeeds, Dictionary = WebAuthnTokens },
         new("webplatform-media-constraints", MediaConstraints) { Seeds = GetMediaConstraintsSeeds, Dictionary = MediaConstraintsTokens },
@@ -125,12 +127,15 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-user-scroll", UserScroll) { Seeds = GetUserScrollSeeds, Dictionary = UserScrollTokens },
         new("webplatform-entries-path", data => EntriesPathResolution(FuzzText.Decode(data))) { Seeds = GetEntriesPathSeeds, Dictionary = EntriesPathTokens },
         new("webplatform-drag-and-drop", DragAndDrop) { Seeds = GetDragAndDropSeeds, Dictionary = DragTokens },
+        new("webplatform-window-find", data => WindowFind(FuzzText.Decode(data.Length > WindowFindMaxLength ? data[..WindowFindMaxLength] : data))) { Seeds = GetWindowFindSeeds, Dictionary = WindowFindTokens },
+        new("webplatform-date-time-fields", DateTimeFields) { Seeds = GetDateTimeFieldsSeeds, Dictionary = DateTimeFieldsTokens },
         new("webplatform-speculation-rules", data => SpeculationRules(FuzzText.Decode(data))) { Seeds = GetSpeculationRulesSeeds, Dictionary = SpeculationRulesTokens },
         new("webplatform-payment-method-manifest", PaymentMethodManifestTarget) { Seeds = GetPaymentMethodManifestSeeds, Dictionary = PaymentMethodManifestTokens },
         new("webplatform-link-header", data => LinkHeaderTarget(FuzzText.Decode(data))) { Seeds = GetLinkHeaderSeeds, Dictionary = LinkHeaderTokens },
         new("webplatform-fedcm", FedCm) { Seeds = GetFedCmSeeds, Dictionary = FedCmTokens },
         new("webplatform-nel-header", data => NetworkErrorLoggingHeader(FuzzText.Decode(data))) { Seeds = GetNetworkErrorLoggingSeeds, Dictionary = NetworkErrorLoggingTokens },
         new("webplatform-media-content-type", data => MediaContentTypeTarget(FuzzText.Decode(data))) { Seeds = GetMediaContentTypeSeeds, Dictionary = MediaContentTypeTokens },
+        new("webplatform-pi-attributes", data => ProcessingInstructionAttributes(FuzzText.Decode(data))) { Seeds = GetProcessingInstructionAttributesSeeds, Dictionary = ProcessingInstructionAttributesTokens },
     ];
 
     /// <summary>

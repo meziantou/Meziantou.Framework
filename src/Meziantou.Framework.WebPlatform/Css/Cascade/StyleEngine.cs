@@ -2916,8 +2916,8 @@ internal sealed partial class StyleEngine
         var preferredTitle = root is Dom.Document { PreferredStyleSheetSetName: { Length: > 0 } name } ? name : null;
         foreach (var sheet in list)
         {
-            // The style sheet sets cannot be selected: the alternate style sheets never apply
-            if (sheet.Alternate)
+            // An alternate style sheet applies when its set is the one selected by <meta http-equiv=default-style>
+            if (sheet.Alternate && (root is not Dom.Document { SelectedStyleSheetSetName: { } selectedName } || sheet.Title != selectedName))
                 continue;
 
             if (!string.IsNullOrEmpty(sheet.Title))

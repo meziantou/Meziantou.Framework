@@ -666,6 +666,20 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         var a0 = r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         o.CancelAnimationFrame(a0); return r.Adapter.Undefined;
     }
+    #pragma warning disable WEBPLATEXP0028 // The binding exposes the experimental Web IDL member
+    private static TValue Op_find(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (string)"" : r.ToDomString(a[0]);
+        var a1 = r.IsMissing(a, 1) ? (bool)false : r.ToBoolean(a[1]);
+        var a2 = r.IsMissing(a, 2) ? (bool)false : r.ToBoolean(a[2]);
+        var a3 = r.IsMissing(a, 3) ? (bool)false : r.ToBoolean(a[3]);
+        var a4 = r.IsMissing(a, 4) ? (bool)false : r.ToBoolean(a[4]);
+        var a5 = r.IsMissing(a, 5) ? (bool)false : r.ToBoolean(a[5]);
+        var a6 = r.IsMissing(a, 6) ? (bool)false : r.ToBoolean(a[6]);
+        var result = o.Find(a0, a1, a2, a3, a4, a5, a6); return r.FromBoolean(result);
+    }
+    #pragma warning restore WEBPLATEXP0028
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "window", Get_window, null, configurable: false);
@@ -881,5 +895,6 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineOperation(instanceTarget, "structuredClone", 1, Op_structuredClone);
         r.DefineOperation(instanceTarget, "requestAnimationFrame", 1, Op_requestAnimationFrame);
         r.DefineOperation(instanceTarget, "cancelAnimationFrame", 1, Op_cancelAnimationFrame);
+        r.DefineOperation(instanceTarget, "find", 0, Op_find);
     }
 }

@@ -187,6 +187,32 @@ public sealed class BlobTests : IDisposable
     }
 
     [Fact]
+    public void Request_FetchedByAnotherWindowAfterTheRevocation_ReadsTheBlob()
+    {
+        var document = Load("""
+            <iframe id=frame srcdoc='<p>frame'></iframe>
+            <script>
+              const iframe = document.getElementById('frame');
+              iframe.onload = async () => {
+                const url = URL.createObjectURL(new Blob(['content']));
+                const request = new Request(url);
+                URL.revokeObjectURL(url);
+                try {
+                  const results = [await (await iframe.contentWindow.fetch(request.clone())).text(), await (await fetch(request)).text()];
+                  document.title = results.join('|');
+                } catch (e) {
+                  document.title = e.name;
+                }
+              };
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+
+        // The request keeps the blob URL entry resolved when it was created, in every realm and in its clones
+        Assert.Equal("content|content", document.Title);
+    }
+
+    [Fact]
     public void RevokeObjectUrl_WithFragment_DoesNotRevoke()
     {
         var document = Load("""
@@ -198,6 +224,45 @@ public sealed class BlobTests : IDisposable
             """);
         var record = WebPlatform.Urls.UrlParser.Parse(document.Body!.GetAttribute("data-url")!, baseUrl: null)!;
         Assert.NotNull(document.BrowsingContext!.BlobUrls.Resolve(record));
+    }
+
+    [Fact]
+    public async Task BlobUrl_IsPartitionedByStorageKey()
+    {
+        // The nested document has the origin of the top-level document, but it is embedded by a cross-site document: its
+        // storage key has the cross-site ancestor bit, so it can neither fetch nor revoke the URLs of the top-level document
+        var loader = new RecordingLoader();
+        loader.Resources["https://other.example/frame.html"] = new DocumentResource("<iframe src='https://example.com/nested.html'></iframe>");
+        loader.Resources["https://example.com/nested.html"] = new DocumentResource("""
+            <script>
+              const url = top.blobUrl;
+              URL.revokeObjectURL(url);
+              fetch(url).then(r => r.text(), e => e.name)
+                .then(nested => top.fetch(url).then(r => r.text()).then(own => top.document.title = nested + '|' + own));
+            </script>
+            """);
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            DocumentLoader = loader,
+            ScriptEngine = _engine,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <script>
+              window.blobUrl = URL.createObjectURL(new Blob(['top']));
+            </script>
+            <iframe src="https://other.example/frame.html"></iframe>
+            """);
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (document.Title.Length == 0 && DateTime.UtcNow < deadline)
+        {
+            _contexts.EventLoop.RunUntilIdle();
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Empty(_errors);
+        Assert.Equal("TypeError|top", document.Title);
     }
 
     [Fact]

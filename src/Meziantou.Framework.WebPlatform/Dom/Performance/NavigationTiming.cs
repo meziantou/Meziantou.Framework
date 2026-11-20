@@ -115,6 +115,12 @@ internal sealed class DocumentLoadTimingInfo
     public string DeliveryType { get; set; } = "";
 
     /// <summary>
+    /// The cache state of the response of the navigation (https://fetch.spec.whatwg.org/#concept-response-cache-state): the
+    /// empty string, <c>local</c> (a stored response of the HTTP cache used without validation) or <c>validated</c>.
+    /// </summary>
+    public string CacheState { get; set; } = "";
+
+    /// <summary>
     /// The time the response of the navigational prefetch used by the navigation was received (not earlier than the fetch
     /// start of the navigation), or 0.
     /// </summary>

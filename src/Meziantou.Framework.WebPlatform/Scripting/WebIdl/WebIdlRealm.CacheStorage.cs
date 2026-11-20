@@ -298,6 +298,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             RequestIncludesCredentials = Adapter.ToBoolean(Adapter.Get(serialized, Key("requestIncludesCredentials"))),
             CrossOriginResourcePolicy = Adapter.Get(serialized, Key("crossOriginResourcePolicy")) is var policy && Adapter.IsString(policy) ? Adapter.AsString(policy) : null,
             Body = Adapter.IsNull(body) || Adapter.IsUndefined(body) ? null : GetBytes(body),
+            RangeRequested = Adapter.IsObject(internalResponse) && Adapter.ToBoolean(Adapter.Get(internalResponse, Key("rangeRequested"))),
         };
     }
 
@@ -323,6 +324,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 UrlList = response.UrlList,
                 Body = response.Body,
             }));
+            SetMember(Adapter.Get(opaque, Key("internal")), "rangeRequested", Adapter.FromBoolean(response.RangeRequested));
             return opaque;
         }
 

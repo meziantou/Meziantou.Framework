@@ -829,24 +829,10 @@
     "total": 14
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry-different-function-realm.html": {
-    "total": 5,
-    "failures": {
-      "Fulfillment handler on fulfilled promise": "FAIL",
-      "Fulfillment handler on pending-then-fulfilled promise": "FAIL",
-      "Rejection handler on pending-then-rejected promise": "FAIL",
-      "Rejection handler on rejected promise": "FAIL",
-      "Thenable resolution": "FAIL"
-    }
+    "total": 5
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-entry.html": {
-    "total": 6,
-    "failures": {
-      "Fulfillment handler on fulfilled promise": "FAIL",
-      "Fulfillment handler on pending-then-fulfilled promise": "FAIL",
-      "Rejection handler on pending-then-rejected promise": "FAIL",
-      "Rejection handler on rejected promise": "FAIL",
-      "Thenable resolution": "FAIL"
-    }
+    "total": 6
   },
   "html/webappapis/scripting/processing-model-2/integration-with-the-javascript-job-queue/promise-job-incumbent.html": {
     "total": 11

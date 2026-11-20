@@ -209,22 +209,13 @@
     "total": 2
   },
   "fetch/api/basic/request-upload-421.any.js": {
-    "total": 1,
-    "failures": {
-      "Fetch with POST with text body on 421 response should be retried once on new connection.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/request-upload-421.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Fetch with POST with text body on 421 response should be retried once on new connection.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/request-upload-421.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Fetch with POST with text body on 421 response should be retried once on new connection.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/request-upload.any.js": {
     "total": 18
@@ -236,46 +227,13 @@
     "total": 18
   },
   "fetch/api/basic/request-upload.h2.any.js": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "Feature detect for POST with ReadableStream": "TIMEOUT",
-      "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "ReadbleStream should be closed on signal.abort": "NOTRUN",
-      "Streaming upload should fail on a 401 response": "NOTRUN",
-      "Streaming upload with body containing a String": "NOTRUN",
-      "Streaming upload with body containing a number": "NOTRUN",
-      "Streaming upload with body containing null": "NOTRUN",
-      "Synchronous feature detect fails if feature unsupported": "NOTRUN"
-    }
+    "total": 12
   },
   "fetch/api/basic/request-upload.h2.any.js#dedicatedworker": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "Feature detect for POST with ReadableStream": "TIMEOUT",
-      "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "ReadbleStream should be closed on signal.abort": "NOTRUN",
-      "Streaming upload should fail on a 401 response": "NOTRUN",
-      "Streaming upload with body containing a String": "NOTRUN",
-      "Streaming upload with body containing a number": "NOTRUN",
-      "Streaming upload with body containing null": "NOTRUN",
-      "Synchronous feature detect fails if feature unsupported": "NOTRUN"
-    }
+    "total": 12
   },
   "fetch/api/basic/request-upload.h2.any.js#sharedworker": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "Feature detect for POST with ReadableStream": "TIMEOUT",
-      "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "ReadbleStream should be closed on signal.abort": "NOTRUN",
-      "Streaming upload should fail on a 401 response": "NOTRUN",
-      "Streaming upload with body containing a String": "NOTRUN",
-      "Streaming upload with body containing a number": "NOTRUN",
-      "Streaming upload with body containing null": "NOTRUN",
-      "Synchronous feature detect fails if feature unsupported": "NOTRUN"
-    }
+    "total": 12
   },
   "fetch/api/basic/response-null-body.any.js": {
     "total": 11
@@ -2270,42 +2228,24 @@
   "fetch/http-cache/partial.any.js": {
     "total": 9,
     "failures": {
-      "HTTP cache stores complete response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it with only-if-cached": "FAIL",
-      "HTTP cache stores partial content and completes it": "FAIL",
       "HTTP cache stores partial content and reuses it": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores partial response and serves smaller ranges from it (byte-range-spec)": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL"
     }
   },
   "fetch/http-cache/partial.any.js#dedicatedworker": {
     "total": 9,
     "failures": {
-      "HTTP cache stores complete response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it with only-if-cached": "FAIL",
-      "HTTP cache stores partial content and completes it": "FAIL",
       "HTTP cache stores partial content and reuses it": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores partial response and serves smaller ranges from it (byte-range-spec)": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL"
     }
   },
   "fetch/http-cache/partial.any.js#sharedworker": {
     "total": 9,
     "failures": {
-      "HTTP cache stores complete response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it with only-if-cached": "FAIL",
-      "HTTP cache stores partial content and completes it": "FAIL",
       "HTTP cache stores partial content and reuses it": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores partial response and serves smaller ranges from it (byte-range-spec)": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL"
     }
   },
@@ -2597,56 +2537,13 @@
     "total": 18
   },
   "fetch/metadata/generated/element-link-icon.https.sub.html": {
-    "harness": "TIMEOUT",
     "total": 22,
     "failures": {
-      "sec-fetch-dest no attributes": "NOTRUN",
-      "sec-fetch-mode attributes: crossorigin": "NOTRUN",
-      "sec-fetch-mode attributes: crossorigin=anonymous": "NOTRUN",
-      "sec-fetch-mode attributes: crossorigin=use-credentials": "NOTRUN",
-      "sec-fetch-mode no attributes": "NOTRUN",
-      "sec-fetch-site - Cross-Site -> Cross-Site no attributes": "NOTRUN",
-      "sec-fetch-site - Cross-Site -> Same Origin no attributes": "NOTRUN",
-      "sec-fetch-site - Cross-Site -> Same-Site no attributes": "NOTRUN",
-      "sec-fetch-site - Cross-site no attributes": "NOTRUN",
-      "sec-fetch-site - Same origin no attributes": "TIMEOUT",
-      "sec-fetch-site - Same site no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Origin -> Cross-Site -> Same-Origin redirect no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Origin -> Cross-Site no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Origin -> Same Origin no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Origin -> Same-Site -> Same-Origin redirect no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Origin -> Same-Site no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Site -> Cross-Site no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Site -> Same Origin no attributes": "NOTRUN",
-      "sec-fetch-site - Same-Site -> Same-Site no attributes": "NOTRUN",
-      "sec-fetch-storage-access - Cross-site no attributes": "NOTRUN",
-      "sec-fetch-storage-access - Same site no attributes": "NOTRUN",
-      "sec-fetch-user no attributes": "NOTRUN"
+      "sec-fetch-dest no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-link-icon.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 18,
-    "failures": {
-      "sec-fetch-dest - Not sent to non-trustworthy cross-site destination no attributes": "NOTRUN",
-      "sec-fetch-dest - Not sent to non-trustworthy same-origin destination no attributes": "NOTRUN",
-      "sec-fetch-dest - Not sent to non-trustworthy same-site destination no attributes": "NOTRUN",
-      "sec-fetch-mode - Not sent to non-trustworthy cross-site destination no attributes": "NOTRUN",
-      "sec-fetch-mode - Not sent to non-trustworthy same-origin destination no attributes": "NOTRUN",
-      "sec-fetch-mode - Not sent to non-trustworthy same-site destination no attributes": "NOTRUN",
-      "sec-fetch-site - HTTPS downgrade (header not sent) no attributes": "NOTRUN",
-      "sec-fetch-site - HTTPS downgrade-upgrade no attributes": "NOTRUN",
-      "sec-fetch-site - HTTPS upgrade no attributes": "NOTRUN",
-      "sec-fetch-site - Not sent to non-trustworthy cross-site destination no attributes": "NOTRUN",
-      "sec-fetch-site - Not sent to non-trustworthy same-origin destination no attributes": "TIMEOUT",
-      "sec-fetch-site - Not sent to non-trustworthy same-site destination no attributes": "NOTRUN",
-      "sec-fetch-storage-access - Not sent to non-trustworthy cross-site destination no attributes": "NOTRUN",
-      "sec-fetch-storage-access - Not sent to non-trustworthy same-origin destination no attributes": "NOTRUN",
-      "sec-fetch-storage-access - Not sent to non-trustworthy same-site destination no attributes": "NOTRUN",
-      "sec-fetch-user - Not sent to non-trustworthy cross-site destination no attributes": "NOTRUN",
-      "sec-fetch-user - Not sent to non-trustworthy same-origin destination no attributes": "NOTRUN",
-      "sec-fetch-user - Not sent to non-trustworthy same-site destination no attributes": "NOTRUN"
-    }
+    "total": 18
   },
   "fetch/metadata/generated/element-link-prefetch.https.optional.sub.html": {
     "total": 34,
@@ -3071,11 +2968,7 @@
     "total": 3
   },
   "fetch/range/sw-416.https.window.js": {
-    "total": 2,
-    "failures": {
-      "416 response not allowed following no-cors ranged request": "FAIL",
-      "Cached 416 response not allowed following no-cors ranged request": "FAIL"
-    }
+    "total": 2
   },
   "fetch/range/sw-intercept-range.https.window.js": {
     "total": 2
@@ -3084,11 +2977,7 @@
     "total": 1
   },
   "fetch/range/sw.https.window.js": {
-    "total": 10,
-    "failures": {
-      "Cached ranged response not allowed following no-cors ranged request": "FAIL",
-      "Ranged response not allowed following no-cors ranged request": "FAIL"
-    }
+    "total": 10
   },
   "fetch/redirect-navigate/302-found-post.html": {
     "total": 1
@@ -3112,8 +3001,16 @@
     "total": 1
   },
   "fetch/security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 10,
+    "failures": {
+      "Does not block EventSource": "FAIL",
+      "Does not block Worker": "FAIL",
+      "Does not block fetch": "FAIL",
+      "Does not block importScripts": "FAIL",
+      "Does not block location.replace(`resources/empty.html?\n<`)": "FAIL",
+      "Does not block window.open(`resources/empty.html?\n<`,'_self')": "FAIL",
+      "Does not block xhr": "FAIL"
+    }
   },
   "fetch/security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html": {
     "total": 14,

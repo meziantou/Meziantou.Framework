@@ -37,6 +37,14 @@ internal sealed class ScriptElementCore(Element element)
     /// <summary>Whether <see cref="SourceTextPosition"/> is the position of the source text in the document (the script was created by the HTML parser).</summary>
     public bool HasSourceTextPosition => _sourceTextPosition is not null;
 
+    /// <summary>
+    /// The intended document (https://whatpr.org/html/12758/scripting.html#concept-script-intended-document): the document in
+    /// which the script is expected to execute, set by the streaming fragment parser on the scripts it inserts (their parser
+    /// document is the document of the fragment parser). Null for the other scripts: the parser document is the document in
+    /// which they execute.
+    /// </summary>
+    public Document? IntendedDocument { get; set; }
+
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#parser-inserted</summary>
     public bool IsParserInserted => ParserDocument is not null;
 
@@ -256,6 +264,8 @@ internal sealed class ScriptElementCore(Element element)
 
         var parserDocument = ParserDocument;
         ParserDocument = null;
+        var intendedDocument = IntendedDocument;
+        IntendedDocument = null;
         if (parserDocument is not null && !Element.HasAttributeWithLocalName("async"))
         {
             ForceAsync = true;
@@ -287,7 +297,7 @@ internal sealed class ScriptElementCore(Element element)
         AlreadyStarted = true;
         var document = Element.NodeDocument;
         PreparationTimeDocument = document;
-        if (parserDocument is not null && !ReferenceEquals(parserDocument, document))
+        if ((intendedDocument ?? parserDocument) is { } expectedDocument && !ReferenceEquals(expectedDocument, document))
             return;
 
         // https://html.spec.whatwg.org/multipage/webappapis.html#concept-n-noscript: scripting is disabled for the documents

@@ -525,7 +525,7 @@ public partial class HtmlFormElement
         var enctype = GetSubmitterAttributeState(submitter, "formenctype", "enctype", EnumeratedAttributes.Formenctype, EnumeratedAttributes.Enctype);
         var formTarget = submitter is not HtmlFormElement && submitter.IsSubmitButton() ? submitter.GetAttributeValue("formtarget") : null;
         var target = GetElementTarget(formTarget);
-        if (formDocument.BrowsingContext?.ChooseNavigable(target, HyperlinkElementUtils.GetNoopener(this, target), out _) is not { } targetNavigable)
+        if (formDocument.BrowsingContext?.ChooseNavigable(target, HyperlinkElementUtils.GetNoopener(this, parsedAction, target), out _) is not { } targetNavigable)
             return;
 
         var historyHandling = ReferenceEquals(formDocument, targetNavigable.Document) && !formDocument.CompletelyLoaded ? NavigationHistoryBehavior.Replace : NavigationHistoryBehavior.Auto;

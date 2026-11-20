@@ -405,6 +405,36 @@ public sealed class SpeculationRulesTests : IDisposable
     }
 
     [Fact]
+    public async Task Prerender_DelaysTheWorkersUntilTheActivation()
+    {
+        _loader.Resources["https://example.com/worker.js"] = new DocumentResource("postMessage('');") { Headers = [new("Content-Type", "text/javascript")] };
+        _loader.Resources["https://example.com/next.html"] = new DocumentResource("""
+            <title>next</title>
+            <script>
+              window.log = [];
+              new Worker('worker.js').onmessage = () => { log.push('worker ' + document.prerendering); document.title = log.join(); };
+              document.addEventListener('prerenderingchange', () => log.push('prerenderingchange'));
+              moveTo(10, 10);
+              resizeTo(200, 200);
+            </script>
+            """);
+        var context = Load("""
+            <title>initiator</title>
+            <script type="speculationrules">{ "prerender": [{ "urls": ["next.html"] }] }</script>
+            """);
+        await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
+
+        // The script of the worker is fetched, but the worker does not start, and the window is neither moved nor resized
+        Assert.Single(RequestsOf("https://example.com/worker.js"));
+
+        context.Document.DefaultView!.Location.Href = "https://example.com/next.html";
+        await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("prerenderingchange,worker false", context.Document.Title);
+        Assert.Equal((0, 0), (context.Window.ScreenX, context.Window.ScreenY));
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public async Task Prerender_DelaysTheWebLocksUntilTheActivation()
     {
         _loader.Resources["https://example.com/next.html"] = new DocumentResource("""

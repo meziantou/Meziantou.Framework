@@ -49,26 +49,25 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,575 | 30,012 | 1,296 | 96% |
-| [Tentative](#tentative-tests) | 1,630 | 3,031 | 626 | 68% |
-| [Reftests](#reftests) | 28,679 | 29,567 | 137 | 97% |
-| [Crash tests](#crash-tests) | 2,101 | 2,124 | 13 | 99.5% |
-| **All** | **59,985** | **64,734** | **2,072** | **96%** |
+| [Stable](#stable-tests) | 27,644 | 30,012 | 1,296 | 96% |
+| [Tentative](#tentative-tests) | 1,631 | 3,031 | 626 | 68% |
+| [Reftests](#reftests) | 28,681 | 29,567 | 137 | 97% |
+| [Crash tests](#crash-tests) | 2,102 | 2,124 | 13 | 99.5% |
+| **All** | **60,058** | **64,734** | **2,072** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 110
-- **TEST BUG**: 1,139
-- **NOT IMPLEMENTED**: 2,697
+- **BUG**: 112
+- **TEST BUG**: 1,155
+- **NOT IMPLEMENTED**: 2,611
 - **REQUIRES**: 631
-  - `hardware`: 443
+  - `hardware`: 444
   - `layout`: 22
   - `media`: 26
   - `user-input`: 149
-  - `workers`: 1
-- **TEST RUNNER**: 107
+- **TEST RUNNER**: 104
 - **OUT OF SCOPE**: 260
 - **FLAKY**: 1
 - **PERFORMANCE**: 6
@@ -117,7 +116,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/compositing`](css/compositing.md) | 13 | 15 | 0 | 87% |
 | [`css/css-align`](css/css-align.md) | 242 | 242 | 0 | 100% |
 | [`css/css-anchor-position`](css/css-anchor-position.md) | 258 | 265 | 0 | 97% |
-| [`css/css-animations`](css/css-animations.md) | 96 | 101 | 0 | 95% |
+| [`css/css-animations`](css/css-animations.md) | 98 | 101 | 0 | 97% |
 | [`css/css-backgrounds`](css/css-backgrounds.md) | 62 | 65 | 0 | 95% |
 | [`css/css-borders`](css/css-borders.md) | 107 | 107 | 0 | 100% |
 | [`css/css-box`](css/css-box.md) | 51 | 53 | 0 | 96% |
@@ -161,7 +160,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-parser-api`](css/css-parser-api.md) | 1 | 1 | 0 | 100% |
 | [`css/css-position`](css/css-position.md) | 118 | 121 | 0 | 98% |
 | [`css/css-properties-values-api`](css/css-properties-values-api.md) | 100 | 106 | 0 | 94% |
-| [`css/css-pseudo`](css/css-pseudo.md) | 43 | 51 | 0 | 84% |
+| [`css/css-pseudo`](css/css-pseudo.md) | 45 | 51 | 0 | 88% |
 | [`css/css-rhythm`](css/css-rhythm.md) | 16 | 17 | 0 | 94% |
 | [`css/css-ruby`](css/css-ruby.md) | 21 | 22 | 0 | 95% |
 | [`css/css-scroll-anchoring`](css/css-scroll-anchoring.md) | 69 | 70 | 0 | 99% |
@@ -173,15 +172,15 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-sizing`](css/css-sizing.md) | 212 | 214 | 0 | 99% |
 | [`css/css-syntax`](css/css-syntax.md) | 47 | 48 | 0 | 98% |
 | [`css/css-tables`](css/css-tables.md) | 111 | 115 | 0 | 97% |
-| [`css/css-text`](css/css-text.md) | 342 | 355 | 0 | 96% |
+| [`css/css-text`](css/css-text.md) | 346 | 355 | 0 | 97% |
 | [`css/css-text-decor`](css/css-text-decor.md) | 48 | 48 | 0 | 100% |
 | [`css/css-transforms`](css/css-transforms.md) | 103 | 107 | 0 | 96% |
 | [`css/css-transitions`](css/css-transitions.md) | 99 | 107 | 0 | 93% |
 | [`css/css-typed-om`](css/css-typed-om.md) | 290 | 319 | 0 | 91% |
-| [`css/css-ui`](css/css-ui.md) | 92 | 99 | 0 | 93% |
+| [`css/css-ui`](css/css-ui.md) | 93 | 99 | 0 | 94% |
 | [`css/css-values`](css/css-values.md) | 256 | 267 | 0 | 96% |
 | [`css/css-variables`](css/css-variables.md) | 63 | 65 | 0 | 97% |
-| [`css/css-view-transitions`](css/css-view-transitions.md) | 156 | 165 | 0 | 95% |
+| [`css/css-view-transitions`](css/css-view-transitions.md) | 158 | 165 | 0 | 96% |
 | [`css/css-viewport`](css/css-viewport.md) | 28 | 28 | 0 | 100% |
 | [`css/css-will-change`](css/css-will-change.md) | 5 | 5 | 0 | 100% |
 | [`css/css-writing-modes`](css/css-writing-modes.md) | 82 | 85 | 0 | 96% |
@@ -194,7 +193,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/geometry`](css/geometry.md) | 30 | 30 | 0 | 100% |
 | [`css/mediaqueries`](css/mediaqueries.md) | 27 | 27 | 0 | 100% |
 | [`css/motion`](css/motion.md) | 46 | 46 | 0 | 100% |
-| [`css/selectors`](css/selectors.md) | 458 | 460 | 0 | 99.5% |
+| [`css/selectors`](css/selectors.md) | 460 | 460 | 0 | 100% |
 | [`custom-elements`](custom-elements.md) | 200 | 202 | 0 | 99% |
 | [`delegated-ink`](delegated-ink.md) | 1 | 1 | 0 | 100% |
 | [`density-size-correction`](density-size-correction.md) | 1 | 2 | 0 | 50% |
@@ -207,12 +206,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`document-picture-in-picture`](document-picture-in-picture.md) | 22 | 22 | 0 | 100% |
 | [`document-policy`](document-policy.md) | 6 | 7 | 0 | 86% |
 | [`dom`](dom.md) | 674 | 690 | 6 | 99% |
-| [`domparsing`](domparsing.md) | 87 | 94 | 0 | 93% |
+| [`domparsing`](domparsing.md) | 90 | 94 | 0 | 96% |
 | [`domxpath`](domxpath.md) | 29 | 29 | 0 | 100% |
 | [`dpub-aam`](dpub-aam.md) | 0 | 1 | 1 | – |
 | [`ecmascript`](ecmascript.md) | 0 | 2 | 2 | – |
 | [`editing`](editing.md) | 76 | 133 | 0 | 57% |
-| [`element-timing`](element-timing.md) | 51 | 53 | 0 | 96% |
+| [`element-timing`](element-timing.md) | 52 | 53 | 0 | 98% |
 | [`encoding`](encoding.md) | 153 | 153 | 0 | 100% |
 | [`encoding-detection`](encoding-detection.md) | 5 | 5 | 0 | 100% |
 | [`encrypted-media`](encrypted-media.md) | 58 | 99 | 0 | 59% |
@@ -222,9 +221,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`eyedropper`](eyedropper.md) | 0 | 1 | 1 | – |
 | [`fedcm`](fedcm.md) | 59 | 68 | 0 | 87% |
 | [`fenced-frame`](fenced-frame.md) | 0 | 9 | 9 | – |
-| [`fetch`](fetch.md) | 372 | 408 | 1 | 91% |
+| [`fetch`](fetch.md) | 377 | 408 | 1 | 93% |
 | [`file-system-access`](file-system-access.md) | 0 | 5 | 5 | – |
-| [`FileAPI`](FileAPI.md) | 69 | 73 | 0 | 95% |
+| [`FileAPI`](FileAPI.md) | 72 | 73 | 0 | 99% |
 | [`focus`](focus.md) | 31 | 39 | 0 | 79% |
 | [`font-access`](font-access.md) | 0 | 6 | 6 | – |
 | [`forced-colors-mode`](forced-colors-mode.md) | 13 | 15 | 0 | 87% |
@@ -237,7 +236,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gpc`](gpc.md) | 4 | 4 | 0 | 100% |
 | [`graphics-aria`](graphics-aria.md) | 0 | 1 | 1 | – |
 | [`gyroscope`](gyroscope.md) | 10 | 10 | 0 | 100% |
-| [`hr-time`](hr-time.md) | 12 | 14 | 0 | 86% |
+| [`hr-time`](hr-time.md) | 13 | 14 | 0 | 93% |
 | [`html-aam`](html-aam.md) | 25 | 26 | 0 | 96% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
 | [`html/browsers`](html/browsers.md) | 715 | 760 | 0 | 94% |
@@ -245,7 +244,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 68 | 74 | 0 | 92% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 115 | 115 | 0 | 100% |
 | [`html/dom`](html/dom.md) | 213 | 217 | 0 | 98% |
-| [`html/editing`](html/editing.md) | 130 | 139 | 0 | 94% |
+| [`html/editing`](html/editing.md) | 133 | 139 | 0 | 96% |
 | [`html/infrastructure`](html/infrastructure.md) | 68 | 69 | 0 | 99% |
 | [`html/interaction`](html/interaction.md) | 57 | 59 | 0 | 97% |
 | [`html/links`](html/links.md) | 6 | 6 | 0 | 100% |
@@ -254,16 +253,16 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/rendering`](html/rendering.md) | 145 | 151 | 0 | 96% |
 | [`html/scripting`](html/scripting.md) | 3 | 3 | 0 | 100% |
 | [`html/select`](html/select.md) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](html/semantics.md) | 2,125 | 2,214 | 30 | 97% |
+| [`html/semantics`](html/semantics.md) | 2,127 | 2,214 | 30 | 97% |
 | [`html/syntax`](html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](html/user-activation.md) | 15 | 18 | 0 | 83% |
-| [`html/webappapis`](html/webappapis.md) | 333 | 340 | 1 | 98% |
+| [`html/webappapis`](html/webappapis.md) | 335 | 340 | 1 | 99% |
 | [`idle-detection`](idle-detection.md) | 7 | 10 | 0 | 70% |
 | [`imagebitmap-renderingcontext`](imagebitmap-renderingcontext.md) | 14 | 14 | 0 | 100% |
 | [`import-maps`](import-maps.md) | 49 | 49 | 0 | 100% |
 | [`IndexedDB`](IndexedDB.md) | 229 | 229 | 0 | 100% |
-| [`inert`](inert.md) | 25 | 29 | 0 | 86% |
+| [`inert`](inert.md) | 28 | 29 | 0 | 97% |
 | [`infrastructure`](infrastructure.md) | 0 | 103 | 103 | – |
 | [`input-device-capabilities`](input-device-capabilities.md) | 0 | 1 | 1 | – |
 | [`input-events`](input-events.md) | 16 | 18 | 0 | 89% |
@@ -278,7 +277,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`keyboard-map`](keyboard-map.md) | 8 | 8 | 0 | 100% |
 | [`largest-contentful-paint`](largest-contentful-paint.md) | 64 | 67 | 0 | 96% |
 | [`layout-instability`](layout-instability.md) | 83 | 83 | 0 | 100% |
-| [`loading`](loading.md) | 52 | 53 | 0 | 98% |
+| [`loading`](loading.md) | 53 | 53 | 0 | 100% |
 | [`long-animation-frame`](long-animation-frame.md) | 32 | 40 | 0 | 80% |
 | [`longtask-timing`](longtask-timing.md) | 19 | 21 | 0 | 90% |
 | [`magnetometer`](magnetometer.md) | 8 | 10 | 0 | 80% |
@@ -302,8 +301,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mixed-content`](mixed-content.md) | 384 | 384 | 0 | 100% |
 | [`mst-content-hint`](mst-content-hint.md) | 2 | 4 | 0 | 50% |
 | [`nav-tracking-mitigations`](nav-tracking-mitigations.md) | 0 | 2 | 2 | – |
-| [`navigation-api`](navigation-api.md) | 462 | 469 | 0 | 99% |
-| [`navigation-timing`](navigation-timing.md) | 55 | 59 | 0 | 93% |
+| [`navigation-api`](navigation-api.md) | 463 | 469 | 0 | 99% |
+| [`navigation-timing`](navigation-timing.md) | 57 | 59 | 0 | 97% |
 | [`netinfo`](netinfo.md) | 2 | 2 | 0 | 100% |
 | [`network-error-logging`](network-error-logging.md) | 12 | 12 | 0 | 100% |
 | [`notifications`](notifications.md) | 19 | 21 | 1 | 95% |
@@ -325,9 +324,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`permissions-revoke`](permissions-revoke.md) | 0 | 1 | 1 | – |
 | [`picture-in-picture`](picture-in-picture.md) | 18 | 18 | 0 | 100% |
 | [`png`](png.md) | 4 | 4 | 0 | 100% |
-| [`pointerevents`](pointerevents.md) | 169 | 179 | 0 | 94% |
+| [`pointerevents`](pointerevents.md) | 170 | 179 | 0 | 95% |
 | [`pointerlock`](pointerlock.md) | 19 | 19 | 0 | 100% |
-| [`preload`](preload.md) | 68 | 72 | 0 | 94% |
+| [`preload`](preload.md) | 69 | 72 | 0 | 96% |
 | [`presentation-api`](presentation-api.md) | 0 | 13 | 13 | – |
 | [`private-click-measurement`](private-click-measurement.md) | 0 | 1 | 1 | – |
 | [`proximity`](proximity.md) | 2 | 4 | 0 | 50% |
@@ -338,7 +337,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting`](reporting.md) | 25 | 30 | 0 | 83% |
 | [`requestidlecallback`](requestidlecallback.md) | 21 | 21 | 0 | 100% |
 | [`resize-observer`](resize-observer.md) | 36 | 36 | 0 | 100% |
-| [`resource-timing`](resource-timing.md) | 113 | 119 | 0 | 95% |
+| [`resource-timing`](resource-timing.md) | 114 | 119 | 0 | 96% |
 | [`sanitizer-api`](sanitizer-api.md) | 45 | 47 | 0 | 96% |
 | [`savedata`](savedata.md) | 1 | 1 | 0 | 100% |
 | [`scheduler`](scheduler.md) | 24 | 24 | 0 | 100% |
@@ -346,30 +345,30 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`screen-details`](screen-details.md) | 0 | 1 | 1 | – |
 | [`screen-orientation`](screen-orientation.md) | 13 | 15 | 0 | 87% |
 | [`screen-wake-lock`](screen-wake-lock.md) | 16 | 17 | 0 | 94% |
-| [`scroll-animations`](scroll-animations.md) | 145 | 152 | 0 | 95% |
+| [`scroll-animations`](scroll-animations.md) | 147 | 152 | 0 | 97% |
 | [`scroll-to-text-fragment`](scroll-to-text-fragment.md) | 25 | 26 | 0 | 96% |
 | [`secure-contexts`](secure-contexts.md) | 10 | 10 | 0 | 100% |
 | [`secure-payment-confirmation`](secure-payment-confirmation.md) | 15 | 20 | 0 | 75% |
 | [`selection`](selection.md) | 93 | 98 | 0 | 95% |
 | [`serial`](serial.md) | 0 | 8 | 8 | – |
 | [`server-timing`](server-timing.md) | 9 | 9 | 0 | 100% |
-| [`service-workers`](service-workers.md) | 255 | 283 | 4 | 91% |
+| [`service-workers`](service-workers.md) | 257 | 283 | 4 | 92% |
 | [`shadow-dom`](shadow-dom.md) | 234 | 242 | 0 | 97% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 146 | 185 | 1 | 79% |
+| [`speculation-rules`](speculation-rules.md) | 155 | 185 | 1 | 84% |
 | [`speech-api`](speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](storage.md) | 14 | 14 | 0 | 100% |
-| [`storage-access-api`](storage-access-api.md) | 32 | 37 | 0 | 86% |
+| [`storage-access-api`](storage-access-api.md) | 34 | 37 | 0 | 92% |
 | [`streams`](streams.md) | 86 | 86 | 0 | 100% |
 | [`subresource-integrity`](subresource-integrity.md) | 5 | 7 | 0 | 71% |
-| [`svg`](svg.md) | 733 | 751 | 0 | 98% |
+| [`svg`](svg.md) | 740 | 751 | 0 | 99% |
 | [`svg-aam`](svg-aam.md) | 5 | 5 | 0 | 100% |
 | [`timing-entrytypes-registry`](timing-entrytypes-registry.md) | 2 | 2 | 0 | 100% |
 | [`touch-events`](touch-events.md) | 10 | 12 | 0 | 83% |
 | [`trusted-types`](trusted-types.md) | 223 | 224 | 0 | 99.5% |
 | [`ua-client-hints`](ua-client-hints.md) | 2 | 2 | 0 | 100% |
-| [`uievents`](uievents.md) | 62 | 66 | 0 | 94% |
+| [`uievents`](uievents.md) | 64 | 66 | 0 | 97% |
 | [`upgrade-insecure-requests`](upgrade-insecure-requests.md) | 191 | 194 | 0 | 98% |
 | [`url`](url.md) | 35 | 35 | 0 | 100% |
 | [`urlpattern`](urlpattern.md) | 6 | 6 | 0 | 100% |
@@ -379,8 +378,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`viewport`](viewport.md) | 1 | 1 | 0 | 100% |
 | [`viewport-segments`](viewport-segments.md) | 3 | 3 | 0 | 100% |
 | [`virtual-keyboard`](virtual-keyboard.md) | 3 | 3 | 0 | 100% |
-| [`visual-viewport`](visual-viewport.md) | 20 | 21 | 0 | 95% |
-| [`wai-aria`](wai-aria.md) | 20 | 21 | 0 | 95% |
+| [`visual-viewport`](visual-viewport.md) | 21 | 21 | 0 | 100% |
+| [`wai-aria`](wai-aria.md) | 21 | 21 | 0 | 100% |
 | [`wasm`](wasm.md) | 334 | 340 | 0 | 98% |
 | [`web-animations`](web-animations.md) | 129 | 136 | 0 | 95% |
 | [`web-based-payment-handler`](web-based-payment-handler.md) | 8 | 10 | 0 | 80% |
@@ -420,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (343 sections)** | **27,575** | **30,012** | **1,296** | **96%** |
+| **Total (343 sections)** | **27,644** | **30,012** | **1,296** | **96%** |
 
 ## Tentative tests
 
@@ -482,7 +481,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/cssom-view`](css/cssom-view.md#tentative-tests) | 4 | 5 | 0 | 80% |
 | [`css/fill-stroke`](css/fill-stroke.md#tentative-tests) | 0 | 2 | 0 | 0% |
 | [`css/mediaqueries`](css/mediaqueries.md#tentative-tests) | 3 | 10 | 0 | 30% |
-| [`css/selectors`](css/selectors.md#tentative-tests) | 15 | 17 | 0 | 88% |
+| [`css/selectors`](css/selectors.md#tentative-tests) | 16 | 17 | 0 | 94% |
 | [`custom-elements`](custom-elements.md#tentative-tests) | 2 | 7 | 0 | 29% |
 | [`delegated-ink`](delegated-ink.md#tentative-tests) | 4 | 4 | 0 | 100% |
 | [`device-bound-session-credentials`](device-bound-session-credentials.md#tentative-tests) | 0 | 5 | 5 | – |
@@ -590,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 2 | 2 | 0 | 100% |
-| **Total (164 sections)** | **1,630** | **3,031** | **626** | **68%** |
+| **Total (164 sections)** | **1,631** | **3,031** | **626** | **68%** |
 
 ## Reftests
 
@@ -657,7 +656,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-style-attr`](css/css-style-attr.md#reftests) | 16 | 16 | 0 | 100% |
 | [`css/css-syntax`](css/css-syntax.md#reftests) | 1 | 1 | 0 | 100% |
 | [`css/css-tables`](css/css-tables.md#reftests) | 173 | 176 | 0 | 98% |
-| [`css/css-text`](css/css-text.md#reftests) | 1,528 | 1,577 | 0 | 97% |
+| [`css/css-text`](css/css-text.md#reftests) | 1,529 | 1,577 | 0 | 97% |
 | [`css/css-text-decor`](css/css-text-decor.md#reftests) | 330 | 339 | 0 | 97% |
 | [`css/css-transforms`](css/css-transforms.md#reftests) | 794 | 797 | 0 | 99.6% |
 | [`css/css-transitions`](css/css-transitions.md#reftests) | 6 | 6 | 0 | 100% |
@@ -716,7 +715,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`quirks`](quirks.md#reftests) | 32 | 34 | 0 | 94% |
 | [`referrer-policy`](referrer-policy.md#reftests) | 1 | 1 | 0 | 100% |
 | [`resize-observer`](resize-observer.md#reftests) | 3 | 3 | 0 | 100% |
-| [`scroll-animations`](scroll-animations.md#reftests) | 32 | 37 | 0 | 86% |
+| [`scroll-animations`](scroll-animations.md#reftests) | 33 | 37 | 0 | 89% |
 | [`scroll-to-text-fragment`](scroll-to-text-fragment.md#reftests) | 1 | 1 | 0 | 100% |
 | [`selection`](selection.md#reftests) | 20 | 20 | 0 | 100% |
 | [`service-workers`](service-workers.md#reftests) | 1 | 1 | 0 | 100% |
@@ -727,7 +726,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 191 | 252 | 0 | 76% |
 | [`xml`](xml.md#reftests) | 3 | 3 | 0 | 100% |
-| **Total (131 sections)** | **28,679** | **29,567** | **137** | **97%** |
+| **Total (131 sections)** | **28,681** | **29,567** | **137** | **97%** |
 
 ## Crash tests
 
@@ -806,7 +805,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dom`](dom.md#crash-tests) | 45 | 46 | 0 | 98% |
 | [`domparsing`](domparsing.md#crash-tests) | 3 | 3 | 0 | 100% |
 | [`domxpath`](domxpath.md#crash-tests) | 2 | 2 | 0 | 100% |
-| [`editing`](editing.md#crash-tests) | 147 | 152 | 0 | 97% |
+| [`editing`](editing.md#crash-tests) | 148 | 152 | 0 | 97% |
 | [`encoding`](encoding.md#crash-tests) | 2 | 2 | 0 | 100% |
 | [`fetch`](fetch.md#crash-tests) | 4 | 4 | 0 | 100% |
 | [`FileAPI`](FileAPI.md#crash-tests) | 2 | 2 | 0 | 100% |
@@ -854,4 +853,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webmcp`](webmcp.md#crash-tests) | 5 | 5 | 0 | 100% |
 | [`webtransport`](webtransport.md#crash-tests) | 0 | 1 | 1 | – |
 | [`xml`](xml.md#crash-tests) | 13 | 13 | 0 | 100% |
-| **Total (121 sections)** | **2,101** | **2,124** | **13** | **99.5%** |
+| **Total (121 sections)** | **2,102** | **2,124** | **13** | **99.5%** |

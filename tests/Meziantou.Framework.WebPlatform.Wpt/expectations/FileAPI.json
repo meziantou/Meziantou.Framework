@@ -3,36 +3,16 @@
     "total": 5
   },
   "FileAPI/BlobURL/cross-partition-navigation.https.html": {
-    "total": 5,
-    "failures": {
-      "Blob URL SVG <a> element click should enforce noopener for a cross-top-level-site navigation": "FAIL",
-      "Blob URL area element click should enforce noopener for a cross-top-level-site navigation": "FAIL",
-      "Blob URL link click should enforce noopener for a cross-top-level-site navigation": "FAIL",
-      "Blob URL should partition subframe navigation.": "FAIL",
-      "Blob URL window.open should enforce noopener for a cross-top-level-site navigation": "FAIL"
-    }
+    "total": 5
   },
   "FileAPI/BlobURL/cross-partition-self-fetch.https.html": {
     "total": 1
   },
   "FileAPI/BlobURL/cross-partition-worker-creation.https.html": {
-    "total": 2,
-    "failures": {
-      "Cross-partition Dedicated worker shouldn't be created from blob URL.": "FAIL",
-      "Cross-partition Shared worker shouldn't be created from blob URL.": "FAIL"
-    }
+    "total": 2
   },
   "FileAPI/BlobURL/cross-partition.https.html": {
-    "total": 8,
-    "failures": {
-      "Blob URL shouldn't be fetched from a cross-partition dedicated worker": "FAIL",
-      "Blob URL shouldn't be fetched from a cross-partition iframe": "FAIL",
-      "Blob URL shouldn't be fetched from a cross-partition service worker": "FAIL",
-      "Blob URL shouldn't be fetched from a cross-partition shared worker": "FAIL",
-      "Blob URL shouldn't be revocable from a cross-partition dedicated worker": "FAIL",
-      "Blob URL shouldn't be revocable from a cross-partition iframe": "FAIL",
-      "Blob URL shouldn't be revocable from a cross-partition shared worker": "FAIL"
-    }
+    "total": 8
   },
   "FileAPI/BlobURL/opaque-origin.html": {
     "total": 2

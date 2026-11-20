@@ -47,6 +47,7 @@ internal static partial class CssPropertyRules
         ["flex"] = IsValidFlex,
         ["-webkit-flex"] = IsValidFlex,
         ["shape-inside"] = IsValidShapeInside,
+        ["glyph-orientation-vertical"] = (_, significant) => GetGlyphOrientationVerticalTextOrientation(significant) is not null,
     };
 
     /// <summary>
@@ -320,6 +321,7 @@ internal static partial class CssPropertyRules
         ["page-break-before"] = (ExpandLegacyPageBreak, SerializeLegacyPageBreak),
         ["page-break-after"] = (ExpandLegacyPageBreak, SerializeLegacyPageBreak),
         ["page-break-inside"] = (ExpandLegacyPageBreak, SerializeLegacyPageBreak),
+        ["glyph-orientation-vertical"] = (ExpandGlyphOrientationVertical, SerializeGlyphOrientationVertical),
     };
 
     /// <summary>

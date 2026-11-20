@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of navigation-timing, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 55 | 59 | 0 | 93% |
+| [Stable](#stable-tests) | 57 | 59 | 0 | 97% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **55** | **60** | **0** | **92%** |
+| **All** | **57** | **60** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -55,8 +55,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nested-document-timing-after-cross-origin-redirect.https.html`](https://wpt.fyi/results/navigation-timing/nested-document-timing-after-cross-origin-redirect.https.html) | Pass | 1 / 1 |  |  |
 | [`nested-unload-timing.html`](https://wpt.fyi/results/navigation-timing/nested-unload-timing.html) | Pass | 1 / 1 |  |  |
 | [`po-navigation.html`](https://wpt.fyi/results/navigation-timing/po-navigation.html) | Pass | 1 / 1 |  |  |
-| [`prefetch-transfer-size-executor.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-executor.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the navigation timing entry ignores the cache state of the response: the `transferSize` of a document served by the HTTP cache (the prefetched document) is the size of its body plus 300, not 0 |
-| [`prefetch-transfer-size-iframe.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-iframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the navigation timing entry ignores the cache state of the response: the `transferSize` of a document served by the HTTP cache (the prefetched document) is the size of its body plus 300, not 0 |
+| [`prefetch-transfer-size-executor.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-executor.html) | Pass | 1 / 1 |  |  |
+| [`prefetch-transfer-size-iframe.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-iframe.html) | Pass | 1 / 1 |  |  |
 | [`redirect-tao.html`](https://wpt.fyi/results/navigation-timing/redirect-tao.html) | Pass | 8 / 8 |  |  |
 | [`response-start-after-coop-bcg-switch.https.html`](https://wpt.fyi/results/navigation-timing/response-start-after-coop-bcg-switch.https.html) | Fail | 0 / 1 | TEST BUG | the test expects a `redirectCount` of 0 for a popup navigated through two redirects of the origin of its opener that have `Timing-Allow-Origin: *`, to a document of another origin whose opener policy switches the browsing context group; the redirect count of a navigation is exposed when the navigation TAO check passes (https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: "If navigationParams's response's redirect taint is same-origin, or [...] navigation TAO check given navigationParams's response and navigationParams's origin returns success, then set redirectCount to navigationParams's request's redirect count"), which it does since every redirect allows `*` (https://fetch.spec.whatwg.org/#navigation-tao-check), and the browsing context group switch does not change it: the library reports 2. Upstream, the counterpart `response-start-after-coop-bcg-switch-no-tao.tentative.https.html` says that this test exposes the redirect data because the chain opts into TAO. The other assertions pass |
 | [`secure-connection-start-non-zero.https.html`](https://wpt.fyi/results/navigation-timing/secure-connection-start-non-zero.https.html) | Pass | 1 / 1 |  |  |

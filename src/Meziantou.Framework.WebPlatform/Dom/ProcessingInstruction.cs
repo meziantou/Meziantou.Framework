@@ -288,20 +288,27 @@ internal static class PseudoAttributes
                     continue;
                 }
 
+                // PseudoAttValue only contains the characters of the Char production (U+0000 and lone surrogates are errors)
+                if (char.IsHighSurrogate(c) && position + 1 < value.Length && char.IsLowSurrogate(value[position + 1]))
+                {
+                    attributeValue.Append(c).Append(value[position + 1]);
+                    position += 2;
+                    continue;
+                }
+
+                if (!XmlNames.IsXmlChar(c))
+                    return null;
+
                 attributeValue.Append(c);
                 position++;
             }
 
-            // "Set attribute map[name] to value": a later duplicate overwrites the value, keeping the original position
-            var existingIndex = result.FindIndex(a => a.Key == name);
-            if (existingIndex >= 0)
-            {
-                result[existingIndex] = new(name, attributeValue.ToString());
-            }
-            else
-            {
-                result.Add(new(name, attributeValue.ToString()));
-            }
+            // A name cannot appear twice (https://www.w3.org/TR/xml-stylesheet/#dt-parsing: it is an error, so there is no
+            // attribute at all)
+            if (result.Exists(a => a.Key == name))
+                return null;
+
+            result.Add(new(name, attributeValue.ToString()));
 
             var beforeWhitespace = position;
             SkipWhitespace(value, ref position);

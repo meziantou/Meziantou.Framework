@@ -72,12 +72,7 @@
     "total": 3
   },
   "html/editing/dnd/drop/002.xhtml": {
-    "total": 3,
-    "failures": {
-      "Text input selection drag and drop: allowed effects\n    'copy','move','link'": "FAIL",
-      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 1": "FAIL",
-      "Text input selection drag and drop: allowed effects\n    'copy','move','link' 2": "FAIL"
-    }
+    "total": 3
   },
   "html/editing/dnd/drop/003.xhtml": {
     "total": 3
@@ -612,11 +607,7 @@
     "total": 1
   },
   "html/editing/dnd/reload/004.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Reload during text input selection drag and drop roundtrip": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/editing/dnd/reload/005.html": {
     "total": 1
@@ -640,10 +631,7 @@
     "total": 1
   },
   "html/editing/dnd/remove/004.html": {
-    "total": 1,
-    "failures": {
-      "Removing input element during drag and drop of selection": "FAIL"
-    }
+    "total": 1
   },
   "html/editing/dnd/remove/005.html": {
     "total": 1

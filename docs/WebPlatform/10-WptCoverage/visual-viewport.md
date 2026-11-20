@@ -9,24 +9,18 @@ description: "The results of the web-platform-tests of visual-viewport, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 20 | 21 | 0 | 95% |
+| [Stable](#stable-tests) | 21 | 21 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **20** | **21** | **0** | **95%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 1
+| **All** | **21** | **21** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`page-and-offset-in-iframe.html`](https://wpt.fyi/results/visual-viewport/page-and-offset-in-iframe.html) | Pass | 1 / 1 |  |  |
-| [`resize-event-order.html`](https://wpt.fyi/results/visual-viewport/resize-event-order.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | `resizeTo()`/`resizeBy()` of a popup window (there is no client window: the viewport of a top-level browsing context has the size of its `ViewportOptions`) |
+| [`resize-event-order.html`](https://wpt.fyi/results/visual-viewport/resize-event-order.html) | Pass | 2 / 2 |  |  |
 | [`scroll-event-order.html`](https://wpt.fyi/results/visual-viewport/scroll-event-order.html) | Pass | 1 / 1 |  |  |
 | [`viewport-no-resize-event-on-overflow-recalc.html`](https://wpt.fyi/results/visual-viewport/viewport-no-resize-event-on-overflow-recalc.html) | Pass | 1 / 1 |  |  |
 | [`viewport-no-scroll-event-on-layout-viewport-scroll.html`](https://wpt.fyi/results/visual-viewport/viewport-no-scroll-event-on-layout-viewport-scroll.html) | Pass | 1 / 1 |  |  |

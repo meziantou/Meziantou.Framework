@@ -32,6 +32,11 @@ public sealed partial class HtmlMetaElement
             // https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-http-equiv-refresh
             document.RunSharedDeclarativeRefreshSteps(content, isMeta: true);
         }
+        else if (InfraAscii.EqualsIgnoreAsciiCase(httpEquiv, "default-style") && GetAttributeValue("content") is { Length: > 0 } styleSheetSetName)
+        {
+            // https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-http-equiv-default-style
+            document.ChangePreferredStyleSheetSetName(styleSheetSetName);
+        }
         else if (InfraAscii.EqualsIgnoreAsciiCase(httpEquiv, "delegate-ch") || InfraAscii.EqualsIgnoreAsciiCase(httpEquiv, "accept-ch"))
         {
             // https://wicg.github.io/client-hints-infrastructure/#delegate-ch-algo

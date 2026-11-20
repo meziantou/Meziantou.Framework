@@ -712,6 +712,113 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void HttpCache_StoresPartialResponses_ServesRangesAndCompletesThem()
+    {
+        _loader.Handler = request => (request.Url, HeaderList.Get(request.Headers, "Range")) switch
+        {
+            ("https://example.com/partial", "bytes=0-4") => new DocumentResource("01234") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 0-4/10"), new("ETag", "\"v1\"")] },
+            ("https://example.com/partial", "bytes=5-") => new DocumentResource("56789") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 5-9/10"), new("ETag", "\"v1\"")] },
+            _ => null,
+        };
+        var document = Load("""
+            <script>
+              (async () => {
+                const results = [];
+                for (const range of ['bytes=0-4', 'bytes=1-3', null, 'bytes=6-7', 'bytes=-2']) {
+                  const response = await fetch('partial', { headers: range === null ? {} : { Range: range } });
+                  results.push(response.status + ':' + (response.headers.get('Content-Range') ?? '') + ':' + await response.text());
+                }
+
+                document.title = results.join('|');
+              })();
+            </script>
+            """);
+
+        Assert.Equal("206:bytes 0-4/10:01234|206:bytes 1-3/10:123|200::0123456789|206:bytes 6-7/10:67|206:bytes 8-9/10:89", document.Title);
+        var requests = _loader.Requests.FindAll(request => request.Url == "https://example.com/partial");
+        Assert.Equal(["bytes=0-4", "bytes=5-"], requests.Select(request => HeaderList.Get(request.Headers, "Range")));
+    }
+
+    [Fact]
+    public void HttpCache_PartialResponsesWithoutStrongValidator_AreNotCombined()
+    {
+        _loader.Handler = request => (request.Url, HeaderList.Get(request.Headers, "Range")) switch
+        {
+            ("https://example.com/changing", "bytes=0-4") => new DocumentResource("01234") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 0-4/10")] },
+            ("https://example.com/changing", "bytes=5-") => new DocumentResource("fghij") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 5-9/10")] },
+            ("https://example.com/changing", null) => new DocumentResource("abcdefghij") { Headers = [new("Cache-Control", "no-store")] },
+            _ => null,
+        };
+        var document = Load("""
+            <script>
+              (async () => {
+                await (await fetch('changing', { headers: { Range: 'bytes=0-4' } })).text();
+                const response = await fetch('changing');
+                document.title = response.status + ':' + await response.text();
+              })();
+            </script>
+            """);
+
+        // Without a strong validator, the stored bytes may come from another version: the complete representation is requested
+        Assert.Equal("200:abcdefghij", document.Title);
+        var requests = _loader.Requests.FindAll(request => request.Url == "https://example.com/changing");
+        Assert.Equal(["bytes=0-4", "bytes=5-", null], requests.Select(request => HeaderList.Get(request.Headers, "Range")));
+    }
+
+    [Fact]
+    public void HttpCache_PartialResponse_IsNotUsedForARangeItDoesNotContain()
+    {
+        var count = 0;
+        _loader.Handler = request => request.Url == "https://example.com/range"
+            ? new DocumentResource((++count).ToString(System.Globalization.CultureInfo.InvariantCulture) + "bc") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 0-2/10")] }
+            : null;
+        var document = Load("""
+            <script>
+              (async () => {
+                const first = await (await fetch('range', { headers: { Range: 'bytes=0-2' } })).text();
+                const second = await (await fetch('range', { headers: { Range: 'bytes=2-5' } })).text();
+                document.title = first + '|' + second;
+              })();
+            </script>
+            """);
+
+        Assert.Equal("1bc|2bc", document.Title);
+        Assert.Equal(2, count);
+    }
+
+    [Fact]
+    public void Fetch_A421Response_IsRetriedOnceUnlessTheBodyIsAStream()
+    {
+        _loader.Handler = request => request.Url == "https://example.com/misdirected" ? new DocumentResource("misdirected") { StatusCode = 421 } : null;
+        var document = Load("""
+            <script>
+              (async () => {
+                const text = await fetch('misdirected', { method: 'POST', body: 'text' });
+                const stream = await fetch('misdirected', { method: 'POST', duplex: 'half', body: new ReadableStream({ start(c) { c.enqueue(new Uint8Array([65])); c.close(); } }) });
+                document.title = text.status + '|' + stream.status;
+              })();
+            </script>
+            """);
+
+        Assert.Equal("421|421", document.Title);
+        Assert.Equal(3, _loader.Requests.Count(request => request.Url == "https://example.com/misdirected"));
+    }
+
+    [Fact]
+    public void Fetch_StreamBody_IsNotReadByTheFetchOfADataUrl()
+    {
+        var document = Load("""
+            <script>
+              fetch('data:text/plain,test', { method: 'POST', duplex: 'half', body: new ReadableStream() })
+                .then(response => response.text())
+                .then(text => document.title = text);
+            </script>
+            """);
+
+        Assert.Equal("test", document.Title);
+    }
+
+    [Fact]
     public void HttpCache_VaryAndInvalidation()
     {
         var count = 0;

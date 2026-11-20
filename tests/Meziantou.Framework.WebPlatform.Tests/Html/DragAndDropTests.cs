@@ -200,6 +200,75 @@ public sealed class DragAndDropTests : IDisposable
     }
 
     [Fact]
+    public void Mouse_DragsTheSelectionOfATextControl()
+    {
+        var document = Load(Style + "<input id=source value='Drag me'><div id=target></div>");
+        var source = (HtmlInputElement)document.GetElementById("source")!;
+        var target = document.GetElementById("target")!;
+        target.AddEventListener("dragover", e => e.PreventDefault());
+        string? dropped = null;
+        target.AddEventListener("drop", e =>
+        {
+            e.PreventDefault();
+            dropped = ((DragEvent)e).DataTransfer!.GetData("text/plain");
+        });
+        var events = Log(document, "dragstart", "drop", "dragend");
+        source.Select();
+        source.Focus();
+
+        // A press in the selected text keeps the selection, and the moves drag it: the input element is the source node
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        var rect = source.GetBoundingClientRect();
+        mouse.Move(rect.X + (rect.Width / 4), rect.Y + (rect.Height / 2));
+        mouse.Down();
+        mouse.Move(50, 150);
+        mouse.Up();
+
+        Assert.Equal("Drag me", dropped);
+        Assert.Equal(["dragstart@source", "drop@target", "dragend@source"], events);
+    }
+
+    [Fact]
+    public void Mouse_TheSelectionOfAPasswordFieldIsNotDragged()
+    {
+        var document = Load(Style + "<input id=source type=password value='secret'><div id=target></div>");
+        var source = (HtmlInputElement)document.GetElementById("source")!;
+        document.GetElementById("target")!.AddEventListener("dragover", e => e.PreventDefault());
+        var events = Log(document, "dragstart", "drop");
+        source.Select();
+        source.Focus();
+
+        // As the copy and the cut, the drag does not expose the value of the password field
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        var rect = source.GetBoundingClientRect();
+        mouse.Move(rect.X + (rect.Width / 4), rect.Y + (rect.Height / 2));
+        mouse.Down();
+        mouse.Move(50, 150);
+        mouse.Up();
+
+        Assert.Empty(events);
+    }
+
+    [Fact]
+    public void Mouse_ClickInTheSelectionOfATextControlCollapsesIt()
+    {
+        var document = Load(Style + "<input id=source value='Drag me'>");
+        var source = (HtmlInputElement)document.GetElementById("source")!;
+        source.Select();
+        source.Focus();
+
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        var rect = source.GetBoundingClientRect();
+        mouse.Move(rect.X + (rect.Width / 4), rect.Y + (rect.Height / 2));
+        mouse.Down();
+        Assert.Equal(((uint?)0, (uint?)7), (source.SelectionStart, source.SelectionEnd));
+        mouse.Up();
+
+        Assert.True(source.SelectionStart > 0);
+        Assert.Equal(source.SelectionStart, source.SelectionEnd);
+    }
+
+    [Fact]
     public void Mouse_EscapeCancelsTheDrag()
     {
         var document = Load(Style + "<div id=source draggable=true></div><div id=target></div>");

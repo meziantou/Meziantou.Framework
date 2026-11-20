@@ -575,6 +575,34 @@ public partial class SvgAnimationElement
         }
     }
 
+    /// <summary>
+    /// Resolves the repeat conditions (<c>id.repeat(n)</c>) of the dependents for the iterations after <paramref name="after"/>
+    /// up to <paramref name="last"/> of the current interval, which began without firing their events (e.g. a seek
+    /// skipped them): the instance times are the begins of the iterations.
+    /// </summary>
+    private void NotifyDependentsOfSkippedRepeats(long after, long last)
+    {
+        if (last <= after || NodeDocument.SmilOrNull is not { } smil)
+            return;
+
+        var simpleDuration = SimpleDuration;
+        if (!simpleDuration.IsFinite || simpleDuration.IsZero || !_interval.IsResolved)
+            return;
+
+        foreach (var dependent in smil.Elements)
+        {
+            foreach (var condition in dependent._conditions)
+            {
+                if (condition.Kind == ConditionKind.Repeat && ReferenceEquals(condition.Base, this) && condition.Repeat > after && condition.Repeat <= last
+                    && condition.Repeat < long.MaxValue / 4 / simpleDuration.Ticks)
+                {
+                    var time = _interval.Begin + SmilTime.FromTicks(simpleDuration.Ticks * condition.Repeat);
+                    dependent.AddInstanceTime(condition.IsBegin ? dependent._beginTimes : dependent._endTimes, time + condition.Offset, InstanceOrigin.SyncBase);
+                }
+            }
+        }
+    }
+
     private void NotifyDependentsOfRepeat(long repeat, SmilTime time)
     {
         if (NodeDocument.SmilOrNull is not { } smil)
@@ -905,6 +933,9 @@ public partial class SvgAnimationElement
             _activeBegin = _interval.Begin;
             _waitingForFirstInterval = false;
             _lastRepeat = CalculateProgress(time).Repeat;
+
+            // The interval began before the time (a seek): the iterations that began before the time are skipped
+            NotifyDependentsOfSkippedRepeats(0, _lastRepeat);
             if (events)
             {
                 QueueTimeEvent("beginEvent", 0);
@@ -915,6 +946,9 @@ public partial class SvgAnimationElement
             var repeat = CalculateProgress(time).Repeat;
             if (repeat != _lastRepeat)
             {
+                // The iterations skipped by a seek or by an update that is late (only the last iteration of an update fires its
+                // events)
+                NotifyDependentsOfSkippedRepeats(_lastRepeat, events ? repeat - 1 : repeat);
                 _lastRepeat = repeat;
                 if (events && repeat > 0)
                 {

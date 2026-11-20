@@ -169,8 +169,27 @@ public sealed class Worker : EventTarget
                 return;
             }
 
-            agent.EventLoop.QueueTask(() => agent.RunScript(script));
+            RunScript(owner, agent, script);
         });
+    }
+
+    /// <summary>
+    /// Runs the fetched script of a worker in its event loop. The script of a worker created by a prerendering document is
+    /// fetched, but the worker starts when the document is activated
+    /// (https://wicg.github.io/nav-speculation/prerendering.html#delay-while-prerendering, as in the browsers: the workers of a
+    /// prerendering page are suspended until its activation).
+    /// </summary>
+    internal static void RunScript(GlobalScope owner, WorkerAgent agent, FetchedWorkerScript script)
+    {
+        // (the callback runs out of the event loop of the window: a document stops prerendering once, so a document that is
+        // not prerendering is not prerendering anymore when the task runs)
+        if (owner is not Window { Document.Prerendering: true } window)
+        {
+            agent.EventLoop.QueueTask(() => agent.RunScript(script));
+            return;
+        }
+
+        window.QueueGlobalTask(() => window.Document.RunAfterPrerendering(() => agent.EventLoop.QueueTask(() => agent.RunScript(script))));
     }
 
     /// <summary>Terminates the worker: its running script is aborted and its event loop ends (https://html.spec.whatwg.org/multipage/workers.html#dom-worker-terminate).</summary>
@@ -380,7 +399,7 @@ internal static class SharedWorkerManager
                         return;
                     }
 
-                    newAgent.EventLoop.QueueTask(() => newAgent.RunScript(script));
+                    Worker.RunScript(owner, newAgent, script);
                 });
             }
         }

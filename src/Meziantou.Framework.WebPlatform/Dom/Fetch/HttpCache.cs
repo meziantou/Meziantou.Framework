@@ -14,8 +14,10 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// have their own entries. The freshness is computed with the clock of the event loop of the request.
 /// </summary>
 /// <remarks>
-/// The partial responses (<c>206</c>) are not stored, and a <c>HEAD</c> request does not use the stored response of a
-/// <c>GET</c> request. The cache is used by the threads of the workers.
+/// A partial response (<c>206</c>) with a single range is stored (https://httpwg.org/specs/rfc9111.html#incomplete.responses):
+/// it answers the range requests whose range it contains, and a request without range completes it with a range request of
+/// the rest of the representation. A stored complete response answers the range requests too. A <c>HEAD</c> request does not
+/// use the stored response of a <c>GET</c> request. The cache is used by the threads of the workers.
 /// </remarks>
 internal sealed class HttpCache
 {
@@ -23,7 +25,7 @@ internal sealed class HttpCache
     internal const int MaxBodyLength = 16 * 1024 * 1024;
 
     // https://httpwg.org/specs/rfc9110.html#overview.of.status.codes: the statuses that are heuristically cacheable
-    private static readonly HashSet<int> HeuristicallyCacheableStatuses = [200, 203, 204, 300, 301, 308, 404, 405, 410, 414, 501];
+    private static readonly HashSet<int> HeuristicallyCacheableStatuses = [200, 203, 204, 206, 300, 301, 308, 404, 405, 410, 414, 501];
 
     // https://httpwg.org/specs/rfc9111.html#update: the headers of a 304 response that do not update the stored response
     private static readonly HashSet<string> NotUpdatedHeaderNames = new(StringComparer.OrdinalIgnoreCase)
@@ -98,6 +100,10 @@ internal sealed class HttpCache
                 entries = [];
                 _entries[key] = entries;
             }
+
+            // A partial response does not replace a stored complete response of the same request
+            if (entry.Status == 206 && entries.Exists(existing => existing.Status != 206 && existing.IncludeCredentials == entry.IncludeCredentials && MatchesVary(existing, entry.RequestHeaders)))
+                return;
 
             entries.RemoveAll(existing => existing.IncludeCredentials == entry.IncludeCredentials && MatchesVary(existing, entry.RequestHeaders));
             entries.Add(entry);
@@ -260,7 +266,12 @@ internal sealed class HttpCache
     /// </summary>
     public static bool IsStorable(string method, UrlRecord url, IReadOnlyList<KeyValuePair<string, string>> requestHeaders, int status, IReadOnlyList<KeyValuePair<string, string>> responseHeaders)
     {
-        if (status is < 200 or 206 or 304 || status > 999)
+        if (status is < 200 or 304 || status > 999)
+            return false;
+
+        // A partial response is stored when it is the response of a GET request and has a single byte range of a
+        // representation whose length is known
+        if (status == 206 && (method != "GET" || ParseContentRange(responseHeaders) is null))
             return false;
 
         var requestDirectives = ParseCacheControl(requestHeaders);
@@ -280,6 +291,115 @@ internal sealed class HttpCache
         }
 
         return hasExplicitFreshness || responseDirectives.ContainsKey("public") || responseDirectives.ContainsKey("private") || HeuristicallyCacheableStatuses.Contains(status);
+    }
+
+    /// <summary>
+    /// The byte range of the representation that a stored response contains: all the representation for a <c>200</c>
+    /// response, the range of the <c>Content-Range</c> header of a <c>206</c> response (an incomplete partial response,
+    /// whose body is shorter than its range, contains the bytes of its body), or null.
+    /// </summary>
+    public static (long First, long Last, long CompleteLength)? GetStoredRange(HttpCacheEntry entry)
+    {
+        if (entry.Status == 200)
+            return entry.Body.Length == 0 ? null : (0, entry.Body.Length - 1, entry.Body.Length);
+
+        if (entry.Status != 206 || ParseContentRange(entry.Headers) is not var (first, last, completeLength) || entry.Body.Length == 0)
+            return null;
+
+        return (first, Math.Min(last, first + entry.Body.Length - 1), completeLength);
+    }
+
+    /// <summary>
+    /// The <c>206</c> response that a stored response (<c>200</c> or <c>206</c>) gives to a request whose <c>Range</c> header has
+    /// a single byte range (https://httpwg.org/specs/rfc9110.html#field.range), or null when the stored response does not
+    /// contain all the bytes of the range (or when the range cannot be satisfied): the request is sent to the network.
+    /// </summary>
+    public static HttpCacheEntry? GetRangeEntry(HttpCacheEntry entry, string rangeHeader)
+    {
+        if (GetStoredRange(entry) is not var (first, last, completeLength) || FetchHeaders.ParseSingleRangeHeaderValue(rangeHeader, allowWhitespace: true) is not var (rangeStart, rangeEnd))
+            return null;
+
+        long start;
+        long end;
+        if (rangeStart is null)
+        {
+            if (rangeEnd is 0)
+                return null;
+
+            start = Math.Max(completeLength - rangeEnd!.Value, 0);
+            end = completeLength - 1;
+        }
+        else
+        {
+            start = rangeStart.Value;
+            end = rangeEnd is { } value ? Math.Min(value, completeLength - 1) : completeLength - 1;
+        }
+
+        if (start > end || start < first || end > last)
+            return null;
+
+        var headers = new List<KeyValuePair<string, string>>(entry.Headers.Count + 2);
+        foreach (var header in entry.Headers)
+        {
+            if (!header.Key.Equals("Content-Range", StringComparison.OrdinalIgnoreCase) && !header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+            {
+                headers.Add(header);
+            }
+        }
+
+        var body = entry.Body.AsSpan((int)(start - first), (int)(end - start + 1)).ToArray();
+        headers.Add(new("Content-Range", FormatContentRange(start, end, completeLength)));
+        headers.Add(new("Content-Length", body.Length.ToString(CultureInfo.InvariantCulture)));
+        return entry with { Status = 206, StatusMessage = "Partial Content", Headers = headers, Body = body };
+    }
+
+    /// <summary>The value of a <c>Content-Range</c> header of a byte range (https://httpwg.org/specs/rfc9110.html#field.content-range).</summary>
+    public static string FormatContentRange(long first, long last, long completeLength)
+        => "bytes " + first.ToString(CultureInfo.InvariantCulture) + "-" + last.ToString(CultureInfo.InvariantCulture) + "/" + completeLength.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Parses the <c>Content-Range</c> header of a <c>206</c> response (https://httpwg.org/specs/rfc9110.html#field.content-range):
+    /// a single byte range <c>bytes first-last/complete-length</c> whose complete length is known, or null.
+    /// </summary>
+    public static (long First, long Last, long CompleteLength)? ParseContentRange(IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        if (HeaderList.Get(headers, "Content-Range") is not { } value)
+            return null;
+
+        var span = value.AsSpan().Trim(" \t");
+        if (!span.StartsWith("bytes ", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        span = span[6..].TrimStart(' ');
+        var dash = span.IndexOf('-');
+        var slash = span.IndexOf('/');
+        if (dash <= 0 || slash <= dash + 1)
+            return null;
+
+        if (!TryParseDigits(span[..dash], out var first) || !TryParseDigits(span[(dash + 1)..slash], out var last) || !TryParseDigits(span[(slash + 1)..], out var completeLength))
+            return null;
+
+        if (first > last || last >= completeLength)
+            return null;
+
+        return (first, last, completeLength);
+
+        static bool TryParseDigits(ReadOnlySpan<char> digits, out long result)
+        {
+            result = 0;
+            if (digits.IsEmpty || digits.Length > 18)
+                return false;
+
+            foreach (var c in digits)
+            {
+                if (c is < '0' or > '9')
+                    return false;
+
+                result = (result * 10) + (c - '0');
+            }
+
+            return true;
+        }
     }
 
     /// <summary>Whether a stored response can be used without validation (<see cref="GetFreshness"/> is <see cref="HttpCacheFreshness.Fresh"/>).</summary>

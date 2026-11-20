@@ -10,9 +10,10 @@ internal static partial class CssPropertyRules
     /// The legacy shorthands page-break-before, page-break-after and page-break-inside
     /// (https://drafts.csswg.org/css-break-4/#page-break-properties): they set break-before, break-after and break-inside, are
     /// never used to serialize a declaration block (https://drafts.csswg.org/css-cascade-5/#legacy-shorthand), and only
-    /// represent the values of their grammar.
+    /// represent the values of their grammar. The obsolete glyph-orientation-vertical property of SVG 1.1 is a legacy shorthand
+    /// of text-orientation too (https://drafts.csswg.org/css-writing-modes-4/#glyph-orientation).
     /// </summary>
-    public static bool IsLegacyShorthand(string name) => name is "page-break-before" or "page-break-after" or "page-break-inside";
+    public static bool IsLegacyShorthand(string name) => name is "page-break-before" or "page-break-after" or "page-break-inside" or "glyph-orientation-vertical";
 
     /// <summary>The value always of page-break-before and page-break-after is page, the other values are the same.</summary>
     private static Dictionary<string, string>? ExpandLegacyPageBreak(CssPropertyDefinition shorthand, List<CssComponentValue> significant)

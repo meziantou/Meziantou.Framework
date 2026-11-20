@@ -1082,35 +1082,73 @@ public partial class Window
     [IdlMember("visualViewport", "https://drafts.csswg.org/cssom-view/#dom-window-visualviewport")]
     public VisualViewport? VisualViewport => Document.IsFullyActive ? Document.VisualViewport : null;
 
-    /// <summary>Moves the window (https://drafts.csswg.org/cssom-view/#dom-window-moveto): there is no client window, nothing happens.</summary>
+    /// <summary>
+    /// Moves the client window so that its top left corner is at a position on the screen, in CSS pixels
+    /// (https://drafts.csswg.org/cssom-view/#dom-window-moveto). Only the windows created by <c>window.open()</c> are moved
+    /// (see <see cref="GetScriptMovableBrowsingContext"/>); the position is not negative.
+    /// </summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-moveto"/>
     [IdlMember("moveTo", "https://drafts.csswg.org/cssom-view/#dom-window-moveto")]
-    public void MoveTo(int x, int y)
-    {
-    }
+    public void MoveTo(int x, int y) => GetScriptMovableBrowsingContext()?.MoveClientWindow(x, y);
 
-    /// <summary>Moves the window (https://drafts.csswg.org/cssom-view/#dom-window-moveby): there is no client window, nothing happens.</summary>
+    /// <summary>Moves the client window by an offset (https://drafts.csswg.org/cssom-view/#dom-window-moveby): see <see cref="MoveTo"/>.</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-moveby"/>
     [IdlMember("moveBy", "https://drafts.csswg.org/cssom-view/#dom-window-moveby")]
     public void MoveBy(int x, int y)
     {
+        if (GetScriptMovableBrowsingContext() is { } navigable)
+        {
+            navigable.MoveClientWindow(ClampToInt((long)navigable.ClientWindowLeft + x), ClampToInt((long)navigable.ClientWindowTop + y));
+        }
     }
 
     /// <summary>
-    /// Resizes the window (https://drafts.csswg.org/cssom-view/#dom-window-resizeto): there is no client window, nothing
-    /// happens, except in a Document Picture-in-Picture window, whose viewport is resized (it needs a transient activation,
-    /// which is consumed: https://wicg.github.io/document-picture-in-picture/#resizing-the-pip-window).
+    /// Resizes the client window (https://drafts.csswg.org/cssom-view/#dom-window-resizeto): the client window has no
+    /// decoration, so its viewport gets the size; the <c>resize</c> event is fired by the next rendering update. Only the
+    /// windows created by <c>window.open()</c> are resized (see <see cref="GetScriptMovableBrowsingContext"/>), not smaller than
+    /// the popups of the browsers (100 CSS pixels). A Document Picture-in-Picture window needs a transient activation instead,
+    /// which is consumed (https://wicg.github.io/document-picture-in-picture/#resizing-the-pip-window).
     /// </summary>
     /// <exception cref="DomException">A <c>NotAllowedError</c>: the Picture-in-Picture window has no transient activation.</exception>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-resizeto"/>
     [IdlMember("resizeTo", "https://drafts.csswg.org/cssom-view/#dom-window-resizeto")]
-    public void ResizeTo(int width, int height) => DocumentPictureInPictureModel.Resize(this, _ => new PictureInPictureWindowSize(width, height));
+    public void ResizeTo(int width, int height)
+    {
+        if (BrowsingContext is { IsDocumentPictureInPicture: true })
+        {
+            DocumentPictureInPictureModel.Resize(this, _ => new PictureInPictureWindowSize(width, height));
+            return;
+        }
 
-    /// <summary>Resizes the window by an offset (https://drafts.csswg.org/cssom-view/#dom-window-resizeby): see <see cref="ResizeTo"/>.</summary>
+        GetScriptMovableBrowsingContext()?.ResizeClientWindow(width, height);
+    }
+
+    /// <summary>Resizes the client window by an offset (https://drafts.csswg.org/cssom-view/#dom-window-resizeby): see <see cref="ResizeTo"/>.</summary>
     /// <exception cref="DomException">A <c>NotAllowedError</c>: the Picture-in-Picture window has no transient activation.</exception>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-resizeby"/>
     [IdlMember("resizeBy", "https://drafts.csswg.org/cssom-view/#dom-window-resizeby")]
-    public void ResizeBy(int x, int y) => DocumentPictureInPictureModel.Resize(this, size => new PictureInPictureWindowSize((int)Math.Clamp((long)size.Width + x, int.MinValue, int.MaxValue), (int)Math.Clamp((long)size.Height + y, int.MinValue, int.MaxValue)));
+    public void ResizeBy(int x, int y)
+    {
+        if (BrowsingContext is { IsDocumentPictureInPicture: true })
+        {
+            DocumentPictureInPictureModel.Resize(this, size => new PictureInPictureWindowSize(ClampToInt((long)size.Width + x), ClampToInt((long)size.Height + y)));
+            return;
+        }
+
+        GetScriptMovableBrowsingContext()?.ResizeClientWindow(ClampToInt((long)OuterWidth + x), ClampToInt((long)OuterHeight + y));
+    }
+
+    /// <summary>
+    /// Returns the browsing context whose client window the scripts of the window may move and resize, or null: the
+    /// top-level browsing context of the window when it is an auxiliary browsing context created by a script
+    /// (https://drafts.csswg.org/cssom-view/#dom-window-moveto: <c>window.open()</c>), and the document of the window is
+    /// fully active. A prerendering document does not move nor resize its window
+    /// (https://github.com/jeremyroman/alternate-loading-modes/issues/73, as the browsers that prerender).
+    /// </summary>
+    private BrowsingContext? GetScriptMovableBrowsingContext()
+        => BrowsingContext is { Parent: null, IsCreatedByScript: true, IsDestroyed: false } navigable && Document.IsFullyActive && !Document.Prerendering ? navigable : null;
+
+    private static int ClampToInt(long value) => (int)Math.Clamp(value, int.MinValue, int.MaxValue);
 
     /// <summary>
     /// Gets the horizontal scroll position of the viewport (https://drafts.csswg.org/cssom-view/#dom-window-scrollx): the x

@@ -53,6 +53,46 @@ public sealed class InputEventsTests : IDisposable
     }
 
     [Fact]
+    public void UserEdit_InsertedText_FiresTextInputBeforeTheEdit()
+    {
+        var document = Load("<div id=host contenteditable>ab</div><input id=input><textarea id=area></textarea>");
+        var host = (HtmlElement)document.GetElementById("host")!;
+        var events = new List<string>();
+        foreach (var target in new Element[] { host, document.GetElementById("input")!, document.GetElementById("area")! })
+        {
+            foreach (var type in new[] { "beforeinput", "textInput", "input" })
+            {
+                target.AddEventListener(type, e => events.Add(e is TextEvent textEvent
+                    ? $"{type} {(textEvent.Data == "\n" ? "LF" : textEvent.Data)} {textEvent.Bubbles} {textEvent.Cancelable} {textEvent.IsTrusted} {target.TextContent}"
+                    : type));
+            }
+        }
+
+        host.Focus();
+        document.GetSelection()!.Collapse(host.FirstChild, 1);
+        Editing.UserEdit(host, "insertText", "x");
+        Assert.Equal(["beforeinput", "textInput x True True True ab", "input"], events);
+        Assert.Equal("axb", host.TextContent);
+
+        // Canceling textInput cancels the insertion; the deletions fire no textInput event
+        events.Clear();
+        host.AddEventListener("textInput", e => e.PreventDefault());
+        Editing.UserEdit(host, "insertText", "y");
+        Editing.UserEdit(host, "deleteContentBackward", data: null);
+        Assert.Equal(["beforeinput", "textInput y True True True axb", "beforeinput", "input"], events);
+        Assert.Equal("ab", host.TextContent);
+
+        // The line breaks of a text control (none for an input element, which does not insert one)
+        events.Clear();
+        var area = (HtmlTextAreaElement)document.GetElementById("area")!;
+        area.Focus();
+        Editing.UserEditTextControl(area, "insertLineBreak", data: null);
+        Editing.UserEditTextControl(document.GetElementById("input")!, "insertLineBreak", data: null);
+        Assert.Equal(["beforeinput", "textInput LF True True True ", "input"], events);
+        Assert.Equal("\n", area.Value);
+    }
+
+    [Fact]
     public void UserEdit_WordDeletion()
     {
         var document = Load("<div id=host contenteditable>hello world</div>");

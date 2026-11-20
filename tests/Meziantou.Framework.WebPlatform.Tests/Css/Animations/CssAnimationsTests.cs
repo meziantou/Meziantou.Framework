@@ -72,6 +72,17 @@ public sealed class CssAnimationsTests : IDisposable
     }
 
     [Fact]
+    public void RevertRuleInAKeyframeIsTheValueWithoutTheAnimation()
+    {
+        var document = Load("<style>@keyframes a { from { width: revert-rule } to { width: 200px } } #target { width: 100px; animation: a 100s -50s paused linear }</style><div id=target></div>");
+        var target = document.GetElementById("target")!;
+        Assert.Equal("150px", GetComputed(target, "width"));
+
+        target.SetAttribute("style", "width: 120px");
+        Assert.Equal("160px", GetComputed(target, "width"));
+    }
+
+    [Fact]
     public void ImportantDeclarationsInKeyframesAreIgnored()
     {
         var document = Load("<style>@keyframes a { to { width: 100px !important; height: 100px } } #target { width: 0px; height: 0px; animation: a 100s -50s paused linear }</style><div id=target></div>");

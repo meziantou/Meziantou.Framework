@@ -4,6 +4,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Media;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Meziantou.Framework.WebPlatform.WebCodecs;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
@@ -3658,6 +3659,182 @@ public sealed class HostDeviceApisTests : IDisposable
         var request = document.DefaultView!.Navigator.MediaDevices.GetUserMedia(constraints);
         _contexts.EventLoop.RunUntilIdle();
         return request.Result;
+    }
+
+    // Media Capabilities
+
+    private const string MediaCapabilitiesScript = """
+        window.video = (contentType, extra) => ({ contentType, width: 640, height: 480, bitrate: 1000000, framerate: 30, ...extra });
+        window.describe = info => [info.supported, info.smooth, info.powerEfficient, info.keySystemAccess].join();
+        window.decode = configs => Promise.all(configs.map(c => navigator.mediaCapabilities.decodingInfo(c).then(describe, e => e.name))).then(r => document.title = r.join('|'));
+        window.encode = configs => Promise.all(configs.map(c => navigator.mediaCapabilities.encodingInfo(c).then(describe, e => e.name))).then(r => document.title = r.join('|'));
+        """;
+
+    [Fact]
+    public async Task MediaCapabilities_WithoutBackends_NothingIsSupported()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>");
+
+        Assert.Equal("false,false,false,|false,false,false,", await RunAsync(document, """decode([{ type: 'file', video: video('video/webm; codecs="vp8"') }, { type: 'webrtc', audio: { contentType: 'audio/opus' } }])"""));
+        Assert.Equal("false,false,false,|false,false,false,", await RunAsync(document, """encode([{ type: 'record', audio: { contentType: 'audio/webm; codecs="opus"' } }, { type: 'webrtc', video: video('video/VP8') }])"""));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_InvalidConfigurations_AreRejected()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>");
+
+        // No track, an invalid frame rate, a content type that is not valid, of the other kind, with another parameter, a
+        // container without codecs or with two codecs, a codec of the other kind, a trailing semicolon, HDR for webrtc
+        Assert.Equal(string.Join('|', Enumerable.Repeat("TypeError", 12)), await RunAsync(document, """
+            decode([
+                { type: 'file' },
+                { type: 'file', video: video('video/webm; codecs="vp8"', { framerate: 0 }) },
+                { type: 'file', video: video('fgeoa') },
+                { type: 'file', video: video('audio/webm; codecs="opus"') },
+                { type: 'file', video: video('video/webm; codecs="vp8"; foo=bar') },
+                { type: 'file', video: video('video/webm') },
+                { type: 'file', video: video('video/webm; codecs="vp8, vp09.00.10.08"') },
+                { type: 'file', video: video('application/ogg; codecs=vorbis') },
+                { type: 'file', audio: { contentType: 'audio/mpeg;' } },
+                { type: 'file', audio: { contentType: 'audio/mpeg; codecs=mp3' } },
+                { type: 'webrtc', video: video('video/VP8', { colorGamut: 'srgb' }) },
+                { type: 'webrtc', video: video('video/VP8'), keySystemConfiguration: { keySystem: 'org.w3.clearkey' } },
+            ])
+            """));
+
+        // A scalability mode only applies to webrtc, the spatial scalability only to the decoding types
+        Assert.Equal("TypeError|TypeError|TypeError", await RunAsync(document, """
+            encode([
+                { type: 'record', video: video('video/webm; codecs="vp8"', { scalabilityMode: 'L1T2' }) },
+                { type: 'record', video: video('video/webm; codecs="vp8"', { spatialScalability: true }) },
+                { type: 'webrtc', video: video('video/VP8', { colorGamut: 'srgb' }) },
+            ])
+            """));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_DecodingInfo_AsksTheMediaBackend()
+    {
+        #region WebPlatform_MediaCapabilities
+        var options = new BrowsingContextOptions
+        {
+            // Answers navigator.mediaCapabilities.decodingInfo() for the "file" and "media-source" types
+            MediaBackend = new WebMMediaBackend(),
+
+            // Answers the "webrtc" types, and the "record" type (what MediaRecorder records)
+            MediaCodecs = new Vp8OpusCodecs(),
+        };
+        #endregion
+
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", options);
+
+        // A media source needs a byte stream parser, which the backend does not create
+        Assert.Equal("true,true,false,|false,false,false,|false,false,false,|true,true,false,|false,false,false,", await RunAsync(document, """
+            decode([
+                { type: 'file', video: video('video/webm; codecs="vp8"'), audio: { contentType: 'audio/webm; codecs="opus"' } },
+                { type: 'file', video: video('video/webm; codecs="av01.0.04M.08"') },
+                { type: 'media-source', video: video('video/webm; codecs="vp8"') },
+                { type: 'file', audio: { contentType: 'audio/mpeg' } },
+                { type: 'file', audio: { contentType: 'audio/flac' } },
+            ])
+            """));
+
+        var task = document.DefaultView!.Navigator.MediaCapabilities.DecodingInfo(new MediaDecodingConfiguration
+        {
+            Type = MediaDecodingType.WebRtc,
+            Video = new VideoConfiguration { ContentType = "video/VP8", Width = 1280, Height = 720, Bitrate = 2_000_000, Framerate = 30 },
+        });
+        _contexts.EventLoop.RunUntilIdle();
+        var info = await task;
+
+        Assert.True(info.Supported);
+        Assert.True(info.Smooth);
+        Assert.False(info.PowerEfficient);
+        Assert.Null(info.KeySystemAccess);
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_WebRtcAndRecord_AskTheCodecs()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaCodecs = new Vp8OpusCodecs() });
+
+        // The RTP payload formats are converted to the codecs of WebCodecs; a container is not an RTP payload format
+        Assert.Equal("true,true,false,|true,true,false,|false,false,false,|false,false,false,", await RunAsync(document, """
+            decode([
+                { type: 'webrtc', video: video('video/VP8'), audio: { contentType: 'audio/opus' } },
+                { type: 'webrtc', audio: { contentType: 'audio/OPUS' } },
+                { type: 'webrtc', video: video('video/VP9; profile-id=0') },
+                { type: 'webrtc', audio: { contentType: 'audio/webm; codecs="opus"' } },
+            ])
+            """));
+
+        // MediaRecorder records VP8 and Opus in WebM or Matroska; the scalability mode is checked by the codecs
+        Assert.Equal("true,true,false,|true,true,false,|false,false,false,|false,false,false,|true,true,false,|false,false,false,", await RunAsync(document, """
+            encode([
+                { type: 'record', video: video('video/webm; codecs="vp8"'), audio: { contentType: 'audio/webm; codecs="opus"', channels: '2', samplerate: 48000 } },
+                { type: 'record', video: video('video/x-matroska; codecs="vp8"') },
+                { type: 'record', video: video('video/mp4; codecs="avc1.42001E"') },
+                { type: 'record', audio: { contentType: 'audio/matroska; codecs="pcm"' } },
+                { type: 'webrtc', video: video('video/VP8', { scalabilityMode: 'L1T1' }) },
+                { type: 'webrtc', video: video('video/VP8', { scalabilityMode: 'L3T3' }) },
+            ])
+            """));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_ColorSpace_MustMatchTheCodecString()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() });
+
+        // vp09.00.10.08 is BT.709; the color primaries 09 and the transfer characteristics 16 are BT.2020 and PQ
+        Assert.Equal("true,true,false,|false,false,false,|true,true,false,|false,false,false,", await RunAsync(document, """
+            decode([
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08"', { colorGamut: 'srgb', transferFunction: 'srgb' }) },
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08"', { colorGamut: 'rec2020', transferFunction: 'pq' }) },
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08.00.09.16.09.00"', { colorGamut: 'rec2020', transferFunction: 'pq' }) },
+                { type: 'file', video: video('video/webm; codecs="vp09.00.10.08.00.09.16.09.00"', { hdrMetadataType: 'smpteSt2086' }) },
+            ])
+            """));
+    }
+
+    [Fact]
+    public async Task MediaCapabilities_KeySystem_IsNotSupported()
+    {
+        var document = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() });
+        const string Script = """decode([{ type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey' } }, { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey', audio: {} } }])""";
+
+        Assert.Equal("false,false,false,|TypeError", await RunAsync(document, Script));
+        var insecure = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() }, url: "http://example.com/");
+        Assert.Equal("SecurityError|TypeError", await RunAsync(insecure, Script));
+    }
+
+    #region WebPlatform_MediaCapabilitiesBackend
+    // Plays WebM files with VP8 and Opus, and MP3 files
+    private sealed class WebMMediaBackend : MediaBackend
+    {
+        public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => mimeType switch
+        {
+            "video/webm" or "audio/webm" when codecs.Count == 0 => MediaTypeSupport.Maybe,
+            "video/webm" or "audio/webm" => codecs.All(codec => codec is "vp8" or "opus" || codec.StartsWith("vp09.", StringComparison.Ordinal)) ? MediaTypeSupport.Probably : MediaTypeSupport.NotSupported,
+            "audio/mpeg" => MediaTypeSupport.Probably,
+            _ => MediaTypeSupport.NotSupported,
+        };
+
+        public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
+    }
+    #endregion
+
+    // The codecs of the webrtc and record types: VP8 and Opus
+    private sealed class Vp8OpusCodecs : MediaCodecBackend
+    {
+        public override bool IsConfigSupported(AudioDecoderConfig config) => config.Codec == "opus";
+
+        public override bool IsConfigSupported(VideoDecoderConfig config) => config.Codec == "vp8";
+
+        public override bool IsConfigSupported(AudioEncoderConfig config) => config.Codec == "opus" && config.NumberOfChannels <= 2;
+
+        public override bool IsConfigSupported(VideoEncoderConfig config) => config.Codec == "vp8" && config.ScalabilityMode is null or "L1T1";
     }
 
     // The media elements play the streams once a media backend enables their processing model

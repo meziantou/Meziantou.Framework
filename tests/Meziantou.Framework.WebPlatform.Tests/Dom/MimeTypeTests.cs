@@ -30,4 +30,32 @@ public sealed class MimeTypeTests
     {
         Assert.Null(MimeType.Parse(input));
     }
+
+    // The valid MIME type strings of Media Capabilities (Media.MediaContentType): a strict parser
+    [Theory]
+    [InlineData("video/webm; codecs=\"vp8\"", "video/webm;codecs=vp8")]
+    [InlineData(" Video/WebM;CODECS=\"vp09.00.10.08, opus\" ", "video/webm;codecs=\"vp09.00.10.08, opus\"")]
+    [InlineData("video/VP9; profile-level=\"0\"", "video/vp9;profile-level=0")]
+    [InlineData("audio/mp3", "audio/mp3")]
+    [InlineData("video/webm; codecs=\"a\\\"b\"; foo=bar", "video/webm;codecs=\"a\\\"b\";foo=bar")]
+    [InlineData("video/webm; codecs=\"\"", "video/webm;codecs=\"\"")]
+    public void ParseContentType(string input, string expected)
+    {
+        Assert.Equal(expected, Media.MediaContentType.Parse(input)?.ToString());
+    }
+
+    [Theory]
+    [InlineData("fgeoa")]
+    [InlineData("video/webm;")]
+    [InlineData("audio/mpeg;")]
+    [InlineData("video/VP9\"")]
+    [InlineData("video/webm; codecs")]
+    [InlineData("video/webm; codecs=")]
+    [InlineData("video/webm; codecs=\"vp8")]
+    [InlineData("video/webm; codecs=a b")]
+    [InlineData("video /webm")]
+    public void ParseContentType_Failure(string input)
+    {
+        Assert.Null(Media.MediaContentType.Parse(input));
+    }
 }

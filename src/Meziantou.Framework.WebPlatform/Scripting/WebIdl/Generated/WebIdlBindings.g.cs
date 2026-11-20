@@ -414,6 +414,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ManagedSourceBuffer"] = Binding_ManagedSourceBuffer<TAdapter, TValue>.Binding,
             ["MathMLAnchorElement"] = Binding_MathMLAnchorElement<TAdapter, TValue>.Binding,
             ["MathMLElement"] = Binding_MathMLElement<TAdapter, TValue>.Binding,
+            ["MediaCapabilities"] = Binding_MediaCapabilities<TAdapter, TValue>.Binding,
             ["MediaDeviceInfo"] = Binding_MediaDeviceInfo<TAdapter, TValue>.Binding,
             ["MediaDevices"] = Binding_MediaDevices<TAdapter, TValue>.Binding,
             ["MediaElementAudioSourceNode"] = Binding_MediaElementAudioSourceNode<TAdapter, TValue>.Binding,
@@ -945,6 +946,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions dictionaryDom_MagnetometerSensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MagnetometerSensorOptions(r, dictionaryDom_MagnetometerSensorOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesDecodingInfo dictionaryDom_MediaCapabilitiesDecodingInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaCapabilitiesDecodingInfo(r, dictionaryDom_MediaCapabilitiesDecodingInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesEncodingInfo dictionaryDom_MediaCapabilitiesEncodingInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaCapabilitiesEncodingInfo(r, dictionaryDom_MediaCapabilitiesEncodingInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration dictionaryDom_MediaDecodingConfiguration:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaDecodingConfiguration(r, dictionaryDom_MediaDecodingConfiguration);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingConfiguration dictionaryDom_MediaEncodingConfiguration:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaEncodingConfiguration(r, dictionaryDom_MediaEncodingConfiguration);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackEventInit dictionaryDom_MediaStreamTrackEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaStreamTrackEventInit(r, dictionaryDom_MediaStreamTrackEventInit);
                 return true;
@@ -1175,6 +1188,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AssignedNodesOptions dictionaryDom_AssignedNodesOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AssignedNodesOptions(r, dictionaryDom_AssignedNodesOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration dictionaryDom_AudioConfiguration:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AudioConfiguration(r, dictionaryDom_AudioConfiguration);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs dictionaryDom_AuthenticationExtensionsClientInputs:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsClientInputs(r, dictionaryDom_AuthenticationExtensionsClientInputs);
@@ -1491,6 +1507,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.IsInputPendingOptions dictionaryDom_IsInputPendingOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IsInputPendingOptions(r, dictionaryDom_IsInputPendingOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.KeySystemTrackConfiguration dictionaryDom_KeySystemTrackConfiguration:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_KeySystemTrackConfiguration(r, dictionaryDom_KeySystemTrackConfiguration);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.LayoutConstraintsOptions dictionaryDom_LayoutConstraintsOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_LayoutConstraintsOptions(r, dictionaryDom_LayoutConstraintsOptions);
                 return true;
@@ -1505,6 +1524,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.LockOptions dictionaryDom_LockOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_LockOptions(r, dictionaryDom_LockOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesKeySystemConfiguration dictionaryDom_MediaCapabilitiesKeySystemConfiguration:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaCapabilitiesKeySystemConfiguration(r, dictionaryDom_MediaCapabilitiesKeySystemConfiguration);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaImage dictionaryDom_MediaImage:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaImage(r, dictionaryDom_MediaImage);
@@ -1842,6 +1864,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ValidityStateFlags dictionaryDom_ValidityStateFlags:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ValidityStateFlags(r, dictionaryDom_ValidityStateFlags);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration dictionaryDom_VideoConfiguration:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_VideoConfiguration(r, dictionaryDom_VideoConfiguration);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WorkerOptions dictionaryDom_WorkerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WorkerOptions(r, dictionaryDom_WorkerOptions);
                 return true;
@@ -2109,6 +2134,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ClientType enumDom_ClientType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ClientType(enumDom_ClientType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ColorGamut enumDom_ColorGamut:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ColorGamut(enumDom_ColorGamut));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ColorSpaceConversion enumDom_ColorSpaceConversion:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ColorSpaceConversion(enumDom_ColorSpaceConversion));
                 return true;
@@ -2163,6 +2191,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.GyroscopeLocalCoordinateSystem enumDom_GyroscopeLocalCoordinateSystem:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GyroscopeLocalCoordinateSystem(enumDom_GyroscopeLocalCoordinateSystem));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType enumDom_HdrMetadataType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_HdrMetadataType(enumDom_HdrMetadataType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection enumDom_IdbCursorDirection:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdbCursorDirection(enumDom_IdbCursorDirection));
                 return true;
@@ -2205,8 +2236,14 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem enumDom_MagnetometerLocalCoordinateSystem:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MagnetometerLocalCoordinateSystem(enumDom_MagnetometerLocalCoordinateSystem));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaDecodingType enumDom_MediaDecodingType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaDecodingType(enumDom_MediaDecodingType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind enumDom_MediaDeviceKind:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaDeviceKind(enumDom_MediaDeviceKind));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaEncodingType enumDom_MediaEncodingType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaEncodingType(enumDom_MediaEncodingType));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction enumDom_MediaSessionAction:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaSessionAction(enumDom_MediaSessionAction));
@@ -2375,6 +2412,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TouchType enumDom_TouchType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_TouchType(enumDom_TouchType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.TransferFunction enumDom_TransferFunction:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_TransferFunction(enumDom_TransferFunction));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.UserIdleState enumDom_UserIdleState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UserIdleState(enumDom_UserIdleState));
@@ -2552,6 +2592,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.LockManagerSnapshot> taskSystem_Threading_Tasks_Task_Dom_LockManagerSnapshot_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_LockManagerSnapshot_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_LockManagerSnapshot(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesDecodingInfo> taskSystem_Threading_Tasks_Task_Dom_MediaCapabilitiesDecodingInfo_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaCapabilitiesDecodingInfo_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaCapabilitiesDecodingInfo(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesEncodingInfo> taskSystem_Threading_Tasks_Task_Dom_MediaCapabilitiesEncodingInfo_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaCapabilitiesEncodingInfo_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaCapabilitiesEncodingInfo(r, dictionaryValue) : r.Adapter.Null));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaStream> taskSystem_Threading_Tasks_Task_Dom_MediaStream_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaStream_, static (r, v) => r.Wrap(v));

@@ -783,6 +783,46 @@ Call [HandleAction](cref:Meziantou.Framework.WebPlatform.Dom.MediaSession.Handle
 control: the handler that the page registered with `setActionHandler()` runs from a task, and the method returns false
 when the page has no handler for the action. The URLs of the artwork are absolute; the library does not fetch the images.
 
+## Media capabilities
+
+A page asks `navigator.mediaCapabilities.decodingInfo()` and `encodingInfo()` (in a window or a worker) whether it can
+play, receive, record or send media with a configuration: a content type, the size and frame rate of the video, the
+channels of the audio. The library validates the configurations (the promise is rejected with a `TypeError` for a
+content type that is not valid, a container without a single codec, a codec of the other kind, a member that does not
+apply to the type...), and the backends of the browsing context answer:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCapabilities;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
+- `file` asks [CanPlayType](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend.CanPlayType) of the
+  [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend): a container with a codec is supported when the
+  answer is [MediaTypeSupport.Probably](cref:Meziantou.Framework.WebPlatform.Media.MediaTypeSupport.Probably), a type of a
+  single codec such as `audio/mpeg` when it is not
+  [MediaTypeSupport.NotSupported](cref:Meziantou.Framework.WebPlatform.Media.MediaTypeSupport.NotSupported).
+  `media-source` also needs a byte stream parser from
+  [CreateSegmentParser](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend.CreateSegmentParser).
+- `webrtc` takes the RTP payload formats (`audio/opus`, `audio/PCMU`, `audio/PCMA`, `video/VP8`, `video/VP9`,
+  `video/H264`, `video/AV1`, `video/H265`, with their format parameters such as `profile-id`), converts them to the
+  configurations of the WebCodecs decoders and encoders, and asks the
+  [MediaCodecBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaCodecBackend).
+- `record` is what `MediaRecorder` records: VP8 and Opus in WebM or Matroska, when the encoders of the
+  [MediaCodecBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaCodecBackend) support the size, the frame rate
+  and the bitrate.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCapabilitiesBackend;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
+Without a backend, nothing is supported. The library has no performance model: a supported configuration is `smooth`,
+and it is not `powerEfficient`, since the library cannot tell whether a backend uses hardware codecs. A `colorGamut` or
+a `transferFunction` must match the color space of a VP9 or AV1 codec string (BT.709 when the string does not give it),
+and a video with HDR metadata (`hdrMetadataType`) is not supported, as the rendering is in sRGB. Encrypted Media
+Extensions are not implemented: a configuration with a `keySystemConfiguration` is validated (it is rejected with a
+`SecurityError` in a context that is not secure, and with an `InvalidStateError` in a worker), then reported as not
+supported, with a null `keySystemAccess`. .NET code calls
+[DecodingInfo](cref:Meziantou.Framework.WebPlatform.Dom.MediaCapabilities.DecodingInfo) and
+[EncodingInfo](cref:Meziantou.Framework.WebPlatform.Dom.MediaCapabilities.EncodingInfo) on
+[Navigator.MediaCapabilities](cref:Meziantou.Framework.WebPlatform.Dom.Navigator.MediaCapabilities).
+
 ## Sensors
 
 The sensor objects of the pages (`Accelerometer`, `LinearAccelerationSensor`, `GravitySensor`, `Gyroscope`,

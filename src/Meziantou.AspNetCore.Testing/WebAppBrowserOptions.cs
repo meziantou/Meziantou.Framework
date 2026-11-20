@@ -73,6 +73,13 @@ public sealed class WebAppBrowserOptions
     /// </summary>
     public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
 
+    /// <summary>
+    /// Gets the controller that answers the dialogs of the pages and records them, or null for a controller of each page in
+    /// <see cref="DialogMode.Strict"/> mode (see <see cref="TestPage.Dialogs"/>). The pages
+    /// that use the same controller share its handlers and its history (<see cref="PageDialog.Page"/> tells the page of a dialog).
+    /// </summary>
+    public DialogController? Dialogs { get; init; }
+
     /// <summary>Gets the name of the attribute that <see cref="LocatorScope.GetByTestId(string)"/> matches. The default is <c>data-testid</c>.</summary>
     public string TestIdAttribute { get; init; } = "data-testid";
 }

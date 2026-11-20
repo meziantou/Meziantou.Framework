@@ -51,4 +51,10 @@ public sealed class TestPageSettings
     /// </summary>
     /// <remarks>The page throws an <see cref="InvalidOperationException"/> when the function replaces them.</remarks>
     public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
+
+    /// <summary>
+    /// Gets the controller that answers the dialogs of the page and records them, or null for a controller of the page in
+    /// <see cref="DialogMode.Strict"/> mode (see <see cref="TestPage.Dialogs"/>).
+    /// </summary>
+    public DialogController? Dialogs { get; init; }
 }

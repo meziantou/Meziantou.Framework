@@ -228,6 +228,286 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
+    public async Task Dialogs_QueuedAnswers()
+    {
+        #region DialogController_Usage
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        // Answer the next confirm() with Cancel: the item is kept
+        page.Dialogs.DismissNext();
+        await page.GetByRole("button", "Delete").ClickAsync();
+        await Expect(page.Locator("output")).ToHaveTextAsync("Kept");
+
+        // Answer the next prompt() with a text
+        page.Dialogs.AcceptNext("Invoice.pdf");
+        await page.GetByRole("button", "Rename").ClickAsync();
+        await Expect(page.GetByRole("listitem")).ToHaveTextAsync("Invoice.pdf");
+
+        // Answer the next confirm() with OK, then the alert() that it shows: the answers are used in order
+        page.Dialogs.AcceptNext();
+        page.Dialogs.AcceptNext();
+        await page.GetByRole("button", "Delete").ClickAsync();
+        await Expect(page.GetByRole("listitem")).ToHaveCountAsync(0);
+
+        // The controller records the dialogs and their answers
+        var history = page.Dialogs.History;
+        Assert.Equal(["Delete Report.pdf?", "New name", "Delete Invoice.pdf?", "Deleted"], history.Select(dialog => dialog.Message));
+        Assert.Equal([UserPromptType.Confirm, UserPromptType.Prompt, UserPromptType.Confirm, UserPromptType.Alert], history.Select(dialog => dialog.Type));
+        Assert.Equal([false, true, true, true], history.Select(dialog => dialog.Accepted));
+        Assert.Equal("Invoice.pdf", history[1].Text);
+        #endregion
+
+        Assert.Equal("Report.pdf", history[1].DefaultValue);
+        Assert.Null(history[0].Text);
+        Assert.All(history, dialog => Assert.Same(page, dialog.Page));
+        Assert.All(history, dialog => Assert.False(dialog.IsUnexpected));
+        Assert.Equal(0, page.Dialogs.PendingCount);
+
+        page.Dialogs.ClearHistory();
+        Assert.Empty(page.Dialogs.History);
+    }
+
+    [Fact]
+    public async Task Dialogs_HandleNextChecksTheDialog()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        #region DialogController_HandleNext
+        // Check the dialog, then answer it
+        page.Dialogs.HandleNext(dialog =>
+        {
+            Assert.Equal(UserPromptType.Prompt, dialog.Type);
+            Assert.Equal("Report.pdf", dialog.DefaultValue);
+            dialog.Accept(dialog.DefaultValue.Replace(".pdf", ".txt", StringComparison.Ordinal));
+        });
+        await page.GetByRole("button", "Rename").ClickAsync();
+
+        await Expect(page.GetByRole("listitem")).ToHaveTextAsync("Report.txt");
+        #endregion
+    }
+
+    [Fact]
+    public async Task Dialogs_HandleAll()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        #region DialogController_HandleAll
+        // Answer the dialogs that no queued handler answers
+        page.Dialogs.HandleAll(dialog =>
+        {
+            if (dialog.Type is UserPromptType.Prompt)
+            {
+                dialog.Accept(dialog.DefaultValue.ToUpperInvariant());
+            }
+            else
+            {
+                dialog.Accept();
+            }
+        });
+
+        await page.GetByRole("button", "Rename").ClickAsync();
+        await Expect(page.GetByRole("listitem")).ToHaveTextAsync("REPORT.PDF");
+
+        await page.GetByRole("button", "Delete").ClickAsync();
+        await Expect(page.GetByRole("listitem")).ToHaveCountAsync(0);
+        #endregion
+
+        Assert.Equal(3, page.Dialogs.History.Count);
+
+        // A queued handler comes first: stay on the page
+        page.Dialogs.DismissNext();
+        await page.GetByRole("link", "Home").ClickAsync();
+        await Expect(page).ToHaveUrlAsync("/dialogs");
+    }
+
+    [Fact]
+    public async Task Dialogs_StrictModeFailsTheActionThatShowsAnUnexpectedDialog()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        #region DialogController_StrictMode
+        // No answer: confirm() returns false, and the click fails
+        var exception = await Assert.ThrowsAsync<UnexpectedDialogException>(() => page.GetByRole("button", "Delete").ClickAsync());
+
+        Assert.Equal("Delete Report.pdf?", exception.Dialog?.Message);
+        Assert.Equal("Kept", page.Find("output").TextContent);
+        #endregion
+
+        Assert.True(exception.Dialog?.IsUnexpected);
+        Assert.False(exception.Dialog?.Accepted);
+
+        // The failure is reported once
+        await page.WaitForIdleAsync();
+    }
+
+    [Fact]
+    public async Task Dialogs_AnExceptionOfAHandlerFailsTheAction()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        page.Dialogs.HandleNext(dialog => throw new InvalidOperationException("Unexpected message: " + dialog.Message));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => page.GetByRole("button", "Delete").ClickAsync());
+        Assert.Equal("Unexpected message: Delete Report.pdf?", exception.Message);
+        Assert.Equal("Kept", page.Find("output").TextContent);
+
+        // A dialog is answered once, while its handler runs
+        PageDialog? answered = null;
+        page.Dialogs.HandleNext(dialog =>
+        {
+            answered = dialog;
+            dialog.Dismiss();
+            dialog.Accept();
+        });
+        var twice = await Assert.ThrowsAsync<InvalidOperationException>(() => page.GetByRole("button", "Delete").ClickAsync());
+        Assert.Equal("The dialog is already dismissed.", twice.Message);
+        Assert.Throws<InvalidOperationException>(() => answered!.Dismiss());
+        Assert.False(answered!.Accepted);
+    }
+
+    [Fact]
+    public async Task Dialogs_LooseModeGivesTheAnswersOfABrowserWithoutDialogs()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+        page.Dialogs.Mode = DialogMode.Loose;
+
+        await page.GetByRole("button", "Rename").ClickAsync();
+        await page.GetByRole("button", "Delete").ClickAsync();
+
+        Assert.Equal("Report.pdf", page.Find("li").TextContent);
+        Assert.Equal("Kept", page.Find("output").TextContent);
+        Assert.Equal([false, false], page.Dialogs.History.Select(dialog => dialog.Accepted));
+        Assert.All(page.Dialogs.History, dialog => Assert.True(dialog.IsUnexpected));
+
+        // The beforeunload confirmation is accepted: the page leaves
+        await page.GetByRole("link", "Home").ClickAsync();
+        await Expect(page).ToHaveUrlAsync("/");
+        Assert.Equal(UserPromptType.BeforeUnload, page.Dialogs.History[^1].Type);
+        Assert.True(page.Dialogs.History[^1].Accepted);
+    }
+
+    [Fact]
+    public async Task Dialogs_DismissTheBeforeUnloadConfirmationToStayOnThePage()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        #region DialogController_BeforeUnload
+        // The click gives the page the sticky activation that the confirmation requires
+        page.Dialogs.DismissNext();
+        await page.GetByRole("button", "Delete").ClickAsync();
+
+        // Stay on the page that has unsaved changes
+        page.Dialogs.DismissNext();
+        await page.GetByRole("link", "Home").ClickAsync();
+        await Expect(page).ToHaveUrlAsync("/dialogs");
+        #endregion
+
+        Assert.Equal(UserPromptType.BeforeUnload, page.Dialogs.History[^1].Type);
+        Assert.False(page.Dialogs.History[^1].Accepted);
+        Assert.Equal("", page.Dialogs.History[^1].Message);
+
+        // Without answer, the strict mode fails the navigation
+        await Assert.ThrowsAsync<UnexpectedDialogException>(() => page.GetByRole("link", "Home").ClickAsync());
+        await Expect(page).ToHaveUrlAsync("/");
+    }
+
+    [Fact]
+    public async Task Dialogs_WaitForDialog()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        #region TestPage_WaitForDialog
+        // The answer is set up before the dialog: the script waits for it
+        page.Dialogs.AcceptNext();
+        await page.GetByRole("button", "Save").ClickAsync(new ClickOptions { NoWaitAfter = true });
+
+        // The alert() is shown by a timer: wait for it, and get it with its answer
+        var dialog = await page.WaitForDialogAsync();
+        Assert.Equal("Saved", dialog.Message);
+        Assert.True(dialog.Accepted);
+        #endregion
+
+        await Assert.ThrowsAsync<TimeoutException>(() => page.WaitForDialogAsync(TimeSpan.FromMilliseconds(50)));
+
+        // Each dialog is returned once, in order
+        page.Dialogs.AcceptAll();
+        await page.GetByRole("button", "Delete").ClickAsync();
+        Assert.Equal("Delete Report.pdf?", (await page.WaitForDialogAsync()).Message);
+        Assert.Equal("Deleted", (await page.WaitForDialogAsync()).Message);
+    }
+
+    [Fact]
+    public async Task Dialogs_PagesShareTheControllerOfTheOptions()
+    {
+        #region WebAppBrowser_Dialogs
+        // The pages of the browser share the controller: dismiss every dialog
+        var dialogs = DialogController.DismissingAll();
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { Dialogs = dialogs });
+        var page = await browser.OpenAsync("/dialogs");
+        var otherPage = await browser.OpenAsync("/dialogs");
+
+        await page.GetByRole("button", "Delete").ClickAsync();
+        await otherPage.GetByRole("button", "Rename").ClickAsync();
+
+        Assert.Same(dialogs, page.Dialogs);
+        Assert.Equal([page, otherPage], dialogs.History.Select(dialog => dialog.Page));
+        #endregion
+
+        Assert.All(dialogs.History, dialog => Assert.False(dialog.Accepted));
+        var accepting = DialogController.AcceptingAll();
+        Assert.NotSame(accepting, DialogController.AcceptingAll());
+        Assert.Equal(DialogMode.Strict, accepting.Mode);
+    }
+
+    [Fact]
+    public async Task Dialogs_FallBackToTheHandlerOfTheBrowsingContextOptions()
+    {
+        var messages = new List<string>();
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions
+        {
+            ConfigureBrowsingContext = options => options with
+            {
+                UserPromptHandler = (_, prompt) =>
+                {
+                    messages.Add(prompt.Message);
+                    return UserPromptResult.Accept();
+                },
+            },
+        });
+        var page = await browser.OpenAsync("/dialogs");
+
+        // The queued handler comes first, the handler of all the dialogs next, then the handler of the options
+        page.Dialogs.DismissNext();
+        await page.GetByRole("button", "Delete").ClickAsync();
+        page.Dialogs.AcceptAll("From the page");
+        await page.GetByRole("button", "Rename").ClickAsync();
+        page.Dialogs.HandleAll(null);
+        await page.GetByRole("button", "Delete").ClickAsync();
+
+        Assert.Equal(["Delete From the page?", "Deleted"], messages);
+        Assert.Equal(["Delete Report.pdf?", "New name", "Delete From the page?", "Deleted"], page.Dialogs.History.Select(dialog => dialog.Message));
+        Assert.Equal([false, true, true, true], page.Dialogs.History.Select(dialog => dialog.Accepted));
+        Assert.All(page.Dialogs.History, dialog => Assert.False(dialog.IsUnexpected));
+    }
+
+    [Fact]
     public async Task ConfigureTheBrowsingContextOfThePages()
     {
         #region WebAppBrowser_ConfigureBrowsingContext

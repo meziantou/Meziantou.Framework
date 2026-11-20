@@ -78,6 +78,12 @@ public sealed class ComponentTestHostOptions
     /// </summary>
     public Func<BrowsingContextOptions, BrowsingContextOptions>? ConfigureBrowsingContext { get; init; }
 
+    /// <summary>
+    /// Gets the controller that answers the dialogs of the page and records them, or null for a controller of the page in
+    /// <see cref="DialogMode.Strict"/> mode (see <see cref="TestPage.Dialogs"/>).
+    /// </summary>
+    public DialogController? Dialogs { get; init; }
+
     /// <summary>Gets the name of the attribute that <see cref="LocatorScope.GetByTestId(string)"/> matches. The default is <c>data-testid</c>.</summary>
     public string TestIdAttribute { get; init; } = "data-testid";
 }

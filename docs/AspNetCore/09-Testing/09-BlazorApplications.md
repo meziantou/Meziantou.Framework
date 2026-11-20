@@ -26,7 +26,7 @@ await Expect(page.GetByRole("status")).ToHaveTextAsync("Current count: 1");
 - The render batches come from the server after the action: wait for the result with an
   [assertion](03-Locators.md#assert-the-state-of-the-page) of `Expect`.
 - The Interactive WebAssembly components need a WebAssembly runtime, which the pages do not have by default: without
-  it, `blazor.webassembly.js` fails to start. See [WebAssembly](07-WebApplications.md#webassembly).
+  it, `blazor.webassembly.js` fails to start. See [WebAssembly](08-WebApplications.md#webassembly).
 
 ## Blazor WebAssembly
 

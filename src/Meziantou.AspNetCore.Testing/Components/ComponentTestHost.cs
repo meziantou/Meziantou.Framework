@@ -62,6 +62,7 @@ public sealed class ComponentTestHost : TestPage
             DefaultTimeout = options.DefaultTimeout,
             TestIdAttribute = options.TestIdAttribute,
             ConfigureBrowsingContext = options.ConfigureBrowsingContext,
+            Dialogs = options.Dialogs,
         })
     {
         _options = options;
@@ -177,6 +178,7 @@ public sealed class ComponentTestHost : TestPage
             RunEventLoop();
         }
 
+        ThrowIfDialogFailed();
         ThrowIfFailed();
         return result;
     }

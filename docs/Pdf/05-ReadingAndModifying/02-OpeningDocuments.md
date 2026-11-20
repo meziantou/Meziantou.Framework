@@ -80,6 +80,31 @@ var canCopy = read.Permissions.HasFlag(PdfPermissions.CopyContent);
 
 See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwords.
 
+## Open a remote file
+
+[OpenAsync](cref:Meziantou.Framework.Pdf.PdfDocument.OpenAsync) with an `HttpClient` and a URI opens a file over HTTP and downloads only the parts it reads, with range requests:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfReaderTests.cs;region=Pdf_OpenRemote;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Only the parts of the file the document reads are downloaded
+var document = await PdfDocument.OpenAsync(httpClient, new Uri("https://example.com/report.pdf"));
+
+// Download what a page needs before reading it, so that reading it sends no request
+await document.PrefetchPageAsync(10);
+var text = document.Pages[10].ExtractText();
+```
+<!-- endref -->
+
+- The file is downloaded in blocks of 16 KiB, each once. Opening the document downloads its start, its end and its
+  cross-reference sections; the first page of a linearized file comes with the first requests
+  ([Linearize](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Linearize) writes such files).
+- [PrefetchPageAsync](cref:Meziantou.Framework.Pdf.PdfDocument.PrefetchPageAsync) downloads what a page needs: its content, fonts, images and annotations. Without it, an
+  object read for the first time is downloaded synchronously, which the browser does not support.
+- A server that does not support range requests sends the whole file, which is read from memory.
+- A damaged file is repaired by scanning it, which downloads it whole: set
+  [AllowFullDownload](cref:Meziantou.Framework.Pdf.PdfReadOptions.AllowFullDownload) to `false` to refuse such files instead.
+- The `HttpClient` must stay usable, and the file unchanged, while the document is used.
+
 ## Read options
 
 | Option | Default | Limits |
@@ -87,6 +112,7 @@ See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwo
 | [Password](cref:Meziantou.Framework.Pdf.PdfReadOptions.Password) | The empty password | The user or the owner password of an encrypted document |
 | [MaxDecodedStreamLength](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxDecodedStreamLength) | 256 MiB | The length of the decoded data of one stream, checked as it is decoded |
 | [MaxNestingDepth](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxNestingDepth) | 256 | The depth of nested arrays and dictionaries |
+| [AllowFullDownload](cref:Meziantou.Framework.Pdf.PdfReadOptions.AllowFullDownload) | `true` | Whether a file opened over HTTP can be downloaded whole, to be repaired |
 | [LoadAllObjects](cref:Meziantou.Framework.Pdf.PdfReadOptions.LoadAllObjects) | `false` | Read every object and stream when the file is opened, so that [Diagnostics](cref:Meziantou.Framework.Pdf.PdfDocument.Diagnostics) is complete |
 
 A file beyond a limit throws [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException). Lower the limits for the files of untrusted users: see

@@ -813,4 +813,180 @@ public sealed class PdfReaderTests
         Assert.True(diagnostics.Count <= 1000, diagnostics.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
         Assert.Contains(diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.InvalidDictionaryKey);
     }
+
+    [Fact]
+    public async Task Example_OpenRemote()
+    {
+        var file = CreateLargeDocument(pageCount: 20, linearize: true);
+        using var handler = new RangeHandler(file);
+        using var httpClient = new HttpClient(handler, disposeHandler: false);
+
+        #region Pdf_OpenRemote
+        // Only the parts of the file the document reads are downloaded
+        var document = await PdfDocument.OpenAsync(httpClient, new Uri("https://example.com/report.pdf"));
+
+        // Download what a page needs before reading it, so that reading it sends no request
+        await document.PrefetchPageAsync(10);
+        var text = document.Pages[10].ExtractText();
+        #endregion
+
+        Assert.Equal("Page 11", text.Trim());
+        Assert.Equal(0, handler.SynchronousRequests);
+        Assert.True(handler.ServedBytes < file.Length / 2, $"{handler.ServedBytes} of {file.Length} bytes were downloaded");
+    }
+
+    [Fact]
+    public async Task TheFirstPageOfALinearizedFileIsDownloadedWithTheStartOfTheFile()
+    {
+        var file = CreateLargeDocument(pageCount: 20, linearize: true);
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        // The start of the file, its end, then the rest of the first page section (/E) in one request
+        Assert.Equal(3, handler.Requests);
+        var start = Encoding.Latin1.GetString(file.AsSpan(0, 300));
+        var endOfFirstPage = long.Parse(start[(start.IndexOf("/E ", StringComparison.Ordinal) + 3)..].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0], System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains(handler.Ranges, range => range.From == 16 * 1024 && range.From + range.Length >= endOfFirstPage);
+        await document.PrefetchPageAsync(0);
+        Assert.Equal("Page 1", document.Pages[0].ExtractText().Trim());
+        Assert.Equal(20, document.Pages.Count);
+        Assert.Equal(0, handler.SynchronousRequests);
+    }
+
+    [Fact]
+    public async Task AFileThatIsNotLinearizedIsReadOverHttp()
+    {
+        var file = CreateLargeDocument(pageCount: 10, linearize: false);
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        // Without a prefetch, the objects are downloaded synchronously when they are read
+        Assert.Equal("Page 10", document.Pages[9].ExtractText().Trim());
+        Assert.True(handler.SynchronousRequests > 0);
+        Assert.True(handler.ServedBytes < file.Length);
+        Assert.Equal(PdfDocument.Open(file).Pages.Select(page => page.ExtractText()), document.Pages.Select(page => page.ExtractText()));
+    }
+
+    [Fact]
+    public async Task AServerThatIgnoresTheRangesSendsTheWholeFile()
+    {
+        var file = CreateLargeDocument(pageCount: 3, linearize: false);
+        using var handler = new RangeHandler(file) { IgnoreRanges = true };
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        Assert.Equal(1, handler.Requests);
+        Assert.Equal("Page 3", document.Pages[2].ExtractText().Trim());
+        await document.PrefetchPageAsync(1);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => document.PrefetchPageAsync(3));
+    }
+
+    [Fact]
+    public async Task HttpErrorsAndCancellationAreReported()
+    {
+        var file = CreateLargeDocument(pageCount: 3, linearize: false);
+        using var failingHandler = new RangeHandler(file) { StatusCode = System.Net.HttpStatusCode.InternalServerError };
+        using var failing = new HttpClient(failingHandler, disposeHandler: false);
+        await Assert.ThrowsAsync<HttpRequestException>(() => PdfDocument.OpenAsync(failing, new Uri("https://example.com/a.pdf")));
+
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"), cancellationToken: new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
+    public async Task ARepairNeedsTheWholeFileOverHttp()
+    {
+        var text = Encoding.Latin1.GetString(CreateLargeDocument(pageCount: 3, linearize: false));
+        var damaged = Encoding.Latin1.GetBytes(text[..text.LastIndexOf("startxref", StringComparison.Ordinal)]);
+        using var handler = new RangeHandler(damaged);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        await Assert.ThrowsAsync<UnsupportedPdfFeatureException>(() => PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"), new PdfReadOptions { AllowFullDownload = false }));
+
+        // An empty file: its first range is not satisfiable
+        using var emptyHandler = new RangeHandler([]);
+        using var emptyClient = new HttpClient(emptyHandler, disposeHandler: false);
+        await Assert.ThrowsAsync<InvalidPdfContentException>(() => PdfDocument.OpenAsync(emptyClient, new Uri("https://example.com/empty.pdf")));
+        var repaired = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+        Assert.True(repaired.IsRepaired);
+        Assert.Equal("Page 3", repaired.Pages[2].ExtractText().Trim());
+    }
+
+    private static byte[] CreateLargeDocument(int pageCount, bool linearize)
+    {
+        var document = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var filler = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("% filler line of the content stream\n", 3000)));
+        for (var i = 0; i < pageCount; i++)
+        {
+            document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+                .DrawText(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"Page {i + 1}"), font, 12, 72, 720)
+                .AppendRawContent(filler);
+        }
+
+        return document.ToByteArray(new PdfSaveOptions { Linearize = linearize, CompressStreams = false });
+    }
+
+    /// <summary>Serves a file with range requests (RFC 9110, 14), synchronously or not, and counts what it serves.</summary>
+    private sealed class RangeHandler(byte[] file) : HttpMessageHandler
+    {
+        public bool IgnoreRanges { get; init; }
+
+        public System.Net.HttpStatusCode? StatusCode { get; init; }
+
+        public int Requests { get; private set; }
+
+        public int SynchronousRequests { get; private set; }
+
+        public long ServedBytes { get; private set; }
+
+        public List<(long From, long Length)> Ranges { get; } = [];
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            SynchronousRequests++;
+            return Serve(request);
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(Serve(request));
+        }
+
+        private HttpResponseMessage Serve(HttpRequestMessage request)
+        {
+            Requests++;
+            if (StatusCode is { } status)
+                return new HttpResponseMessage(status);
+
+            if (IgnoreRanges || request.Headers.Range is not { } range)
+            {
+                ServedBytes += file.Length;
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new ByteArrayContent(file) };
+            }
+
+            if (file.Length == 0)
+            {
+                var empty = new ByteArrayContent([]);
+                empty.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(0);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.RequestedRangeNotSatisfiable) { Content = empty };
+            }
+
+            var item = Assert.Single(range.Ranges);
+            var from = item.From!.Value;
+            var to = Math.Min(item.To!.Value, file.Length - 1);
+            ServedBytes += to - from + 1;
+            Ranges.Add((from, to - from + 1));
+            var content = new ByteArrayContent(file, (int)from, (int)(to - from + 1));
+            content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(from, to, file.Length);
+            return new HttpResponseMessage(System.Net.HttpStatusCode.PartialContent) { Content = content };
+        }
+    }
 }

@@ -29,6 +29,8 @@ description: What the library does not do, so that you can plan around it.
   from the blank spaces of the page: it reads them from left to right, and keeps the order of the content for the text
   written vertically.
 - The library reports the permissions of an encrypted document, but does not enforce them.
+- A document opened over HTTP reads its whole page tree, so the dictionaries of all its pages are downloaded when the
+  pages are first used; the hint tables of a linearized file are not read.
 - A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
   file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
 - A file larger than 2 GB is written by [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save), [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync), [SaveIncremental](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncremental) and

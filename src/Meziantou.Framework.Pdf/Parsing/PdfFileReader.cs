@@ -163,7 +163,23 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     /// <summary>Gets an offset of the file for a diagnostic: <see langword="null"/> when it is outside of the file.</summary>
     private long? InFile(long offset) => offset >= 0 && offset < _input.Length ? offset : null;
 
-    private PdfRecoveryScanner GetScanner() => _scanner ??= PdfRecoveryScanner.Scan(_input, _options.MaxNestingDepth);
+    private PdfRecoveryScanner GetScanner()
+    {
+        if (_scanner is null)
+        {
+            CheckFullDownload();
+            _scanner = PdfRecoveryScanner.Scan(_input, _options.MaxNestingDepth);
+        }
+
+        return _scanner;
+    }
+
+    /// <summary>Refuses to read the whole file of a document opened over HTTP when the options do not allow it.</summary>
+    private void CheckFullDownload()
+    {
+        if (_input is HttpRangePdfInput { AllowFullDownload: false })
+            throw new UnsupportedPdfFeatureException($"The file must be scanned to be read, which downloads it whole ({nameof(PdfReadOptions)}.{nameof(PdfReadOptions.AllowFullDownload)} is false)");
+    }
 
     /// <summary>Authenticates the password of an encrypted file (7.6): the encryption dictionary is not encrypted itself.</summary>
     private void InitializeSecurity()
@@ -192,7 +208,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         {
             // Some producers prepend garbage beyond 1 KiB, and some files have no header at all: like other readers, the
             // file is read anyway, and it is rejected when no catalog can be found
-            index = IndexOf(_input, "%PDF-"u8);
+            index = _input is HttpRangePdfInput { AllowFullDownload: false } ? -1 : IndexOf(_input, "%PDF-"u8);
             if (index < 0)
             {
                 Diagnostics.Report(PdfDiagnosticKind.MissingHeader, "The file has no %PDF- header");

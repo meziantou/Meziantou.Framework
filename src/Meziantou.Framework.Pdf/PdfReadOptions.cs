@@ -45,6 +45,14 @@ public sealed class PdfReadOptions
     public X509Certificate2? Certificate { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether a document opened over HTTP (<see cref="PdfDocument.OpenAsync(HttpClient, Uri, PdfReadOptions?, CancellationToken)"/>)
+    /// can download the whole file: to repair a damaged file, which scans it, or to look for a header beyond the first
+    /// kilobyte. When it is <see langword="false"/>, such a file throws <see cref="UnsupportedPdfFeatureException"/>. The
+    /// default is <see langword="true"/>.
+    /// </summary>
+    public bool AllowFullDownload { get; init; } = true;
+
+    /// <summary>
     /// Gets a value indicating whether the document reads all its objects, its page tree and the data of its streams when
     /// it is opened, so that <see cref="PdfDocument.Diagnostics"/> lists every problem of the file
     /// (<see cref="PdfDocument.ValidateStructure"/>). The default is <see langword="false"/>: the objects are read when

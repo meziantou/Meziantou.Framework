@@ -10,7 +10,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 // digit; Tab and Shift+Tab move the focus between the fields before leaving the control, the left and right arrow keys move
 // it too, the up and down arrow keys step the focused field, and Backspace or Delete clears it. The value of the control is
 // set when every field has a value (the empty string otherwise): input and change are then fired, and the user validity of
-// the control becomes true.
+// the control becomes true. The seconds and the fractions of a second of a time are not edited: they are kept when another
+// field is edited.
 public partial class HtmlInputElement
 {
     private DateTimeFields? _dateTimeFields;
@@ -30,7 +31,7 @@ public partial class HtmlInputElement
     internal bool IsDateTimeControl => _type is InputType.Date or InputType.Month or InputType.Week or InputType.Time or InputType.DateTimeLocal;
 
     /// <summary>The fields of a date and time control, and the value of the control they were last synchronized with.</summary>
-    private sealed class DateTimeFields(InputType type, DateTimeFieldKind[] kinds, int?[] values, string syncedValue)
+    private sealed class DateTimeFields(InputType type, DateTimeFieldKind[] kinds, int?[] values, string syncedValue, string timeSuffix)
     {
         public InputType Type { get; } = type;
 
@@ -38,7 +39,11 @@ public partial class HtmlInputElement
 
         public int?[] Values { get; } = values;
 
-        public string SyncedValue { get; set; } = syncedValue;
+        /// <summary>The value of the control the fields were synchronized with, or null when they must be synchronized again.</summary>
+        public string? SyncedValue { get; set; } = syncedValue;
+
+        /// <summary>The seconds and the fractions of a second of the time of the value (e.g. <c>:56.789</c>), kept by the edits.</summary>
+        public string TimeSuffix { get; } = timeSuffix;
 
         /// <summary>The index of the focused field.</summary>
         public int Focused { get; set; }
@@ -219,6 +224,18 @@ public partial class HtmlInputElement
         return up ? min : max;
     }
 
+    /// <summary>
+    /// The value is set by a script, by the reset algorithm or by the <c>value</c> attribute: the fields are synchronized
+    /// with it the next time they are used, even when it is the empty string of fields that are partially filled.
+    /// </summary>
+    private void InvalidateDateTimeFields()
+    {
+        if (_dateTimeFields is { } fields)
+        {
+            fields.SyncedValue = null;
+        }
+    }
+
     /// <summary>The fields of the control, synchronized with its value when the value changed since they were last edited.</summary>
     private DateTimeFields GetDateTimeFields()
     {
@@ -235,8 +252,8 @@ public partial class HtmlInputElement
         };
 
         var values = new int?[kinds.Length];
-        ParseDateTimeFields(_type, _value, kinds, values);
-        var result = new DateTimeFields(_type, kinds, values, _value);
+        ParseDateTimeFields(_type, _value, kinds, values, out var timeSuffix);
+        var result = new DateTimeFields(_type, kinds, values, _value, timeSuffix);
         if (_dateTimeFields is { } previous && previous.Type == _type)
         {
             result.Focused = previous.Focused;
@@ -246,8 +263,9 @@ public partial class HtmlInputElement
         return result;
     }
 
-    private static void ParseDateTimeFields(InputType type, string value, DateTimeFieldKind[] kinds, int?[] values)
+    private static void ParseDateTimeFields(InputType type, string value, DateTimeFieldKind[] kinds, int?[] values, out string timeSuffix)
     {
+        timeSuffix = "";
         if (value.Length == 0)
             return;
 
@@ -268,6 +286,7 @@ public partial class HtmlInputElement
 
             case InputType.Time when Microsyntaxes.TryParseTimeString(value, out var h, out var min, out _):
                 (hour, minute) = (h, min);
+                timeSuffix = GetTimeSuffix(value);
                 break;
 
             case InputType.DateTimeLocal:
@@ -276,6 +295,7 @@ public partial class HtmlInputElement
                     && Microsyntaxes.TryParseTimeString(value.AsSpan(separator + 1), out var th, out var tm, out _))
                 {
                     (year, month, day, hour, minute) = (dy, dm, dd, th, tm);
+                    timeSuffix = GetTimeSuffix(value[(separator + 1)..]);
                 }
 
                 break;
@@ -295,6 +315,9 @@ public partial class HtmlInputElement
             };
         }
     }
+
+    /// <summary>The seconds and the fractions of a second of a valid time string (<c>HH:MM</c>, then <c>:SS</c> and <c>.fff</c>).</summary>
+    private static string GetTimeSuffix(string time) => time.Length > 5 ? time[5..] : "";
 
     /// <summary>The value of the fields: the empty string when a field has no value.</summary>
     private static string FormatDateTimeFields(DateTimeFields fields)
@@ -324,8 +347,8 @@ public partial class HtmlInputElement
             InputType.Date => string.Create(invariant, $"{year:D4}-{month:D2}-{day:D2}"),
             InputType.Month => string.Create(invariant, $"{year:D4}-{month:D2}"),
             InputType.Week => string.Create(invariant, $"{year:D4}-W{week:D2}"),
-            InputType.Time => string.Create(invariant, $"{hour24:D2}:{minute:D2}"),
-            _ => string.Create(invariant, $"{year:D4}-{month:D2}-{day:D2}T{hour24:D2}:{minute:D2}"),
+            InputType.Time => string.Create(invariant, $"{hour24:D2}:{minute:D2}{fields.TimeSuffix}"),
+            _ => string.Create(invariant, $"{year:D4}-{month:D2}-{day:D2}T{hour24:D2}:{minute:D2}{fields.TimeSuffix}"),
         };
     }
 

@@ -262,21 +262,28 @@ public sealed class HtmlStreamWriter
         }
     }
 
-    /// <summary>https://whatpr.org/html/12758/parsing.html#execute-the-deferred-scripts</summary>
+    /// <summary>
+    /// https://whatpr.org/html/12758/parsing.html#execute-the-deferred-scripts: the first script runs once it is ready, and the
+    /// next one from another task, so that the event loop runs the other tasks and updates the rendering between them.
+    /// </summary>
     private void ExecuteDeferredScripts()
     {
         var scripts = _builder.Document.ScriptsToExecuteWhenParsingFinished;
-        while (scripts.Count > 0)
-        {
-            var script = scripts[0];
-            if (!script.ReadyToBeParserExecuted)
-            {
-                script.ReadyToBeParserExecutedCallback = ExecuteDeferredScripts;
-                return;
-            }
+        if (scripts.Count == 0)
+            return;
 
-            scripts.RemoveAt(0);
-            script.Execute();
+        var script = scripts[0];
+        if (!script.ReadyToBeParserExecuted)
+        {
+            script.ReadyToBeParserExecutedCallback = ExecuteDeferredScripts;
+            return;
+        }
+
+        scripts.RemoveAt(0);
+        script.Execute();
+        if (scripts.Count > 0 && _builder.StreamingScriptDocument?.RelevantWindow is { } window)
+        {
+            window.QueueGlobalTask(ExecuteDeferredScripts);
         }
     }
 

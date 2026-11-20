@@ -64,11 +64,13 @@ internal static class HyperlinkElementUtils
     /// <param name="element">The hyperlink.</param>
     /// <param name="sourceElement">
     /// The element that initiates the navigation, as seen by the navigation API: the hyperlink, or the use element whose shadow
-    /// tree has the instance of the hyperlink that is activated (the instances are retargeted to the use element).
+    /// tree has the instance of the hyperlink that is activated (the instances are retargeted to the use element). The
+    /// document of the source element is the one that navigates (the hyperlink of a use element may be in an external
+    /// resource document, which has no browsing context): the URL of the hyperlink is resolved against its own document.
     /// </param>
     public static void ActivationBehavior(Element element, Element? sourceElement = null)
     {
-        if (!element.HasActivationBehavior || CannotNavigate(element))
+        if (!element.HasActivationBehavior || CannotNavigate(sourceElement ?? element))
             return;
 
         if (element.HasAttribute("download"))
@@ -133,7 +135,7 @@ internal static class HyperlinkElementUtils
     /// </summary>
     private static void FollowHyperlink(Element element, Element sourceElement)
     {
-        var document = element.NodeDocument;
+        var document = sourceElement.NodeDocument;
         if (document.BrowsingContext is not { } currentNavigable)
             return;
 

@@ -166,6 +166,7 @@ public partial class HtmlInputElement : IEditableTextControl
         _fileList = null;
         _webkitEntries = [];
         SanitizeValue();
+        InvalidateDateTimeFields();
     }
 
     internal override void AttributeChangeSteps(string localName, string? oldValue, string? value, string? @namespace)
@@ -198,6 +199,7 @@ public partial class HtmlInputElement : IEditableTextControl
                 {
                     _value = value ?? "";
                     SanitizeValue();
+                    InvalidateDateTimeFields();
                 }
 
                 break;
@@ -375,6 +377,7 @@ public partial class HtmlInputElement : IEditableTextControl
                     _valueEditedByUser = false;
                     _userInput = null;
                     SanitizeValue();
+                    InvalidateDateTimeFields();
                     NodeDocument.IncrementElementStateVersion();
                     TextControlEditing.ClearHistory(this);
 
@@ -408,6 +411,7 @@ public partial class HtmlInputElement : IEditableTextControl
     {
         _value = value;
         SanitizeValue();
+        InvalidateDateTimeFields();
         NodeDocument.IncrementElementStateVersion();
     }
 

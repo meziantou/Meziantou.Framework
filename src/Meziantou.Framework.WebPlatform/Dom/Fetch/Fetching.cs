@@ -1342,7 +1342,8 @@ internal static class Fetching
     /// Combines a stored partial response that starts at the first byte with the <c>206</c> response of the rest of the
     /// representation (https://httpwg.org/specs/rfc9111.html#combining.responses): the <c>200</c> response of the complete
     /// representation, with the headers of the new response, or null when the new response does not start where the stored
-    /// one ends, does not end at the end of the representation, or has another strong validator.
+    /// one ends, does not end at the end of the representation, or the two responses do not have the same strong validator
+    /// (a strong entity tag, else a last modification date): without one, they may be parts of different representations.
     /// </summary>
     private static FetchResponse? CompletePartialResponse(HttpCacheEntry partialResponse, FetchResponse response)
     {
@@ -1353,8 +1354,17 @@ internal static class Fetching
         if (first != storedLast + 1 || completeLength != storedLength || last != completeLength - 1 || body.Length != last - first + 1)
             return null;
 
-        if (HeaderList.Get(partialResponse.Headers, "ETag") is { } storedEtag && HeaderList.Get(response.HeaderList, "ETag") is { } etag && storedEtag != etag)
+        var storedEtag = HeaderList.Get(partialResponse.Headers, "ETag");
+        var etag = HeaderList.Get(response.HeaderList, "ETag");
+        if (storedEtag is not null || etag is not null)
+        {
+            if (storedEtag is null || storedEtag.StartsWith("W/", StringComparison.Ordinal) || storedEtag != etag)
+                return null;
+        }
+        else if (HeaderList.Get(partialResponse.Headers, "Last-Modified") is not { } storedLastModified || storedLastModified != HeaderList.Get(response.HeaderList, "Last-Modified"))
+        {
             return null;
+        }
 
         var completeBody = new byte[completeLength];
         partialResponse.Body.AsSpan(0, (int)storedLast + 1).CopyTo(completeBody);

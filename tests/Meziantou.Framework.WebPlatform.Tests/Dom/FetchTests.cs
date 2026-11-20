@@ -716,8 +716,8 @@ public sealed class FetchTests : IDisposable
     {
         _loader.Handler = request => (request.Url, HeaderList.Get(request.Headers, "Range")) switch
         {
-            ("https://example.com/partial", "bytes=0-4") => new DocumentResource("01234") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 0-4/10")] },
-            ("https://example.com/partial", "bytes=5-") => new DocumentResource("56789") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 5-9/10")] },
+            ("https://example.com/partial", "bytes=0-4") => new DocumentResource("01234") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 0-4/10"), new("ETag", "\"v1\"")] },
+            ("https://example.com/partial", "bytes=5-") => new DocumentResource("56789") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 5-9/10"), new("ETag", "\"v1\"")] },
             _ => null,
         };
         var document = Load("""
@@ -737,6 +737,32 @@ public sealed class FetchTests : IDisposable
         Assert.Equal("206:bytes 0-4/10:01234|206:bytes 1-3/10:123|200::0123456789|206:bytes 6-7/10:67|206:bytes 8-9/10:89", document.Title);
         var requests = _loader.Requests.FindAll(request => request.Url == "https://example.com/partial");
         Assert.Equal(["bytes=0-4", "bytes=5-"], requests.Select(request => HeaderList.Get(request.Headers, "Range")));
+    }
+
+    [Fact]
+    public void HttpCache_PartialResponsesWithoutStrongValidator_AreNotCombined()
+    {
+        _loader.Handler = request => (request.Url, HeaderList.Get(request.Headers, "Range")) switch
+        {
+            ("https://example.com/changing", "bytes=0-4") => new DocumentResource("01234") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 0-4/10")] },
+            ("https://example.com/changing", "bytes=5-") => new DocumentResource("fghij") { StatusCode = 206, Headers = [new("Cache-Control", "max-age=3600"), new("Content-Range", "bytes 5-9/10")] },
+            ("https://example.com/changing", null) => new DocumentResource("abcdefghij") { Headers = [new("Cache-Control", "no-store")] },
+            _ => null,
+        };
+        var document = Load("""
+            <script>
+              (async () => {
+                await (await fetch('changing', { headers: { Range: 'bytes=0-4' } })).text();
+                const response = await fetch('changing');
+                document.title = response.status + ':' + await response.text();
+              })();
+            </script>
+            """);
+
+        // Without a strong validator, the stored bytes may come from another version: the complete representation is requested
+        Assert.Equal("200:abcdefghij", document.Title);
+        var requests = _loader.Requests.FindAll(request => request.Url == "https://example.com/changing");
+        Assert.Equal(["bytes=0-4", "bytes=5-", null], requests.Select(request => HeaderList.Get(request.Headers, "Range")));
     }
 
     [Fact]

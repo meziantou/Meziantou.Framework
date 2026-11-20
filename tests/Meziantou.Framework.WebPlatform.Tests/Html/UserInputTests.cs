@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
@@ -258,6 +259,30 @@ public sealed class UserInputTests : IDisposable
         use.DispatchEvent(new MouseEvent("click", new MouseEventInit { Bubbles = true, Cancelable = true, ClientX = 150, ClientY = 50 }));
         _contexts.EventLoop.RunUntilIdle();
         Assert.Single(navigations);
+    }
+
+    [Fact]
+    public void Mouse_ClickOnTheInstanceOfAnExternalSvgHyperlinkFollowsIt()
+    {
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/icons/sprite.svg#link"] = new DocumentResource("<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><a id='link' href='page.html'><rect width='100' height='100'/></a></svg>") { Headers = [new("Content-Type", "image/svg+xml")] };
+        var document = _contexts.Create(new BrowsingContextOptions { DocumentLoader = loader }).Navigate("https://example.com/", _ => "<!DOCTYPE html>" + Style + "<svg width=200 height=100><use href='icons/sprite.svg#link' x=100 /></svg>");
+        _contexts.EventLoop.RunUntilIdle();
+        var navigations = new List<string>();
+        document.DefaultView!.Navigation.AddEventListener("navigate", e =>
+        {
+            navigations.Add(((NavigateEvent)e).Destination.Url);
+            e.PreventDefault();
+        });
+
+        // The hyperlink of the resource document (which has no browsing context) is followed by the document of the use
+        // element, and its URL is resolved against the resource document
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(150, 50);
+        mouse.Down();
+        mouse.Up();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["https://example.com/icons/page.html"], navigations);
     }
 
     [Fact]
@@ -527,6 +552,47 @@ public sealed class UserInputTests : IDisposable
         document.BrowsingContext!.Input.Keyboard.Type("0930p");
 
         Assert.Equal("21:30", time.Value);
+    }
+
+    [Fact]
+    public void Keyboard_TimeControl_KeepsTheSecondsOfTheValue()
+    {
+        var document = Load("<input id=time type=time step=0.001 value=12:34:56.789><input id=local type=datetime-local value=2026-01-14T08:15:30>");
+        var time = (HtmlInputElement)document.GetElementById("time")!;
+        var local = (HtmlInputElement)document.GetElementById("local")!;
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+
+        time.Focus();
+        keyboard.Press("Tab");
+        keyboard.Press("ArrowUp");
+        local.Focus();
+        keyboard.Type("02");
+
+        Assert.Equal("12:35:56.789", time.Value);
+        Assert.Equal("2026-02-14T08:15:30", local.Value);
+    }
+
+    [Fact]
+    public void Keyboard_DateControl_ValueSetByAScript_ClearsThePartiallyFilledFields()
+    {
+        var document = Load("<input id=date type=date>");
+        var date = (HtmlInputElement)document.GetElementById("date")!;
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+        date.Focus();
+        keyboard.Type("03");
+        Assert.Equal("", date.Value);
+
+        // The month field is complete: the day field has the focus
+        date.Value = "";
+        keyboard.Type("05");
+        keyboard.Type("2026");
+        Assert.Equal("", date.Value);
+        keyboard.Press("ArrowLeft");
+        keyboard.Press("ArrowLeft");
+        keyboard.Type("07");
+
+        // The month typed before the value was set is gone: it is the month typed after it
+        Assert.Equal("2026-07-05", date.Value);
     }
 
     [Fact]

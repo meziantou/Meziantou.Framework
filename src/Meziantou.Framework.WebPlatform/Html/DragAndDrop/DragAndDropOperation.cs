@@ -130,7 +130,11 @@ public sealed class DragAndDropOperation
         var store = new DragDataStore();
         if (dragSelection && node.IsConnected && node is HtmlElement and IEditableTextControl { IsTextEditor: true } textControl && textControl.EditSelectionStart < textControl.EditSelectionEnd)
         {
-            // The selection of a text control: the control is the source node
+            // The selection of a text control: the control is the source node. As the copy and the cut, the obscured value of a
+            // password field is not dragged
+            if (textControl.IsPassword)
+                return null;
+
             sourceNode = node;
             sourceKind = DragSourceKind.Selection;
             store.Items.Add(new DragDataItem(DragDataItemKind.Text, "text/plain", textControl.EditValue[textControl.EditSelectionStart..textControl.EditSelectionEnd]));

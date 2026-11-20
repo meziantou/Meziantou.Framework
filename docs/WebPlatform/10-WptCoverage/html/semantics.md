@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,124 | 2,214 | 30 | 97% |
+| [Stable](#stable-tests) | 2,125 | 2,214 | 30 | 97% |
 | [Tentative](#tentative-tests) | 62 | 223 | 32 | 32% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,657** | **3,014** | **131** | **92%** |
+| **All** | **2,658** | **3,014** | **131** | **92%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 57
-- **NOT IMPLEMENTED**: 295
+- **NOT IMPLEMENTED**: 294
 - **REQUIRES**: 2
   - `layout`: 1
   - `media`: 1
@@ -228,7 +228,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-addEventListener.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-addEventListener.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-no-listener.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-no-listener.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-onerror.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-remove-onerror.html) | Pass | 1 / 1 |  |  |
-| [`embedded-content/media-elements/loading-the-media-resource/resource-selection-currentSrc.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-currentSrc.html) | Error | 0 / 1 | NOT IMPLEMENTED | `MediaStream` (Media Capture and Streams): the test assigns a `MediaStream` to `srcObject` (`MediaStream` is not defined, the harness reports the error) |
+| [`embedded-content/media-elements/loading-the-media-resource/resource-selection-currentSrc.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-currentSrc.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/loading-the-media-resource/resource-selection-encoding-parse.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-encoding-parse.html) | Pass | 2 / 2 |  |  |
 | [`embedded-content/media-elements/loading-the-media-resource/resource-selection-invoke-audio-constructor-no-src.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-invoke-audio-constructor-no-src.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/loading-the-media-resource/resource-selection-invoke-audio-constructor.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-invoke-audio-constructor.html) | Pass | 1 / 1 |  |  |
@@ -293,7 +293,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`embedded-content/media-elements/playing-the-media-resource/play-in-detached-document.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/playing-the-media-resource/play-in-detached-document.html) | Timeout | 0 / 1 | TEST BUG | the test sets a relative URL as the `src` of a video of a document created by `createHTMLDocument()`, whose base URL is `about:blank`: the URL cannot be parsed, the element fails with `MEDIA_ERR_SRC_NOT_SUPPORTED` and `timeupdate` is never fired (the test fails in Chromium, Gecko and WebKit too) |
 | [`embedded-content/media-elements/playing-the-media-resource/playbackRate.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/playing-the-media-resource/playbackRate.html) | Pass | 7 / 7 |  |  |
 | [`embedded-content/media-elements/preload_reflects_none_autoplay.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/preload_reflects_none_autoplay.html) | Pass | 2 / 2 |  |  |
-| [`embedded-content/media-elements/preserves-pitch.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/preserves-pitch.html) | Fail | 2 / 9 | NOT IMPLEMENTED | `MediaElementAudioSourceNode` (`createMediaElementSource()`), which the test uses to measure the pitch of the audio of the element |
+| [`embedded-content/media-elements/preserves-pitch.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/preserves-pitch.html) | Fail | 3 / 9 | NOT IMPLEMENTED | `MediaElementAudioSourceNode` (`createMediaElementSource()`), which the test uses to measure the pitch of the audio of the element |
 | [`embedded-content/media-elements/ready-states/autoplay-hidden.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/ready-states/autoplay-hidden.optional.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the optional behavior of the `autoplay` attribute: a muted video that autoplays is not paused when it stops intersecting the viewport (`hidden`), and played again when it is visible |
 | [`embedded-content/media-elements/ready-states/autoplay-with-slow-text-tracks.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/ready-states/autoplay-with-slow-text-tracks.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/ready-states/autoplay.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/ready-states/autoplay.html) | Pass | 10 / 10 |  |  |

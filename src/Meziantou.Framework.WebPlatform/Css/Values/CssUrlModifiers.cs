@@ -4,21 +4,23 @@ using Meziantou.Framework.WebPlatform.Infra;
 namespace Meziantou.Framework.WebPlatform.Css.Values;
 
 /// <summary>
-/// The request URL modifiers of url() and src() (https://drafts.csswg.org/css-values-5/#request-url-modifiers):
-/// cross-origin( anonymous | use-credentials ), integrity( &lt;string&gt; ) and referrer-policy( &lt;referrer-policy&gt; ).
+/// The &lt;url-modifier&gt;s of url() and src(): the request URL modifiers (https://drafts.csswg.org/css-values-5/#request-url-modifiers)
+/// cross-origin( anonymous | use-credentials ), integrity( &lt;string&gt; ) and referrer-policy( &lt;referrer-policy&gt; ), and the
+/// link parameters param() (https://drafts.csswg.org/css-link-params-1/#url-modifiers), which do not change the request.
 /// </summary>
 internal static class CssUrlModifiers
 {
     /// <summary>
-    /// Returns the modifiers in their canonical order (cross-origin(), integrity(), then referrer-policy()), "" when there is
-    /// none, or null when they are invalid: an unknown modifier, an invalid argument or a modifier specified twice.
+    /// Returns the modifiers in their canonical order (cross-origin(), integrity(), referrer-policy(), then the param() in their
+    /// order), "" when there is none, or null when they are invalid: an unknown modifier, an invalid argument or a request
+    /// modifier specified twice.
     /// </summary>
     public static string? Canonicalize(IReadOnlyList<CssComponentValue> significant)
     {
         if (Parse(significant) is not { } modifiers)
             return null;
 
-        var serialized = new List<string>(3);
+        var serialized = new List<string>(significant.Count);
         if (modifiers.CrossOrigin is { } crossOrigin)
         {
             serialized.Add("cross-origin(" + crossOrigin + ")");
@@ -34,12 +36,42 @@ internal static class CssUrlModifiers
             serialized.Add("referrer-policy(" + modifiers.ReferrerPolicy + ")");
         }
 
+        foreach (var value in significant)
+        {
+            if (value is CssFunction function && CssLinkParameters.IsParamFunction(function))
+            {
+                serialized.Add(CssLinkParameters.Parse(function)!.ToString());
+            }
+        }
+
         return string.Join(' ', serialized);
     }
 
     /// <summary>
-    /// Parses the modifiers that follow the URL of url() or src(), or returns null when they are invalid: an unknown modifier,
-    /// an invalid argument or a modifier specified twice.
+    /// Returns the link parameters of the param() modifiers of a URL value (https://drafts.csswg.org/css-link-params-1/#url-modifiers),
+    /// in their order; empty for a URL token or a URL without them.
+    /// </summary>
+    public static List<CssLinkParameter> GetLinkParameters(CssComponentValue value)
+    {
+        var result = new List<CssLinkParameter>();
+        if (value is CssFunction function && InfraAscii.ToAsciiLowercase(function.Name) is "url" or "src")
+        {
+            foreach (var modifier in function.Value)
+            {
+                if (modifier is CssFunction param && CssLinkParameters.Parse(param) is { } parameter)
+                {
+                    result.Add(parameter);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Parses the request modifiers that follow the URL of url() or src(), or returns null when the modifiers are invalid: an
+    /// unknown modifier, an invalid argument or a request modifier specified twice. The valid param() modifiers do not change
+    /// the request: they are ignored.
     /// </summary>
     public static CssRequestModifiers? Parse(IReadOnlyList<CssComponentValue> significant)
     {
@@ -63,6 +95,9 @@ internal static class CssUrlModifiers
 
                 case "integrity" when integrity is null && argument is [CssPreservedToken { Type: CssTokenType.String } metadata]:
                     integrity = metadata.Value;
+                    break;
+
+                case "param" when CssLinkParameters.Parse(function) is not null:
                     break;
 
                 case "referrer-policy" when referrerPolicy is null && argument is [CssPreservedToken { Type: CssTokenType.Ident } policy] && IsReferrerPolicy(InfraAscii.ToAsciiLowercase(policy.Value)):

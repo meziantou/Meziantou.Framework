@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Text;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Media;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
@@ -45,6 +47,8 @@ public sealed class HostDeviceApisTests : IDisposable
             Share = options.Share,
             Vibrate = options.Vibrate,
             Geolocation = options.Geolocation,
+            MediaCapture = options.MediaCapture,
+            MediaBackend = options.MediaBackend,
             ShowNotification = options.ShowNotification,
             CloseNotification = options.CloseNotification,
             Badging = options.Badging,
@@ -58,6 +62,7 @@ public sealed class HostDeviceApisTests : IDisposable
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
             WebAuthentication = options.WebAuthentication,
+            UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
             ScreenOrientation = options.ScreenOrientation,
             VirtualKeyboard = options.VirtualKeyboard,
@@ -1563,6 +1568,1166 @@ public sealed class HostDeviceApisTests : IDisposable
             """));
     }
 
+    // Credential Management and the user agent UI
+
+    private const string CredentialsScript = "window.go = p => p.then(c => document.title = c === null ? 'null' : [c.type, c.id, c.password ?? c.provider].join('|'), e => document.title = e.name);";
+
+    [Fact]
+    public void PasswordCredential_WithoutBackend_ResolvesNull()
+    {
+        var document = Load("<script>" + CredentialsScript + "</script>");
+
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ password: true }))"));
+        Assert.Equal("undefined", Run(document, "navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin })).then(r => document.title = String(r))"));
+    }
+
+    [Fact]
+    public void PasswordCredential_StoreAndGet()
+    {
+        #region WebPlatform_UserAgentUI_Credentials
+        var options = new BrowsingContextOptions
+        {
+            // The prompts of the user agent: the credential store and the credential chooser of the backend
+            UserAgentUI = new InMemoryCredentialStore(),
+        };
+        #endregion
+
+        var document = Load("<script>" + CredentialsScript + "</script>", options);
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ password: true }))"));
+        Run(document, "navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin }))");
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true }))"));
+
+        // Only the requested types are returned
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ federated: { providers: ['https://idp.example'] } }))"));
+    }
+
+    [Fact]
+    public void PasswordCredential_Store_RejectsTheCredentialOfAnotherOrigin()
+    {
+        var backend = new InMemoryCredentialStore();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Assert.Equal("SecurityError", Run(document, "go(navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: 'https://bank.example' })))"));
+        Assert.Equal("SecurityError", Run(document, "go(navigator.credentials.store(new FederatedCredential({ id: 'john', provider: 'https://idp.example', origin: 'https://bank.example' })))"));
+        Assert.Equal(0, backend.StorePrompts);
+        Assert.Equal("null", Run(document, "go(navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin })).then(() => null))"));
+        Assert.Equal(1, backend.StorePrompts);
+    }
+
+    [Fact]
+    public void PasswordCredential_PreventSilentAccess_SilentRequestsReturnNull()
+    {
+        var backend = new InMemoryCredentialStore();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Run(document, "navigator.credentials.store(new PasswordCredential({ id: 'john', password: 'secret', origin: location.origin }))");
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'silent' }))"));
+
+        Run(document, "navigator.credentials.preventSilentAccess()");
+        var prompts = backend.ChooserPrompts;
+        Assert.Equal("null", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'silent' }))"));
+        Assert.Equal(prompts, backend.ChooserPrompts);
+
+        // The user chooses a credential: the origin no longer requires user mediation
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true }))"));
+        Assert.True(backend.LastPrompt!.RequiresUserMediation);
+        Assert.Equal("password|john|secret", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'silent' }))"));
+    }
+
+    [Fact]
+    public void Credentials_Create_FromFormAndData()
+    {
+        var document = Load("""
+            <form>
+              <input name=user autocomplete=username value=john>
+              <input name=pwd autocomplete=current-password value=old>
+              <input name=pwd2 autocomplete=new-password value=new>
+              <input name=display autocomplete=nickname value=Johnny>
+            </form>
+            <script>
+            """ + CredentialsScript + "</script>");
+
+        Assert.Equal("password|john|new", Run(document, "go(navigator.credentials.create({ password: document.forms[0] }))"));
+        Assert.Equal("Johnny|https://example.com", Run(document, "document.title = (c => [c.name, c.iconURL || location.origin].join('|'))(new PasswordCredential(document.forms[0]))"));
+        Assert.Equal("federated|john|https://idp.example", Run(document, "go(navigator.credentials.create({ federated: { id: 'john', provider: 'https://idp.example', origin: 'https://other.example' } }))"));
+        Assert.Equal("NotSupportedError", Run(document, "go(navigator.credentials.create({ password: document.forms[0], federated: { id: 'john', provider: 'https://idp.example', origin: location.origin } }))"));
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.create({ password: { id: '', password: 'x', origin: location.origin } }))"));
+    }
+
+    [Fact]
+    public void Credentials_Get_InvalidCombination_IsNotSupported()
+    {
+        var document = Load("<script>" + CredentialsScript + "</script>");
+
+        Assert.Equal("NotSupportedError", Run(document, "go(navigator.credentials.get({ password: true, publicKey: { challenge: new Uint8Array(1) } }))"));
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get({ password: true, mediation: 'conditional' }))"));
+    }
+
+    [Fact]
+    public void Credentials_Get_AbortClosesThePrompt()
+    {
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "window.controller = new AbortController();</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Run(document, "go(navigator.credentials.get({ password: true, signal: controller.signal }))");
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
+        Assert.Equal("AbortError", Run(document, "controller.abort()"));
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task Credentials_Get_AsynchronousAnswer()
+    {
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Run(document, "go(navigator.credentials.get({ password: true }))");
+
+        _ = Task.Run(() => backend.Answer.SetResult(new PasswordCredential(new PasswordCredentialData { Id = "jane", Password = "pass", Origin = "https://example.com" })));
+        Assert.Equal("password|jane|pass", await RunAsync(document));
+    }
+
+    private const string DigitalCredentialsScript = """
+        window.request = (protocol, data) => ({ digital: { requests: [{ protocol, data }] } });
+        window.go = p => p.then(c => document.title = [c.type, c.protocol, JSON.stringify(c.data)].join('|'), e => document.title = e.name);
+        """;
+
+    [Fact]
+    public void DigitalCredential_WalletResponds()
+    {
+        var wallet = new SingleResponseWallet();
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = wallet });
+        Activate(document);
+
+        Assert.Equal("digital|org-iso-mdoc|{\"protocol\":\"org-iso-mdoc\",\"request\":{\"a\":1}}", Run(document, "go(navigator.credentials.get(request('org-iso-mdoc', { a: 1 })))"));
+        var prompt = Assert.IsType<DigitalCredentialPrompt>(wallet.LastPrompt);
+        Assert.Equal(DigitalCredentialRequestKind.Presentation, prompt.Kind);
+        Assert.Equal("https://example.com", prompt.Origin);
+        Assert.Equal(new DigitalCredentialRequest("org-iso-mdoc", "{\"a\":1}"), Assert.Single(prompt.Requests));
+    }
+
+    [Fact]
+    public void DigitalCredential_WithoutWallet_IsNotAllowed()
+    {
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>");
+
+        // Without user activation, then without wallet (the user cancels)
+        Assert.Equal("NotAllowedError", Run(document, "go(navigator.credentials.get(request('openid4vp-v1-unsigned', {})))"));
+        Activate(document);
+        Assert.Equal("NotAllowedError", Run(document, "go(navigator.credentials.get(request('openid4vp-v1-unsigned', {})))"));
+    }
+
+    [Fact]
+    public void DigitalCredential_ValidatesTheRequests()
+    {
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = new SingleResponseWallet() });
+        Activate(document);
+
+        // The protocols that the user agent does not allow are filtered out, and the data must be serializable to JSON
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get(request('unknown', {})))"));
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get(request('org-iso-mdoc', { n: 1n })))"));
+        Assert.Equal("true|false|true", Run(document, "document.title = [DigitalCredential.userAgentAllowsProtocol('org-iso-mdoc'), DigitalCredential.userAgentAllowsProtocol('unknown'), DigitalCredential.userAgentAllowsProtocol('openid4vci-v1')].join('|')"));
+    }
+
+    [Fact]
+    public void DigitalCredential_Create_IsAnIssuance()
+    {
+        var wallet = new SingleResponseWallet();
+        var document = Load("<script>" + DigitalCredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = wallet });
+        Activate(document);
+
+        Assert.Equal("digital|openid4vci-v1|{\"protocol\":\"openid4vci-v1\",\"request\":{}}", Run(document, "go(navigator.credentials.create(request('openid4vci-v1', {})))"));
+        Assert.Equal(DigitalCredentialRequestKind.Issuance, wallet.LastPrompt!.Kind);
+    }
+
+    [Fact]
+    public async Task Credentials_Get_DocumentDestroyedAfterTheAnswer()
+    {
+        // The backend answers, then the document is destroyed before the answer is given to the page
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Run(document, "frame.contentWindow.navigator.credentials.get({ password: true })");
+
+        await Task.Run(() => backend.Answer.SetResult(null));
+        await Task.Delay(50);
+        Run(document, "frame.remove()");
+
+        // The answer was not given to the page yet: the prompt is closed
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Credentials_Get_BackendClosesTheTab_TheEventLoopBecomesIdle()
+    {
+        // The backend closes the tab of the request (which closes its prompts), then returns a pending task
+        var backend = new TabClosingCredentialChooser();
+        var document = Load("<script>" + CredentialsScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        backend.BrowsingContext = document.BrowsingContext;
+
+        Run(document, "navigator.credentials.get({ password: true })");
+        Assert.True(backend.Closed);
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    private sealed class TabClosingCredentialChooser : UserAgentUIBackend
+    {
+        public BrowsingContext? BrowsingContext { get; set; }
+
+        public bool Closed { get; private set; }
+
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<Credential?> ChooseCredentialAsync(CredentialChooserPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            Closed = BrowsingContext!.TryClose();
+            return new(new TaskCompletionSource<Credential?>().Task);
+        }
+    }
+
+    private sealed class PendingCredentialChooser : UserAgentUIBackend
+    {
+        public TaskCompletionSource<Credential?> Answer { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<Credential?> ChooseCredentialAsync(CredentialChooserPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            return new(Answer.Task);
+        }
+    }
+
+    // Payment Request
+
+    private const string PaymentScript = """
+        window.log = [];
+        window.go = p => p.then(r => document.title = String(r), e => document.title = e.name);
+        window.methods = [{ supportedMethods: 'https://pay.example/pay', data: { merchant: 'shop' } }];
+        window.details = { total: { label: 'Total', amount: { currency: 'eur', value: '10.00' } } };
+        window.construct = (m, d, o) => { try { new PaymentRequest(m, d, o); return 'ok'; } catch (e) { return e.name; } };
+        """;
+
+    [Fact]
+    public void PaymentRequest_WithoutBackend_NoPaymentMethodIsSupported()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>");
+
+        Assert.Equal("false", Run(document, "go(new PaymentRequest(methods, details).canMakePayment())"));
+        Assert.Equal("SecurityError", Run(document, "go(new PaymentRequest(methods, details).show())"));
+        Activate(document);
+        Assert.Equal("NotSupportedError", Run(document, "go(new PaymentRequest(methods, details).show())"));
+    }
+
+    [Fact]
+    public async Task PaymentRequest_CanMakePayment_WaitsForTheIngestionOfTheManifests()
+    {
+        // The backend installs the payment handler of the method from its manifest, on another thread: the support of the
+        // method is checked once the manifest is ingested
+        var backend = new InstallingPaymentHandlers();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Assert.Equal("true", await RunAsync(document, "go(new PaymentRequest(methods, details).canMakePayment())"));
+    }
+
+    [Fact]
+    public void PaymentRequest_DestroyedDocument_CancelsTheIngestionOfTheManifests()
+    {
+        // A backend that never completes the ingestion does not keep the event loop busy once the document is destroyed
+        var backend = new InstallingPaymentHandlers { NeverCompletes = true };
+        var document = Load("<script>" + PaymentScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Run(document, "new frame.contentWindow.PaymentRequest(methods, details).canMakePayment()");
+        Assert.False(backend.IngestionToken.IsCancellationRequested);
+        Assert.True(_contexts.EventLoop.HasPendingOperations);
+
+        Run(document, "frame.remove()");
+        Assert.True(backend.IngestionToken.IsCancellationRequested);
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    private sealed class InstallingPaymentHandlers : UserAgentUIBackend
+    {
+        private volatile bool _installed;
+
+        public bool NeverCompletes { get; init; }
+
+        public CancellationToken IngestionToken { get; private set; }
+
+        public override ValueTask IngestPaymentMethodManifestAsync(PaymentMethodManifestRequest request, CancellationToken cancellationToken)
+        {
+            IngestionToken = cancellationToken;
+            if (NeverCompletes)
+                return new(new TaskCompletionSource().Task);
+
+            return new(Task.Run(async () =>
+            {
+                await Task.Delay(50, cancellationToken);
+                _installed = true;
+            }, cancellationToken));
+        }
+
+        public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken) => new(_installed);
+    }
+
+    [Fact]
+    public void PaymentRequest_Constructor_ValidatesTheArguments()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>");
+
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'basic-card' }, { supportedMethods: 'https://pay.example/pay?v=1' }], details)"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([], details)"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'Basic-Card' }], details)"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'http://pay.example/' }], details)"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'https://pay.example/' }, { supportedMethods: 'https://pay.example' }], details)"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'basic-card', data: 'text' }], details)"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct(methods, { total: { label: '', amount: { currency: 'USD', value: '-1' } } })"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct(methods, { total: { label: '', amount: { currency: 'USD', value: '1.' } } })"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct(methods, { total: { label: '', amount: { currency: 'US', value: '1' } } })"));
+        Assert.Equal("ok", Run(document, "document.title = construct(methods, { ...details, displayItems: [{ label: 'Discount', amount: { currency: 'EUR', value: '-1.50' } }] })"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct(methods, { ...details, shippingOptions: [{ id: 'a', label: '', amount: details.total.amount }, { id: 'a', label: '', amount: details.total.amount }] }, { requestShipping: true })"));
+        Assert.Equal("b|delivery|null|null|order-1|true", Run(document, """
+            const r = new PaymentRequest(methods, { ...details, id: 'order-1', shippingOptions: [{ id: 'a', label: '', amount: details.total.amount, selected: true }, { id: 'b', label: '', amount: details.total.amount, selected: true }] }, { requestShipping: true, shippingType: 'delivery' });
+            const other = new PaymentRequest(methods, details);
+            document.title = [r.shippingOption, r.shippingType, String(other.shippingType), String(other.shippingAddress), r.id, other.id.length > 0 && other.id !== new PaymentRequest(methods, details).id].join('|');
+            """));
+    }
+
+    [Fact]
+    public async Task PaymentRequest_Show_TheUserAcceptsThePayment()
+    {
+        #region WebPlatform_UserAgentUI_Payments
+        var paymentSheet = new AcceptingPaymentSheet();
+        var options = new BrowsingContextOptions
+        {
+            // The payment handlers and the payment sheet of the Payment Request API are the ones of the backend
+            UserAgentUI = paymentSheet,
+        };
+        #endregion
+
+        var document = Load("<script>" + PaymentScript + "</script>", options);
+        Assert.Equal("true", await RunAsync(document, "go(new PaymentRequest([{ supportedMethods: 'basic-card' }, ...methods], details).canMakePayment())"));
+
+        Activate(document);
+        Assert.Equal("https://pay.example/pay|tok_12.00|John Doe|null|undefined", await RunAsync(document, """
+            const r = new PaymentRequest(methods, details, { requestPayerName: true });
+            go(r.show(Promise.resolve({ total: { label: 'Total', amount: { currency: 'eur', value: '12.00' } } }))
+                .then(response => response.complete('success').then(result => [response.methodName, response.details.token, response.payerName, String(response.payerEmail), String(result)].join('|'))));
+            """));
+        Assert.Equal(PaymentComplete.Success, paymentSheet.Result);
+        Assert.Equal("EUR", paymentSheet.LastPrompt!.Details.Total.Amount.Currency);
+        Assert.Equal("{\"merchant\":\"shop\"}", paymentSheet.LastPrompt.Methods[0].Data);
+    }
+
+    [Fact]
+    public async Task PaymentRequest_Show_TheSheetWaitsForTheUpdatesOfThePage()
+    {
+        var backend = new ShippingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Activate(document);
+
+        Assert.Equal("John|express|FR|address Paris//0,option express", await RunAsync(document, """
+            const r = new PaymentRequest(methods, details, { requestShipping: true });
+            r.onshippingaddresschange = e => {
+                log.push('address ' + [r.shippingAddress.city, r.shippingAddress.recipient, r.shippingAddress.addressLine.length].join('/'));
+                e.updateWith(new Promise(resolve => setTimeout(() => resolve({ shippingOptions: [
+                    { id: 'standard', label: 'Standard', amount: { currency: 'EUR', value: '0' }, selected: true },
+                    { id: 'express', label: 'Express', amount: { currency: 'EUR', value: '5' } }] }), 0)));
+            };
+            r.onshippingoptionchange = () => log.push('option ' + r.shippingOption);
+            go(r.show().then(response => [response.shippingAddress.recipient, response.shippingOption, response.shippingAddress.country, log.join()].join('|')));
+            """));
+        Assert.Equal(["standard", "express"], backend.ShippingOptions);
+    }
+
+    [Fact]
+    public async Task PaymentRequest_Show_DetailsTaskCompletedOnAnotherThread_IsAppliedOnTheEventLoop()
+    {
+        var backend = new AcceptingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        var request = new PaymentRequest(
+            document.DefaultView!,
+            [new PaymentMethodData { SupportedMethods = "https://pay.example/pay" }],
+            new PaymentDetailsInit { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "EUR", Value = "10.00" } } });
+        Activate(document);
+        var details = new TaskCompletionSource<PaymentDetailsUpdate>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var response = request.Show(details.Task);
+        Run(document);
+        Assert.True(request.IsUpdating);
+
+        // The task is completed on a thread of the thread pool: the details are not updated there, but by the event loop
+        await Task.Run(() => details.SetResult(new PaymentDetailsUpdate { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "EUR", Value = "12.00" } } }));
+        await Task.Delay(50);
+        Assert.True(request.IsUpdating);
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await _contexts.EventLoop.RunUntilAsync(() => response.IsCompleted, timeout.Token);
+        Assert.False(request.IsUpdating);
+        Assert.Equal("https://pay.example/pay", (await response).MethodName);
+        Assert.Equal("12.00", backend.LastPrompt!.Details.Total.Amount.Value);
+    }
+
+    [Fact]
+    public void PaymentRequest_Show_InvalidUpdate_AbortsTheRequest()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = new PendingPaymentSheet() });
+
+        Activate(document);
+        Assert.Equal("AbortError", Run(document, "go(new PaymentRequest(methods, details).show(Promise.reject(new Error('rejected'))))"));
+        Activate(document);
+        Assert.Equal("TypeError", Run(document, "go(new PaymentRequest(methods, details).show(Promise.resolve({ total: { label: '', amount: { currency: 'EUR', value: '-1' } } })))"));
+        Activate(document);
+        Assert.Equal("RangeError", Run(document, "go(new PaymentRequest(methods, details).show(Promise.resolve({ displayItems: [{ label: '', amount: { currency: '€', value: '1' } }] })))"));
+    }
+
+    [Fact]
+    public void PaymentRequest_Abort_ClosesTheSheet()
+    {
+        var backend = new PendingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+
+        Assert.Equal("InvalidStateError", Run(document, "window.r = new PaymentRequest(methods, details); go(r.abort())"));
+        Activate(document);
+        Run(document, "go(r.show())");
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
+
+        // Another payment sheet cannot be shown in the tab
+        Activate(document);
+        Assert.Equal("AbortError", Run(document, "go(new PaymentRequest(methods, details).show())"));
+        Assert.Equal("InvalidStateError", Run(document, "go(r.canMakePayment())"));
+
+        Assert.Equal("AbortError", Run(document, "r.abort()"));
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+        Activate(document);
+        Assert.Equal("InvalidStateError", Run(document, "go(r.show())"));
+    }
+
+    [Fact]
+    public async Task PaymentResponse_Retry_ShowsTheErrorsToTheUser()
+    {
+        var backend = new AcceptingPaymentSheet();
+        var document = Load("<script>" + PaymentScript + "</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        Activate(document);
+
+        Assert.Equal("Jane Doe|InvalidStateError", await RunAsync(document, """
+            const r = new PaymentRequest(methods, details, { requestPayerName: true });
+            go(r.show().then(response => response.retry({ error: 'Card declined', payer: { name: 'Unknown name' } }).then(() => {
+                const name = response.payerName;
+                return response.complete().then(() => response.retry()).catch(e => name + '|' + e.name);
+            })));
+            """));
+        Assert.Equal("Card declined", backend.LastPrompt!.Errors!.Error);
+        Assert.Equal("Unknown name", backend.LastPrompt.Errors.Payer!.Name);
+    }
+
+    [Fact]
+    public void PaymentRequestUpdateEvent_UntrustedEvent_CannotUpdate()
+    {
+        var document = Load("<script>" + PaymentScript + "</script>");
+
+        Assert.Equal("InvalidStateError|test|paymentmethodchange|null", Run(document, """
+            const r = new PaymentRequest(methods, details);
+            const e = new PaymentMethodChangeEvent('paymentmethodchange', { methodName: 'test' });
+            r.onpaymentmethodchange = event => log.push(event.type);
+            r.dispatchEvent(e);
+            try { e.updateWith(Promise.resolve({})); } catch (error) { log.unshift(error.name); }
+            document.title = [log[0], e.methodName, log[1], String(new PaymentMethodChangeEvent('x').methodDetails)].join('|');
+            """));
+    }
+
+    [Theory]
+    [InlineData("https://example.com/pay", true)]
+    [InlineData(" \thttps://example.com/pay\n", true)]
+    [InlineData("https://:@example.com/pay", true)]
+    [InlineData("secure-payment-confirmation", true)]
+    [InlineData("a-b0-c", true)]
+    [InlineData("https://user@example.com/pay", false)]
+    [InlineData("http://example.com/pay", false)]
+    [InlineData("Basic-Card", false)]
+    [InlineData("a--b", false)]
+    [InlineData("a-0", false)]
+    [InlineData("a-", false)]
+    [InlineData("", false)]
+    public void PaymentMethodIdentifier_IsValid(string identifier, bool expected)
+    {
+        Assert.Equal(expected, PaymentMethodIdentifier.IsValid(identifier));
+    }
+
+    [Theory]
+    [InlineData("""{"default_applications": ["app.json", "https://pay.example/pay/app.json"], "supported_origins": ["https://bob.example", "https://bob.example/"], "other": 1}""", "https://pay.example/pay/app.json", "https://bob.example")]
+    [InlineData("""{"supported_origins": ["https://bob.example:8443"]}""", "", "https://bob.example:8443")]
+    [InlineData("""{"default_applications": ["first.json"], "default_applications": ["last.json"]}""", "https://pay.example/pay/last.json", "")]
+    [InlineData("\uFEFF{}", "", "")]
+    [InlineData("""{"default_applications": []}""", null, null)]
+    [InlineData("""{"default_applications": "app.json"}""", null, null)]
+    [InlineData("""{"default_applications": ["app.json", 1]}""", null, null)]
+    [InlineData("""{"default_applications": ["http://pay.example/app.json"]}""", null, null)]
+    [InlineData("""{"default_applications": ["https://"]}""", null, null)]
+    [InlineData("""{"supported_origins": "*"}""", null, null)]
+    [InlineData("""{"supported_origins": null}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://bob.example/pay"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://bob.example/?q"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://bob.example/#f"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["https://user:pass@bob.example"]}""", null, null)]
+    [InlineData("""{"supported_origins": ["/relative"]}""", null, null)]
+    [InlineData("[]", null, null)]
+    [InlineData("not json", null, null)]
+    public void PaymentMethodManifest_Parse(string content, string? defaultApplications, string? supportedOrigins)
+    {
+        var manifest = PaymentMethodManifest.Parse(System.Text.Encoding.UTF8.GetBytes(content), "https://pay.example/pay/manifest.json");
+
+        Assert.Equal(defaultApplications, manifest is null ? null : string.Join(' ', manifest.DefaultApplications));
+        Assert.Equal(supportedOrigins, manifest is null ? null : string.Join(' ', manifest.SupportedOrigins));
+    }
+
+    [Theory]
+    [InlineData("<https://pay.example/manifest.json>; rel=\"payment-method-manifest\"", "https://pay.example/manifest.json")]
+    [InlineData("<manifest.json>; rel=payment-method-manifest", "manifest.json")]
+    [InlineData("<manifest.json>; rel=\"PAYMENT-METHOD-MANIFEST\"", "manifest.json")]
+    [InlineData("<manifest.json>; rel=\"other payment-method-manifest\"; foo=bar", "manifest.json")]
+    [InlineData("<other.json>; rel=\"other\"\n<first.json>; rel=\"payment-method-manifest\"\n<second.json>; rel=\"payment-method-manifest\"", "first.json")]
+    [InlineData("<manifest.json>; rel=\"stylesheet\"", null)]
+    [InlineData("<manifest.json>; rel=\"stylesheet\"; rel=\"payment-method-manifest\"", null)]
+    [InlineData("manifest.json; rel=\"payment-method-manifest\"", null)]
+    [InlineData("<manifest.json>; rel=\"payment-method-manifest", null)]
+    [InlineData("<manifest.json> rel=\"payment-method-manifest\"", null)]
+    public void LinkHeader_FindPaymentMethodManifest(string values, string? expected)
+    {
+        Assert.Equal(expected, LinkHeader.FindPaymentMethodManifest(values.Split('\n')));
+    }
+
+    // Secure Payment Confirmation
+
+    private const string SecurePaymentConfirmationScript = """
+        window.go = p => p.then(r => document.title = String(r), e => document.title = e.name);
+        window.clientData = c => JSON.parse(new TextDecoder().decode(c.response.clientDataJSON));
+        window.enroll = (selection) => navigator.credentials.create({ publicKey: {
+          rp: { name: 'Bank' },
+          user: { id: new Uint8Array([1]), name: 'john', displayName: 'John' },
+          challenge: new Uint8Array([1]),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: Object.assign({ authenticatorAttachment: 'platform', residentKey: 'required', userVerification: 'required' }, selection),
+          extensions: { payment: { isPayment: true } },
+        } });
+        window.data = (credentialIds, extra) => Object.assign({
+          credentialIds,
+          challenge: new Uint8Array([9]),
+          rpId: 'example.com',
+          payeeOrigin: 'https://merchant.example/checkout',
+          instrument: { displayName: 'Card', icon: 'data:image/png;base64,iVBORw0KGgo=' },
+        }, extra);
+        window.details = { total: { label: 'Total', amount: { currency: 'usd', value: '1.00' } } };
+        window.spc = (credentialIds, extra) => new PaymentRequest([{ supportedMethods: 'secure-payment-confirmation', data: data(credentialIds, extra) }], details);
+        window.construct = (methods) => { try { new PaymentRequest(methods, details); return 'ok'; } catch (e) { return e.name; } };
+        """;
+
+    private static VirtualAuthenticatorEnvironment CreatePlatformAuthenticator()
+    {
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        authenticators.AddAuthenticator(new VirtualAuthenticatorOptions { Protocol = VirtualAuthenticatorProtocol.Ctap21, Transport = "internal", HasResidentKey = true, HasUserVerification = true, IsUserVerified = true });
+        return authenticators;
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Show_AuthenticatesThePayment()
+    {
+        #region WebPlatform_UserAgentUI_SecurePaymentConfirmation
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        authenticators.AddAuthenticator(new VirtualAuthenticatorOptions
+        {
+            Protocol = VirtualAuthenticatorProtocol.Ctap21,
+            Transport = "internal",
+            HasResidentKey = true,
+            HasUserVerification = true,
+            IsUserVerified = true,
+        });
+
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var options = new BrowsingContextOptions
+        {
+            // The credentials of the payments are the ones of the virtual authenticators
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators },
+
+            // The transaction dialog of Secure Payment Confirmation is the one of the backend
+            UserAgentUI = transactionDialog,
+        };
+        #endregion
+
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        Assert.Equal("webauthn.create|true|true", await RunAsync(document, """
+            enroll().then(c => {
+              window.credential = c;
+              document.title = [clientData(c).type, clientData(c).payment.browserBoundPublicKey.length > 0, c.getClientExtensionResults().payment.browserBoundSignature.signature.byteLength > 0].join('|');
+            }, e => document.title = e.name);
+            """));
+
+        Activate(document);
+        Assert.Equal("secure-payment-confirmation|true|payment.get|example.com|https://example.com|https://merchant.example|USD|1.00|Card|true|true", await RunAsync(document, """
+            spc([credential.rawId]).show().then(response => response.complete('success').then(() => {
+              const c = response.details;
+              const d = clientData(c);
+              document.title = [response.methodName, c.id === credential.id, d.type, d.payment.rpId, d.payment.topOrigin, d.payment.payeeOrigin, d.payment.total.currency, d.payment.total.value,
+                d.payment.instrument.displayName, d.payment.browserBoundPublicKey === clientData(credential).payment.browserBoundPublicKey, c.getClientExtensionResults().payment.browserBoundSignature.signature.byteLength > 0].join('|');
+            }), e => document.title = e.name);
+            """));
+
+        var prompt = transactionDialog.LastPrompt!;
+        Assert.Equal("https://merchant.example", prompt.PayeeOrigin);
+        Assert.Equal("USD", prompt.Total.Currency);
+        Assert.Equal(1, prompt.CredentialCount);
+        Assert.Equal("https://example.com", prompt.Origin);
+    }
+
+    [Theory]
+    [InlineData(SecurePaymentConfirmationChoice.Decline, "{}", "AbortError")]
+    [InlineData(SecurePaymentConfirmationChoice.AuthenticateAnotherWay, "{}", "NotAllowedError")]
+    [InlineData(SecurePaymentConfirmationChoice.OptOut, "{ showOptOut: true }", "OptOutError")]
+    [InlineData(SecurePaymentConfirmationChoice.OptOut, "{}", "AbortError")]
+    public async Task SecurePaymentConfirmation_Show_TheChoiceOfTheUser(SecurePaymentConfirmationChoice choice, string extra, string expected)
+    {
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = new TransactionDialog(choice),
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        Activate(document);
+        Assert.Equal(expected, await RunAsync(document, $"go(spc([credential.rawId], {extra}).show())"));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Show_AppliesTheDetailsPromise()
+    {
+        // The transaction is signed with the total of the promise given to show(), and a rejected promise aborts the request
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = transactionDialog,
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        Activate(document);
+        Assert.Equal("USD|2.50", await RunAsync(document, """
+            spc([credential.rawId]).show(Promise.resolve({ total: { label: 'Total', amount: { currency: 'usd', value: '2.50' } } }))
+              .then(response => response.complete('success').then(() => document.title = [clientData(response.details).payment.total.currency, clientData(response.details).payment.total.value].join('|')), e => document.title = e.name);
+            """));
+        Assert.Equal("2.50", transactionDialog.LastPrompt!.Total.Value);
+
+        Activate(document);
+        Assert.Equal("AbortError", await RunAsync(document, "go(spc([credential.rawId]).show(Promise.reject(new Error('no'))))"));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Show_DetailsTaskCompletedLater()
+    {
+        // The event loop is not idle while the details of show() are awaited: RunUntilIdleAsync() returns once the payment is done
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = transactionDialog,
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        var window = document.DefaultView!;
+        var data = ((Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngine)_engine).Evaluate(window, "data([credential.rawId])");
+        var request = new PaymentRequest(
+            window,
+            [new PaymentMethodData { SupportedMethods = "secure-payment-confirmation", Data = data.AsObject() }],
+            new PaymentDetailsInit { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "USD", Value = "1.00" } } });
+        Activate(document);
+        var details = new TaskCompletionSource<PaymentDetailsUpdate>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var response = request.Show(details.Task);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(100);
+            details.SetResult(new PaymentDetailsUpdate { Total = new PaymentItem { Label = "Total", Amount = new PaymentCurrencyAmount { Currency = "USD", Value = "2.50" } } });
+        });
+
+        await RunAsync(document);
+        Assert.True(response.IsCompletedSuccessfully);
+        Assert.Equal("secure-payment-confirmation", (await response).MethodName);
+        Assert.Equal("2.50", transactionDialog.LastPrompt!.Total.Value);
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Availability_DetachedDocument_Settles()
+    {
+        // The functions of a removed iframe settle their promises, and the event loop becomes idle
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Accept),
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", options);
+        Run(document, """
+            window.availability = frame.contentWindow.PaymentRequest.securePaymentConfirmationAvailability;
+            window.credentials = frame.contentWindow.navigator.credentials;
+            frame.remove();
+            """);
+
+        Assert.Equal("unavailable-unknown-reason|InvalidStateError", await RunAsync(document, """
+            Promise.all([availability(), credentials.get({ password: true }).then(() => 'resolved', e => e.name)]).then(r => document.title = r.join('|'));
+            """));
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    [Fact]
+    public void UserAgentUI_Show_DetachedDocument_IsDismissedAtOnce()
+    {
+        // A prompt of a document that is no longer fully active is dismissed without calling the backend nor keeping the event loop busy
+        var backend = new PendingCredentialChooser();
+        var document = Load("<script>window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { UserAgentUI = backend });
+        var frameWindow = ((HtmlIFrameElement)document.QuerySelector("iframe")!).ContentWindow!;
+        Run(document, "frame.remove()");
+
+        var answer = "pending";
+        UserAgentUI.Show(frameWindow, (b, token) => new ValueTask<string>(b.ChooseCredentialAsync(null!, token).AsTask().ContinueWith(_ => "answered", TaskScheduler.Default)), dismissed: "dismissed", value => answer = value);
+        Assert.Equal("dismissed", answer);
+        Assert.False(backend.CancellationToken.CanBeCanceled);
+        Assert.False(_contexts.EventLoop.HasPendingOperations);
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Retry_IsNotSupported()
+    {
+        // The transaction dialog cannot be shown again: retry() is rejected without changing the state of the request, so the
+        // response can still be completed
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() },
+            UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Accept),
+        };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        await RunAsync(document, "enroll().then(c => window.credential = c)");
+
+        Activate(document);
+        Assert.Equal("NotSupportedError|completed", await RunAsync(document, """
+            spc([credential.rawId]).show().then(async response => {
+              const retry = await response.retry({ error: 'again' }).then(() => 'retried', e => e.name);
+              const complete = await response.complete('success').then(() => 'completed', e => e.name);
+              document.title = retry + '|' + complete;
+            }, e => document.title = e.name);
+            """));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Show_UnknownCredential_IsNotAllowed()
+    {
+        var transactionDialog = new TransactionDialog(SecurePaymentConfirmationChoice.Accept);
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() }, UserAgentUI = transactionDialog });
+
+        Assert.Equal("true", await RunAsync(document, "go(spc([new Uint8Array([1, 2])]).canMakePayment())"));
+        Activate(document);
+        Assert.Equal("NotAllowedError", await RunAsync(document, "go(spc([new Uint8Array([1, 2])]).show())"));
+        Assert.Equal(0, transactionDialog.LastPrompt!.CredentialCount);
+
+        // Without the backend, the user agent does not support Secure Payment Confirmation
+        var other = Load("<script>" + SecurePaymentConfirmationScript + "</script>");
+        Activate(other);
+        Assert.Equal("NotSupportedError", await RunAsync(other, "go(spc([new Uint8Array([1, 2])]).show())"));
+    }
+
+    [Fact]
+    public void SecurePaymentConfirmation_Constructor_ValidatesTheData()
+    {
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>");
+
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])]) }])"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])]) }, { supportedMethods: 'basic-card' }])"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([]) }])"));
+        Assert.Equal("RangeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array()]) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { challenge: null }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { rpId: 'not a domain' }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { payeeOrigin: undefined }) }])"));
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { payeeOrigin: undefined, payeeName: 'Merchant' }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { payeeOrigin: 'http://merchant.example' }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { paymentEntitiesLogos: [{ url: 'https://logo.example/a.png', label: '' }] }) }])"));
+
+        // Only the relying party can give extensions
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { extensions: { credProps: true } }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { rpId: 'bank.example', extensions: { credProps: true } }) }])"));
+
+        // The locales must match the language of the transaction dialog
+        Assert.Equal("ok", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { locale: ['fr', 'en'] }) }])"));
+        Assert.Equal("NotSupportedError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { locale: ['fr'] }) }])"));
+        Assert.Equal("TypeError", Run(document, "document.title = construct([{ supportedMethods: 'secure-payment-confirmation', data: data([new Uint8Array([1])], { locale: ['-'] }) }])"));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_PaymentExtension()
+    {
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() } });
+
+        // A credential for the payments is a discoverable credential of a platform authenticator that verifies the user
+        Assert.Equal("TypeError", await RunAsync(document, "go(enroll({ authenticatorAttachment: 'cross-platform' }))"));
+        Assert.Equal("TypeError", await RunAsync(document, "go(enroll({ userVerification: 'preferred' }))"));
+        Assert.Equal("[object PublicKeyCredential]", await RunAsync(document, "go(enroll({ residentKey: 'preferred' }).then(c => window.credential = c))"));
+
+        // An authentication with the extension is only possible from the payment handler of Secure Payment Confirmation
+        Assert.Equal("NotAllowedError", await RunAsync(document, """
+            go(navigator.credentials.get({ publicKey: { challenge: new Uint8Array([1]), allowCredentials: [{ type: 'public-key', id: credential.rawId }], extensions: { payment: { isPayment: true } } } }));
+            """));
+    }
+
+    [Fact]
+    public async Task SecurePaymentConfirmation_Availability()
+    {
+        var options = new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = CreatePlatformAuthenticator() }, UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Decline) };
+        var document = Load("<script>" + SecurePaymentConfirmationScript + "</script>", options);
+        Assert.Equal("available", await RunAsync(document, "go(PaymentRequest.securePaymentConfirmationAvailability())"));
+        Assert.Equal("{\"browserBoundKeyHardware\":false}", await RunAsync(document, "go(PaymentRequest.getSecurePaymentConfirmationCapabilities().then(JSON.stringify))"));
+
+        var withoutAuthenticator = Load("<script>" + SecurePaymentConfirmationScript + "</script>", new BrowsingContextOptions { UserAgentUI = new TransactionDialog(SecurePaymentConfirmationChoice.Decline) });
+        Assert.Equal("unavailable-no-user-verifying-platform-authenticator", await RunAsync(withoutAuthenticator, "go(PaymentRequest.securePaymentConfirmationAvailability())"));
+
+        var withoutBackend = Load("<script>" + SecurePaymentConfirmationScript + "</script>");
+        Assert.Equal("unavailable-feature-not-enabled", await RunAsync(withoutBackend, "go(PaymentRequest.securePaymentConfirmationAvailability())"));
+    }
+
+    private sealed class PendingPaymentSheet : UserAgentUIBackend
+    {
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(true);
+
+        public override ValueTask<PaymentSheetResponse?> ShowPaymentSheetAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            return new(new TaskCompletionSource<PaymentSheetResponse?>().Task);
+        }
+    }
+
+    /// <summary>A payment sheet whose user chooses a shipping address, then the last shipping option offered by the page.</summary>
+    private sealed class ShippingPaymentSheet : UserAgentUIBackend
+    {
+        public List<string> ShippingOptions { get; } = [];
+
+        public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(true);
+
+        public override async ValueTask<PaymentSheetResponse?> ShowPaymentSheetAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+        {
+            var details = await prompt.ChangeShippingAddressAsync(new ContactAddress { Country = "FR", City = "Paris", Recipient = "John", AddressLine = ["1 rue de Rivoli"] }, cancellationToken);
+            ShippingOptions.AddRange(details.ShippingOptions.Select(option => option.Id));
+            await prompt.ChangeShippingOptionAsync(details.ShippingOptions[^1].Id, cancellationToken);
+            return new PaymentSheetResponse { MethodName = prompt.Methods[0].Identifier };
+        }
+    }
+
+    // Federated Credential Management (FedCM) and the Login Status API
+
+    private const string FedCmScript = """
+        window.go = p => p.then(c => document.title = [c.type, typeof c.token === 'string' ? c.token : JSON.stringify(c.token), c.isAutoSelected, c.configURL].join('|'), e => document.title = e.name + (e.name === 'IdentityCredentialError' ? '|' + e.error + '|' + e.url : ''));
+        window.options = (mediation, extra) => ({ identity: { providers: [Object.assign({ configURL: 'https://idp.example/fedcm.json', clientId: 'rp', nonce: 'n' }, extra)] }, mediation: mediation ?? 'optional' });
+        """;
+
+    [Fact]
+    public void IdentityCredential_WithoutBackend_IsRejected()
+    {
+        var loader = new IdentityProviderLoader();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader });
+
+        // The accounts are fetched, but the account chooser is dismissed
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get(options()))"));
+        Assert.Contains(loader.Requests, request => request.Url == "https://idp.example/accounts");
+        Assert.DoesNotContain(loader.Requests, request => request.Url == "https://idp.example/token");
+    }
+
+    [Fact]
+    public void IdentityCredential_ChooseAccount_FetchesTheToken()
+    {
+        #region WebPlatform_UserAgentUI_FedCm
+        var options = new BrowsingContextOptions
+        {
+            // The dialogs of FedCM: the account chooser of the backend chooses the first account
+            UserAgentUI = new FirstAccountChooser(),
+        };
+        #endregion
+
+        var loader = new IdentityProviderLoader();
+        var backend = (FirstAccountChooser)options.UserAgentUI;
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("identity|token-for-1234|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+        var prompt = Assert.IsType<IdentityAccountChooserPrompt>(backend.Prompts.Single());
+        Assert.Equal(["1234", "5678"], prompt.Accounts.Select(account => account.Id));
+        Assert.Equal("John Doe", prompt.Accounts[0].Name);
+        Assert.Equal("https://idp.example/fedcm.json", prompt.Accounts[0].ConfigUrl);
+        Assert.False(prompt.Accounts[0].IsConnected);
+        Assert.Equal("https://rp.example/privacy", prompt.Accounts[0].PrivacyPolicyUrl);
+        Assert.Equal(IdentityCredentialRequestOptionsContext.Signin, prompt.RequestContext);
+
+        // The well-known file and the config file are fetched without cookies, the token with the origin of the site
+        var wellKnown = loader.Requests.Single(request => request.Url == "https://idp.example/.well-known/web-identity");
+        Assert.DoesNotContain(wellKnown.Headers, header => header.Key is "Origin" or "Cookie" or "Referer");
+        var token = loader.Requests.Single(request => request.Url == "https://idp.example/token");
+        Assert.Equal("POST", token.Method);
+        Assert.Equal("https://example.com", token.Origin);
+        Assert.Equal("client_id=rp&nonce=n&account_id=1234&disclosure_text_shown=true&is_auto_selected=false&fields=name%2Cemail%2Cpicture&disclosure_shown_for=name%2Cemail%2Cpicture", Encoding.UTF8.GetString(token.Body!.Value.Span));
+        Assert.Contains(token.Headers, header => header.Key == "Sec-Fetch-Dest" && header.Value == "webidentity");
+    }
+
+    [Fact]
+    public void IdentityCredential_ReturningAccount_IsAutoReauthenticated()
+    {
+        var loader = new IdentityProviderLoader();
+        var backend = new FirstAccountChooser();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("identity|token-for-1234|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options('required')))"));
+
+        // The account is connected to the site: an optional or silent request selects it without the account chooser
+        Assert.Equal("identity|token-for-1234|true|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options('silent')))"));
+        Assert.IsType<IdentityAutoReauthenticationPrompt>(backend.Prompts[^1]);
+        Assert.Single(backend.Prompts, prompt => prompt is IdentityAccountChooserPrompt);
+
+        // preventSilentAccess() requires the user mediation again
+        Assert.Equal("NetworkError", Run(document, "navigator.credentials.preventSilentAccess().then(() => go(navigator.credentials.get(options('silent'))))"));
+
+        // The account is disconnected: the silent request fails
+        Assert.Equal("identity|token-for-1234|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+        Assert.Equal("disconnected", Run(document, "IdentityCredential.disconnect({ configURL: 'https://idp.example/fedcm.json', clientId: 'rp', accountHint: '1234' }).then(() => document.title = 'disconnected', e => document.title = e.name)"));
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get(options('silent')))"));
+        Assert.Equal("NetworkError", Run(document, "IdentityCredential.disconnect({ configURL: 'https://idp.example/fedcm.json', clientId: 'rp', accountHint: '1234' }).then(() => document.title = 'disconnected', e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void IdentityCredential_TokenError_IsShownAndRejected()
+    {
+        var loader = new IdentityProviderLoader { TokenResponse = """{ "error": { "error": "access_denied", "url": "/error" } }""" };
+        var backend = new FirstAccountChooser();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("IdentityCredentialError|access_denied|https://idp.example/error", Run(document, "go(navigator.credentials.get(options()))"));
+        var error = Assert.IsType<IdentityCredentialErrorPrompt>(backend.Prompts[^1]);
+        Assert.Equal("access_denied", error.Error.Error);
+        Assert.Equal("invalid_request|", Run(document, "document.title = (e => [e.error, e.url].join('|'))(new IdentityCredentialError('message', { error: 'invalid_request' }))"));
+    }
+
+    [Fact]
+    public void IdentityCredential_ContinueOn_ResolvesTheTokenOfTheContinuationPage()
+    {
+        var loader = new IdentityProviderLoader { TokenResponse = """{ "continue_on": "/continue" }""" };
+        var backend = new FirstAccountChooser();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Assert.Equal("identity|{\"value\":42}|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+        Assert.Equal("NotAllowedError", Run(document, "IdentityProvider.resolve('token').then(() => document.title = 'resolved', e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void IdentityCredential_ContinueOn_ThirdPartyFrameCannotResolve()
+    {
+        // The iframe of another origin in the continuation page cannot complete the sign-in with its own token and account
+        var loader = new IdentityProviderLoader
+        {
+            TokenResponse = """{ "continue_on": "/continue" }""",
+            ContinuationPage = """
+                <iframe src="https://third-party.example/frame"></iframe>
+                <script>onmessage = e => IdentityProvider.resolve({ frame: e.data });</script>
+                """,
+        };
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = new FirstAccountChooser() });
+
+        Assert.Equal("identity|{\"frame\":\"NotAllowedError\"}|false|https://idp.example/fedcm.json", Run(document, "go(navigator.credentials.get(options()))"));
+    }
+
+    [Fact]
+    public void IdentityCredential_InvalidRequests_AreRejected()
+    {
+        var loader = new IdentityProviderLoader();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = new FirstAccountChooser() });
+
+        Assert.Equal("TypeError", Run(document, "go(navigator.credentials.get({ identity: { providers: [] } }))"));
+        Assert.Equal("InvalidStateError", Run(document, "go(navigator.credentials.get(options('optional', { clientId: '' })))"));
+        Assert.Equal("NotSupportedError", Run(document, "go(navigator.credentials.get({ password: true, identity: options().identity }))"));
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get({ identity: { mode: 'active', providers: options().identity.providers } }))"));
+    }
+
+    [Fact]
+    public void IdentityCredential_LoggedOutProvider_IsNotFetched()
+    {
+        var loader = new IdentityProviderLoader();
+        var document = Load("<script>" + FedCmScript + "</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = new FirstAccountChooser() });
+
+        // The login status of the origin of the document is set by navigator.login.setStatus()
+        Assert.Equal("set", Run(document, "navigator.login.setStatus('logged-out').then(() => document.title = 'set')"));
+        Assert.Equal("NetworkError", Run(document, "go(navigator.credentials.get({ identity: { providers: [{ configURL: location.origin + '/fedcm.json', clientId: 'rp' }] } }))"));
+        Assert.DoesNotContain(loader.Requests, request => request.Url.StartsWith("https://example.com/", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void IdentityCredential_Abort_ClosesTheAccountChooser()
+    {
+        var loader = new IdentityProviderLoader();
+        var backend = new PendingAccountChooser();
+        var document = Load("<script>" + FedCmScript + "window.controller = new AbortController();</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Run(document, "go(navigator.credentials.get(Object.assign(options(), { signal: controller.signal })))");
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
+        Assert.Equal("NotAllowedError", Run(document, "navigator.credentials.get(options()).catch(e => document.title = e.name)"));
+        Assert.Equal("AbortError", Run(document, "controller.abort()"));
+        Assert.True(backend.CancellationToken.IsCancellationRequested);
+    }
+
+    [Theory]
+    [InlineData("""{ "provider_urls": ["https://idp.example/fedcm.json"] }""", "https://idp.example/fedcm.json||")]
+    [InlineData("""{ "accounts_endpoint": "/accounts", "login_url": "/login" }""", "|/accounts|/login")]
+    [InlineData("""{ "provider_urls": ["https://a.example/1", "https://a.example/2"] }""", null)]
+    [InlineData("""{ "provider_urls": "https://idp.example/fedcm.json" }""", null)]
+    [InlineData("""null""", "||")]
+    [InlineData("""[]""", null)]
+    [InlineData("""{ "provider_urls": [1, true, null] """, null)]
+    public void IdentityProviderResponses_ParseWellKnown(string json, string? expected)
+    {
+        var wellKnown = IdentityProviderResponses.ParseWellKnown(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, wellKnown is null ? null : string.Join(',', wellKnown.ProviderUrls ?? []) + "|" + wellKnown.AccountsEndpoint + "|" + wellKnown.LoginUrl);
+    }
+
+    [Theory]
+    [InlineData("""{ "accounts_endpoint": "a", "id_assertion_endpoint": "t", "login_url": "l" }""", "a||t|l||False|")]
+    [InlineData("""{ "accounts_endpoint": "a", "client_metadata_endpoint": "m", "id_assertion_endpoint": "t", "login_url": "l", "disconnect_endpoint": "d", "supports_use_other_account": true, "account_label": "x", "branding": { "name": "IdP", "icons": [{ "url": "i.png", "size": 32 }] } }""", "a|m|t|l|d|True|x")]
+    [InlineData("""{ "accounts_endpoint": 12, "id_assertion_endpoint": 1.5, "login_url": false, "supports_use_other_account": "" }""", "12||1.5|false||False|")]
+    [InlineData("""{ "accounts_endpoint": "a", "login_url": "l" }""", null)]
+    [InlineData("""{ "accounts_endpoint": "a", "id_assertion_endpoint": "t", "login_url": "l", "branding": { "icons": [{ "size": 1 }] } }""", null)]
+    [InlineData("""{ "accounts_endpoint": "a", "id_assertion_endpoint": "t", "login_url": "l", "branding": 1 }""", null)]
+    public void IdentityProviderResponses_ParseConfig(string json, string? expected)
+    {
+        var config = IdentityProviderResponses.ParseConfig(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, config is null ? null : string.Join('|', config.AccountsEndpoint, config.ClientMetadataEndpoint, config.IdAssertionEndpoint, config.LoginUrl, config.DisconnectEndpoint, config.SupportsUseOtherAccount, config.AccountLabel));
+    }
+
+    [Theory]
+    [InlineData("""{ "accounts": [{ "id": "1", "name": "John", "email": "j@idp.example", "given_name": "J", "picture": "p.png", "approved_clients": ["a", "b"], "login_hints": ["h"], "domain_hints": ["d"], "label_hints": ["l"] }] }""", "1:John:j@idp.example:J:p.png:a,b:h:d:l")]
+    [InlineData("""{ "accounts": [{ "id": "1", "username": "u" }, { "id": 2, "tel": "+1" }] }""", "1::::::::;2::::::::")]
+    [InlineData("""{ "accounts": [] }""", "")]
+    [InlineData("""{ }""", "")]
+    [InlineData("""{ "accounts": [{ "id": "1" }] }""", null)]
+    [InlineData("""{ "accounts": [{ "name": "John" }] }""", null)]
+    [InlineData("""{ "accounts": [{ "id": "1", "name": "John", "approved_clients": "a" }] }""", null)]
+    [InlineData("""{ "accounts": [{ "id": "\uD800", "name": "\u00E9" }] }""", "\uFFFD:\u00E9:::::::")]
+    public void IdentityProviderResponses_ParseAccounts(string json, string? expected)
+    {
+        var accounts = IdentityProviderResponses.ParseAccounts(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, accounts is null ? null : string.Join(';', accounts.Select(account => string.Join(':', account.Id, account.Name, account.Email, account.GivenName, account.Picture, string.Join(',', account.ApprovedClients ?? []), string.Join(',', account.LoginHints ?? []), string.Join(',', account.DomainHints ?? []), string.Join(',', account.LabelHints ?? [])))));
+    }
+
+    [Theory]
+    [InlineData("""{ "privacy_policy_url": "p", "terms_of_service_url": "t", "client_is_third_party_to_top_frame_origin": true }""", "p|t|True")]
+    [InlineData("""{ }""", "||False")]
+    [InlineData("""{ "client_is_third_party_to_top_frame_origin": 0 }""", "||False")]
+    [InlineData("""1""", null)]
+    public void IdentityProviderResponses_ParseClientMetadata(string json, string? expected)
+    {
+        var metadata = IdentityProviderResponses.ParseClientMetadata(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, metadata is null ? null : string.Join('|', metadata.PrivacyPolicyUrl, metadata.TermsOfServiceUrl, metadata.ClientIsThirdPartyToTopFrameOrigin));
+    }
+
+    [Theory]
+    [InlineData("""{ "token": "token" }""", "\"token\"||")]
+    [InlineData("""{ "token": { "a": [1, null] } }""", "{ \"a\": [1, null] }||")]
+    [InlineData("""{ "token": null }""", "null||")]
+    [InlineData("""{ "continue_on": "/continue" }""", "|/continue|")]
+    [InlineData("""{ "error": { "error": "access_denied", "url": "/error" } }""", "||access_denied,/error")]
+    [InlineData("""{ "error": { "code": "access_denied" } }""", "||,")]
+    [InlineData("""{ "error": "access_denied" }""", null)]
+    [InlineData("""{ "token": "a" """, null)]
+    public void IdentityProviderResponses_ParseAssertion(string json, string? expected)
+    {
+        var assertion = IdentityProviderResponses.ParseAssertion(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, assertion is null ? null : assertion.TokenJson + "|" + assertion.ContinueOn + "|" + (assertion.Error is { } error ? error.Error + "," + error.Url : ""));
+    }
+
+    [Fact]
+    public void IdentityCredential_DestroyedDocument_ReleasesThePendingRequest()
+    {
+        // The request of a removed iframe is aborted: its account chooser is closed, and the page can make a new request
+        var loader = new IdentityProviderLoader();
+        var backend = new PendingAccountChooser();
+        var document = Load("<script>" + FedCmScript + "window.frame = document.documentElement.appendChild(document.createElement('iframe'));</script>", new BrowsingContextOptions { DocumentLoader = loader, UserAgentUI = backend });
+
+        Run(document, "frame.contentWindow.navigator.credentials.get(frame.contentWindow.Object.assign({}, options()))");
+        var frameToken = backend.CancellationToken;
+        Assert.True(frameToken.CanBeCanceled);
+        Assert.False(frameToken.IsCancellationRequested);
+
+        Run(document, "frame.remove()");
+        Assert.True(frameToken.IsCancellationRequested);
+
+        Run(document, "go(navigator.credentials.get(options()))");
+        Assert.NotEqual(frameToken, backend.CancellationToken);
+        Assert.False(backend.CancellationToken.IsCancellationRequested);
+    }
+
+    [Theory]
+    [InlineData("""{ "account_id": "1234" }""", "1234")]
+    [InlineData("""{ "account_id": 1e21 }""", "1e+21")]
+    [InlineData("""{ "account_id": [1, [2, 3]] }""", "1,2,3")]
+    [InlineData("""{ }""", null)]
+    [InlineData("\uFEFF{ \"account_id\": \"1\" }", "1")]
+    public void IdentityProviderResponses_ParseDisconnect(string json, string? expected)
+    {
+        Assert.Equal(expected, IdentityProviderResponses.ParseDisconnect(Encoding.UTF8.GetBytes(json)));
+    }
+
+    /// <summary>An identity provider at https://idp.example (cross-site with the documents of the tests, https://example.com).</summary>
+    private sealed class IdentityProviderLoader : DocumentLoader
+    {
+        public List<DocumentRequest> Requests { get; } = [];
+
+        public string? TokenResponse { get; init; }
+
+        public string? ContinuationPage { get; init; }
+
+        public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+        {
+            lock (Requests)
+            {
+                Requests.Add(request);
+            }
+
+            var path = request.Url.Split('?')[0];
+            var resource = path switch
+            {
+                "https://idp.example/.well-known/web-identity" => Json("""{ "provider_urls": ["https://idp.example/fedcm.json"] }"""),
+                "https://idp.example/fedcm.json" => Json("""{ "accounts_endpoint": "/accounts", "client_metadata_endpoint": "/metadata", "id_assertion_endpoint": "/token", "disconnect_endpoint": "/disconnect", "login_url": "/login" }"""),
+                "https://idp.example/accounts" => Json("""{ "accounts": [{ "id": "1234", "name": "John Doe", "email": "john@idp.example" }, { "id": "5678", "name": "Jane Doe", "email": "jane@idp.example" }] }"""),
+                "https://idp.example/metadata" => Json("""{ "privacy_policy_url": "https://rp.example/privacy" }"""),
+                "https://idp.example/token" => Json(TokenResponse ?? "{ \"token\": \"token-for-" + GetField(request, "account_id") + "\" }", cors: true),
+                "https://idp.example/disconnect" => Json("{ \"account_id\": \"" + GetField(request, "account_hint") + "\" }", cors: true),
+                "https://idp.example/continue" => new DocumentResource(ContinuationPage ?? "<script>IdentityProvider.resolve({ value: 42 })</script>") { Headers = [new("Content-Type", "text/html")] },
+                "https://third-party.example/frame" => new DocumentResource("<script>IdentityProvider.resolve('stolen', { accountId: '5678' }).then(() => parent.postMessage('resolved', '*'), e => parent.postMessage(e.name, '*'));</script>") { Headers = [new("Content-Type", "text/html")] },
+                _ => null,
+            };
+            return ValueTask.FromResult(resource);
+
+            static DocumentResource Json(string json, bool cors = false) => new(json)
+            {
+                Headers = cors
+                    ? [new("Content-Type", "application/json"), new("Access-Control-Allow-Origin", "https://example.com"), new("Access-Control-Allow-Credentials", "true")]
+                    : [new("Content-Type", "application/json")],
+            };
+
+            static string? GetField(DocumentRequest request, string name)
+                => request.Body is { } body ? System.Web.HttpUtility.ParseQueryString(Encoding.UTF8.GetString(body.Span))[name] : null;
+        }
+    }
+
+    private sealed class PendingAccountChooser : UserAgentUIBackend
+    {
+        public CancellationToken CancellationToken { get; private set; }
+
+        public override ValueTask<IdentityAccountChoice?> ChooseIdentityAccountAsync(IdentityAccountChooserPrompt prompt, CancellationToken cancellationToken)
+        {
+            CancellationToken = cancellationToken;
+            return new(new TaskCompletionSource<IdentityAccountChoice?>().Task);
+        }
+    }
+
     // Screen Orientation
 
     private const string OrientationScript = """
@@ -2373,4 +3538,613 @@ public sealed class HostDeviceApisTests : IDisposable
 
         Assert.Equal("false,false,false,undefined,false,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,false,undefined,undefined,false", Run(document));
     }
+
+    // Media Capture and Streams
+
+    #region WebPlatform_MediaCaptureBackend
+    // A camera whose frames are filled with a color, for the tests of a page that uses getUserMedia()
+    private sealed class SolidColorCamera : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Camera = new()
+        {
+            Id = "camera-1",
+            Kind = MediaDeviceKind.VideoInput,
+            Label = "Test camera",
+            Capabilities = new MediaTrackCapabilities { FacingMode = ["user"] },
+            DefaultSettings = new MediaTrackSettings { Width = 640, Height = 480, FacingMode = "user" },
+
+            // The native modes; smaller sizes and frame rates are cropped and scaled down from them
+            VideoModes = [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 30)],
+        };
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Camera];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => new Source(request);
+
+        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        {
+            public override MediaVideoFrame? GetVideoFrame(TimeSpan timestamp)
+            {
+                var width = (int)Settings.Width!.Value;
+                var height = (int)Settings.Height!.Value;
+                var pixels = new byte[width * height * 4];
+                for (var i = 0; i < pixels.Length; i += 4)
+                {
+                    pixels[i + 1] = 128; // green
+                    pixels[i + 3] = 255;
+                }
+
+                return new MediaVideoFrame(width, height, pixels);
+            }
+        }
+    }
+    #endregion
+
+    // A camera with a large mode and a fast mode, which records the settings of its last source
+    private sealed class TwoModeCamera : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Camera = new()
+        {
+            Id = "camera-1",
+            Kind = MediaDeviceKind.VideoInput,
+            Label = "Two-mode camera",
+            DefaultSettings = new MediaTrackSettings { Width = 1920, Height = 1080, FrameRate = 30 },
+            VideoModes = [new MediaCaptureVideoMode(1920, 1080, 30), new MediaCaptureVideoMode(1280, 720, 60)],
+        };
+
+        public MediaCaptureSource? LastSource { get; private set; }
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Camera];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request);
+
+        private sealed class Source(MediaCaptureRequest request) : MediaCaptureSource(request)
+        {
+        }
+    }
+
+    // A microphone that plays a ramp on every channel: the value of a frame is its position, divided by 1000
+    private sealed class RampMicrophone : MediaCaptureBackend
+    {
+        private static readonly MediaCaptureDevice Microphone = new()
+        {
+            Id = "microphone-1",
+            Kind = MediaDeviceKind.AudioInput,
+            Capabilities = new MediaTrackCapabilities { SampleRate = new ULongRange { Min = 48000, Max = 48000 }, ChannelCount = new ULongRange { Min = 1, Max = 2 } },
+            DefaultSettings = new MediaTrackSettings { SampleRate = 48000, ChannelCount = 1 },
+        };
+
+        public MediaCaptureSource? LastSource { get; private set; }
+
+        // The state of the device when it starts (e.g. the operating system already took it)
+        public bool MutedOnStart { get; init; }
+
+        public bool EndedOnStart { get; init; }
+
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Microphone];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => LastSource = new Source(request, MutedOnStart, EndedOnStart);
+
+        private sealed class Source : MediaCaptureSource
+        {
+            public Source(MediaCaptureRequest request, bool muted, bool ended)
+                : base(request)
+            {
+                if (muted)
+                {
+                    SetMuted(muted: true);
+                }
+
+                if (ended)
+                {
+                    End();
+                }
+            }
+
+            public override void ReadAudio(long position, Span<float> destination)
+            {
+                var channels = (int)Settings.ChannelCount!.Value;
+                for (var i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = (position + (i / channels)) / 1000f;
+                }
+            }
+        }
+    }
+
+    private MediaStream GetUserMedia(Document document, MediaStreamConstraints constraints)
+    {
+        var request = document.DefaultView!.Navigator.MediaDevices.GetUserMedia(constraints);
+        _contexts.EventLoop.RunUntilIdle();
+        return request.Result;
+    }
+
+    // The media elements play the streams once a media backend enables their processing model
+    private sealed class NoMediaBackend : MediaBackend
+    {
+        public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => MediaTypeSupport.NotSupported;
+
+        public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
+    }
+
+    private const string GetUserMediaScript = "window.go = c => navigator.mediaDevices.getUserMedia(c).then(s => { window.stream = s; const t = s.getTracks()[0]; const st = t.getSettings(); document.title = [t.kind, t.label, st.width, st.height, st.resizeMode, st.deviceId.length].join(); }, e => document.title = e.name + ':' + (e.constraint ?? ''));";
+
+    [Fact]
+    public async Task GetUserMedia_StartsTheCameraOfTheBackend()
+    {
+        #region WebPlatform_MediaCapture
+        var options = new BrowsingContextOptions
+        {
+            MediaCapture = new SolidColorCamera(),
+
+            // Plays the role of the permission prompt: the user allows the camera
+            RequestPermission = (callbackContext, name) => name == "camera" ? PermissionState.Granted : PermissionState.Denied,
+        };
+        #endregion
+
+        var document = Load("<script>" + GetUserMediaScript + "</script>", options);
+
+        Assert.Equal("video,Test camera,640,480,none,64", await RunAsync(document, "go({ video: true })"));
+    }
+
+    [Fact]
+    public async Task GetUserMedia_ConstraintsSelectTheVideoMode()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+
+        Assert.Equal("video,Test camera,1280,720,none,64", await RunAsync(document, "go({ video: { width: { min: 1000 } } })"));
+        Assert.Equal("video,Test camera,320,240,crop-and-scale,64", await RunAsync(document, "go({ video: { width: 320 } })"));
+        Assert.Equal("OverconstrainedError:width", await RunAsync(document, "go({ video: { width: { min: 4000 } } })"));
+        Assert.Equal("OverconstrainedError:width", await RunAsync(document, "go({ video: { width: { exact: 639 }, resizeMode: { exact: 'none' } } })"));
+    }
+
+    [Fact]
+    public async Task GetUserMedia_Errors()
+    {
+        var withoutBackend = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { Permissions = GrantedPermissions("camera") });
+        Assert.Equal("NotFoundError:", await RunAsync(withoutBackend, "go({ video: true })"));
+
+        var denied = new PermissionStore();
+        denied.SetState("camera", PermissionState.Denied);
+        var deniedDocument = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = denied });
+        Assert.Equal("NotAllowedError:", await RunAsync(deniedDocument, "go({ video: true })"));
+
+        var noRequest = Load("<script>navigator.mediaDevices.getUserMedia({}).catch(e => document.title = e.name);</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera() });
+        Assert.Equal("TypeError", await RunAsync(noRequest));
+
+        var insecure = Load("<script>document.title = 'mediaDevices' in navigator;</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera() }, url: "http://example.com/");
+        Assert.Equal("false", Run(insecure));
+    }
+
+    [Fact]
+    public void SelectSettings_ManyAdvancedConstraintSetsStayBounded()
+    {
+        // Hundreds of advanced sets with distinct sizes, aspect ratios and frame rates: the candidates of the video modes
+        // must not be the Cartesian product of all their values
+        var advanced = Enumerable.Range(1, 400).Select(i => (MediaTrackConstraintSet)new MediaTrackConstraints
+        {
+            Width = new ConstrainULongRange { Min = (uint)i, Ideal = (uint)(i * 3) },
+            Height = new ConstrainULongRange { Max = (uint)(2000 - i), Ideal = (uint)(i * 2) },
+            AspectRatio = new ConstrainDoubleRange { Ideal = 1 + (i / 400d) },
+            FrameRate = new ConstrainDoubleRange { Min = 1, Ideal = i % 60 },
+        }).ToList();
+        var model = MediaTrackSourceModel.Create(MediaTrackKinds.Video, new MediaTrackCapabilities(), new MediaTrackSettings { Width = 640, Height = 480, FrameRate = 30 }, [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 60), new MediaCaptureVideoMode(1920, 1080, 30)]);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = MediaTrackConstraintProcessing.SelectSettings(model, new MediaTrackConstraints { Width = new ConstrainULongRange { Min = 100 }, Advanced = advanced });
+
+        Assert.True(result.Succeeded);
+        Assert.True((double)result.Settings!["width"] >= 100);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"SelectSettings took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void SelectSettings_TheAdvancedConstraintSetsDoNotTakeTheCandidatesOfTheBasicOnes()
+    {
+        // The heights derived from the aspect ratios of the advanced sets must not fill the candidates before the height of the basic set
+        var advanced = Enumerable.Range(0, 16).Select(i => (MediaTrackConstraintSet)new MediaTrackConstraints
+        {
+            AspectRatio = new ConstrainDoubleRange { Ideal = 1.10 + (i * 0.01) },
+        }).ToList();
+        var model = MediaTrackSourceModel.Create(MediaTrackKinds.Video, new MediaTrackCapabilities(), new MediaTrackSettings { Width = 1920, Height = 1080, FrameRate = 30 }, [new MediaCaptureVideoMode(1920, 1080, 30)]);
+
+        var result = MediaTrackConstraintProcessing.SelectSettings(model, new MediaTrackConstraints
+        {
+            Width = new ConstrainULongRange { Exact = 640 },
+            Height = new ConstrainULongRange { Exact = 400 },
+            FrameRate = new ConstrainDoubleRange { Exact = 15 },
+            Advanced = advanced,
+        });
+
+        Assert.True(result.Succeeded, result.FailedConstraint);
+        Assert.Equal(640d, result.Settings!["width"]);
+        Assert.Equal(400d, result.Settings["height"]);
+        Assert.Equal(15d, result.Settings["frameRate"]);
+    }
+
+    [Fact]
+    public void TrackStats_CountTheFramesOfEachState()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        var track = GetUserMedia(document, new MediaStreamConstraints { Video = true }).GetVideoTracks()[0];
+        var stats = (MediaStreamTrackVideoStats)track.Stats!;
+
+        // 1 s enabled, 1 s disabled, 1 s enabled at 30 frames per second, then the track stops: the stats are read once, after
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Enabled = false;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Enabled = true;
+        clock.Advance(TimeSpan.FromSeconds(1));
+        track.Stop();
+        clock.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(60ul, stats.TotalFrames);
+        Assert.Equal(60ul, stats.DeliveredFrames);
+        Assert.Equal(0ul, stats.DiscardedFrames);
+    }
+
+    [Fact]
+    public void MediaStreamPlayer_StopsObservingTheRemovedTracks()
+    {
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        var stream = GetUserMedia(document, new MediaStreamConstraints { Video = true });
+        var track = stream.GetVideoTracks()[0];
+        using var player = new MediaStreamPlayer(stream, TimeProvider.System, isVideoElement: true);
+        Assert.True(track.HasStateChangedCallbacks);
+
+        stream.RemoveTrack(track);
+        Assert.False(track.HasStateChangedCallbacks);
+    }
+
+    [Fact]
+    public void GetUserMedia_KeepsTheStateTheSourceHasWhenItStarts()
+    {
+        var muted = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { MutedOnStart = true }, Permissions = GrantedPermissions("microphone") });
+        var mutedTrack = GetUserMedia(muted, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        Assert.True(mutedTrack.Muted);
+        Assert.Equal(MediaStreamTrackState.Live, mutedTrack.ReadyState);
+
+        var ended = Load("<p>", new BrowsingContextOptions { MediaCapture = new RampMicrophone { EndedOnStart = true }, Permissions = GrantedPermissions("microphone") });
+        var endedTrack = GetUserMedia(ended, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        Assert.Equal(MediaStreamTrackState.Ended, endedTrack.ReadyState);
+    }
+
+    [Fact]
+    public void ApplyConstraints_OfACloneDoesNotChangeTheMediaOfTheOtherTracks()
+    {
+        var backend = new RampMicrophone();
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = backend, Permissions = GrantedPermissions("microphone") });
+        var original = GetUserMedia(document, new MediaStreamConstraints { Audio = true }).GetAudioTracks()[0];
+        var clone = original.Clone();
+
+        var apply = clone.ApplyConstraints(new MediaTrackConstraints { ChannelCount = 2u });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(apply.IsCompletedSuccessfully);
+
+        // The device delivers stereo for the clone; the original track keeps its mono settings and its mono audio
+        Assert.Equal(2u, backend.LastSource!.Settings.ChannelCount);
+        Assert.Equal(1u, original.GetSettings().ChannelCount);
+        Assert.Equal(2u, clone.GetSettings().ChannelCount);
+        var mono = new float[4];
+        original.ReadAudio(10, mono);
+        Assert.Equal([0.010f, 0.011f, 0.012f, 0.013f], mono);
+        var stereo = new float[4];
+        clone.ReadAudio(10, stereo);
+        Assert.Equal([0.010f, 0.010f, 0.011f, 0.011f], stereo);
+    }
+
+    [Fact]
+    public void ApplyConstraints_OfACloneKeepsTheDeviceInANativeModeThatCoversEveryTrack()
+    {
+        var backend = new TwoModeCamera();
+        var document = Load("<p>", new BrowsingContextOptions { MediaCapture = backend, Permissions = GrantedPermissions("camera") });
+        var original = GetUserMedia(document, new MediaStreamConstraints { Video = true }).GetVideoTracks()[0];
+        var clone = original.Clone();
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+
+        // Only the fast mode gives 60 frames per second, but it cannot give the size of the original track: the call is
+        // rejected, and neither the clone nor the device change
+        var conflict = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Exact = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("frameRate", Assert.IsType<OverconstrainedError>(conflict.Exception?.InnerException).Constraint);
+        Assert.Equal(30d, clone.GetSettings().FrameRate);
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+
+        // An ideal frame rate falls back to the modes that cover the original track
+        var ideal = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Ideal = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(ideal.IsCompletedSuccessfully);
+        Assert.Equal(30d, clone.GetSettings().FrameRate);
+
+        // A smaller size: the device stays in the smallest native mode that covers both tracks
+        var smaller = clone.ApplyConstraints(new MediaTrackConstraints { Width = new ConstrainULongRange { Exact = 640 }, Height = new ConstrainULongRange { Exact = 360 }, FrameRate = new ConstrainDoubleRange { Exact = 15 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(smaller.IsCompletedSuccessfully);
+        Assert.Equal(("1920x1080", 30d), DeviceMode());
+        Assert.Equal(1920u, original.GetSettings().Width);
+
+        // Once the original track stopped, the clone can use the fast mode; a track of each size runs the device in the fast mode
+        original.Stop();
+        var fast = clone.ApplyConstraints(new MediaTrackConstraints { FrameRate = new ConstrainDoubleRange { Exact = 60 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(fast.IsCompletedSuccessfully);
+        Assert.Equal(60d, clone.GetSettings().FrameRate);
+        var second = clone.Clone();
+        var slow = clone.ApplyConstraints(new MediaTrackConstraints { Width = new ConstrainULongRange { Exact = 640 }, Height = new ConstrainULongRange { Exact = 360 }, FrameRate = new ConstrainDoubleRange { Exact = 15 } });
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(slow.IsCompletedSuccessfully);
+        Assert.Equal(("1280x720", 60d), DeviceMode());
+        Assert.Equal(60d, second.GetSettings().FrameRate);
+
+        (string Size, double FrameRate) DeviceMode()
+        {
+            var settings = backend.LastSource!.Settings;
+            return ($"{settings.Width}x{settings.Height}", settings.FrameRate!.Value);
+        }
+    }
+
+    [Fact]
+    public async Task EnumerateDevices_ExposesTheDetailsOnceADeviceWasCaptured()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "window.list = () => navigator.mediaDevices.enumerateDevices().then(d => document.title = d.map(x => [x.kind, x.label, x.deviceId.length, x instanceof InputDeviceInfo].join()).join(';'));</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+
+        Assert.Equal("videoinput,,0,true", await RunAsync(document, "list()"));
+        await RunAsync(document, "go({ video: true })");
+        Assert.Equal("videoinput,Test camera,64,true", await RunAsync(document, "list()"));
+    }
+
+    [Fact]
+    public async Task ApplyConstraints_ChangesTheSettings()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("1280x720 none 1280", await RunAsync(document, "const t = stream.getVideoTracks()[0]; t.applyConstraints({ width: { exact: 1280 } }).then(() => document.title = `${t.getSettings().width}x${t.getSettings().height} ${t.getSettings().resizeMode} ${t.getConstraints().width.exact}`)"));
+        Assert.Equal("OverconstrainedError height 1280", await RunAsync(document, "const t2 = stream.getVideoTracks()[0]; t2.applyConstraints({ height: { min: 2000 } }).catch(e => document.title = `${e.name} ${e.constraint} ${t2.getSettings().width}`)"));
+        Assert.Equal("ended,live,false", await RunAsync(document, "const t3 = stream.getVideoTracks()[0]; const c = t3.clone(); t3.stop(); document.title = [t3.readyState, c.readyState, stream.active].join()"));
+    }
+
+    [Fact]
+    public async Task MediaStream_ConstructorsAndClone()
+    {
+        var document = Load("<script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), Permissions = GrantedPermissions("camera") });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("1,1,true,false,0", Run(document, """
+            const copy = new MediaStream(stream);
+            const clone = stream.clone();
+            const empty = new MediaStream();
+            document.title = [copy.getTracks().length, clone.getTracks().length, copy.getTracks()[0] === stream.getTracks()[0], clone.getTracks()[0] === stream.getTracks()[0], empty.getTracks().length].join();
+            """));
+    }
+
+    [Fact]
+    public async Task MediaStreamAudioDestinationNode_StreamHasAnAudioTrack()
+    {
+        var document = Load("<script>const ac = new AudioContext(); const dest = ac.createMediaStreamDestination(); const src = ac.createMediaStreamSource(dest.stream); document.title = [dest.stream.getAudioTracks().length, src.mediaStream === dest.stream, src.numberOfInputs, dest.numberOfOutputs].join();</script>");
+
+        Assert.Equal("1,true,0,0", await RunAsync(document));
+    }
+
+    [Fact]
+    public async Task MediaElement_PlaysAStream()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<video></video><script>" + GetUserMediaScript + "</script>", new BrowsingContextOptions { MediaCapture = new SolidColorCamera(), MediaBackend = new NoMediaBackend(), Permissions = GrantedPermissions("camera"), TimeProvider = clock });
+        await RunAsync(document, "go({ video: true })");
+
+        Assert.Equal("canplay,4,640x480,Infinity,0", await RunAsync(document, """
+            window.v = document.querySelector('video');
+            v.srcObject = stream;
+            v.oncanplay = () => document.title = ['canplay', v.readyState, v.videoWidth + 'x' + v.videoHeight, v.duration, v.seekable.length].join();
+            """));
+        await RunAsync(document, "v.ontimeupdate = () => { v.ontimeupdate = null; document.title = ['timeupdate', v.currentTime > 0, v.played.length, v.played.end(0) === v.currentTime].join(); }; v.play();");
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal("timeupdate,true,1,true", await RunAsync(document));
+        Assert.Equal("ended,true,durationchange", await RunAsync(document, "v.ondurationchange = () => document.title += ',durationchange'; v.onended = () => document.title = ['ended', v.ended].join(); stream.getTracks()[0].stop();"));
+    }
+
+    [Fact]
+    public async Task CanvasCaptureStream_DoesNotCaptureATaintedCanvas()
+    {
+        var document = Load("<canvas width=2 height=2></canvas>");
+        var canvas = (HtmlCanvasElement)document.QuerySelector("canvas")!;
+        var context = (ImageBitmapRenderingContext)canvas.GetContext("bitmaprenderer")!;
+        var track = canvas.CaptureStream().GetVideoTracks()[0];
+
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(2, 2, new byte[16])));
+        Assert.NotNull(track.GetVideoFrame());
+
+        // A cross-origin image drawn on the canvas: its pixels are never captured, and the track is muted
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(2, 2, [.. Enumerable.Repeat((byte)255, 16)], originClean: false)));
+        Assert.Null(track.GetVideoFrame());
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(track.Muted);
+        Assert.Null(track.GetVideoFrame());
+        var grabFrame = await Assert.ThrowsAsync<DomException>(() => new ImageCapture(track).GrabFrame());
+        Assert.Equal("InvalidStateError", grabFrame.Name);
+        var takePhoto = await Assert.ThrowsAsync<DomException>(() => new ImageCapture(track).TakePhoto());
+        Assert.Equal("UnknownError", takePhoto.Name);
+    }
+
+    [Fact]
+    public async Task MediaStreamAudioDestinationNode_TrackFollowsTheChannelCountOfTheNode()
+    {
+        var document = Load("""
+            <script>
+              const ac = new AudioContext();
+              const dest = new MediaStreamAudioDestinationNode(ac, { channelCount: 1 });
+              const track = dest.stream.getAudioTracks()[0];
+              const before = track.getSettings().channelCount;
+              dest.channelCount = 4;
+              document.title = [before, track.getSettings().channelCount, dest.channelCount].join();
+            </script>
+            """);
+
+        Assert.Equal("1,4,4", await RunAsync(document));
+    }
+
+    [Fact]
+    public void CanvasCaptureStream_RespectsTheFrameRate()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=1 height=1></canvas>", new BrowsingContextOptions { TimeProvider = clock });
+        var canvas = (HtmlCanvasElement)document.QuerySelector("canvas")!;
+        var context = (ImageBitmapRenderingContext)canvas.GetContext("bitmaprenderer")!;
+        var track = (CanvasCaptureMediaStreamTrack)canvas.CaptureStream(frameRequestRate: 1).GetVideoTracks()[0];
+
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [1, 0, 0, 255])));
+        Assert.Equal(1, track.GetVideoFrame()!.Pixels.Span[0]);
+
+        // A second change within the second of the frame rate is captured once the second elapsed
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [2, 0, 0, 255])));
+        Assert.Equal(1, track.GetVideoFrame()!.Pixels.Span[0]);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(2, track.GetVideoFrame()!.Pixels.Span[0]);
+
+        // requestFrame() captures the canvas at once
+        context.TransferFromImageBitmap(new ImageBitmap(new BitmapPixels(1, 1, [3, 0, 0, 255])));
+        track.RequestFrame();
+        Assert.Equal(3, track.GetVideoFrame()!.Pixels.Span[0]);
+    }
+
+    [Fact]
+    public void CanvasCaptureStream_FollowsTheSizeOfTheCanvas()
+    {
+        var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");
+
+        Assert.Equal("true,true,80,30,10", Run(document));
+    }
 }
+
+#region WebPlatform_UserAgentUIBackend
+/// <summary>
+/// A credential store of the user agent: <c>navigator.credentials.store()</c> saves the credentials without asking, and
+/// <c>navigator.credentials.get()</c> returns the first stored credential that matches the request.
+/// </summary>
+internal sealed class InMemoryCredentialStore : UserAgentUIBackend
+{
+    private readonly List<Credential> _credentials = [];
+
+    public int ChooserPrompts { get; private set; }
+
+    public CredentialChooserPrompt? LastPrompt { get; private set; }
+
+    public int StorePrompts { get; private set; }
+
+    public override ValueTask<bool> StoreCredentialAsync(CredentialStorePrompt prompt, CancellationToken cancellationToken)
+    {
+        StorePrompts++;
+        _credentials.Add(prompt.Credential);
+        return ValueTask.FromResult(true);
+    }
+
+    public override ValueTask<Credential?> ChooseCredentialAsync(CredentialChooserPrompt prompt, CancellationToken cancellationToken)
+    {
+        ChooserPrompts++;
+        LastPrompt = prompt;
+        return ValueTask.FromResult(_credentials.Find(prompt.Matches));
+    }
+}
+#endregion
+
+#region WebPlatform_DigitalCredentialWallet
+/// <summary>A wallet that answers the first request of a digital credential request with the request itself.</summary>
+internal sealed class SingleResponseWallet : UserAgentUIBackend
+{
+    public DigitalCredentialPrompt? LastPrompt { get; private set; }
+
+    public override ValueTask<DigitalCredentialResponse?> RequestDigitalCredentialAsync(DigitalCredentialPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        var request = prompt.Requests[0];
+        var response = $$"""{"protocol":"{{request.Protocol}}","request":{{request.Data}}}""";
+        return ValueTask.FromResult<DigitalCredentialResponse?>(new DigitalCredentialResponse(request.Protocol, response));
+    }
+}
+#endregion
+
+#region WebPlatform_UserAgentUIBackend_Payments
+/// <summary>
+/// A payment sheet whose user accepts the payment with the first supported payment method, once the page updated the
+/// details: the user agent has a payment handler for https://pay.example/pay.
+/// </summary>
+internal sealed class AcceptingPaymentSheet : UserAgentUIBackend
+{
+    public PaymentSheetPrompt? LastPrompt { get; private set; }
+
+    public PaymentComplete? Result { get; private set; }
+
+    public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(query.Method.Identifier == "https://pay.example/pay");
+
+    public override async ValueTask<PaymentSheetResponse?> ShowPaymentSheetAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        var details = await prompt.WaitForUpdateAsync(cancellationToken);
+        return new PaymentSheetResponse
+        {
+            MethodName = prompt.Methods[0].Identifier,
+            Details = $$"""{"token": "tok_{{details.Total.Amount.Value}}"}""",
+            PayerName = "John Doe",
+        };
+    }
+
+    // The user fixes the errors shown by the sheet (prompt.Errors)
+    public override ValueTask<PaymentSheetResponse?> RetryPaymentAsync(PaymentSheetPrompt prompt, CancellationToken cancellationToken)
+        => ValueTask.FromResult<PaymentSheetResponse?>(new PaymentSheetResponse { MethodName = prompt.Response!.MethodName, PayerName = "Jane Doe" });
+
+    public override ValueTask CompletePaymentAsync(PaymentSheetPrompt prompt, PaymentComplete result, string serializedData, CancellationToken cancellationToken)
+    {
+        Result = result;
+        return ValueTask.CompletedTask;
+    }
+}
+#endregion
+
+#region WebPlatform_FedCmBackend
+/// <summary>The dialogs of FedCM: the account chooser chooses the first account, and the other dialogs are recorded.</summary>
+internal sealed class FirstAccountChooser : UserAgentUIBackend
+{
+    public List<IdentityCredentialPrompt> Prompts { get; } = [];
+
+    public override ValueTask<IdentityAccountChoice?> ChooseIdentityAccountAsync(IdentityAccountChooserPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.FromResult<IdentityAccountChoice?>(IdentityAccountChoice.Select(prompt.Accounts[0]));
+    }
+
+    public override ValueTask ShowIdentityCredentialErrorAsync(IdentityCredentialErrorPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask<bool> ShowIdentityAutoReauthenticationAsync(IdentityAutoReauthenticationPrompt prompt, CancellationToken cancellationToken)
+    {
+        Prompts.Add(prompt);
+        return ValueTask.FromResult(true);
+    }
+}
+#endregion
+
+#region WebPlatform_UserAgentUIBackend_SecurePaymentConfirmation
+/// <summary>
+/// A transaction dialog of Secure Payment Confirmation whose user always makes the same choice: the user agent supports the
+/// secure-payment-confirmation payment method.
+/// </summary>
+internal sealed class TransactionDialog(SecurePaymentConfirmationChoice choice) : UserAgentUIBackend
+{
+    public SecurePaymentConfirmationPrompt? LastPrompt { get; private set; }
+
+    public override ValueTask<bool> HasPaymentHandlerAsync(PaymentHandlerQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(query.Method.Identifier == "secure-payment-confirmation");
+
+    public override ValueTask<SecurePaymentConfirmationChoice> ShowSecurePaymentConfirmationAsync(SecurePaymentConfirmationPrompt prompt, CancellationToken cancellationToken)
+    {
+        LastPrompt = prompt;
+        return ValueTask.FromResult(choice);
+    }
+}
+#endregion

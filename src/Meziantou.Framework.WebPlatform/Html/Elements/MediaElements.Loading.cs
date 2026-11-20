@@ -153,7 +153,9 @@ public partial class HtmlMediaElement
             OnRenderingChanged();
         }
 
-        if (_playbackRate != _defaultPlaybackRate)
+        // The playback rate of a media stream is not set (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements):
+        // the rate changes when the stream is no longer the media provider object
+        if (_playbackRate != _defaultPlaybackRate && !HasMediaStreamProvider)
         {
             SetPlaybackRate(_defaultPlaybackRate);
             QueueRateChange();
@@ -524,6 +526,39 @@ public partial class HtmlMediaElement
         }
     }
 
+    /// <summary>
+    /// Plays a media stream (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements): its metadata is known
+    /// once it has data (for a video element whose stream has a video track, the first frame of the track, e.g. the first
+    /// frame of a canvas once it is painted), and it has enough data at once.
+    /// </summary>
+    private void EstablishMediaStream(int generation, MediaStream stream)
+    {
+        if (generation != _selectionGeneration || NodeDocument.EventLoop is not { } eventLoop)
+            return;
+
+        var player = new MediaStreamPlayer(stream, eventLoop.TimeProvider, this is HtmlVideoElement);
+        if (!player.HasData)
+        {
+            player.Dispose();
+            eventLoop.QueueTimer(MediaStreamPollInterval, () => QueueMediaElementTask(() => EstablishMediaStream(generation, stream)));
+            return;
+        }
+
+        _mediaStreamEnded = false;
+        EstablishMediaResource(player, eventLoop, isCorsSameOrigin: true);
+        QueueMediaElementTask(() =>
+        {
+            if (!ReferenceEquals(_player, player))
+                return;
+
+            UpdateReadyStateFromPlayer();
+            SetDelayingTheLoadEvent(false);
+        });
+    }
+
+    /// <summary>The interval at which a media stream without data is checked again.</summary>
+    private static readonly TimeSpan MediaStreamPollInterval = TimeSpan.FromMilliseconds(10);
+
     private void StartFetch(int generation, UrlRecord? url, object? provider, Action onFailure)
     {
         // Local mode: a media source (or its handle, for a source constructed in a dedicated worker) is attached to the
@@ -543,6 +578,14 @@ public partial class HtmlMediaElement
             }
 
             AttachMediaSource(generation, provider as MediaSource ?? ((MediaSourceHandle)provider).Source, byHandle: provider is MediaSourceHandle, onFailure);
+            return;
+        }
+
+        // A media stream is played live (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements): its metadata
+        // is known at once, and it has enough data as soon as it has a track
+        if (provider is MediaStream stream)
+        {
+            QueueMediaElementTask(() => EstablishMediaStream(generation, stream));
             return;
         }
 
@@ -1176,6 +1219,17 @@ public partial class HtmlMediaElement
 
         UpdateVideoDimensions();
         UpdateReadyStateFromPlayer(canRise: player is not MediaSourcePlayer || _isMonitoringMediaSource);
+
+        // The playback of a media stream ends when the stream becomes inactive, whether the element plays or not
+        // (https://w3c.github.io/mediacapture-main/#mediastreams-in-media-elements)
+        if (player is MediaStreamPlayer streamPlayer && streamPlayer.HasEnded != _mediaStreamEnded)
+        {
+            _mediaStreamEnded = streamPlayer.HasEnded;
+            if (_mediaStreamEnded && _readyState >= HaveMetadata)
+            {
+                OnMediaStreamEnded();
+            }
+        }
         if (_seeking && !player.IsSeeking)
         {
             if (player is MediaSourcePlayer)

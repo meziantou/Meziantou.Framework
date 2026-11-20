@@ -87,7 +87,7 @@ public sealed class ServiceWorker : EventTarget
 /// </summary>
 /// <seealso href="https://w3c.github.io/ServiceWorker/#serviceworkerregistration"/>
 [IdlInterface("ServiceWorkerRegistration", "https://w3c.github.io/ServiceWorker/#serviceworkerregistration")]
-public sealed class ServiceWorkerRegistration : EventTarget
+public sealed partial class ServiceWorkerRegistration : EventTarget
 {
     private NavigationPreloadManager? _navigationPreload;
 

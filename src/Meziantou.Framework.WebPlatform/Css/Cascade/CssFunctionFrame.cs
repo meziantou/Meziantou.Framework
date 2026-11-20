@@ -32,9 +32,10 @@ namespace Meziantou.Framework.WebPlatform.Css.Cascade;
 /// </para>
 /// <para>
 /// A frame also evaluates the application of a mixin (https://drafts.csswg.org/css-mixins-1/#mixin-args) for an element: its
-/// parameters and its local variables (the custom properties of the mixin body) shadow the variables of the applying context
-/// (the mixin whose @result contains the @apply rule, then the element). A missing argument without default value is the
-/// guaranteed-invalid value. The custom functions called by the values of the mixin do not see its variables.
+/// parameters shadow the variables of the applying context (the mixin whose body contains the @apply rule, then the element).
+/// A missing argument without default value is the guaranteed-invalid value. The custom functions called by the values of the
+/// mixin do not see its parameters. A mixin has no local variables: the private properties of its body are custom properties
+/// of the element with hidden names (see <see cref="CssPrivateScope"/>).
 /// </para>
 /// </remarks>
 internal sealed class CssFunctionFrame
@@ -102,7 +103,7 @@ internal sealed class CssFunctionFrame
 
     /// <summary>
     /// Creates the frame of the application of a mixin for an element, in the calling context: the element (the
-    /// <see cref="SubstitutionContext.TreeScope"/> is the tree of the @apply rule), or the frame of the mixin whose @result
+    /// <see cref="SubstitutionContext.TreeScope"/> is the tree of the @apply rule), or the frame of the mixin whose body
     /// contains the @apply rule. <see cref="InitializeMixin"/> resolves its arguments and collects its local variables.
     /// </summary>
     public static CssFunctionFrame CreateMixin(CssMixinApplication mixin, SubstitutionContext callerContext) => new(mixin, callerContext);
@@ -121,8 +122,9 @@ internal sealed class CssFunctionFrame
         }
 
         ResolveParameters(arguments, missingArgumentIsInvalid: false);
+
+        // A mixin has no local variables: its private properties are custom properties of the element (see CssPrivateScope)
         _declarations = new(StringComparer.Ordinal);
-        CollectDeclarations(_body, _declarations);
     }
 
     private ComputedStyle Style => _context.Style;
@@ -245,6 +247,12 @@ internal sealed class CssFunctionFrame
 
             if (value is null && parameter.DefaultValue is { } defaultValue)
             {
+                // The default value of a parameter of a mixin sees the private properties of the @apply rule
+                if (_mixin?.CallerPrivateScope is { } privateScope)
+                {
+                    defaultValue = privateScope.RewriteReferences(defaultValue);
+                }
+
                 value = CssSubstitution.Substitute(defaultValue, _context, out var taintedRanges);
                 tainted = taintedRanges is not null;
                 value = ResolveKeyword(parameter.Name, value, initialValue: null, initialTainted: false, ref tainted);
@@ -266,7 +274,6 @@ internal sealed class CssFunctionFrame
     /// <summary>
     /// Collects the declarations of the function body: the conditional group rules apply when their condition is true
     /// (https://drafts.csswg.org/css-mixins-1/#conditional-rules), and the queries refer to the element of the calling context.
-    /// The local variables of a mixin are the custom properties of its body, outside of the @result rules.
     /// </summary>
     private void CollectDeclarations(List<CssRule> rules, Dictionary<string, string> declarations)
     {
@@ -282,16 +289,6 @@ internal sealed class CssFunctionFrame
 
                     break;
 
-                case CssNestedDeclarations nestedDeclarations when IsMixin:
-                    foreach (var declaration in nestedDeclarations.Style.Declarations)
-                    {
-                        if (!declaration.Important && CssPropertyRegistry.IsCustomProperty(declaration.Name))
-                        {
-                            declarations[declaration.Name] = declaration.Value.Value;
-                        }
-                    }
-
-                    break;
 
                 case CssMediaRule mediaRule when MediaQueryEvaluator.Matches(mediaRule.Media, Style.Environment):
                     CollectDeclarations(mediaRule.ChildRules, declarations);

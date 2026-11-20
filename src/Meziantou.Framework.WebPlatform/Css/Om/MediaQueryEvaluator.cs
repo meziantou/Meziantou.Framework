@@ -115,6 +115,12 @@ internal sealed record MediaEnvironment
 
     /// <summary>The rectangle of the virtual keyboard that overlays the content (https://w3c.github.io/virtual-keyboard/#keyboard-inset-variables), or null.</summary>
     public Dom.VirtualKeyboardRect? KeyboardInsets { get; init; }
+
+    /// <summary>
+    /// The link parameters passed to the document of an SVG image (https://drafts.csswg.org/css-link-params-1/#using): its custom
+    /// environment variables (<c>env(--name)</c>, <c>env(color)</c>, <c>env(accent-color)</c>), or null.
+    /// </summary>
+    public CssLinkParameterValues? LinkParameters { get; init; }
 }
 
 /// <summary>

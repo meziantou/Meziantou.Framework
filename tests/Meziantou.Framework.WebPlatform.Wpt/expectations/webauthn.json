@@ -116,7 +116,6 @@
   "webauthn/getcredential-extensions.https.html": {
     "total": 10,
     "failures": {
-      "Payment extension is only supported at registration": "FAIL",
       "credProps is only supported at registration": "FAIL"
     }
   },

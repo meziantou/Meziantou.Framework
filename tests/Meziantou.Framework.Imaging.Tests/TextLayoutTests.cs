@@ -958,6 +958,23 @@ public sealed class TextLayoutTests
         }
     }
 
+    [Theory]
+    [InlineData(TextLineBreakStrategy.Greedy)]
+    [InlineData(TextLineBreakStrategy.Optimal)]
+    public void AControlCharacterAfterAZeroWidthJoinerEndsTheEmojiSequence(TextLineBreakStrategy strategy)
+    {
+        // The emoji are drawn with the missing glyph, 8 pixels, and the joiner and the control character take no room. The
+        // control character ends the sequence: a line can end before the second emoji, which is not measured with the
+        // first one.
+        const string Text = "AA\U0001F600‍\0\U0001F600";
+        var layout = TextLayout.Create(Text, Style, new TextLayoutOptions { MaxWidth = 40, LineBreakStrategy = strategy });
+
+        Assert.Equal(2, layout.LineCount);
+        Assert.Equal(6, layout.Lines[0].Length);
+        Assert.Equal(40, layout.Lines[0].Width);
+        Assert.Equal(8, layout.Lines[1].Width);
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void OptimalLineBreakingHandlesMixedFontsBidiTextAndRuby()

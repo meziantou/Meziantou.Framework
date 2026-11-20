@@ -7,7 +7,7 @@ using Meziantou.Framework.JavaScriptEngine.Text;
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>A Source Text Module Record (https://tc39.es/ecma262/#sec-source-text-module-records): a module parsed from JavaScript source text.</summary>
-public sealed class JsSourceTextModule : JsModule
+public sealed class JsSourceTextModule : JsCyclicModule
 {
     private JsSourceTextModule(JsRealm realm, SourceText source, object? hostDefined, CompiledModule code)
         : base(realm, source.Url, hostDefined)
@@ -20,12 +20,6 @@ public sealed class JsSourceTextModule : JsModule
 
     internal CompiledModule Code { get; }
 
-    /// <summary>[[RequestedModules]]</summary>
-    internal List<ModuleRequest> RequestedModules { get; } = [];
-
-    /// <summary>[[LoadedModules]]</summary>
-    internal List<(ModuleRequest Request, JsModule Module)> LoadedModules { get; } = [];
-
     internal List<ImportEntry> ImportEntries { get; } = [];
 
     internal List<ExportEntry> LocalExportEntries { get; } = [];
@@ -34,13 +28,6 @@ public sealed class JsSourceTextModule : JsModule
 
     internal List<ExportEntry> StarExportEntries { get; } = [];
 
-    /// <summary>
-    /// [[OptionalIndirectExportEntries]] (https://tc39.es/proposal-deferred-reexports/): the entries of the <c>export defer</c>
-    /// declarations, and of the <c>export * from</c> declarations that may re-export the <c>export defer</c> bindings of
-    /// other modules, in source order.
-    /// </summary>
-    internal List<ExportEntry> OptionalIndirectExportEntries { get; } = [];
-
     /// <summary>The filtered namespace objects of the <c>export { a } as ns from</c> declarations (the <c>*ns*</c> bindings), created on first use.</summary>
     private Dictionary<ExportEntry, JsObject>? _filteredNamespaceExports;
 
@@ -48,28 +35,7 @@ public sealed class JsSourceTextModule : JsModule
     internal bool NamespaceExportsValidated { get; set; }
 
     /// <summary>[[HasTLA]]</summary>
-    internal bool HasTopLevelAwait => Code.HasTopLevelAwait;
-
-    internal int DfsIndex { get; set; } = -1;
-
-    internal int DfsAncestorIndex { get; set; } = -1;
-
-    /// <summary>[[CycleRoot]]</summary>
-    internal JsSourceTextModule? CycleRoot { get; set; }
-
-    /// <summary>[[AsyncEvaluationOrder]]: 0 when unset, -1 when done, the order of the asynchronous evaluation otherwise.</summary>
-    internal long AsyncEvaluationOrder { get; set; }
-
-    internal bool IsAsyncEvaluation => AsyncEvaluationOrder > 0;
-
-    /// <summary>[[TopLevelCapability]]</summary>
-    internal PromiseCapability? TopLevelCapability { get; set; }
-
-    /// <summary>[[AsyncParentModules]]</summary>
-    internal List<JsSourceTextModule> AsyncParentModules { get; } = [];
-
-    /// <summary>[[PendingAsyncDependencies]]</summary>
-    internal int PendingAsyncDependencies { get; set; }
+    internal override bool HasTopLevelAwait => Code.HasTopLevelAwait;
 
     /// <summary>The import.meta object ([[ImportMeta]]), created on first use.</summary>
     internal JsObject? ImportMeta { get; set; }
@@ -318,18 +284,6 @@ public sealed class JsSourceTextModule : JsModule
         }
     }
 
-    /// <summary>GetImportedModule(referrer, request)</summary>
-    internal JsModule GetImportedModule(ModuleRequest request)
-    {
-        foreach (var (loadedRequest, module) in LoadedModules)
-        {
-            if (loadedRequest.Equals(request))
-                return module;
-        }
-
-        throw new InvalidOperationException("The module '" + request.Specifier + "' is not loaded");
-    }
-
     internal override List<string> GetExportedNames(List<JsModule> exportStarSet)
     {
         if (exportStarSet.Contains(this))
@@ -470,7 +424,7 @@ public sealed class JsSourceTextModule : JsModule
     /// provide <paramref name="importedNames"/> (null for all of them), and of the <c>export * from</c> declarations that
     /// may re-export them from other modules.
     /// </summary>
-    internal List<ModuleRequest> GetOptionalIndirectExportsModuleRequests(List<string>? importedNames)
+    internal override List<ModuleRequest> GetOptionalIndirectExportsModuleRequests(List<string>? importedNames)
     {
         var requests = new List<ModuleRequest>();
         if (OptionalIndirectExportEntries.Count == 0)

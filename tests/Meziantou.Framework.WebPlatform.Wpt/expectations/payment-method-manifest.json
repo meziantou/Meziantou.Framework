@@ -1,0 +1,35 @@
+{
+  "payment-method-manifest/fetch-options.https.window.js": {
+    "total": 4
+  },
+  "payment-method-manifest/link-header-parsing.https.window.js": {
+    "total": 5
+  },
+  "payment-method-manifest/link-header-selection.https.window.js": {
+    "total": 5
+  },
+  "payment-method-manifest/link-header-target-url.https.window.js": {
+    "total": 2
+  },
+  "payment-method-manifest/pmi-http-status.https.window.js": {
+    "total": 3
+  },
+  "payment-method-manifest/pmi-redirects.https.window.js": {
+    "total": 4
+  },
+  "payment-method-manifest/pmm-default-applications.https.window.js": {
+    "total": 10
+  },
+  "payment-method-manifest/pmm-http-status.https.window.js": {
+    "total": 2
+  },
+  "payment-method-manifest/pmm-redirect-disallowed.https.window.js": {
+    "total": 1
+  },
+  "payment-method-manifest/pmm-supported-origins.https.window.js": {
+    "total": 13
+  },
+  "payment-method-manifest/wam-redirect-disallowed.https.window.js": {
+    "total": 1
+  }
+}

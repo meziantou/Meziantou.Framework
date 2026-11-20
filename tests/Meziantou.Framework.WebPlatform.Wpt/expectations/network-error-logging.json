@@ -1,0 +1,38 @@
+{
+  "network-error-logging/no-report-on-failed-cors-preflight.https.html": {
+    "total": 1
+  },
+  "network-error-logging/no-report-on-subdomain-404.https.html": {
+    "total": 1
+  },
+  "network-error-logging/no-report-on-subdomain-success.https.html": {
+    "total": 1
+  },
+  "network-error-logging/no-report-on-unexpired-cached-response.https.html": {
+    "total": 1
+  },
+  "network-error-logging/reports-are-not-observable.https.html": {
+    "total": 1
+  },
+  "network-error-logging/sends-report-on-404.https.html": {
+    "total": 1
+  },
+  "network-error-logging/sends-report-on-cache-validation.https.html": {
+    "total": 1
+  },
+  "network-error-logging/sends-report-on-redirect.https.html": {
+    "total": 1
+  },
+  "network-error-logging/sends-report-on-subdomain-dns-failure.https.html": {
+    "total": 1
+  },
+  "network-error-logging/sends-report-on-success-v1.https.html": {
+    "total": 1
+  },
+  "network-error-logging/sends-report-on-success-with-subdomain-policy.https.html": {
+    "total": 1
+  },
+  "network-error-logging/sends-report-on-success.https.html": {
+    "total": 1
+  }
+}

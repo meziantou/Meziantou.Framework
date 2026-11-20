@@ -9,64 +9,58 @@ description: "The results of the web-platform-tests of xml, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 12 | 12 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
-| [Reftests](#reftests) | 0 | 3 | 3 | – |
-| [Crash tests](#crash-tests) | 0 | 13 | 13 | – |
-| **All** | **0** | **30** | **30** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 30
+| [Stable](#stable-tests) | 12 | 12 | 0 | 100% |
+| [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
+| [Reftests](#reftests) | 3 | 3 | 0 | 100% |
+| [Crash tests](#crash-tests) | 13 | 13 | 0 | 100% |
+| **All** | **30** | **30** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`attlist-defaults.html`](https://wpt.fyi/results/xml/attlist-defaults.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`eol-normalization.html`](https://wpt.fyi/results/xml/eol-normalization.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`onreadystatechange-crash-on-stop.xhtml`](https://wpt.fyi/results/xml/onreadystatechange-crash-on-stop.xhtml) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`retain_redundant_xmlns.html`](https://wpt.fyi/results/xml/retain_redundant_xmlns.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`retain_undeclared_xmlns.html`](https://wpt.fyi/results/xml/retain_undeclared_xmlns.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xml-bom.html`](https://wpt.fyi/results/xml/xml-bom.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xml-innerHTML-unpaired-surrogate.html`](https://wpt.fyi/results/xml/xml-innerHTML-unpaired-surrogate.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xml-prolog-accepted-versions.html`](https://wpt.fyi/results/xml/xml-prolog-accepted-versions.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/document-element.window.js`](https://wpt.fyi/results/xml/xslt/document-element.window.js) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/document-function.window.js`](https://wpt.fyi/results/xml/xslt/document-function.window.js) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/fetch/xslt.https.sub.html`](https://wpt.fyi/results/xml/xslt/fetch/xslt.https.sub.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/transformToDocument-xml-scripting-support-disabled.html`](https://wpt.fyi/results/xml/xslt/transformToDocument-xml-scripting-support-disabled.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
+| [`attlist-defaults.html`](https://wpt.fyi/results/xml/attlist-defaults.html) | Pass | 27 / 27 |  |  |
+| [`eol-normalization.html`](https://wpt.fyi/results/xml/eol-normalization.html) | Pass | 3 / 3 |  |  |
+| [`onreadystatechange-crash-on-stop.xhtml`](https://wpt.fyi/results/xml/onreadystatechange-crash-on-stop.xhtml) | Pass | 1 / 1 |  |  |
+| [`retain_redundant_xmlns.html`](https://wpt.fyi/results/xml/retain_redundant_xmlns.html) | Pass | 3 / 3 |  |  |
+| [`retain_undeclared_xmlns.html`](https://wpt.fyi/results/xml/retain_undeclared_xmlns.html) | Pass | 4 / 4 |  |  |
+| [`xml-bom.html`](https://wpt.fyi/results/xml/xml-bom.html) | Pass | 5 / 5 |  |  |
+| [`xml-innerHTML-unpaired-surrogate.html`](https://wpt.fyi/results/xml/xml-innerHTML-unpaired-surrogate.html) | Pass | 2 / 2 |  |  |
+| [`xml-prolog-accepted-versions.html`](https://wpt.fyi/results/xml/xml-prolog-accepted-versions.html) | Pass | 10 / 10 |  |  |
+| [`xslt/document-element.window.js`](https://wpt.fyi/results/xml/xslt/document-element.window.js) | Pass | 1 / 1 |  |  |
+| [`xslt/document-function.window.js`](https://wpt.fyi/results/xml/xslt/document-function.window.js) | Pass | 3 / 3 |  |  |
+| [`xslt/fetch/xslt.https.sub.html`](https://wpt.fyi/results/xml/xslt/fetch/xslt.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`xslt/transformToDocument-xml-scripting-support-disabled.html`](https://wpt.fyi/results/xml/xslt/transformToDocument-xml-scripting-support-disabled.html) | Pass | 9 / 9 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`xslt/functions.tentative.window.js`](https://wpt.fyi/results/xml/xslt/functions.tentative.window.js) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/transformToFragment.tentative.window.js`](https://wpt.fyi/results/xml/xslt/transformToFragment.tentative.window.js) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
+| [`xslt/functions.tentative.window.js`](https://wpt.fyi/results/xml/xslt/functions.tentative.window.js) | Pass | 177 / 177 |  |  |
+| [`xslt/transformToFragment.tentative.window.js`](https://wpt.fyi/results/xml/xslt/transformToFragment.tentative.window.js) | Pass | 2 / 2 |  |  |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`xslt/encoding-single-chunk.html`](https://wpt.fyi/results/xml/xslt/encoding-single-chunk.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/large-cdata.html`](https://wpt.fyi/results/xml/xslt/large-cdata.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/sort.html`](https://wpt.fyi/results/xml/xslt/sort.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
+| [`xslt/encoding-single-chunk.html`](https://wpt.fyi/results/xml/xslt/encoding-single-chunk.html) | Pass | 1 / 1 |  |  |
+| [`xslt/large-cdata.html`](https://wpt.fyi/results/xml/xslt/large-cdata.html) | Pass | 1 / 1 |  |  |
+| [`xslt/sort.html`](https://wpt.fyi/results/xml/xslt/sort.html) | Pass | 1 / 1 |  |  |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`xml-doc-innerHTML-crash.html`](https://wpt.fyi/results/xml/xml-doc-innerHTML-crash.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/import-include-no-href-crash.html`](https://wpt.fyi/results/xml/xslt/import-include-no-href-crash.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/invalid-output-encoding-crash.html`](https://wpt.fyi/results/xml/xslt/invalid-output-encoding-crash.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/strip-space-crash.xml`](https://wpt.fyi/results/xml/xslt/strip-space-crash.xml) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/svg/crashtests/xslt-in-img-001.html`](https://wpt.fyi/results/xml/xslt/svg/crashtests/xslt-in-img-001.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/svg/crashtests/xslt-in-img-002.html`](https://wpt.fyi/results/xml/xslt/svg/crashtests/xslt-in-img-002.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/transformToFragment-on-node-from-inactive-document-crash.html`](https://wpt.fyi/results/xml/xslt/transformToFragment-on-node-from-inactive-document-crash.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/xslt-attribute-double-free-crash.html`](https://wpt.fyi/results/xml/xslt/xslt-attribute-double-free-crash.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/xslt-mutation-crash.xhtml`](https://wpt.fyi/results/xml/xslt/xslt-mutation-crash.xhtml) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/xslt-number-pattern-cache-reentrancy-crash.html`](https://wpt.fyi/results/xml/xslt/xslt-number-pattern-cache-reentrancy-crash.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/xslt-reparent-custom-element-crash.xml`](https://wpt.fyi/results/xml/xslt/xslt-reparent-custom-element-crash.xml) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/xslt-reparent-root-crash.xml`](https://wpt.fyi/results/xml/xslt/xslt-reparent-root-crash.xml) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
-| [`xslt/xslt-type-confusion-crash.html`](https://wpt.fyi/results/xml/xslt/xslt-type-confusion-crash.html) | Disabled | – | NOT IMPLEMENTED | XSLT and the rendering of the XML parser errors in documents loaded in iframes |
+| [`xml-doc-innerHTML-crash.html`](https://wpt.fyi/results/xml/xml-doc-innerHTML-crash.html) | Pass | 1 / 1 |  |  |
+| [`xslt/import-include-no-href-crash.html`](https://wpt.fyi/results/xml/xslt/import-include-no-href-crash.html) | Pass | 1 / 1 |  |  |
+| [`xslt/invalid-output-encoding-crash.html`](https://wpt.fyi/results/xml/xslt/invalid-output-encoding-crash.html) | Pass | 1 / 1 |  |  |
+| [`xslt/strip-space-crash.xml`](https://wpt.fyi/results/xml/xslt/strip-space-crash.xml) | Pass | 1 / 1 |  |  |
+| [`xslt/svg/crashtests/xslt-in-img-001.html`](https://wpt.fyi/results/xml/xslt/svg/crashtests/xslt-in-img-001.html) | Pass | 1 / 1 |  |  |
+| [`xslt/svg/crashtests/xslt-in-img-002.html`](https://wpt.fyi/results/xml/xslt/svg/crashtests/xslt-in-img-002.html) | Pass | 1 / 1 |  |  |
+| [`xslt/transformToFragment-on-node-from-inactive-document-crash.html`](https://wpt.fyi/results/xml/xslt/transformToFragment-on-node-from-inactive-document-crash.html) | Pass | 1 / 1 |  |  |
+| [`xslt/xslt-attribute-double-free-crash.html`](https://wpt.fyi/results/xml/xslt/xslt-attribute-double-free-crash.html) | Pass | 1 / 1 |  |  |
+| [`xslt/xslt-mutation-crash.xhtml`](https://wpt.fyi/results/xml/xslt/xslt-mutation-crash.xhtml) | Pass | 1 / 1 |  |  |
+| [`xslt/xslt-number-pattern-cache-reentrancy-crash.html`](https://wpt.fyi/results/xml/xslt/xslt-number-pattern-cache-reentrancy-crash.html) | Pass | 1 / 1 |  |  |
+| [`xslt/xslt-reparent-custom-element-crash.xml`](https://wpt.fyi/results/xml/xslt/xslt-reparent-custom-element-crash.xml) | Pass | 1 / 1 |  |  |
+| [`xslt/xslt-reparent-root-crash.xml`](https://wpt.fyi/results/xml/xslt/xslt-reparent-root-crash.xml) | Pass | 1 / 1 |  |  |
+| [`xslt/xslt-type-confusion-crash.html`](https://wpt.fyi/results/xml/xslt/xslt-type-confusion-crash.html) | Pass | 1 / 1 |  |  |

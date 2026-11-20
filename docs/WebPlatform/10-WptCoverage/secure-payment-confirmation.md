@@ -9,39 +9,39 @@ description: "The results of the web-platform-tests of secure-payment-confirmati
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 20 | 20 | – |
+| [Stable](#stable-tests) | 15 | 20 | 0 | 75% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **20** | **20** | **–** |
+| **All** | **15** | **20** | **0** | **75%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 20
+- **TEST BUG**: 5
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`authentication-accepted-bbk-created.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-created.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-accepted-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-per-passkey.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-accepted-bbk-reused.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-reused.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-accepted.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-auth-another-way.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-auth-another-way.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-cannot-bypass-spc.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cannot-bypass-spc.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-cross-origin.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cross-origin.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-icon-data-url.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-icon-data-url.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-in-iframe.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-invalid-icon.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-icon.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-invalid-payment-entity-logo.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-payment-entity-logo.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-optout.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-optout.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-rejected.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-rejected.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`authentication-requires-user-activation.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-requires-user-activation.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`constructor-validate-payment-method-data.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor-validate-payment-method-data.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`constructor.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk-per-passkey.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment-bbk.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-in-iframe.sub.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
-| [`enrollment.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment.https.html) | Disabled | – | NOT IMPLEMENTED | Secure Payment Confirmation |
+| [`authentication-accepted-bbk-created.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-created.https.html) | Pass | 3 / 3 |  |  |
+| [`authentication-accepted-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-per-passkey.https.html) | Pass | 1 / 1 |  |  |
+| [`authentication-accepted-bbk-reused.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted-bbk-reused.https.html) | Pass | 3 / 3 |  |  |
+| [`authentication-accepted.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-accepted.https.html) | Pass | 2 / 2 |  |  |
+| [`authentication-auth-another-way.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-auth-another-way.https.html) | Pass | 2 / 2 |  |  |
+| [`authentication-cannot-bypass-spc.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cannot-bypass-spc.https.html) | Fail | 0 / 1 | TEST BUG | the test gives `total: PAYMENT_DETAILS['total']`, a `PaymentItem` (`{ label, amount }`), to the `payment` extension, whose `total` is a `PaymentCurrencyAmount` (https://w3c.github.io/secure-payment-confirmation/#dictdef-authenticationextensionspaymentinputs): the conversion of the options throws a `TypeError` (the required member `currency` is missing) before the extension rejects the authentication with the expected `NotAllowedError` |
+| [`authentication-cross-origin.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-cross-origin.sub.https.html) | Pass | 1 / 1 |  |  |
+| [`authentication-icon-data-url.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-icon-data-url.https.html) | Pass | 1 / 1 |  |  |
+| [`authentication-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-in-iframe.sub.https.html) | Pass | 2 / 2 |  |  |
+| [`authentication-invalid-icon.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-icon.https.html) | Pass | 2 / 2 |  |  |
+| [`authentication-invalid-payment-entity-logo.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-invalid-payment-entity-logo.https.html) | Pass | 1 / 1 |  |  |
+| [`authentication-optout.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-optout.https.html) | Pass | 1 / 1 |  |  |
+| [`authentication-rejected.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-rejected.https.html) | Pass | 2 / 2 |  |  |
+| [`authentication-requires-user-activation.https.html`](https://wpt.fyi/results/secure-payment-confirmation/authentication-requires-user-activation.https.html) | Pass | 1 / 1 |  |  |
+| [`constructor-validate-payment-method-data.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor-validate-payment-method-data.https.html) | Fail | 20 / 22 | TEST BUG | "Large credentialIds value" and "Large challenge value" expect a `TypeError` for 1 MiB buffers: the steps to validate payment method data (https://w3c.github.io/secure-payment-confirmation/#sctn-steps-to-validate-payment-method-data) have no size limit (Chromium limits the JSON serialization of the data of a payment method to 1 MiB) |
+| [`constructor.https.html`](https://wpt.fyi/results/secure-payment-confirmation/constructor.https.html) | Pass | 10 / 10 |  |  |
+| [`enrollment-bbk-per-passkey.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk-per-passkey.https.html) | Pass | 1 / 1 |  |  |
+| [`enrollment-bbk.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-bbk.https.html) | Error | 3 / 3 | TEST BUG | the subtests do not return (nor await) the promise of `testBrowserBoundKeyOnPasskeyEnrollment()`: they pass at once, the three registrations run concurrently, and the second and third ones are rejected with a `NotAllowedError` (a request for a public key credential is already pending, as in Chromium) that nothing handles, so the harness reports an error |
+| [`enrollment-in-iframe.sub.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment-in-iframe.sub.https.html) | Fail | 2 / 3 | TEST BUG | "SPC enrollment in cross-origin iframe without payment permission": a cross-origin iframe without `allow="payment"` may use neither `publickey-credentials-create` nor `payment` (the alternative create permissions policy of `public-key`, https://w3c.github.io/secure-payment-confirmation/#sctn-permissions-policy), so `create()` rejects with a `NotAllowedError` (https://w3c.github.io/webappsec-credential-management/#algorithm-create, step 9.3: "If document is not allowed to use permission, return a promise rejected with a NotAllowedError"); the test expects the `NotSupportedError` of Chromium |
+| [`enrollment.https.html`](https://wpt.fyi/results/secure-payment-confirmation/enrollment.https.html) | Fail | 5 / 9 | TEST BUG | the registration processing of the `payment` extension throws a `TypeError` when `authenticatorAttachment` is not `platform`, `residentKey` is not `required` or `preferred`, or `userVerification` is not `required` (https://w3c.github.io/secure-payment-confirmation/#client-extension-processing-registration: "then throw a TypeError"); the test expects a `NotSupportedError` |

@@ -1,0 +1,36 @@
+{
+  "merchant-validation/complete-method.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "If event's isTrusted attribute is false, then then throw an InvalidStateError DOMException.": "FAIL"
+    }
+  },
+  "merchant-validation/constructor.tentative.http.html": {
+    "total": 1
+  },
+  "merchant-validation/constructor.tentative.https.html": {
+    "total": 11,
+    "failures": {
+      "MerchantValidationEvent can be constructed in secure-context.": "FAIL",
+      "MerchantValidationEvent can be constructed with an EventInitDict, even if not trusted.": "FAIL",
+      "MerchantValidationEvent can be constructed with valid PMIs": "FAIL",
+      "MerchantValidationEvent can be dispatched, even if not trusted.": "FAIL",
+      "MerchantValidationEvent can't be constructed with invalid PMIs": "FAIL",
+      "Must have a methodName IDL attribute, which is initialized with to the methodName dictionary value.": "FAIL",
+      "Must have a validationURL IDL attribute, which is initialized with to the validationURL dictionary value.": "FAIL",
+      "Must throw TypeError if initialized with an invalid URL.": "FAIL",
+      "Relative validationURLs use the document as the base.": "FAIL",
+      "Relative validationURLs use the document.baseURI as the base.": "FAIL",
+      "When no methodName is passed, methodName attribute defaults to the empty string": "FAIL"
+    }
+  },
+  "merchant-validation/onmerchantvalidation-attribute.https.html": {
+    "total": 4,
+    "failures": {
+      "Must have a onmerchantvalidation IDL attribute": "FAIL",
+      "onmerchantvalidation attribute and listeners both work": "FAIL",
+      "onmerchantvalidation attribute is a generic handler for \"merchantvalidation\"": "FAIL",
+      "onmerchantvalidation attribute is a handler for MerchantValidationEvent": "FAIL"
+    }
+  }
+}

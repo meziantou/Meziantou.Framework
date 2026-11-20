@@ -1,9 +1,11 @@
 using System.Text.RegularExpressions;
 using Meziantou.AspNetCore.Testing.TestApp;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Wasmtime;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using static Meziantou.AspNetCore.Testing.Expectations;
 
 namespace Meziantou.AspNetCore.Testing.Tests;
@@ -259,6 +261,52 @@ public sealed class WebAppBrowserTests
 
         var exception = Assert.Throws<InvalidOperationException>(browser.NewPage);
         Assert.Contains("cannot replace the DocumentLoader or the ScriptEngine", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TimeProviderIsTheClockOfTheDates()
+    {
+        #region WebAppBrowser_TimeProvider
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero));
+        clock.SetLocalTimeZone(TimeZoneInfo.CreateCustomTimeZone("Test", TimeSpan.FromHours(2), "Test", "Test"));
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { TimeProvider = clock });
+
+        // The page writes new Date().toISOString() and new Date().getTimezoneOffset()
+        var page = await browser.OpenAsync("/clock");
+
+        Assert.Equal("2026-01-10T12:00:00.000Z -120", page.Find("output").TextContent);
+        #endregion
+        Assert.Empty(page.ScriptErrors);
+    }
+
+    [Fact]
+    public async Task WebAssemblyRuntimeRunsTheModulesOfThePages()
+    {
+        #region WebAppBrowser_WebAssemblyRuntime
+        // The runtime of the Meziantou.Framework.WebPlatform.Wasmtime package: the pages share it
+        using var runtime = new WasmtimeRuntime();
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { WebAssemblyRuntime = runtime });
+
+        // The page instantiates a WebAssembly module and calls its add function
+        var page = await browser.OpenAsync("/wasm");
+
+        await Expect(page.Locator("output")).ToHaveTextAsync("2 + 3 = 5");
+        #endregion
+        Assert.Same(runtime, page.BrowsingContext.Options.WebAssemblyRuntime);
+        Assert.Empty(page.ScriptErrors);
+    }
+
+    [Fact]
+    public async Task WebAssemblyIsNotDefinedWithoutRuntime()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/wasm");
+
+        Assert.Equal("WebAssembly is not defined", page.Find("output").TextContent);
+        Assert.Null(page.BrowsingContext.Options.WebAssemblyRuntime);
     }
 
     [Fact]

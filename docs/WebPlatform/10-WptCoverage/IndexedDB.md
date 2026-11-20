@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of IndexedDB, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 228 | 229 | 0 | 99.5% |
+| [Stable](#stable-tests) | 229 | 229 | 0 | 100% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **228** | **230** | **0** | **99%** |
+| **All** | **229** | **230** | **0** | **99.5%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -222,7 +222,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`request_bubble-and-capture.any.js`](https://wpt.fyi/results/IndexedDB/request_bubble-and-capture.any.js) | Pass | 3 / 3 |  |  |
 | [`serialize-sharedarraybuffer-throws.https.html`](https://wpt.fyi/results/IndexedDB/serialize-sharedarraybuffer-throws.https.html) | Pass | 1 / 1 |  |  |
 | [`sharedarraybuffer-key.https.html`](https://wpt.fyi/results/IndexedDB/sharedarraybuffer-key.https.html) | Pass | 3 / 3 |  |  |
-| [`storage-buckets.https.any.js`](https://wpt.fyi/results/IndexedDB/storage-buckets.https.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`) |
+| [`storage-buckets.https.any.js`](https://wpt.fyi/results/IndexedDB/storage-buckets.https.any.js) | Pass | 6 / 6 |  |  |
 | [`string-list-ordering.any.js`](https://wpt.fyi/results/IndexedDB/string-list-ordering.any.js) | Pass | 3 / 3 |  |  |
 | [`structured-clone-transaction-state.any.js`](https://wpt.fyi/results/IndexedDB/structured-clone-transaction-state.any.js) | Pass | 6 / 6 |  |  |
 | [`structured-clone.any.js`](https://wpt.fyi/results/IndexedDB/structured-clone.any.js) | Pass | 249 / 249 |  |  |

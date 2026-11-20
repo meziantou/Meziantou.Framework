@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.AspNetCore.Testing.Components;
 
@@ -47,7 +48,19 @@ public sealed class ComponentTestHostOptions
     /// </summary>
     public bool EnableJavaScript { get; init; }
 
-    /// <summary>Gets the clock of the timers of the page (<c>setTimeout()</c>, the CSS animations...). The default is the system clock.</summary>
+    /// <summary>
+    /// Gets the runtime that compiles and runs the WebAssembly modules of the scripts of the page (with
+    /// <see cref="EnableJavaScript"/>), or null: the <c>WebAssembly</c> namespace is then not defined. The
+    /// <c>Meziantou.Framework.WebPlatform.Wasmtime</c> package provides a runtime (<c>WasmtimeRuntime</c>). The host does
+    /// not dispose it.
+    /// </summary>
+    public WebAssemblyRuntime? WebAssemblyRuntime { get; init; }
+
+    /// <summary>
+    /// Gets the clock of the page: the clock of the timers (<c>setTimeout()</c>, the CSS animations...) and, with
+    /// <see cref="EnableJavaScript"/>, of the dates of the scripts (<c>Date.now()</c>, <c>new Date()</c>), including their
+    /// local time zone (<see cref="TimeProvider.LocalTimeZone"/>). The default is the system clock.
+    /// </summary>
     public TimeProvider? TimeProvider { get; init; }
 
     /// <summary>Gets the maximum time to wait for the components and the page to be idle. The default is 10 seconds.</summary>

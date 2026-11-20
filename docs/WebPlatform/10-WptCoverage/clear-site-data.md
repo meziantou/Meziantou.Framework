@@ -37,7 +37,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`set-cookie-after-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-after-clear-cookies.https.html) | Pass | 1 / 1 |  |  |
 | [`set-cookie-before-clear-all.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-all.https.html) | Pass | 1 / 1 |  |  |
 | [`set-cookie-before-clear-cookies.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-before-clear-cookies.https.html) | Pass | 1 / 1 |  |  |
-| [`storage.https.html`](https://wpt.fyi/results/clear-site-data/storage.https.html) | Pass | 8 / 8 |  |  |
+| [`storage.https.html`](https://wpt.fyi/results/clear-site-data/storage.https.html) | Pass | 9 / 9 |  |  |
 
 ## Tentative tests
 

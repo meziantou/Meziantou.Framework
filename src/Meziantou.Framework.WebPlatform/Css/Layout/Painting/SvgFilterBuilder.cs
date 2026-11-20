@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Rendering;
 using Meziantou.Framework.WebPlatform.Svg;
@@ -314,7 +315,9 @@ internal static class SvgFilterBuilder
             var (destination, rootPreserveAspectRatio) = Painter.GetSvgImageDestination(preserveAspectRatio, svgImage, fitRegion);
             builder.Save();
             builder.Add(new ClipRectItem(subregion));
-            new PaintedImage.SvgPaintedImage(svgImage, 1, colorScheme: null, rootPreserveAspectRatio).Draw(builder, destination, element);
+            // The feImage element passes its link parameters to the image, like an image element
+            var linkParameters = SvgUserSpace.GetStyle(element) is { } style ? CssLinkParameters.Resolve(style, image.Url, urlModifiers: null, document) : null;
+            new PaintedImage.SvgPaintedImage(svgImage, 1, colorScheme: null, rootPreserveAspectRatio, linkParameters).Draw(builder, destination, element);
             builder.Restore();
         }
         else

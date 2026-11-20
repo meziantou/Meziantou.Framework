@@ -3164,10 +3164,12 @@ internal sealed partial class StyleEngine
     /// <summary>
     /// The rules of the user agent of the documents of the SVG images (<see cref="Layout.SvgImage"/>): the root svg element fills
     /// the viewport of the image, the concrete object size (https://drafts.csswg.org/css-images-3/#concrete-size-resolution), whatever
-    /// its width and height.
+    /// its width and height. The color and accent-color link parameters set the color and the accent color of the root
+    /// (https://drafts.csswg.org/css-link-params-1/#ua-stylesheet).
     /// </summary>
     private const string SvgImageUserAgentStyleSheet = """
         svg:root { width: 100% !important; height: 100% !important; }
+        :root { color: env(color, CanvasText); accent-color: env(accent-color, AccentColorText); }
         """;
 
     /// <summary>

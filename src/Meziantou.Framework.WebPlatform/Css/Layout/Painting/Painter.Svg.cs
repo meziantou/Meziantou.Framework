@@ -800,7 +800,8 @@ internal sealed partial class Painter
             if (SvgImage.Get(image, _document) is { } svgImage)
             {
                 var (destination, rootPreserveAspectRatio) = GetSvgImageDestination(element.GetAnimatedAttributeValue("preserveAspectRatio"), svgImage, viewport);
-                new PaintedImage.SvgPaintedImage(svgImage, 1, CssValueComputer.GetUsedColorScheme(style), rootPreserveAspectRatio).Draw(_builder, destination, source);
+                var linkParameters = CssLinkParameters.Resolve(style, image.Url, urlModifiers: null, _document);
+                new PaintedImage.SvgPaintedImage(svgImage, 1, CssValueComputer.GetUsedColorScheme(style), rootPreserveAspectRatio, linkParameters).Draw(_builder, destination, source);
             }
         }
         else if (image.Width > 0 && image.Height > 0)

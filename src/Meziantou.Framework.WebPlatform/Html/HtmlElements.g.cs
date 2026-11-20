@@ -3835,15 +3835,6 @@ public abstract partial class HtmlMediaElement : HtmlElement
         set => Reflection.SetNullableString(this, "crossorigin", value);
     }
 
-    /// <summary>Gets or sets the value of the <c>preload</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
-    /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-preload"/>
-    [IdlMember("preload", "https://html.spec.whatwg.org/multipage/media.html#dom-media-preload")]
-    public string Preload
-    {
-        get => Reflection.GetEnumerated(this, "preload", EnumeratedAttributes.Preload);
-        set => Reflection.SetString(this, "preload", value);
-    }
-
     /// <summary>Gets or sets a value indicating whether the element has the <c>autoplay</c> content attribute.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/media.html#dom-media-autoplay"/>
     [IdlMember("autoplay", "https://html.spec.whatwg.org/multipage/media.html#dom-media-autoplay")]

@@ -102,32 +102,16 @@
     "total": 27
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js#serviceworker": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-buckets.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "cache.open promise is rejected when bucket is gone": "FAIL",
-      "caches from different buckets have different contents": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/cache-storage/cache-storage-keys.https.any.js": {
     "total": 1
@@ -412,10 +396,7 @@
     "total": 6
   },
   "service-workers/service-worker/fetch-audio-tainting.https.html": {
-    "total": 1,
-    "failures": {
-      "Verify CORS XHR of fetch() in a Service Worker": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/fetch-canvas-tainting-double-write.https.html": {
     "total": 1
@@ -1142,9 +1123,6 @@
     "total": 6
   },
   "service-workers/service-worker/xsl-base-url.https.html": {
-    "total": 1,
-    "failures": {
-      "base URL when service worker does respondWith(fetch(responseUrl))": "FAIL"
-    }
+    "total": 1
   }
 }

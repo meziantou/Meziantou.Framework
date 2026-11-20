@@ -94,7 +94,7 @@ public static class MarkdownMediaHost
         return null;
     }
 
-    private sealed class MediaHost(string host, Func<Uri, string?> handler, bool allowFullScreen, string? iframeClass) : IMarkdownMediaHost
+    internal sealed class MediaHost(string host, Func<Uri, string?> handler, bool allowFullScreen, string? iframeClass) : IMarkdownMediaHost
     {
         public string? Class => iframeClass;
 
@@ -104,7 +104,13 @@ public static class MarkdownMediaHost
         {
             ArgumentNullException.ThrowIfNull(mediaUri);
 
-            iframeUrl = IsHostOrSubdomain(mediaUri.Host) ? handler(mediaUri) : null;
+            return TryHandle(mediaUri, mediaUri.Host, out iframeUrl);
+        }
+
+        // The host of the URI is given: Uri.Host makes a string at each call, which the renderer reads once for every host
+        internal bool TryHandle(Uri mediaUri, string mediaHost, [NotNullWhen(true)] out string? iframeUrl)
+        {
+            iframeUrl = IsHostOrSubdomain(mediaHost) ? handler(mediaUri) : null;
             return !string.IsNullOrEmpty(iframeUrl);
         }
 

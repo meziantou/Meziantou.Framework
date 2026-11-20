@@ -1,0 +1,56 @@
+{
+  "screen-capture/capture-controller-event-target.https.window.js": {
+    "total": 3
+  },
+  "screen-capture/delegate-request.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "Display-capture request from a subframe succeeds with delegation when the top frame has user activation": "FAIL"
+    }
+  },
+  "screen-capture/getallscreensmedia-exposure.tentative.https.window.js": {
+    "total": 2
+  },
+  "screen-capture/getdisplaymedia-after-discard.https.html": {
+    "total": 1
+  },
+  "screen-capture/getdisplaymedia-capture-controller.https.window.js": {
+    "total": 51
+  },
+  "screen-capture/getdisplaymedia-framerate.https.html": {
+    "total": 1
+  },
+  "screen-capture/getdisplaymedia-restrictOwnAudio.https.html": {
+    "total": 3
+  },
+  "screen-capture/getdisplaymedia-settings.https.html": {
+    "total": 2
+  },
+  "screen-capture/getdisplaymedia.https.html": {
+    "total": 78
+  },
+  "screen-capture/historical.https.html": {
+    "total": 1
+  },
+  "screen-capture/idlharness.https.window.js": {
+    "total": 23
+  },
+  "screen-capture/permissions-policy-audio+video.https.sub.html": {
+    "total": 5
+  },
+  "screen-capture/permissions-policy-audio.https.sub.html": {
+    "total": 5
+  },
+  "screen-capture/permissions-policy-video.https.sub.html": {
+    "total": 5
+  },
+  "screen-capture/tentative/getdisplaymedia-captured-surface-resolution.https.html": {
+    "total": 6,
+    "failures": {
+      "applyConstraints() should not change the capabilities resolution and screenPixelRatio of captured surface type monitor": "FAIL",
+      "applyConstraints() should not change the capabilities resolution and screenPixelRatio of captured surface type window": "FAIL",
+      "getDisplayMedia() and screenPixelRatio for captured surface type monitor": "FAIL",
+      "getDisplayMedia() and screenPixelRatio for captured surface type window": "FAIL"
+    }
+  }
+}

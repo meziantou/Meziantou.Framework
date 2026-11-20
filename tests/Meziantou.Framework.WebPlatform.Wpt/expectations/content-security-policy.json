@@ -3008,24 +3008,12 @@
     "total": 1
   },
   "content-security-policy/xslt/document-function-blocked.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "XSL document() function is blocked by CSP": "TIMEOUT"
-    }
+    "total": 1
   },
   "content-security-policy/xslt/xslt-strict-dynamic-blocked.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "XSLT stylesheet is blocked by 'strict-dynamic'": "TIMEOUT"
-    }
+    "total": 1
   },
   "content-security-policy/xslt/xsltprocessor-include-blocked.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "xsltprocessor-include-blocked": "TIMEOUT"
-    }
+    "total": 1
   }
 }

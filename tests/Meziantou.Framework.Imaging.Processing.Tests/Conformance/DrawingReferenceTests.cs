@@ -1218,6 +1218,39 @@ public sealed class DrawingReferenceTests
         }
     }
 
+    [Fact]
+    public void ThePiecesKeptApartLeaveNoCrackOnTheSidesTheyShare()
+    {
+        // A dash across a corner (fuzz regression): the end of the body before the vertex, which the bevel shares, passes
+        // through the centers of pixels, the vertex included; the pieces kept apart are crossed at the same points there
+        const int Size = 41;
+        var path = new VectorPathBuilder().MoveTo(20.5, 4.5).LineTo(20.5, 12.5).LineTo(28.5, 28.5).LineTo(36.5, 12.5).Build();
+        var pen = new Pen(new SolidBrush(new Rgba32(20, 40, 160, 200)), 24) { LineJoin = LineJoin.Bevel, DashPattern = [2, 2] };
+        using var merged = new Image<Rgba32>(Size, Size);
+        using var apart = new Image<Rgba32>(Size, Size);
+        merged.Draw(canvas => canvas.Antialiasing(enabled: false, aliased => aliased.Stroke(pen, path)), Ct);
+        Stroker.KeepsPiecesApartOnCurrentThread = true;
+        try
+        {
+            apart.Draw(canvas => canvas.Antialiasing(enabled: false, aliased => aliased.Stroke(pen, path)), Ct);
+        }
+        finally
+        {
+            Stroker.KeepsPiecesApartOnCurrentThread = false;
+        }
+
+        foreach (var (x, y) in (ReadOnlySpan<(int X, int Y)>)[(26, 29), (28, 28), (30, 27)])
+        {
+            Assert.Equal(200, merged.Frames[0][x, y].A);
+        }
+
+        var mergedBytes = new byte[Size * Size * 4];
+        var apartBytes = new byte[Size * Size * 4];
+        merged.Frames[0].CopyPixelBytesTo(mergedBytes);
+        apart.Frames[0].CopyPixelBytesTo(apartBytes);
+        Assert.Equal(mergedBytes, apartBytes);
+    }
+
     /// <summary>Runs the stroker of the library on a path and returns the directed edges of the pieces it fills.</summary>
     private static List<(double X0, double Y0, double X1, double Y1)> GetStrokeEdges(VectorPath path, Pen pen, int width, int height, bool keepPiecesApart = false)
     {

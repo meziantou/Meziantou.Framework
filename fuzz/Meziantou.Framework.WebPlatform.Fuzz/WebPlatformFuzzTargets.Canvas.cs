@@ -45,7 +45,15 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>The tokens of the target: the pairs of operations that open and close a scope.</summary>
     private static readonly string[] CanvasTokens = ["\u0002\u0004", "\u0000\u0001", "\u0003\u0000", "\u0002\u0000\u0004", "\u0000\u0002\u0001", "\u0002\u0007\u0004", "\u0002\u0008"];
 
-    private static readonly Lazy<CanvasRenderingContext2D> FuzzCanvasContext = new(CreateFuzzCanvasContext);
+    /// <summary>
+    /// The context of the canvas targets, one per thread: <c>Meziantou.Framework.Fuzzing.Tests</c> replays the targets in
+    /// parallel, and a context used by two targets at once mixes their drawing states (a <c>reset()</c> of one target
+    /// replaces the state another target is reading).
+    /// </summary>
+    [ThreadStatic]
+    private static CanvasRenderingContext2D? s_fuzzCanvasContext;
+
+    private static CanvasRenderingContext2D FuzzCanvasContext => s_fuzzCanvasContext ??= CreateFuzzCanvasContext();
 
     private static CanvasRenderingContext2D CreateFuzzCanvasContext()
     {
@@ -61,7 +69,7 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>Runs the operations of the input on a 2D context, and checks the stack of its drawing states against a model.</summary>
     public static void CanvasState(ReadOnlySpan<byte> data)
     {
-        var context = FuzzCanvasContext.Value;
+        var context = FuzzCanvasContext;
         context.Reset();
 
         // The model of the stack: true for a state saved by BeginLayer(), false for one saved by Save()

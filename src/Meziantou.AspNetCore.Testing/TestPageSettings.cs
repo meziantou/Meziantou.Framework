@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.AspNetCore.Testing;
 
@@ -19,7 +20,18 @@ public sealed class TestPageSettings
     /// <summary>Gets the engine that runs the scripts of the page, or null to run no script. The page disposes it.</summary>
     public ScriptEngine? ScriptEngine { get; init; }
 
-    /// <summary>Gets the clock of the timers of the page (<c>setTimeout()</c>, the animations...), or null for the system clock.</summary>
+    /// <summary>
+    /// Gets the runtime that compiles and runs the WebAssembly modules of the scripts of the page, or null: the
+    /// <c>WebAssembly</c> namespace is then not defined (see <see cref="BrowsingContextOptions.WebAssemblyRuntime"/>). The
+    /// <c>Meziantou.Framework.WebPlatform.Wasmtime</c> package provides a runtime. The page does not dispose it.
+    /// </summary>
+    public WebAssemblyRuntime? WebAssemblyRuntime { get; init; }
+
+    /// <summary>
+    /// Gets the clock of the timers of the page (<c>setTimeout()</c>, the animations...), or null for the system clock. The
+    /// clock of the dates of the scripts (<c>Date</c>) is the one of <see cref="ScriptEngine"/>: give the same clock to
+    /// the engine (for instance <c>JavaScriptScriptEngineOptions.TimeProvider</c>) for the page to have one clock.
+    /// </summary>
     public TimeProvider? TimeProvider { get; init; }
 
     /// <summary>Gets the maximum time the waits of the page wait for. The default is 10 seconds.</summary>

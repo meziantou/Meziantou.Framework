@@ -824,222 +824,94 @@
     "total": 62
   },
   "wasm/jsapi/esm-integration/exports.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "Exported names from a WebAssembly module": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/exports.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Exported names from a WebAssembly module": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/global-exports-live-bindings.tentative.any.js": {
-    "total": 2,
-    "failures": {
-      "Dep module mutable global exports should be live bindings": "FAIL",
-      "Local mutable global exports should be live bindings": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/esm-integration/global-exports-live-bindings.tentative.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Dep module mutable global exports should be live bindings": "FAIL",
-      "Local mutable global exports should be live bindings": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/esm-integration/global-exports.tentative.any.js": {
-    "total": 5,
-    "failures": {
-      "WebAssembly local global values should be unwrapped when exporting in ESM integration": "FAIL",
-      "WebAssembly module global values should be unwrapped when importing in ESM integration": "FAIL",
-      "WebAssembly module globals from imported WebAssembly modules should be unwrapped": "FAIL",
-      "WebAssembly mutable global values should be unwrapped when importing in ESM integration": "FAIL",
-      "WebAssembly should properly handle all global types": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/esm-integration/global-exports.tentative.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "WebAssembly local global values should be unwrapped when exporting in ESM integration": "FAIL",
-      "WebAssembly module global values should be unwrapped when importing in ESM integration": "FAIL",
-      "WebAssembly module globals from imported WebAssembly modules should be unwrapped": "FAIL",
-      "WebAssembly mutable global values should be unwrapped when importing in ESM integration": "FAIL",
-      "WebAssembly should properly handle all global types": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/esm-integration/js-wasm-cycle.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "Check bindings in JavaScript and WebAssembly cycle (JS higher)": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/js-wasm-cycle.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Check bindings in JavaScript and WebAssembly cycle (JS higher)": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/mutable-global-sharing.tentative.any.js": {
-    "total": 5,
-    "failures": {
-      "Multiple JavaScript imports return the same WebAssembly module instance": "FAIL",
-      "Wasm-to-Wasm mutable global sharing is live": "FAIL",
-      "WebAssembly modules should export shared mutable globals with correct initial values": "FAIL",
-      "v128 global mutations should work correctly between WebAssembly modules": "FAIL",
-      "v128 globals should work correctly in WebAssembly-to-WebAssembly imports": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/esm-integration/mutable-global-sharing.tentative.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "Multiple JavaScript imports return the same WebAssembly module instance": "FAIL",
-      "Wasm-to-Wasm mutable global sharing is live": "FAIL",
-      "WebAssembly modules should export shared mutable globals with correct initial values": "FAIL",
-      "v128 global mutations should work correctly between WebAssembly modules": "FAIL",
-      "v128 globals should work correctly in WebAssembly-to-WebAssembly imports": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/esm-integration/namespace-instance.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "WebAssembly.namespaceInstance() should return the underlying instance with shared state": "FAIL",
-      "WebAssembly.namespaceInstance() should work correctly with multiple modules": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/esm-integration/namespace-instance.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "WebAssembly.namespaceInstance() should return the underlying instance with shared state": "FAIL",
-      "WebAssembly.namespaceInstance() should work correctly with multiple modules": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/esm-integration/reserved-import-names.tentative.any.js": {
-    "total": 5,
-    "failures": {
-      "wasm-js: reserved export names should cause WebAssembly.LinkError": "FAIL",
-      "wasm-js: reserved import names should cause WebAssembly.LinkError": "FAIL",
-      "wasm-js: reserved module names should cause WebAssembly.LinkError": "FAIL",
-      "wasm: reserved export names should cause WebAssembly.LinkError": "FAIL",
-      "wasm: reserved import names should cause WebAssembly.LinkError": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/esm-integration/reserved-import-names.tentative.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "wasm-js: reserved export names should cause WebAssembly.LinkError": "FAIL",
-      "wasm-js: reserved import names should cause WebAssembly.LinkError": "FAIL",
-      "wasm-js: reserved module names should cause WebAssembly.LinkError": "FAIL",
-      "wasm: reserved export names should cause WebAssembly.LinkError": "FAIL",
-      "wasm: reserved import names should cause WebAssembly.LinkError": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/esm-integration/resolve-export.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "ResolveExport on invalid re-export from WebAssembly": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/resolve-export.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "ResolveExport on invalid re-export from WebAssembly": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/source-phase-string-builtins.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Source phase import should handle string builtin import reflection correctly": "FAIL",
-      "Source phase import should properly expose string builtin exports": "FAIL",
-      "String builtins should be supported in source phase imports": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/esm-integration/source-phase-string-builtins.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Source phase import should handle string builtin import reflection correctly": "FAIL",
-      "Source phase import should properly expose string builtin exports": "FAIL",
-      "String builtins should be supported in source phase imports": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/esm-integration/source-phase-string-constants.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Source phase import should handle string constants import reflection correctly": "FAIL",
-      "Source phase import should properly expose string constants exports": "FAIL",
-      "String constants from wasm:js/string-constants should be supported in source phase imports": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/esm-integration/source-phase-string-constants.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Source phase import should handle string constants import reflection correctly": "FAIL",
-      "Source phase import should properly expose string constants exports": "FAIL",
-      "String constants from wasm:js/string-constants should be supported in source phase imports": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/esm-integration/source-phase.tentative.any.js": {
-    "total": 2,
-    "failures": {
-      "Source phase identities": "FAIL",
-      "Source phase imports": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/esm-integration/source-phase.tentative.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Source phase identities": "FAIL",
-      "Source phase imports": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/esm-integration/string-builtins.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "String builtins should be supported in imports in ESM integration": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/string-builtins.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "String builtins should be supported in imports in ESM integration": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/string-constants.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "String constants from wasm:js/string-constants should be supported in ESM integration": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/string-constants.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "String constants from wasm:js/string-constants should be supported in ESM integration": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/v128-tdz.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "v128 global exports should cause TDZ errors": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/v128-tdz.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "v128 global exports should cause TDZ errors": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "Check import and export between WebAssembly modules": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Check import and export between WebAssembly modules": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/exception/basic.tentative.any.js": {
     "total": 5,
@@ -1100,76 +972,28 @@
     "total": 2
   },
   "wasm/jsapi/function/call.tentative.any.js": {
-    "total": 2,
-    "failures": {
-      "test calling function": "FAIL",
-      "test constructing function": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/function/call.tentative.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "test calling function": "FAIL",
-      "test constructing function": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/function/constructor.tentative.any.js": {
-    "total": 11,
-    "failures": {
-      "Calling": "FAIL",
-      "Too few arguments": "FAIL",
-      "construct with JS function": "FAIL",
-      "fail to construct with non-callable object": "FAIL",
-      "fail with missing parameters": "FAIL",
-      "fail with missing results": "FAIL",
-      "fail with non-existent parameter and result type": "FAIL",
-      "fail with non-function object": "FAIL",
-      "fail with non-string parameters & results": "FAIL",
-      "length": "FAIL",
-      "name": "FAIL"
-    }
+    "total": 11
   },
   "wasm/jsapi/function/constructor.tentative.any.js#dedicatedworker": {
-    "total": 11,
-    "failures": {
-      "Calling": "FAIL",
-      "Too few arguments": "FAIL",
-      "construct with JS function": "FAIL",
-      "fail to construct with non-callable object": "FAIL",
-      "fail with missing parameters": "FAIL",
-      "fail with missing results": "FAIL",
-      "fail with non-existent parameter and result type": "FAIL",
-      "fail with non-function object": "FAIL",
-      "fail with non-string parameters & results": "FAIL",
-      "length": "FAIL",
-      "name": "FAIL"
-    }
+    "total": 11
   },
   "wasm/jsapi/function/table.tentative.any.js": {
-    "total": 1,
-    "failures": {
-      "Test insertion into table": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/function/table.tentative.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Test insertion into table": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/function/type.tentative.any.js": {
-    "total": 2,
-    "failures": {
-      "Check all types": "FAIL",
-      "Check empty results and parameters": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/function/type.tentative.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Check all types": "FAIL",
-      "Check empty results and parameters": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/functions/entry-different-function-realm.html": {
     "total": 1
@@ -1211,40 +1035,10 @@
     "total": 2
   },
   "wasm/jsapi/global/type.tentative.any.js": {
-    "total": 13,
-    "failures": {
-      "externref, immutable": "FAIL",
-      "externref, mutable": "FAIL",
-      "f32, immutable": "FAIL",
-      "f32, mutable": "FAIL",
-      "f64, immutable": "FAIL",
-      "f64, mutable": "FAIL",
-      "funcref, immutable": "FAIL",
-      "funcref, mutable": "FAIL",
-      "i32, immutable": "FAIL",
-      "i32, mutable": "FAIL",
-      "i64, immutable": "FAIL",
-      "i64, mutable": "FAIL",
-      "key ordering": "FAIL"
-    }
+    "total": 13
   },
   "wasm/jsapi/global/type.tentative.any.js#dedicatedworker": {
-    "total": 13,
-    "failures": {
-      "externref, immutable": "FAIL",
-      "externref, mutable": "FAIL",
-      "f32, immutable": "FAIL",
-      "f32, mutable": "FAIL",
-      "f64, immutable": "FAIL",
-      "f64, mutable": "FAIL",
-      "funcref, immutable": "FAIL",
-      "funcref, mutable": "FAIL",
-      "i32, immutable": "FAIL",
-      "i32, mutable": "FAIL",
-      "i64, immutable": "FAIL",
-      "i64, mutable": "FAIL",
-      "key ordering": "FAIL"
-    }
+    "total": 13
   },
   "wasm/jsapi/global/value-get-set.any.js": {
     "total": 68
@@ -1409,20 +1203,10 @@
     "total": 3
   },
   "wasm/jsapi/memory/constructor-types.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor-types.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor.any.js": {
     "total": 24
@@ -1467,26 +1251,10 @@
     "total": 2
   },
   "wasm/jsapi/memory/type.tentative.any.js": {
-    "total": 6,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "None-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL",
-      "non-shared memory": "FAIL",
-      "shared memory": "FAIL"
-    }
+    "total": 6
   },
   "wasm/jsapi/memory/type.tentative.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "None-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL",
-      "non-shared memory": "FAIL",
-      "shared memory": "FAIL"
-    }
+    "total": 6
   },
   "wasm/jsapi/module/constructor.any.js": {
     "total": 10
@@ -1534,20 +1302,10 @@
     "total": 5
   },
   "wasm/jsapi/table/constructor-types.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/table/constructor-types.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Initializing with both initial and minimum": "FAIL",
-      "Non-zero minimum": "FAIL",
-      "Zero minimum": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/table/constructor.any.js": {
     "total": 32
@@ -1580,22 +1338,10 @@
     "total": 2
   },
   "wasm/jsapi/table/type.tentative.any.js": {
-    "total": 4,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "Non-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL"
-    }
+    "total": 4
   },
   "wasm/jsapi/table/type.tentative.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "Non-zero initial, no maximum": "FAIL",
-      "Non-zero maximum": "FAIL",
-      "Zero initial, no maximum": "FAIL",
-      "Zero maximum": "FAIL"
-    }
+    "total": 4
   },
   "wasm/jsapi/tag/constructor.tentative.any.js": {
     "total": 6
@@ -1610,20 +1356,10 @@
     "total": 2
   },
   "wasm/jsapi/tag/type.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "[]": "FAIL",
-      "[i32 i64 f32 f64]": "FAIL",
-      "[i32 i64]": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/tag/type.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "[]": "FAIL",
-      "[i32 i64 f32 f64]": "FAIL",
-      "[i32 i64]": "FAIL"
-    }
+    "total": 3
   },
   "wasm/proposals/wide-arithmetic/core/wide-arithmetic.wast.js.tentative.html": {
     "total": 123
@@ -1749,59 +1485,34 @@
     "total": 8
   },
   "wasm/webapi/esm-integration/execute-start.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Importing a WebAssembly module should execute the start function.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/exported-names.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/invalid-bytecode.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that imports of invalid WebAssembly modules leads to WebAssembly.CompileError on window.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/js-wasm-cycle-errors.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Check cyclic linking between JavaScript and WebAssembly where JavaScript is higher in the module graph.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/js-wasm-cycle.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/module-parse-error.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Test that imports of invalid WebAssembly modules leads to WebAssembly.CompileError on window.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/resolve-export.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Re-export of missing Wasm export should result in SyntaxError.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/reuse-wasm-loaded-as-classic-script.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Reuse Wasm loaded as classic script": "TIMEOUT"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/script-src-allows-source-phase-wasm.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/script-src-allows-wasm.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Importing a WebAssembly module should be allowed by script-src CSP.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/script-src-blocks-wasm.tentative.sub.html": {
     "total": 1
@@ -1813,69 +1524,40 @@
     "total": 1
   },
   "wasm/webapi/esm-integration/source-phase-import-non-UTF8.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/source-phase-js-string.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/source-phase-preload.tentative.html": {
-    "total": 2,
-    "failures": {
-      "Dynamic source phase import.": "FAIL",
-      "Static source phase import.": "FAIL"
-    }
+    "total": 2
   },
   "wasm/webapi/esm-integration/source-phase.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/wasm-import-wasm-export.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/wasm-import.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Invalid imports for WebAssembly modules should error.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/wasm-js-cycle.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "wasm/webapi/esm-integration/wasm-to-wasm-link-error.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Link errors for imports between WebAssembly modules should be reported.": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/worker-import-source-phase.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Testing import of WebAssembly source phase from JavaScript worker": "NOTRUN"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/worker-import.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Testing import of WebAssembly from JavaScript worker": "NOTRUN"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/worker.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Testing WebAssembly worker": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/esm-integration/worklet-import-source-phase.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Import a source phase module to a worklet": "FAIL"
-    }
+    "total": 1
   },
   "wasm/webapi/historical.any.js": {
     "total": 1

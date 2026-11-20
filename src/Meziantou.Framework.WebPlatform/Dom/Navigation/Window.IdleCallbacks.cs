@@ -44,6 +44,17 @@ public partial class Window
             };
         }
 
+        // The callback is attributed to the script of the caller (see TaskAttribution)
+        if (TaskAttribution.Current is { } attribution)
+        {
+            var attributedCallback = callback;
+            callback = deadline =>
+            {
+                using var scope = TaskAttribution.Enter(attribution);
+                attributedCallback(deadline);
+            };
+        }
+
         var handle = ++_idleCallbackIdentifier;
         (_idleRequestCallbacks ??= []).Add((handle, callback));
         EventLoop.OnIdleCallbackRequested(this);

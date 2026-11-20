@@ -124,6 +124,23 @@ public sealed class DpxDecoderTests
     }
 
     [Fact]
+    public void SignalingNaNComponentsLoadAsQuietNaNs()
+    {
+        // The load converts the rows to GrayFloat, the reader of RgbaFloat keeps them: both give the quiet NaN of the same payload
+        var data = new DpxFileBuilder { Width = 2, Height = 1, Descriptor = 6, BitDepth = 32, RawData = new byte[] { 0xFF, 0xBF, 0xFF, 0xFF, 0x7F, 0x80, 0x00, 0x01 } }.Build();
+        using var image = Image.Load<GrayFloat>(data);
+        Assert.Equal(0xFFFF_FFFFu, BitConverter.SingleToUInt32Bits(image.Frames[0][0, 0].Value));
+        Assert.Equal(0x7FC0_0001u, BitConverter.SingleToUInt32Bits(image.Frames[0][1, 0].Value));
+
+        using var stream = new MemoryStream(data);
+        using var reader = Image.OpenReader<RgbaFloat>(stream);
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.Equal(0xFFFF_FFFFu, BitConverter.SingleToUInt32Bits(frame.Frames[0][0, 0].R));
+        Assert.Equal(0x7FC0_0001u, BitConverter.SingleToUInt32Bits(frame.Frames[0][1, 0].B));
+    }
+
+    [Fact]
     public void YCbCrComponentsAreConvertedToRgb()
     {
         // BT.601 nominal range: Y 16 is black, Y 235 white, Cr 240 (with Y 81 and Cb 90) is red

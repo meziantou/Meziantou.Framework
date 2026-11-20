@@ -3,8 +3,10 @@ using Meziantou.AspNetCore.Testing.Components.JSInterop;
 using Meziantou.AspNetCore.Testing.Tests.TestComponents;
 using Meziantou.Framework.SnapshotTesting;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Wasmtime;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using static Meziantou.AspNetCore.Testing.Expectations;
 
 namespace Meziantou.AspNetCore.Testing.Tests;
@@ -54,6 +56,41 @@ public sealed class ComponentTestHostTests
             ConfigureBrowsingContext = options => options with { ScriptEngine = null },
         }));
         Assert.Contains("cannot replace the DocumentLoader or the ScriptEngine", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TimeProvider_IsTheClockOfTheDates()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero));
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            EnableJavaScript = true,
+            TimeProvider = clock,
+            HostPage = "<!DOCTYPE html><html><head><script>document.title = new Date().toISOString();</script></head><body></body></html>",
+        });
+
+        Assert.Equal("2026-01-10T12:00:00.000Z", host.Document.Title);
+    }
+
+    [Fact]
+    public async Task WebAssemblyRuntime_RunsTheModulesOfThePage()
+    {
+        using var runtime = new WasmtimeRuntime();
+        await using var host = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            EnableJavaScript = true,
+            WebAssemblyRuntime = runtime,
+            HostPage = "<!DOCTYPE html><html><head><script>document.title = typeof WebAssembly.instantiate + ' ' + WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]));</script></head><body></body></html>",
+        });
+        await using var otherHost = new ComponentTestHost(new ComponentTestHostOptions
+        {
+            EnableJavaScript = true,
+            HostPage = "<!DOCTYPE html><html><head><script>document.title = typeof WebAssembly;</script></head><body></body></html>",
+        });
+
+        Assert.Equal("function true", host.Document.Title);
+        Assert.Same(runtime, host.BrowsingContext.Options.WebAssemblyRuntime);
+        Assert.Equal("undefined", otherHost.Document.Title);
     }
 
     [Fact]

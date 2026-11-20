@@ -1,0 +1,19 @@
+{
+  "payment-method-basic-card/apply_the_modifiers.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  },
+  "payment-method-basic-card/historical.https.html": {
+    "total": 1
+  },
+  "payment-method-basic-card/payment-request-canmakepayment-method.https.html": {
+    "total": 3,
+    "failures": {
+      "Must return true when basic-card is amongst unsupported PMIs.": "FAIL"
+    }
+  },
+  "payment-method-basic-card/steps_for_selecting_the_payment_handler.html": {
+    "harness": "TIMEOUT",
+    "total": 0
+  }
+}

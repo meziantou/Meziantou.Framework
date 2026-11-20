@@ -180,6 +180,12 @@ public sealed class JsDebugFrame
                 value = cell.Module.Environment is { } moduleEnvironment ? moduleEnvironment.Slots[cell.Slot] : JsValue.Hole;
             }
 
+            // A live binding of a host-defined module (e.g. a mutable WebAssembly global)
+            if (value.Cell is LiveBindingCell live)
+            {
+                value = live.Getter();
+            }
+
             result.Add(CreateVariable(name, value));
         }
 

@@ -28,12 +28,6 @@ internal enum CssRuleContext
     /// the descriptors and the conditional group rules.
     /// </summary>
     Function,
-
-    /// <summary>
-    /// The body of a @mixin rule, or of a conditional group rule in it (https://drafts.csswg.org/css-mixins-1/#mixin-body):
-    /// the local variables, the @result rules and the conditional group rules.
-    /// </summary>
-    Mixin,
 }
 
 /// <summary>Creates the CSSOM rules from the rules of the CSS Syntax parser (https://drafts.csswg.org/cssom/#parse-a-css-rule).</summary>
@@ -106,13 +100,16 @@ internal sealed partial class CssRuleParser
         init => _inScopeRule = value;
     }
 
-    /// <summary>Whether the rules being parsed are in a @result rule of a mixin: @contents is valid, @layer is not.</summary>
-    private bool _inMixinResult;
+    /// <summary>
+    /// Whether the rules being parsed are in the body of a mixin (https://drafts.csswg.org/css-mixins-1/#mixin-body): @contents
+    /// is valid, @layer is not.
+    /// </summary>
+    private bool _inMixinBody;
 
-    /// <summary>Whether the parsed rules are in a @result rule of a mixin.</summary>
-    public bool InMixinResult
+    /// <summary>Whether the parsed rules are in the body of a mixin.</summary>
+    public bool InMixinBody
     {
-        init => _inMixinResult = value;
+        init => _inMixinBody = value;
     }
 
     private SelectorNamespaceContext Namespaces => _namespaceContext ??= _defaultNamespace is null && _namespacePrefixes.Count == 0
@@ -242,17 +239,6 @@ internal sealed partial class CssRuleParser
                 rule = new CssNestedDeclarations(declarations);
             }
         }
-        else if (rule is null && node is not CssAtRule && context == CssRuleContext.Mixin)
-        {
-            // The local variables of a mixin body are wrapped in nested declarations (https://drafts.csswg.org/css-mixins-1/#cssmixinrule)
-            var declarations = new List<CssDeclarationEntry>();
-            CssStyleDeclaration.ParseDeclarationBlock(text, declarations, atRule: null, _quirks);
-            declarations.RemoveAll(d => d.Important);
-            if (declarations.Count > 0)
-            {
-                rule = new CssNestedDeclarations(declarations);
-            }
-        }
         else if (rule is null && node is not CssAtRule && context == CssRuleContext.Function)
         {
             // The declarations of a @function rule (https://drafts.csswg.org/css-mixins-1/#cssfunctiondeclarations)
@@ -340,7 +326,7 @@ internal sealed partial class CssRuleParser
 
     private CssRule? ConvertRule(CssSyntaxNode node, CssRuleContext context) => node switch
     {
-        CssQualifiedRule qualified => context is CssRuleContext.Page or CssRuleContext.Function or CssRuleContext.Mixin ? null : ParseStyleRule(qualified, nested: context == CssRuleContext.Nested),
+        CssQualifiedRule qualified => context is CssRuleContext.Page or CssRuleContext.Function ? null : ParseStyleRule(qualified, nested: context == CssRuleContext.Nested),
         CssAtRule atRule => ParseAtRule(atRule, context),
         _ => null,
     };
@@ -473,46 +459,14 @@ internal sealed partial class CssRuleParser
     }
 
     /// <summary>
-    /// Parses the body of a @mixin rule, or of a conditional group rule in it: the runs of consecutive declarations (the local
-    /// variables) are CSSNestedDeclarations rules (https://drafts.csswg.org/css-mixins-1/#cssmixinrule). The important
-    /// declarations are invalid.
+    /// Parses the body of a @mixin rule (https://drafts.csswg.org/css-mixins-1/#mixin-body): it is parsed as the block of a
+    /// nested declarations rule, where @contents is valid and @layer is not. The declarations are CSSNestedDeclarations rules.
     /// </summary>
-    private void ParseMixinBlock(List<CssComponentValue> block, CssGroupingRule parent)
+    private void ParseMixinBody(List<CssComponentValue> block, CssGroupingRule parent)
     {
-        List<CssDeclarationEntry>? declarations = null;
-        foreach (var node in CssParser.ConsumeBlockContents(new CssComponentValueStream(block)))
-        {
-            if (node is CssDeclaration declaration)
-            {
-                if (declaration.Important)
-                    continue;
-
-                if (declarations is null)
-                {
-                    declarations = [];
-                    parent.AddChildRule(new CssNestedDeclarations(declarations));
-                }
-
-                CssStyleDeclaration.AppendDeclaration(declaration, _source, declarations, atRule: null, _quirks);
-                continue;
-            }
-
-            if (ConvertRule(node, CssRuleContext.Mixin) is { } child)
-            {
-                declarations = null;
-                parent.AddChildRule(child);
-            }
-        }
-
-        parent.ChildRules.RemoveAll(r => r is CssNestedDeclarations { Style.Length: 0 });
-    }
-
-    /// <summary>Parses the contents of a block in the context of a @result rule of a mixin (where @contents is valid and @layer is not).</summary>
-    private void ParseMixinResultBlock(List<CssComponentValue> block, CssGroupingRule parent)
-    {
-        var inMixinResult = _inMixinResult;
+        var inMixinBody = _inMixinBody;
         var inScopeRule = _inScopeRule;
-        _inMixinResult = true;
+        _inMixinBody = true;
         _inScopeRule = false;
         try
         {
@@ -520,29 +474,31 @@ internal sealed partial class CssRuleParser
         }
         finally
         {
-            _inMixinResult = inMixinResult;
+            _inMixinBody = inMixinBody;
             _inScopeRule = inScopeRule;
         }
     }
 
     /// <summary>
-    /// Parses rules nested in a style rule, from their serialization: the rules of a @result rule (or of the contents block of
-    /// an @apply rule) are parsed again for each application of the mixin, as their nesting selectors refer to the rule they
-    /// are applied in.
+    /// Parses rules nested in a style rule, from their serialization: the rules of a mixin body (or of the contents block of an
+    /// @apply rule) are parsed again for each application of the mixin, as their nesting selectors refer to the rule they are
+    /// applied in.
     /// </summary>
-    public List<CssRule> ParseNestedRules(string text, bool inMixinResult)
+    public List<CssRule> ParseNestedRules(string text, bool inMixinBody)
     {
         var values = CssParser.ParseListOfComponentValues(text, out _source);
-        var container = new CssMixinResultRule();
-        var previous = _inMixinResult;
-        _inMixinResult = inMixinResult;
+
+        // The rules are parsed in a rule that is not in a style sheet, as the body of a mixin
+        var container = new CssMixinRule("--", []);
+        var previous = _inMixinBody;
+        _inMixinBody = inMixinBody;
         try
         {
             ParseNestedBlock(values, container, declarations: null);
         }
         finally
         {
-            _inMixinResult = previous;
+            _inMixinBody = previous;
         }
 
         var rules = new List<CssRule>(container.ChildRules);
@@ -566,12 +522,6 @@ internal sealed partial class CssRuleParser
         if (context == CssRuleContext.Function)
         {
             ParseFunctionBlock(block.Value, parent);
-            return;
-        }
-
-        if (context == CssRuleContext.Mixin)
-        {
-            ParseMixinBlock(block.Value, parent);
             return;
         }
 
@@ -611,13 +561,9 @@ internal sealed partial class CssRuleParser
         // The context of the child rules of a conditional group rule
         var childContext = context switch
         {
-            CssRuleContext.Nested or CssRuleContext.Function or CssRuleContext.Mixin => context,
+            CssRuleContext.Nested or CssRuleContext.Function => context,
             _ => CssRuleContext.Grouping,
         };
-
-        // The body of a mixin contains the conditional group rules and the @result rules
-        if (context == CssRuleContext.Mixin && name is not ("media" or "supports" or "container" or "result"))
-            return null;
 
         switch (name)
         {
@@ -660,7 +606,7 @@ internal sealed partial class CssRuleParser
             }
 
             // @layer is invalid in a mixin (https://github.com/w3c/csswg-drafts/issues/12417)
-            case "layer" when context is not (CssRuleContext.Page or CssRuleContext.Function) && !_inMixinResult:
+            case "layer" when context is not (CssRuleContext.Page or CssRuleContext.Function) && !_inMixinBody:
             {
                 var names = ParseLayerNames(rule.Prelude);
                 if (names is null)
@@ -804,15 +750,8 @@ internal sealed partial class CssRuleParser
                 if (mixinRule is null)
                     return null;
 
-                ParseChildRules(rule.Block, mixinRule, CssRuleContext.Mixin);
+                ParseMixinBody(rule.Block.Value, mixinRule);
                 return mixinRule;
-            }
-
-            case "result" when rule.Block is not null && prelude.Count == 0 && context == CssRuleContext.Mixin:
-            {
-                var resultRule = new CssMixinResultRule();
-                ParseMixinResultBlock(rule.Block.Value, resultRule);
-                return resultRule;
             }
 
             // @apply is valid in the body of a style rule or of a nested group rule (https://drafts.csswg.org/css-mixins-1/#apply-rule)
@@ -830,7 +769,7 @@ internal sealed partial class CssRuleParser
             }
 
             // @contents is only valid in a mixin (https://drafts.csswg.org/css-mixins-1/#contents-rule)
-            case "contents" when context == CssRuleContext.Nested && _inMixinResult && prelude.Count == 0:
+            case "contents" when context == CssRuleContext.Nested && _inMixinBody && prelude.Count == 0:
             {
                 if (rule.Block is null)
                     return new CssContentsStatementRule();
@@ -1492,7 +1431,7 @@ internal sealed partial class CssRuleParser
     /// https://drafts.csswg.org/css-mixins-1/#typedef-css-type: &lt;syntax-component&gt; | type( &lt;syntax&gt; ). A syntax
     /// with several components or the universal syntax must be written in type().
     /// </summary>
-    private static CssSyntaxDefinition? ParseCssType(List<CssComponentValue> values)
+    internal static CssSyntaxDefinition? ParseCssType(List<CssComponentValue> values)
     {
         var significant = ValueMatcher.RemoveWhitespace(values);
         if (significant is [CssFunction { Name: var functionName } typeFunction] && InfraAscii.EqualsIgnoreAsciiCase(functionName, "type"))

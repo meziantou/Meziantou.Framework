@@ -595,6 +595,47 @@ public sealed class ImageDecodingTests : IDisposable
         Assert.Equal(Colors.White, cleared.GetPixel(5, 5));
     }
 
+    [Fact]
+    public void CanvasCaptureStream_ResumesWhenTheCanvasIsOriginCleanAgain()
+    {
+        var context = _pages.Load("<canvas width=2 height=2></canvas>");
+        var canvas = (HtmlCanvasElement)context.Document!.QuerySelector("canvas")!;
+        var context2d = Assert.IsType<CanvasRenderingContext2D>(canvas.GetContext("2d"));
+        var track = canvas.CaptureStream().GetVideoTracks()[0];
+        var events = new List<string>();
+        track.AddEventListener("mute", _ => events.Add("mute"));
+        track.AddEventListener("unmute", _ => events.Add("unmute"));
+        var crossOriginImage = new ImageBitmap(new BitmapPixels(2, 2, [.. Enumerable.Repeat((byte)255, 16)], originClean: false));
+
+        // reset() clears the bitmap of a tainted canvas: the track is unmuted and captures the canvas again
+        context2d.DrawImage(crossOriginImage, 0, 0);
+        context.EventLoop.RunUntilIdle();
+        Assert.True(track.Muted);
+        Assert.Null(track.GetVideoFrame());
+        context2d.Reset();
+        context.EventLoop.RunUntilIdle();
+        Assert.False(track.Muted);
+        Assert.NotNull(track.GetVideoFrame());
+
+        // A new size clears the bitmap too
+        context2d.DrawImage(crossOriginImage, 0, 0);
+        context.EventLoop.RunUntilIdle();
+        Assert.True(track.Muted);
+        canvas.Width = 4;
+        context.EventLoop.RunUntilIdle();
+        Assert.False(track.Muted);
+        Assert.Equal(4, track.GetVideoFrame()!.Width);
+
+        // A reset before the task of the mute runs: the task sees a clean canvas, and the track is never muted
+        context2d.DrawImage(crossOriginImage, 0, 0);
+        context2d.Reset();
+        context.EventLoop.RunUntilIdle();
+        Assert.False(track.Muted);
+        Assert.NotNull(track.GetVideoFrame());
+
+        Assert.Equal(["mute", "unmute", "mute", "unmute"], events);
+    }
+
     [Theory]
     [InlineData("png", 0)]
     [InlineData("png-interlaced", 0)]

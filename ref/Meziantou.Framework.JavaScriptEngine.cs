@@ -111,6 +111,10 @@ namespace Meziantou.Framework.JavaScriptEngine
         public void Invoke() { }
     }
 
+    public abstract class JsCyclicModule : Meziantou.Framework.JavaScriptEngine.JsModule
+    {
+    }
+
     public readonly struct JsDebugEvent
     {
         public int CallDepth { get => throw null; }
@@ -334,6 +338,17 @@ namespace Meziantou.Framework.JavaScriptEngine
         public virtual void ReportJobException(Meziantou.Framework.JavaScriptEngine.JsEngine engine, Meziantou.Framework.JavaScriptEngine.JsException exception) { }
     }
 
+    public sealed class JsHostDefinedModule : Meziantou.Framework.JavaScriptEngine.JsCyclicModule
+    {
+        public System.Collections.Generic.IReadOnlyList<string> ExportNames { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> ImportedNames { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> RequestedModuleSpecifiers { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsModuleBinding GetImport(string specifier, string importName) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsModule GetRequestedModule(string specifier) => throw null;
+        public void SetExport(string name, Meziantou.Framework.JavaScriptEngine.JsValue value) { }
+        public void SetExportGetter(string name, System.Func<Meziantou.Framework.JavaScriptEngine.JsValue> getter) { }
+    }
+
     public sealed class JsHostJob
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm? Realm { get => throw null; }
@@ -418,9 +433,19 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsObject? ModuleSource { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsModuleStatus Status { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate() => throw null;
+        public static Meziantou.Framework.JavaScriptEngine.JsModule? FromNamespace(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue GetNamespace() => throw null;
         public void Link() { }
         public Meziantou.Framework.JavaScriptEngine.JsValue LoadRequestedModules(object? hostDefined = null) => throw null;
+    }
+
+    public sealed class JsModuleBinding
+    {
+        public string? BindingName { get => throw null; }
+        public bool IsNamespace { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsModule Module { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue GetValue() => throw null;
+        public bool TryGetValue(out Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
     }
 
     public sealed class JsModuleLoadRequest
@@ -625,6 +650,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, T2, TResult>(string name, System.Func<T1, T2, TResult> function) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, T2, T3, TResult>(string name, System.Func<T1, T2, T3, TResult> function) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateGrowableSharedArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock block, System.Action<Meziantou.Framework.JavaScriptEngine.JsObject, int> grow) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsHostDefinedModule CreateHostDefinedModule(System.Collections.Generic.IEnumerable<string> requestedModules, System.Collections.Generic.IEnumerable<string> exportNames, System.Action<Meziantou.Framework.JavaScriptEngine.JsHostDefinedModule> evaluate, string? url = null, object? hostDefined = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>? importedNames = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateJsonModule(string json, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
@@ -729,7 +755,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public string MapStackTrace(string stackTrace) => throw null;
     }
 
-    public sealed class JsSourceTextModule : Meziantou.Framework.JavaScriptEngine.JsModule
+    public sealed class JsSourceTextModule : Meziantou.Framework.JavaScriptEngine.JsCyclicModule
     {
     }
 

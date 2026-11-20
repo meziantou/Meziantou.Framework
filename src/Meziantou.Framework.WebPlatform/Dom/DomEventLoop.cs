@@ -119,7 +119,8 @@ public sealed partial class DomEventLoop
         }
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the timer runs in the interaction context of the code that queued it
-        callback = InteractionContext.Wrap(callback);
+        // (and is attributed to its script, see TaskAttribution)
+        callback = TaskAttribution.Wrap(InteractionContext.Wrap(callback));
         var due = ObserveClock(TimeProvider.GetTimestamp()) + (long)(delay.TotalSeconds * TimeProvider.TimestampFrequency);
         lock (_timersLock)
         {
@@ -1114,7 +1115,8 @@ public sealed partial class DomEventLoop
             return;
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the microtask runs in the interaction context of the code that queued it
-        callback = InteractionContext.Wrap(callback);
+        // (and is attributed to its script, see TaskAttribution)
+        callback = TaskAttribution.Wrap(InteractionContext.Wrap(callback));
         if (_scriptEngines.Count > 0 && GetScriptEngine() is { } engine)
         {
             engine.QueueMicrotask(callback);
@@ -1137,7 +1139,7 @@ public sealed partial class DomEventLoop
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the task runs in the interaction context of the
         // code that queued it (e.g. an asynchronous operation started by an event listener of an interaction)
-        QueueTask(InteractionContext.Wrap(callback), schedulerTaskSlot: null);
+        QueueTask(TaskAttribution.Wrap(InteractionContext.Wrap(callback)), schedulerTaskSlot: null);
     }
 
     /// <summary>Queues a task, or the slot of a task of a scheduler (see <see cref="SchedulerTaskSlot"/>).</summary>
@@ -1184,6 +1186,29 @@ public sealed partial class DomEventLoop
     public bool HasPendingOperations => Volatile.Read(ref _pendingOperations) > 0;
 
     /// <summary>Registers an asynchronous operation, which must queue a task before calling <see cref="EndOperation"/>.</summary>
+    private int _pendingUserAgentWork;
+
+    /// <summary>
+    /// Gets whether the user agent is doing work that the page waits for, outside of the event loop (e.g. the fetch of a payment
+    /// method manifest before the support of a payment method is checked): a host that runs the event loop with a virtual clock
+    /// should not advance the clock to the next timer meanwhile.
+    /// </summary>
+    internal bool HasPendingUserAgentWork => Volatile.Read(ref _pendingUserAgentWork) > 0;
+
+    /// <summary>Starts a work of the user agent (see <see cref="HasPendingUserAgentWork"/>): it is also an operation (<see cref="BeginOperation"/>).</summary>
+    internal void BeginUserAgentWork()
+    {
+        Interlocked.Increment(ref _pendingUserAgentWork);
+        BeginOperation();
+    }
+
+    /// <summary>Ends a work of the user agent started by <see cref="BeginUserAgentWork"/>, once its continuation is queued.</summary>
+    internal void EndUserAgentWork()
+    {
+        Interlocked.Decrement(ref _pendingUserAgentWork);
+        EndOperation();
+    }
+
     internal void BeginOperation()
     {
         Interlocked.Increment(ref _pendingOperations);
@@ -1362,6 +1387,7 @@ public sealed partial class DomEventLoop
             var continuationState = CurrentContinuationState;
             CurrentContinuationState = null;
             using var interactionContextScope = InteractionContext.Enter(null);
+            using var attributionScope = TaskAttribution.Enter(null);
             EndIdlePeriod();
             try
             {

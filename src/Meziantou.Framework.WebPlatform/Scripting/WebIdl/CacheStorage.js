@@ -391,7 +391,7 @@
     // https://w3c.github.io/ServiceWorker/#cache-storage-match
     match(request, options = undefined) {
       try {
-        thisRecord(this, 'CacheStorage');
+        const record = thisRecord(this, 'CacheStorage');
         if (arguments.length < 1) throw new TypeError_("Failed to execute 'match' on 'CacheStorage': 1 argument required, but only 0 present.");
         const convertedOptions = convertOptions(options, true);
         const requestRecord = fetchSupport.toRequestRecord(request);
@@ -403,7 +403,7 @@
 
         const serialized = fetchSupport.serializeRequest(requestRecord);
         settle(deferred, () => {
-          const response = hooks.storageMatch(serialized, convertedOptions.cacheName, convertedOptions.ignoreSearch, convertedOptions.ignoreMethod, convertedOptions.ignoreVary);
+          const response = hooks.storageMatch(record.partition, serialized, convertedOptions.cacheName, convertedOptions.ignoreSearch, convertedOptions.ignoreMethod, convertedOptions.ignoreVary);
           return () => response === null ? undefined : fetchSupport.createResponseObject(response);
         });
         return deferred.promise;
@@ -414,12 +414,12 @@
 
     has(cacheName) {
       try {
-        thisRecord(this, 'CacheStorage');
+        const record = thisRecord(this, 'CacheStorage');
         if (arguments.length < 1) throw new TypeError_("Failed to execute 'has' on 'CacheStorage': 1 argument required, but only 0 present.");
         const name = `${cacheName}`;
         const deferred = newPromise();
         settle(deferred, () => {
-          const result = hooks.storageHas(name);
+          const result = hooks.storageHas(record.partition, name);
           return () => result;
         });
         return deferred.promise;
@@ -430,12 +430,12 @@
 
     open(cacheName) {
       try {
-        thisRecord(this, 'CacheStorage');
+        const record = thisRecord(this, 'CacheStorage');
         if (arguments.length < 1) throw new TypeError_("Failed to execute 'open' on 'CacheStorage': 1 argument required, but only 0 present.");
         const name = `${cacheName}`;
         const deferred = newPromise();
         settle(deferred, () => {
-          const handle = hooks.storageOpen(name);
+          const handle = hooks.storageOpen(record.partition, name);
           return () => createCache(handle);
         });
         return deferred.promise;
@@ -446,12 +446,12 @@
 
     delete(cacheName) {
       try {
-        thisRecord(this, 'CacheStorage');
+        const record = thisRecord(this, 'CacheStorage');
         if (arguments.length < 1) throw new TypeError_("Failed to execute 'delete' on 'CacheStorage': 1 argument required, but only 0 present.");
         const name = `${cacheName}`;
         const deferred = newPromise();
         settle(deferred, () => {
-          const result = hooks.storageDelete(name);
+          const result = hooks.storageDelete(record.partition, name);
           return () => result;
         });
         return deferred.promise;
@@ -462,10 +462,10 @@
 
     keys() {
       try {
-        thisRecord(this, 'CacheStorage');
+        const record = thisRecord(this, 'CacheStorage');
         const deferred = newPromise();
         settle(deferred, () => {
-          const names = hooks.storageKeys();
+          const names = hooks.storageKeys(record.partition);
           return () => names;
         });
         return deferred.promise;
@@ -477,18 +477,25 @@
 
   defineInterface(CacheStorage, 'CacheStorage', { match: 1, has: 1, open: 1, delete: 1, keys: 0 });
 
-  // The CacheStorage object of the global object
-  constructing = true;
-  let caches;
-  try {
-    caches = new CacheStorage();
-  } finally {
-    constructing = false;
+  // A CacheStorage object: the one of the global object (partition undefined), or the one of another storage key (a
+  // StorageAccessHandle or a StorageBucket), whose partition is an opaque token given back to the hooks
+  function createCacheStorage(partition) {
+    constructing = true;
+    let cacheStorage;
+    try {
+      cacheStorage = new CacheStorage();
+    } finally {
+      constructing = false;
+    }
+
+    const record = ObjectCreate(null);
+    record.kind = 'CacheStorage';
+    record.partition = partition;
+    apply(weakMapSet, records, [cacheStorage, record]);
+    return cacheStorage;
   }
 
-  const cachesRecord = ObjectCreate(null);
-  cachesRecord.kind = 'CacheStorage';
-  apply(weakMapSet, records, [caches, cachesRecord]);
+  const caches = createCacheStorage(undefined);
 
-  return { Cache, CacheStorage, caches };
+  return { Cache, CacheStorage, caches, createCacheStorage };
 });

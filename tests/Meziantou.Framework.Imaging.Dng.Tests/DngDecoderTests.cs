@@ -26,6 +26,29 @@ public sealed class DngDecoderTests
     }
 
     [Fact]
+    public void ADngVersionTagAfterALargerTagIsDetected()
+    {
+        // The entries of IFD 0 are not sorted: the private tag 65000 comes first, before DNGVersion (50706)
+        var builder = Variant(DngScenes.Get("bayer-rggb"));
+        builder.ExtraIfd0Tags.Add(DngTag.UInt32s(65000, 1));
+        var data = builder.Build();
+        var ifd0 = (int)BitConverter.ToUInt32(data, 4);
+        var count = BitConverter.ToUInt16(data, ifd0);
+        var entries = data.AsSpan(ifd0 + 2, count * 12);
+        Assert.Equal((ushort)65000, BitConverter.ToUInt16(entries[^12..]));
+        var last = entries[^12..].ToArray();
+        entries[..^12].CopyTo(entries[12..]);
+        last.CopyTo(entries);
+
+        Assert.Equal(ImageFormat.Dng, Image.DetectFormat(data));
+        Assert.Equal(ImageFormat.Dng, Image.Identify(data).Format);
+        using var raw = DngRawImage.Load(data);
+        using var stream = new MemoryStream(data);
+        using var fromStream = DngRawImage.Load(stream);
+        Assert.Equal(raw.Size, fromStream.Size);
+    }
+
+    [Fact]
     public void AnActiveAreaWithoutASampleOfEveryColorIsRejected()
     {
         // A 1x1 active area of an RGGB pattern holds a red sample only: no window of it holds green or blue

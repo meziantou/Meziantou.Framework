@@ -117,6 +117,37 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task PaymentHandler_PaymentManagerAndEvents()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('message', e => {
+              const results = [];
+              const event = new PaymentRequestEvent('paymentrequest', { topOrigin: 'https://shop.example', total: { currency: 'USD', value: '1.00' } });
+              results.push(event.topOrigin, event.total.value, event.methodData.length, event.paymentOptions);
+              try { event.respondWith(Promise.resolve({})); } catch (error) { results.push(error.name); }
+              try { new CanMakePaymentEvent('canmakepayment').respondWith(Promise.resolve(true)); } catch (error) { results.push(error.name); }
+              results.push(typeof self.oncanmakepayment, typeof self.onpaymentrequest, e.data);
+              e.source.postMessage(results.join('|'));
+            });
+            """);
+        var document = Load("""
+            <script>
+              navigator.serviceWorker.onmessage = e => document.title = e.data;
+              navigator.serviceWorker.register('sw.js').then(async registration => {
+                const manager = registration.paymentManager;
+                manager.userHint = '**** 1234';
+                await manager.enableDelegations(['payerName', 'shippingAddress']);
+                await navigator.serviceWorker.ready;
+                registration.active.postMessage([manager === registration.paymentManager, manager.userHint].join('|'));
+              }, e => document.title = 'error: ' + e);
+            </script>
+            """);
+
+        Assert.Equal("https://shop.example|1.00|0||InvalidStateError|InvalidStateError|object|object|true|**** 1234", await WaitForTitleAsync(document));
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public async Task Register_RejectsAScriptThatIsNotJavaScript()
     {
         AddScript("https://example.com/dir/sw.txt", "", contentType: "text/plain");

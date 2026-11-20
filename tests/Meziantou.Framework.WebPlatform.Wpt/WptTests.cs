@@ -15,6 +15,8 @@ public sealed class WptTests
 
     public static TheoryData<string> DomXPathTests => GetTests("domxpath");
 
+    public static TheoryData<string> XmlTests => GetTests("xml");
+
     public static TheoryData<string> HtmlDomTests => GetTests("html/dom");
 
     public static TheoryData<string> SvgTypesTests => GetTests("svg/types");
@@ -262,6 +264,26 @@ public sealed class WptTests
 
     public static TheoryData<string> WebAuthnTests => GetTests("webauthn");
 
+    public static TheoryData<string> CredentialManagementTests => GetTests("credential-management");
+
+    public static TheoryData<string> PaymentRequestTests => GetTests("payment-request");
+
+    public static TheoryData<string> PaymentMethodBasicCardTests => GetTests("payment-method-basic-card");
+
+    public static TheoryData<string> PaymentMethodIdTests => GetTests("payment-method-id");
+
+    public static TheoryData<string> PaymentMethodManifestTests => GetTests("payment-method-manifest");
+
+    public static TheoryData<string> MerchantValidationTests => GetTests("merchant-validation");
+
+    public static TheoryData<string> SecurePaymentConfirmationTests => GetTests("secure-payment-confirmation");
+
+    public static TheoryData<string> FedCmTests => GetTests("fedcm");
+
+    public static TheoryData<string> DigitalCredentialsTests => GetTests("digital-credentials");
+
+    public static TheoryData<string> WebBasedPaymentHandlerTests => GetTests("web-based-payment-handler");
+
     public static TheoryData<string> SaveDataTests => GetTests("savedata");
 
     public static TheoryData<string> GpcTests => GetTests("gpc");
@@ -343,6 +365,22 @@ public sealed class WptTests
     public static TheoryData<string> DelegatedInkTests => GetTests("delegated-ink");
 
     public static TheoryData<string> MediaCaptureFromElementTests => GetTests("mediacapture-fromelement");
+
+    public static TheoryData<string> MediaCaptureStreamsTests => GetTests("mediacapture-streams");
+
+    public static TheoryData<string> MediaCaptureImageTests => GetTests("mediacapture-image");
+
+    public static TheoryData<string> MediaCaptureInsertableStreamsTests => GetTests("mediacapture-insertable-streams");
+
+    public static TheoryData<string> MediaCaptureExtensionsTests => GetTests("mediacapture-extensions");
+
+    public static TheoryData<string> MediaCaptureHandleTests => GetTests("mediacapture-handle");
+
+    public static TheoryData<string> MediaCaptureRegionTests => GetTests("mediacapture-region");
+
+    public static TheoryData<string> ScreenCaptureTests => GetTests("screen-capture");
+
+    public static TheoryData<string> MstContentHintTests => GetTests("mst-content-hint");
 
     public static TheoryData<string> ShapeDetectionTests => GetTests("shape-detection");
 
@@ -435,6 +473,10 @@ public sealed class WptTests
     public static TheoryData<string> ReportingTests => GetTests("reporting");
 
     public static TheoryData<string> DeprecationReportingTests => GetTests("deprecation-reporting");
+
+    public static TheoryData<string> NetworkErrorLoggingTests => GetTests("network-error-logging");
+
+    public static TheoryData<string> MeasureMemoryTests => GetTests("measure-memory");
 
     public static TheoryData<string> InterventionReportingTests => GetTests("intervention-reporting");
 
@@ -768,6 +810,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DomXPathTests))]
     public void DomXPath(string test) => Run("domxpath", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(XmlTests))]
+    public void Xml(string test) => Run("xml", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(HtmlDomTests))]
@@ -1258,6 +1304,46 @@ public sealed class WptTests
     public void WebAuthn(string test) => Run("webauthn", test);
 
     [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CredentialManagementTests))]
+    public void CredentialManagement(string test) => Run("credential-management", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentRequestTests))]
+    public void PaymentRequest(string test) => Run("payment-request", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentMethodBasicCardTests))]
+    public void PaymentMethodBasicCard(string test) => Run("payment-method-basic-card", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentMethodIdTests))]
+    public void PaymentMethodId(string test) => Run("payment-method-id", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PaymentMethodManifestTests))]
+    public void PaymentMethodManifest(string test) => Run("payment-method-manifest", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MerchantValidationTests))]
+    public void MerchantValidation(string test) => Run("merchant-validation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SecurePaymentConfirmationTests))]
+    public void SecurePaymentConfirmation(string test) => Run("secure-payment-confirmation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(FedCmTests))]
+    public void FedCm(string test) => Run("fedcm", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DigitalCredentialsTests))]
+    public void DigitalCredentials(string test) => Run("digital-credentials", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebBasedPaymentHandlerTests))]
+    public void WebBasedPaymentHandler(string test) => Run("web-based-payment-handler", test);
+
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(SaveDataTests))]
     public void SaveData(string test) => Run("savedata", test);
 
@@ -1420,6 +1506,38 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MediaCaptureFromElementTests))]
     public void MediaCaptureFromElement(string test) => Run("mediacapture-fromelement", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureStreamsTests))]
+    public void MediaCaptureStreams(string test) => Run("mediacapture-streams", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureImageTests))]
+    public void MediaCaptureImage(string test) => Run("mediacapture-image", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureInsertableStreamsTests))]
+    public void MediaCaptureInsertableStreams(string test) => Run("mediacapture-insertable-streams", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureExtensionsTests))]
+    public void MediaCaptureExtensions(string test) => Run("mediacapture-extensions", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureHandleTests))]
+    public void MediaCaptureHandle(string test) => Run("mediacapture-handle", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureRegionTests))]
+    public void MediaCaptureRegion(string test) => Run("mediacapture-region", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ScreenCaptureTests))]
+    public void ScreenCapture(string test) => Run("screen-capture", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MstContentHintTests))]
+    public void MstContentHint(string test) => Run("mst-content-hint", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ShapeDetectionTests))]
@@ -1608,6 +1726,14 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ReportingTests))]
     public void Reporting(string test) => Run("reporting", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(NetworkErrorLoggingTests))]
+    public void NetworkErrorLogging(string test) => Run("network-error-logging", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MeasureMemoryTests))]
+    public void MeasureMemory(string test) => Run("measure-memory", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(DeprecationReportingTests))]

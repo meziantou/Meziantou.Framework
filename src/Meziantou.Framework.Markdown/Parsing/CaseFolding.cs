@@ -12,6 +12,14 @@ internal static partial class CaseFolding
     {
         while (!value.IsEmpty)
         {
+            // The only ASCII characters that fold are the uppercase letters
+            if (char.IsAscii(value[0]))
+            {
+                builder.Append(char.IsAsciiLetterUpper(value[0]) ? (char)(value[0] | 0x20) : value[0]);
+                value = value[1..];
+                continue;
+            }
+
             if (Rune.DecodeFromUtf16(value, out var rune, out var charsConsumed) is OperationStatus.Done)
             {
                 if (CodePointToFolded.TryGetValue(rune.Value, out var folded))

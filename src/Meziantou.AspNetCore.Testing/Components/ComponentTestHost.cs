@@ -57,6 +57,7 @@ public sealed class ComponentTestHost : TestPage
             Viewport = options.Viewport,
             DocumentLoader = options.DocumentLoader ?? TestDocumentLoaders.FromDirectories(new Uri(options.BaseUrl, UriKind.Absolute), options.StaticFiles),
             ScriptEngine = scriptEngine,
+            WebAssemblyRuntime = options.WebAssemblyRuntime,
             TimeProvider = options.TimeProvider,
             DefaultTimeout = options.DefaultTimeout,
             TestIdAttribute = options.TestIdAttribute,
@@ -250,7 +251,7 @@ public sealed class ComponentTestHost : TestPage
     }
 
     private static ComponentScriptEngine? CreateScriptEngine(ComponentTestHostOptions options)
-        => options.EnableJavaScript ? new ComponentScriptEngine(new JavaScriptScriptEngineOptions { Timeout = options.DefaultTimeout }) : null;
+        => options.EnableJavaScript ? new ComponentScriptEngine(new JavaScriptScriptEngineOptions { Timeout = options.DefaultTimeout, TimeProvider = options.TimeProvider }) : null;
 
     private Element GetContainer(RenderOptions? options)
     {

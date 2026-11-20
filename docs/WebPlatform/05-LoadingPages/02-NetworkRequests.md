@@ -188,7 +188,8 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   `ReportingObserver`s of the page receive them, and they are sent to the `default` endpoint of the `Reporting-Endpoints`
   header. The body gives the identifier of the feature (as in Chromium, e.g.
   `XMLHttpRequestSynchronousInNonWorkerOutsideBeforeUnload`, `PreventDefaultPassive`), a message and the location of the
-  script.
+  script. The non-standard members that the browsers deprecate (e.g. `webkitRequestAnimationFrame()`,
+  `window.fullScreen`) are not exposed, so they report nothing.
 - The scripts, the style sheets and the preloads check the hashes of their `integrity` attribute
   ([Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/)): a resource whose body does not match
   is a network error (the element fires `error`, the script does not run, the style sheet does not apply), and so is a
@@ -214,6 +215,12 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   events as the chunks arrive (at most every 50 ms; its `responseText` has every chunk received so far). Return the
   response once its headers are received: the time the loader returns it is the `responseStart` of the resource timing
   entry, and the end of the body its `responseEnd`.
+- The resource timing entries (`performance.getEntriesByType("resource")`) have the experimental `initiatorUrl` of
+  Chromium ([PerformanceResourceTiming.InitiatorUrl](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceResourceTiming.InitiatorUrl), whose .NET
+  property reports the experimental diagnostic `WEBPLATEXP0026`): the style
+  sheet that fetched a resource (its `@import` rules, fonts and images), the module that imports a module, else the script
+  that started the fetch, followed through the timers, the tasks, the callbacks and the asynchronous operations it
+  scheduled (an inline script is the page), else the page or the worker.
 - [ReportInterimResponse](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.ReportInterimResponse) reports an
   interim response (`100 Continue`, `103 Early Hints`...) before the final response: its time is the
   `firstInterimResponseStart` of the resource timing entry, and the `Link` headers of the first `103` response of the
@@ -225,6 +232,32 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 
 The requests are canceled when the navigation is aborted (another navigation, the removal of the `iframe`) and when the
 browsing context is disposed: pass the `CancellationToken` to your I/O.
+
+### Network Error Logging
+
+[Network Error Logging](https://w3c.github.io/network-error-logging/) is disabled by default: the reports describe the
+requests of the user, and are sent to collectors that the sites choose. Enable it with
+[BrowsingContextOptions.NetworkErrorLogging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.NetworkErrorLogging):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/ReportingTests.cs;region=WebPlatform_NetworkErrorLogging;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Network Error Logging is disabled by default: give the browsing contexts a cache of the NEL policies
+var networkErrorLogging = new NetworkErrorLoggingCache();
+var options = new BrowsingContextOptions { NetworkErrorLogging = networkErrorLogging };
+```
+<!-- endref -->
+
+- The `NEL` header of a secure response (`{"report_to": "group", "max_age": 86400}`) sets the policy of its origin, and
+  `max_age: 0` removes it. A `max_age` above 10 years is clamped to 10 years. `report_to` names an endpoint of the `Reporting-Endpoints` header or a group of the legacy
+  `Report-To` header of the same response.
+- Each request sent to the network (the redirects and the `304` revalidations included, not the responses of the HTTP
+  cache) to an origin with a policy generates a `network-error` report, sent to the endpoint of the policy: `ok`,
+  `http.error` (`4xx` and `5xx`), or the type of the failure. The loader reports the failure with the
+  `HttpRequestError` of the `HttpRequestException` it throws (`dns.name_not_resolved`, `tcp.failed`, `tls.failed`...).
+  The `success_fraction` (0 by default) and `failure_fraction` (1 by default) members sample the reports.
+- A policy with `include_subdomains` also applies to the subdomains of its origin, for their DNS failures only (the URL of
+  the report is then the origin of the request).
+- The reports are not visible to the `ReportingObserver`s. The cache can be shared by several browsing contexts.
 
 ## Downloads
 

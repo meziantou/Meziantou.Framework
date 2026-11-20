@@ -4,10 +4,10 @@ namespace Meziantou.Framework.Markdown.Parsing;
 
 internal static class MarkdownParser
 {
-    public static GreenNode Parse(string text, MarkdownParseOptions options, CellContext? cell = null)
+    public static GreenNode Parse(string text, MarkdownParseOptions options, CellContext? cell = null, DocumentDefinitions? definitions = null)
     {
         using var elements = new TreeBuffer(Math.Max(256, text.Length / 8));
-        var triviaSpans = BlockParser.Parse(text, options, elements, cell);
+        var triviaSpans = BlockParser.Parse(text, options, elements, cell, definitions);
         return GreenBuilder.Build(text, elements, triviaSpans, options.SyntaxExtensionSet?.Extensions);
     }
 }

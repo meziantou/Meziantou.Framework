@@ -411,6 +411,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         }
     }
 
+    public object? GetModuleOfNamespace(object value) => value is JsObject obj ? JsModule.FromNamespace(obj) : null;
+
     public bool TryGetBufferSource(object value, out WebIdlBufferKind kind, out bool isShared, out Memory<byte> bytes)
     {
         if (value is JsObject obj && JsBinaryData.TryGetBufferSource(obj, out var engineKind, out isShared, out bytes))

@@ -66,7 +66,7 @@ internal abstract class PaintedImage
         {
             case CssPreservedToken { Type: CssTokenType.Url }:
             case CssFunction url when InfraAscii.EqualsIgnoreAsciiCase(url.Name, "url") || InfraAscii.EqualsIgnoreAsciiCase(url.Name, "src"):
-                return CssUrlModifiers.TryGetUrl(value, out var address, out _) ? ResolveUrl(document, style, address, painter) : null;
+                return CssUrlModifiers.TryGetUrl(value, out var address, out _) ? ResolveUrl(document, style, address, painter, CssUrlModifiers.GetLinkParameters(value)) : null;
 
             case CssPreservedToken { Type: CssTokenType.String } text:
                 return ResolveUrl(document, style, text.Value, painter);
@@ -137,8 +137,11 @@ internal abstract class PaintedImage
         }
     }
 
-    /// <summary>Resolves the image of a URL: the image fetched for the computed values of the document.</summary>
-    private static PaintedImage? ResolveUrl(Document document, ComputedStyle style, string url, Painter? painter)
+    /// <summary>
+    /// Resolves the image of a URL: the image fetched for the computed values of the document. An SVG image gets the link parameters
+    /// of the element, of the fragment of the URL and of the param() modifiers of the url() (https://drafts.csswg.org/css-link-params-1/#setting).
+    /// </summary>
+    private static PaintedImage? ResolveUrl(Document document, ComputedStyle style, string url, Painter? painter, List<CssLinkParameter>? linkParameters = null)
     {
         if (url.Length == 0 || document.CssPaintImages is not { } images || UrlParser.Parse(url, document.DocumentBaseUrl) is not { } parsed)
             return null;
@@ -152,7 +155,7 @@ internal abstract class PaintedImage
                 return null;
 
             // The natural size of the document is divided by the density of the Content-DPR header of the response
-            var svgPaintedImage = SvgPaintedImage.Create(svgImage, style);
+            var svgPaintedImage = SvgPaintedImage.Create(svgImage, style, CssLinkParameters.Resolve(style, url, linkParameters, document));
             return image.ContentDpr == 1 ? svgPaintedImage : new ScaledImage(svgPaintedImage, 1 / image.ContentDpr);
         }
 
@@ -217,15 +220,16 @@ internal abstract class PaintedImage
 
     /// <summary>
     /// An SVG image (<see cref="SvgImage"/>): its natural dimensions are the ones of its root svg element (multiplied by the zoom),
-    /// it is painted by its document laid out in the rectangle it is drawn in, clipped to the rectangle.
+    /// it is painted by its document laid out in the rectangle it is drawn in, clipped to the rectangle, with the link parameters
+    /// passed by the element that draws it.
     /// </summary>
-    internal sealed class SvgPaintedImage(SvgImage image, double zoom, string? colorScheme, string? preserveAspectRatio = null) : PaintedImage
+    internal sealed class SvgPaintedImage(SvgImage image, double zoom, string? colorScheme, string? preserveAspectRatio = null, CssLinkParameterValues? linkParameters = null) : PaintedImage
     {
         public SvgImage Image { get; } = image;
 
         /// <summary>Creates the image used by an element: the color scheme of the image is the used color scheme of the element.</summary>
-        public static SvgPaintedImage Create(SvgImage image, ComputedStyle style)
-            => new(image, style.Layout.EffectiveZoom, CssValueComputer.GetUsedColorScheme(style));
+        public static SvgPaintedImage Create(SvgImage image, ComputedStyle style, CssLinkParameterValues? linkParameters)
+            => new(image, style.Layout.EffectiveZoom, CssValueComputer.GetUsedColorScheme(style), linkParameters: linkParameters);
 
         public override double? NaturalWidth => Image.NaturalSize.Width * zoom;
 
@@ -234,7 +238,7 @@ internal abstract class PaintedImage
         public override double? NaturalRatio => base.NaturalRatio ?? Image.NaturalSize.AspectRatio;
 
         public override DisplayShader? CreateShader(PhysicalSize size)
-            => Image.GetDisplayList(size, colorScheme, preserveAspectRatio, zoom) is { } list ? new DisplayListShader(list, size) : null;
+            => Image.GetDisplayList(size, colorScheme, preserveAspectRatio, zoom, linkParameters) is { } list ? new DisplayListShader(list, size) : null;
 
         public override void Draw(DisplayListBuilder builder, PhysicalRect destination, Node? source) => Draw(builder, destination, source, layoutSize: null);
 
@@ -246,7 +250,7 @@ internal abstract class PaintedImage
         public void Draw(DisplayListBuilder builder, PhysicalRect destination, Node? source, PhysicalSize? layoutSize)
         {
             var size = layoutSize is { Width: > 0, Height: > 0 } unsnapped ? unsnapped : destination.Size;
-            if (destination.IsEmpty || Image.GetDisplayList(size, colorScheme, preserveAspectRatio, zoom) is not { } list)
+            if (destination.IsEmpty || Image.GetDisplayList(size, colorScheme, preserveAspectRatio, zoom, linkParameters) is not { } list)
                 return;
 
             var saveCount = builder.SaveCount;

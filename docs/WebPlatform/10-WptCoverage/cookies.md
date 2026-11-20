@@ -10,17 +10,17 @@ description: "The results of the web-platform-tests of cookies, and why the test
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 72 | 76 | 0 | 95% |
-| [Tentative](#tentative-tests) | 11 | 13 | 0 | 85% |
+| [Tentative](#tentative-tests) | 12 | 13 | 0 | 92% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **83** | **89** | **0** | **93%** |
+| **All** | **84** | **89** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -118,5 +118,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`schemeful-same-site/schemeful-navigation.tentative.html`](https://wpt.fyi/results/cookies/schemeful-same-site/schemeful-navigation.tentative.html) | Pass | 2 / 2 |  |  |
 | [`schemeful-same-site/schemeful-subresource.tentative.html`](https://wpt.fyi/results/cookies/schemeful-same-site/schemeful-subresource.tentative.html) | Pass | 2 / 2 |  |  |
 | [`schemeful-same-site/schemeful-websockets.sub.tentative.html`](https://wpt.fyi/results/cookies/schemeful-same-site/schemeful-websockets.sub.tentative.html) | Pass | 1 / 1 |  |  |
-| [`third-party-cookies/third-party-cookie-heuristics.tentative.https.html`](https://wpt.fyi/results/cookies/third-party-cookies/third-party-cookie-heuristics.tentative.https.html) | Fail | 4 / 6 | NOT IMPLEMENTED | blocking the third-party cookies (the tentative tests expect the cross-site requests and iframes to have no cookies) |
-| [`third-party-cookies/third-party-cookies.tentative.https.html`](https://wpt.fyi/results/cookies/third-party-cookies/third-party-cookies.tentative.https.html) | Fail | 4 / 10 | NOT IMPLEMENTED | blocking the third-party cookies (the tentative tests expect the cross-site requests and iframes to have no cookies) |
+| [`third-party-cookies/third-party-cookie-heuristics.tentative.https.html`](https://wpt.fyi/results/cookies/third-party-cookies/third-party-cookie-heuristics.tentative.https.html) | Fail | 4 / 6 | NOT IMPLEMENTED | 2 subtests: the third-party cookie heuristics of Chromium (a site that opens a popup of another site, which the user interacts with, gets temporary access to the unpartitioned cookies of the popup's site in its frames; the Storage Access API leaves such grants to the user agent): the cross-site fetches stay blocked |
+| [`third-party-cookies/third-party-cookies.tentative.https.html`](https://wpt.fyi/results/cookies/third-party-cookies/third-party-cookies.tentative.https.html) | Pass | 10 / 10 |  |  |

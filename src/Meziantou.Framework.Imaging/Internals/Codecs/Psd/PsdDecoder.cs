@@ -22,6 +22,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// images; no ink for CMYK images, whose samples are stored inverted). The decoder removes the matte:
 /// <c>c = (s − w × (1 − α)) / α</c>, rounded to the nearest integer and clipped to the range of the samples (not clipped
 /// for floating-point samples). Where α is 0 the colors are undefined, and the stored samples are kept, as ImageMagick reads them.
+/// A floating-point NaN is read quiet (its sign and payload kept), as a conversion to another pixel format makes it.
 /// </para>
 /// <para>
 /// CMYK samples are stored inverted (the largest value is no ink). They are loaded as CMYK pixels when the request asks
@@ -225,7 +226,7 @@ internal sealed class PsdDecoder : IImageDecodeObserver
                 var samples = unsafe(MemoryMarshal.Cast<byte, float>(target));
                 for (var x = 0; x < width; x++)
                 {
-                    samples[(x * stride) + slot] = BinaryPrimitives.ReadSingleBigEndian(row[(x * 4)..]);
+                    samples[(x * stride) + slot] = QuietNaN(BinaryPrimitives.ReadSingleBigEndian(row[(x * 4)..]));
                 }
 
                 break;
@@ -301,6 +302,12 @@ internal sealed class PsdDecoder : IImageDecodeObserver
         7 or 8 => PixelFormat.Rgba64,
         _ => PixelFormat.RgbaFloat,
     };
+
+    /// <summary>
+    /// Sets the quiet bit of a NaN, keeping its sign and payload: a conversion between floating-point formats goes through
+    /// a double, which quiets a signaling NaN, so the rows give the same bits in every pixel format.
+    /// </summary>
+    private static float QuietNaN(float value) => float.IsNaN(value) ? BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(value) | 0x0040_0000) : value;
 
     /// <summary>
     /// Removes the matte of a sample blended over white: <c>(s × max − w × (max − α)) / α</c>, rounded to the nearest integer and

@@ -1,12 +1,47 @@
+using System.Globalization;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Meziantou.Framework.WebPlatform.Tests.Storage;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
 /// <summary>IndexedDB (https://w3c.github.io/IndexedDB/).</summary>
 public sealed class IndexedDBTests : IDisposable
 {
+    private const string WriteDraftScript = """
+        <script>
+          (async () => {
+            const drafts = await navigator.storageBuckets.open('drafts');
+            const db = await new Promise(resolve => {
+              const request = drafts.indexedDB.open('db');
+              request.onupgradeneeded = () => request.result.createObjectStore('store');
+              request.onsuccess = () => resolve(request.result);
+            });
+            const transaction = db.transaction('store', 'readwrite');
+            transaction.objectStore('store').put('saved', 'key');
+            transaction.oncomplete = () => { db.close(); document.title = 'written'; };
+          })();
+        </script>
+        """;
+
+    private const string ReadDraftScript = """
+        <script>
+          async function readDraft(bucket) {
+            if ((await bucket.indexedDB.databases()).length === 0)
+              return 'empty';
+
+            return await new Promise(resolve => {
+              const request = bucket.indexedDB.open('db');
+              request.onsuccess = () => {
+                const db = request.result;
+                db.transaction('store').objectStore('store').get('key').onsuccess = e => { db.close(); resolve(e.target.result); };
+              };
+            });
+          }
+        </script>
+        """;
+
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
     private readonly RecordingLoader _loader = new();
@@ -18,13 +53,14 @@ public sealed class IndexedDBTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
-    private Document Load(string html, IndexedDBBackend? backend = null, string url = "https://example.com/", WebPlatformFeatures? features = null)
+    private Document Load(string html, IndexedDBBackend? backend = null, string url = "https://example.com/", WebPlatformFeatures? features = null, CacheStorageBackend? cacheStorage = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = _engine,
             DocumentLoader = _loader,
             IndexedDB = backend,
+            CacheStorage = cacheStorage,
             Features = features,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
@@ -65,6 +101,323 @@ public sealed class IndexedDBTests : IDisposable
 
         Assert.Empty(_errors);
         Assert.Equal("upgrade:0->2,success:2:store,get:b,index:1,count:2,complete", document.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_DeletingABucketOfACredentiallessIframeKeepsTheBucketOfThePage()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const root = await (await navigator.storageBuckets.open('drafts')).getDirectory();
+                await root.getFileHandle('top.txt', { create: true });
+                window.onFrameDone = async frameResult => {
+                  const kept = await root.getFileHandle('top.txt').then(() => 'kept', e => e.name);
+                  document.title = kept + ',' + frameResult;
+                };
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('credentialless', '');
+                iframe.srcdoc = `<script>(async () => {
+                  const root = await (await navigator.storageBuckets.open('drafts')).getDirectory();
+                  await root.getFileHandle('frame.txt', { create: true });
+                  await navigator.storageBuckets.delete('drafts');
+                  const again = await (await navigator.storageBuckets.open('drafts')).getDirectory();
+                  parent.onFrameDone(await again.getFileHandle('frame.txt').then(() => 'leftover', () => 'empty'));
+                })();<\/script>`;
+                document.body.appendChild(iframe);
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("kept,empty", document.Title);
+    }
+
+    [Fact]
+    public void ClearSiteData_OfACredentiallessIframeKeepsTheDatabasesOfThePage()
+    {
+        _loader.Resources["https://example.com/clear"] = new DocumentResource("") { Headers = [new("Content-Type", "text/plain"), new("Clear-Site-Data", "\"storage\"")] };
+        var document = Load("""
+            <script>
+              (async () => {
+                await new Promise(resolve => { const request = indexedDB.open('page'); request.onsuccess = () => { request.result.close(); resolve(); }; });
+                window.onFrameDone = async () => {
+                  document.title = (await indexedDB.databases()).map(database => database.name).join() || 'none';
+                };
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('credentialless', '');
+                iframe.srcdoc = `<script>fetch('/clear').then(() => parent.onFrameDone());<\/script>`;
+                document.body.appendChild(iframe);
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("page", document.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_ARecreatedBucketDoesNotSeeTheDatabasesOfTheDeletedOne()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const first = await navigator.storageBuckets.open('inbox');
+                await new Promise(resolve => {
+                  const request = first.indexedDB.open('db');
+                  request.onupgradeneeded = () => request.result.createObjectStore('store');
+                  request.onsuccess = () => resolve(request.result);
+                });
+                await navigator.storageBuckets.delete('inbox');
+                const second = await navigator.storageBuckets.open('inbox');
+                document.title = (await second.indexedDB.databases()).map(database => database.name).join() || 'empty';
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("empty", document.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_BrowsingContextGroupsThatShareABackendSeeTheSameBucket()
+    {
+        var backend = new InMemoryIndexedDBBackend();
+        var writer = Load(WriteDraftScript, backend);
+        var reader = Load("""
+            <script>
+              (async () => {
+                await navigator.storageBuckets.open('inbox');
+                const drafts = await navigator.storageBuckets.open('drafts');
+                document.title = await readDraft(drafts);
+              })();
+            </script>
+            """ + ReadDraftScript, backend);
+
+        Assert.Empty(_errors);
+        Assert.Equal("written", writer.Title);
+        Assert.Equal("saved", reader.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_APersistentBackendKeepsTheBucketsWhenItIsOpenedAgain()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "idb-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using (var backend = new SqliteIndexedDBBackend(directory))
+            {
+                Assert.Equal("written", Load(WriteDraftScript, backend).Title);
+            }
+
+            using (var backend = new SqliteIndexedDBBackend(directory))
+            {
+                var reader = Load("""
+                    <script>
+                      (async () => {
+                        const names = await navigator.storageBuckets.keys();
+                        const drafts = await navigator.storageBuckets.open('drafts');
+                        document.title = names.join() + ',' + await readDraft(drafts);
+                      })();
+                    </script>
+                    """ + ReadDraftScript, backend);
+
+                Assert.Equal("drafts,saved", reader.Title);
+            }
+
+            using (var backend = new SqliteIndexedDBBackend(directory))
+            {
+                var deleter = Load("""
+                    <script>
+                      (async () => {
+                        await navigator.storageBuckets.delete('drafts');
+                        const names = await navigator.storageBuckets.keys();
+                        const drafts = await navigator.storageBuckets.open('drafts');
+                        document.title = (names.join() || 'none') + ',' + await readDraft(drafts);
+                      })();
+                    </script>
+                    """ + ReadDraftScript, backend);
+
+                Assert.Equal("none,empty", deleter.Title);
+            }
+
+            Assert.Empty(_errors);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void StorageBuckets_AStaleIdentityInABackendDoesNotEraseTheStorageOfTheRecreatedBucket()
+    {
+        // The browsing context groups share the caches; the second one has its own IndexedDB backend
+        var caches = new InMemoryCacheStorageBackend();
+        var indexedDB = new InMemoryIndexedDBBackend();
+        var opener = Load("<script>navigator.storageBuckets.open('drafts').then(() => document.title = 'opened');</script>", indexedDB, cacheStorage: caches);
+        var writer = Load("""
+            <script>
+              (async () => {
+                await navigator.storageBuckets.open('drafts');
+                await navigator.storageBuckets.delete('drafts');
+                const drafts = await navigator.storageBuckets.open('drafts');
+                await (await drafts.caches.open('cache')).put('https://example.com/draft', new Response('saved'));
+                document.title = 'written';
+              })();
+            </script>
+            """, cacheStorage: caches);
+        var reader = Load("""
+            <script>
+              (async () => {
+                const drafts = await navigator.storageBuckets.open('drafts');
+                const response = await (await drafts.caches.open('cache')).match('https://example.com/draft');
+                document.title = response ? await response.text() : 'empty';
+              })();
+            </script>
+            """, indexedDB, cacheStorage: caches);
+
+        Assert.Empty(_errors);
+        Assert.Equal("opened", opener.Title);
+        Assert.Equal("written", writer.Title);
+        Assert.Equal("saved", reader.Title);
+    }
+
+    [Fact]
+    public void StorageBuckets_ABucketDeletedThroughASharedBackendStaysDeleted()
+    {
+        // The browsing context groups share the caches; the first and the last ones share an IndexedDB backend
+        var caches = new InMemoryCacheStorageBackend();
+        var indexedDB = new InMemoryIndexedDBBackend();
+        var writer = Load(WriteDraftScript, indexedDB, cacheStorage: caches);
+        var deleter = Load("<script>navigator.storageBuckets.delete('drafts').then(() => document.title = 'deleted');</script>", cacheStorage: caches);
+        var reader = Load("""
+            <script>
+              (async () => {
+                const names = await navigator.storageBuckets.keys();
+                const drafts = await navigator.storageBuckets.open('drafts');
+                document.title = (names.join() || 'none') + ',' + await readDraft(drafts);
+              })();
+            </script>
+            """ + ReadDraftScript, indexedDB, cacheStorage: caches);
+
+        Assert.Empty(_errors);
+        Assert.Equal("written", writer.Title);
+        Assert.Equal("deleted", deleter.Title);
+        Assert.Equal("none,empty", reader.Title);
+    }
+
+    [Fact]
+    public async Task StorageBuckets_BrowsingContextGroupsThatOpenABucketAtTheSameTimeGetTheSameIdentity()
+    {
+        var caches = new InMemoryCacheStorageBackend();
+        var first = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = _loader, CacheStorage = caches });
+        var second = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = _loader, CacheStorage = caches });
+        var storageKey = new StorageKey("https://example.com", PartitionNonce: null);
+        var name = "race-" + Guid.NewGuid().ToString("N");
+        using var lookedUp = new ManualResetEventSlim();
+        using var resume = new ManualResetEventSlim();
+        var paused = 0;
+        StorageBucketBackends.LookedUp = bucket =>
+        {
+            if (bucket == name && Interlocked.Exchange(ref paused, 1) == 0)
+            {
+                lookedUp.Set();
+                resume.Wait(TimeSpan.FromSeconds(30));
+            }
+        };
+
+        try
+        {
+            // The first group looked the bucket up (it does not exist), and pauses before it stores the new identity
+            var firstOpen = Task.Run(() => new StorageBucketBackends(first, storageKey).Open(name, expired: null, []));
+            Assert.True(lookedUp.Wait(TimeSpan.FromSeconds(30)));
+            var secondOpen = Task.Run(() => new StorageBucketBackends(second, storageKey).Open(name, expired: null, []));
+            var secondCompletedFirst = await Task.WhenAny(secondOpen, Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken)) == secondOpen;
+            resume.Set();
+
+            Assert.False(secondCompletedFirst);
+            Assert.Equal(await firstOpen, await secondOpen);
+        }
+        finally
+        {
+            StorageBucketBackends.LookedUp = null;
+        }
+    }
+
+    [Fact]
+    public void StorageBuckets_TheIdentitiesOfABackendAreReadOncePerOperation()
+    {
+        var caches = new CountingCacheStorageBackend();
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = _loader, CacheStorage = caches });
+        context.Navigate("https://example.com/", _ => "");
+        _contexts.EventLoop.RunUntilIdle();
+        var window = context.Window;
+        var storageKey = new StorageKey("https://example.com", PartitionNonce: null);
+        var registry = context.StorageBuckets;
+        static string Name(int index) => "bucket-" + index.ToString("D3", CultureInfo.InvariantCulture);
+
+        // 200 buckets: 20 expired, 80 deleted (their tombstones stay in the backends) and 100 that exist
+        for (var i = 0; i < 200; i++)
+        {
+            registry.Open(window, context, storageKey, Name(i), new StorageBucketOptions { Expires = i < 20 ? 1 : null });
+        }
+
+        for (var i = 20; i < 100; i++)
+        {
+            registry.Delete(context, storageKey, Name(i));
+        }
+
+        caches.MarkerReads = 0;
+        var names = registry.Keys(window, context, storageKey);
+        Assert.Equal(100, names.Count);
+        Assert.Equal(1, caches.MarkerReads);
+
+        caches.MarkerReads = 0;
+        registry.Open(window, context, storageKey, Name(150), new StorageBucketOptions());
+        Assert.Equal(1, caches.MarkerReads);
+
+        caches.MarkerReads = 0;
+        registry.Delete(context, storageKey, Name(150));
+        Assert.Equal(1, caches.MarkerReads);
+
+        caches.MarkerReads = 0;
+        registry.DeleteAll(context, storageKey);
+        Assert.Equal(1, caches.MarkerReads);
+        Assert.Empty(registry.Keys(window, context, storageKey));
+    }
+
+    [Fact]
+    public void StorageBuckets_TheBlockedRequestOfARemovedIframeIsCanceled()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const bucket = await navigator.storageBuckets.open('b');
+                const db = await new Promise(resolve => { const request = bucket.indexedDB.open('db', 1); request.onsuccess = () => resolve(request.result); });
+                const iframe = document.createElement('iframe');
+                window.onBlocked = () => setTimeout(() => {
+                  iframe.remove();
+                  db.close();
+                  const request = bucket.indexedDB.deleteDatabase('db');
+                  request.onsuccess = () => document.title = 'deleted';
+                  request.onerror = () => document.title = 'error';
+                }, 0);
+                iframe.srcdoc = `<script>(async () => {
+                  const request = (await navigator.storageBuckets.open('b')).indexedDB.open('db', 2);
+                  request.onblocked = () => parent.onBlocked();
+                })();<\/script>`;
+                document.body.appendChild(iframe);
+              })();
+            </script>
+            """);
+
+        Assert.Empty(_errors);
+        Assert.Equal("deleted", document.Title);
     }
 
     [Fact]
@@ -236,5 +589,31 @@ public sealed class IndexedDBTests : IDisposable
         var document = Load("<script>try { indexedDB.open('db'); } catch (e) { document.title = e.name; }</script>", url: "data:text/html,");
 
         Assert.Equal("SecurityError", document.Title);
+    }
+
+    /// <summary>A cache storage backend that counts the reads of the identities of the storage buckets.</summary>
+    private sealed class CountingCacheStorageBackend : CacheStorageBackend
+    {
+        private readonly InMemoryCacheStorageBackend _storage = new();
+
+        public int MarkerReads { get; set; }
+
+        public override IReadOnlyList<string> GetCacheNames(string origin)
+        {
+            if (origin.StartsWith("storage-buckets ", StringComparison.Ordinal))
+            {
+                MarkerReads++;
+            }
+
+            return _storage.GetCacheNames(origin);
+        }
+
+        public override bool CreateCache(string origin, string name) => _storage.CreateCache(origin, name);
+
+        public override bool DeleteCache(string origin, string name) => _storage.DeleteCache(origin, name);
+
+        public override IReadOnlyList<CacheEntry> GetEntries(string origin, string name, string? urlWithoutQuery) => _storage.GetEntries(origin, name, urlWithoutQuery);
+
+        public override void ApplyBatch(string origin, string name, IReadOnlyList<long> removedEntryIds, IReadOnlyList<CacheEntry> addedEntries) => _storage.ApplyBatch(origin, name, removedEntryIds, addedEntries);
     }
 }

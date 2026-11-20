@@ -240,7 +240,7 @@ internal static class TextureBlockWriter
                 var row = pixels.GetFloats(y);
                 for (var i = 0; i < width * 4; i++)
                 {
-                    BinaryPrimitives.WriteHalfLittleEndian(destination[(i * 2)..], (Half)row[i]);
+                    BinaryPrimitives.WriteUInt16LittleEndian(destination[(i * 2)..], TexturePixels.ToHalfBits(row[i]));
                 }
 
                 break;

@@ -65,7 +65,7 @@ public static partial class WebPlatformFuzzTargets
             filter = null;
         }
 
-        var context = FuzzCanvasContext.Value;
+        var context = FuzzCanvasContext;
         context.Reset();
 
         // beginLayer() accepts the description of a CanvasFilter: it throws when the constructor throws, before opening a layer

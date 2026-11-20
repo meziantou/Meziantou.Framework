@@ -771,39 +771,7 @@
     "total": 220
   },
   "dom/idlharness.window.js?exclude=Node": {
-    "total": 1373,
-    "failures": {
-      "Stringification of new XSLTProcessor()": "FAIL",
-      "XSLTProcessor interface object length": "FAIL",
-      "XSLTProcessor interface object name": "FAIL",
-      "XSLTProcessor interface: calling getParameter(DOMString, DOMString) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
-      "XSLTProcessor interface: calling importStylesheet(Node) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
-      "XSLTProcessor interface: calling removeParameter(DOMString, DOMString) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
-      "XSLTProcessor interface: calling setParameter(DOMString, DOMString, any) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
-      "XSLTProcessor interface: calling transformToDocument(Node) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
-      "XSLTProcessor interface: calling transformToFragment(Node, Document) on new XSLTProcessor() with too few arguments must throw TypeError": "FAIL",
-      "XSLTProcessor interface: existence and properties of interface object": "FAIL",
-      "XSLTProcessor interface: existence and properties of interface prototype object": "FAIL",
-      "XSLTProcessor interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "XSLTProcessor interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"clearParameters()\" with the proper type": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"getParameter(DOMString, DOMString)\" with the proper type": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"importStylesheet(Node)\" with the proper type": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"removeParameter(DOMString, DOMString)\" with the proper type": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"reset()\" with the proper type": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"setParameter(DOMString, DOMString, any)\" with the proper type": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"transformToDocument(Node)\" with the proper type": "FAIL",
-      "XSLTProcessor interface: new XSLTProcessor() must inherit property \"transformToFragment(Node, Document)\" with the proper type": "FAIL",
-      "XSLTProcessor interface: operation clearParameters()": "FAIL",
-      "XSLTProcessor interface: operation getParameter(DOMString, DOMString)": "FAIL",
-      "XSLTProcessor interface: operation importStylesheet(Node)": "FAIL",
-      "XSLTProcessor interface: operation removeParameter(DOMString, DOMString)": "FAIL",
-      "XSLTProcessor interface: operation reset()": "FAIL",
-      "XSLTProcessor interface: operation setParameter(DOMString, DOMString, any)": "FAIL",
-      "XSLTProcessor interface: operation transformToDocument(Node)": "FAIL",
-      "XSLTProcessor interface: operation transformToFragment(Node, Document)": "FAIL",
-      "XSLTProcessor must be primary interface of new XSLTProcessor()": "FAIL"
-    }
+    "total": 1373
   },
   "dom/idlharness.window.js?include=Node": {
     "total": 613

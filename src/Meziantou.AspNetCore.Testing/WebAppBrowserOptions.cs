@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.AspNetCore.Testing;
 
@@ -11,7 +12,19 @@ public sealed class WebAppBrowserOptions
     /// <summary>Gets whether the pages run their scripts. The default is true.</summary>
     public bool EnableJavaScript { get; init; } = true;
 
-    /// <summary>Gets the clock of the timers of the pages, or null for the system clock.</summary>
+    /// <summary>
+    /// Gets the runtime that compiles and runs the WebAssembly modules of the scripts of the pages, or null: the
+    /// <c>WebAssembly</c> namespace is then not defined, so a Blazor WebAssembly application does not start. The
+    /// <c>Meziantou.Framework.WebPlatform.Wasmtime</c> package provides a runtime (<c>WasmtimeRuntime</c>). The pages share
+    /// it, and the browser does not dispose it.
+    /// </summary>
+    public WebAssemblyRuntime? WebAssemblyRuntime { get; init; }
+
+    /// <summary>
+    /// Gets the clock of the pages, or null for the system clock: the clock of the timers (<c>setTimeout()</c>, the
+    /// animations...) and of the dates (<c>Date.now()</c>, <c>new Date()</c>, and <c>DateTime.Now</c> in a Blazor
+    /// WebAssembly application), including the local time zone of the dates (<see cref="TimeProvider.LocalTimeZone"/>).
+    /// </summary>
     public TimeProvider? TimeProvider { get; init; }
 
     /// <summary>Gets the maximum time the waits of the pages wait for. The default is 10 seconds.</summary>

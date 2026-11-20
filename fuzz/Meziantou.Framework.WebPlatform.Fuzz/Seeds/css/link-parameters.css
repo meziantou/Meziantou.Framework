@@ -1,0 +1,4 @@
+a { link-parameters: param(--a <color>: currentcolor), param(--b:orange); link-parameters: param(--a type(<color> | <length>): 1px); }
+b { link-parameters: param(--a: ), param(--b:); link-parameters: param(COLOR), param(--b), param(--c <length>); link-parameters: none; }
+c { link-parameters: param(--a: var(--x)); link-parameters: param(--a <notatype>: red); link-parameters: param(--a, red); }
+d { background-image: url("a.svg" param(--c <color>: green) cross-origin(anonymous) param(--d: 1)); background-image: url("a.svg#:~:param(--a:red)" param(--c type(<color>): green)); }

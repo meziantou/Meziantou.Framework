@@ -402,6 +402,16 @@ public interface IJsAdapter<TValue>
     {
     }
 
+    /// <summary>
+    /// Returns the module record of a module namespace object (its [[Module]] internal slot), or null when
+    /// <paramref name="value"/> is not a module namespace object. <c>WebAssembly.namespaceInstance()</c> returns the instance
+    /// of the WebAssembly module whose namespace object it gets
+    /// (https://webassembly.github.io/esm-integration/js-api/index.html#dom-webassembly-namespaceinstance). The default
+    /// implementation returns null.
+    /// </summary>
+    [Experimental(ExperimentalApis.SourcePhaseImports, UrlFormat = ExperimentalApis.UrlFormat)]
+    object? GetModuleOfNamespace(TValue value) => null;
+
     // ----------------------------------------------------------------------------------------------------------------
     // Buffer sources (https://webidl.spec.whatwg.org/#idl-buffer-source-types)
     // ----------------------------------------------------------------------------------------------------------------

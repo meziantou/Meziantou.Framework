@@ -32,6 +32,12 @@ internal enum InterfaceBindingFlags
     /// interface extends %AbstractModuleSource% and the class string is the [[ModuleSourceClassName]] of the instances.
     /// </summary>
     ModuleSource = 128,
+
+    /// <summary>
+    /// The instances are functions (WebAssembly.Function, https://webassembly.github.io/js-types/js-api/#exported-functions):
+    /// the interface object extends %Function% and the interface prototype object extends %Function.prototype%.
+    /// </summary>
+    Function = 256,
 }
 
 /// <summary>

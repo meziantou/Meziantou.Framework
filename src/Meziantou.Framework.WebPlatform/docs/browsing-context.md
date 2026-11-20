@@ -504,8 +504,8 @@ sealed class MyPlayer(MediaResource resource) : MediaPlayer(resource.TimeProvide
   duration, so a backend that only reads the metadata of the resources is enough to run the scripts of a page. A player
   whose state changes by itself (a streamed resource, an error) calls `NotifyStateChanged()`, from any thread.
 - **The resource selection** ([algorithm](https://html.spec.whatwg.org/multipage/media.html#concept-media-load-algorithm)):
-  `load()`, the `src` attribute, `srcObject` (a `Blob`, a `MediaSource` or a `MediaSourceHandle`, see
-  [Media Source Extensions](#media-source-extensions); `MediaStream` is not implemented) and the
+  `load()`, the `src` attribute, `srcObject` (a `MediaStream`, a `Blob`, a `MediaSource` or a `MediaSourceHandle`, see
+  [Media Source Extensions](#media-source-extensions) and [Media capture](#media-capture)) and the
   `source` children (their `src`, `type` and `media` attributes, the `error` events of the candidates, the pointer that
   follows the insertions and the removals, the wait for a new `source` element), with `networkState`, `currentSrc`,
   `error` (`MediaError`) and the events `loadstart`, `progress`, `suspend`, `abort`, `emptied`, `stalled` and `error`. The
@@ -552,8 +552,34 @@ sealed class MyPlayer(MediaResource resource) : MediaPlayer(resource.TimeProvide
 - **Playback quality** ([Media Playback Quality](https://w3c.github.io/media-playback-quality/)):
   `HTMLVideoElement.getVideoPlaybackQuality()` returns the numbers of frames the player reports
   (`MediaPlayer.TotalVideoFrames`, `DroppedVideoFrames`: 0 by default, as nothing is decoded) at the current time.
-- **Not implemented**: `MediaStream`, Encrypted Media, the controls, `controlsList`, the pause
+- **Not implemented**: Encrypted Media, `MediaRecorder`, the controls, `controlsList`, the pause
   of the videos that are not visible, Media Session and Picture-in-Picture.
+
+### Media capture
+
+Media Capture and Streams (https://w3c.github.io/mediacapture-main/) is implemented on the capture devices of the
+`MediaCaptureBackend` of `BrowsingContextOptions.MediaCapture` (none by default): see
+[Camera, microphone and screen capture](../../../docs/WebPlatform/05-LoadingPages/08-PermissionsAndDevices.md#camera-microphone-and-screen-capture).
+
+- **Devices**: `navigator.mediaDevices` with `getUserMedia()`, `enumerateDevices()` (the details of a kind of device are
+  exposed once the document captured one; the identifiers are SHA-256 hashes of the identifiers of the backend, the
+  origin and the top-level origin, and the group identifiers are different in each document), `getSupportedConstraints()`,
+  `devicechange`, the `camera` and `microphone` permissions and permissions policies. As in the browsers, a constraint
+  that no device satisfies is named in the `OverconstrainedError` before the document captured a device.
+- **Constraints**: the SelectSettings algorithm runs on finite candidates (the defaults, the bounds of the ranges, the
+  values of the constraints); the size, the aspect ratio, the frame rate and the resize mode are tuples of the native
+  modes of the device and of the modes cropped and scaled down from them. A `deviceId` or `groupId` constraint longer
+  than 500 characters cannot be satisfied, as in the browsers.
+- **Tracks and streams**: `MediaStream`, `MediaStreamTrack` (`clone()`, `stop()`, `enabled` gives black frames and
+  silence, `contentHint`, `stats`), `MediaStreamTrackEvent`, `OverconstrainedError`; a stream assigned to `srcObject` is
+  played live (no seeking, a playback rate of 1, `preload` is `none`) and ends when it becomes inactive.
+- **Screen capture**: `getDisplayMedia()` (user activation, `CaptureController`, the constraints of display surfaces);
+  `setCaptureHandleConfig()` and `CropTarget.fromElement()`, but no capture can be cropped.
+- **From elements**: `canvas.captureStream()` (`CanvasCaptureMediaStreamTrack`), `video.captureStream()` and
+  `audio.captureStream()` (the audio of the resources is not decoded), `ImageCapture` (`grabFrame()`, `takePhoto()` as
+  PNG), and the Web Audio `MediaStream` nodes.
+- **Not implemented**: `MediaRecorder`, the transfer of the tracks (`postMessage()`), the insertable streams
+  (`MediaStreamTrackProcessor`, `VideoTrackGenerator`), `BrowserCaptureMediaStreamTrack` (`cropTo()`, `restrictTo()`).
 
 ### Media Source Extensions
 

@@ -1,0 +1,49 @@
+{
+  "web-based-payment-handler/can-make-payment-event-constructor.https.html": {
+    "total": 1
+  },
+  "web-based-payment-handler/can-make-payment-event-constructor.https.serviceworker.html": {
+    "total": 5,
+    "failures": {
+      "CanMakePaymentEvent can be constructed with an EventInitDict, even if not trusted": "FAIL"
+    }
+  },
+  "web-based-payment-handler/can-make-payment-event-constructor.https.worker.js": {
+    "total": 1
+  },
+  "web-based-payment-handler/can-make-payment-event.https.html": {
+    "total": 7,
+    "failures": {
+      "If CanMakePaymentEvent.respondWith(Promise.reject(error)) is called, then canMakePayment() still returns true and the app can still be invoked.": "FAIL",
+      "If CanMakePaymentEvent.respondWith(Promise.resolve(false)) is called, then canMakePayment() still returns true and the app can still be invoked.": "FAIL",
+      "If CanMakePaymentEvent.respondWith(Promise.resolve(true)) is called, then canMakePayment() returns true and the app can be invoked.": "FAIL",
+      "If CanMakePaymentEvent.respondWith(false) is called, then canMakePayment() still returns true and the app can still be invoked.": "FAIL",
+      "If CanMakePaymentEvent.respondWith(true) is called, then canMakePayment() returns true and the app can be invoked.": "FAIL",
+      "If a payment handler is not installed, but can be installed just-in-time, then the payment method is supported.": "FAIL"
+    }
+  },
+  "web-based-payment-handler/idlharness.https.any.js": {
+    "total": 26
+  },
+  "web-based-payment-handler/idlharness.https.any.js#dedicatedworker": {
+    "total": 13
+  },
+  "web-based-payment-handler/idlharness.https.any.js#sharedworker": {
+    "total": 13
+  },
+  "web-based-payment-handler/payment-request-event-constructor.https.html": {
+    "total": 1
+  },
+  "web-based-payment-handler/payment-request-event-constructor.https.serviceworker.html": {
+    "total": 5
+  },
+  "web-based-payment-handler/payment-request-event-constructor.https.worker.js": {
+    "total": 1
+  },
+  "web-based-payment-handler/same-object-attributes.https.html": {
+    "total": 1
+  },
+  "web-based-payment-handler/untrusted-event.https.html": {
+    "total": 1
+  }
+}

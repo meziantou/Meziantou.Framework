@@ -106,6 +106,11 @@ internal static class Binding_HTMLMediaElement<TAdapter, TValue> where TAdapter 
         var a2 = r.IsMissing(a, 2) ? (string)"" : r.ToDomString(a[2]);
         var result = o.AddTextTrack(WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_TextTrackKind(a0), a1, a2); return r.Wrap(result);
     }
+    private static TValue Op_captureStream(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(t, Binding);
+        var result = o.CaptureStream(); return r.Wrap(result);
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineConstant(interfaceObject, prototype, "NETWORK_EMPTY", r.Adapter.FromNumber(0d));
@@ -153,5 +158,6 @@ internal static class Binding_HTMLMediaElement<TAdapter, TValue> where TAdapter 
         r.DefineOperation(instanceTarget, "play", 0, Op_play, returnsPromise: true);
         r.DefineOperation(instanceTarget, "pause", 0, Op_pause);
         r.DefineOperation(instanceTarget, "addTextTrack", 1, Op_addTextTrack);
+        r.DefineOperation(instanceTarget, "captureStream", 0, Op_captureStream);
     }
 }

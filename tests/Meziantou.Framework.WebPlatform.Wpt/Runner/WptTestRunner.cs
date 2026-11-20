@@ -145,6 +145,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
 
+    /// <summary>The prompts of the user agent (payment sheet, account choosers...), driven by the commands of the test driver.</summary>
+    private readonly WptUserAgentUI _userAgentUI = new();
+
     /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
     private readonly DisplayFeaturesProvider _displayFeatures = new();
     private readonly WptStash _stash = new();
@@ -189,12 +192,45 @@ internal sealed partial class WptTestRunner
         // Origin-bound cookies are an option of the jar (the browsers do not enable them by default): the tests of the
         // feature enable it, the other tests share the cookies of a host between its schemes and ports (e.g. the cookies
         // of the WebSocket tests, whose server listens on another port)
-        _cookieJar = new CookieJar(_clock) { OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal) };
+        _cookieJar = new CookieJar(_clock)
+        {
+            OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal),
+            BlockThirdPartyCookies = BlocksThirdPartyCookies(test.Id),
+        };
         _webSocketServer = new WptWebSocketServer(this);
     }
 
     /// <summary>Gets the cookie store of the browser (the cookies of the test driver).</summary>
     internal CookieJar CookieJar => _cookieJar;
+
+    /// <summary>
+    /// The tests that expect the user agent to block the unpartitioned third-party cookies by default, as the browsers that
+    /// block them (Safari, and Chromium in the configurations that test it, where these tests run): the tentative tests of
+    /// third-party cookie blocking, the <c>Sec-Fetch-Storage-Access</c> header of the Fetch Metadata tests (<c>none</c> for
+    /// the cross-site requests), and the Storage Access API tests that expect a request without user activation, or whose
+    /// permission is denied, to be rejected. The other tests run with the default of the library (<see cref="CookieJar.BlockThirdPartyCookies"/> is
+    /// false): the <c>SameSite</c> tests of <c>cookies/</c> expect the <c>SameSite=None</c> cookies to be sent and stored
+    /// in the cross-site contexts.
+    /// </summary>
+    private static readonly string[] ThirdPartyCookieBlockingTests =
+    [
+        "cookies/third-party-cookies/",
+        "fetch/metadata/",
+        "storage-access-api/requestStorageAccess-cross-site-iframe.",
+        "storage-access-api/requestStorageAccess-nested-cross-site-iframe.",
+        "storage-access-api/storage-access-beyond-cookies.",
+    ];
+
+    private static bool BlocksThirdPartyCookies(string testId)
+    {
+        foreach (var prefix in ThirdPartyCookieBlockingTests)
+        {
+            if (testId.StartsWith(prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
 
     // The testharness.js tests have the rendering backend of the reftests: the images are decoded (decode(), createImageBitmap())
     public static WptResult Run(WptTest test) => new WptTestRunner(test, WptReftestRunner.Backend, reftest: false).Run();
@@ -226,6 +262,9 @@ internal sealed partial class WptTestRunner
                 // The cookies of the responses of the WPT server, sent with the next requests (see GetRequestHeaders)
                 CookieJar = _cookieJar,
 
+                // Network Error Logging is enabled, as in Chromium: the network-error reports are sent to report.py
+                NetworkErrorLogging = new NetworkErrorLoggingCache(),
+
                 // The history of the visited links of the test, which starts empty: the page of the test is visited (as in the
                 // browsers, where the tests link to their own URL to get a visited link), the other URLs are not
                 VisitedLinks = new InMemoryVisitedLinkStore(),
@@ -246,8 +285,9 @@ internal sealed partial class WptTestRunner
                 Permissions = _permissionStore,
                 ClipboardPermission = (_, access) => !_permissions.TryGetValue(access == ClipboardAccess.Read ? "clipboard-read" : "clipboard-write", out var state) || state != "denied",
 
-                // As in Chromium, the screen wake lock is granted without asking the user; the other prompts are dismissed
-                RequestPermission = (_, name) => name == "screen-wake-lock" ? PermissionState.Granted : PermissionState.Prompt,
+                // As in Chromium, the screen wake lock is granted without asking the user, and the prompts of the capture
+                // devices are accepted (--use-fake-ui-for-media-stream); the other prompts are dismissed
+                RequestPermission = (_, name) => name is "screen-wake-lock" or "camera" or "microphone" ? PermissionState.Granted : PermissionState.Prompt,
 
                 // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
                 Geolocation = _geolocation,
@@ -264,6 +304,10 @@ internal sealed partial class WptTestRunner
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
+
+                // The prompts of the user agent, answered by the commands of the test driver (test_driver.set_spc_transaction_mode(),
+                // test_driver.select_fedcm_account(), test_driver.set_virtual_wallet_behavior()...)
+                UserAgentUI = _userAgentUI,
 
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
@@ -282,6 +326,9 @@ internal sealed partial class WptTestRunner
 
                 // The media files are not decoded: their metadata is read and they are played with the virtual clock
                 MediaBackend = WptMediaBackend.Instance,
+
+                // The fake capture devices: a camera, a microphone and the display surfaces of getDisplayMedia()
+                MediaCapture = new WptMediaCaptureBackend(),
 
                 // The values of the client hints: a desktop user agent on Linux, with the memory and the network of a
                 // recent machine (the library sends no device memory nor network hint by default)
@@ -459,8 +506,12 @@ internal sealed partial class WptTestRunner
             if (cancellationToken.IsCancellationRequested)
                 return ValueTask.FromCanceled<DocumentResource?>(cancellationToken);
 
-            // The requests of fetch() and XMLHttpRequest
-            if (request.Destination == RequestDestination.Empty)
+            // The subdomain that does not resolve: the request fails with a DNS error (the type of the network-error reports)
+            if (WptServer.IsUnresolvedHost(new Url(request.Url)))
+                return ValueTask.FromException<DocumentResource?>(new HttpRequestException(HttpRequestError.NameResolutionError, "The host name does not resolve"));
+
+            // The requests of fetch() and XMLHttpRequest, and the requests of FedCM to the identity providers
+            if (request.Destination is RequestDestination.Empty or RequestDestination.WebIdentity)
                 return runner.LoadFetchResource(request, cancellationToken);
 
             return Load(request.Url, request);
@@ -2086,6 +2137,30 @@ internal sealed partial class WptTestRunner
             return adapter.Undefined;
         });
 
+        // The commands of the prompts of the user agent (see WptUserAgentUI): the arguments and the result are JSON; as WebDriver
+        // commands, they run after the tasks that are already queued
+        Define("__wpt_user_agent_ui", 4, (_, args) =>
+        {
+            var command = adapter.ToString(args[0]);
+            var arguments = adapter.ToString(args[1]);
+            var (resolve, reject) = (args[2], args[3]);
+            QueueTask(() => realm.Run(() =>
+            {
+                string? result;
+                try
+                {
+                    result = _userAgentUI.Execute(command, System.Text.Json.Nodes.JsonNode.Parse(arguments)?.AsArray() ?? throw WptWebDriverException.InvalidArgument("the arguments are not an array"));
+                }
+                catch (WptWebDriverException ex)
+                {
+                    return adapter.Call(reject, adapter.Undefined, [adapter.FromString(ex.Message)]);
+                }
+
+                return adapter.Call(resolve, adapter.Undefined, [result is null ? adapter.Undefined : adapter.FromString(result)]);
+            }));
+            return adapter.Undefined;
+        });
+
         // https://w3c.github.io/device-posture/#set-device-posture and https://w3c.github.io/device-posture/#clear-device-posture
         Define("__wpt_set_device_posture", 3, (_, args) =>
         {
@@ -2427,6 +2502,7 @@ internal sealed partial class WptTestRunner
         "cpu" => PressureSource.Cpu,
         _ => null,
     };
+
     /// <summary>
     /// Parses the display features of the Set Display Features command (https://drafts.csswg.org/css-viewport/#set-display-features),
     /// or returns null with the error.
@@ -2601,8 +2677,9 @@ internal sealed partial class WptTestRunner
 
             // The handlers of the WebSocket server run on the thread pool: the clock is not advanced while a connection is busy
             // (a handler is about to respond, or the library is processing a message). The task queue is checked afterwards: a
-            // connection that becomes idle has queued its tasks
-            if (_webSocketServer.IsBusy)
+            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch of a
+            // payment method manifest)
+            if (_webSocketServer.IsBusy || eventLoop.HasPendingUserAgentWork)
             {
                 workerWait.SpinOnce();
                 continue;

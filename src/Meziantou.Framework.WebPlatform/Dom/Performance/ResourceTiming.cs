@@ -73,6 +73,7 @@ internal sealed class ResourceTiming
     private readonly GlobalScope _global;
     private readonly FetchRequest _request;
     private readonly string _initiatorType;
+    private readonly string _initiatorUrl;
     private readonly long _startTimestamp;
     private bool _reported;
 
@@ -82,6 +83,9 @@ internal sealed class ResourceTiming
         _request = request;
         _initiatorType = initiatorType;
         _startTimestamp = global.EventLoop.TimeProvider.GetTimestamp();
+
+        // The initiator of the fetch: the style sheet of the request, the script to which the running task is attributed, or the global object
+        _initiatorUrl = request.InitiatorUrl ?? TaskAttribution.GetScriptUrl(global.EventLoop) ?? global.EnvironmentDocument.Url;
     }
 
     /// <summary>
@@ -231,7 +235,9 @@ internal sealed class ResourceTiming
     {
         var startTime = Math.Max(0, global.ToRelativeHighResolutionTime(startTimestamp));
         var timingInfo = new FetchTimingInfo { StartTime = startTime, PostRedirectStartTime = startTime, EndTime = Math.Max(startTime, global.GetCurrentHighResolutionTime()) };
-        var entry = new PerformanceResourceTiming(global, url, initiatorType, timingInfo, default, responseStatus: 0);
+#pragma warning disable WEBPLATEXP0026 // The initiator URL of the entries is experimental for the consumers of the package only
+        var entry = new PerformanceResourceTiming(global, url, initiatorType, timingInfo, default, responseStatus: 0) { InitiatorUrl = global.EnvironmentDocument.Url };
+#pragma warning restore WEBPLATEXP0026
         var performance = global.Performance;
         performance.QueueEntry(entry);
         performance.AddResourceTimingEntry(entry);
@@ -242,7 +248,9 @@ internal sealed class ResourceTiming
     {
         // https://fetch.spec.whatwg.org/#finalize-and-report-timing: the name is the first URL of the URL list of the response,
         // i.e. the URL of the request once upgraded to https: by main fetch (mixed content, upgrade-insecure-requests)
-        var entry = new PerformanceResourceTiming(_global, _request.RedirectChain[0].Serialize(), _initiatorType, timingInfo, bodyInfo, responseStatus, contentEncoding, serverTiming) { IsRenderBlocking = _request.RenderBlocking };
+#pragma warning disable WEBPLATEXP0026 // The initiator URL of the entries is experimental for the consumers of the package only
+        var entry = new PerformanceResourceTiming(_global, _request.RedirectChain[0].Serialize(), _initiatorType, timingInfo, bodyInfo, responseStatus, contentEncoding, serverTiming) { IsRenderBlocking = _request.RenderBlocking, InitiatorUrl = _initiatorUrl };
+#pragma warning restore WEBPLATEXP0026
         var performance = _global.Performance;
         performance.QueueEntry(entry);
         performance.AddResourceTimingEntry(entry);

@@ -38,10 +38,30 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         });
         var onRejected = Adapter.CreateFunction("", 1, (_, arguments) =>
         {
-            completion.TrySetException(Adapter.CreateException(arguments.Length > 0 ? arguments[0] : Adapter.Undefined));
+            completion.TrySetException(PromiseRejections.Mark(Adapter.CreateException(arguments.Length > 0 ? arguments[0] : Adapter.Undefined)));
             return Adapter.Undefined;
         });
         Adapter.Call(_promiseThen, promise, [onFulfilled, onRejected]);
         return completion.Task;
     }
+}
+
+/// <summary>
+/// The exceptions of the tasks of <see cref="WebIdlRealm{TAdapter, TValue}.ToTask{T}"/> whose promise was rejected, as opposed
+/// to the exceptions thrown by the conversion of the fulfillment value: an algorithm that handles them differently (e.g. the
+/// update of the details of a payment request, https://w3c.github.io/payment-request/#update-a-paymentrequest-s-details-algorithm)
+/// tells them apart.
+/// </summary>
+internal static class PromiseRejections
+{
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Exception, object> Rejections = [];
+
+    public static Exception Mark(Exception exception)
+    {
+        Rejections.AddOrUpdate(exception, Rejections);
+        return exception;
+    }
+
+    /// <summary>Whether the exception is the reason of a rejected promise.</summary>
+    public static bool IsRejection(Exception exception) => Rejections.TryGetValue(exception, out _);
 }

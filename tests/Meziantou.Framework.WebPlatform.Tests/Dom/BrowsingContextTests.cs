@@ -2223,6 +2223,59 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public async Task RequestStorageAccess_WithTypes_GivesTheUnpartitionedStorageToACrossSiteIframe()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>frame</p>")));
+        var permissions = new PermissionStore();
+        permissions.SetState("storage-access", PermissionState.Granted);
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, Permissions = permissions });
+        var top = Load(context, "<iframe src='https://other.example/frame.html'></iframe>");
+        var frame = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!.Document;
+
+        #region WebPlatform_StorageAccessHandle
+        // A frame of https://other.example in a page of another site: window.localStorage is partitioned by the top-level site
+        frame.DefaultView!.LocalStorage.SetItem("partitioned", "1");
+
+        // The handle gives the storage of https://other.example when it is not embedded by another site
+        var request = frame.RequestStorageAccess(new StorageAccessTypes { LocalStorage = true, IndexedDB = true });
+        context.EventLoop.RunUntilIdle();
+        var handle = await request;
+        handle.LocalStorage.SetItem("unpartitioned", "2");
+        Assert.Null(handle.LocalStorage.GetItem("partitioned"));
+        Assert.Null(frame.DefaultView.LocalStorage.GetItem("unpartitioned"));
+
+        // The members that were not requested throw an InvalidStateError
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => handle.SessionStorage).Name);
+        #endregion
+
+        // The request is not the request of the unpartitioned cookies, and a request without type is rejected
+        Assert.False(frame.EnvironmentHasStorageAccess);
+        var empty = frame.RequestStorageAccess(new StorageAccessTypes());
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("InvalidStateError", Assert.IsType<DomException>(empty.Exception?.InnerException).Name);
+    }
+
+    [Fact]
+    public void CookieStoreSet_IsRejectedForABlockedUnpartitionedCookieOfACrossSiteIframe()
+    {
+        var cookies = new CookieJar { BlockThirdPartyCookies = true };
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>frame</p>")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, CookieJar = cookies });
+
+        var top = Load(context, "<iframe src='https://other.example/frame.html'></iframe>");
+        var frame = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!.Document;
+        var cookieStore = frame.DefaultView!.CookieStore;
+
+        var unpartitioned = cookieStore.Set(new CookieInit { Name = "a", Value = "1", SameSite = CookieSameSite.None });
+        var partitioned = cookieStore.Set(new CookieInit { Name = "b", Value = "2", SameSite = CookieSameSite.None, Partitioned = true });
+        context.EventLoop.RunUntilIdle();
+
+        Assert.IsType<TypeErrorException>(unpartitioned.Exception?.InnerException);
+        Assert.True(partitioned.IsCompletedSuccessfully);
+        Assert.Equal("b=2", frame.Cookie);
+    }
+
+    [Fact]
     public void RequestStorageAccess_IsRejectedWithoutUserActivationWhenThePermissionIsNotGranted()
     {
         var cookies = new CookieJar();
@@ -2312,6 +2365,110 @@ public sealed class BrowsingContextTests
         Assert.Equal("rgb(0, 128, 0)", context.Window.GetComputedStyle(document.QuerySelector("h1")!).Color);
         var frame = (HtmlIFrameElement)document.QuerySelector("iframe")!;
         Assert.Equal("Inside the frame", frame.ContentDocument!.Body!.TextContent);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_XmlDocumentWithXsltStylesheet()
+    {
+        #region WebPlatform_XsltStylesheetProcessingInstruction
+        var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
+        {
+            ["https://example.com/feed.xml"] = ("""
+                <?xml-stylesheet type="text/xsl" href="feed.xsl"?>
+                <feed><title>News</title><entry>First</entry><entry>Second</entry></feed>
+                """, "application/xml"),
+            ["https://example.com/feed.xsl"] = ("""
+                <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                  <xsl:template match="/feed">
+                    <html><body><h1><xsl:value-of select="title"/></h1><xsl:apply-templates select="entry"/></body></html>
+                  </xsl:template>
+                  <xsl:template match="entry"><p><xsl:value-of select="."/></p></xsl:template>
+                </xsl:stylesheet>
+                """, "text/xsl"),
+        });
+
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+        context.Navigate("https://example.com/feed.xml");
+        await context.EventLoop.RunUntilIdleAsync(); // the XML document, its stylesheet, then the result of the transformation
+
+        // The result of the transformation replaces the XML document: an HTML document, in quirks mode without doctype
+        var document = context.Document;
+        Assert.Equal("text/html", document.ContentType);
+        Assert.Equal("BackCompat", document.CompatMode);
+        Assert.Equal("News", document.QuerySelector("h1")!.TextContent);
+        Assert.Equal(2u, document.QuerySelectorAll("p").Length);
+        #endregion
+    }
+
+    [Fact]
+    public void XmlDocument_XsltStylesheet_ReplacesTheHistoryEntry()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(url switch
+        {
+            "https://example.com/style.xsl" => new DocumentResource("""<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:output method="text"/><xsl:template match="/">text: <xsl:value-of select="."/></xsl:template></xsl:stylesheet>""") { Headers = [new("Content-Type", "text/xsl")] },
+            "https://other.example/style.xsl" => new DocumentResource("""<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:template match="/"><r/></xsl:template></xsl:stylesheet>""") { Headers = [new("Content-Type", "text/xsl")] },
+            _ => null,
+        }));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+        context.Navigate("https://example.com/", _ => "<p>start</p>");
+        context.Navigate("https://example.com/doc.xml", _ => new DocumentResource("""<?xml-stylesheet type="text/xsl" href="style.xsl"?><root>a</root>""") { Headers = [new("Content-Type", "application/xml")] });
+        context.EventLoop.RunUntilIdle();
+
+        // The text output method: a text document
+        Assert.Equal("text/plain", context.Document.ContentType);
+        Assert.Equal("text: a", context.Document.QuerySelector("pre")!.TextContent);
+        Assert.Equal(2u, context.Window.History.Length);
+        Assert.Equal("xslt", HeaderList.Get(loader.LastRequest!.Headers, "Sec-Fetch-Dest"));
+
+        // A cross-origin stylesheet is not loaded: the document is the XML document
+        context.Navigate("https://example.com/cross.xml", _ => new DocumentResource("""<?xml-stylesheet type="text/xsl" href="https://other.example/style.xsl"?><root>a</root>""") { Headers = [new("Content-Type", "application/xml")] });
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("root", context.Document.DocumentElement!.LocalName);
+    }
+
+    [Fact]
+    public async Task Documentation_XsltLimits()
+    {
+        #region WebPlatform_XsltLimits
+        var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
+        {
+            ["https://example.com/doc.xml"] = ("""<?xml-stylesheet type="text/xsl" href="slow.xsl"?><root>a</root>""", "application/xml"),
+
+            // Two recursive calls with a counter of 40: about 10^12 calls
+            ["https://example.com/slow.xsl"] = ("""
+                <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                  <xsl:template match="/"><xsl:call-template name="t"><xsl:with-param name="n" select="40"/></xsl:call-template></xsl:template>
+                  <xsl:template name="t">
+                    <xsl:param name="n"/>
+                    <xsl:if test="$n &gt; 0">
+                      <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+                      <xsl:call-template name="t"><xsl:with-param name="n" select="$n - 1"/></xsl:call-template>
+                    </xsl:if>
+                  </xsl:template>
+                </xsl:stylesheet>
+                """, "text/xsl"),
+        });
+
+        var messages = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = loader,
+            Xslt = new XsltOptions
+            {
+                MaxSteps = 1_000_000,         // instructions, expressions, patterns and copied nodes
+                MaxOutputNodes = 100_000,     // nodes of the result and of the variables
+                Timeout = TimeSpan.FromSeconds(2),
+            },
+            ConsoleMessage = (_, message) => messages.Add(message.Text),
+        });
+        context.Navigate("https://example.com/doc.xml");
+        await context.EventLoop.RunUntilIdleAsync();
+
+        // The transformation fails: the XML document is shown, and the error is reported to the console
+        Assert.Equal("application/xml", context.Document.ContentType);
+        Assert.Equal("root", context.Document.DocumentElement!.LocalName);
+        Assert.Contains(messages, message => message.StartsWith("XSLT transformation failed", StringComparison.Ordinal));
         #endregion
     }
 

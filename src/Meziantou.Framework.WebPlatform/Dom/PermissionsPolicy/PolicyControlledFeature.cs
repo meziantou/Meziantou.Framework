@@ -37,6 +37,9 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://w3c.github.io/battery/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature Battery { get; } = new("battery", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/mediacapture-main/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Camera { get; } = new("camera", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature ClipboardRead { get; } = new("clipboard-read", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature ClipboardWrite { get; } = new("clipboard-write", isAllowedForAllByDefault: false);
@@ -45,6 +48,9 @@ internal sealed partial class PolicyControlledFeature
     public static PolicyControlledFeature ComputePressure { get; } = new("compute-pressure", isAllowedForAllByDefault: false);
 
     public static PolicyControlledFeature CrossOriginIsolated { get; } = new("cross-origin-isolated", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/mediacapture-screen-share/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature DisplayCapture { get; } = new("display-capture", isAllowedForAllByDefault: false);
 
     /// <summary>https://wicg.github.io/page-lifecycle/#feature-policies: its default allowlist is *.</summary>
     public static PolicyControlledFeature ExecutionWhileNotRendered { get; } = new("execution-while-not-rendered", isAllowedForAllByDefault: true);
@@ -70,13 +76,28 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://fetch.spec.whatwg.org/#policy-controlled-feature-deferred-fetch-minimal: its default allowlist is *.</summary>
     public static PolicyControlledFeature DeferredFetchMinimal { get; } = new("deferred-fetch-minimal", isAllowedForAllByDefault: true);
 
+    /// <summary>https://w3c-fedid.github.io/FedCM/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature IdentityCredentialsGet { get; } = new("identity-credentials-get", isAllowedForAllByDefault: false);
+
     /// <summary>https://wicg.github.io/idle-detection/#api-permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature IdleDetection { get; } = new("idle-detection", isAllowedForAllByDefault: false);
 
     /// <summary>https://wicg.github.io/keyboard-map/#permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature KeyboardMap { get; } = new("keyboard-map", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c-fedid.github.io/digital-credentials/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature DigitalCredentialsCreate { get; } = new("digital-credentials-create", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c-fedid.github.io/digital-credentials/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature DigitalCredentialsGet { get; } = new("digital-credentials-get", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
+
+    /// <summary>https://w3c.github.io/mediacapture-main/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Microphone { get; } = new("microphone", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/payment-request/#permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature Payment { get; } = new("payment", isAllowedForAllByDefault: false);
 
     /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature PublicKeyCredentialsCreate { get; } = new("publickey-credentials-create", isAllowedForAllByDefault: false);
@@ -120,7 +141,7 @@ internal sealed partial class PolicyControlledFeature
         Autoplay,
         Battery,
         new("bluetooth", isAllowedForAllByDefault: false),
-        new("camera", isAllowedForAllByDefault: false),
+        Camera,
         .. ClientHintFeatures.All,
         ClipboardRead,
         ClipboardWrite,
@@ -128,6 +149,9 @@ internal sealed partial class PolicyControlledFeature
         CrossOriginIsolated,
         DeferredFetch,
         DeferredFetchMinimal,
+        DigitalCredentialsCreate,
+        DigitalCredentialsGet,
+        DisplayCapture,
         new("encrypted-media", isAllowedForAllByDefault: false),
         ExecutionWhileNotRendered,
         ExecutionWhileOutOfViewport,
@@ -135,14 +159,15 @@ internal sealed partial class PolicyControlledFeature
         Fullscreen,
         Geolocation,
         Gyroscope,
+        IdentityCredentialsGet,
         IdleDetection,
         KeyboardMap,
         new("local-fonts", isAllowedForAllByDefault: false),
         Magnetometer,
         MediaPlaybackWhileNotVisible,
-        new("microphone", isAllowedForAllByDefault: false),
+        Microphone,
         new("midi", isAllowedForAllByDefault: false),
-        new("payment", isAllowedForAllByDefault: false),
+        Payment,
         new("picture-in-picture", isAllowedForAllByDefault: true),
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
         new("private-state-token-redemption", isAllowedForAllByDefault: false),

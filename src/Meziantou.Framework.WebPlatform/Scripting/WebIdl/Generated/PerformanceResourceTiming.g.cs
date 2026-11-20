@@ -48,6 +48,9 @@ internal static class Binding_PerformanceResourceTiming<TAdapter, TValue> where 
     private static TValue Get_contentType(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.PerformanceResourceTiming>(t, Binding); return r.FromString(o.ContentType); }
     private static TValue Get_contentEncoding(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.PerformanceResourceTiming>(t, Binding); return r.FromString(o.ContentEncoding); }
     private static TValue Get_serverTiming(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.PerformanceResourceTiming>(t, Binding); return r.FromFrozenArray(o.ServerTiming, static (r, e) => r.Wrap(e)); }
+    #pragma warning disable WEBPLATEXP0026 // The binding exposes the experimental Web IDL member
+    private static TValue Get_initiatorUrl(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.PerformanceResourceTiming>(t, Binding); return r.FromString(o.InitiatorUrl); }
+    #pragma warning restore WEBPLATEXP0026
     private static TValue Op_toJSON(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         r.This<global::Meziantou.Framework.WebPlatform.Dom.PerformanceResourceTiming>(t, Binding);
@@ -87,6 +90,7 @@ internal static class Binding_PerformanceResourceTiming<TAdapter, TValue> where 
         r.SetMember(result, "contentType", Get_contentType(r, t));
         r.SetMember(result, "contentEncoding", Get_contentEncoding(r, t));
         r.SetMember(result, "serverTiming", Get_serverTiming(r, t));
+        r.SetMember(result, "initiatorUrl", Get_initiatorUrl(r, t));
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
@@ -119,6 +123,7 @@ internal static class Binding_PerformanceResourceTiming<TAdapter, TValue> where 
         r.DefineAttribute(instanceTarget, "contentType", Get_contentType, null);
         r.DefineAttribute(instanceTarget, "contentEncoding", Get_contentEncoding, null);
         r.DefineAttribute(instanceTarget, "serverTiming", Get_serverTiming, null);
+        r.DefineAttribute(instanceTarget, "initiatorUrl", Get_initiatorUrl, null);
         r.DefineOperation(instanceTarget, "toJSON", 0, Op_toJSON);
     }
 }

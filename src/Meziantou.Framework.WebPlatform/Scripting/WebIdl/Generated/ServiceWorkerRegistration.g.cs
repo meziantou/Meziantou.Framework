@@ -28,6 +28,7 @@ internal static class Binding_ServiceWorkerRegistration<TAdapter, TValue> where 
     private static TValue Get_onupdatefound(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "updatefound");
     private static void Set_onupdatefound(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "updatefound", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_cookies(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding); return r.Wrap(o.Cookies); }
+    private static TValue Get_paymentManager(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding); return r.Wrap(o.PaymentManager); }
     private static TValue Op_update(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>(t, Binding);
@@ -62,6 +63,7 @@ internal static class Binding_ServiceWorkerRegistration<TAdapter, TValue> where 
         r.DefineAttribute(instanceTarget, "updateViaCache", Get_updateViaCache, null);
         r.DefineAttribute(instanceTarget, "onupdatefound", Get_onupdatefound, Set_onupdatefound);
         if (r.IsExposed(global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.ServiceWorker)) r.DefineAttribute(instanceTarget, "cookies", Get_cookies, null);
+        r.DefineAttribute(instanceTarget, "paymentManager", Get_paymentManager, null);
         r.DefineOperation(instanceTarget, "update", 0, Op_update, returnsPromise: true);
         r.DefineOperation(instanceTarget, "unregister", 0, Op_unregister, returnsPromise: true);
         r.DefineOperation(instanceTarget, "showNotification", 1, Op_showNotification, returnsPromise: true);

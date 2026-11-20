@@ -203,7 +203,7 @@ public sealed class PublicKeyCredentialRequestOptions
     public AuthenticationExtensionsClientInputs? Extensions { get; init; }
 }
 
-/// <summary>The inputs of the client extensions (https://w3c.github.io/webauthn/#dictdef-authenticationextensionsclientinputs). The library implements <c>credProps</c>, <c>prf</c> and <c>largeBlob</c>.</summary>
+/// <summary>The inputs of the client extensions (https://w3c.github.io/webauthn/#dictdef-authenticationextensionsclientinputs). The library implements <c>credProps</c>, <c>prf</c>, <c>largeBlob</c> and <c>payment</c> (Secure Payment Confirmation).</summary>
 /// <seealso href="https://w3c.github.io/webauthn/#dictdef-authenticationextensionsclientinputs"/>
 [IdlInterface("AuthenticationExtensionsClientInputs", "https://w3c.github.io/webauthn/#dictdef-authenticationextensionsclientinputs")]
 public sealed class AuthenticationExtensionsClientInputs
@@ -237,6 +237,15 @@ public sealed class AuthenticationExtensionsClientInputs
     /// <seealso href="https://w3c.github.io/webauthn/#dom-authenticationextensionsclientinputs-remoteclientdatajson"/>
     [IdlMember("remoteClientDataJSON", "https://w3c.github.io/webauthn/#dom-authenticationextensionsclientinputs-remoteclientdatajson")]
     public string? RemoteClientDataJson { get; init; }
+
+    /// <summary>
+    /// Gets the inputs of the <c>payment</c> extension of Secure Payment Confirmation: a registration creates a credential
+    /// that can authenticate payments (and a browser bound key); an authentication is only allowed by the payment handler of
+    /// Secure Payment Confirmation (<see cref="PaymentRequest"/>), <c>navigator.credentials.get()</c> rejects it with a <c>NotAllowedError</c>.
+    /// </summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionsclientinputs-payment"/>
+    [IdlMember("payment", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionsclientinputs-payment")]
+    public AuthenticationExtensionsPaymentInputs? Payment { get; init; }
 }
 
 /// <summary>The outputs of the client extensions (https://w3c.github.io/webauthn/#dictdef-authenticationextensionsclientoutputs).</summary>
@@ -273,6 +282,84 @@ public sealed class AuthenticationExtensionsClientOutputs
     /// <seealso href="https://w3c.github.io/webauthn/#dom-authenticationextensionsclientoutputs-remoteclientdatajson"/>
     [IdlMember("remoteClientDataJSON", "https://w3c.github.io/webauthn/#dom-authenticationextensionsclientoutputs-remoteclientdatajson")]
     public bool? RemoteClientDataJson { get; init; }
+
+    /// <summary>Gets the outputs of the <c>payment</c> extension of Secure Payment Confirmation (the signature of the browser bound key).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionsclientoutputs-payment"/>
+    [IdlMember("payment", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionsclientoutputs-payment")]
+    public AuthenticationExtensionsPaymentOutputs? Payment { get; init; }
+}
+
+/// <summary>The inputs of the <c>payment</c> extension of Secure Payment Confirmation (https://w3c.github.io/secure-payment-confirmation/#sctn-payment-extension-registration).</summary>
+/// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dictdef-authenticationextensionspaymentinputs"/>
+[IdlInterface("AuthenticationExtensionsPaymentInputs", "https://w3c.github.io/secure-payment-confirmation/#dictdef-authenticationextensionspaymentinputs")]
+public sealed class AuthenticationExtensionsPaymentInputs
+{
+    /// <summary>Gets whether the extension is active.</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-ispayment"/>
+    [IdlMember("isPayment", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-ispayment")]
+    public bool? IsPayment { get; init; }
+
+    /// <summary>Gets the algorithms allowed for the browser bound key of a registration (the default is <c>pubKeyCredParams</c>).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-browserboundpubkeycredparams"/>
+    [IdlMember("browserBoundPubKeyCredParams", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-browserboundpubkeycredparams")]
+    public IReadOnlyList<PublicKeyCredentialParameters>? BrowserBoundPubKeyCredParams { get; init; }
+
+    /// <summary>Gets the relying party identifier (set by the user agent for an authentication).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-rpid"/>
+    [IdlMember("rpId", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-rpid")]
+    public string? RpId { get; init; }
+
+    /// <summary>Gets the origin of the top-level document (set by the user agent for an authentication).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-toporigin"/>
+    [IdlMember("topOrigin", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-toporigin")]
+    public string? TopOrigin { get; init; }
+
+    /// <summary>Gets the name of the payee (set by the user agent for an authentication).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-payeename"/>
+    [IdlMember("payeeName", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-payeename")]
+    public string? PayeeName { get; init; }
+
+    /// <summary>Gets the origin of the payee (set by the user agent for an authentication).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-payeeorigin"/>
+    [IdlMember("payeeOrigin", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-payeeorigin")]
+    public string? PayeeOrigin { get; init; }
+
+    /// <summary>Gets the logos of the entities that facilitate the payment (set by the user agent for an authentication).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-paymententitieslogos"/>
+    [IdlMember("paymentEntitiesLogos", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-paymententitieslogos")]
+    public IReadOnlyList<PaymentEntityLogo>? PaymentEntitiesLogos { get; init; }
+
+    /// <summary>Gets the amount of the transaction (set by the user agent for an authentication).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-total"/>
+    [IdlMember("total", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-total")]
+    public PaymentCurrencyAmount? Total { get; init; }
+
+    /// <summary>Gets the payment instrument (set by the user agent for an authentication).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-instrument"/>
+    [IdlMember("instrument", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentinputs-instrument")]
+    public PaymentCredentialInstrument? Instrument { get; init; }
+}
+
+/// <summary>The outputs of the <c>payment</c> extension of Secure Payment Confirmation (https://w3c.github.io/secure-payment-confirmation/#sctn-payment-extension-registration).</summary>
+/// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dictdef-authenticationextensionspaymentoutputs"/>
+[IdlInterface("AuthenticationExtensionsPaymentOutputs", "https://w3c.github.io/secure-payment-confirmation/#dictdef-authenticationextensionspaymentoutputs")]
+public sealed class AuthenticationExtensionsPaymentOutputs
+{
+    /// <summary>Gets the signature of the client data by the browser bound key, or null when there is no browser bound key.</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentoutputs-browserboundsignature"/>
+    [IdlMember("browserBoundSignature", "https://w3c.github.io/secure-payment-confirmation/#dom-authenticationextensionspaymentoutputs-browserboundsignature")]
+    public BrowserBoundSignature? BrowserBoundSignature { get; init; }
+}
+
+/// <summary>A signature of the client data by the browser bound key (https://w3c.github.io/secure-payment-confirmation/#dictdef-browserboundsignature).</summary>
+/// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dictdef-browserboundsignature"/>
+[IdlInterface("BrowserBoundSignature", "https://w3c.github.io/secure-payment-confirmation/#dictdef-browserboundsignature")]
+public sealed class BrowserBoundSignature
+{
+    /// <summary>Gets the signature of the <c>clientDataJSON</c> of the credential, with the algorithm of the browser bound key (a DER-encoded signature for ES256).</summary>
+    /// <seealso href="https://w3c.github.io/secure-payment-confirmation/#dom-browserboundsignature-signature"/>
+    [IdlMember("signature", "https://w3c.github.io/secure-payment-confirmation/#dom-browserboundsignature-signature")]
+    public required ReadOnlyMemory<byte> Signature { get; init; }
 }
 
 /// <summary>The credential properties (https://w3c.github.io/webauthn/#dictdef-credentialpropertiesoutput).</summary>

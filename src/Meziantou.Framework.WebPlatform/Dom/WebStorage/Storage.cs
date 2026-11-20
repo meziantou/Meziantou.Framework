@@ -13,12 +13,16 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
     private readonly Window _window;
     private readonly StorageArea _map;
 
-    internal Storage(Window window, StorageArea map, bool isSession)
+    internal Storage(Window window, StorageArea map, bool isSession, StorageKey? storageKey = null)
     {
         _window = window;
         _map = map;
         IsSession = isSession;
+        StorageKey = storageKey;
     }
+
+    /// <summary>The storage key of the area of a <see cref="StorageAccessHandle"/> (the unpartitioned storage), or null for the storage key of the document.</summary>
+    internal StorageKey? StorageKey { get; }
 
     /// <summary>The type of the storage: "session" (true) or "local" (false).</summary>
     internal bool IsSession { get; }
@@ -97,12 +101,12 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
             return;
 
         var url = thisDocument.Url;
-        if (Window.GetStorageKey(thisDocument) is not { } storageKey)
+        if ((StorageKey ?? Window.GetStorageKey(thisDocument)) is not { } storageKey)
             return;
         if (IsSession)
         {
             // The windows of the same top-level traversable
-            BroadcastToGroup(navigable.Top, [navigable.Top], thisDocument, storageKey, key, oldValue, newValue, url, isSession: true);
+            BroadcastToGroup(navigable.Top, [navigable.Top], this, storageKey, key, oldValue, newValue, url, isSession: true);
             return;
         }
 
@@ -113,17 +117,18 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
         {
             if (ReferenceEquals(owner.EventLoop, currentLoop))
             {
-                BroadcastToGroup(navigable.Top, owner.GetGroupTopLevelBrowsingContexts(), thisDocument, storageKey, key, oldValue, newValue, url, isSession: false);
+                BroadcastToGroup(navigable.Top, owner.GetGroupTopLevelBrowsingContexts(), this, storageKey, key, oldValue, newValue, url, isSession: false);
             }
             else
             {
-                owner.EventLoop.QueueTask(() => BroadcastToGroup(navigable.Top, owner.GetGroupTopLevelBrowsingContexts(), thisDocument, storageKey, key, oldValue, newValue, url, isSession: false));
+                owner.EventLoop.QueueTask(() => BroadcastToGroup(navigable.Top, owner.GetGroupTopLevelBrowsingContexts(), this, storageKey, key, oldValue, newValue, url, isSession: false));
             }
         }
     }
 
-    private static void BroadcastToGroup(BrowsingContext sourceTop, IEnumerable<BrowsingContext> topLevelBrowsingContexts, Document thisDocument, StorageKey storageKey, string? key, string? oldValue, string? newValue, string url, bool isSession)
+    private static void BroadcastToGroup(BrowsingContext sourceTop, IEnumerable<BrowsingContext> topLevelBrowsingContexts, Storage source, StorageKey storageKey, string? key, string? oldValue, string? newValue, string url, bool isSession)
     {
+        var thisDocument = source._window.Document;
         foreach (var topLevel in topLevelBrowsingContexts)
         {
             if (topLevel.IsDestroyed || (isSession && !ReferenceEquals(topLevel, sourceTop)))
@@ -132,8 +137,24 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
             foreach (var navigable in topLevel.GetInclusiveDescendantNavigables())
             {
                 var document = navigable.Document;
+                if (document.RelevantWindow is not { } window)
+                    continue;
+
+                // The Storage objects of the StorageAccessHandle objects of the document whose storage key is the same
+                if (document.StorageAccessHandleStorages is { } handleStorages)
+                {
+                    foreach (var handleStorage in handleStorages)
+                    {
+                        if (!ReferenceEquals(handleStorage, source) && handleStorage.IsSession == isSession && handleStorage.StorageKey == storageKey)
+                        {
+                            var target = handleStorage;
+                            document.QueueGlobalTask(() => FireStorageEvent(window, target, key, oldValue, newValue, url));
+                        }
+                    }
+                }
+
                 // The Storage objects of the same storage key: the same origin (and partition nonce)
-                if (ReferenceEquals(document, thisDocument) || document.RelevantWindow is not { } window || Window.GetStorageKey(document) != storageKey)
+                if ((ReferenceEquals(document, thisDocument) && source.StorageKey is null) || Window.GetStorageKey(document) != storageKey)
                     continue;
 
                 // Queue a global task on the DOM manipulation task source given the relevant global object of the remote storage
@@ -149,19 +170,24 @@ public sealed class Storage : ISupportedPropertyNames, IRealmBoundPlatformObject
                         return;
                     }
 
-                    window.FireEvent(new StorageEvent("storage", new StorageEventInit
-                    {
-                        Key = key,
-                        OldValue = oldValue,
-                        NewValue = newValue,
-                        Url = url,
-                        StorageArea = storageArea,
-                    })
-                    {
-                        RealmWindow = window,
-                    });
+                    FireStorageEvent(window, storageArea, key, oldValue, newValue, url);
                 });
             }
         }
+    }
+
+    private static void FireStorageEvent(Window window, Storage storageArea, string? key, string? oldValue, string? newValue, string url)
+    {
+        window.FireEvent(new StorageEvent("storage", new StorageEventInit
+        {
+            Key = key,
+            OldValue = oldValue,
+            NewValue = newValue,
+            Url = url,
+            StorageArea = storageArea,
+        })
+        {
+            RealmWindow = window,
+        });
     }
 }

@@ -6,7 +6,7 @@ public partial class Document
 {
     /// <summary>
     /// https://privacycg.github.io/storage-access/#environment-has-storage-access: whether the environment of the document
-    /// has storage access. It is set by <see cref="RequestStorageAccess"/>, and inherited by the document of a navigation
+    /// has storage access. It is set by <see cref="RequestStorageAccess()"/>, and inherited by the document of a navigation
     /// that the document initiates in its own navigable to its own origin (e.g. a reload), or whose response has the
     /// <c>Activate-Storage-Access: load</c> header.
     /// </summary>
@@ -17,7 +17,7 @@ public partial class Document
     /// (https://privacycg.github.io/storage-access/#dom-document-hasstorageaccess): true in a first-party context (a top-level
     /// document, or a document that is same site with its top-level document and its ancestors) or when the user allows
     /// the unpartitioned cookies of its site (<see cref="CookieJar.SetThirdPartyCookieAccess"/>); in a third-party context,
-    /// whether the document obtained storage access (<see cref="RequestStorageAccess"/>) and the <c>storage-access</c>
+    /// whether the document obtained storage access (<see cref="RequestStorageAccess()"/>) and the <c>storage-access</c>
     /// permission is still granted. The task fails with an <c>InvalidStateError</c> <see cref="DomException"/> when the
     /// document is not fully active, and is false for a document of an opaque origin, that is not a secure context, or that
     /// is loaded in a credentialless iframe.
@@ -82,7 +82,14 @@ public partial class Document
     /// </summary>
     /// <seealso href="https://privacycg.github.io/storage-access/#dom-document-requeststorageaccess"/>
     [IdlMember("requestStorageAccess", "https://privacycg.github.io/storage-access/#dom-document-requeststorageaccess")]
-    public Task RequestStorageAccess()
+    public Task RequestStorageAccess() => RequestStorageAccessCore(requestUnpartitionedCookieAccess: true);
+
+    /// <summary>
+    /// https://privacycg.github.io/storage-access/#request-storage-access: the environment of the document gets storage access
+    /// (its unpartitioned cookies) when the request is granted and <paramref name="requestUnpartitionedCookieAccess"/> is
+    /// true (https://privacycg.github.io/saa-non-cookie-storage/#dom-document-requeststorageaccess).
+    /// </summary>
+    private Task RequestStorageAccessCore(bool requestUnpartitionedCookieAccess)
     {
         if (!IsFullyActive || BrowsingContext is not { } browsingContext || RelevantWindow is not { } global)
             return Task.FromException(DomException.InvalidState("The document is not fully active"));
@@ -134,7 +141,11 @@ public partial class Document
             {
                 if (state == PermissionState.Granted)
                 {
-                    EnvironmentHasStorageAccess = true;
+                    if (requestUnpartitionedCookieAccess)
+                    {
+                        EnvironmentHasStorageAccess = true;
+                    }
+
                     result.TrySetResult();
                 }
                 else

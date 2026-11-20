@@ -9,19 +9,19 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 673 | 690 | 6 | 98% |
+| [Stable](#stable-tests) | 674 | 690 | 6 | 99% |
 | [Tentative](#tentative-tests) | 32 | 55 | 0 | 58% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
 | [Crash tests](#crash-tests) | 45 | 46 | 0 | 98% |
-| **All** | **754** | **795** | **6** | **96%** |
+| **All** | **755** | **795** | **6** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 25
+- **TEST BUG**: 8
+- **NOT IMPLEMENTED**: 24
 - **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
 
@@ -231,7 +231,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`historical-mutation-events.html`](https://wpt.fyi/results/dom/historical-mutation-events.html) | Pass | 10 / 10 |  |  |
 | [`historical.html`](https://wpt.fyi/results/dom/historical.html) | Pass | 80 / 80 |  |  |
 | [`idlharness.any.js`](https://wpt.fyi/results/dom/idlharness.any.js) | Pass | 440 / 440 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/dom/idlharness.window.js) | Fail | 1,956 / 1,986 | TEST BUG, NOT IMPLEMENTED | 6 subtests: the IDL of the test (`interfaces/dom.idl`) predates `NodeRange` (https://dom.spec.whatwg.org/#noderange): `startContainer` and `endContainer` are attributes of `NodeRange`, the parent interface of `StaticRange` and `Range`, not of `AbstractRange`; `XSLTProcessor` |
+| [`idlharness.window.js`](https://wpt.fyi/results/dom/idlharness.window.js) | Pass | 1,986 / 1,986 |  |  |
 | [`interface-objects.html`](https://wpt.fyi/results/dom/interface-objects.html) | Pass | 23 / 23 |  |  |
 | [`lists/DOMTokenList-Iterable.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-Iterable.html) | Pass | 6 / 6 |  |  |
 | [`lists/DOMTokenList-coverage-for-attributes.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-coverage-for-attributes.html) | Fail | 174 / 175 | NOT IMPLEMENTED | `relList` on the MathML `<a>` element (`MathMLAnchorElement` only reflects `href`) |

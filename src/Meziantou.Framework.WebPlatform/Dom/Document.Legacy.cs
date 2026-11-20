@@ -466,6 +466,12 @@ public partial class Document
             sensors.OnDocumentVisible();
         }
 
+        // https://w3c.github.io/mediacapture-main/#dfn-device-enumeration-can-proceed: the requests of a hidden document wait until it is visible
+        if (visible && RelevantWindow is { NavigatorOrNull.MediaDevicesOrNull: { } mediaDevices } mediaDevicesWindow && ReferenceEquals(mediaDevicesWindow.Document, this))
+        {
+            mediaDevices.OnDocumentVisible();
+        }
+
         // The keyboard layout that changed while the document was hidden is reported
         if (visible && RelevantWindow is { NavigatorOrNull.KeyboardOrNull: { } keyboard } keyboardWindow && ReferenceEquals(keyboardWindow.Document, this))
         {

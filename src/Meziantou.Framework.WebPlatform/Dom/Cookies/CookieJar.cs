@@ -18,7 +18,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// "same-site" and "cross-site" requests, schemefully). The cookies with the <c>Partitioned</c> attribute are keyed by the
 /// site of the top-level document (CHIPS); the other cookies are not partitioned. By default, the third-party cookies are not
 /// blocked: <see cref="BlockThirdPartyCookies"/> and <see cref="SetThirdPartyCookieAccess"/> block the unpartitioned cookies
-/// in the third-party contexts, which the Storage Access API (<see cref="Document.RequestStorageAccess"/>) can then unblock.
+/// in the third-party contexts, which the Storage Access API (<see cref="Document.RequestStorageAccess()"/>) can then unblock.
 /// </para>
 /// <para>
 /// The names and the values of the cookies are byte sequences, represented as strings whose characters are the bytes
@@ -107,7 +107,7 @@ public sealed class CookieJar
     /// Gets or sets whether the unpartitioned cookies are blocked in the third-party contexts (third-party cookie blocking):
     /// the documents and the requests whose site is not the site of their top-level document, or that have a cross-site
     /// ancestor, neither send nor store the cookies without the <c>Partitioned</c> attribute, unless they have storage access
-    /// (https://privacycg.github.io/storage-access/, see <see cref="Document.RequestStorageAccess"/>). The rules of
+    /// (https://privacycg.github.io/storage-access/, see <see cref="Document.RequestStorageAccess()"/>). The rules of
     /// <see cref="SetThirdPartyCookieAccess"/> take precedence. The default value is false: as in the browsers that do not
     /// block the third-party cookies, the unpartitioned cookies are available in every context, so every document has
     /// storage access (<see cref="Document.HasStorageAccess"/>), and the cross-site requests have the <c>active</c> storage
@@ -136,7 +136,7 @@ public sealed class CookieJar
     /// the user, and the Set Storage Access command of WebDriver, https://privacycg.github.io/storage-access/#set-storage-access-command).
     /// The rules override <see cref="BlockThirdPartyCookies"/>. The documents of a site whose cookies are allowed have storage
     /// access (<see cref="Document.HasStorageAccess"/>); the documents of a site whose cookies are blocked can request it
-    /// (<see cref="Document.RequestStorageAccess"/>).
+    /// (<see cref="Document.RequestStorageAccess()"/>).
     /// </summary>
     /// <param name="topLevelUrl">A URL of the top-level site (e.g. <c>https://example.com/</c>), or null for every top-level site.</param>
     /// <param name="embeddedUrl">A URL of the embedded site, or null for every site.</param>

@@ -2517,13 +2517,9 @@
       "background-image sec-fetch-site - Same-Site -> Same-Site": "TIMEOUT",
       "background-image sec-fetch-storage-access - Cross-site": "TIMEOUT",
       "border-image sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "border-image sec-fetch-storage-access - Cross-site": "FAIL",
       "content sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "content sec-fetch-storage-access - Cross-site": "FAIL",
       "cursor sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "cursor sec-fetch-storage-access - Cross-site": "FAIL",
-      "list-style-image sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "list-style-image sec-fetch-storage-access - Cross-site": "FAIL"
+      "list-style-image sec-fetch-site - HTTPS downgrade-upgrade": "FAIL"
     }
   },
   "fetch/metadata/generated/css-images.sub.tentative.html": {
@@ -2549,8 +2545,7 @@
   "fetch/metadata/generated/element-audio.https.sub.html": {
     "total": 23,
     "failures": {
-      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-audio.sub.html": {
@@ -2559,36 +2554,26 @@
   "fetch/metadata/generated/element-embed.https.sub.html": {
     "total": 19,
     "failures": {
-      "sec-fetch-mode": "FAIL",
-      "sec-fetch-storage-access - Cross-site": "FAIL"
+      "sec-fetch-mode": "FAIL"
     }
   },
   "fetch/metadata/generated/element-embed.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-frame.https.sub.html": {
-    "total": 20,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site": "FAIL"
-    }
+    "total": 20
   },
   "fetch/metadata/generated/element-frame.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-iframe.https.sub.html": {
-    "total": 20,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site": "FAIL"
-    }
+    "total": 20
   },
   "fetch/metadata/generated/element-iframe.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-img-environment-change.https.sub.html": {
-    "total": 22,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
-    }
+    "total": 22
   },
   "fetch/metadata/generated/element-img-environment-change.sub.html": {
     "total": 18
@@ -2596,9 +2581,7 @@
   "fetch/metadata/generated/element-img.https.sub.html": {
     "total": 45,
     "failures": {
-      "sec-fetch-site - src - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - src - Cross-site, no attributes": "FAIL",
-      "sec-fetch-storage-access - srcset - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - src - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-img.sub.html": {
@@ -2607,8 +2590,7 @@
   "fetch/metadata/generated/element-input-image.https.sub.html": {
     "total": 20,
     "failures": {
-      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-input-image.sub.html": {
@@ -2680,8 +2662,7 @@
       "sec-fetch-dest attributes: as=style": "FAIL",
       "sec-fetch-dest attributes: as=track": "FAIL",
       "sec-fetch-dest attributes: as=video": "FAIL",
-      "sec-fetch-dest attributes: as=worker": "FAIL",
-      "sec-fetch-storage-access - Cross-site no attributes": "FAIL"
+      "sec-fetch-dest attributes: as=worker": "FAIL"
     }
   },
   "fetch/metadata/generated/element-link-prefetch.optional.sub.html": {
@@ -2694,21 +2675,13 @@
     "total": 18
   },
   "fetch/metadata/generated/element-picture.https.sub.html": {
-    "total": 66,
-    "failures": {
-      "sec-fetch-storage-access - img[src] - Cross-site, no attributes": "FAIL",
-      "sec-fetch-storage-access - img[srcset] - Cross-site, no attributes": "FAIL",
-      "sec-fetch-storage-access - source[srcset] - Cross-site, no attributes": "FAIL"
-    }
+    "total": 66
   },
   "fetch/metadata/generated/element-picture.sub.html": {
     "total": 54
   },
   "fetch/metadata/generated/element-script.https.sub.html": {
-    "total": 37,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
-    }
+    "total": 37
   },
   "fetch/metadata/generated/element-script.sub.html": {
     "total": 36
@@ -2731,25 +2704,17 @@
   "fetch/metadata/generated/element-video.https.sub.html": {
     "total": 23,
     "failures": {
-      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-video.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/fetch-via-serviceworker.https.sub.html": {
-    "total": 44,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, init: mode=no-cors, credentials=include - fallback": "FAIL",
-      "sec-fetch-storage-access - Cross-site, init: mode=no-cors, credentials=include - respondWith": "FAIL"
-    }
+    "total": 44
   },
   "fetch/metadata/generated/fetch.https.sub.html": {
-    "total": 22,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, init: mode=no-cors, credentials=include": "FAIL"
-    }
+    "total": 22
   },
   "fetch/metadata/generated/fetch.sub.html": {
     "total": 18
@@ -2761,11 +2726,7 @@
     "total": 36
   },
   "fetch/metadata/generated/header-link.https.sub.html": {
-    "total": 37,
-    "failures": {
-      "sec-fetch-storage-access rel=icon - Cross-site": "FAIL",
-      "sec-fetch-storage-access rel=stylesheet - Cross-site": "FAIL"
-    }
+    "total": 37
   },
   "fetch/metadata/generated/header-link.https.sub.tentative.html": {
     "total": 1
@@ -2810,8 +2771,7 @@
     "total": 23,
     "failures": {
       "sec-fetch-dest no attributes": "FAIL",
-      "sec-fetch-site - HTTPS downgrade-upgrade no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/svg-image.sub.html": {
@@ -2842,10 +2802,7 @@
     "total": 5
   },
   "fetch/metadata/generated/worker-dedicated-importscripts.https.sub.html": {
-    "total": 19,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site": "FAIL"
-    }
+    "total": 19
   },
   "fetch/metadata/generated/worker-dedicated-importscripts.sub.html": {
     "total": 18

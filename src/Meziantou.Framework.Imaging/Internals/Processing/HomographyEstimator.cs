@@ -9,12 +9,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// Each set of points is moved so that its centroid is the origin and scaled so that the mean distance to it is √2. Each
 /// correspondence gives two rows of the 2n x 9 matrix <c>A</c> of the equations <c>u (h31 x + h32 y + h33) = h11 x + h12 y
-/// + h13</c> and likewise for <c>v</c>; the homography is the unit vector <c>h</c> that minimizes <c>|A h|</c>, the
-/// eigenvector of the smallest eigenvalue of <c>AᵀA</c>, found with the cyclic Jacobi method (rotations computed with
-/// square roots only, in a fixed order, so the result does not depend on the platform). The points determine no
-/// homography when the second smallest eigenvalue is not larger than 10⁻¹² times the largest one (three collinear points
-/// of four, all the points on a line), or when the result is singular. The scale of the result makes <c>W = 1</c> at the
-/// centroid of the source points, so that they are in front of the viewer.
+/// + h13</c> and likewise for <c>v</c>; the homography is the unit vector <c>h</c> that minimizes <c>|A h|</c>, the right
+/// singular vector of the smallest singular value of <c>A</c>. The rows are reduced as they come to the 9 x 9 triangular
+/// factor <c>R</c> of <c>A = QR</c> with Givens rotations, and <c>R</c> is decomposed with the one-sided Jacobi method
+/// (Hestenes), so that the singular values keep the accuracy of <c>A</c>: forming <c>AᵀA</c> would square the condition
+/// number, and lose the homography of four points of which two or three are close together. The rotations are computed
+/// with square roots only, in a fixed order, so the result does not depend on the platform. The points determine no
+/// homography when the second smallest singular value is not larger than 10⁻¹⁰ times the largest one (three collinear
+/// points of four, all the points on a line: the rounding errors leave it near 10⁻¹⁶ times the largest one), or when
+/// the result is singular. The scale of the result makes <c>W = 1</c> at the centroid of the source points, so that they
+/// are in front of the viewer.
 /// </para>
 /// <para>
 /// RANSAC draws samples of four distinct correspondences with a xorshift generator seeded by the options, keeps the
@@ -26,6 +30,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class HomographyEstimator
 {
     private const int MaxJacobiSweeps = 100;
+    private const int Unknowns = 9;
 
     /// <summary>Fits the homography of all the correspondences by least squares, or returns <see langword="false"/> when they determine none.</summary>
     public static bool TryFit(ReadOnlySpan<PointD> source, ReadOnlySpan<PointD> destination, ReadOnlySpan<int> indices, out ProjectiveTransform transform)
@@ -39,10 +44,10 @@ internal static class HomographyEstimator
         if (sourceScale == 0 || destinationScale == 0)
             return false;
 
-        // AᵀA, accumulated row by row
-        Span<double> matrix = stackalloc double[81];
-        matrix.Clear();
-        Span<double> row = stackalloc double[9];
+        // R, the triangular factor of A = QR, updated row by row
+        Span<double> triangle = stackalloc double[Unknowns * Unknowns];
+        triangle.Clear();
+        Span<double> row = stackalloc double[Unknowns];
         foreach (var index in indices)
         {
             var x = (source[index].X - sourceCenter.X) * sourceScale;
@@ -59,7 +64,7 @@ internal static class HomographyEstimator
             row[6] = u * x;
             row[7] = u * y;
             row[8] = u;
-            AddOuterProduct(matrix, row);
+            AddRow(triangle, row);
 
             row[0] = 0;
             row[1] = 0;
@@ -70,18 +75,18 @@ internal static class HomographyEstimator
             row[6] = v * x;
             row[7] = v * y;
             row[8] = v;
-            AddOuterProduct(matrix, row);
+            AddRow(triangle, row);
         }
 
-        Span<double> eigenvalues = stackalloc double[9];
-        Span<double> eigenvectors = stackalloc double[81];
-        DiagonalizeSymmetric(matrix, eigenvalues, eigenvectors);
+        Span<double> singularValues = stackalloc double[Unknowns];
+        Span<double> singularVectors = stackalloc double[Unknowns * Unknowns];
+        DecomposeSingularValues(triangle, singularValues, singularVectors);
 
-        // The smallest eigenvalue, and the second smallest that must be clearly larger
+        // The smallest singular value, and the second smallest that must be clearly larger
         var smallest = 0;
-        for (var i = 1; i < 9; i++)
+        for (var i = 1; i < Unknowns; i++)
         {
-            if (eigenvalues[i] < eigenvalues[smallest])
+            if (singularValues[i] < singularValues[smallest])
             {
                 smallest = i;
             }
@@ -89,23 +94,23 @@ internal static class HomographyEstimator
 
         var second = double.PositiveInfinity;
         var largest = 0.0;
-        for (var i = 0; i < 9; i++)
+        for (var i = 0; i < Unknowns; i++)
         {
-            largest = Math.Max(largest, eigenvalues[i]);
+            largest = Math.Max(largest, singularValues[i]);
             if (i != smallest)
             {
-                second = Math.Min(second, eigenvalues[i]);
+                second = Math.Min(second, singularValues[i]);
             }
         }
 
-        if (!(second > 1e-12 * largest))
+        if (!(second > 1e-10 * largest) || !double.IsFinite(largest))
             return false;
 
         // h in the normalized coordinates: u = (h0 x + h1 y + h2) / (h6 x + h7 y + h8)
-        Span<double> h = stackalloc double[9];
-        for (var i = 0; i < 9; i++)
+        Span<double> h = stackalloc double[Unknowns];
+        for (var i = 0; i < Unknowns; i++)
         {
-            h[i] = eigenvectors[(i * 9) + smallest];
+            h[i] = singularVectors[(i * Unknowns) + smallest];
         }
 
         // Denormalize: H = T_destination⁻¹ * Hn * T_source, with T(p) = s (p - c)
@@ -274,91 +279,121 @@ internal static class HomographyEstimator
         return (center, distance > 0 && double.IsFinite(distance) ? Math.Sqrt(2) / distance : 0);
     }
 
-    private static void AddOuterProduct(Span<double> matrix, ReadOnlySpan<double> row)
+    /// <summary>
+    /// Adds a row to the matrix of which <paramref name="triangle"/> is the upper triangular factor <c>R</c> of the QR
+    /// decomposition: Givens rotations of the row with the rows of <c>R</c> zero it. The row is destroyed.
+    /// </summary>
+    private static void AddRow(Span<double> triangle, Span<double> row)
     {
-        for (var i = 0; i < 9; i++)
+        for (var i = 0; i < Unknowns; i++)
         {
-            for (var j = 0; j < 9; j++)
+            var b = row[i];
+            if (b == 0)
+                continue;
+
+            var a = triangle[(i * Unknowns) + i];
+            var r = Hypot(a, b);
+            var c = a / r;
+            var s = b / r;
+            triangle[(i * Unknowns) + i] = r;
+            row[i] = 0;
+            for (var j = i + 1; j < Unknowns; j++)
             {
-                matrix[(i * 9) + j] += row[i] * row[j];
+                var t = triangle[(i * Unknowns) + j];
+                var w = row[j];
+                triangle[(i * Unknowns) + j] = (c * t) + (s * w);
+                row[j] = (c * w) - (s * t);
             }
         }
     }
 
     /// <summary>
-    /// Diagonalizes a symmetric 9 x 9 matrix with the cyclic Jacobi method: <paramref name="eigenvalues"/> receives its
-    /// eigenvalues and the columns of <paramref name="eigenvectors"/> the unit eigenvectors. The matrix is destroyed.
+    /// Decomposes a 9 x 9 matrix <c>M = U Σ Vᵀ</c> with the one-sided Jacobi method (Hestenes): rotations of pairs of columns
+    /// make them orthogonal. <paramref name="singularValues"/> receives the singular values and the columns of
+    /// <paramref name="singularVectors"/> the right singular vectors. The matrix is destroyed.
     /// </summary>
-    private static void DiagonalizeSymmetric(Span<double> matrix, Span<double> eigenvalues, Span<double> eigenvectors)
+    private static void DecomposeSingularValues(Span<double> matrix, Span<double> singularValues, Span<double> singularVectors)
     {
-        const int N = 9;
-        eigenvectors.Clear();
+        const int N = Unknowns;
+        singularVectors.Clear();
         for (var i = 0; i < N; i++)
         {
-            eigenvectors[(i * N) + i] = 1;
+            singularVectors[(i * N) + i] = 1;
         }
 
         for (var sweep = 0; sweep < MaxJacobiSweeps; sweep++)
         {
-            var off = 0.0;
-            var diagonal = 0.0;
-            for (var p = 0; p < N; p++)
-            {
-                diagonal += matrix[(p * N) + p] * matrix[(p * N) + p];
-                for (var q = p + 1; q < N; q++)
-                {
-                    off += matrix[(p * N) + q] * matrix[(p * N) + q];
-                }
-            }
-
-            if (off <= 1e-30 * diagonal || off == 0)
-                break;
-
+            var rotated = false;
             for (var p = 0; p < N - 1; p++)
             {
                 for (var q = p + 1; q < N; q++)
                 {
-                    var apq = matrix[(p * N) + q];
-                    if (apq == 0)
+                    var alpha = 0.0;
+                    var beta = 0.0;
+                    var gamma = 0.0;
+                    for (var k = 0; k < N; k++)
+                    {
+                        var mkp = matrix[(k * N) + p];
+                        var mkq = matrix[(k * N) + q];
+                        alpha += mkp * mkp;
+                        beta += mkq * mkq;
+                        gamma += mkp * mkq;
+                    }
+
+                    // The columns are orthogonal to the precision of the computation
+                    if (!(Math.Abs(gamma) > 1e-15 * Math.Sqrt(alpha) * Math.Sqrt(beta)))
                         continue;
 
-                    var app = matrix[(p * N) + p];
-                    var aqq = matrix[(q * N) + q];
-                    var tau = (aqq - app) / (2 * apq);
-                    var t = (tau >= 0 ? 1 : -1) / (Math.Abs(tau) + Math.Sqrt(1 + (tau * tau)));
+                    rotated = true;
+                    var zeta = (beta - alpha) / (2 * gamma);
+                    var t = Math.Abs(zeta) > 1e100 ? 1 / (2 * zeta) : (zeta >= 0 ? 1 : -1) / (Math.Abs(zeta) + Math.Sqrt(1 + (zeta * zeta)));
                     var c = 1 / Math.Sqrt(1 + (t * t));
                     var s = t * c;
 
                     for (var k = 0; k < N; k++)
                     {
-                        var akp = matrix[(k * N) + p];
-                        var akq = matrix[(k * N) + q];
-                        matrix[(k * N) + p] = (c * akp) - (s * akq);
-                        matrix[(k * N) + q] = (s * akp) + (c * akq);
+                        var mkp = matrix[(k * N) + p];
+                        var mkq = matrix[(k * N) + q];
+                        matrix[(k * N) + p] = (c * mkp) - (s * mkq);
+                        matrix[(k * N) + q] = (s * mkp) + (c * mkq);
                     }
 
                     for (var k = 0; k < N; k++)
                     {
-                        var apk = matrix[(p * N) + k];
-                        var aqk = matrix[(q * N) + k];
-                        matrix[(p * N) + k] = (c * apk) - (s * aqk);
-                        matrix[(q * N) + k] = (s * apk) + (c * aqk);
-                    }
-
-                    for (var k = 0; k < N; k++)
-                    {
-                        var vkp = eigenvectors[(k * N) + p];
-                        var vkq = eigenvectors[(k * N) + q];
-                        eigenvectors[(k * N) + p] = (c * vkp) - (s * vkq);
-                        eigenvectors[(k * N) + q] = (s * vkp) + (c * vkq);
+                        var vkp = singularVectors[(k * N) + p];
+                        var vkq = singularVectors[(k * N) + q];
+                        singularVectors[(k * N) + p] = (c * vkp) - (s * vkq);
+                        singularVectors[(k * N) + q] = (s * vkp) + (c * vkq);
                     }
                 }
             }
+
+            if (!rotated)
+                break;
         }
 
-        for (var i = 0; i < N; i++)
+        for (var j = 0; j < N; j++)
         {
-            eigenvalues[i] = matrix[(i * N) + i];
+            var norm = 0.0;
+            for (var k = 0; k < N; k++)
+            {
+                norm = Hypot(norm, matrix[(k * N) + j]);
+            }
+
+            singularValues[j] = norm;
         }
+    }
+
+    /// <summary>Gets √(a² + b²) without overflow or underflow of the squares.</summary>
+    private static double Hypot(double a, double b)
+    {
+        var x = Math.Abs(a);
+        var y = Math.Abs(b);
+        var max = Math.Max(x, y);
+        if (max == 0 || !double.IsFinite(max))
+            return max;
+
+        var min = Math.Min(x, y) / max;
+        return max * Math.Sqrt(1 + (min * min));
     }
 }

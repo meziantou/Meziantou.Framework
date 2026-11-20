@@ -6,14 +6,11 @@ using Meziantou.Framework.WebPlatform.Css.Values;
 namespace Meziantou.Framework.WebPlatform.Css.Om;
 
 /// <summary>
-/// https://drafts.csswg.org/css-mixins-1/#mixin-rule: a mixin. Its body contains the local variables of the mixin (the custom
-/// properties, written as <see cref="CssNestedDeclarations"/> rules), the @result rules, whose contents replace the @apply
-/// rules that apply the mixin, and the conditional group rules (@media, @supports, @container) that contain them.
+/// https://drafts.csswg.org/css-mixins-1/#mixin-rule: a mixin. Its body (https://drafts.csswg.org/css-mixins-1/#mixin-body) is
+/// parsed as a nested declarations rule: its declarations (written as <see cref="CssNestedDeclarations"/> rules), its nested
+/// style rules, its conditional group rules, its @apply, @contents and @private rules replace the @apply rules that apply the
+/// mixin. @layer rules are invalid in the body.
 /// </summary>
-/// <remarks>
-/// The body of a mixin is experimental: the web-platform-tests (and the browsers) wrap the declarations and the rules that
-/// are applied in a @result rule, which the specification no longer defines.
-/// </remarks>
 /// <seealso href="https://drafts.csswg.org/css-mixins-1/#cssmixinrule"/>
 [IdlInterface("CSSMixinRule", "https://drafts.csswg.org/css-mixins-1/#cssmixinrule")]
 public sealed class CssMixinRule : CssGroupingRule
@@ -66,20 +63,6 @@ public sealed class CssMixinRule : CssGroupingRule
 
         return false;
     }
-}
-
-/// <summary>
-/// The @result rule of a mixin body, as implemented by the browsers and used by the web-platform-tests: its declarations and
-/// its rules replace the @apply rules that apply the mixin. It accepts the contents of a style rule, plus the @contents rules.
-/// </summary>
-[Experimental(ExperimentalApis.CssMixinResultAndPrivateRules, UrlFormat = ExperimentalApis.UrlFormat)]
-public sealed class CssMixinResultRule : CssGroupingRule
-{
-    internal CssMixinResultRule()
-    {
-    }
-
-    internal override string GetPrelude() => "@result";
 }
 
 /// <summary>
@@ -201,12 +184,12 @@ internal sealed record CssPrivateDeclaration(string Name, CssSyntaxDefinition Ty
 
 /// <summary>
 /// https://drafts.csswg.org/css-mixins-1/#private: @private { &lt;declaration-rule-list&gt; } defines the private
-/// properties of the style rule that contains it: &lt;custom-property-name&gt; &lt;css-type&gt;? : &lt;declaration-value&gt;.
-/// The private properties are not applied by the cascade.
+/// properties of the style rule (or of the mixin body) that contains it: &lt;custom-property-name&gt; &lt;css-type&gt;? :
+/// &lt;declaration-value&gt;.
 /// </summary>
 /// <seealso href="https://github.com/w3c/csswg-drafts/issues/14243#issuecomment-5180782117"/>
 [IdlInterface("CSSPrivateRule", "https://github.com/w3c/csswg-drafts/issues/14243#issuecomment-5180782117")]
-[Experimental(ExperimentalApis.CssMixinResultAndPrivateRules, UrlFormat = ExperimentalApis.UrlFormat)]
+[Experimental(ExperimentalApis.CssPrivateRule, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class CssPrivateRule : CssRule
 {
     internal CssPrivateRule(List<CssPrivateDeclaration> declarations)

@@ -65,6 +65,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         }
 
         using var interactionContextScope = InteractionContext.Enter(continuationState is null ? InteractionContext.Current : continuationState.InteractionContext);
+        using var attributionScope = TaskAttribution.Enter(continuationState is null ? TaskAttribution.Current : continuationState.Attribution);
         try
         {
             if (state.ActiveScript is null)
@@ -99,6 +100,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         var previousContinuationState = eventLoop.CurrentContinuationState;
         eventLoop.CurrentContinuationState = snapshot.State;
         using var interactionContextScope = InteractionContext.Enter(snapshot.InteractionContext);
+        using var attributionScope = TaskAttribution.Enter(snapshot.Attribution);
         try
         {
             continuation.Invoke();

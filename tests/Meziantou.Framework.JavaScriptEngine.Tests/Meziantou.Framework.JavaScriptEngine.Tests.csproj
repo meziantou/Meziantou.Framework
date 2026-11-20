@@ -18,6 +18,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
+    <!-- ScopedActivityListener, for the tests of the telemetry -->
+    <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <!-- The classes of the documentation site (docs/JavaScriptEngine), run by JsEngineTests.cs -->
     <ProjectReference Include="../../samples/Meziantou.Framework.JavaScriptEngine.Samples/Meziantou.Framework.JavaScriptEngine.Samples.csproj" />
   </ItemGroup>

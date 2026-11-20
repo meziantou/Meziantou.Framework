@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -3472,6 +3474,267 @@ public sealed class JsEngineTests
         Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try { f(); } catch (e) { e.name }").AsString());
         #endregion
     }
+
+    [Fact]
+    public void Documentation_Telemetry()
+    {
+        #region JavaScriptEngine_Telemetry
+        // With OpenTelemetry: .AddSource(JsEngineTelemetry.ActivitySourceName) and .AddMeter(JsEngineTelemetry.MeterName)
+        var spans = new ConcurrentQueue<Activity>();
+        using var activityListener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == JsEngineTelemetry.ActivitySourceName,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = spans.Enqueue,
+        };
+        ActivitySource.AddActivityListener(activityListener);
+
+        var measurements = new ConcurrentQueue<(string Instrument, object? Kind)>();
+        using var meterListener = new MeterListener
+        {
+            InstrumentPublished = (instrument, listener) =>
+            {
+                if (instrument.Meter.Name == JsEngineTelemetry.MeterName)
+                {
+                    listener.EnableMeasurementEvents(instrument);
+                }
+            },
+        };
+        meterListener.SetMeasurementEventCallback<double>((instrument, _, tags, _) =>
+        {
+            foreach (var tag in tags)
+            {
+                if (tag.Key == "js.code.kind")
+                {
+                    measurements.Enqueue((instrument.Name, tag.Value));
+                }
+            }
+        });
+        meterListener.Start();
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("function add(a, b) { return a + b; } add(1, 2);", "telemetry-sample.js");
+
+        // A span for the script, with the parsing and the compilation as children
+        var execute = Assert.Single(spans, span => span.OperationName == "js.script.execute" && (string?)span.GetTagItem("js.source.url") == "telemetry-sample.js");
+        var children = spans.Where(span => span.ParentSpanId == execute.SpanId).Select(span => span.OperationName).Order(StringComparer.Ordinal);
+        Assert.Equal(["js.compile", "js.parse"], children);
+
+        // The metrics measure the parsing, the compilation and the execution, including the functions compiled on their first call
+        Assert.Contains(("meziantou.framework.javascript_engine.parse.duration", "script"), measurements);
+        Assert.Contains(("meziantou.framework.javascript_engine.compile.duration", "lazy_function"), measurements);
+        Assert.Contains(("meziantou.framework.javascript_engine.execution.duration", "script"), measurements);
+        #endregion
+    }
+
+    [Fact]
+    public void Telemetry_Execute_TracesParseCompileAndExecution()
+    {
+        using var listener = CreateTelemetryListener();
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        Assert.Equal(2, realm.Execute("1 + 1", "script.js").AsNumber());
+
+        var execute = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ScriptExecuteActivityName);
+        Assert.Equal(ActivityKind.Internal, execute.Kind);
+        Assert.Equal(ActivityStatusCode.Unset, execute.Status);
+        Assert.Equal("script.js", execute.GetTagItem("js.source.url"));
+        Assert.Equal(5, execute.GetTagItem("js.source.length"));
+        Assert.Equal("script", execute.GetTagItem("js.code.kind"));
+
+        var parse = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ParseActivityName);
+        var compile = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.CompileActivityName);
+        Assert.Equal(execute.SpanId, parse.ParentSpanId);
+        Assert.Equal(execute.SpanId, compile.ParentSpanId);
+        Assert.Equal("script", parse.GetTagItem("js.code.kind"));
+        Assert.Equal("script.js", compile.GetTagItem("js.source.url"));
+        Assert.HasCount(3, listener.Activities);
+    }
+
+    [Fact]
+    public void Telemetry_PreparedScript_TracesTheCompilationOnce()
+    {
+        using var listener = CreateTelemetryListener();
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        var script = JsPreparedScript.Parse("40 + 2", "prepared.js");
+        Assert.HasCount(2, listener.Activities);
+
+        Assert.Equal(42, realm.Execute(script).AsNumber());
+        Assert.Equal(42, realm.Execute(script).AsNumber());
+
+        Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ParseActivityName);
+        Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.CompileActivityName);
+        var executions = listener.Activities.Where(activity => activity.OperationName == JsEngineTelemetry.ScriptExecuteActivityName).ToArray();
+        Assert.HasCount(2, executions);
+        Assert.All(executions, execution => Assert.Equal("prepared.js", execution.GetTagItem("js.source.url")));
+    }
+
+    [Fact]
+    public void Telemetry_SyntaxError_SetsTheErrorStatus()
+    {
+        using var listener = CreateTelemetryListener();
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        Assert.Throws<JsException>(() => realm.Execute("let let = 1;", "invalid.js"));
+
+        var parse = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ParseActivityName);
+        Assert.Equal(ActivityStatusCode.Error, parse.Status);
+        Assert.Equal(typeof(JsSyntaxErrorException).FullName, parse.GetTagItem("error.type"));
+        Assert.Contains(parse.Events, activityEvent => activityEvent.Name == "exception");
+
+        var execute = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ScriptExecuteActivityName);
+        Assert.Equal(ActivityStatusCode.Error, execute.Status);
+        Assert.Equal(typeof(JsException).FullName, execute.GetTagItem("error.type"));
+        Assert.DoesNotContain(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.CompileActivityName);
+    }
+
+    [Fact]
+    public void Telemetry_Termination_SetsTheReason()
+    {
+        using var listener = CreateTelemetryListener();
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1000 });
+        var realm = engine.CreateRealm();
+
+        Assert.Throws<JsTerminationException>(() => realm.Execute("for (;;) {}"));
+
+        var execute = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ScriptExecuteActivityName);
+        Assert.Equal(ActivityStatusCode.Error, execute.Status);
+        Assert.Equal(typeof(JsTerminationException).FullName, execute.GetTagItem("error.type"));
+        Assert.Equal("statement_limit", execute.GetTagItem("js.termination.reason"));
+    }
+
+    [Fact]
+    public void Telemetry_Modules_TracesParseLinkAndEvaluate()
+    {
+        using var listener = CreateTelemetryListener();
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        var module = realm.ParseModule("export const a = 1;", "module.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        module.Evaluate();
+        engine.RunJobs();
+
+        var parse = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ParseActivityName);
+        Assert.Equal("module", parse.GetTagItem("js.code.kind"));
+        Assert.Equal("module.js", parse.GetTagItem("js.source.url"));
+        Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.CompileActivityName);
+        var link = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ModuleLinkActivityName);
+        Assert.Equal("module.js", link.GetTagItem("js.source.url"));
+        var evaluate = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ModuleEvaluateActivityName);
+        Assert.Equal("module.js", evaluate.GetTagItem("js.source.url"));
+        Assert.Equal(ActivityStatusCode.Unset, evaluate.Status);
+    }
+
+    [Fact]
+    public void Telemetry_ModuleEvaluationError_SetsTheErrorStatus()
+    {
+        using var listener = CreateTelemetryListener();
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        var module = realm.ParseModule("throw new Error('boom');", "failing.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        module.Evaluate();
+        engine.RunJobs();
+
+        Assert.True(module.HasEvaluationError);
+        var evaluate = Assert.Single(listener.Activities, activity => activity.OperationName == JsEngineTelemetry.ModuleEvaluateActivityName);
+        Assert.Equal(ActivityStatusCode.Error, evaluate.Status);
+        Assert.Equal(typeof(JsException).FullName, evaluate.GetTagItem("error.type"));
+    }
+
+    [Fact]
+    public void Telemetry_EvalAndFunctions_AreNotTraced()
+    {
+        using var listener = CreateTelemetryListener();
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+
+        Assert.Equal(6, realm.Execute("function f() { return eval('1 + 2') + new Function('return 3')(); } f()").AsNumber());
+
+        Assert.HasCount(3, listener.Activities);
+    }
+
+    [Fact]
+    public void Telemetry_Metrics_MeasureEachKindOfCode()
+    {
+        var durations = new ConcurrentQueue<(string Instrument, string? Kind)>();
+        var terminations = new ConcurrentQueue<string?>();
+        using var meterListener = new MeterListener
+        {
+            InstrumentPublished = (instrument, listener) =>
+            {
+                if (instrument.Meter.Name == JsEngineTelemetry.MeterName)
+                {
+                    listener.EnableMeasurementEvents(instrument);
+                }
+            },
+        };
+        meterListener.SetMeasurementEventCallback<double>((instrument, _, tags, _) =>
+        {
+            durations.Enqueue((instrument.Name, GetTag(tags, "js.code.kind")));
+        });
+        meterListener.SetMeasurementEventCallback<long>((_, _, tags, _) => terminations.Enqueue(GetTag(tags, "js.termination.reason")));
+        meterListener.Start();
+
+        using (var engine = new JsEngine())
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("function f() { return eval('1 + 2') + new Function('return 3')(); } f()");
+            var module = realm.ParseModule("export const a = 1;");
+            module.LoadRequestedModules();
+            engine.RunJobs();
+            module.Link();
+            module.Evaluate();
+            engine.RunJobs();
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1000 }))
+        {
+            Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute("for (;;) {}"));
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 1 }))
+        {
+            Assert.Equal(10, engine.CreateRealm().Execute("function g(x) { return x + 1; } let sum = 0; for (let i = 0; i < 4; i++) sum += g(i); sum").AsNumber());
+        }
+
+        Assert.Contains((JsEngineTelemetry.CompileDurationName, "jit"), durations);
+
+        foreach (var kind in new[] { "script", "module", "eval", "function", "lazy_function" })
+        {
+            Assert.Contains((JsEngineTelemetry.ParseDurationName, kind), durations);
+            Assert.Contains((JsEngineTelemetry.CompileDurationName, kind), durations);
+        }
+
+        Assert.Contains((JsEngineTelemetry.ExecutionDurationName, "script"), durations);
+        Assert.Contains((JsEngineTelemetry.ExecutionDurationName, "module"), durations);
+        Assert.Contains("statement_limit", terminations);
+
+        static string? GetTag(ReadOnlySpan<KeyValuePair<string, object?>> tags, string name)
+        {
+            foreach (var tag in tags)
+            {
+                if (tag.Key == name)
+                    return tag.Value as string;
+            }
+
+            return null;
+        }
+    }
+
+    private static Meziantou.Framework.Diagnostics.ScopedActivityListener CreateTelemetryListener()
+        => new(new Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions { SourceNames = [JsEngineTelemetry.ActivitySourceName] });
 
     [Fact]
     public void Documentation_Cancellation()

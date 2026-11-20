@@ -58,16 +58,39 @@ public abstract class JsModule : JsScriptOrModule
     /// <exception cref="JsException">An import cannot be resolved (a SyntaxError).</exception>
     public void Link()
     {
-        using var entry = Realm.Engine.EnterHostEntry();
-        ModuleOperations.Link(this);
+        var operation = JsTelemetryOperation.Start(JsEngineTelemetry.ModuleLinkActivityName, histogram: null, JsCodeKind.Module, Url);
+        try
+        {
+            using var entry = Realm.Engine.EnterHostEntry();
+            ModuleOperations.Link(this);
+        }
+        catch (Exception ex) when (operation.Fail(ex))
+        {
+            throw;
+        }
+
+        operation.Stop();
     }
 
     /// <summary>Evaluates the module and its dependencies (Evaluate).</summary>
     /// <returns>A promise fulfilled when the evaluation completes, rejected with the error of the evaluation.</returns>
     public JsValue Evaluate()
     {
-        using var entry = Realm.Engine.EnterHostEntry();
-        return ModuleOperations.Evaluate(this);
+        var operation = JsTelemetryOperation.Start(JsEngineTelemetry.ModuleEvaluateActivityName, JsEngineTelemetry.ExecutionDuration, JsCodeKind.Module, Url);
+        JsValue result;
+        try
+        {
+            using var entry = Realm.Engine.EnterHostEntry();
+            result = ModuleOperations.Evaluate(this);
+        }
+        catch (Exception ex) when (operation.Fail(ex))
+        {
+            throw;
+        }
+
+        // The error of the evaluation rejects the promise instead of being thrown
+        operation.Stop(HasEvaluationError ? typeof(JsException).FullName : null);
+        return result;
     }
 
     /// <summary>Gets the namespace object of the module (GetModuleNamespace). The module must be linked.</summary>

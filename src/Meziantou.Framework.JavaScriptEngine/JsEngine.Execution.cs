@@ -313,6 +313,7 @@ public sealed partial class JsEngine
         if (IsExecuting && _pendingTermination is null)
         {
             _pendingTermination = (reason, message);
+            JsEngineTelemetry.RecordTermination(reason);
 
             // The next interrupt point checks the limits
             _nextInterruptCheck = _interruptCounter + 1;

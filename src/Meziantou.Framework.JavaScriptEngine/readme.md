@@ -196,6 +196,13 @@ export is a SyntaxError, and no module runs. Its evaluation steps read its impor
 and initialize its exports (`SetExport`, or `SetExportGetter` for a live binding); an export that is not initialized
 throws a ReferenceError.
 
+## Observability
+
+The engine traces the parsing, the compilation and the execution of the scripts and the modules with an
+`ActivitySource`, and measures their duration with a `Meter`, both named `Meziantou.Framework.JavaScriptEngine`
+(`JsEngineTelemetry.ActivitySourceName` and `JsEngineTelemetry.MeterName`): add them to OpenTelemetry with `AddSource`
+and `AddMeter`. See [Observability](../../docs/JavaScriptEngine/12-Observability.md).
+
 ## Documentation
 
 [docs/architecture.md](docs/architecture.md) describes the values, the objects, the realms, the compiler and the

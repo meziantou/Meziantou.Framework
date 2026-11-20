@@ -948,14 +948,21 @@ internal sealed partial class ServiceWorkerRegistry
                 client.QueueTask(() => client.Global?.ServiceWorkerObjectsOrNull?.Container?.ResolveReadyPromise(registration, snapshot));
             }
 
-            // The clients that use the registration are controlled by the new active worker
+            // The clients that use the registration are controlled by the new active worker, unless the registration was cleared
+            // meanwhile (Clear-Site-Data, see UnregisterImmediately, which removes the controllers under the same lock)
             foreach (var client in GetClients())
             {
-                if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
-                    continue;
+                lock (_lock)
+                {
+                    if (!ReferenceEquals(registration.Active, activeWorker))
+                        break;
 
-                environment.ActiveServiceWorker = activeWorker;
-                NotifyControllerChange(client, activeWorker, ServiceWorkerState.Activating);
+                    if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
+                        continue;
+
+                    environment.ActiveServiceWorker = activeWorker;
+                    NotifyControllerChange(client, activeWorker, ServiceWorkerState.Activating);
+                }
             }
 
             if (!ShouldSkipEvent(activeWorker, "activate") && await RunServiceWorkerAsync(activeWorker).ConfigureAwait(false) != ServiceWorkerStartStatus.Failure)
@@ -1076,22 +1083,28 @@ internal sealed partial class ServiceWorkerRegistry
         foreach (var registration in registrations)
         {
             RemoveRegistration(registration);
-            foreach (var client in GetClients())
+
+            // The controllers are removed and the registration is cleared in one step: an activation that runs in parallel
+            // (ActivateAsync) sees the cleared registration and does not give its worker to the clients again
+            lock (_lock)
             {
-                if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
-                    continue;
-
-                environment.ActiveServiceWorker = null;
-                client.QueueTask(() =>
+                foreach (var client in GetClients())
                 {
-                    if (client.Global is { ServiceWorkerObjectsOrNull.Container: { } container })
-                    {
-                        container.FireEvent(new Event("controllerchange"));
-                    }
-                });
-            }
+                    if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
+                        continue;
 
-            ClearRegistration(registration);
+                    environment.ActiveServiceWorker = null;
+                    client.QueueTask(() =>
+                    {
+                        if (client.Global is { ServiceWorkerObjectsOrNull.Container: { } container })
+                        {
+                            container.FireEvent(new Event("controllerchange"));
+                        }
+                    });
+                }
+
+                ClearRegistration(registration);
+            }
         }
     }
 

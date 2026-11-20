@@ -305,12 +305,8 @@ public sealed class MediaRecorder : EventTarget
         }
 
         State = RecordingState.Recording;
-        var recording = new Recording(this, container, videoTrack, audioTrack, videoCodec, audioCodec, timeslice);
+        var recording = new Recording(this, container, videoTrack, audioTrack, videoCodec, audioCodec, timeslice, tracks);
         _recording = recording;
-        foreach (var track in tracks)
-        {
-            track.AddStateChangedCallback(recording.OnTrackStateChanged);
-        }
 
         // A recording stopped just before is still completed by its own task: the callback is registered once
         Stream.RemoveTracksChangedCallback(_tracksChanged);
@@ -586,6 +582,7 @@ public sealed class MediaRecorder : EventTarget
         private const int DefaultFrameRate = 30;
 
         private readonly MediaRecorder _recorder;
+        private readonly IReadOnlyList<MediaStreamTrack> _tracks;
         private readonly string _container;
         private readonly MediaStreamTrack? _videoTrack;
         private readonly MediaStreamTrack? _audioTrack;
@@ -612,8 +609,13 @@ public sealed class MediaRecorder : EventTarget
         private long _blobCount;
         private bool _gathering;
 
-        public Recording(MediaRecorder recorder, string container, MediaStreamTrack? videoTrack, MediaStreamTrack? audioTrack, bool recordVideo, bool recordAudio, uint? timeslice)
+        public Recording(MediaRecorder recorder, string container, MediaStreamTrack? videoTrack, MediaStreamTrack? audioTrack, bool recordVideo, bool recordAudio, uint? timeslice, IReadOnlyList<MediaStreamTrack> tracks)
         {
+            _tracks = tracks;
+            foreach (var track in tracks)
+            {
+                track.AddStateChangedCallback(OnTrackStateChanged);
+            }
 
             _recorder = recorder;
             _container = container;
@@ -921,6 +923,10 @@ public sealed class MediaRecorder : EventTarget
         public void Close()
         {
             IsCompleted = true;
+            foreach (var track in _tracks)
+            {
+                track.RemoveStateChangedCallback(OnTrackStateChanged);
+            }
 
             StopGathering();
             _videoEncoder?.Dispose();

@@ -4386,6 +4386,31 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void MediaRecorder_Stop_UnsubscribesFromTheTracks()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=4 height=2></canvas><script>" + RecorderScript + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+        Run(document, "window.stream = document.querySelector('canvas').captureStream(); stream.getVideoTracks()[0].requestFrame();");
+        var track = GetPlatformObject<MediaStreamTrack>(document, "stream.getVideoTracks()[0]");
+        Assert.False(track.HasStateChangedCallbacks);
+
+        Run(document, "record(stream);");
+        Advance(clock, document, 50);
+        Assert.True(track.HasStateChangedCallbacks);
+
+        Run(document, "recorder.stop();");
+        Advance(clock, document, 10);
+        Assert.False(track.HasStateChangedCallbacks);
+    }
+
+    /// <summary>Returns the .NET platform object of the value of a script.</summary>
+    private T GetPlatformObject<T>(Document document, string script)
+    {
+        var value = ((Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngine)_engine).Evaluate(document.DefaultView!, script);
+        return (T)((Meziantou.Framework.WebPlatform.JavaScript.JavaScriptPlatformObject)value.AsObject()).Target;
+    }
+
+    [Fact]
     public void MediaRecorder_StateTransitions()
     {
         var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);

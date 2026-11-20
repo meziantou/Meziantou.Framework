@@ -317,7 +317,8 @@ using var screenshot = canvas.TakeScreenshot();
 - `DrawElementImage()` sets the canvas transform of the element to where it is drawn, unless
   [DrawElementImageOptions.PreserveElementGeometry](cref:Meziantou.Framework.WebPlatform.Dom.DrawElementImageOptions.PreserveElementGeometry) is true:
   the geometry of the element (`GetBoundingClientRect()`...) and its hit testing (`ElementFromPoint()`, the pointer events) follow
-  the drawing. [UpdateElementGeometry](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.UpdateElementGeometry),
+  the drawing (also the parts of an inline element split around block-level descendants, and the blocks split out of it,
+  unless they are drawable elements themselves). [UpdateElementGeometry](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.UpdateElementGeometry),
   [ClearElementGeometry](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ClearElementGeometry) and
   [GetElementTransform](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.GetElementTransform) set and read it. The
   elements whose geometry was never set are not hit tested.

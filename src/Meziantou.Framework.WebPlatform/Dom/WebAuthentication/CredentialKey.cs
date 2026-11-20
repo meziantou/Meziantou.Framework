@@ -56,6 +56,14 @@ internal abstract class CredentialKey
                     ecdsa.ImportPkcs8PrivateKey(pkcs8, out var read);
                     if (read != pkcs8.Length || !IsP256(ecdsa.ExportParameters(includePrivateParameters: false).Curve))
                         throw new CryptographicException("The key is not an ECDSA private key on the P-256 curve");
+
+                    // The public key of the ECPrivateKey structure must be the one of its private key: OpenSSL imports a key whose
+                    // public key does not match (it would export a public key that does not verify its signatures), CNG rejects it
+                    var parameters = ecdsa.ExportParameters(includePrivateParameters: true);
+                    using var derived = ECDsa.Create(new ECParameters { Curve = ECCurve.NamedCurves.nistP256, D = parameters.D });
+                    var publicKey = derived.ExportParameters(includePrivateParameters: false).Q;
+                    if (!publicKey.X.AsSpan().SequenceEqual(parameters.Q.X) || !publicKey.Y.AsSpan().SequenceEqual(parameters.Q.Y))
+                        throw new CryptographicException("The public key of the key package is not the one of its private key");
                 }
                 catch (PlatformNotSupportedException ex)
                 {

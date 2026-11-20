@@ -489,6 +489,9 @@ internal static partial class CssSerializer
     private static void SerializeList(StringBuilder builder, IReadOnlyList<CssComponentValue> values, HashSet<string>? keywords, bool zeroIsLength)
     {
         var pendingSpace = false;
+
+        // The end of the serialization of the last component value: a space there ends an escape (\30 ), it is not a separator
+        var componentEnd = -1;
         for (var i = 0; i < values.Count; i++)
         {
             var value = values[i];
@@ -513,14 +516,25 @@ internal static partial class CssSerializer
                 continue;
             }
 
-            if (pendingSpace && builder.Length > 0 && builder[^1] != ' ' && builder[^1] != '(')
+            var adjacent = builder.Length > 0 && builder.Length == componentEnd;
+            if (pendingSpace && builder.Length > 0 && (adjacent || (builder[^1] != ' ' && builder[^1] != '(')))
             {
+                builder.Append(' ');
+            }
+            else if (!pendingSpace && adjacent && value is CssPreservedToken { Type: CssTokenType.Hash } && CssColor.Parse(value) is not null && WouldMergeWithFollowingName(builder[^1]))
+            {
+                // A hex color is serialized as rgb(): it is separated from the previous token it would merge with (a#fff, 1#fff)
                 builder.Append(' ');
             }
 
             pendingSpace = false;
             SerializeComponentValue(builder, value, keywords, zeroIsLength);
+            componentEnd = builder.Length;
         }
+
+        // The last character of a serialization followed by a name: an ident code point, the space ending an escape, @ (an
+        // at-keyword), # (a hash), or \ (an escape)
+        static bool WouldMergeWithFollowingName(char c) => c >= '\u0080' || char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or ' ' or '@' or '#' or '\\';
     }
 
     /// <summary>

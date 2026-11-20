@@ -17,6 +17,7 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 public static partial class WebPlatformFuzzTargets
 {
     private const int PagedInlineSizeMaxRows = 12;
+    private const double PagedInlineSizeTolerance = 0.01;
 
     /// <summary>The containers of the rows: the opening markup, the markup of a row (its id, its style and its content), the closing markup.</summary>
     private static readonly (string Start, string Row, string End)[] PagedInlineSizeContainers =
@@ -78,7 +79,7 @@ public static partial class WebPlatformFuzzTargets
         var laidOutWords = 0;
         foreach (var page in pages)
         {
-            Visit(page.Content, page.Index);
+            Visit(page.Content, page.Index, top: 0);
         }
 
         var previous = 0;
@@ -91,7 +92,7 @@ public static partial class WebPlatformFuzzTargets
 
         FuzzAssert.Equal(words, laidOutWords, $"the number of words laid out in the pages: {markup}");
 
-        void Visit(Fragment fragment, int index)
+        void Visit(Fragment fragment, int index, double top)
         {
             FuzzAssert.True(double.IsFinite(fragment.Offset.X) && double.IsFinite(fragment.Offset.Y) && double.IsFinite(fragment.Size.Width) && double.IsFinite(fragment.Size.Height), "the rectangle of a fragment is finite");
             if (fragment is BoxFragment { Box: { Element: { } element, PseudoElement: null } } && element.Id is ['r', .. var number] && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var rowIndex) && rowIndex < rowCount)
@@ -99,14 +100,17 @@ public static partial class WebPlatformFuzzTargets
                 firstPages[rowIndex] ??= index;
             }
 
-            if (fragment is TextFragment text)
+            // A line that does not fit and cannot be pushed to the next page (only the block-start padding of its box precedes it
+            // in the page) is sliced, as the monolithic content: its rest, above the top of the next page, is not another line
+            top += fragment.Offset.Y;
+            if (fragment is TextFragment text && top >= -PagedInlineSizeTolerance)
             {
                 laidOutWords += text.Run.Data[text.Start..text.End].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
             }
 
             foreach (var child in fragment.ChildrenSpan)
             {
-                Visit(child, index);
+                Visit(child, index, top);
             }
         }
     }

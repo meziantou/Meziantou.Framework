@@ -367,14 +367,25 @@ public sealed class CanvasShapedText
     {
         // The clusters grouped by the bidi run of their fragment (see CanvasTextLayout.GetFragment), then by font
         var groups = new List<(int Run, object? Font, List<int> Clusters)>();
+        var groupOfCluster = new int[_layout.Clusters.Count];
+        var owned = new List<(int Cluster, int Owner)>();
         for (var i = 0; i < _layout.Clusters.Count; i++)
         {
-            var run = _layout.GetFragment(_layout.Clusters[i]).Run;
+            // A cluster without advance is in the fragment of the character after it, which may be in another group of the
+            // run (e.g. a bidi control before a character of a fallback font): it is added to the group of that character
+            if (_layout.GetFragmentOwner(_layout.Clusters[i]) is var owner and >= 0)
+            {
+                owned.Add((i, owner));
+                continue;
+            }
+
+            var run = _layout.Clusters[i].Run;
             object? font = _layout.GetGlyphs(i) is [var first, ..] ? first.Font : null;
             var group = groups.FindLastIndex(g => g.Run == run);
             if (group >= 0 && (font is null || groups[group].Font is null || ReferenceEquals(font, groups[group].Font)) && group == groups.Count - 1)
             {
                 groups[group].Clusters.Add(i);
+                groupOfCluster[i] = group;
                 if (groups[group].Font is null && font is not null)
                 {
                     groups[group] = groups[group] with { Font = font };
@@ -383,7 +394,23 @@ public sealed class CanvasShapedText
                 continue;
             }
 
+            groupOfCluster[i] = groups.Count;
             groups.Add((run, font, [i]));
+        }
+
+        foreach (var (cluster, owner) in owned)
+        {
+            object? font = _layout.GetGlyphs(cluster) is [var first, ..] ? first.Font : null;
+            var group = groupOfCluster[owner];
+            if (font is null || groups[group].Font is null || ReferenceEquals(font, groups[group].Font))
+            {
+                var clusters = groups[group].Clusters;
+                clusters.Insert(clusters.FindIndex(index => index > cluster) is var position and >= 0 ? position : clusters.Count, cluster);
+            }
+            else
+            {
+                groups.Add((groups[group].Run, font, [cluster]));
+            }
         }
 
         var result = groups.ConvertAll(group => CreateRun(group.Clusters, useFragments: true));

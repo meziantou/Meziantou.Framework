@@ -819,6 +819,46 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             if (children.Count == 0 || children[^1].End < source.Length)
             {
                 var tailStart = children.Count > 0 ? children[^1].End : GetContentStart(source, value);
+
+                // The content of a block deeper than the maximum nesting depth is skipped by the parser: its tokens are scanned
+                // once, so that its unclosed functions, blocks and strings are closed before the closers of this block
+                if (children.Count == 0 && tailStart < source.Length)
+                {
+                    var tokenizer = new CssTokenizer(source[tailStart..]);
+                    var endings = new Stack<char>();
+                    CssPreservedToken? lastToken = null;
+                    while (tokenizer.ConsumeToken() is { Type: not CssTokenType.EndOfFile } skipped)
+                    {
+                        lastToken = new CssPreservedToken(skipped) { Start = skipped.Start, End = skipped.End };
+                        switch (skipped.Type)
+                        {
+                            case CssTokenType.LeftCurlyBracket:
+                                endings.Push('}');
+                                break;
+                            case CssTokenType.LeftSquareBracket:
+                                endings.Push(']');
+                                break;
+                            case CssTokenType.LeftParenthesis or CssTokenType.Function:
+                                endings.Push(')');
+                                break;
+                            case CssTokenType.RightCurlyBracket or CssTokenType.RightSquareBracket or CssTokenType.RightParenthesis when endings.TryPeek(out var ending) && ending == skipped.Type switch { CssTokenType.RightCurlyBracket => '}', CssTokenType.RightSquareBracket => ']', _ => ')' }:
+                                endings.Pop();
+                                break;
+                        }
+                    }
+
+                    // (the stack enumerates the innermost closer first)
+                    closers.Insert(0, string.Concat(endings));
+                    source = tokenizer.Input;
+                    if (lastToken is not null && lastToken.End >= source.Length)
+                    {
+                        value = lastToken;
+                        break;
+                    }
+
+                    tailStart = lastToken?.End ?? 0;
+                }
+
                 if (EndsInUnclosedComment(source, tailStart))
                 {
                     closers.Insert(0, "*/");

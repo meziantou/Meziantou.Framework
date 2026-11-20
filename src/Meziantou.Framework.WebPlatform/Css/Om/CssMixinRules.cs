@@ -88,9 +88,14 @@ internal sealed class CssApplyPrelude(string name, List<string> arguments)
         return builder.ToString();
     }
 
-    /// <summary>https://drafts.csswg.org/css-mixins-1/#serialize-a-function-argument: an argument containing a top-level comma or {} block is written in a {} block.</summary>
+    /// <summary>
+    /// https://drafts.csswg.org/css-mixins-1/#serialize-a-function-argument: an argument containing a top-level comma or {}
+    /// block is written in a {} block. The blocks left open at the end of the style sheet are closed, so that they do not
+    /// contain the closing characters of the prelude.
+    /// </summary>
     private static string SerializeArgument(string argument)
     {
+        argument = CssStyleDeclaration.CloseUnclosedBlocks(argument);
         var values = CssParser.ParseListOfComponentValues(argument);
         return values.Exists(v => v is CssPreservedToken { Type: CssTokenType.Comma } or CssSimpleBlock { AssociatedToken: CssTokenType.LeftCurlyBracket }) ? "{ " + argument + " }" : argument;
     }

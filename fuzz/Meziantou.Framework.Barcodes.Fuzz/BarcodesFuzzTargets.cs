@@ -57,15 +57,25 @@ public static class BarcodesFuzzTargets
         "\0", "ABCXYZ", "abcxyz", "*,-./", "!\"%&'()+:;<=>?_", "991231", "250101", "001750",
     ];
 
-    // The decoder reads the text of the barcode back, from its modules and from scaled scan lines read from the right
-    private static void CheckLinearDecoding(Barcode barcode)
+    // The decoder reads the text of the barcode back, from its modules and from scaled scan lines read from the right.
+    // A symbol of GS1 element strings does not encode where an application identifier ends: the decoder splits the data
+    // with the dictionary, so an identifier that is not in it is read as the identifiers it finds there (AI 4252 and the
+    // data 61 are read as AI 425 and 261), or the data is read as is.
+    private static void CheckLinearDecoding(Barcode barcode, List<Gs1Element>? gs1Elements = null)
     {
+        var text = barcode.Text;
+        if (gs1Elements is not null)
+        {
+            var data = Gs1ElementStrings.Concatenate([.. gs1Elements], separator: '\u001D', nameof(gs1Elements));
+            text = Gs1ElementStrings.FormatHumanReadable(data) ?? data;
+        }
+
         // An EAN-13 symbol whose first digit is 0 is a UPC-A symbol, a single-row GS1 DataBar Expanded Stacked symbol is GS1 DataBar Expanded
         var (expectedType, expectedText) = barcode.Type switch
         {
-            BarcodeType.Ean13 when barcode.Text[0] == '0' => (BarcodeType.UpcA, barcode.Text[1..]),
-            BarcodeType.Gs1DataBarExpandedStacked when barcode.Height == 34 => (BarcodeType.Gs1DataBarExpanded, barcode.Text),
-            _ => (barcode.Type, barcode.Text),
+            BarcodeType.Ean13 when text[0] == '0' => (BarcodeType.UpcA, text[1..]),
+            BarcodeType.Gs1DataBarExpandedStacked when barcode.Height == 34 => (BarcodeType.Gs1DataBarExpanded, text),
+            _ => (barcode.Type, text),
         };
 
         if (barcode.Width > 20000)
@@ -304,7 +314,7 @@ public static class BarcodesFuzzTargets
 
         FuzzAssert.Equal(type, barcode.Type, "The barcode type");
         FuzzAssert.Equal(type is BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarExpandedStacked, barcode.IsStacked, "IsStacked");
-        CheckLinearDecoding(barcode);
+        CheckLinearDecoding(barcode, type is BarcodeType.Gs1DataBarExpanded or BarcodeType.Gs1DataBarExpandedStacked ? elements : null);
         switch (type)
         {
             case BarcodeType.UpcE:

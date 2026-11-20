@@ -964,6 +964,9 @@ public sealed class ImageRendererTests
             data.Add("12345", QRCodeType.MicroQR, moduleSize);
             data.Add("MICRO QR", QRCodeType.MicroQR, moduleSize);
             data.Add("hello micro", QRCodeType.MicroQR, moduleSize);
+
+            // An M4 symbol whose top-left 13x13 modules also decode as an M2 symbol
+            data.Add("\0\0\0\0\0\u0001\0\u0010\0\0\0\0\0", QRCodeType.MicroQR, moduleSize);
             data.Add("HELLO", QRCodeType.RMQR, moduleSize);
             data.Add("https://www.meziantou.net", QRCodeType.RMQR, moduleSize);
         }
@@ -985,6 +988,34 @@ public sealed class ImageRendererTests
         var quietZone = 4 * moduleSize;
         Assert.True(result.Corners[0].DistanceTo(new PointD(quietZone, quietZone)) < moduleSize / 2.0, $"Top-left corner {result.Corners[0]}");
         Assert.True(result.Corners[2].DistanceTo(new PointD(quietZone + (qrCode.Width * moduleSize), quietZone + (qrCode.Height * moduleSize))) < moduleSize / 2.0, $"Bottom-right corner {result.Corners[2]}");
+    }
+
+    [Theory]
+    [InlineData("MICRO QR")]
+    [InlineData("hello micro")]
+    public void ReadQRCodes_MicroQRWithDamagedTimingPattern(string text)
+    {
+        var qrCode = QRCode.CreateMicroQR(text);
+        Assert.True(qrCode.Width >= 13);
+        const int ModuleSize = 4;
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = ModuleSize });
+
+        // The modules 11 and 12 of the top timing pattern, which hold no data, are flipped
+        var quietZone = 4 * ModuleSize;
+        foreach (var column in (int[])[11, 12])
+        {
+            var color = qrCode[0, column] ? Colors.White : Colors.Black;
+            for (var y = 0; y < ModuleSize; y++)
+            {
+                for (var x = 0; x < ModuleSize; x++)
+                {
+                    image.Frames[0][quietZone + (column * ModuleSize) + x, quietZone + y] = color;
+                }
+            }
+        }
+
+        var result = Assert.Single(image.ReadQRCodes());
+        Assert.Equal((text, QRCodeType.MicroQR, qrCode.Version), (result.Text, result.Result.Type, result.Result.Version));
     }
 
     [Theory]

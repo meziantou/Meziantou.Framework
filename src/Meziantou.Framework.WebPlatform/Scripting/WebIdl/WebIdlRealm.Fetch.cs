@@ -16,9 +16,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     private static string? s_fetchScript;
 
     // The blob URL entries of the Request objects (https://fetch.spec.whatwg.org/#concept-request-url, the blob URL entry of
-    // the parsed URL), held by opaque objects of the realm: the entry keeps the blob and the partition of the URL when it is
-    // revoked after the creation of the request
-    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<TValue, BlobUrlEntry> _requestBlobUrlEntries = [];
+    // the parsed URL), held by opaque objects: the entry keeps the blob and the partition of the URL when it is revoked after
+    // the creation of the request. The table is shared by the realms: a Request created in a window can be fetched by
+    // another one (e.g. a same-origin frame)
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<TValue, BlobUrlEntry> RequestBlobUrlEntries = [];
     private TValue? _fetch;
 
     private void DefineFetchGlobals()
@@ -149,7 +150,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                     return adapter.Null;
 
                 var handle = CreateObject();
-                _requestBlobUrlEntries.AddOrUpdate(handle, entry);
+                RequestBlobUrlEntries.AddOrUpdate(handle, entry);
                 return handle;
             });
             Define("origin", 0, (_, _) => Adapter.FromString(GlobalScope.Origin));
@@ -292,7 +293,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             // https://fetch.spec.whatwg.org/#fetch-method: the requests of a service worker are not handled by service workers
             ServiceWorkersMode = GlobalScope is ServiceWorkerGlobalScope ? ServiceWorkersMode.None : ServiceWorkersMode.All,
             Integrity = Adapter.ToString(Adapter.Get(serialized, Key("integrity"))),
-            BlobUrlEntry = Adapter.Get(serialized, Key("blob")) is var blobHandle && _requestBlobUrlEntries.TryGetValue(blobHandle, out var blobUrlEntry) ? blobUrlEntry : null,
+            BlobUrlEntry = Adapter.Get(serialized, Key("blob")) is var blobHandle && RequestBlobUrlEntries.TryGetValue(blobHandle, out var blobUrlEntry) ? blobUrlEntry : null,
             RedirectMode = Adapter.ToString(Adapter.Get(serialized, Key("redirect"))) switch
             {
                 "error" => FetchRedirectMode.Error,

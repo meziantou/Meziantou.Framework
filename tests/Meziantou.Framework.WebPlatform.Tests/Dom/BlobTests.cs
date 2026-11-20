@@ -187,6 +187,32 @@ public sealed class BlobTests : IDisposable
     }
 
     [Fact]
+    public void Request_FetchedByAnotherWindowAfterTheRevocation_ReadsTheBlob()
+    {
+        var document = Load("""
+            <iframe id=frame srcdoc='<p>frame'></iframe>
+            <script>
+              const iframe = document.getElementById('frame');
+              iframe.onload = async () => {
+                const url = URL.createObjectURL(new Blob(['content']));
+                const request = new Request(url);
+                URL.revokeObjectURL(url);
+                try {
+                  const results = [await (await iframe.contentWindow.fetch(request.clone())).text(), await (await fetch(request)).text()];
+                  document.title = results.join('|');
+                } catch (e) {
+                  document.title = e.name;
+                }
+              };
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+
+        // The request keeps the blob URL entry resolved when it was created, in every realm and in its clones
+        Assert.Equal("content|content", document.Title);
+    }
+
+    [Fact]
     public void RevokeObjectUrl_WithFragment_DoesNotRevoke()
     {
         var document = Load("""

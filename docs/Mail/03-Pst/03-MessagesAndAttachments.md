@@ -11,7 +11,7 @@ A [PstMessage](cref:Meziantou.Framework.Mail.PstMessage) gives the common proper
 ([TransportMessageHeaders](cref:Meziantou.Framework.Mail.PstMessage.TransportMessageHeaders)) and its
 [Recipients](cref:Meziantou.Framework.Mail.PstMessage.Recipients):
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstMessage_Read;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstMessage_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var file = PstFile.Open(path);
 var message = file.GetFolder("Inbox")!.EnumerateItems().First();
@@ -36,7 +36,7 @@ An email has up to three bodies:
 [OpenRead](cref:Meziantou.Framework.Mail.PstAttachment.OpenRead) reads the content block by block, without loading it in
 memory, and [GetContent](cref:Meziantou.Framework.Mail.PstAttachment.GetContent) returns it as bytes:
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstAttachment_Save;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstAttachment_Save;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var file = PstFile.Open(path);
 var message = file.GetFolder("Inbox")!.EnumerateItems().First();

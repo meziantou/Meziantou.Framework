@@ -9,7 +9,8 @@
 
   <ItemGroup>
     <!-- The files of the unit tests are the seeds, except the OST of 16 MB: a smaller one is generated -->
-    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Pst\*.pst" LogicalName="TestData/%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Pst\*.pst" LogicalName="TestData/Pst/%(FileName)%(Extension)" Link="Seeds\Pst\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Mime\*.eml" LogicalName="TestData/Mime/%(FileName)%(Extension)" Link="Seeds\Mime\%(FileName)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

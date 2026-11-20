@@ -15,7 +15,7 @@ levels of the trees. It reports a malformed file with an
 value loaded in memory, the depth of the trees and of the embedded messages, and the number of pages and blocks kept in a
 cache. A file that exceeds them throws a [PstResourceLimitException](cref:Meziantou.Framework.Mail.PstResourceLimitException):
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstReadOptions_Limits;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstReadOptions_Limits;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new PstReadOptions
 {
@@ -44,7 +44,7 @@ is read block by block.
 problem: the header, the B-trees, every block and every node, the heaps and the tables, and the allocation maps. It returns
 the problems it finds:
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstFile_Validate;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstFile_Validate;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var file = PstFile.Open(path);
 var issues = file.Validate();

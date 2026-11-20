@@ -9,7 +9,7 @@ description: Create a file with folders, emails, attachments, contacts, appointm
 [AddItem](cref:Meziantou.Framework.Mail.PstWriterFolder.AddItem) writes an item described by a
 [PstMessageBuilder](cref:Meziantou.Framework.Mail.PstMessageBuilder):
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstWriterTests.cs;region=PstWriter_Create;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstWriterTests.cs;region=PstWriter_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using (var writer = PstWriter.Create(path, new PstWriterOptions { DisplayName = "Archive" }))
 {
@@ -52,7 +52,7 @@ attachment is not loaded in memory.
 [PstTaskBuilder](cref:Meziantou.Framework.Mail.PstTaskBuilder) set the properties of the items Outlook types. Put them in
 folders of the matching class (`IPF.Contact`, `IPF.Appointment`, `IPF.Task`), where Outlook shows them:
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstWriterTests.cs;region=PstWriter_TypedItems;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstWriterTests.cs;region=PstWriter_TypedItems;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using (var writer = PstWriter.Create(stream, leaveOpen: true))
 {
@@ -95,7 +95,7 @@ The writer creates new files: it does not modify an existing file.
 [PstMessageBuilder.FromMessage](cref:Meziantou.Framework.Mail.PstMessageBuilder.FromMessage) copies an item read from a file,
 with its properties, its recipients and its attachments, including the embedded messages, to write it to another file:
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstWriterTests.cs;region=PstMessageBuilder_FromMessage;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstWriterTests.cs;region=PstMessageBuilder_FromMessage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Copy the messages of a folder to a new file: properties, recipients, attachments and embedded messages
 using (var source = PstFile.Open(sourcePath))

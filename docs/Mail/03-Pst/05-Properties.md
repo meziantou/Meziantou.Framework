@@ -8,7 +8,7 @@ Every object of a file is a set of MAPI properties, identified by a 16-bit ident
 [Properties](cref:Meziantou.Framework.Mail.PstMessage.Properties) gives all of them, as a
 [PstPropertyCollection](cref:Meziantou.Framework.Mail.PstPropertyCollection):
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstPropertyCollection_Read;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstPropertyCollection_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var file = PstFile.Open(path);
 var appointment = file.GetFolder("Calendar")!.EnumerateItems().Single();

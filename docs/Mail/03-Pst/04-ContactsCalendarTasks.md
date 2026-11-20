@@ -23,7 +23,7 @@ A [PstContact](cref:Meziantou.Framework.Mail.PstContact) gives the names, the em
 postal addresses of a contact. The [Members](cref:Meziantou.Framework.Mail.PstDistributionList.Members) of a
 [PstDistributionList](cref:Meziantou.Framework.Mail.PstDistributionList) are its addresses:
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstContact_Read;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstContact_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var file = PstFile.Open(path);
 foreach (var item in file.GetFolder("Contacts")!.EnumerateItems())
@@ -53,7 +53,7 @@ appointment, in UTC, its location, its attendees and its reminder.
 its pattern, its end, and the occurrences that are deleted or modified
 ([Exceptions](cref:Meziantou.Framework.Mail.PstRecurrencePattern.Exceptions)):
 
-<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstAppointment_Read;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mail.Tests/PstFileTests.cs;region=PstAppointment_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var file = PstFile.Open(path);
 var appointment = file.GetFolder("Calendar")!.EnumerateItems().OfType<PstAppointment>().Single();

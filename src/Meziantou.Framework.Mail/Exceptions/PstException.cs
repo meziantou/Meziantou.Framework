@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Mail;
 
 /// <summary>The base class of the exceptions the library throws for the content of an Outlook data file.</summary>
-public class PstException : IOException
+public class PstException : MailException
 {
     /// <summary>Initializes a new instance of the <see cref="PstException"/> class.</summary>
     public PstException()

@@ -9,9 +9,9 @@ namespace Meziantou.Framework.Mail.Fuzz;
 /// <see cref="PstFile.Validate"/> reports problems instead of throwing. The writer writes files that read back with the content it
 /// was given and that <see cref="PstFile.Validate"/> accepts, and copying a file that reads gives a file with the same content.
 /// </summary>
-public static class MailFuzzTargets
+public static partial class MailFuzzTargets
 {
-    private const string TestDataPrefix = "TestData/";
+    private const string TestDataPrefix = "TestData/Pst/";
 
     private static readonly string[] Tokens =
     [
@@ -33,7 +33,9 @@ public static class MailFuzzTargets
 
     private static readonly PstReadOptions ReadOptions = new() { MaxPropertySize = 4 * 1024 * 1024, MaxTreeDepth = 16, MaxEmbeddedMessageDepth = 8, CacheSize = 32 };
 
-    public static IReadOnlyList<FuzzTarget> All { get; } =
+    public static IReadOnlyList<FuzzTarget> All => [.. PstTargets, .. MimeTargets];
+
+    private static IReadOnlyList<FuzzTarget> PstTargets { get; } =
     [
         new("pst-read", Read) { Seeds = GetFileSeeds, Dictionary = Tokens },
         new("pst-roundtrip", RoundTrip) { Seeds = GetFileSeeds, Dictionary = Tokens },

@@ -1,0 +1,11 @@
+From: alice@example.com
+To: bob@example.com
+Subject: Quoted-printable
+Date: 3 Jul 2025 12:00 GMT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+Voil=E0 un texte en fran=E7ais avec une tr=E8s longue ligne qui est coup=E9e =
+par un saut de ligne doux.=20
+Fin=3D.

@@ -1,7 +1,14 @@
 # Meziantou.Framework.Mail
 
-Reads and writes Outlook data files: PST and OST, in the ANSI, Unicode and 4K-page formats, with or without encryption
-([MS-PST]). No Outlook or MAPI installation is needed.
+Reads and writes email files, without native dependencies:
+
+- Outlook data files: PST and OST, in the ANSI, Unicode and 4K-page formats, with or without encryption ([MS-PST]).
+  No Outlook or MAPI installation is needed.
+- Email messages (`.eml`): the Internet Message Format and MIME, with the encoded headers, the multiparts, the
+  attachments and the embedded messages. A message read and written without changes keeps its bytes.
+- `EmailMessage`, a model to convert a message from one format to another.
+
+Outlook data files:
 
 - Folders, search folders and associated items
 - Emails: properties, recipients, bodies in plain text, HTML and RTF (compressed RTF, [MS-OXRTFCP])
@@ -83,6 +90,44 @@ var item = file.GetFolder("Inbox")!.EnumerateItems().Single();
 Assert.Equal("Hello", item.Subject);
 Assert.Equal("bob@example.com", item.Recipients.Single().EmailAddress);
 Assert.Equal("notes.txt", item.Attachments.Single().Name);
+```
+<!-- endref -->
+
+## Read an email message
+
+<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/MimeMessageTests.cs;region=MimeMessage_Load;format=md-fenced-code-block;dedent=true -->
+```csharp
+var message = MimeMessage.Load(path);
+Assert.Equal("Attachments", message.Subject);
+Assert.Equal("alice@example.com", message.From[0].Address);
+Assert.Equal("See the attachments.", message.TextBody?.TrimEnd());
+
+foreach (var attachment in message.Attachments.OfType<MimePart>())
+{
+    // The file name is decoded (RFC 2047 and RFC 2231), and the content is decoded from base64 or quoted-printable
+    var fileName = attachment.FileName;
+    var content = attachment.GetContent();
+    Assert.NotNull(content);
+    _ = fileName;
+}
+```
+<!-- endref -->
+
+## Convert a message
+
+<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/EmailMessageTests.cs;region=EmailMessage_Convert;format=md-fenced-code-block;dedent=true -->
+```csharp
+// An item of an Outlook data file, saved as an .eml file
+using (var file = PstFile.Open(pstPath))
+{
+    var item = file.GetFolder("Inbox")!.EnumerateItems().First();
+    EmailMessage.FromPst(item).ToMime().WriteTo(emlPath);
+}
+
+// The .eml file, read back
+var email = EmailMessage.FromMime(MimeMessage.Load(emlPath));
+Assert.Equal("Welcome to Microsoft Office Outlook 2003", email.Subject);
+Assert.HasCount(11, email.Attachments);
 ```
 <!-- endref -->
 

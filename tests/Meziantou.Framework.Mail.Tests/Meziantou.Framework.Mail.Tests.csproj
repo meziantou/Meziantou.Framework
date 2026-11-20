@@ -5,8 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- See TestData/Pst/README.md for the origin and license of each file -->
+    <!-- See the README.md file of each folder of TestData for the origin and license of the files -->
     <None Update="TestData/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- An independent MIME parser (MIT), the oracle of MimeOracleTests -->
+    <PackageReference Include="MimeKit" Version="4.18.2" />
   </ItemGroup>
 
   <ItemGroup>

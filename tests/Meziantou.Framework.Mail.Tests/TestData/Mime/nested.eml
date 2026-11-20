@@ -1,0 +1,30 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: Nested multiparts
+Date: Mon, 7 Jul 2025 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="a"
+
+--a
+Content-Type: multipart/alternative; boundary="b"
+
+--b
+Content-Type: text/plain
+
+Nested plain.
+--b
+Content-Type: multipart/related; boundary="c"
+
+--c
+Content-Type: text/html
+
+<p>Nested html</p>
+--c--
+--b--
+--a
+Content-Type: application/zip
+Content-Disposition: attachment; filename=archive.zip
+Content-Transfer-Encoding: base64
+
+UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==
+--a--

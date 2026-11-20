@@ -4,10 +4,208 @@
 
 namespace Meziantou.Framework.Mail
 {
+    public sealed class EmailAttachment
+    {
+        public System.ReadOnlyMemory<byte> Content { get => throw null; set { } }
+        public string? ContentId { get => throw null; set { } }
+        public string ContentType { get => throw null; set { } }
+        public Meziantou.Framework.Mail.EmailMessage? EmbeddedMessage { get => throw null; set { } }
+        public string? FileName { get => throw null; set { } }
+        public bool IsInline { get => throw null; set { } }
+        public override string ToString() => throw null;
+    }
+
+    public enum EmailImportance
+    {
+        Low = 0,
+        Normal = 1,
+        High = 2,
+    }
+
+    public sealed class EmailMessage
+    {
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.EmailAttachment> Attachments { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.MailboxAddress> Bcc { get => throw null; }
+        public System.Collections.Generic.IList<string> Categories { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.MailboxAddress> Cc { get => throw null; }
+        public System.DateTimeOffset? Date { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MailboxAddress? From { get => throw null; set { } }
+        public System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, string>> Headers { get => throw null; }
+        public string? HtmlBody { get => throw null; set { } }
+        public Meziantou.Framework.Mail.EmailImportance Importance { get => throw null; set { } }
+        public string? InReplyTo { get => throw null; set { } }
+        public string? MessageId { get => throw null; set { } }
+        public System.Collections.Generic.IList<string> References { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.MailboxAddress> ReplyTo { get => throw null; }
+        public string? RtfBody { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MailboxAddress? Sender { get => throw null; set { } }
+        public string? Subject { get => throw null; set { } }
+        public string? TextBody { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.MailboxAddress> To { get => throw null; }
+        public static Meziantou.Framework.Mail.EmailMessage FromMime(Meziantou.Framework.Mail.MimeMessage message) => throw null;
+        public static Meziantou.Framework.Mail.EmailMessage FromPst(Meziantou.Framework.Mail.PstMessage message) => throw null;
+        public Meziantou.Framework.Mail.MimeMessage ToMime() => throw null;
+        public Meziantou.Framework.Mail.PstMessageBuilder ToPstBuilder() => throw null;
+    }
+
+    public sealed class InvalidMailDataException : Meziantou.Framework.Mail.MailException
+    {
+        public InvalidMailDataException(string? message) { }
+        public InvalidMailDataException(string? message, System.Exception? innerException) { }
+    }
+
     public sealed class InvalidPstException : Meziantou.Framework.Mail.PstException
     {
         public InvalidPstException(string? message) { }
         public InvalidPstException(string? message, System.Exception? innerException) { }
+    }
+
+    public class MailException : System.IO.IOException
+    {
+        public MailException(string? message) { }
+        public MailException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class MailResourceLimitException : Meziantou.Framework.Mail.MailException
+    {
+        public MailResourceLimitException(string? message) { }
+        public MailResourceLimitException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class MailboxAddress : System.IEquatable<Meziantou.Framework.Mail.MailboxAddress>
+    {
+        public string Address { get => throw null; }
+        public string? Name { get => throw null; }
+        public MailboxAddress(string? name, string address) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Mail.MailboxAddress? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static string FormatList(System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.MailboxAddress> addresses) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Mail.MailboxAddress? Parse(string? value) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MailboxAddress> ParseList(string? value) => throw null;
+        public string ToHeaderValue() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class MimeContentDisposition
+    {
+        public const string Attachment = "attachment";
+        public const string Inline = "inline";
+        public string Disposition { get => throw null; set { } }
+        public string? FileName { get => throw null; set { } }
+        public bool IsAttachment { get => throw null; }
+        public System.Collections.Generic.IDictionary<string, string> Parameters { get => throw null; }
+        public MimeContentDisposition(string disposition) { }
+        public static Meziantou.Framework.Mail.MimeContentDisposition Parse(string value) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class MimeContentType
+    {
+        public string? Boundary { get => throw null; set { } }
+        public string? Charset { get => throw null; set { } }
+        public string MediaSubtype { get => throw null; set { } }
+        public string MediaType { get => throw null; set { } }
+        public string MimeType { get => throw null; }
+        public string? Name { get => throw null; set { } }
+        public System.Collections.Generic.IDictionary<string, string> Parameters { get => throw null; }
+        public MimeContentType(string mediaType, string mediaSubtype) { }
+        public bool IsMimeType(string mediaType, string mediaSubtype) => throw null;
+        public static Meziantou.Framework.Mail.MimeContentType Parse(string value) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public abstract class MimeEntity
+    {
+        public Meziantou.Framework.Mail.MimeContentDisposition? ContentDisposition { get => throw null; set { } }
+        public string? ContentId { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MimeContentType ContentType { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MimeHeaderCollection Headers { get => throw null; }
+    }
+
+    public sealed class MimeHeader
+    {
+        public string Name { get => throw null; }
+        public string RawValue { get => throw null; }
+        public string Value { get => throw null; }
+        public static Meziantou.Framework.Mail.MimeHeader Create(string name, string value) => throw null;
+        public static Meziantou.Framework.Mail.MimeHeader CreateRaw(string name, string rawValue) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class MimeHeaderCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.MimeHeader>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Mail.MimeHeader>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MimeHeader>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public Meziantou.Framework.Mail.MimeHeader this[int index] { get => throw null; }
+        public string? this[string name] { get => throw null; }
+        public void Add(Meziantou.Framework.Mail.MimeHeader header) { }
+        public void Add(string name, string value) { }
+        public Meziantou.Framework.Mail.MimeHeader? Find(string name) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.MimeHeader> FindAll(string name) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Mail.MimeHeader> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(Meziantou.Framework.Mail.MimeHeader header) => throw null;
+        public int RemoveAll(string name) => throw null;
+        public void Set(string name, Meziantou.Framework.Mail.MimeHeader? header) { }
+        public void Set(string name, string? value) { }
+    }
+
+    public sealed class MimeMessage
+    {
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.MimeEntity> Attachments { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MailboxAddress> Bcc { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MimeEntity Body { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MailboxAddress> Cc { get => throw null; set { } }
+        public System.DateTimeOffset? Date { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MailboxAddress> From { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MimeHeaderCollection Headers { get => throw null; }
+        public string? HtmlBody { get => throw null; }
+        public string? InReplyTo { get => throw null; set { } }
+        public string? MessageId { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string> References { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MailboxAddress> ReplyTo { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MailboxAddress? Sender { get => throw null; set { } }
+        public string? Subject { get => throw null; set { } }
+        public string? TextBody { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MailboxAddress> To { get => throw null; set { } }
+        public static Meziantou.Framework.Mail.MimeMessage Load(System.IO.Stream stream, Meziantou.Framework.Mail.MimeReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.MimeMessage Load(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Mail.MimeReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.MimeMessage Load(string path, Meziantou.Framework.Mail.MimeReadOptions? options = null) => throw null;
+        public byte[] ToByteArray() => throw null;
+        public void WriteTo(System.IO.Stream stream) { }
+        public void WriteTo(string path) { }
+    }
+
+    public sealed class MimeMessagePart : Meziantou.Framework.Mail.MimeEntity
+    {
+        public Meziantou.Framework.Mail.MimeMessage Message { get => throw null; set { } }
+        public MimeMessagePart(Meziantou.Framework.Mail.MimeMessage message) { }
+    }
+
+    public sealed class MimeMultipart : Meziantou.Framework.Mail.MimeEntity
+    {
+        public System.ReadOnlyMemory<byte> Epilogue { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.MimeEntity> Parts { get => throw null; }
+        public System.ReadOnlyMemory<byte> Preamble { get => throw null; set { } }
+        public MimeMultipart(string mediaSubtype = "mixed") { }
+    }
+
+    public sealed class MimePart : Meziantou.Framework.Mail.MimeEntity
+    {
+        public string? ContentTransferEncoding { get => throw null; set { } }
+        public string? FileName { get => throw null; }
+        public bool IsAttachment { get => throw null; }
+        public byte[] GetContent() => throw null;
+        public string GetText() => throw null;
+        public void SetContent(byte[] content) { }
+        public void SetText(string text, string mediaSubtype = "plain") { }
+    }
+
+    public sealed class MimeReadOptions
+    {
+        public int MaxDepth { get => throw null; set { } }
+        public int MaxParts { get => throw null; set { } }
+        public long MaxSize { get => throw null; set { } }
     }
 
     public sealed class PstAppointment : Meziantou.Framework.Mail.PstMessage
@@ -198,7 +396,7 @@ namespace Meziantou.Framework.Mail
         Cyclic = 2,
     }
 
-    public class PstException : System.IO.IOException
+    public class PstException : Meziantou.Framework.Mail.MailException
     {
         public PstException(string? message) { }
         public PstException(string? message, System.Exception? innerException) { }

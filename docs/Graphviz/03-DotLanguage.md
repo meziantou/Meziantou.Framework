@@ -49,7 +49,7 @@ are attached to the nodes.
 | Edge | `lhead`, `ltail` | With `compound=true`, the edge ends at the frame of a cluster that contains its end: its end is the subgraph. |
 | All | `style` | See the styles below. |
 | All | `fontcolor`, `fontsize`, `penwidth` | The color and the size of the texts, and the width of the lines. |
-| Nodes and clusters | `URL` (or `href`), `tooltip` | The link and the tooltip of the element in the SVG. |
+| Nodes and clusters | `URL` (or `href`), `tooltip` | The link and the tooltip of the element in the SVG. A link that is not relative and whose scheme is not `http`, `https` or `mailto` (such as `javascript:`) is ignored, with a warning. |
 | All | `class` | The CSS classes of the element in the SVG. |
 
 The other attributes, such as `fontname`, `width`, `height`, `weight` or `constraint`, are ignored and reported as

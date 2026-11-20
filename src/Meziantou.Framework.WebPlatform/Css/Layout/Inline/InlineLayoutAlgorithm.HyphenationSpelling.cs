@@ -9,7 +9,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 // language-specific hyphenation character(s) and should apply any appropriate spelling changes just as for automatic hyphenation
 // at the same point". The spelling changes of the WPT tests css/css-text/hyphens/i18n are applied at the soft hyphens and at the
 // automatic hyphenation opportunities (no browser applies them): the Dutch diminutives of the words in -é (cafeetje is
-// café-tje), the long double consonants of Hungarian (Összeg is Ösz-szeg), and the apostrophe that separates the syllables of
+// café-tje), the Dutch trema that separates two vowels, which is not needed at the start of the next line (zeeën is zee-en), the long double consonants of Hungarian (Összeg is Ösz-szeg), and the apostrophe that separates the syllables of
 // Pinyin, which is removed at the break (tú’àn is tú-àn). The typographic conventions of other languages are applied too: the
 // geminate l of Catalan (col·lecció is col-lecció), the ck of the 1901 German orthography (Zucker is Zuk-ker), and the hyphen of a
 // compound word repeated at the start of the next line (see AddLanguageHyphenationOpportunities).
@@ -43,9 +43,10 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>
     /// The text displayed at a hyphenation break before <c>_text[position]</c>: <see cref="RemovedBefore"/> characters before the
     /// break are replaced by <see cref="Hyphen"/> (the letters of the spelling change and the hyphenation character), and the next
-    /// line starts <see cref="RemovedAfter"/> characters after the break.
+    /// line starts <see cref="RemovedAfter"/> characters after the break, with <see cref="InsertedAfter"/> before them (the
+    /// letters of the spelling change that replace the removed characters, or <see langword="null"/>).
     /// </summary>
-    private readonly record struct HyphenationBreak(int RemovedBefore, string Hyphen, int RemovedAfter);
+    private readonly record struct HyphenationBreak(int RemovedBefore, string Hyphen, int RemovedAfter, string? InsertedAfter = null);
 
     /// <summary>The digraphs of Hungarian whose long form doubles their first letter (e.g. ssz is the long sz), longest first.</summary>
     private static readonly string[] HungarianDigraphs = ["dzs", "cs", "dz", "gy", "ly", "ny", "sz", "ty", "zs"];
@@ -71,6 +72,18 @@ internal sealed partial class InlineLayoutAlgorithm
                     && text[position] is 't' or 'T' && text[position + 1] is 'j' or 'J')
                 {
                     return new HyphenationBreak(position - end + 2, (text[end - 1] == 'E' ? "\U000000C9" : "\U000000E9") + hyphen, 0);
+                }
+
+                // The trema that separates two vowels (zeeën, beïnvloeden) is not needed at the start of the next line (zee-en,
+                // be-invloeden): the vowel loses it, precomposed or followed by U+0308 COMBINING DIAERESIS
+                if (end > 0 && char.IsLetter(text[end - 1]) && position < text.Length)
+                {
+                    var vowel = GetDutchTremaVowel(text[position]);
+                    if (vowel != 0 && position + 1 < text.Length && char.IsLetter(text[position + 1]))
+                        return new HyphenationBreak(0, hyphen, 1, vowel.ToString());
+
+                    if (text[position] is 'a' or 'e' or 'i' or 'o' or 'u' or 'A' or 'E' or 'I' or 'O' or 'U' && position + 2 < text.Length && text[position + 1] == CombiningDiaeresis && char.IsLetter(text[position + 2]))
+                        return new HyphenationBreak(0, hyphen, 2, text[position].ToString());
                 }
 
                 break;
@@ -122,6 +135,24 @@ internal sealed partial class InlineLayoutAlgorithm
         return new HyphenationBreak(0, hyphen, 0);
     }
 
+    private const char CombiningDiaeresis = (char)0x0308;
+
+    /// <summary>The vowel without its diaeresis of a precomposed vowel with a diaeresis of Dutch (ä, ë, ï, ö, ü), or 0.</summary>
+    private static char GetDutchTremaVowel(char c) => c switch
+    {
+        (char)0x00E4 => 'a',
+        (char)0x00EB => 'e',
+        (char)0x00EF => 'i',
+        (char)0x00F6 => 'o',
+        (char)0x00FC => 'u',
+        (char)0x00C4 => 'A',
+        (char)0x00CB => 'E',
+        (char)0x00CF => 'I',
+        (char)0x00D6 => 'O',
+        (char)0x00DC => 'U',
+        _ => (char)0,
+    };
+
     /// <summary>The width of the hyphenation break at <paramref name="position"/>, in the text item <paramref name="index"/>: the hyphen, without the characters it replaces.</summary>
     private double MeasureHyphenationBreak(int index, int position, bool isFirstLine)
     {
@@ -143,8 +174,22 @@ internal sealed partial class InlineLayoutAlgorithm
     /// </summary>
     private LinePosition SkipHyphenationRemovedCharacters(LinePosition start)
     {
+        var removed = GetLineStartSpellingChange(start, out _, out _).RemovedAfter;
+        return removed > 0 ? start with { Position = start.Position + removed } : start;
+    }
+
+    /// <summary>
+    /// The spelling change at the start of the line that starts at <paramref name="start"/>, made by the hyphenation break that
+    /// ends the previous line: the characters it removes (see <see cref="HyphenationBreak.RemovedAfter"/>) are in the text item
+    /// <paramref name="item"/> (the word may continue in the next item: <c>&lt;span&gt;zee&amp;shy;ë&lt;/span&gt;n</c>), and
+    /// <paramref name="style"/> is the style of the text before the break. A break without such a change has no removed characters.
+    /// </summary>
+    private HyphenationBreak GetLineStartSpellingChange(LinePosition start, out int item, out ComputedStyle? style)
+    {
+        item = -1;
+        style = null;
         if (!_opportunitiesComputed || start.Position <= 0 || start.Position >= _length || _opportunities[start.Position] is not (LineBreakOpportunity.Hyphen or LineBreakOpportunity.AutoHyphen))
-            return start;
+            return default;
 
         // (the style of the text before the break)
         var index = start.Item;
@@ -154,20 +199,79 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         if (Items[index].Kind != InlineItemKind.Text)
-            return start;
+            return default;
 
-        var removed = GetHyphenationBreak(start.Position, Items[index].Style).RemovedAfter;
-        if (removed == 0)
-            return start;
+        var hyphenBreak = GetHyphenationBreak(start.Position, Items[index].Style);
+        if (hyphenBreak.RemovedAfter == 0)
+            return default;
 
-        // The removed characters must be in the text item that starts the line
-        var item = start.Item;
+        // The removed characters must be in the text item that starts the line (the letters that replace them are shaped with its style)
+        item = start.Item;
         while (item < Items.Length && Items[item].End <= start.Position)
         {
             item++;
         }
 
-        return item < Items.Length && Items[item].Kind == InlineItemKind.Text && start.Position + removed <= Items[item].End ? start with { Position = start.Position + removed } : start;
+        var end = start.Position + hyphenBreak.RemovedAfter;
+        if (item >= Items.Length || Items[item].Kind != InlineItemKind.Text || Items[item].Start > start.Position || end > Items[item].End)
+        {
+            item = -1;
+            return default;
+        }
+
+        style = Items[index].Style;
+        return hyphenBreak;
+    }
+
+    /// <summary>The width of the letters inserted at the start of the line that starts at <paramref name="start"/> by the spelling change of the hyphenation break that ends the previous line.</summary>
+    private double MeasureLineStartSpellingChange(LinePosition start)
+    {
+        var hyphenBreak = GetLineStartSpellingChange(start, out var item, out _);
+        return hyphenBreak.InsertedAfter is { } inserted ? TextShaper.MeasureWidth(inserted, Items[item].Style.Fonts, GetHyphenShapingOptions(Items[item].Style)) : 0;
+    }
+
+    /// <summary>
+    /// Adds the letters inserted at the start of the line that starts at <paramref name="start"/> by the spelling change of the
+    /// hyphenation break that ends the previous line (the vowel without its Dutch trema): a hyphen leaf in the inline box of the
+    /// characters they replace, before the first text of the line, at the position of these characters. When these characters
+    /// end their inline box, the leaf replaces the empty leaf of the box.
+    /// </summary>
+    private void AddLineStartSpellingChange(LinePosition start, bool isFirstLine)
+    {
+        var hyphenBreak = GetLineStartSpellingChange(start, out var item, out _);
+        if (hyphenBreak.InsertedAfter is not { } inserted)
+            return;
+
+        var contentStart = start.Position + hyphenBreak.RemovedAfter;
+        var container = Items[item].Container;
+        for (var i = 0; i < _leaves.Count; i++)
+        {
+            var leaf = _leaves[i];
+            var replacesEmptyBox = leaf.Kind == LineLeafKind.EmptyBox && ReferenceEquals(leaf.Box, container);
+            if (!replacesEmptyBox)
+            {
+                if (leaf.Kind != LineLeafKind.Text)
+                    continue;
+
+                // (the first text of the line: the rest of the word, in the same item or after the end of the item)
+                if (leaf.Item == item ? leaf.Start != contentStart : contentStart != Items[item].End)
+                    return;
+            }
+
+            var style = GetLineStyle(Items[item], isFirstLine);
+            var shaped = TextShaper.Shape(inserted, style.Fonts, GetHyphenShapingOptions(style) with { IsRightToLeft = (leaf.Level & 1) != 0 });
+            var spellingChange = new LineLeaf { Kind = LineLeafKind.Hyphen, Level = leaf.Level, Item = item, Start = start.Position, End = start.Position, HangStart = start.Position, Parent = container, Shaped = shaped, GlyphCount = shaped.Glyphs.Length, Width = shaped.Width, SpellingChangeLength = hyphenBreak.RemovedAfter };
+            if (replacesEmptyBox)
+            {
+                _leaves[i] = spellingChange;
+            }
+            else
+            {
+                _leaves.Insert(i, spellingChange);
+            }
+
+            return;
+        }
     }
 
     /// <summary>

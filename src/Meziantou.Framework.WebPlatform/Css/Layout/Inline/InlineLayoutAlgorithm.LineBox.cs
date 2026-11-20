@@ -90,6 +90,12 @@ internal sealed partial class InlineLayoutAlgorithm
 
         /// <summary>Whether the leaf is in the annotations of its outermost ruby column (<see cref="RubyColumn"/>).</summary>
         public bool IsRubyAnnotation;
+
+        /// <summary>
+        /// The number of characters after <see cref="Start"/> that a hyphen leaf at the start of a line replaces (the letters of
+        /// the spelling change of the hyphenation break that ends the previous line), or 0 for the hyphen at the end of a line.
+        /// </summary>
+        public int SpellingChangeLength;
     }
 
     /// <summary>A fragment of a line being built: a leaf, or a fragment of an inline box whose children are the following nodes.</summary>
@@ -361,6 +367,8 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             AddHyphen(isFirstLine);
         }
+
+        AddLineStartSpellingChange(start, isFirstLine);
 
         var isRightToLeft = _block.Style.Layout.Direction == Direction.Rtl;
         var reordered = false;

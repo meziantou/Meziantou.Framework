@@ -1525,6 +1525,13 @@ internal sealed class TextFragment : Fragment
     public bool IsHyphen { get; init; }
 
     /// <summary>
+    /// Whether the fragment is the letters that the spelling change of a hyphenation break displays at the start of the next
+    /// line instead of the characters from <see cref="Start"/> to <see cref="End"/> (the vowel without its Dutch trema): its
+    /// glyphs are not the ones of these characters, but it is their text (a single typographic character unit for the caret).
+    /// </summary>
+    public bool IsSpellingChange { get; init; }
+
+    /// <summary>
     /// The writing direction of the text of the fragment: the writing mode of its text run, and the direction of its bidi level
     /// (the direction of its glyphs).
     /// </summary>
@@ -1602,6 +1609,11 @@ internal sealed class TextFragment : Fragment
     /// </summary>
     public PhysicalRect GetRangeRect(int start, int end)
     {
+        // The letters of a spelling change are the text of all the characters they replace: a range over any of them has the
+        // rectangle of the letters (their glyphs are not the ones of these characters)
+        if (IsSpellingChange && end > start && start < End && end > Start)
+            return new PhysicalRect(0, 0, Size.Width, Size.Height);
+
         var a = GetInlineOffset(start);
         var b = GetInlineOffset(end, roundUp: end > start);
         var low = Math.Min(a, b);

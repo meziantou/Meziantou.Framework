@@ -149,10 +149,12 @@ internal sealed partial class LayoutEngine
             var outerLanesBreaks = context.GridLanesBreaks;
             var outerRelayout = context.StripRelayout;
             var outerResumes = context.InlineResumes;
+            var outerFlexResumes = context.FlexLineResumes;
             context.FloatPushes = floatPushes;
             context.GridLanesBreaks = lanesBreaks;
             context.StripRelayout = stripRelayout;
             context.InlineResumes = segment?.Anchor.Resume is { } resume ? new() { [segment.Anchor.Box] = resume } : null;
+            context.FlexLineResumes = segment?.Anchor is { Container: { } flexContainer, Following: { } flexFollowing } && IsFlexLineContainer(flexContainer) ? new() { [flexContainer] = flexFollowing } : null;
             stripRelayout.BeginLayout();
             BoxFragment initialContainingBlock;
             try
@@ -166,6 +168,7 @@ internal sealed partial class LayoutEngine
                 context.GridLanesBreaks = outerLanesBreaks;
                 context.StripRelayout = outerRelayout;
                 context.InlineResumes = outerResumes;
+                context.FlexLineResumes = outerFlexResumes;
             }
 
             icbSize = initialContainingBlock.Size;
@@ -675,10 +678,11 @@ internal sealed partial class LayoutEngine
     /// before it is the same whatever the inline size. That is the case of a break before an in-flow block-level box of the
     /// block flow of the root element (the box and its block containers are laid out the same way in a strip of another inline
     /// size), of a break between two line boxes of a block container of that block flow (its line boxes are laid out from
-    /// there in the strip of another inline size, see <see cref="InlineResume"/>), and of a break between the rows of a
+    /// there in the strip of another inline size, see <see cref="InlineResume"/>), of a break between the rows of a
     /// container whose rows are the same whatever its inline size (see <see cref="IsRowContainer"/>), or inside the only row
-    /// that the break crosses when the rows are not side by side; else null (a break inside a line box, between the lines of a
-    /// flex container that wraps...).
+    /// that the break crosses when the rows are not side by side, and of a break between the flex lines of a multi-line row
+    /// flex container (the items after the break start a new flex line in the strip of another inline size, see
+    /// <see cref="LayoutContext.FlexLineResumes"/>); else null (a break inside a line box, inside a flex line...).
     /// </summary>
     private static BreakAnchor? FindBreakAnchor(ReadOnlySpan<Fragment> children, PhysicalSize parentSize, WritingDirection writingDirection, double position, double parentTop, BoxFragment? parent = null)
     {
@@ -866,9 +870,10 @@ internal sealed partial class LayoutEngine
     /// Returns whether a box is a container whose rows (its in-flow children, in the block axis) are the same whatever its inline
     /// size: a table wrapper box (the captions and the table grid box), a table grid box (the row groups), a row group (the
     /// rows), a single-line column flex container (the items), and a grid container whose columns do not depend on its inline
-    /// size (no <c>auto-fill</c> nor <c>auto-fit</c> repetition, not a subgrid: the items are placed in the same rows).
-    /// <paramref name="sideBySide"/> is whether rows may be side by side (the items of a grid row): a break can only be found
-    /// again between its rows.
+    /// size (no <c>auto-fill</c> nor <c>auto-fit</c> repetition, not a subgrid: the items are placed in the same rows), and a
+    /// multi-line row flex container (see <see cref="IsFlexLineContainer"/>: its flex lines are the rows, the items after a break
+    /// between them start a new flex line in another inline size). <paramref name="sideBySide"/> is whether rows may be side by
+    /// side (the items of a grid row or of a flex line): a break can only be found again between its rows.
     /// </summary>
     private static bool IsRowContainer(ContainerBox box, out bool sideBySide)
     {
@@ -886,6 +891,12 @@ internal sealed partial class LayoutEngine
         {
             case DisplayInside.Flex:
                 var flex = box.Style.Layout.Flex;
+                if (IsFlexLineContainer(box))
+                {
+                    sideBySide = true;
+                    return true;
+                }
+
                 return flex.Direction is FlexDirection.Column or FlexDirection.ColumnReverse && flex.Wrap == FlexWrap.NoWrap;
 
             case DisplayInside.Grid:
@@ -896,6 +907,20 @@ internal sealed partial class LayoutEngine
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// Returns whether a box is a multi-line row flex container whose flex lines are stacked in the block axis in the order of the
+    /// items (<c>flex-wrap: wrap</c>, not balanced, not a <c>-webkit-box</c>): the items after a break between two of its flex
+    /// lines start a new flex line in the strip of another inline size (see <see cref="LayoutContext.FlexLineResumes"/>).
+    /// </summary>
+    private static bool IsFlexLineContainer(ContainerBox box)
+    {
+        if (box.Kind is not (ContainerBoxKind.Normal or ContainerBoxKind.Anonymous) || box.Display.IsInternal || box.Display.Inside != DisplayInside.Flex)
+            return false;
+
+        var properties = FlexContainerProperties.Get(box);
+        return properties is { IsRow: true, IsMultiLine: true, IsCrossReverse: false, IsBalanced: false, IsWebkitBox: false };
     }
 
     /// <summary>

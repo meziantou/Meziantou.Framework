@@ -115,7 +115,7 @@ public static partial class WebPlatformFuzzTargets
         }
     }
 
-    /// <summary>The seeds: the scenarios of the unit tests (rows of 100px on a first page of 200x300 then pages of 400x300, a paragraph in a column flex container, an automatic grid).</summary>
+    /// <summary>The seeds: the scenarios of the unit tests (rows of 100px on a first page of 200x300 then pages of 400x300, a paragraph in a column flex container, an automatic grid, a flex container that wraps).</summary>
     private static IEnumerable<FuzzSeed> GetPagedInlineSizeSeeds()
     {
         byte[][] scenarios =
@@ -130,9 +130,14 @@ public static partial class WebPlatformFuzzTargets
             [35, 75, 55, 2, 1, 0, 100, 2, 0, 39],
             [35, 75, 55, 6, 0, 2, 0, 39],
 
-            // The containers whose rows depend on their inline size keep their layout
+            // A grid whose columns depend on its inline size keeps its layout
             [35, 75, 55, 4, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+
+            // A row flex container that wraps, broken between its flex lines (the items after the break start a new flex line),
+            // with paragraphs, and broken inside a flex line (it keeps its layout)
             [35, 75, 55, 5, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+            [35, 75, 55, 5, 7, 2, 0, 20, 0, 100, 2, 0, 39, 0, 100, 0, 100, 3, 0, 10, 0, 100, 0, 100],
+            [35, 75, 55, 5, 3, 0, 199, 0, 199, 0, 199, 0, 100],
 
             // A row that avoids breaks and does not fit below a header that is not repeated starts the next page
             [55, 55, 8, 7, 1, 3, 0, 28, 2, 0, 2],

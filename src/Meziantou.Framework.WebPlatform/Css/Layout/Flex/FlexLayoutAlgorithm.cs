@@ -942,7 +942,11 @@ internal sealed partial class FlexLayoutAlgorithm
         // https://drafts.csswg.org/css-flexbox-1/#algo-available: the available main space is the inner main size of the
         // container; a column container whose block size is indefinite breaks its lines at its maximum block size (as the browsers)
         var available = _definiteMainSize ?? _content.MaxBlockSize ?? double.PositiveInfinity;
-        if (!_properties.IsBalanced || !CollectBalancedLines(available, collapse))
+
+        // The content of a page of another inline size that starts between two flex lines (see LayoutContext.FlexLineResumes):
+        // the items after the break start a new line, the items before it are in the lines before (in the previous pages)
+        var resumed = _properties.IsMultiLine && _context.FlexLineResumes is { } resumes && resumes.TryGetValue(_box, out var following) ? following : null;
+        if (resumed is not null || !_properties.IsBalanced || !CollectBalancedLines(available, collapse))
         {
             var start = 0;
             while (start < _items.Count)
@@ -968,6 +972,9 @@ internal sealed partial class FlexLayoutAlgorithm
                     // are rounded: the items fit with the tolerance of the layout unit of the browsers, 1/64px (the columns of
                     // 16.66666667% and 8.33333333% of a row of Bootstrap fill it)
                     if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance)
+                        break;
+
+                    if (resumed is not null && end > start && resumed.Contains(item.Box) && !resumed.Contains(_items[end - 1].Box))
                         break;
 
                     used = next;

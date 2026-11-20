@@ -1044,7 +1044,9 @@ public sealed class Navigation : EventTarget
             FormData = formData,
             DownloadRequest = downloadRequestFilename,
             Info = apiMethodTracker?.Info,
-            SourceElement = sourceElement,
+            // Not in the HTML Standard, but as in the browsers (WPT navigation-api/navigate-event/sourceElement-shadow-tree.html):
+            // an element of a shadow tree is retargeted to its shadow host, so the event does not expose the shadow trees
+            SourceElement = EventDispatcher.Retarget(sourceElement, document) as Element,
         })
         {
             AbortController = abortController,

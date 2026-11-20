@@ -61,7 +61,12 @@ internal static class HyperlinkElementUtils
     /// request navigate event is fired, then the resource is fetched and handed to
     /// <see cref="BrowsingContextOptions.DownloadStarted"/> (nothing is fetched when it is null).
     /// </summary>
-    public static void ActivationBehavior(Element element)
+    /// <param name="element">The hyperlink.</param>
+    /// <param name="sourceElement">
+    /// The element that initiates the navigation, as seen by the navigation API: the hyperlink, or the use element whose shadow
+    /// tree has the instance of the hyperlink that is activated (the instances are retargeted to the use element).
+    /// </param>
+    public static void ActivationBehavior(Element element, Element? sourceElement = null)
     {
         if (!element.HasActivationBehavior || CannotNavigate(element))
             return;
@@ -72,7 +77,7 @@ internal static class HyperlinkElementUtils
             return;
         }
 
-        FollowHyperlink(element);
+        FollowHyperlink(element, sourceElement ?? element);
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/links.html#downloading-hyperlinks</summary>
@@ -126,7 +131,7 @@ internal static class HyperlinkElementUtils
     /// https://html.spec.whatwg.org/multipage/links.html#following-hyperlinks-2: navigates the navigable chosen by the target
     /// of the element (a new auxiliary browsing context for <c>_blank</c> and the unknown names).
     /// </summary>
-    private static void FollowHyperlink(Element element)
+    private static void FollowHyperlink(Element element, Element sourceElement)
     {
         var document = element.NodeDocument;
         if (document.BrowsingContext is not { } currentNavigable)
@@ -144,20 +149,21 @@ internal static class HyperlinkElementUtils
         var referrerPolicy = HasLinkType(element, "noreferrer") ? "no-referrer" : element.GetAttributeValue("referrerpolicy") ?? "";
         // The navigation is initiated by the user when the window has transient activation (a trusted activation event)
         var userInvolvement = document.RelevantWindow?.HasTransientActivation == true ? UserNavigationInvolvement.Activation : UserNavigationInvolvement.None;
-        targetNavigable.Navigate(url, document, NavigationHistoryBehavior.Auto, referrerPolicy: referrerPolicy, userInvolvement: userInvolvement, sourceElement: element);
+        targetNavigable.Navigate(url, document, NavigationHistoryBehavior.Auto, referrerPolicy: referrerPolicy, userInvolvement: userInvolvement, sourceElement: sourceElement);
         SendPings(currentNavigable, document, url, pingUrls);
     }
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/links.html#hyperlink-auditing: the tokens of the <c>ping</c> attribute of an
-    /// <c>a</c> or <c>area</c> element (and of the MathML <c>a</c> element), encoding-parsed relative to the node document. The failures, the URLs whose scheme
+    /// <c>a</c> or <c>area</c> element (and of the SVG and MathML <c>a</c> elements, whose <c>ping</c> attribute has the semantics
+    /// of the HTML one: https://svgwg.org/svg2-draft/linking.html#AElementPingAttribute), encoding-parsed relative to the node document. The failures, the URLs whose scheme
     /// is not an HTTP(S) scheme and the mixed content URLs are ignored (the requests blocked by the content security policies,
     /// connect-src, are blocked and reported by the fetch).
     /// </summary>
     private static List<UrlRecord> GetPingUrls(Element element)
     {
         var urls = new List<UrlRecord>();
-        if (element is not (HtmlAnchorElement or HtmlAreaElement or MathMLAnchorElement) || element.GetAttributeValue("ping") is not { Length: > 0 } ping)
+        if (element is not (HtmlAnchorElement or HtmlAreaElement or SvgAElement or MathMLAnchorElement) || element.GetAttributeValue("ping") is not { Length: > 0 } ping)
             return urls;
 
         foreach (var token in Infra.InfraString.SplitOnAsciiWhitespace(ping))

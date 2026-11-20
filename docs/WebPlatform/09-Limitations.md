@@ -33,6 +33,10 @@ fails.
     SVG 2 (basic shapes and references to SVG shape elements) wrap the SVG texts;
   - in the shaping of the complex scripts, the Myanmar Zawgyi encoding and the Arabic fallback shaping of the
     Windows-1256 fonts.
+- **SVG `use` elements.** The `use` elements have no shadow tree of element instances: the referenced content is rendered
+  and hit tested in place, and the events of its instances are dispatched to the `use` element. A click of the user on
+  the instance of a hyperlink (an `a` element of the referenced content) follows the referenced hyperlink, whose source
+  element is the `use` element; the `ShadowAnimation` interface and the `:hover` of the instances are not supported.
 - **Painting.** The core library paints the documents into a display list; a [rendering backend](07-Rendering/01-Overview.md)
   produces the pixels. Without a backend, nothing is painted, the images are not decoded and `canvas.getContext("2d")`
   returns `null`. The Imaging backend draws the color glyphs (`COLR` versions 0 and 1, `SVG `, `sbix` and `CBDT`) with

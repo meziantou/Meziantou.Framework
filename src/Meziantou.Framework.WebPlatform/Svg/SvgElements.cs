@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Css.Values;
+using Meziantou.Framework.WebPlatform.Html;
 using Meziantou.Framework.WebPlatform.Svg;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
@@ -968,6 +969,52 @@ public partial class SvgUseElement
         if (localName == "href" && @namespace is null or Namespaces.XLink)
         {
             UpdateExternalResource();
+        }
+    }
+
+    // https://svgwg.org/svg2-draft/struct.html#UseElement: the shadow tree is not built (the referenced content is rendered and hit
+    // tested in place), so the hyperlinks of the shadow tree are activated through the use element, the target of the events
+    // of its element instances: the use element has an activation behavior when its referenced content has a hyperlink
+    internal override bool HasActivationBehavior => GetReferencedElement() is { } referenced && GetHyperlinks(referenced).Any();
+
+    /// <summary>
+    /// The activation behavior of the element instance of a hyperlink (https://svgwg.org/svg2-draft/linking.html#AElement): a
+    /// click of the user on the content of a hyperlink of the shadow tree follows the hyperlink (its attributes are the ones of
+    /// the referenced element, which the element instance mirrors), whose source element is the use element. The element
+    /// instance under the pointer is found by hit testing the position of the click; a synthetic click is dispatched to the use
+    /// element only (it is not in the shadow tree).
+    /// </summary>
+    internal override void ActivationBehavior(Event @event)
+    {
+        if (@event is not MouseEvent { IsTrusted: true } mouseEvent || GetReferencedElement() is not { } referenced)
+            return;
+
+        if (CssomViewGeometry.HitTest(NodeDocument, mouseEvent.ClientX, mouseEvent.ClientY) is not { UseInstance: { } instance } hit || !ReferenceEquals(hit.Target, this))
+            return;
+
+        for (Node? node = instance; node is not null; node = node.ParentNode)
+        {
+            if (node is SvgAElement hyperlink && hyperlink.HasActivationBehavior)
+            {
+                HyperlinkElementUtils.ActivationBehavior(hyperlink, sourceElement: this);
+                return;
+            }
+
+            if (ReferenceEquals(node, referenced))
+                return;
+        }
+    }
+
+    /// <summary>The hyperlinks of the content referenced by the element (the referenced element and its descendants).</summary>
+    private static IEnumerable<SvgAElement> GetHyperlinks(Element referenced)
+    {
+        if (referenced is SvgAElement { HasActivationBehavior: true } self)
+            yield return self;
+
+        foreach (var descendant in referenced.Descendants())
+        {
+            if (descendant is SvgAElement { HasActivationBehavior: true } hyperlink)
+                yield return hyperlink;
         }
     }
 

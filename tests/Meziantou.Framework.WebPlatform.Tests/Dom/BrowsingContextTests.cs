@@ -1188,6 +1188,22 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void SvgHyperlink_Click_NavigatesAndSendsPings()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<title>" + url + "</title>")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+        var document = Load(context, "<svg><a href='next.html' ping='ping.py other.py'><rect width=10 height=10 /></a></svg>");
+
+        // https://svgwg.org/svg2-draft/linking.html#AElementPingAttribute: the ping attribute has the semantics of the HTML one
+        var link = Assert.IsType<SvgAElement>(document.QuerySelector("a"));
+        link.QuerySelector("rect")!.DispatchEvent(new MouseEvent("click", new MouseEventInit { Bubbles = true, Cancelable = true }));
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal(["https://example.com/dir/ping.py", "https://example.com/dir/other.py"], loader.Requests.Where(request => request.Destination == RequestDestination.Ping).Select(request => request.Url));
+        Assert.Equal("https://example.com/dir/next.html", context.Document.Title);
+    }
+
+    [Fact]
     public void Hyperlink_UsesTheTargetOfTheBaseElement()
     {
         using var context = new BrowsingContext(new BrowsingContextOptions

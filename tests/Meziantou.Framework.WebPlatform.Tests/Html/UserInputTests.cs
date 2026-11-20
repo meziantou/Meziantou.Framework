@@ -233,6 +233,34 @@ public sealed class UserInputTests : IDisposable
     }
 
     [Fact]
+    public void Mouse_ClickOnTheInstanceOfAnSvgHyperlinkFollowsIt()
+    {
+        var document = Load("<svg width=300 height=100><defs><a id=link href='#target'><rect width=100 height=100 /></a></defs><rect id=other x=200 width=100 height=100 /><use id=use href='#link' x=100 /></svg>");
+        var use = document.GetElementById("use")!;
+        var navigations = new List<string>();
+        document.DefaultView!.Navigation.AddEventListener("navigate", e =>
+        {
+            var navigate = (NavigateEvent)e;
+            navigations.Add(navigate.Destination.Url + " " + ((Element?)navigate.SourceElement)?.Id);
+            e.PreventDefault();
+        });
+
+        // The use element has no shadow tree: the click on the instance of the hyperlink follows the referenced hyperlink, and
+        // the source element is the use element, the target of the events of its instances
+        var mouse = document.BrowsingContext!.Input.Mouse;
+        mouse.Move(150, 50);
+        mouse.Down();
+        mouse.Up();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["https://example.com/#target use"], navigations);
+
+        // A synthetic click on the use element is not dispatched to its shadow tree
+        use.DispatchEvent(new MouseEvent("click", new MouseEventInit { Bubbles = true, Cancelable = true, ClientX = 150, ClientY = 50 }));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Single(navigations);
+    }
+
+    [Fact]
     public void Slider_DragSetsTheValue()
     {
         var document = Load("<input id=range type=range min=0 max=10 value=5 style='width: 116px; margin: 0; padding: 0; border: 0'>");

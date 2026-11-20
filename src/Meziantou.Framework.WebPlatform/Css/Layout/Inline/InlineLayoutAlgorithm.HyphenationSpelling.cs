@@ -181,7 +181,7 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>
     /// The spelling change at the start of the line that starts at <paramref name="start"/>, made by the hyphenation break that
     /// ends the previous line: the characters it removes (see <see cref="HyphenationBreak.RemovedAfter"/>) are in the text item
-    /// <paramref name="item"/>, whose content continues after them when the spelling change inserts letters, and
+    /// <paramref name="item"/> (the word may continue in the next item: <c>&lt;span&gt;zee&amp;shy;ë&lt;/span&gt;n</c>), and
     /// <paramref name="style"/> is the style of the text before the break. A break without such a change has no removed characters.
     /// </summary>
     private HyphenationBreak GetLineStartSpellingChange(LinePosition start, out int item, out ComputedStyle? style)
@@ -205,8 +205,7 @@ internal sealed partial class InlineLayoutAlgorithm
         if (hyphenBreak.RemovedAfter == 0)
             return default;
 
-        // The removed characters must be in the text item that starts the line (followed by other characters of it when letters
-        // replace them: they are shaped with its style)
+        // The removed characters must be in the text item that starts the line (the letters that replace them are shaped with its style)
         item = start.Item;
         while (item < Items.Length && Items[item].End <= start.Position)
         {
@@ -214,7 +213,7 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         var end = start.Position + hyphenBreak.RemovedAfter;
-        if (item >= Items.Length || Items[item].Kind != InlineItemKind.Text || Items[item].Start > start.Position || (hyphenBreak.InsertedAfter is null ? end > Items[item].End : end >= Items[item].End))
+        if (item >= Items.Length || Items[item].Kind != InlineItemKind.Text || Items[item].Start > start.Position || end > Items[item].End)
         {
             item = -1;
             return default;
@@ -233,8 +232,9 @@ internal sealed partial class InlineLayoutAlgorithm
 
     /// <summary>
     /// Adds the letters inserted at the start of the line that starts at <paramref name="start"/> by the spelling change of the
-    /// hyphenation break that ends the previous line (the vowel without its Dutch trema): a hyphen leaf before the first text of
-    /// the line, at the position of the characters they replace.
+    /// hyphenation break that ends the previous line (the vowel without its Dutch trema): a hyphen leaf in the inline box of the
+    /// characters they replace, before the first text of the line, at the position of these characters. When these characters
+    /// end their inline box, the leaf replaces the empty leaf of the box.
     /// </summary>
     private void AddLineStartSpellingChange(LinePosition start, bool isFirstLine)
     {
@@ -243,18 +243,33 @@ internal sealed partial class InlineLayoutAlgorithm
             return;
 
         var contentStart = start.Position + hyphenBreak.RemovedAfter;
+        var container = Items[item].Container;
         for (var i = 0; i < _leaves.Count; i++)
         {
             var leaf = _leaves[i];
-            if (leaf.Kind != LineLeafKind.Text)
-                continue;
+            var replacesEmptyBox = leaf.Kind == LineLeafKind.EmptyBox && ReferenceEquals(leaf.Box, container);
+            if (!replacesEmptyBox)
+            {
+                if (leaf.Kind != LineLeafKind.Text)
+                    continue;
 
-            if (leaf.Item != item || leaf.Start != contentStart)
-                return;
+                // (the first text of the line: the rest of the word, in the same item or after the end of the item)
+                if (leaf.Item == item ? leaf.Start != contentStart : contentStart != Items[item].End)
+                    return;
+            }
 
             var style = GetLineStyle(Items[item], isFirstLine);
             var shaped = TextShaper.Shape(inserted, style.Fonts, GetHyphenShapingOptions(style) with { IsRightToLeft = (leaf.Level & 1) != 0 });
-            _leaves.Insert(i, new LineLeaf { Kind = LineLeafKind.Hyphen, Level = leaf.Level, Item = item, Start = start.Position, End = start.Position, HangStart = start.Position, Parent = leaf.Parent, Shaped = shaped, GlyphCount = shaped.Glyphs.Length, Width = shaped.Width, SpellingChangeLength = hyphenBreak.RemovedAfter });
+            var spellingChange = new LineLeaf { Kind = LineLeafKind.Hyphen, Level = leaf.Level, Item = item, Start = start.Position, End = start.Position, HangStart = start.Position, Parent = container, Shaped = shaped, GlyphCount = shaped.Glyphs.Length, Width = shaped.Width, SpellingChangeLength = hyphenBreak.RemovedAfter };
+            if (replacesEmptyBox)
+            {
+                _leaves[i] = spellingChange;
+            }
+            else
+            {
+                _leaves.Insert(i, spellingChange);
+            }
+
             return;
         }
     }

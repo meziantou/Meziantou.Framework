@@ -6189,9 +6189,11 @@ hyphenator of Android `hyphenator_aosp.cc`):
   of the spelling change are shaped with the hyphen (the hyphen fragment), the characters they replace are removed from the end
   of the line, the line breaking measures them, and the next line starts after the removed characters (its `ContentStart`).
   The letters that replace characters at the start of the next line (the vowel without its trema,
-  `HyphenationBreak.InsertedAfter`) are a hyphen leaf before its first text (`AddLineStartSpellingChange`,
-  `LineLeaf.SpellingChangeLength`) that the line breaking measures (`MeasureLineStartSpellingChange`): its fragment is a
-  hyphen fragment whose offsets are the ones of the characters it replaces (the client rects of a range over them).
+  `HyphenationBreak.InsertedAfter`) are a hyphen leaf in the inline box of these characters, before the first text of the
+  line (`AddLineStartSpellingChange`, `LineLeaf.SpellingChangeLength`; it replaces the empty leaf of that box when the word
+  continues in the next one: `<span>zee&shy;ë</span>n`), that the line breaking measures (`MeasureLineStartSpellingChange`).
+  Its fragment is a text fragment of the characters it replaces (`TextFragment.IsSpellingChange`, not `IsHyphen`): the
+  client rects of a range over them, their emphasis marks, and a single caret unit.
   No browser implements them (WPT `css/css-text/hyphens/i18n`).
 - The edges of a hyphenated line are shaped again as at the other breaks (`ShapeLineEdges`, as Chrome's
   `ShapingLineBreaker`): when the opportunity is unsafe to break (a kerned pair, a joining) or inside a cluster (a ligature

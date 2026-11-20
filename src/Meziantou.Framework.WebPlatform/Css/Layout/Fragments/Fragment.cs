@@ -1520,11 +1520,16 @@ internal sealed class TextFragment : Fragment
     /// <summary>
     /// Whether the fragment is the hyphen displayed at the end of a line broken after a soft hyphen
     /// (https://drafts.csswg.org/css-text-4/#hyphenation): its glyphs are the ones of <c>hyphenate-character</c>, and its
-    /// <see cref="Start"/> and <see cref="End"/> are the offset after the soft hyphen. It is also the letters that the spelling
-    /// change of a hyphenation break displays at the start of the next line (the vowel without its Dutch trema): its
-    /// <see cref="Start"/> and <see cref="End"/> are then the offsets of the characters they replace.
+    /// <see cref="Start"/> and <see cref="End"/> are the offset after the soft hyphen.
     /// </summary>
     public bool IsHyphen { get; init; }
+
+    /// <summary>
+    /// Whether the fragment is the letters that the spelling change of a hyphenation break displays at the start of the next
+    /// line instead of the characters from <see cref="Start"/> to <see cref="End"/> (the vowel without its Dutch trema): its
+    /// glyphs are not the ones of these characters, but it is their text (a single typographic character unit for the caret).
+    /// </summary>
+    public bool IsSpellingChange { get; init; }
 
     /// <summary>
     /// The writing direction of the text of the fragment: the writing mode of its text run, and the direction of its bidi level

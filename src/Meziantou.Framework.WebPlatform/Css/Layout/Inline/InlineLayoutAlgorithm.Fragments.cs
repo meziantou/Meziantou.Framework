@@ -1109,7 +1109,7 @@ internal sealed partial class InlineLayoutAlgorithm
                 // After the soft hyphen, or the characters replaced by the spelling change at the start of the line
                 var offset = leaf.Start < item.End ? _offsets[leaf.Start] : item.DomEnd;
                 var endOffset = leaf.SpellingChangeLength == 0 ? offset : leaf.Start + leaf.SpellingChangeLength < item.End ? _offsets[leaf.Start + leaf.SpellingChangeLength] : item.DomEnd;
-                return new TextFragment(run, offset, endOffset, size, baseline, leaf.Shaped, 0, leaf.GlyphCount) { IsHyphen = true, LineStyle = lineStyle };
+                return new TextFragment(run, offset, endOffset, size, baseline, leaf.Shaped, 0, leaf.GlyphCount) { IsHyphen = leaf.SpellingChangeLength == 0, IsSpellingChange = leaf.SpellingChangeLength > 0, LineStyle = lineStyle };
 
             default:
                 var domStart = leaf.Start == item.Start ? item.DomStart : _offsets[leaf.Start];

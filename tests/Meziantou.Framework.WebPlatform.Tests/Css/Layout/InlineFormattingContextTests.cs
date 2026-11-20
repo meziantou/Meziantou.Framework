@@ -246,24 +246,47 @@ public sealed class InlineFormattingContextTests : IDisposable
     {
         var document = Parse($"<div id=d lang=nl style='width: 10px; hyphens: manual'>{text}</div>");
         var fragments = GetTextFragments(document, "d");
-        Assert.Equal(2, fragments.Count(fragment => fragment.IsHyphen));
+        Assert.Single(fragments, fragment => fragment.IsHyphen);
 
-        // The letter that replaces the vowel with its trema starts the next line, before the rest of the word
-        var vowel = fragments.Single(fragment => fragment.IsHyphen && fragment.End > fragment.Start);
+        // The letter that replaces the vowel with its trema starts the next line, before the rest of the word: it is the text of
+        // the characters it replaces
+        var vowel = Assert.Single(fragments, fragment => fragment.IsSpellingChange);
+        Assert.False(vowel.IsHyphen);
         Assert.Equal(replacedStart, vowel.Start);
         Assert.Equal(replacedEnd, vowel.End);
         Assert.Equal(new PhysicalRect(0, 10, 10, 10), vowel.GetRectInRoot());
-        var rest = Assert.Single(fragments, fragment => !fragment.IsHyphen && fragment.GetRectInRoot().Y == 10);
+        var rest = Assert.Single(fragments, fragment => !fragment.IsSpellingChange && fragment.GetRectInRoot().Y == 10);
         Assert.Equal(new PhysicalRect(10, 10, 10, 10), rest.GetRectInRoot());
         Assert.Equal(replacedEnd, rest.Start);
 
-        // The letter is part of the characters it replaces
+        // The client rects of a range over the replaced characters are the ones of the letter, a collapsed range inside them has no width
         var node = (Text)document.GetElementById("d")!.FirstChild!;
         var range = document.CreateRange();
         range.SetStart(node, (uint)replacedStart);
         range.SetEnd(node, (uint)replacedEnd);
         var rect = Assert.Single(range.GetClientRects());
         Assert.Equal((0d, 10d, 10d, 10d), (rect.X, rect.Y, rect.Width, rect.Height));
+        range.SetEnd(node, (uint)replacedStart + 1);
+        range.Collapse(toStart: false);
+        Assert.All(range.GetClientRects(), collapsed => Assert.Equal(0, collapsed.Width));
+
+        // The letter is a single caret unit: the characters it replaces
+        Assert.Equal((uint)replacedStart, document.CaretPositionFromPoint(2, 15)!.Offset);
+        Assert.Equal((uint)replacedEnd, document.CaretPositionFromPoint(8, 15)!.Offset);
+    }
+
+    [Theory]
+    [InlineData("<span>zee&shy;&#xEB;</span>n")] // the word continues in the next inline box
+    [InlineData("zee&shy;&#xEB;<b>n</b>")]
+    [InlineData("<span>zee&shy;e&#x308;</span><b>n</b>")]
+    public void HyphensManual_DutchTrema_WordSpansInlineBoxes(string html)
+    {
+        var document = Parse($"<div id=d lang=nl style='width: 10px; hyphens: manual'>{html}</div>");
+        var fragments = GetTextFragments(document, "d");
+        var vowel = Assert.Single(fragments, fragment => fragment.IsSpellingChange);
+        Assert.Equal(new PhysicalRect(0, 10, 10, 10), vowel.GetRectInRoot());
+        var rest = Assert.Single(fragments, fragment => !fragment.IsSpellingChange && fragment.GetRectInRoot().Y == 10);
+        Assert.Equal(new PhysicalRect(10, 10, 10, 10), rest.GetRectInRoot());
     }
 
     [Theory]
@@ -274,7 +297,7 @@ public sealed class InlineFormattingContextTests : IDisposable
     {
         var document = Parse($"<div id=d lang={language} style='width: 10px; hyphens: manual'>{text}</div>");
         Assert.Equal(expected, string.Join("|", GetLines(document, "d")));
-        Assert.DoesNotContain(GetTextFragments(document, "d"), fragment => fragment.IsHyphen && fragment.End > fragment.Start);
+        Assert.DoesNotContain(GetTextFragments(document, "d"), fragment => fragment.IsSpellingChange);
     }
 
     [Theory]

@@ -225,9 +225,8 @@ internal static class CssomViewGeometry
         {
             if (fragment.IsHyphen)
             {
-                // The hyphen of a line broken after a soft hyphen is part of the soft hyphen, the letters of a spelling change at the
-                // start of a line are part of the characters they replace
-                if (fragment.End > fragment.Start ? start < fragment.End && end > fragment.Start : start < fragment.Start && end >= fragment.Start)
+                // The hyphen of a line broken after a soft hyphen is part of the soft hyphen
+                if (start < fragment.Start && end >= fragment.Start)
                 {
                     result.Add(engine.ToViewport(LayoutEngine.MapToRoot(fragment, fragment.LocalRect)));
                 }

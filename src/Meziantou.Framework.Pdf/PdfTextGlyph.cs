@@ -46,4 +46,7 @@ public sealed class PdfTextGlyph
 
     /// <inheritdoc/>
     public override string ToString() => Text;
+
+    /// <summary>Gets the index of the operator of the content of the page that shows the glyph: the text operator, or the <c>Do</c> of the form that contains it.</summary>
+    internal int OperationIndex { get; init; } = -1;
 }

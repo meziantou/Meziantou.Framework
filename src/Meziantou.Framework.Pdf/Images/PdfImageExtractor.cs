@@ -13,11 +13,12 @@ internal static class PdfImageExtractor
     {
         var result = new List<PdfImageOccurrence>();
         var forms = new HashSet<PdfStream>(ReferenceEqualityComparer.Instance);
-        Run(page, page.GetContentData(), page.Resources, PdfMatrix.Identity, forms, depth: 0, result);
+        var operation = -1;
+        Run(page, page.GetContentData(), page.Resources, PdfMatrix.Identity, forms, depth: 0, result, ref operation);
         return result;
     }
 
-    private static void Run(PdfPage page, ReadOnlyMemory<byte> content, PdfDictionary? resources, PdfMatrix initial, HashSet<PdfStream> forms, int depth, List<PdfImageOccurrence> result)
+    private static void Run(PdfPage page, ReadOnlyMemory<byte> content, PdfDictionary? resources, PdfMatrix initial, HashSet<PdfStream> forms, int depth, List<PdfImageOccurrence> result, ref int operation)
     {
         var reader = new ContentStreamReader(content);
         var operands = new List<PdfObject>();
@@ -25,6 +26,12 @@ internal static class PdfImageExtractor
         var ctm = initial;
         while (result.Count < MaxOccurrences && reader.TryRead(operands, out var name))
         {
+            // The index of the operator of the page: the images of a form get the index of its Do
+            if (depth == 0)
+            {
+                operation++;
+            }
+
             switch (name)
             {
                 case "q":
@@ -38,7 +45,7 @@ internal static class PdfImageExtractor
                     ctm = new PdfMatrix(Get(0), Get(1), Get(2), Get(3), Get(4), Get(5)) * ctm;
                     break;
                 case "BI" when operands.Count == 2 && operands[0] is PdfDictionary inline && operands[1] is PdfString data:
-                    result.Add(PdfImageOccurrence.FromInline(page, ctm, inline, data.Bytes, resources));
+                    result.Add(PdfImageOccurrence.FromInline(page, ctm, inline, data.Bytes, resources).WithOperation(operation));
                     break;
                 case "Do" when operands.Count == 1 && operands[0] is PdfName xobjectName:
                     var value = resources?.Get<PdfDictionary>(PdfNames.XObject)?[xobjectName];
@@ -48,7 +55,7 @@ internal static class PdfImageExtractor
                     var subtype = stream.Dictionary.GetName(PdfNames.Subtype);
                     if (subtype == PdfNames.Image)
                     {
-                        result.Add(PdfImageOccurrence.FromXObject(page, ctm, stream, xobjectName.Value, value as PdfReference, resources));
+                        result.Add(PdfImageOccurrence.FromXObject(page, ctm, stream, xobjectName.Value, value as PdfReference, resources).WithOperation(operation));
                     }
                     else if (subtype == PdfNames.Form && depth < MaxFormDepth && forms.Add(stream))
                     {
@@ -56,7 +63,7 @@ internal static class PdfImageExtractor
                         var matrix = stream.Dictionary.Get<PdfArray>(PdfNames.Matrix) is { Count: 6 } values
                             ? new PdfMatrix(values.GetNumber(0), values.GetNumber(1), values.GetNumber(2), values.GetNumber(3), values.GetNumber(4), values.GetNumber(5))
                             : PdfMatrix.Identity;
-                        Run(page, stream.GetDecodedData(), stream.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? resources, matrix * ctm, forms, depth + 1, result);
+                        Run(page, stream.GetDecodedData(), stream.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? resources, matrix * ctm, forms, depth + 1, result, ref operation);
                         forms.Remove(stream);
                     }
 

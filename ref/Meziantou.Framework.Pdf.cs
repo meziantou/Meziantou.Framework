@@ -153,6 +153,26 @@ namespace Meziantou.Framework.Pdf
         Schema = 7,
     }
 
+    public sealed class PdfAutoTagOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfAutoTagOptions Default { get => throw null; }
+        public System.Func<Meziantou.Framework.Pdf.PdfImageOccurrence, string?>? FigureAlternateText { get => throw null; init { } }
+        public bool FirstTableRowIsHeader { get => throw null; init { } }
+        public string? Language { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfLayoutOptions Layout { get => throw null; init { } }
+    }
+
+    public sealed class PdfAutoTagResult
+    {
+        public int Artifacts { get => throw null; }
+        public int Figures { get => throw null; }
+        public int FiguresWithoutAlternateText { get => throw null; }
+        public int Headings { get => throw null; }
+        public int Lists { get => throw null; }
+        public int Paragraphs { get => throw null; }
+        public int Tables { get => throw null; }
+    }
+
     public static class PdfBates
     {
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfBatesRange> Apply(System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfDocument> documents, Meziantou.Framework.Pdf.PdfHeaderFooterOptions options) => throw null;
@@ -458,10 +478,12 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfVersion Version { get => throw null; set { } }
         public void AddHeaderFooter(Meziantou.Framework.Pdf.PdfHeaderFooterOptions options) { }
         public void AddWatermark(string text, Meziantou.Framework.Pdf.PdfWatermarkOptions? options = null) { }
+        public Meziantou.Framework.Pdf.PdfAutoTagResult AutoTag(Meziantou.Framework.Pdf.PdfAutoTagOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfAConversionResult ConvertToPdfA(Meziantou.Framework.Pdf.PdfAConformance conformance, Meziantou.Framework.Pdf.PdfAConversionOptions? options = null) => throw null;
         public Meziantou.Framework.Pdf.PdfForm CreateForm(Meziantou.Framework.Pdf.PdfRectangle boundingBox, Meziantou.Framework.Pdf.PdfMatrix? matrix = null, Meziantou.Framework.Pdf.PdfTransparencyGroup? group = null) => throw null;
         public Meziantou.Framework.Pdf.PdfForm CreateFormFromPage(Meziantou.Framework.Pdf.PdfPage page) => throw null;
         public Meziantou.Framework.Pdf.PdfTilingPattern CreateTilingPattern(Meziantou.Framework.Pdf.PdfRectangle cell, double xStep, double yStep, bool isColored = true, Meziantou.Framework.Pdf.PdfMatrix? matrix = null) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfLayoutPage> ExtractLayout(Meziantou.Framework.Pdf.PdfLayoutOptions? options = null) => throw null;
         public byte[]? GetXmpMetadata() => throw null;
         public static Meziantou.Framework.Pdf.PdfDocument Open(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
         public static Meziantou.Framework.Pdf.PdfDocument Open(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
@@ -951,6 +973,46 @@ namespace Meziantou.Framework.Pdf
         public string Script { get => throw null; }
     }
 
+    public sealed class PdfLayoutNode
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfLayoutNode> Children { get => throw null; }
+        public int Column { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfImageOccurrence? Image { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfLayoutNodeKind Kind { get => throw null; }
+        public int Level { get => throw null; init { } }
+        public int Row { get => throw null; init { } }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfLayoutNodeKind
+    {
+        Heading = 0,
+        Paragraph = 1,
+        List = 2,
+        ListItem = 3,
+        Table = 4,
+        TableCell = 5,
+        Figure = 6,
+        Header = 7,
+        Footer = 8,
+    }
+
+    public sealed class PdfLayoutOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfLayoutOptions Default { get => throw null; }
+        public bool DetectHeadersAndFooters { get => throw null; init { } }
+        public bool DetectTables { get => throw null; init { } }
+        public double HeadingSizeRatio { get => throw null; init { } }
+    }
+
+    public sealed class PdfLayoutPage
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfLayoutNode> Nodes { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfPage Page { get => throw null; }
+    }
+
     public enum PdfLineCap
     {
         Butt = 0,
@@ -1170,6 +1232,7 @@ namespace Meziantou.Framework.Pdf
         public void AddWatermark(string text, Meziantou.Framework.Pdf.PdfWatermarkOptions? options = null) { }
         public Meziantou.Framework.Pdf.PdfContentBuilder CreateContentBuilder() => throw null;
         public Meziantou.Framework.Pdf.PdfContentBuilder CreateContentBuilder(Meziantou.Framework.Pdf.PdfContentPlacement placement) => throw null;
+        public Meziantou.Framework.Pdf.PdfLayoutPage ExtractLayout(Meziantou.Framework.Pdf.PdfLayoutOptions? options = null) => throw null;
         public string ExtractText() => throw null;
         public string ExtractText(Meziantou.Framework.Pdf.PdfTextExtractionOptions? options) => throw null;
         public Meziantou.Framework.Pdf.PdfTextLayout ExtractTextLayout(Meziantou.Framework.Pdf.PdfTextExtractionOptions? options = null) => throw null;

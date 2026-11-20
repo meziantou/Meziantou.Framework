@@ -1770,6 +1770,97 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.False(_contexts.EventLoop.HasPendingOperations);
     }
 
+    // Document Picture-in-Picture
+
+    [Fact]
+    public async Task DocumentPictureInPicture_RequestWindow_OpensAWindowWithTheModeAndBaseUrlOfTheOpener()
+    {
+        var document = Load("<base href='https://example.com/assets/'><p>quirks</p>");
+        var window = document.DefaultView!;
+        var api = window.DocumentPictureInPicture;
+        var entered = new List<Window>();
+        api.AddEventListener("enter", e => entered.Add(((DocumentPictureInPictureEvent)e).Window));
+
+        var rejected = api.RequestWindow();
+        Assert.Equal("NotAllowedError", Assert.IsType<DomException>(rejected.Exception?.InnerException).Name);
+
+        Activate(document);
+        Assert.IsType<RangeErrorException>(api.RequestWindow(new DocumentPictureInPictureOptions { Width = 300 }).Exception?.InnerException);
+        var request = api.RequestWindow(new DocumentPictureInPictureOptions { Width = 320, Height = 200 });
+        Assert.True(request.IsCompletedSuccessfully);
+        var pipWindow = await request;
+        Assert.True(pipWindow.BrowsingContext!.IsDocumentPictureInPicture);
+        Assert.Same(window, pipWindow.Opener);
+        Assert.Same(pipWindow, api.Window);
+        Assert.Equal((320, 200), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+        Assert.Equal(document.CompatMode, pipWindow.Document.CompatMode);
+        Assert.Equal("https://example.com/assets/", pipWindow.Document.BaseUri);
+        Assert.True(pipWindow.MatchMedia("(display-mode: picture-in-picture)").Matches);
+        Assert.False(pipWindow.Document.FullscreenEnabled);
+        Assert.Empty(entered);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Same(pipWindow, Assert.Single(entered));
+
+        // Resizing a Picture-in-Picture window needs a user activation, and it cannot open a Picture-in-Picture window
+        Assert.Equal("NotAllowedError", Assert.Throws<DomException>(() => pipWindow.ResizeBy(10, 10)).Name);
+        Activate(pipWindow.Document);
+        Assert.Equal("NotAllowedError", Assert.IsType<DomException>(pipWindow.DocumentPictureInPicture.RequestWindow().Exception?.InnerException).Name);
+        pipWindow.ResizeBy(10, 10);
+        Assert.Equal((330, 210), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+
+        // The window is closed when its opener navigates to another document
+        window.BrowsingContext!.Navigate("https://example.com/other");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(pipWindow.Closed);
+    }
+
+    [Fact]
+    public async Task DocumentPictureInPicture_TheBackendSizesResizesAndClosesTheWindow()
+    {
+        #region WebPlatform_UserAgentUI_DocumentPictureInPicture
+        var backend = new FloatingDocumentWindows();
+        var options = new BrowsingContextOptions
+        {
+            // documentPictureInPicture.requestWindow() opens the windows of the backend
+            UserAgentUI = backend,
+        };
+        #endregion
+
+        var document = Load("<p>hello</p>", options);
+        Activate(document);
+        var pipWindow = await document.DefaultView!.DocumentPictureInPicture.RequestWindow();
+        Assert.Equal((480, 270), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+        var handle = backend.LastRequest!.Handle;
+
+        handle.Resize(new PictureInPictureWindowSize(500, 300));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal((500, 300), (pipWindow.InnerWidth, pipWindow.InnerHeight));
+
+        handle.Close();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.True(pipWindow.Closed);
+        Assert.True(handle.IsClosed);
+        Assert.Null(document.DefaultView.DocumentPictureInPicture.Window);
+
+        // The next window opens at the size of the previous one
+        Activate(document);
+        await document.DefaultView.DocumentPictureInPicture.RequestWindow();
+        Assert.Equal(new PictureInPictureWindowSize(500, 300), backend.LastRequest.DefaultSize);
+    }
+
+    private sealed class FloatingDocumentWindows : UserAgentUIBackend
+    {
+        public PictureInPictureWindowRequest? LastRequest { get; private set; }
+
+        // A 16:9 window, unless the page requests a size; the handle resizes and closes the window later
+        public override PictureInPictureWindowSize? OpenDocumentPictureInPictureWindow(PictureInPictureWindowRequest request)
+        {
+            var isFirstWindow = LastRequest is null;
+            LastRequest = request;
+            return request.RequestedSize ?? (isFirstWindow ? new PictureInPictureWindowSize(480, 270) : request.DefaultSize);
+        }
+    }
+
     private sealed class TabClosingCredentialChooser : UserAgentUIBackend
     {
         public BrowsingContext? BrowsingContext { get; set; }

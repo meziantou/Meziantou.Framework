@@ -1686,6 +1686,26 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_DocumentPictureInPictureEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "window", r.Wrap(value.Window));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_DocumentPictureInPictureOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "disallowReturnToOpener", r.FromBoolean(value.DisallowReturnToOpener));
+        r.SetMember(result, "height", r.FromNumber((double)value.Height));
+        r.SetMember(result, "preferInitialWindowPlacement", r.FromBoolean(value.PreferInitialWindowPlacement));
+        r.SetMember(result, "width", r.FromNumber((double)value.Width));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_DocumentPolicyViolationReportBody(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.DocumentPolicyViolationReportBody value)
     {
         var result = r.CreateObject();
@@ -8431,6 +8451,47 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             SystemAudio = m6_present ? (m6 is { } enumValue_m6 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_SystemAudioPreference(enumValue_m6) : (global::Meziantou.Framework.WebPlatform.Dom.SystemAudioPreference?)null) : Defaults_Dom_DisplayMediaStreamOptions.SystemAudio,
             Video = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_BooleanOrMediaTrackConstraints(r, m7),
             WindowAudio = m8_present ? (m8 is { } enumValue_m8 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_WindowAudioPreference(enumValue_m8) : (global::Meziantou.Framework.WebPlatform.Dom.WindowAudioPreference?)null) : Defaults_Dom_DisplayMediaStreamOptions.WindowAudio,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureEventInit ToDictionary_Dom_DocumentPictureInPictureEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "DocumentPictureInPictureEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "window");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("DocumentPictureInPictureEventInit", "window");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Window>(m3_value, "Window");
+        return new global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Window = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureOptions ToDictionary_Dom_DocumentPictureInPictureOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "DocumentPictureInPictureOptions");
+        var m0_value = r.GetDictionaryMember(value, "disallowReturnToOpener");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "height");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (ulong)(ulong)(0d) : r.ToUnsignedLongLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var m2_value = r.GetDictionaryMember(value, "preferInitialWindowPlacement");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "width");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (ulong)(ulong)(0d) : r.ToUnsignedLongLong(m3_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        return new global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureOptions
+        {
+            DisallowReturnToOpener = m0,
+            Height = m1,
+            PreferInitialWindowPlacement = m2,
+            Width = m3,
         };
     }
 

@@ -1527,6 +1527,18 @@ public sealed partial class BrowsingContext : IDisposable
             IsDelayingLoadEvents = true;
         }
 
+        // https://wicg.github.io/document-picture-in-picture/#close-on-navigation: the Picture-in-Picture window of the top-level
+        // window is closed, and a Picture-in-Picture window that navigates to another document is closed instead
+        if (DocumentPictureInPictureModel.OnNavigate(this))
+        {
+            if (_ongoingNavigation == navigationId)
+            {
+                EndNavigationWithoutDocument();
+            }
+
+            return;
+        }
+
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, step 23.3: the active document stops loading
         if (traversalEntry is null)
         {
@@ -3862,7 +3874,8 @@ public sealed partial class BrowsingContext : IDisposable
         if (IsDestroyed)
             return;
 
-        if (FireBeforeUnload())
+        // https://wicg.github.io/document-picture-in-picture/#close-window: the unloading of a Picture-in-Picture window cannot be canceled
+        if (!IsDocumentPictureInPicture && FireBeforeUnload())
             return;
 
         Destroy();
@@ -3902,9 +3915,13 @@ public sealed partial class BrowsingContext : IDisposable
             return;
 
         var window = Document.RelevantWindow;
+
+        // https://wicg.github.io/document-picture-in-picture/#close-on-destroy: the Picture-in-Picture window of the window is closed
+        DocumentPictureInPictureModel.OnDestroyed(this);
         ClearBackForwardCache();
         UnloadAndDestroy(Document);
         IsDestroyed = true;
+        OnDocumentPictureInPictureWindowDestroyed();
         _groupOwner?._auxiliaryBrowsingContexts?.Remove(this);
 
         // The window of the opener (else the first window of the group) is the active window again

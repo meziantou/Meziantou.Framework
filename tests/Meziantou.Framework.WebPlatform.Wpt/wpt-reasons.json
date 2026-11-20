@@ -18,7 +18,6 @@
     "css/css-navigation/*": [{ "kind": "NOT IMPLEMENTED", "description": "CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules)" }],
     "device-bound-session-credentials/*": [{ "kind": "NOT IMPLEMENTED", "description": "Device Bound Session Credentials" }],
     "direct-sockets/*": [{ "kind": "NOT IMPLEMENTED", "description": "Direct Sockets API" }],
-    "document-picture-in-picture/*": [{ "kind": "NOT IMPLEMENTED", "description": "Document Picture-in-Picture API" }],
     "dpub-aam/*": [{ "kind": "TEST RUNNER", "description": "needs the platform accessibility API of a browser" }],
     "ecmascript/*": [{ "kind": "OUT OF SCOPE", "description": "ECMAScript tests are the responsibility of the JavaScript engine: Meziantou.Framework.JavaScriptEngine is tested by test262 (`tests/Meziantou.Framework.JavaScriptEngine.Test262`)" }],
     "eyedropper/*": [{ "kind": "NOT IMPLEMENTED", "description": "EyeDropper API" }],

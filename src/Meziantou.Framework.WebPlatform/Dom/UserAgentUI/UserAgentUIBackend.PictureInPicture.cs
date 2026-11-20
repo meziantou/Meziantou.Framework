@@ -18,6 +18,23 @@ public abstract partial class UserAgentUIBackend
     /// <returns>The size of the window, or null when it cannot be opened.</returns>
     public virtual ValueTask<PictureInPictureWindowSize?> OpenPictureInPictureWindowAsync(PictureInPictureWindowRequest request, CancellationToken cancellationToken)
         => new(request.DefaultSize);
+
+    /// <summary>
+    /// Opens the Picture-in-Picture window of a document (<see cref="DocumentPictureInPicture.RequestWindow"/>), a floating
+    /// top-level browsing context, and returns the size of its viewport in CSS pixels, or null when the user agent cannot open
+    /// it (the request fails with a <c>NotAllowedError</c>). The method is synchronous: <c>requestWindow()</c> returns the new
+    /// window at once. The size is clamped to 80% of the screen. The backend changes the size of the window and closes it
+    /// later through <see cref="PictureInPictureWindowRequest.Handle"/>; the browsing context is
+    /// <see cref="BrowsingContext.IsDocumentPictureInPicture"/>.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the prompts, opening a Picture-in-Picture window does not ask the user: the default implementation (and the
+    /// user agent without a backend) opens the window at <see cref="PictureInPictureWindowRequest.DefaultSize"/>.
+    /// </remarks>
+    /// <param name="request">The window to open.</param>
+    /// <returns>The size of the viewport of the window, or null when it cannot be opened.</returns>
+    public virtual PictureInPictureWindowSize? OpenDocumentPictureInPictureWindow(PictureInPictureWindowRequest request)
+        => request.DefaultSize;
 }
 
 /// <summary>The size of a Picture-in-Picture window, in CSS pixels.</summary>
@@ -27,7 +44,8 @@ public abstract partial class UserAgentUIBackend
 public readonly record struct PictureInPictureWindowSize(int Width, int Height);
 
 /// <summary>
-/// A Picture-in-Picture window to open, given to <see cref="UserAgentUIBackend.OpenPictureInPictureWindowAsync"/>.
+/// A Picture-in-Picture window to open, given to <see cref="UserAgentUIBackend.OpenPictureInPictureWindowAsync"/> (the window
+/// of a video) or <see cref="UserAgentUIBackend.OpenDocumentPictureInPictureWindow"/> (the window of a document).
 /// </summary>
 public sealed class PictureInPictureWindowRequest : UserAgentPrompt
 {

@@ -224,6 +224,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["DigitalCredential"] = Binding_DigitalCredential<TAdapter, TValue>.Binding,
             ["Document"] = Binding_Document<TAdapter, TValue>.Binding,
             ["DocumentFragment"] = Binding_DocumentFragment<TAdapter, TValue>.Binding,
+            ["DocumentPictureInPicture"] = Binding_DocumentPictureInPicture<TAdapter, TValue>.Binding,
+            ["DocumentPictureInPictureEvent"] = Binding_DocumentPictureInPictureEvent<TAdapter, TValue>.Binding,
             ["DocumentTimeline"] = Binding_DocumentTimeline<TAdapter, TValue>.Binding,
             ["DocumentType"] = Binding_DocumentType<TAdapter, TValue>.Binding,
             ["DragEvent"] = Binding_DragEvent<TAdapter, TValue>.Binding,
@@ -909,6 +911,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.DeviceOrientationEventInit dictionaryDom_DeviceOrientationEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceOrientationEventInit(r, dictionaryDom_DeviceOrientationEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureEventInit dictionaryDom_DocumentPictureInPictureEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DocumentPictureInPictureEventInit(r, dictionaryDom_DocumentPictureInPictureEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DocumentPolicyViolationReportBody dictionaryDom_DocumentPolicyViolationReportBody:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DocumentPolicyViolationReportBody(r, dictionaryDom_DocumentPolicyViolationReportBody);
                 return true;
@@ -1355,6 +1360,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DisplayMediaStreamOptions dictionaryDom_DisplayMediaStreamOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DisplayMediaStreamOptions(r, dictionaryDom_DisplayMediaStreamOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureOptions dictionaryDom_DocumentPictureInPictureOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DocumentPictureInPictureOptions(r, dictionaryDom_DocumentPictureInPictureOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DomMatrix2DInit dictionaryDom_DomMatrix2DInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomMatrix2DInit(r, dictionaryDom_DomMatrix2DInit);
@@ -2645,6 +2653,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WakeLockSentinel> taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.Window> taskSystem_Threading_Tasks_Task_Dom_Window_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_Window_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WindowClient> taskSystem_Threading_Tasks_Task_Dom_WindowClient_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WindowClient_, static (r, v) => r.Wrap(v));

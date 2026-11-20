@@ -3563,6 +3563,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.UserInput Input { get => throw null; }
         public bool IsAuxiliary { get => throw null; }
         public bool IsDestroyed { get => throw null; }
+        public bool IsDocumentPictureInPicture { get => throw null; }
         public bool IsFrozen { get => throw null; set { } }
         public bool IsNavigating { get => throw null; }
         public bool IsOffline { get => throw null; set { } }
@@ -5482,6 +5483,32 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DocumentResource?> ConnectWebSocketAsync(Meziantou.Framework.WebPlatform.Dom.DocumentRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
         public static Meziantou.Framework.WebPlatform.Dom.DocumentLoader Create(System.Net.Http.HttpClient? httpClient = null) => throw null;
         public abstract System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DocumentResource?> LoadAsync(Meziantou.Framework.WebPlatform.Dom.DocumentRequest request, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class DocumentPictureInPicture : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEnter { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.Window? Window { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Window> RequestWindow(Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureOptions? options = null) => throw null;
+    }
+
+    public sealed class DocumentPictureInPictureEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Window Window { get => throw null; }
+        public DocumentPictureInPictureEvent(string type, Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPictureEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class DocumentPictureInPictureEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.Window Window { get => throw null; init { } }
+    }
+
+    public sealed class DocumentPictureInPictureOptions
+    {
+        public bool DisallowReturnToOpener { get => throw null; init { } }
+        public ulong Height { get => throw null; init { } }
+        public bool PreferInitialWindowPlacement { get => throw null; init { } }
+        public ulong Width { get => throw null; init { } }
     }
 
     public sealed class DocumentPolicyViolationReportBody : Meziantou.Framework.WebPlatform.Dom.ReportBody
@@ -15554,6 +15581,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public virtual System.Threading.Tasks.ValueTask<bool> ConfirmIdentityProviderLoginAsync(Meziantou.Framework.WebPlatform.Dom.IdentityProviderLoginPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<bool> HasPaymentHandlerAsync(Meziantou.Framework.WebPlatform.Dom.PaymentHandlerQuery query, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask IngestPaymentMethodManifestAsync(Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifestRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize? OpenDocumentPictureInPictureWindow(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest request) => throw null;
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize?> OpenPictureInPictureWindowAsync(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse?> RequestDigitalCredentialAsync(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PaymentSheetResponse?> RetryPaymentAsync(Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
@@ -16119,6 +16147,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.CustomElementRegistry CustomElements { get => throw null; }
         public double DevicePixelRatio { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DocumentPictureInPicture DocumentPictureInPicture { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Event? Event { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.External External { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? FrameElement { get => throw null; }

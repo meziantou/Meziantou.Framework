@@ -1096,19 +1096,21 @@ public partial class Window
     {
     }
 
-    /// <summary>Resizes the window (https://drafts.csswg.org/cssom-view/#dom-window-resizeto): there is no client window, nothing happens.</summary>
+    /// <summary>
+    /// Resizes the window (https://drafts.csswg.org/cssom-view/#dom-window-resizeto): there is no client window, nothing
+    /// happens, except in a Document Picture-in-Picture window, whose viewport is resized (it needs a transient activation,
+    /// which is consumed: https://wicg.github.io/document-picture-in-picture/#resizing-the-pip-window).
+    /// </summary>
+    /// <exception cref="DomException">A <c>NotAllowedError</c>: the Picture-in-Picture window has no transient activation.</exception>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-resizeto"/>
     [IdlMember("resizeTo", "https://drafts.csswg.org/cssom-view/#dom-window-resizeto")]
-    public void ResizeTo(int width, int height)
-    {
-    }
+    public void ResizeTo(int width, int height) => DocumentPictureInPictureModel.Resize(this, _ => new PictureInPictureWindowSize(width, height));
 
-    /// <summary>Resizes the window (https://drafts.csswg.org/cssom-view/#dom-window-resizeby): there is no client window, nothing happens.</summary>
+    /// <summary>Resizes the window by an offset (https://drafts.csswg.org/cssom-view/#dom-window-resizeby): see <see cref="ResizeTo"/>.</summary>
+    /// <exception cref="DomException">A <c>NotAllowedError</c>: the Picture-in-Picture window has no transient activation.</exception>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-window-resizeby"/>
     [IdlMember("resizeBy", "https://drafts.csswg.org/cssom-view/#dom-window-resizeby")]
-    public void ResizeBy(int x, int y)
-    {
-    }
+    public void ResizeBy(int x, int y) => DocumentPictureInPictureModel.Resize(this, size => new PictureInPictureWindowSize((int)Math.Clamp((long)size.Width + x, int.MinValue, int.MaxValue), (int)Math.Clamp((long)size.Height + y, int.MinValue, int.MaxValue)));
 
     /// <summary>
     /// Gets the horizontal scroll position of the viewport (https://drafts.csswg.org/cssom-view/#dom-window-scrollx): the x

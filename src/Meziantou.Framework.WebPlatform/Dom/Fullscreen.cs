@@ -128,7 +128,10 @@ public partial class Document
     /// </summary>
     /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-document-fullscreenenabled"/>
     [IdlMember("fullscreenEnabled", "https://fullscreen.spec.whatwg.org/#dom-document-fullscreenenabled")]
-    public bool FullscreenEnabled => PermissionsPolicyAlgorithms.IsAllowedToUse(this, PolicyControlledFeature.Fullscreen, report: false);
+    public bool FullscreenEnabled => !IsInDocumentPictureInPicture && PermissionsPolicyAlgorithms.IsAllowedToUse(this, PolicyControlledFeature.Fullscreen, report: false);
+
+    /// <summary>Whether the document is in a Document Picture-in-Picture window, which cannot be displayed fullscreen (https://wicg.github.io/document-picture-in-picture/#fullscreen).</summary>
+    internal bool IsInDocumentPictureInPicture => BrowsingContext?.Top.IsDocumentPictureInPicture ?? false;
 
     /// <summary>Gets whether the document has a fullscreen element (https://fullscreen.spec.whatwg.org/#dom-document-fullscreen, historical: use <see cref="FullscreenElement"/>).</summary>
     /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-document-fullscreen"/>
@@ -214,6 +217,7 @@ internal static class FullscreenModel
     /// <summary>https://fullscreen.spec.whatwg.org/#fullscreen-element-ready-check</summary>
     private static bool IsReady(Element element, bool report)
         => element.IsConnected
+            && !element.NodeDocument.IsInDocumentPictureInPicture
             && PermissionsPolicyAlgorithms.IsAllowedToUse(element.NodeDocument, PolicyControlledFeature.Fullscreen, report)
             && (!element.IsHtmlNamespace || element is not HtmlElement { IsPopoverShowing: true });
 

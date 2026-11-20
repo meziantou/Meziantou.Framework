@@ -96,37 +96,23 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     public long FindEndOfFile(long offset)
     {
         // The tokens after the section, so that the keyword in a string or a comment is not an end; the data of a stream
-        // (a cross-reference stream) is skipped to its endstream keyword. A section followed by more than the window is
-        // searched in its bytes after the window
-        const int Window = 16 * 1024 * 1024;
+        // (a cross-reference stream) is skipped to its endstream keyword. The window starts small, as the end of a revision
+        // is usually a few hundred bytes after its section, and doubles while its tokens do not reach the end; a section
+        // followed by more than the largest window is searched in its bytes after the window
+        const int MaxWindow = 16 * 1024 * 1024;
         offset = Math.Max(offset, 0);
-        var windowLength = (int)Math.Min(Window, Math.Max(0, _input.Length - offset));
-        var window = new byte[windowLength];
-        windowLength = _input.Read(offset, window);
-        var lexer = new PdfLexer(window.AsMemory(0, windowLength));
-        var previous = default(PdfToken);
-        while (true)
+        var remaining = Math.Max(0, _input.Length - offset);
+        int windowLength;
+        for (var size = 4096L; ; size *= 2)
         {
-            var token = lexer.Next();
-            if (token.Kind == PdfTokenKind.EndOfInput)
+            var window = new byte[(int)Math.Min(Math.Min(size, MaxWindow), remaining)];
+            windowLength = _input.Read(offset, window);
+            var end = FindEndOfFileToken(window.AsMemory(0, windowLength));
+            if (end >= 0)
+                return offset + end;
+
+            if (windowLength >= remaining || windowLength >= MaxWindow || windowLength < window.Length)
                 break;
-
-            if (lexer.IsKeyword(token, "stream"u8))
-            {
-                var endOfStream = lexer.Span[token.End..].IndexOf("endstream"u8);
-                if (endOfStream < 0)
-                    break;
-
-                lexer.Position = token.End + endOfStream + "endstream"u8.Length;
-            }
-            else if (token.Kind == PdfTokenKind.Integer && lexer.IsKeyword(previous, "startxref"u8))
-            {
-                var end = MatchEndOfFile(lexer.Span, token.End);
-                if (end >= 0)
-                    return offset + end;
-            }
-
-            previous = token;
         }
 
         if (offset + windowLength >= _input.Length)
@@ -175,6 +161,36 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             }
 
             return position == digits ? -1 : MatchEndOfFile(span, position);
+        }
+    }
+
+    /// <summary>Finds the end of file trailer in the tokens of data: the offset after it, or -1.</summary>
+    private static int FindEndOfFileToken(ReadOnlyMemory<byte> data)
+    {
+        var lexer = new PdfLexer(data);
+        var previous = default(PdfToken);
+        while (true)
+        {
+            var token = lexer.Next();
+            if (token.Kind == PdfTokenKind.EndOfInput)
+                return -1;
+
+            if (lexer.IsKeyword(token, "stream"u8))
+            {
+                var endOfStream = lexer.Span[token.End..].IndexOf("endstream"u8);
+                if (endOfStream < 0)
+                    return -1;
+
+                lexer.Position = token.End + endOfStream + "endstream"u8.Length;
+            }
+            else if (token.Kind == PdfTokenKind.Integer && lexer.IsKeyword(previous, "startxref"u8))
+            {
+                var end = MatchEndOfFile(lexer.Span, token.End);
+                if (end >= 0)
+                    return end;
+            }
+
+            previous = token;
         }
     }
 

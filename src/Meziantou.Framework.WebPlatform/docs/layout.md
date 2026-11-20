@@ -4873,13 +4873,19 @@ placed in a focused editing host (`Editing.PlaceCaretAtStart`) move the caret ov
   included) and does not intersect; the threshold index of a target that does not intersect is 0, and a target is
   intersecting only when its ratio reaches the first threshold (w3c/IntersectionObserver#432); the target of an implicit root
   observer in a document that is not fully active (e.g. `createHTMLDocument()`) is not observed until it is adopted.
-- The visibility (`trackVisibility`): false when the target or an ancestor up to the root (the containers of the nested
+- The visibility (`trackVisibility`): false when the target or an ancestor up to the root (the SVG ancestors of an SVG
+  target, whose transform to the content box of its outermost `svg` element counts, and the containers of the nested
   browsing contexts included) has a transform other than a 2D translation or a proportional upscaling, an opacity below 1 or
-  a filter, or when a box painted after it (`LayoutEngine.GetPaintOrder()`, in its document or in the document of a container)
-  that paints something (text, a replaced element, a background, a border or an outer shadow, not transparent nor hidden)
-  covers its intersection: the area of an occluder is its border box, or the bounds of its border shaped by `border-shape`,
-  and the bounds of its outer shadows (`Painter.GetDecorationBounds`). The rest of the ink overflow of the occluders
-  (filters, outlines), the SVG content and the 3D rendering contexts are not taken into account.
+  a filter, or when content painted after it covers its intersection (`OcclusionScanner`, in the display list of its document,
+  `LayoutEngine.GetDisplayList()`, or of the document of a container): the display list is in the painting order, the planes
+  of the 3D rendering contexts sorted and split, so an operation after the first visible operation of the target (or of a
+  shadow-including descendant, or of a nested document for a container) that is not one of the target paints over it. The
+  area of an operation is its ink: the outlines of the glyphs (`OpenTypeFont.TryGetGlyphBounds`), the blur of a shadow and the
+  width of a stroke, then the filters of its layers (a blur extends it by three standard deviations, a drop shadow adds it
+  moved by the offset, an SVG filter fills its filter region), with the transforms and the clips; the operations of a group
+  whose opacity is 0, of a mask, or in a transparent color do not occlude. A target that paints nothing falls back to the
+  boxes painted after its fragments in `LayoutEngine.GetPaintOrder()` (their border boxes and outer shadows,
+  `Painter.GetDecorationBounds`).
 - The lazy loading (`Html/Elements/LazyLoading.cs`) uses an observer of the user agent per document (the lazy load
   intersection observer) whose scroll margin is 1250px, created by the internal constructor (not exposed to the scripts):
   see [browsing-context.md](browsing-context.md#lazy-loading). `content-visibility: auto` shares the geometry
@@ -4887,7 +4893,7 @@ placed in a focused editing host (`Editing.PlaceCaretAtStart`) move the caret ov
 - `WebPlatformFeatures.IntersectionObserverEnabled` hides the interfaces from the scripts and disables the lazy loading.
 - The rectangle of an SVG target is its stroke bounding box, clipped by the bounds of the clip paths of the target and of its
   SVG ancestors (as in the browsers).
-- Not done: the ink overflow in the occlusion, the `scrolling` attribute of the iframes.
+- Not done: the `scrolling` attribute of the iframes.
 
 ### Layout shifts (`Css/Layout/LayoutShiftTracker.cs`)
 

@@ -86,6 +86,13 @@ scroll containers, with the `scroll` events, the scroll snapping and the scroll 
 loading of the images and frames (`loading="lazy"`) follows the viewport. They are run by the rendering updates of the
 event loop: run the event loop to get their callbacks (see [Time and the event loop](07-TimeAndTheEventLoop.md)).
 
+An observer created with `TrackVisibility` (Intersection Observer v2) also reports whether the target is visible
+(`IsVisible`): it is not when the target or an ancestor is transparent, filtered or transformed by more than a
+translation or an upscaling, or when content painted over the target covers a part of its intersection. The occluding
+content is what the page paints after the target: other boxes, text, images, the content of `svg` elements, and the
+parts of an element painted outside of its box, such as shadows (`box-shadow`, `text-shadow`), filters (`blur()`,
+`drop-shadow()`, SVG filters) and outlines. The content of the SVG elements can be observed as well.
+
 ## Fonts and text
 
 The text is measured with the fonts bundled with the library (Tinos for `serif`, Arimo for `sans-serif`, Cousine for

@@ -351,11 +351,7 @@
     "total": 1
   },
   "intersection-observer/v2/3d-transform-occlusion.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Intersection observer V2 test with occlusion by an element with a 3D transform.": "TIMEOUT"
-    }
+    "total": 1
   },
   "intersection-observer/v2/3d-transform-overflow-control-occlusion.html": {
     "total": 1
@@ -370,10 +366,7 @@
     "total": 1
   },
   "intersection-observer/v2/blur-filter.html": {
-    "total": 3,
-    "failures": {
-      "occluder.style.opacity = 0": "FAIL"
-    }
+    "total": 3
   },
   "intersection-observer/v2/border-radius-shadow-occlusion-replaced.html": {
     "total": 1
@@ -406,10 +399,7 @@
     }
   },
   "intersection-observer/v2/drop-shadow-filter-vertical-rl.html": {
-    "total": 3,
-    "failures": {
-      "occluder.style.opacity = 0": "FAIL"
-    }
+    "total": 3
   },
   "intersection-observer/v2/fragmented-occluder.html": {
     "total": 3
@@ -442,59 +432,30 @@
     "total": 4
   },
   "intersection-observer/v2/svg-drop-shadow-occlusion.html": {
-    "total": 1,
-    "failures": {
-      "svg-drop-shadow-occlusion": "FAIL"
-    }
+    "total": 1
   },
   "intersection-observer/v2/svg-foreign-object-filter-occlusion.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "IntersectionObserver observes visibility changes from SVG foreignObject filter changes": "TIMEOUT"
-    }
+    "total": 1
   },
   "intersection-observer/v2/svg-group-filter-occlusion.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "IntersectionObserver observes visibility changes from SVG group filter changes": "TIMEOUT"
-    }
+    "total": 1
   },
   "intersection-observer/v2/svg-image-filter-occlusion.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "IntersectionObserver observes visibility changes from SVG image filter changes": "TIMEOUT"
-    }
+    "total": 1
   },
   "intersection-observer/v2/svg-reference-filter-occlusion.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "IntersectionObserver observes visibility changes from SVG reference filter changes": "TIMEOUT"
-    }
+    "total": 1
   },
   "intersection-observer/v2/svg-root-filter-occlusion.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "IntersectionObserver observes visibility changes from SVG grandchild filter changes": "TIMEOUT",
-      "IntersectionObserver observes visibility changes from SVG root filter changes": "TIMEOUT"
-    }
+    "total": 2
   },
   "intersection-observer/v2/svg-shape-filter-occlusion.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "IntersectionObserver observes visibility changes from SVG filter changes": "TIMEOUT"
-    }
+    "total": 1
   },
   "intersection-observer/v2/svg-text-filter-occlusion.html": {
     "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "IntersectionObserver observes visibility changes from SVG text filter changes": "TIMEOUT",
       "IntersectionObserver observes visibility changes from SVG tspan filter changes": "TIMEOUT"
     }
   },
@@ -502,12 +463,7 @@
     "total": 4
   },
   "intersection-observer/v2/text-shadow.html": {
-    "total": 4,
-    "failures": {
-      "First rAF.": "FAIL",
-      "occluder.style.textShadow = \"\"": "FAIL",
-      "occluder.style.textShadow = \"none\"": "FAIL"
-    }
+    "total": 4
   },
   "intersection-observer/v2/z-index-changes.html": {
     "total": 1

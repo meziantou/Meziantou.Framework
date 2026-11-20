@@ -315,6 +315,70 @@ public sealed class IntersectionObserverTests : IDisposable
         Assert.Empty(entries);
     }
 
+    [Theory]
+    [InlineData("filter: blur(20px)")]
+    [InlineData("filter: drop-shadow(0 -50px 0 red)")]
+    [InlineData("writing-mode: vertical-rl; filter: drop-shadow(0 -50px 0 red)")]
+    [InlineData("box-shadow: 0 -50px red")]
+    [InlineData("color: transparent; text-shadow: 0 -60px red")]
+    public void TrackVisibility_TheInkOverflowOfAnOccluderOccludes(string occluderStyle)
+    {
+        var document = Parse("<div id=target style='width: 100px; height: 100px; background: green'></div><div id=occluder style='margin-top: 10px; width: 100px; height: 100px; font-size: 80px; line-height: 1'>X</div>");
+        var occluder = Get(document, "occluder");
+        var entries = new List<IntersectionObserverEntry>();
+        new IntersectionObserver((list, _) => entries.AddRange(list), new IntersectionObserverInit { TrackVisibility = true }).Observe(Get(document, "target"));
+        RunFrames();
+        Assert.True(Assert.Single(entries).IsVisible);
+
+        entries.Clear();
+        occluder.SetAttribute("style", occluder.GetAttribute("style") + "; " + occluderStyle);
+        RunFrames(8);
+        Assert.False(Assert.Single(entries).IsVisible);
+
+        // A group whose opacity is 0 paints nothing
+        entries.Clear();
+        occluder.Style.SetProperty("opacity", "0");
+        RunFrames(8);
+        Assert.True(Assert.Single(entries).IsVisible);
+    }
+
+    [Fact]
+    public void TrackVisibility_TheContentOfAnSvgElementOccludesAndIsObserved()
+    {
+        var document = Parse("""
+            <div id=target style='position: absolute; left: 10px; top: 10px; width: 100px; height: 100px; background: green'></div>
+            <svg style='position: absolute; left: 150px; top: 150px; width: 300px; height: 200px; overflow: visible'>
+              <g id=group><rect id=svgTarget x=100 y=0 width=50 height=50 fill=blue /></g>
+              <rect id=svgOccluder x=200 y=0 width=10 height=10 fill=red />
+            </svg>
+            """);
+        var htmlEntries = new List<IntersectionObserverEntry>();
+        var svgEntries = new List<IntersectionObserverEntry>();
+        new IntersectionObserver((list, _) => htmlEntries.AddRange(list), new IntersectionObserverInit { TrackVisibility = true }).Observe(Get(document, "target"));
+        new IntersectionObserver((list, _) => svgEntries.AddRange(list), new IntersectionObserverInit { TrackVisibility = true }).Observe(document.GetElementById("svgTarget")!);
+        RunFrames();
+        Assert.True(Assert.Single(htmlEntries).IsVisible);
+        Assert.True(Assert.Single(svgEntries).IsVisible);
+
+        // The drop shadow of an SVG element painted after the target covers it
+        htmlEntries.Clear();
+        svgEntries.Clear();
+        var occluder = document.GetElementById("svgOccluder")!;
+        occluder.SetAttribute("style", "filter: drop-shadow(-340px -140px red) drop-shadow(-80px 0 red)");
+        RunFrames(8);
+        Assert.False(Assert.Single(htmlEntries).IsVisible);
+        Assert.False(Assert.Single(svgEntries).IsVisible);
+
+        // The opacity of an SVG ancestor makes an SVG target not visible
+        occluder.RemoveAttribute("style");
+        RunFrames(8);
+        Assert.True(svgEntries[^1].IsVisible);
+        svgEntries.Clear();
+        document.GetElementById("group")!.SetAttribute("opacity", "0.5");
+        RunFrames(8);
+        Assert.False(Assert.Single(svgEntries).IsVisible);
+    }
+
     [Fact]
     public void LazyImages_AreFetchedWhenTheyAreCloseToTheViewport()
     {

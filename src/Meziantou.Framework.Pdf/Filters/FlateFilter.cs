@@ -9,8 +9,15 @@ namespace Meziantou.Framework.Pdf.Filters;
 /// </remarks>
 internal static class FlateFilter
 {
-    public static byte[] Decode(ReadOnlyMemory<byte> input, long limit)
+    public static byte[] Decode(ReadOnlyMemory<byte> input, long limit) => Decode(input, limit, out _);
+
+    /// <summary>Decodes Flate data.</summary>
+    /// <param name="input">The data.</param>
+    /// <param name="limit">The maximum length of the decoded data.</param>
+    /// <param name="isDamaged">Whether the data is damaged: the bytes decoded before the damage are returned.</param>
+    public static byte[] Decode(ReadOnlyMemory<byte> input, long limit, out bool isDamaged)
     {
+        isDamaged = false;
         var output = new BoundedOutput(limit, (int)Math.Min(Math.Max(256L, input.Length * 4L), int.MaxValue));
 
         // A zlib header (RFC 1950, 2.2): compression method 8 and a check value; some producers write raw deflate data
@@ -46,6 +53,7 @@ internal static class FlateFilter
         catch (InvalidDataException) when (output.Length > 0 || input.Length == 0)
         {
             // Damaged data: keep what was decoded
+            isDamaged = input.Length > 0;
         }
         catch (InvalidDataException ex)
         {

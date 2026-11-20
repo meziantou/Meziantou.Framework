@@ -43,4 +43,12 @@ public sealed class PdfReadOptions
     /// security handler, <c>/Adobe.PubSec</c>). The default is <see langword="null"/>.
     /// </summary>
     public X509Certificate2? Certificate { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the document reads all its objects, its page tree and the data of its streams when
+    /// it is opened, so that <see cref="PdfDocument.Diagnostics"/> lists every problem of the file
+    /// (<see cref="PdfDocument.ValidateStructure"/>). The default is <see langword="false"/>: the objects are read when
+    /// they are first used.
+    /// </summary>
+    public bool LoadAllObjects { get; init; }
 }

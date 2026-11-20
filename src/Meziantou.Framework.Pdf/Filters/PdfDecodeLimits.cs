@@ -11,4 +11,7 @@ internal sealed class PdfDecodeLimits
     public static PdfDecodeLimits Default { get; } = new(PdfReadOptions.DefaultMaxDecodedStreamLength);
 
     public long MaxDecodedStreamLength { get; }
+
+    /// <summary>Gets the diagnostics of the document the streams belong to, which the filters report the damaged data to.</summary>
+    public PdfDiagnosticCollector? Diagnostics { get; init; }
 }

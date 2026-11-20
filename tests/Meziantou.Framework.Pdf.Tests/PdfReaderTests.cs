@@ -91,6 +91,8 @@ public sealed class PdfReaderTests
         var document = PdfDocument.Open(file.ToArray());
 
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.WrongObjectOffset, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
+        Assert.All(document.Diagnostics, diagnostic => Assert.NotNull(diagnostic.ObjectNumber));
     }
 
     [Fact]
@@ -104,6 +106,8 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.DamagedCrossReferenceSection, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
+        Assert.Contains(PdfDiagnosticKind.CrossReferenceRebuilt, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -116,6 +120,7 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Single(document.Pages);
+        Assert.Contains(PdfDiagnosticKind.CatalogFoundByScan, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -128,6 +133,7 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.InvalidStartXref, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -139,6 +145,10 @@ public sealed class PdfReaderTests
         var document = PdfDocument.Open(shifted);
 
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        var header = Assert.Single(document.Diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.HeaderNotAtStart);
+        Assert.Equal(8, header.Offset);
+        Assert.Equal(PdfDiagnosticSeverity.Information, header.Severity);
+        Assert.Contains(PdfDiagnosticKind.WrongObjectOffset, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -163,6 +173,7 @@ public sealed class PdfReaderTests
 
         Assert.False(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Equal([PdfDiagnosticKind.ShiftedCrossReferenceTable], document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -237,6 +248,9 @@ public sealed class PdfReaderTests
         Assert.Equal(new PdfRectangle(0, 0, 100, 100), document.Pages[1].MediaBox);
         Assert.Equal(270, document.Pages[1].Rotation);
         Assert.Equal(document.Pages[0].MediaBox, document.Pages[0].CropBox);
+        var cycle = Assert.Single(document.Diagnostics);
+        Assert.Equal(PdfDiagnosticKind.InvalidPageTreeNode, cycle.Kind);
+        Assert.Equal(2, cycle.ObjectNumber);
     }
 
     [Fact]
@@ -337,6 +351,8 @@ public sealed class PdfReaderTests
             Assert.True(document.Objects.TryGetReference(10 + i, out var reference));
             Assert.Equal(i * 3, Assert.IsType<PdfInteger>(reference.Resolve()).Value);
         }
+
+        Assert.Contains(PdfDiagnosticKind.WrongObjectStreamIndex, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -445,6 +461,7 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.GenerationMismatch, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -507,6 +524,7 @@ public sealed class PdfReaderTests
         Assert.True(document.Objects.TryGetReference(7, out var second));
         Assert.Equal("abc", Encoding.Latin1.GetString(Assert.IsType<PdfStream>(first.Resolve()).GetDecodedData()));
         Assert.Equal("xyz", Encoding.Latin1.GetString(Assert.IsType<PdfStream>(second.Resolve()).GetDecodedData()));
+        Assert.Contains(document.Diagnostics, diagnostic => diagnostic.ObjectNumber == 6 && diagnostic.Kind is PdfDiagnosticKind.MissingEndStream or PdfDiagnosticKind.InvalidStreamLength);
     }
 
     [Fact]
@@ -519,6 +537,11 @@ public sealed class PdfReaderTests
 
         Assert.True(document.Objects.TryGetReference(6, out var reference));
         Assert.Equal("abc", Encoding.Latin1.GetString(Assert.IsType<PdfStream>(reference.Resolve()).GetDecodedData()));
+        var length = Assert.Single(document.Diagnostics);
+        Assert.Equal(PdfDiagnosticKind.InvalidStreamLength, length.Kind);
+        Assert.Equal(6, length.ObjectNumber);
+        Assert.Equal(PdfDiagnosticSeverity.Warning, length.Severity);
+        Assert.StartsWith("Warning InvalidStreamLength (object 6, offset ", length.ToString());
     }
 
     [Fact]
@@ -618,5 +641,97 @@ public sealed class PdfReaderTests
         Assert.True(document.IsRepaired);
         Assert.Single(document.Pages);
         Assert.Equal(new PdfRectangle(0, 0, 100, 100), document.Pages[0].MediaBox);
+        Assert.Contains(PdfDiagnosticKind.UnclosedContainer, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
+    }
+
+    [Fact]
+    public void AnIntactFileHasNoDiagnostics()
+    {
+        var document = PdfDocument.Open(HandWrittenPdf.CreateSimple().ToArray(), new PdfReadOptions { LoadAllObjects = true });
+
+        Assert.Empty(document.Diagnostics);
+        Assert.Empty(new PdfDocument().Diagnostics);
+        Assert.Empty(new PdfDocument().ValidateStructure());
+    }
+
+    [Fact]
+    public void DiagnosticsGrowAsTheObjectsAreRead()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, "<< /Length 1 >>\nstream\nabc\nendstream");
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Empty(document.Diagnostics);
+        Assert.Equal(PdfDiagnosticKind.InvalidStreamLength, Assert.Single(document.ValidateStructure()).Kind);
+        Assert.Equal(PdfDiagnosticKind.InvalidStreamLength, Assert.Single(PdfDocument.Open(file.ToArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics).Kind);
+    }
+
+    [Fact]
+    public void ValidateStructureReportsTheStreamsThatCannotBeDecoded()
+    {
+        // Flate data whose last block has a reserved type (RFC 1951, 3.2.3): the bytes of the blocks before it are decoded
+        using var compressed = new MemoryStream();
+        var deflate = new System.IO.Compression.DeflateStream(compressed, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true);
+        deflate.Write(Encoding.ASCII.GetBytes(new string('a', 100_000)));
+        deflate.Flush();
+        var truncated = Encoding.Latin1.GetString([.. compressed.ToArray(), 0x07]);
+        deflate.Dispose();
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, "<< /Length 3 /Filter /Unknown >>\nstream\nabc\nendstream");
+        file.Add(7, HandWrittenPdf.Stream(truncated, " /Filter /FlateDecode"));
+        file.Add(8, "<< /A missing 5 /B 1 >>");
+
+        var diagnostics = PdfDocument.Open(file.ToArray()).ValidateStructure();
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.UndecodableStream, ObjectNumber: 6, Severity: PdfDiagnosticSeverity.Error });
+        Assert.Contains(diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.DamagedStreamData);
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.UnknownKeyword, ObjectNumber: 8 });
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.InvalidDictionaryKey, ObjectNumber: 8 });
+    }
+
+    [Fact]
+    public void ABrokenPreviousSectionIsReported()
+    {
+        var original = HandWrittenPdf.CreateSimple().ToArray();
+        var updated = HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Prev 3 >>");
+
+        var document = PdfDocument.Open(updated);
+
+        Assert.Equal("T", document.Information.Title);
+        var broken = Assert.Single(document.Diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.BrokenCrossReferenceChain);
+        Assert.Equal(3, broken.Offset);
+        Assert.Null(PdfDocument.Open(HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Prev 99999 >>")).Diagnostics.Single(diagnostic => diagnostic.Kind == PdfDiagnosticKind.BrokenCrossReferenceChain).Offset);
+    }
+
+    [Fact]
+    public void AMissingObjectIsReported()
+    {
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());
+        var file = Encoding.Latin1.GetBytes(text.Replace("4 0 obj", "4 0 xxx", StringComparison.Ordinal));
+
+        var document = PdfDocument.Open(file);
+        _ = document.Pages[0].ExtractText();
+
+        Assert.Contains(document.Diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.MissingObject, ObjectNumber: 4 });
+    }
+
+    [Fact]
+    public void Example_Diagnostics()
+    {
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());
+        var data = Encoding.Latin1.GetBytes(text.Replace("startxref\n", "startxref\n9", StringComparison.Ordinal));
+
+        #region Pdf_Diagnostics
+        // Read the whole file when it is opened, so that every problem is listed
+        var document = PdfDocument.Open(data, new PdfReadOptions { LoadAllObjects = true });
+        var problems = document.Diagnostics
+            .Where(diagnostic => diagnostic.Severity >= PdfDiagnosticSeverity.Warning)
+            .Select(diagnostic => diagnostic.ToString())
+            .ToList();
+        #endregion
+
+        Assert.True(document.IsRepaired);
+        Assert.Contains("Warning CrossReferenceRebuilt: The cross-reference information was rebuilt by scanning the file: 5 objects found", problems);
     }
 }

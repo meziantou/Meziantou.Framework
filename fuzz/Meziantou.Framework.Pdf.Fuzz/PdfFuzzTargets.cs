@@ -65,6 +65,7 @@ public static class PdfFuzzTargets
         new("pdf-fdf", Fdf) { Seeds = () => GetSeeds(".fdf"), Dictionary = FdfTokens },
         new("pdf-xfdf", Xfdf) { Seeds = () => GetSeeds(".xfdf"), Dictionary = XfdfTokens },
         new("pdf-round-trip", RoundTrip) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-diagnostics", Diagnostics) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
         new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -239,6 +240,42 @@ public static class PdfFuzzTargets
 
         FuzzAssert.True(sanitized.Output.Span.StartsWith(bytes), "The sanitizer did not keep the bytes of the file");
         FuzzAssert.False(PdfSaveSanitizer.Sanitize(sanitized.Output, ReadOptions).HasChanges, "The output of the sanitizer still needs repairs");
+    }
+
+    /// <summary>
+    /// The input is a PDF file, opened with all its objects read. The diagnostics are within their bounds: a repaired file
+    /// reports that its cross-reference information was rebuilt, the offsets are in the file, the object numbers are
+    /// positive, the list is bounded, and reading the file again adds nothing.
+    /// </summary>
+    private static void Diagnostics(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { LoadAllObjects = true, MaxDecodedStreamLength = 1 << 20 });
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        var diagnostics = document.Diagnostics;
+        FuzzAssert.True(diagnostics.Count <= 1000, "The number of diagnostics is not bounded");
+        FuzzAssert.Equal(document.IsRepaired, diagnostics.Any(diagnostic => diagnostic.Kind == PdfDiagnosticKind.CrossReferenceRebuilt), "A repaired file must report that its cross-reference information was rebuilt, and only a repaired file");
+        foreach (var diagnostic in diagnostics)
+        {
+            FuzzAssert.True(diagnostic.Offset is not { } offset || (offset >= 0 && offset <= data.Length), $"The offset of a diagnostic is outside of the file: {diagnostic}");
+            FuzzAssert.True(diagnostic.ObjectNumber is null or >= 0, $"The object number of a diagnostic is negative: {diagnostic}");
+            FuzzAssert.False(string.IsNullOrEmpty(diagnostic.ToString()), "A diagnostic has no text");
+        }
+
+        try
+        {
+            FuzzAssert.Equal(diagnostics.Count, document.ValidateStructure().Count, "Reading the file again reports new problems");
+        }
+        catch (PdfException)
+        {
+        }
     }
 
     /// <summary>

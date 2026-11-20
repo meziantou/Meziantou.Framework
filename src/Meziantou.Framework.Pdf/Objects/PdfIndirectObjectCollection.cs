@@ -201,8 +201,14 @@ public sealed class PdfIndirectObjectCollection
         {
             // A reference with another generation is the null object (7.3.10), except in a repaired file that defines one
             // generation of the object only: the generation of the reference or of the definition is wrong
-            if (entry.Reference.Generation == reference.Generation || Loader?.AcceptsOtherGeneration(reference.ObjectNumber) is true)
+            if (entry.Reference.Generation == reference.Generation)
                 return entry;
+
+            if (Loader?.AcceptsOtherGeneration(reference.ObjectNumber) is true)
+            {
+                Diagnostics?.Report(PdfDiagnosticKind.GenerationMismatch, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"A reference has the generation {reference.Generation}, the object {entry.Reference.Generation}: the object is used"), objectNumber: reference.ObjectNumber);
+                return entry;
+            }
         }
 
         return null;
@@ -220,6 +226,9 @@ public sealed class PdfIndirectObjectCollection
     }
 
     internal IndirectObjectEntry? GetEntry(int objectNumber) => _entries.GetValueOrDefault(objectNumber);
+
+    /// <summary>Gets or sets the diagnostics of the file the objects are read from.</summary>
+    internal PdfDiagnosticCollector? Diagnostics { get; set; }
 
     internal void Reserve(int maxObjectNumber)
     {

@@ -86,6 +86,9 @@ internal static class PdfFuzzOracle
     private static async Task ReadAsync(byte[] data, PdfReadOptions options, bool render)
     {
         var document = PdfDocument.Open(data, options);
+        if (document.IsRepaired && !document.Diagnostics.Any(diagnostic => diagnostic.Kind == PdfDiagnosticKind.CrossReferenceRebuilt))
+            throw new InvalidOperationException("A repaired document does not report that its cross-reference information was rebuilt");
+
         var pageCount = document.Pages.Count;
         var texts = new List<string>();
         foreach (var page in document.Pages.Take(MaxPages))

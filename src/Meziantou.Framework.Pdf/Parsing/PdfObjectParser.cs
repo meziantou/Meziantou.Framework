@@ -29,6 +29,9 @@ internal sealed class PdfObjectParser
     /// <summary>Gets or sets where the data of the lexer is in the input of the file, when the parser reads a file.</summary>
     public PdfInputWindow? Window { get; set; }
 
+    /// <summary>Gets or sets the list the parser adds the repairs it makes to, or <see langword="null"/> to not record them.</summary>
+    public List<ParserNote>? Notes { get; set; }
+
     /// <summary>Gets a value indicating whether the data of the last stream ends after the window: the stream is complete, the bytes after it are not read.</summary>
     public bool StreamEndsAfterWindow { get; private set; }
 
@@ -80,6 +83,7 @@ internal sealed class PdfObjectParser
                     return null;
 
                 // An unknown keyword where an object is expected: readers read it as null
+                Note(PdfDiagnosticKind.UnknownKeyword, "A keyword is where an object is expected: it is read as null", token.Start);
                 return PdfNull.Instance;
             default:
                 return null;
@@ -136,6 +140,7 @@ internal sealed class PdfObjectParser
 
         if (!Lexer.IsKeyword(next, "endobj"u8))
         {
+            Note(PdfDiagnosticKind.MissingEndObj, "The object has no endobj keyword", position);
             Lexer.Position = position;
         }
 
@@ -200,11 +205,14 @@ internal sealed class PdfObjectParser
             // is right, and the search of a keyword below would read the objects that follow
             if (after.StartsWith("endobj"u8) || IsObjectHeader(after))
             {
+                Note(PdfDiagnosticKind.MissingEndStream, "The stream has no endstream keyword: its data ends at its /Length", (int)Math.Min(end, int.MaxValue));
                 SetStreamData(stream, start, (int)declaredLength);
                 MoveTo(end + whitespace);
                 return;
             }
         }
+
+        Note(PdfDiagnosticKind.InvalidStreamLength, declaredLength < 0 ? "The stream has no /Length: its data ends at the endstream keyword" : "The /Length of the stream is wrong: its data ends at the endstream keyword", start);
 
         // The length is missing or wrong: the data ends at the "endstream" keyword, without the end of line before it. In a
         // recovered file, the data of the lexer ends at the next object, so that the search does not read the file again for
@@ -334,6 +342,7 @@ internal sealed class PdfObjectParser
                 case PdfTokenKind.ArrayEnd:
                     return PdfArray.Wrap(items);
                 case PdfTokenKind.EndOfInput when IsAtRecoveryBoundary():
+                    Note(PdfDiagnosticKind.UnclosedContainer, "An array is not closed: it ends with the object", token.Start);
                     return PdfArray.Wrap(items);
                 case PdfTokenKind.EndOfInput:
                     throw new InvalidPdfContentException($"The array that starts before offset {token.Start} is not closed");
@@ -348,6 +357,7 @@ internal sealed class PdfObjectParser
             if (value is null)
             {
                 // "endobj" or "stream" in an array: the array is not closed
+                Note(PdfDiagnosticKind.UnclosedContainer, "An array is not closed: it ends with the object", token.Start);
                 Lexer.Position = token.Start;
                 return PdfArray.Wrap(items);
             }
@@ -367,16 +377,19 @@ internal sealed class PdfObjectParser
                 case PdfTokenKind.DictionaryEnd:
                     return dictionary;
                 case PdfTokenKind.EndOfInput when IsAtRecoveryBoundary():
+                    Note(PdfDiagnosticKind.UnclosedContainer, "A dictionary is not closed: it ends with the object", token.Start);
                     return dictionary;
                 case PdfTokenKind.EndOfInput:
                     throw new InvalidPdfContentException($"The dictionary that starts before offset {token.Start} is not closed");
                 case PdfTokenKind.Name:
                     break;
                 case PdfTokenKind.Keyword when IsStructureKeyword(Lexer.GetBytes(token)):
+                    Note(PdfDiagnosticKind.UnclosedContainer, "A dictionary is not closed: it ends with the object", token.Start);
                     Lexer.Position = token.Start;
                     return dictionary;
                 default:
                     // A key that is not a name: skip it and its value when it is a container
+                    Note(PdfDiagnosticKind.InvalidDictionaryKey, "A key of a dictionary is not a name: it is skipped", token.Start);
                     if (token.Kind is PdfTokenKind.ArrayStart or PdfTokenKind.DictionaryStart)
                     {
                         ParseValue(token, depth + 1);
@@ -412,6 +425,8 @@ internal sealed class PdfObjectParser
     /// there ends with the data, as it would end at the header of the next object if the data went on.
     /// </summary>
     private bool IsAtRecoveryBoundary() => Window is { } window && window.Limit < window.Input.Length && window.Offset + Lexer.Length >= window.Limit;
+
+    private void Note(PdfDiagnosticKind kind, string message, int position) => Notes?.Add(new ParserNote(kind, message, (Window?.Offset ?? 0) + position));
 
     private PdfName ParseName(PdfToken token) => NameCache is { } cache ? cache.Get(Lexer, token) : PdfName.FromBytes(Lexer.DecodeName(token));
 

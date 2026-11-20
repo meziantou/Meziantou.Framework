@@ -331,8 +331,8 @@ public sealed class MediaRecorder : EventTarget
             if (_constrainedMimeType.Length == 0)
                 MimeType = recording.MimeType;
 
-            FireEvent(new Event("start"));
             recording.Begin();
+            FireEvent(new Event("start"));
         });
     }
 

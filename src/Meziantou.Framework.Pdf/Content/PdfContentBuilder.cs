@@ -917,6 +917,16 @@ public sealed class PdfContentBuilder
         return Operator("BDC");
     }
 
+    /// <summary>Begins a marked-content sequence whose property list is a resource of the <c>/Properties</c> category (<c>BDC</c> with a name, ISO 32000-2, 14.6.2), such as an optional content group.</summary>
+    internal PdfContentBuilder BeginMarkedContentWithResource(string tag, PdfObject properties)
+    {
+        var name = AddResource(PdfName.Create("Properties"), "MC", properties);
+        _markedContentDepth++;
+        WriteName(tag);
+        WriteName(name);
+        return Operator("BDC");
+    }
+
     /// <summary>
     /// Begins the marked content of an element of the structure tree (<c>BDC</c> with a marked-content identifier, ISO
     /// 32000-2, 14.7.5.2): the content until the matching <see cref="EndMarkedContent"/> belongs to the element.

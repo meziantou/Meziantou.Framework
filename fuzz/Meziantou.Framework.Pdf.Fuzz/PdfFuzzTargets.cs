@@ -67,6 +67,7 @@ public static class PdfFuzzTargets
         new("pdf-round-trip", RoundTrip) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
+        new("pdf-annotation-model", AnnotationModel) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -239,6 +240,132 @@ public static class PdfFuzzTargets
 
         FuzzAssert.True(sanitized.Output.Span.StartsWith(bytes), "The sanitizer did not keep the bytes of the file");
         FuzzAssert.False(PdfSaveSanitizer.Sanitize(sanitized.Output, ReadOptions).HasChanges, "The output of the sanitizer still needs repairs");
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The typed views of its annotations read within their bounds (the opacity, the border, the
+    /// rotation of the widgets); their appearances are drawn; flattening every annotation leaves only the pop-ups of the
+    /// annotations of other pages and the widgets of signed signatures, the redactions are applied, and the document
+    /// reads back.
+    /// </summary>
+    private static void AnnotationModel(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+            if (document.Pages.Count == 0)
+                return;
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var page in document.Pages.Take(4))
+            {
+                foreach (var annotation in page.Annotations.Take(64))
+                {
+                    ReadAnnotation(annotation);
+                    _ = annotation.UpdateAppearance();
+                }
+            }
+
+            foreach (var page in document.Pages.Take(4))
+            {
+                page.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = annotation => annotation is not PdfRedactAnnotation });
+                foreach (var annotation in page.Annotations)
+                {
+                    FuzzAssert.True(annotation is PdfPopupAnnotation or PdfWidgetAnnotation or PdfRedactAnnotation, $"A {annotation.Subtype} annotation was not flattened");
+                }
+            }
+
+            document.ApplyRedactions();
+            FuzzAssert.False(document.Pages.Take(4).Any(page => page.Annotations.OfType<PdfRedactAnnotation>().Any()), "A redaction annotation was not applied");
+            var read = PdfDocument.Open(document.ToByteArray());
+            FuzzAssert.Equal(document.Pages.Count, read.Pages.Count, "The pages of the flattened document did not read back");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    private static void ReadAnnotation(PdfAnnotation annotation)
+    {
+        _ = annotation.Rectangle;
+        _ = annotation.Contents;
+        _ = annotation.UniqueName;
+        _ = annotation.ModificationDate;
+        _ = annotation.Color;
+        _ = annotation.HasAppearance;
+        var border = annotation.Border;
+        FuzzAssert.True(border.Width >= 0 && double.IsFinite(border.Width), "The width of a border is not a positive number");
+        FuzzAssert.True(border.CloudyIntensity is >= 0 and <= 2, "The intensity of a cloudy border is out of range");
+        FuzzAssert.True(border.DashPattern.Count is > 0 and <= 16 && border.DashPattern.All(length => length >= 0), "The dashes of a border are out of range");
+        _ = border.BorderStyle;
+        if (annotation is PdfMarkupAnnotation markup)
+        {
+            FuzzAssert.True(markup.Opacity is >= 0 and <= 1, "The opacity of an annotation is out of range");
+            _ = markup.Popup;
+            _ = markup.InReplyTo;
+            _ = markup.ReplyType;
+            _ = markup.RichContents;
+            _ = markup.GetReplies();
+        }
+
+        switch (annotation)
+        {
+            case PdfTextAnnotation text:
+                _ = (text.Icon, text.IsOpen, text.State, text.StateModel);
+                break;
+            case PdfFreeTextAnnotation freeText:
+                _ = (freeText.DefaultAppearance, freeText.Alignment, freeText.CalloutLineEnding, freeText.Intent);
+                FuzzAssert.True(freeText.CalloutLine.Count is 0 or 2 or 3, "A callout line does not have 2 or 3 points");
+                break;
+            case PdfLineAnnotation line:
+                _ = (line.Start, line.End, line.StartEnding, line.EndEnding, line.InteriorColor, line.LeaderLineLength, line.LeaderLineExtension, line.ShowCaption);
+                break;
+            case PdfSquareAnnotation square:
+                _ = square.InteriorColor;
+                break;
+            case PdfCircleAnnotation circle:
+                _ = circle.InteriorColor;
+                break;
+            case PdfPolygonAnnotation polygon:
+                FuzzAssert.True(polygon.Vertices.Count <= 65536, "Too many vertices");
+                _ = polygon.InteriorColor;
+                break;
+            case PdfPolyLineAnnotation polyline:
+                FuzzAssert.True(polyline.Vertices.Count <= 65536, "Too many vertices");
+                _ = (polyline.StartEnding, polyline.EndEnding, polyline.InteriorColor);
+                break;
+            case PdfInkAnnotation ink:
+                FuzzAssert.True(ink.Strokes.Sum(stroke => stroke.Count) <= 65536, "Too many points in the strokes");
+                break;
+            case PdfTextMarkupAnnotation textMarkup:
+                _ = (textMarkup.Kind, textMarkup.Regions);
+                break;
+            case PdfStampAnnotation stamp:
+                FuzzAssert.False(string.IsNullOrEmpty(stamp.Icon), "A stamp has no name");
+                break;
+            case PdfCaretAnnotation caret:
+                _ = caret.ShowsParagraphSymbol;
+                break;
+            case PdfRedactAnnotation redact:
+                FuzzAssert.True(redact.Regions.Count > 0, "A redaction has no region");
+                _ = (redact.InteriorColor, redact.OverlayText, redact.RepeatOverlayText);
+                break;
+            case PdfPopupAnnotation popup:
+                _ = (popup.Parent, popup.IsOpen);
+                break;
+            case PdfWidgetAnnotation widget:
+                var characteristics = widget.AppearanceCharacteristics;
+                FuzzAssert.True(characteristics.Rotation is 0 or 90 or 180 or 270, "The rotation of a widget is not a multiple of 90");
+                _ = (widget.AppearanceState, widget.HighlightMode, characteristics.BorderColor, characteristics.BackgroundColor, characteristics.NormalCaption, characteristics.RolloverCaption, characteristics.DownCaption);
+                break;
+        }
     }
 
     /// <summary>

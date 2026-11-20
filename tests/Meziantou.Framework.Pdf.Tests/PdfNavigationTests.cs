@@ -354,13 +354,13 @@ public sealed class PdfNavigationTests
             .Add(5, "<< /Subtype /Widget /Rect [0 0 1 1] /C [] >>");
         var annotations = PdfDocument.Open(file.ToArray()).Pages[0].Annotations;
 
-        var square = Assert.IsType<PdfMarkupAnnotation>(annotations[0]);
+        var square = Assert.IsType<PdfSquareAnnotation>(annotations[0]);
         Assert.Equal("Ann", square.Author);
         Assert.Equal("Shape", square.Subject);
         Assert.Equal(0.5, square.Opacity);
         Assert.Equal(PdfColor.FromRgb(0, 0, 1), square.Color);
         Assert.Equal(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero), square.CreationDate);
-        Assert.IsNotType<PdfMarkupAnnotation>(annotations[1]);
+        Assert.IsType<PdfWidgetAnnotation>(annotations[1]);
         Assert.Null(annotations[1].Color);
 
         square.Opacity = 1;
@@ -369,6 +369,429 @@ public sealed class PdfNavigationTests
         Assert.False(square.Dictionary.ContainsKey(PdfName.Create("CA")));
         Assert.False(square.Dictionary.ContainsKey(PdfNames.C));
         Assert.Throws<ArgumentOutOfRangeException>(() => square.Opacity = 2);
+    }
+
+    [Fact]
+    public void AnnotationsAreReadAsTheirTypes()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R 15 0 R 16 0 R 17 0 R 18 0 R] >>")
+            .Add(4, "<< /Subtype /Text /Rect [0 0 20 20] /Name /Key /Open true /State (Accepted) /StateModel (Review) /Popup 5 0 R /NM (n1) /M (D:20240102030405Z) >>")
+            .Add(5, "<< /Subtype /Popup /Rect [20 20 120 80] /Parent 4 0 R /Open true >>")
+            .Add(6, "<< /Subtype /FreeText /Rect [0 0 100 30] /DA (/Helvetica 9 Tf 0 0 1 rg) /Q 2 /CL [10 10 20 20 30 20] /LE /OpenArrow /IT /FreeTextCallout >>")
+            .Add(7, "<< /Subtype /Line /Rect [0 0 100 100] /L [10 20 90 80] /LE [/Circle /ClosedArrow] /IC [1 0 0] /LL 5 /LLE 2 /Cap true >>")
+            .Add(8, "<< /Subtype /Square /Rect [0 0 10 10] /IC [0 1 0] >>")
+            .Add(9, "<< /Subtype /Circle /Rect [0 0 10 10] /IC [0.5] >>")
+            .Add(10, "<< /Subtype /Polygon /Rect [0 0 10 10] /Vertices [0 0 10 0 5 10] >>")
+            .Add(11, "<< /Subtype /PolyLine /Rect [0 0 10 10] /Vertices [0 0 10 0 5] /LE [/None /Slash] >>")
+            .Add(12, "<< /Subtype /Ink /Rect [0 0 10 10] /InkList [[0 0 1 1] [2 2]] >>")
+            .Add(13, "<< /Subtype /Squiggly /Rect [0 0 10 10] /QuadPoints [0 10 10 10 0 0 10 0] >>")
+            .Add(14, "<< /Subtype /Stamp /Rect [0 0 10 10] /Name /Confidential >>")
+            .Add(15, "<< /Subtype /Caret /Rect [0 0 10 10] /Sy /P >>")
+            .Add(16, "<< /Subtype /Redact /Rect [0 0 10 10] /OverlayText (Removed) /Repeat true /IC [0 0 0] >>")
+            .Add(17, "<< /Subtype /Widget /Rect [0 0 10 10] /AS /On /H /P /MK << /R 450 /BC [1 0 0] /BG [1] /CA (OK) /RC (Over) /AC (Down) >> >>")
+            .Add(18, "<< /Subtype /Text /Rect [0 0 20 20] /IRT 4 0 R /RT /Group >>");
+        var annotations = PdfDocument.Open(file.ToArray()).Pages[0].Annotations;
+
+        var note = Assert.IsType<PdfTextAnnotation>(annotations[0]);
+        Assert.Equal("Key", note.Icon);
+        Assert.True(note.IsOpen);
+        Assert.Equal("Accepted", note.State);
+        Assert.Equal("Review", note.StateModel);
+        Assert.Equal("n1", note.UniqueName);
+        Assert.Equal(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero), note.ModificationDate);
+        Assert.Same(annotations[1], note.Popup);
+
+        var popup = Assert.IsType<PdfPopupAnnotation>(annotations[1]);
+        Assert.Same(note, popup.Parent);
+        Assert.True(popup.IsOpen);
+
+        var freeText = Assert.IsType<PdfFreeTextAnnotation>(annotations[2]);
+        Assert.Equal("/Helvetica 9 Tf 0 0 1 rg", freeText.DefaultAppearance);
+        Assert.Equal(PdfTextAlignment.Right, freeText.Alignment);
+        Assert.Equal([new PdfPoint(10, 10), new PdfPoint(20, 20), new PdfPoint(30, 20)], freeText.CalloutLine);
+        Assert.Equal(PdfLineEnding.OpenArrow, freeText.CalloutLineEnding);
+        Assert.Equal("FreeTextCallout", freeText.Intent);
+
+        var line = Assert.IsType<PdfLineAnnotation>(annotations[3]);
+        Assert.Equal(new PdfPoint(10, 20), line.Start);
+        Assert.Equal(new PdfPoint(90, 80), line.End);
+        Assert.Equal(PdfLineEnding.Circle, line.StartEnding);
+        Assert.Equal(PdfLineEnding.ClosedArrow, line.EndEnding);
+        Assert.Equal(PdfColor.FromRgb(1, 0, 0), line.InteriorColor);
+        Assert.Equal(5, line.LeaderLineLength);
+        Assert.Equal(2, line.LeaderLineExtension);
+        Assert.True(line.ShowCaption);
+
+        Assert.Equal(PdfColor.FromRgb(0, 1, 0), Assert.IsType<PdfSquareAnnotation>(annotations[4]).InteriorColor);
+        Assert.Equal(PdfColor.FromGray(0.5), Assert.IsType<PdfCircleAnnotation>(annotations[5]).InteriorColor);
+        Assert.Equal([new PdfPoint(0, 0), new PdfPoint(10, 0), new PdfPoint(5, 10)], Assert.IsType<PdfPolygonAnnotation>(annotations[6]).Vertices);
+
+        // An odd number of coordinates: the last one is ignored
+        var polyline = Assert.IsType<PdfPolyLineAnnotation>(annotations[7]);
+        Assert.Equal([new PdfPoint(0, 0), new PdfPoint(10, 0)], polyline.Vertices);
+        Assert.Equal(PdfLineEnding.None, polyline.StartEnding);
+        Assert.Equal(PdfLineEnding.Slash, polyline.EndEnding);
+
+        var ink = Assert.IsType<PdfInkAnnotation>(annotations[8]);
+        Assert.HasCount(2, ink.Strokes);
+        Assert.Equal([new PdfPoint(0, 0), new PdfPoint(1, 1)], ink.Strokes[0]);
+        Assert.Equal([new PdfPoint(2, 2)], ink.Strokes[1]);
+
+        var markup = Assert.IsType<PdfTextMarkupAnnotation>(annotations[9]);
+        Assert.Equal(PdfTextMarkupKind.Squiggly, markup.Kind);
+        Assert.Equal([new PdfRectangle(0, 0, 10, 10)], markup.Regions);
+
+        Assert.Equal("Confidential", Assert.IsType<PdfStampAnnotation>(annotations[10]).Icon);
+        Assert.True(Assert.IsType<PdfCaretAnnotation>(annotations[11]).ShowsParagraphSymbol);
+
+        var redact = Assert.IsType<PdfRedactAnnotation>(annotations[12]);
+        Assert.Equal([new PdfRectangle(0, 0, 10, 10)], redact.Regions);
+        Assert.Equal("Removed", redact.OverlayText);
+        Assert.True(redact.RepeatOverlayText);
+        Assert.Equal(PdfColor.FromRgb(0, 0, 0), redact.InteriorColor);
+
+        var widget = Assert.IsType<PdfWidgetAnnotation>(annotations[13]);
+        Assert.Equal("On", widget.AppearanceState);
+        Assert.Equal(PdfWidgetHighlightMode.Push, widget.HighlightMode);
+        Assert.Equal(90, widget.AppearanceCharacteristics.Rotation);
+        Assert.Equal(PdfColor.FromRgb(1, 0, 0), widget.AppearanceCharacteristics.BorderColor);
+        Assert.Equal(PdfColor.FromGray(1), widget.AppearanceCharacteristics.BackgroundColor);
+        Assert.Equal("OK", widget.AppearanceCharacteristics.NormalCaption);
+        Assert.Equal("Over", widget.AppearanceCharacteristics.RolloverCaption);
+        Assert.Equal("Down", widget.AppearanceCharacteristics.DownCaption);
+
+        var reply = Assert.IsType<PdfTextAnnotation>(annotations[14]);
+        Assert.Same(note, reply.InReplyTo);
+        Assert.Equal(PdfAnnotationReplyType.Group, reply.ReplyType);
+        Assert.Equal([reply], note.GetReplies());
+    }
+
+    [Fact]
+    public void AnnotationPropertiesAreWritten()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var line = page.Annotations.AddLine(new PdfPoint(10, 10), new PdfPoint(100, 100));
+        line.Start = new PdfPoint(20, 30);
+        line.EndEnding = PdfLineEnding.ReversedClosedArrow;
+        line.InteriorColor = PdfColor.FromCmyk(0, 0, 0, 1);
+        line.LeaderLineLength = -4;
+        line.ShowCaption = true;
+        line.UniqueName = "line-1";
+        line.ModificationDate = new DateTimeOffset(2025, 6, 7, 8, 9, 10, TimeSpan.Zero);
+        var widget = (PdfWidgetAnnotation)document.Form.AddTextField(page, "name", new PdfRectangle(10, 150, 100, 170)).Widgets[0];
+        widget.HighlightMode = PdfWidgetHighlightMode.Outline;
+        widget.AppearanceCharacteristics.Rotation = -90;
+        widget.AppearanceCharacteristics.BackgroundColor = PdfColor.FromGray(0.9);
+
+        var read = PdfDocument.Open(document.ToByteArray()).Pages[0].Annotations;
+        var readLine = Assert.IsType<PdfLineAnnotation>(read[0]);
+        Assert.Equal(new PdfPoint(20, 30), readLine.Start);
+        Assert.Equal(new PdfPoint(100, 100), readLine.End);
+        Assert.Equal(PdfLineEnding.None, readLine.StartEnding);
+        Assert.Equal(PdfLineEnding.ReversedClosedArrow, readLine.EndEnding);
+        Assert.Equal(PdfColor.FromCmyk(0, 0, 0, 1), readLine.InteriorColor);
+        Assert.Equal(-4, readLine.LeaderLineLength);
+        Assert.True(readLine.ShowCaption);
+        Assert.Equal("line-1", readLine.UniqueName);
+        Assert.Equal(new DateTimeOffset(2025, 6, 7, 8, 9, 10, TimeSpan.Zero), readLine.ModificationDate);
+        var readWidget = Assert.IsType<PdfWidgetAnnotation>(read[1]);
+        Assert.Equal(PdfWidgetHighlightMode.Outline, readWidget.HighlightMode);
+        Assert.Equal(270, readWidget.AppearanceCharacteristics.Rotation);
+        Assert.Equal(PdfColor.FromGray(0.9), readWidget.AppearanceCharacteristics.BackgroundColor);
+        Assert.Throws<ArgumentOutOfRangeException>(() => readWidget.AppearanceCharacteristics.Rotation = 45);
+    }
+
+    [Fact]
+    public void TheBorderIsReadFromTheBorderStyleOrTheBorderArray()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R 5 0 R 6 0 R] >>")
+            .Add(4, "<< /Subtype /Square /Rect [0 0 10 10] /Border [0 0 3 [2 1]] >>")
+            .Add(5, "<< /Subtype /Square /Rect [0 0 10 10] /Border [0 0 9] /BS << /W 2 /S /I >> /BE << /S /C /I 1.5 >> >>")
+            .Add(6, "<< /Subtype /Square /Rect [0 0 10 10] >>");
+        var annotations = PdfDocument.Open(file.ToArray()).Pages[0].Annotations;
+
+        var array = annotations[0].Border;
+        Assert.Equal(3, array.Width);
+        Assert.Equal(PdfAnnotationBorderStyle.Dashed, array.BorderStyle);
+        Assert.Equal([2, 1], array.DashPattern);
+
+        var style = annotations[1].Border;
+        Assert.Equal(2, style.Width);
+        Assert.Equal(PdfAnnotationBorderStyle.Inset, style.BorderStyle);
+        Assert.Equal(1.5, style.CloudyIntensity);
+
+        var none = annotations[2].Border;
+        Assert.Equal(1, none.Width);
+        Assert.Equal(PdfAnnotationBorderStyle.Solid, none.BorderStyle);
+        Assert.Equal([3], none.DashPattern);
+        Assert.Equal(0, none.CloudyIntensity);
+
+        // Setting a value replaces the border array with a style dictionary that keeps its width and dashes
+        array.BorderStyle = PdfAnnotationBorderStyle.Underline;
+        Assert.Equal(3, array.Width);
+        Assert.Equal(PdfAnnotationBorderStyle.Underline, array.BorderStyle);
+        Assert.Equal([2, 1], array.DashPattern);
+
+        none.Width = 0;
+        none.CloudyIntensity = 2;
+        none.DashPattern = [4, 2];
+        Assert.Equal(0, none.Width);
+        Assert.Equal(2, none.CloudyIntensity);
+        Assert.Equal([4, 2], none.DashPattern);
+        none.CloudyIntensity = 0;
+        Assert.False(annotations[2].Dictionary.ContainsKey(PdfName.Create("BE")));
+        Assert.Throws<ArgumentOutOfRangeException>(() => none.Width = -1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => none.CloudyIntensity = 3);
+        Assert.Throws<ArgumentException>(() => none.DashPattern = [0, 0]);
+    }
+
+    [Fact]
+    public void Example_ShapeAnnotations()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+
+        #region Pdf_ShapeAnnotations
+        var annotations = page.Annotations;
+        var arrow = annotations.AddLine(new PdfPoint(100, 600), new PdfPoint(250, 680), endEnding: PdfLineEnding.ClosedArrow);
+        arrow.Contents = "Look here";
+        annotations.AddSquare(new PdfRectangle(260, 660, 400, 720), PdfColor.FromRgb(0, 0, 0.8), interiorColor: PdfColor.FromRgb(0.9, 0.9, 1));
+        annotations.AddCircle(new PdfRectangle(100, 450, 200, 520), width: 2);
+        annotations.AddPolygon([new PdfPoint(300, 450), new PdfPoint(400, 450), new PdfPoint(350, 530)]);
+        annotations.AddInk([[new PdfPoint(100, 300), new PdfPoint(150, 350), new PdfPoint(200, 300)]], PdfColor.FromRgb(0, 0.6, 0), width: 3);
+
+        // A reply in the thread of the arrow, and the window that shows its text
+        annotations.AddReply(arrow, "Fixed in the next version", author: "Author");
+        annotations.AddPopup(arrow, new PdfRectangle(260, 560, 460, 640));
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray()).Pages[0].Annotations;
+        Assert.Equal(["Line", "Square", "Circle", "Polygon", "Ink", "Text", "Popup"], read.Select(annotation => annotation.Subtype));
+        Assert.All(read.Take(6), annotation => Assert.True(annotation.HasAppearance));
+        var readArrow = Assert.IsType<PdfLineAnnotation>(read[0]);
+        Assert.Equal(PdfLineEnding.ClosedArrow, readArrow.EndEnding);
+        Assert.Same(read[6], readArrow.Popup);
+        Assert.Equal("Fixed in the next version", Assert.Single(readArrow.GetReplies()).Contents);
+        Assert.Equal("Author", ((PdfMarkupAnnotation)read[5]).Author);
+    }
+
+    [Fact]
+    public void ShapeAnnotationsAreDrawn()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        page.Annotations.AddSquare(new PdfRectangle(10, 10, 40, 40), PdfColor.FromRgb(0, 0, 1), PdfColor.FromRgb(1, 0, 0), width: 2);
+        page.Annotations.AddInk([[new PdfPoint(60, 20), new PdfPoint(90, 20)]], PdfColor.FromRgb(0, 1, 0), width: 4);
+        page.Annotations.AddLine(new PdfPoint(60, 80), new PdfPoint(90, 80), PdfColor.FromRgb(0, 0, 1), width: 2);
+
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(image, 25, 25, 255, 0, 0);
+        AssertPixel(image, 11, 25, 0, 0, 255);
+        AssertPixel(image, 75, 20, 0, 255, 0);
+        AssertPixel(image, 75, 80, 0, 0, 255);
+        AssertPixel(image, 50, 50, 255, 255, 255);
+    }
+
+    [Theory]
+    [InlineData("<< /Subtype /Text /Rect [10 10 30 30] /C [0 0 1] >>", 15, 22, 0, 0, 255)]
+    [InlineData("<< /Subtype /FreeText /Rect [5 5 95 95] /Contents (IIIIIIII IIIIIIII IIIIIIII) /DA (/Helvetica-Bold 30 Tf 1 0 0 rg) /BS << /W 3 >> >>", 6, 50, 255, 0, 0)]
+    [InlineData("<< /Subtype /Stamp /Rect [5 30 95 70] /Name /Draft /C [0 0.5 0] >>", 7, 50, 0, 128, 0)]
+    [InlineData("<< /Subtype /Caret /Rect [20 10 80 90] /C [0 0 1] >>", 50, 50, 0, 0, 255)]
+    [InlineData("<< /Subtype /Redact /Rect [10 10 90 90] >>", 10, 50, 255, 0, 0)]
+    public void UpdateAppearanceDrawsTheAnnotationsTheRendererLeavesToTheViewers(string annotation, int x, int y, int r, int g, int b)
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>")
+            .Add(4, annotation);
+        var document = PdfDocument.Open(file.ToArray());
+        var item = document.Pages[0].Annotations[0];
+        Assert.False(item.HasAppearance);
+
+        Assert.True(item.UpdateAppearance());
+
+        Assert.True(item.HasAppearance);
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(image, x, y, r, g, b, tolerance: 40);
+    }
+
+    [Fact]
+    public void UpdateAppearanceReturnsFalseForTheTypesItDoesNotDraw()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        var link = page.Annotations.AddLink(new PdfRectangle(0, 0, 10, 10), new Uri("https://example.com"));
+        var square = page.Annotations.AddSquare(new PdfRectangle(0, 0, 10, 10));
+        square.Color = null;
+
+        Assert.False(link.UpdateAppearance());
+        Assert.False(square.UpdateAppearance());
+    }
+
+    [Fact]
+    public void RemovingAnAnnotationRemovesItsPopupAndTheReferencesToIt()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var note = page.Annotations.AddNote(new PdfPoint(10, 10), "note");
+        page.Annotations.AddPopup(note, new PdfRectangle(50, 50, 150, 100));
+        var reply = page.Annotations.AddReply(note, "reply");
+        var element = document.StructureTree.AddElement("Annot");
+        element.AddAnnotation(note);
+
+        Assert.True(page.Annotations.Remove(note));
+
+        Assert.Same(reply.Dictionary, Assert.Single(page.Annotations).Dictionary);
+        Assert.Null(reply.InReplyTo);
+        Assert.True(element.Dictionary.GetResolved(PdfNames.K) is null or PdfArray { Count: 0 });
+        Assert.False(page.Annotations.Remove(note));
+    }
+
+    [Fact]
+    public void AnnotationsCannotReferToAnnotationsOfAnotherDocumentOrPage()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var other = document.Pages.Add(new PdfSize(200, 200));
+        var note = page.Annotations.AddNote(new PdfPoint(10, 10), "note");
+        var foreign = new PdfDocument().Pages.Add(new PdfSize(10, 10)).Annotations.AddNote(new PdfPoint(0, 0), "x");
+
+        Assert.Throws<ArgumentException>(() => other.Annotations.AddPopup(note, new PdfRectangle(0, 0, 10, 10)));
+        Assert.Throws<ArgumentException>(() => other.Annotations.AddReply(note, "reply"));
+        Assert.Throws<ArgumentException>(() => note.InReplyTo = foreign);
+        Assert.Throws<ArgumentException>(() => page.Annotations.AddPolygon([new PdfPoint(0, 0)]));
+        Assert.Throws<ArgumentException>(() => page.Annotations.AddInk([]));
+        Assert.Throws<ArgumentException>(() => page.Annotations.AddLine(new PdfPoint(double.NaN, 0), new PdfPoint(1, 1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => page.Annotations.AddSquare(new PdfRectangle(0, 0, 1, 1), width: -1));
+        Assert.Throws<ArgumentException>(() => page.Annotations.AddRedaction([]));
+    }
+
+    [Fact]
+    public void Example_FlattenAnnotations()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        page.Annotations.AddSquare(new PdfRectangle(10, 10, 40, 40), interiorColor: PdfColor.FromRgb(0, 0, 1));
+        page.Annotations.AddLink(new PdfRectangle(60, 60, 90, 90), new Uri("https://example.com"));
+        using var before = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+
+        #region Pdf_FlattenAnnotations
+        // The markup annotations become content of the page; the links are kept
+        var flattened = document.FlattenAnnotations();
+        #endregion
+
+        Assert.Equal(1, flattened);
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.IsType<PdfLinkAnnotation>(Assert.Single(read.Pages[0].Annotations));
+        using var after = read.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(after, 25, 25, 0, 0, 255);
+        AssertPixel(after, 11, 25, before.Frames[0][11, 99 - 25].R, before.Frames[0][11, 99 - 25].G, before.Frames[0][11, 99 - 25].B, tolerance: 2);
+    }
+
+    [Fact]
+    public void FlatteningAppliesTheFlagsTheOpacityAndTheFilter()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        var hidden = page.Annotations.AddSquare(new PdfRectangle(0, 0, 50, 50), interiorColor: PdfColor.FromRgb(1, 0, 0), width: 0);
+        hidden.Flags = PdfAnnotationFlags.NoView | PdfAnnotationFlags.Print;
+        var transparent = page.Annotations.AddSquare(new PdfRectangle(50, 50, 100, 100), interiorColor: PdfColor.FromRgb(0, 0, 0), width: 0);
+        transparent.Opacity = 0.5;
+        var kept = page.Annotations.AddCircle(new PdfRectangle(0, 50, 50, 100), interiorColor: PdfColor.FromRgb(0, 1, 0));
+
+        var count = page.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = annotation => annotation is PdfSquareAnnotation });
+
+        Assert.Equal(2, count);
+        Assert.Same(kept.Dictionary, Assert.Single(page.Annotations).Dictionary);
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false, RenderAnnotations = false });
+        AssertPixel(image, 25, 25, 255, 255, 255);
+        AssertPixel(image, 75, 75, 128, 128, 128, tolerance: 3);
+    }
+
+    [Fact]
+    public void FlatteningForPrintingDrawsThePrintedAnnotations()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        var printed = page.Annotations.AddSquare(new PdfRectangle(0, 0, 50, 50), interiorColor: PdfColor.FromRgb(1, 0, 0), width: 0);
+        printed.Flags = PdfAnnotationFlags.NoView | PdfAnnotationFlags.Print;
+
+        page.FlattenAnnotations(new PdfAnnotationFlattenOptions { Intent = PdfRenderIntent.Print });
+
+        Assert.Empty(page.Annotations);
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(image, 25, 25, 255, 0, 0);
+    }
+
+    [Fact]
+    public void FlatteningKeepsTheWidgetsOfSignedSignatures()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R 5 0 R] >>")
+            .Add(4, "<< /Type /Annot /Subtype /Widget /FT /Sig /T (sig) /V << /Type /Sig >> /Rect [0 0 10 10] /P 3 0 R >>")
+            .Add(5, "<< /Type /Annot /Subtype /Square /Rect [0 0 10 10] /C [1 0 0] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        var count = document.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = _ => true });
+
+        Assert.Equal(1, count);
+        Assert.IsType<PdfWidgetAnnotation>(Assert.Single(document.Pages[0].Annotations));
+    }
+
+    [Fact]
+    public void Example_ApplyRedactions()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 100));
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        page.CreateContentBuilder().DrawText("Public", font, 12, 10, 50).DrawText("Secret", font, 12, 110, 50);
+
+        #region Pdf_RedactionAnnotations
+        // A reviewer marks the regions to remove; the content stays until the redactions are applied
+        page.Annotations.AddRedaction([new PdfRectangle(105, 45, 160, 65)], overlayText: "REDACTED");
+        var applied = document.ApplyRedactions();
+        #endregion
+
+        Assert.Equal(1, applied);
+        var bytes = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        var read = PdfDocument.Open(bytes);
+        Assert.Empty(read.Pages[0].Annotations);
+        Assert.Equal("Public REDACTED", read.Pages[0].ExtractText().Trim());
+        using var image = read.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(image, 106, 46, 0, 0, 0);
+    }
+
+    [Fact]
+    public void ApplyingRedactionsUsesTheInteriorColorOrTheFillColor()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        var redact = page.Annotations.AddRedaction([new PdfRectangle(0, 0, 40, 40)], interiorColor: PdfColor.FromRgb(0, 0, 1));
+        var other = page.Annotations.AddRedaction([new PdfRectangle(60, 60, 100, 100)]);
+        other.InteriorColor = null;
+
+        Assert.Equal(2, document.ApplyRedactions(new PdfRedactionOptions { FillColor = PdfColor.FromRgb(0, 1, 0) }));
+
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(image, 20, 20, 0, 0, 255);
+        AssertPixel(image, 80, 80, 0, 255, 0);
+        Assert.NotNull(redact);
+    }
+
+    private static void AssertPixel(Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> image, int x, int y, int r, int g, int b, int tolerance = 3)
+    {
+        var pixel = image.Frames[0][x, image.Height - 1 - y];
+        Assert.True(Math.Abs(pixel.R - r) <= tolerance && Math.Abs(pixel.G - g) <= tolerance && Math.Abs(pixel.B - b) <= tolerance, $"({x}, {y}): ({pixel.R}, {pixel.G}, {pixel.B}) instead of ({r}, {g}, {b})");
     }
 
     [Fact]

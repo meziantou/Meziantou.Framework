@@ -23,8 +23,35 @@ internal static class AppearanceGenerator
     // The nesting of the fields whose entries a widget inherits
     private const int MaxFieldDepth = 32;
 
+    // The standard fonts by their PostScript names (9.6.2.2)
+    private static readonly Dictionary<string, PdfStandardFont> StandardFonts = new(StringComparer.Ordinal)
+    {
+        ["Times-Roman"] = PdfStandardFont.TimesRoman,
+        ["Times-Bold"] = PdfStandardFont.TimesBold,
+        ["Times-Italic"] = PdfStandardFont.TimesItalic,
+        ["Times-BoldItalic"] = PdfStandardFont.TimesBoldItalic,
+        ["Helvetica"] = PdfStandardFont.Helvetica,
+        ["Helvetica-Bold"] = PdfStandardFont.HelveticaBold,
+        ["Helvetica-Oblique"] = PdfStandardFont.HelveticaOblique,
+        ["Helvetica-BoldOblique"] = PdfStandardFont.HelveticaBoldOblique,
+        ["Courier"] = PdfStandardFont.Courier,
+        ["Courier-Bold"] = PdfStandardFont.CourierBold,
+        ["Courier-Oblique"] = PdfStandardFont.CourierOblique,
+        ["Courier-BoldOblique"] = PdfStandardFont.CourierBoldOblique,
+        ["Symbol"] = PdfStandardFont.Symbol,
+        ["ZapfDingbats"] = PdfStandardFont.ZapfDingbats,
+    };
+
     /// <summary>Gets the appearance of an annotation that has none, or of a field whose form asks for new appearances (<c>/NeedAppearances</c>); <see langword="null"/> when none is generated.</summary>
-    public static PdfStream? Generate(PdfPage page, PdfDictionary annotation, PdfRectangle rectangle)
+    /// <param name="page">The page of the annotation.</param>
+    /// <param name="annotation">The annotation dictionary.</param>
+    /// <param name="rectangle">The rectangle of the annotation.</param>
+    /// <param name="includeIcons">
+    /// Whether the annotations a viewer draws with its own icons or text layout also get an appearance: the notes, the
+    /// free texts, the stamps, the carets and the redactions. The renderer leaves them out, <see cref="PdfAnnotation.UpdateAppearance"/>
+    /// draws them.
+    /// </param>
+    public static PdfStream? Generate(PdfPage page, PdfDictionary annotation, PdfRectangle rectangle, bool includeIcons = false)
     {
         var width = rectangle.Right - rectangle.Left;
         var height = rectangle.Top - rectangle.Bottom;
@@ -43,6 +70,11 @@ internal static class AppearanceGenerator
             "Ink" => Ink(content, annotation),
             "Highlight" or "Underline" or "StrikeOut" or "Squiggly" => TextMarkup(content, resources, annotation, rectangle),
             "Widget" => Widget(page, content, resources, annotation, rectangle),
+            "Text" when includeIcons => Note(content, annotation, rectangle),
+            "FreeText" when includeIcons => FreeText(content, resources, annotation, rectangle),
+            "Stamp" when includeIcons => Stamp(content, resources, annotation, rectangle),
+            "Caret" when includeIcons => Caret(content, resources, annotation, rectangle),
+            "Redact" when includeIcons => Redact(content, annotation, rectangle),
             _ => false,
         };
         if (!generated)
@@ -348,6 +380,252 @@ internal static class AppearanceGenerator
         return true;
     }
 
+    /// <summary>Generates the icon of a note (12.5.6.4): a speech bubble filled with the color of the annotation, yellow by default, with two lines of text.</summary>
+    private static bool Note(StringBuilder content, PdfDictionary annotation, PdfRectangle rectangle)
+    {
+        var (x, y) = (rectangle.Left, rectangle.Bottom);
+        var size = Math.Min(rectangle.Right - rectangle.Left, rectangle.Top - rectangle.Bottom);
+        double S(double value) => value * size / 20;
+        if (!SetColor(content, annotation.Get<PdfArray>(PdfName.Create("C")), stroke: false))
+        {
+            content.Append("1 0.85 0.2 rg ");
+        }
+
+        content.Append("0.2 G 1 j ");
+        Append(content, S(1)).Append("w ");
+        Append(content, x + S(2), y + S(6)).Append("m ");
+        Append(content, x + S(2), y + S(18)).Append("l ");
+        Append(content, x + S(18), y + S(18)).Append("l ");
+        Append(content, x + S(18), y + S(6)).Append("l ");
+        Append(content, x + S(9), y + S(6)).Append("l ");
+        Append(content, x + S(5), y + S(2)).Append("l ");
+        Append(content, x + S(5), y + S(6)).Append("l h B ");
+        Append(content, x + S(5), y + S(14.5)).Append("m ");
+        Append(content, x + S(15), y + S(14.5)).Append("l ");
+        Append(content, x + S(5), y + S(10.5)).Append("m ");
+        Append(content, x + S(13), y + S(10.5)).Append("l S");
+        return true;
+    }
+
+    /// <summary>
+    /// Generates the appearance of a free text (12.5.6.6): its border, in the color of the text, and its text broken into
+    /// lines that fit the rectangle, with the font, size and color of its default appearance (<c>/DA</c>) and its
+    /// alignment (<c>/Q</c>). A font that is not a standard font is replaced with Helvetica.
+    /// </summary>
+    private static bool FreeText(StringBuilder content, PdfDictionary resources, PdfDictionary annotation, PdfRectangle rectangle)
+    {
+        var width = rectangle.Right - rectangle.Left;
+        var height = rectangle.Top - rectangle.Bottom;
+        var text = annotation.GetText(PdfNames.Contents) ?? "";
+        var defaultAppearance = new StringBuilder();
+        if (!SetDefaultAppearance(defaultAppearance, resources, annotation, form: null, height, out var fontSize))
+            return false;
+
+        var borderWidth = annotation.Get<PdfDictionary>(PdfName.Create("BS")) is null && annotation.Get<PdfArray>(PdfNames.Border) is null ? 0 : BorderWidth(annotation);
+        content.Append("q ").Append(defaultAppearance);
+        if (borderWidth > 0)
+        {
+            // The border is stroked in the color of the text: the default appearance sets the color of the fill
+            content.Append("q ");
+            content.Append(StrokeColorOf(defaultAppearance.ToString()));
+            SetLine(content, annotation, borderWidth);
+            Append(content, rectangle.Left + (borderWidth / 2), rectangle.Bottom + (borderWidth / 2), width - borderWidth, height - borderWidth).Append("re S Q ");
+        }
+
+        var padding = borderWidth + 2;
+        var font = StandardFont(resources);
+        var lines = WrapText(text, font, fontSize, width - (2 * padding));
+        var alignment = annotation.GetInteger(PdfName.Create("Q"), 0);
+        Append(content, rectangle.Left + borderWidth, rectangle.Bottom + borderWidth, Math.Max(width - (2 * borderWidth), 0), Math.Max(height - (2 * borderWidth), 0)).Append("re W n BT ");
+        var y = rectangle.Top - padding - (fontSize * 0.8);
+        foreach (var line in lines.Take(1024))
+        {
+            if (y < rectangle.Bottom - fontSize)
+                break;
+
+            var lineWidth = MeasureText(font, line, fontSize);
+            var x = alignment switch
+            {
+                1 => rectangle.Left + ((width - lineWidth) / 2),
+                2 => rectangle.Right - padding - lineWidth,
+                _ => rectangle.Left + padding,
+            };
+            content.Append("1 0 0 1 ");
+            Append(content, x, y).Append("Tm ");
+            AppendString(content, line).Append(" Tj ");
+            y -= fontSize * 1.2;
+        }
+
+        content.Append("ET Q");
+        return true;
+    }
+
+    /// <summary>Generates the appearance of a rubber stamp (12.5.6.12): its name, such as <c>NOT APPROVED</c>, in a frame with rounded corners, in the color of the annotation, red by default.</summary>
+    private static bool Stamp(StringBuilder content, PdfDictionary resources, PdfDictionary annotation, PdfRectangle rectangle)
+    {
+        var name = annotation.GetName(PdfNames.Name)?.Value ?? "Draft";
+        var text = new StringBuilder();
+        foreach (var c in name)
+        {
+            if (char.IsUpper(c) && text.Length > 0 && !char.IsUpper(text[^1]))
+            {
+                text.Append(' ');
+            }
+
+            text.Append(char.ToUpperInvariant(c));
+        }
+
+        var colors = new StringBuilder();
+        if (!SetColor(colors, annotation.Get<PdfArray>(PdfName.Create("C")), stroke: false))
+        {
+            colors.Append("0.8 0.1 0.1 rg ");
+        }
+
+        var fill = colors.ToString();
+        var width = rectangle.Right - rectangle.Left;
+        var height = rectangle.Top - rectangle.Bottom;
+        var line = Math.Max(Math.Min(width, height) * 0.06, 0.5);
+        var font = PdfFont.GetStandardFont(PdfStandardFont.HelveticaBold);
+        var label = text.ToString();
+        var fontSize = Math.Max(Math.Min((height - (4 * line)) * 0.7, (width - (6 * line)) / Math.Max(MeasureText(font, label, 1), 0.001)), 1);
+        var radius = Math.Min(width, height) * 0.2;
+        var k = radius * 0.5523;
+        var (l, b, r, t) = (rectangle.Left + line, rectangle.Bottom + line, rectangle.Right - line, rectangle.Top - line);
+        content.Append(fill).Append(fill.Replace(" rg ", " RG ", StringComparison.Ordinal).Replace(" g ", " G ", StringComparison.Ordinal).Replace(" k ", " K ", StringComparison.Ordinal));
+        Append(content, line).Append("w ");
+        Append(content, l + radius, b).Append("m ");
+        Append(content, r - radius, b).Append("l ");
+        Append(content, r - radius + k, b, r, b + radius - k, r, b + radius).Append("c ");
+        Append(content, r, t - radius).Append("l ");
+        Append(content, r, t - radius + k, r - radius + k, t, r - radius, t).Append("c ");
+        Append(content, l + radius, t).Append("l ");
+        Append(content, l + radius - k, t, l, t - radius + k, l, t - radius).Append("c ");
+        Append(content, l, b + radius).Append("l ");
+        Append(content, l, b + radius - k, l + radius - k, b, l + radius, b).Append("c h S ");
+        resources[PdfNames.Font] = new PdfDictionary { [PdfName.Create("F0")] = StandardFontDictionary("Helvetica-Bold") };
+        content.Append("BT /F0 ");
+        Append(content, fontSize).Append("Tf ");
+        Append(content, rectangle.Left + ((width - MeasureText(font, label, fontSize)) / 2), rectangle.Bottom + ((height - (font.CapHeight * fontSize / 1000)) / 2)).Append("Td ");
+        AppendString(content, label).Append(" Tj ET");
+        return true;
+    }
+
+    /// <summary>Generates the appearance of a caret (12.5.6.11): a caret filled with the color of the annotation, black by default, or a paragraph symbol (<c>/Sy /P</c>).</summary>
+    private static bool Caret(StringBuilder content, PdfDictionary resources, PdfDictionary annotation, PdfRectangle rectangle)
+    {
+        if (!SetColor(content, annotation.Get<PdfArray>(PdfName.Create("C")), stroke: false))
+        {
+            content.Append("0 g ");
+        }
+
+        var width = rectangle.Right - rectangle.Left;
+        var height = rectangle.Top - rectangle.Bottom;
+        if (annotation.GetName(PdfName.Create("Sy"))?.Value == "P")
+        {
+            resources[PdfNames.Font] = new PdfDictionary { [PdfName.Create("F0")] = StandardFontDictionary("Helvetica") };
+            var size = Math.Min(height, width * 1.6);
+            content.Append("BT /F0 ");
+            Append(content, size).Append("Tf ");
+            Append(content, rectangle.Left + ((width - (size * 0.537)) / 2), rectangle.Bottom + (height * 0.15)).Append(@"Td (\266) Tj ET");
+            return true;
+        }
+
+        // A caret: two curved strokes that meet at the top
+        var (x, y) = (rectangle.Left, rectangle.Bottom);
+        Append(content, x, y).Append("m ");
+        Append(content, x + (width * 0.4), y + (height * 0.3), x + (width * 0.45), y + (height * 0.7), x + (width * 0.5), y + height).Append("c ");
+        Append(content, x + (width * 0.55), y + (height * 0.7), x + (width * 0.6), y + (height * 0.3), x + width, y).Append("c ");
+        Append(content, x + (width * 0.6), y + (height * 0.12), x + (width * 0.4), y + (height * 0.12), x, y).Append("c f");
+        return true;
+    }
+
+    /// <summary>Generates the appearance of a redaction annotation before it is applied (12.5.6.23): the outline of its regions, in the color of the annotation, red by default.</summary>
+    private static bool Redact(StringBuilder content, PdfDictionary annotation, PdfRectangle rectangle)
+    {
+        if (!SetColor(content, annotation.Get<PdfArray>(PdfName.Create("C")), stroke: true))
+        {
+            content.Append("1 0 0 RG ");
+        }
+
+        content.Append("1 w ");
+        var regions = PdfAnnotation.ReadQuadrilaterals(annotation.Get<PdfArray>(PdfName.Create("QuadPoints")));
+        if (regions.Count == 0)
+        {
+            regions.Add(rectangle);
+        }
+
+        foreach (var region in regions)
+        {
+            Append(content, region.Left + 0.5, region.Bottom + 0.5, Math.Max(region.Right - region.Left - 1, 0), Math.Max(region.Top - region.Bottom - 1, 0)).Append("re ");
+        }
+
+        content.Append('S');
+        return true;
+    }
+
+    /// <summary>Gets the stroking operator of the color the default appearance sets for the fill (<c>g</c>, <c>rg</c> or <c>k</c>), so that a border has the color of the text.</summary>
+    private static string StrokeColorOf(string defaultAppearance)
+    {
+        var tokens = defaultAppearance.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        for (var i = tokens.Length - 1; i >= 0; i--)
+        {
+            var count = tokens[i] switch { "g" => 1, "rg" => 3, "k" => 4, _ => 0 };
+            if (count > 0 && i >= count)
+                return string.Join(' ', tokens[(i - count)..i]) + " " + tokens[i].ToUpperInvariant() + " ";
+        }
+
+        return "0 G ";
+    }
+
+    /// <summary>Gets the standard font of the font resource <c>F0</c> the default appearance set: Helvetica when it is not one of the standard fonts.</summary>
+    private static PdfFont StandardFont(PdfDictionary resources)
+    {
+        var baseFont = resources.Get<PdfDictionary>(PdfNames.Font)?.Get<PdfDictionary>(PdfName.Create("F0"))?.GetName(PdfNames.BaseFont)?.Value;
+        return StandardFonts.TryGetValue(baseFont ?? "", out var font) ? PdfFont.GetStandardFont(font) : PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+    }
+
+    private static PdfDictionary StandardFontDictionary(string baseFont) => new()
+    {
+        [PdfNames.Type] = PdfNames.Font,
+        [PdfNames.Subtype] = PdfName.Create("Type1"),
+        [PdfNames.BaseFont] = PdfName.Create(baseFont),
+        [PdfNames.Encoding] = PdfName.Create("WinAnsiEncoding"),
+    };
+
+    /// <summary>Breaks a text into lines that fit a width with the metrics of a standard font; the characters the font cannot show are measured as question marks.</summary>
+    private static List<string> WrapText(string text, PdfFont font, double fontSize, double width)
+    {
+        var printable = ToLatin1(text);
+        try
+        {
+            return [.. PdfTextWrapper.Wrap(printable, font, fontSize, Math.Max(width, fontSize)).Select(line => line.Text)];
+        }
+        catch (ArgumentException)
+        {
+            return [.. printable.Split('\n')];
+        }
+    }
+
+    private static double MeasureText(PdfFont font, string text, double fontSize)
+    {
+        try
+        {
+            return font.GetTextWidth(ToLatin1(text), fontSize);
+        }
+        catch (ArgumentException)
+        {
+            return text.Length * fontSize * 0.5;
+        }
+    }
+
+    private static string ToLatin1(string text) => string.Create(text.Length, text, (span, value) =>
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            span[i] = value[i] is > '\u00FF' or (< ' ' and not '\n') ? '?' : value[i];
+        }
+    });
+
     /// <summary>
     /// Generates the appearance of the widget of a field (12.7.4.3): its background and border (<c>/MK</c>), then the
     /// value of a text field or of a choice field with the default appearance (<c>/DA</c>), or the check mark of a check
@@ -555,9 +833,9 @@ internal static class AppearanceGenerator
             fontSize = Math.Clamp(availableHeight * 0.75, 4, 12);
         }
 
-        // The font of the resources of the form, or Helvetica
+        // The font of the resources of the form, the standard font the name designates, or Helvetica
         var font = form?.Get<PdfDictionary>(PdfName.Create("DR"))?.Get<PdfDictionary>(PdfNames.Font)?.GetResolved(PdfName.Create(fontName))
-            ?? new PdfDictionary { [PdfNames.Type] = PdfNames.Font, [PdfNames.Subtype] = PdfName.Create("Type1"), [PdfNames.BaseFont] = PdfName.Create("Helvetica"), [PdfNames.Encoding] = PdfName.Create("WinAnsiEncoding") };
+            ?? StandardFontDictionary(StandardFonts.TryGetValue(fontName, out var standard) && standard is not (PdfStandardFont.Symbol or PdfStandardFont.ZapfDingbats) ? fontName : "Helvetica");
         resources[PdfNames.Font] = new PdfDictionary { [PdfName.Create("F0")] = font };
 
         // The operators of the default appearance, with the font replaced

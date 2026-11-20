@@ -105,10 +105,20 @@ internal static class PdfFuzzOracle
             foreach (var annotation in page.Annotations)
             {
                 _ = annotation.Rectangle;
-                if (annotation is PdfLinkAnnotation link)
+                _ = annotation.Border.Width;
+                switch (annotation)
                 {
-                    _ = link.Uri;
-                    _ = link.Destination;
+                    case PdfLinkAnnotation link:
+                        _ = link.Uri;
+                        _ = link.Destination;
+                        break;
+                    case PdfMarkupAnnotation markup:
+                        _ = markup.Popup;
+                        _ = markup.InReplyTo;
+                        break;
+                    case PdfWidgetAnnotation widget:
+                        _ = widget.AppearanceCharacteristics.Rotation;
+                        break;
                 }
             }
         }

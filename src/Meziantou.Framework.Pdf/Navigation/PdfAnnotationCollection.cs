@@ -287,7 +287,227 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
         return AddMarkup(dictionary, form);
     }
 
-    /// <summary>Removes an annotation from the page.</summary>
+    /// <summary>Adds a line annotation (12.5.6.7): a straight line, with endings such as arrows.</summary>
+    /// <param name="start">The start of the line, in default user space.</param>
+    /// <param name="end">The end of the line, in default user space.</param>
+    /// <param name="color">The color of the line, or <see langword="null"/> for red.</param>
+    /// <param name="width">The width of the line, in points.</param>
+    /// <param name="startEnding">The ending at <paramref name="start"/>.</param>
+    /// <param name="endEnding">The ending at <paramref name="end"/>.</param>
+    /// <returns>The annotation. Its closed endings are filled with the color of the line (<see cref="PdfLineAnnotation.InteriorColor"/>).</returns>
+    /// <exception cref="ArgumentException">A coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is negative or not finite.</exception>
+    public PdfLineAnnotation AddLine(PdfPoint start, PdfPoint end, PdfColor? color = null, double width = 1, PdfLineEnding startEnding = PdfLineEnding.None, PdfLineEnding endEnding = PdfLineEnding.None)
+    {
+        CheckWidth(width);
+        var stroke = color ?? DefaultShapeColor;
+        var bounds = GetBounds([start, end], (width * 4) + 5);
+        var dictionary = CreateShape("Line", bounds, stroke, width);
+        dictionary[PdfNames.L] = PdfArray.FromNumbers(start.X, start.Y, end.X, end.Y);
+        PdfLineEndingNames.Write(dictionary, startEnding, endEnding);
+        if (startEnding != PdfLineEnding.None || endEnding != PdfLineEnding.None)
+        {
+            dictionary[AnnotationNames.IC] = PdfArray.FromNumbers(stroke.GetComponents());
+        }
+
+        return AddGenerated<PdfLineAnnotation>(dictionary);
+    }
+
+    /// <summary>Adds a square annotation (12.5.6.8): a rectangle.</summary>
+    /// <param name="rectangle">The rectangle, in default user space: the border is drawn inside it.</param>
+    /// <param name="color">The color of the border, or <see langword="null"/> for red.</param>
+    /// <param name="interiorColor">The color that fills the rectangle, or <see langword="null"/> for none.</param>
+    /// <param name="width">The width of the border, in points; 0 for none.</param>
+    /// <returns>The annotation.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is negative or not finite.</exception>
+    public PdfSquareAnnotation AddSquare(PdfRectangle rectangle, PdfColor? color = null, PdfColor? interiorColor = null, double width = 1)
+    {
+        var dictionary = CreateShape("Square", rectangle, color ?? DefaultShapeColor, width);
+        SetInteriorColor(dictionary, interiorColor);
+        return AddGenerated<PdfSquareAnnotation>(dictionary);
+    }
+
+    /// <summary>Adds a circle annotation (12.5.6.8): an ellipse inscribed in a rectangle.</summary>
+    /// <param name="rectangle">The rectangle, in default user space: the border is drawn inside it.</param>
+    /// <param name="color">The color of the border, or <see langword="null"/> for red.</param>
+    /// <param name="interiorColor">The color that fills the ellipse, or <see langword="null"/> for none.</param>
+    /// <param name="width">The width of the border, in points; 0 for none.</param>
+    /// <returns>The annotation.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is negative or not finite.</exception>
+    public PdfCircleAnnotation AddCircle(PdfRectangle rectangle, PdfColor? color = null, PdfColor? interiorColor = null, double width = 1)
+    {
+        var dictionary = CreateShape("Circle", rectangle, color ?? DefaultShapeColor, width);
+        SetInteriorColor(dictionary, interiorColor);
+        return AddGenerated<PdfCircleAnnotation>(dictionary);
+    }
+
+    /// <summary>Adds a polygon annotation (12.5.6.9): a closed shape of vertices.</summary>
+    /// <param name="vertices">The vertices, in default user space: at least 2.</param>
+    /// <param name="color">The color of the border, or <see langword="null"/> for red.</param>
+    /// <param name="interiorColor">The color that fills the polygon, or <see langword="null"/> for none.</param>
+    /// <param name="width">The width of the border, in points; 0 for none.</param>
+    /// <returns>The annotation.</returns>
+    /// <exception cref="ArgumentException">There are fewer than 2 vertices, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is negative or not finite.</exception>
+    public PdfPolygonAnnotation AddPolygon(IEnumerable<PdfPoint> vertices, PdfColor? color = null, PdfColor? interiorColor = null, double width = 1)
+    {
+        var points = GetVertices(vertices);
+        CheckWidth(width);
+        var dictionary = CreateShape("Polygon", GetBounds(points, (width / 2) + 1), color ?? DefaultShapeColor, width);
+        dictionary[AnnotationNames.Vertices] = PdfAnnotation.WritePoints(points);
+        SetInteriorColor(dictionary, interiorColor);
+        return AddGenerated<PdfPolygonAnnotation>(dictionary);
+    }
+
+    /// <summary>Adds a polyline annotation (12.5.6.9): connected straight lines, with endings such as arrows at the first and last vertices.</summary>
+    /// <param name="vertices">The vertices, in default user space: at least 2.</param>
+    /// <param name="color">The color of the lines, or <see langword="null"/> for red.</param>
+    /// <param name="width">The width of the lines, in points.</param>
+    /// <param name="startEnding">The ending at the first vertex.</param>
+    /// <param name="endEnding">The ending at the last vertex.</param>
+    /// <returns>The annotation. Its closed endings are filled with the color of the lines.</returns>
+    /// <exception cref="ArgumentException">There are fewer than 2 vertices, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is negative or not finite.</exception>
+    public PdfPolyLineAnnotation AddPolyLine(IEnumerable<PdfPoint> vertices, PdfColor? color = null, double width = 1, PdfLineEnding startEnding = PdfLineEnding.None, PdfLineEnding endEnding = PdfLineEnding.None)
+    {
+        var points = GetVertices(vertices);
+        CheckWidth(width);
+        var stroke = color ?? DefaultShapeColor;
+        var dictionary = CreateShape("PolyLine", GetBounds(points, (width * 4) + 5), stroke, width);
+        dictionary[AnnotationNames.Vertices] = PdfAnnotation.WritePoints(points);
+        PdfLineEndingNames.Write(dictionary, startEnding, endEnding);
+        if (startEnding != PdfLineEnding.None || endEnding != PdfLineEnding.None)
+        {
+            dictionary[AnnotationNames.IC] = PdfArray.FromNumbers(stroke.GetComponents());
+        }
+
+        return AddGenerated<PdfPolyLineAnnotation>(dictionary);
+    }
+
+    /// <summary>Adds an ink annotation (12.5.6.13): freehand strokes, as drawn with a pen, with round caps and joins.</summary>
+    /// <param name="strokes">The strokes: each one a list of points, in default user space.</param>
+    /// <param name="color">The color of the strokes, or <see langword="null"/> for red.</param>
+    /// <param name="width">The width of the strokes, in points.</param>
+    /// <returns>The annotation.</returns>
+    /// <exception cref="ArgumentException">There is no stroke, a stroke is empty, or a coordinate is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is negative or not finite.</exception>
+    public PdfInkAnnotation AddInk(IEnumerable<IEnumerable<PdfPoint>> strokes, PdfColor? color = null, double width = 1)
+    {
+        ArgumentNullException.ThrowIfNull(strokes);
+        CheckWidth(width);
+        var list = strokes.Select(stroke => stroke?.ToList() ?? []).ToList();
+        if (list.Count == 0 || list.Any(stroke => stroke.Count == 0))
+            throw new ArgumentException("An ink annotation needs strokes of at least one point", nameof(strokes));
+
+        var dictionary = CreateShape("Ink", GetBounds(list.SelectMany(stroke => stroke), (width / 2) + 1), color ?? DefaultShapeColor, width);
+        dictionary[AnnotationNames.InkList] = new PdfArray(list.Select(stroke => (PdfObject)PdfAnnotation.WritePoints(stroke)));
+        return AddGenerated<PdfInkAnnotation>(dictionary);
+    }
+
+    /// <summary>Adds a caret annotation (12.5.6.11): a symbol that marks where text is to be inserted.</summary>
+    /// <param name="rectangle">The rectangle of the caret, in default user space.</param>
+    /// <param name="text">The text to insert, or a comment, or <see langword="null"/>.</param>
+    /// <param name="color">The color of the caret, or <see langword="null"/> for blue.</param>
+    /// <returns>The annotation.</returns>
+    public PdfCaretAnnotation AddCaret(PdfRectangle rectangle, string? text = null, PdfColor? color = null)
+    {
+        var dictionary = CreateMarkup("Caret", rectangle, text, color ?? PdfColor.FromRgb(0, 0.3, 0.9));
+        dictionary[AnnotationNames.Sy] = PdfName.Create("None");
+        return AddGenerated<PdfCaretAnnotation>(dictionary);
+    }
+
+    /// <summary>
+    /// Adds a redaction annotation (12.5.6.23): marks regions whose content is to be removed. The content stays until the
+    /// redaction is applied, by <see cref="PdfDocument.ApplyRedactions(PdfRedactionOptions?)"/> or by a viewer; until then,
+    /// the regions are outlined in red.
+    /// </summary>
+    /// <param name="regions">The regions, in default user space.</param>
+    /// <param name="overlayText">The text drawn in the regions once they are redacted, or <see langword="null"/>.</param>
+    /// <param name="interiorColor">The color that fills the regions once they are redacted, or <see langword="null"/> for black.</param>
+    /// <returns>The annotation.</returns>
+    /// <exception cref="ArgumentException">There is no region.</exception>
+    public PdfRedactAnnotation AddRedaction(IEnumerable<PdfRectangle> regions, string? overlayText = null, PdfColor? interiorColor = null)
+    {
+        ArgumentNullException.ThrowIfNull(regions);
+        var list = regions.ToList();
+        if (list.Count == 0)
+            throw new ArgumentException("A redaction needs a region", nameof(regions));
+
+        var bounds = new PdfRectangle(list.Min(r => r.Left), list.Min(r => r.Bottom), list.Max(r => r.Right), list.Max(r => r.Top));
+        var dictionary = CreateMarkup("Redact", bounds, text: null, PdfColor.FromRgb(1, 0, 0));
+        dictionary[AnnotationNames.QuadPoints] = PdfAnnotation.WriteQuadrilaterals(list);
+        dictionary[AnnotationNames.IC] = PdfArray.FromNumbers((interiorColor ?? PdfColor.Black).GetComponents());
+        if (overlayText is not null)
+        {
+            dictionary[AnnotationNames.OverlayText] = PdfString.FromText(overlayText);
+        }
+
+        return AddGenerated<PdfRedactAnnotation>(dictionary);
+    }
+
+    /// <summary>Adds the pop-up annotation of a markup annotation (12.5.6.14): the window that shows its text, and sets its <see cref="PdfMarkupAnnotation.Popup"/>.</summary>
+    /// <param name="parent">The markup annotation, on this page.</param>
+    /// <param name="rectangle">The rectangle of the window, in default user space.</param>
+    /// <param name="isOpen">Whether the window is initially open.</param>
+    /// <returns>The pop-up annotation.</returns>
+    /// <exception cref="ArgumentException">The annotation is not on this page.</exception>
+    public PdfPopupAnnotation AddPopup(PdfMarkupAnnotation parent, PdfRectangle rectangle, bool isOpen = false)
+    {
+        CheckOnPage(parent);
+        var dictionary = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Annot,
+            [PdfNames.Subtype] = AnnotationNames.PopupSubtype,
+            [PdfNames.Rect] = rectangle.ToArray(),
+            [PdfNames.P] = _page.Reference,
+            [PdfNames.Parent] = (PdfObject?)parent.Reference ?? parent.Dictionary,
+        };
+        if (isOpen)
+        {
+            dictionary[AnnotationNames.Open] = PdfBoolean.True;
+        }
+
+        var reference = _page.Document.Objects.Add(dictionary);
+        GetOrCreateArray().Add(reference);
+        var popup = (PdfPopupAnnotation)PdfAnnotation.Create(_page, dictionary, reference);
+        parent.Popup = popup;
+        return popup;
+    }
+
+    /// <summary>
+    /// Adds a reply to a markup annotation (12.5.6.2): a text annotation in reply to it (<c>/IRT</c>), at the same place.
+    /// Viewers list the replies in the thread of the annotation; the reply has an empty appearance, so that it does not
+    /// draw a second icon.
+    /// </summary>
+    /// <param name="parent">The annotation, on this page.</param>
+    /// <param name="text">The text of the reply.</param>
+    /// <param name="author">The author of the reply, or <see langword="null"/>.</param>
+    /// <returns>The reply.</returns>
+    /// <exception cref="ArgumentException">The annotation is not on this page.</exception>
+    public PdfTextAnnotation AddReply(PdfMarkupAnnotation parent, string text, string? author = null)
+    {
+        CheckOnPage(parent);
+        ArgumentNullException.ThrowIfNull(text);
+        var dictionary = CreateMarkup("Text", parent.Rectangle, text, parent.Color);
+        dictionary[PdfNames.Name] = PdfName.Create("Comment");
+        dictionary[AnnotationNames.IRT] = (PdfObject?)parent.Reference ?? parent.Dictionary;
+        if (author is not null)
+        {
+            dictionary[PdfName.Create("T")] = PdfString.FromText(author);
+        }
+
+        // Print, NoZoom and NoRotate (12.5.3), as the notes
+        dictionary[PdfNames.F] = PdfInteger.Get(4 | 8 | 16);
+        var form = _page.Document.CreateForm(new PdfRectangle(0, 0, Math.Max(parent.Rectangle.Width, 1), Math.Max(parent.Rectangle.Height, 1)));
+        form.CreateContentBuilder().Complete();
+        return (PdfTextAnnotation)AddMarkup(dictionary, form);
+    }
+
+    /// <summary>
+    /// Removes an annotation from the page, with the references that would keep it in a saved file: its pop-up
+    /// annotation, the <c>/IRT</c> and <c>/Popup</c> entries of the other annotations of the page that point to it, the
+    /// object references of the structure tree, and, for a widget, its entry in its form field.
+    /// </summary>
     /// <param name="annotation">The annotation.</param>
     /// <returns><see langword="true"/> when the annotation was on the page.</returns>
     public bool Remove(PdfAnnotation annotation)
@@ -298,9 +518,9 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
 
         for (var i = 0; i < array.Count; i++)
         {
-            if ((annotation.Reference is not null && annotation.Reference.Equals(array[i])) || ReferenceEquals(array[i], annotation.Dictionary))
+            if ((annotation.Reference is not null && annotation.Reference.Equals(array[i])) || ReferenceEquals(PdfReference.ResolveIfReference(array[i]), annotation.Dictionary))
             {
-                array.RemoveAt(i);
+                AnnotationRemover.Remove(_page, [(array[i], annotation.Dictionary)]);
                 return true;
             }
         }
@@ -364,6 +584,33 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
         return form.Reference;
     }
 
+    private static readonly PdfColor DefaultShapeColor = PdfColor.FromRgb(0.9, 0, 0);
+
+    private static List<PdfPoint> GetVertices(IEnumerable<PdfPoint> vertices)
+    {
+        ArgumentNullException.ThrowIfNull(vertices);
+        var list = vertices.ToList();
+        if (list.Count < 2)
+            throw new ArgumentException("A polygon or a polyline needs at least 2 vertices", nameof(vertices));
+
+        return list;
+    }
+
+    private static void SetInteriorColor(PdfDictionary dictionary, PdfColor? color)
+    {
+        if (color is { } value)
+        {
+            dictionary[AnnotationNames.IC] = PdfArray.FromNumbers(value.GetComponents());
+        }
+    }
+
+    private void CheckOnPage(PdfMarkupAnnotation annotation)
+    {
+        ArgumentNullException.ThrowIfNull(annotation);
+        if (!this.Any(item => ReferenceEquals(item.Dictionary, annotation.Dictionary)))
+            throw new ArgumentException("The annotation is not on this page", nameof(annotation));
+    }
+
     private PdfDictionary CreateMarkup(string subtype, PdfRectangle rectangle, string? text, PdfColor? color)
     {
         var dictionary = new PdfDictionary
@@ -392,7 +639,47 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
         dictionary[PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = appearance.Reference };
         var reference = _page.Document.Objects.Add(dictionary);
         GetOrCreateArray().Add(reference);
-        return new PdfMarkupAnnotation(_page, dictionary, reference);
+        return (PdfMarkupAnnotation)PdfAnnotation.Create(_page, dictionary, reference);
+    }
+
+    /// <summary>Adds an annotation dictionary to the page, draws its appearance from its properties, and returns the annotation.</summary>
+    private T AddGenerated<T>(PdfDictionary dictionary)
+        where T : PdfAnnotation
+    {
+        var reference = _page.Document.Objects.Add(dictionary);
+        GetOrCreateArray().Add(reference);
+        var annotation = (T)PdfAnnotation.Create(_page, dictionary, reference);
+        annotation.UpdateAppearance();
+        return annotation;
+    }
+
+    /// <summary>Gets the rectangle of a geometry: the bounds of its points, extended by the margin its line and endings need.</summary>
+    private static PdfRectangle GetBounds(IEnumerable<PdfPoint> points, double margin)
+    {
+        var (left, bottom, right, top) = (double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity);
+        foreach (var point in points)
+        {
+            if (!double.IsFinite(point.X) || !double.IsFinite(point.Y))
+                throw new ArgumentException("The coordinates must be finite numbers", nameof(points));
+
+            (left, bottom, right, top) = (Math.Min(left, point.X), Math.Min(bottom, point.Y), Math.Max(right, point.X), Math.Max(top, point.Y));
+        }
+
+        return new PdfRectangle(left - margin, bottom - margin, right + margin, top + margin);
+    }
+
+    private static void CheckWidth(double width)
+    {
+        if (!(width >= 0 && double.IsFinite(width)))
+            throw new ArgumentOutOfRangeException(nameof(width), width, "The width must be a positive number");
+    }
+
+    private PdfDictionary CreateShape(string subtype, PdfRectangle rectangle, PdfColor? color, double width)
+    {
+        CheckWidth(width);
+        var dictionary = CreateMarkup(subtype, rectangle, text: null, color);
+        dictionary[AnnotationNames.BS] = new PdfDictionary { [AnnotationNames.W] = PdfObjectFactory.Number(width) };
+        return dictionary;
     }
 
     private PdfArray GetOrCreateArray()

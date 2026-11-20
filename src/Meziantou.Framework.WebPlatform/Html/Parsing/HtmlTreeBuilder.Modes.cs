@@ -445,6 +445,16 @@ internal sealed partial class HtmlTreeBuilder
             var sanitizes = extensions && ContentPatching.IsSanitizing(templateStartTag.GetAttribute("sanitize"));
             var src = extensions ? templateStartTag.GetAttribute("src") : null;
             var template = (HtmlTemplateElement)InsertForeignElement(templateStartTag, Namespaces.Html, onlyAddToElementStack: true);
+
+            // When streaming, a template whose location is dropped (the reference child is no longer a child of the target,
+            // or the parser is being aborted) does not patch the content: it is not inserted
+            if (IsStreaming)
+            {
+                var (patchParent, patchReferenceChild) = AdjustInsertionLocation(adjustedInsertionLocation);
+                if (IsDisplaced(patchParent, patchReferenceChild))
+                    return;
+            }
+
             if (!ContentPatching.Prepare(scope, template, removeContent: !buffered && src is null))
             {
                 PopCurrentNode();
@@ -498,7 +508,8 @@ internal sealed partial class HtmlTreeBuilder
     /// </summary>
     private void RemovePatchMarkers(HtmlTemplateElement template)
     {
-        if (template.InsertionTarget is not null && template.InsertionStartMarker is { } start)
+        // The markers stay when the streaming parser is aborted (the DOM is not mutated once an abort is requested)
+        if (template.InsertionTarget is not null && template.InsertionStartMarker is { } start && !(IsStreaming && (_aborted || _abortRequested)))
         {
             start.RemoveFromParent();
             template.InsertionEndMarker?.RemoveFromParent();

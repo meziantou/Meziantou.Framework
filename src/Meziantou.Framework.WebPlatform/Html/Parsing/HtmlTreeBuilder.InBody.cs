@@ -539,7 +539,8 @@ internal sealed partial class HtmlTreeBuilder
 
     private void AddMissingAttributes(Element element, HtmlTagToken tag)
     {
-        if (GetSanitizerAction(element) != SanitizerElementAction.Keep)
+        // Once the streaming parser is being aborted, the DOM is not mutated
+        if (GetSanitizerAction(element) != SanitizerElementAction.Keep || (IsStreaming && _abortRequested))
             return;
 
         tag = GetSanitizedToken(tag, element.NamespaceUri!);
@@ -993,6 +994,10 @@ internal sealed partial class HtmlTreeBuilder
                 continue;
             }
 
+            // Once the streaming parser is being aborted, the DOM is not mutated: the children stay in furthestBlock
+            if (IsStreaming && _abortRequested)
+                continue;
+
             // A custom element reaction may have inserted the new element in the tree (e.g. in furthestBlock): the nodes are
             // not appended to one of their descendants, which would create a cycle
             for (var child = furthestBlock.FirstChild; child is not null;)
@@ -1049,20 +1054,22 @@ internal sealed partial class HtmlTreeBuilder
     /// </summary>
     private void PrepareParsedScript(ScriptElementCore script)
     {
-        // The scripts streamed with runScripts run when their end tag is parsed, as the scripts inserted by a script
-        // (approximating https://whatpr.org/html/12758/parsing.html#scriptEndTag, which pauses the parser)
+        // The scripts streamed with runScripts are parser-inserted scripts of the document of the fragment parser, which run
+        // in the node document of the target, their intended document (https://whatpr.org/html/12758/parsing.html#scriptEndTag):
+        // a parser-blocking script pauses the parser (see HtmlStreamWriter), and the defer and module scripts run once the
+        // stream is closed. A script that is not connected when it is prepared (e.g. streamed into a disconnected element)
+        // is no longer parser-inserted: it runs as an async script once it is connected.
         if (IsStreaming && ScriptingMode == ParserScriptingMode.Fragment)
         {
             // A script moved to another document while it was parsed, or created in the new node document of an adopted
-            // target, does not run: its node document is not the document of the stream (the parser document of the other
-            // parsed scripts)
+            // target, does not run: its node document is not the document of the stream
             if (script.Element.IsConnected && !IsInScriptDocument(script.Element))
             {
                 script.AlreadyStarted = true;
                 return;
             }
 
-            script.ParserDocument = null;
+            script.IntendedDocument = _streamingScriptDocument;
             (_streamedScripts ??= []).Add(script);
         }
 
@@ -1105,7 +1112,9 @@ internal sealed partial class HtmlTreeBuilder
     /// </summary>
     private void PerformMicrotaskCheckpointBeforeScript()
     {
-        if (_document.BrowsingContext is { Options.ScriptEngine: not null } browsingContext && !browsingContext.EventLoop.IsScriptRunning)
+        // The streamed scripts run in the node document of the target (the document of the fragment parser has no browsing context)
+        var document = IsStreaming && ScriptingMode == ParserScriptingMode.Fragment ? _streamingScriptDocument! : _document;
+        if (document.BrowsingContext is { Options.ScriptEngine: not null } browsingContext && !browsingContext.EventLoop.IsScriptRunning)
         {
             browsingContext.EventLoop.PerformMicrotaskCheckpoint();
         }

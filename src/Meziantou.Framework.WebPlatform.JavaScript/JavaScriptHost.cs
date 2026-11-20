@@ -53,6 +53,15 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
         if (jobCallback.HostDefined is not JobCallbackState state)
             return base.CallJobCallback(engine, jobCallback, thisValue, arguments);
 
+        // https://html.spec.whatwg.org/multipage/webappapis.html#hostenqueuepromisejob: the job is run with the settings object
+        // of its realm (the realm of the handler, the current realm of the job) as the entry settings object, so that e.g. the
+        // URLs given to window.open() are resolved against its document
+        var previousEntryDocument = Document.EntryGlobalDocument;
+        if (owner.Agent.CurrentRealm?.GlobalScope.EnvironmentDocument is { } jobDocument)
+        {
+            Document.EntryGlobalDocument = jobDocument;
+        }
+
         // Prepare to run a callback with the incumbent settings object (the backup incumbent settings object stack), and
         // push the script execution context of the active script
         owner.PrepareToRunCallback(state.Incumbent);
@@ -82,6 +91,7 @@ internal sealed class JavaScriptHost(JavaScriptScriptEngine owner) : JsHost
             }
 
             owner.CleanUpAfterRunningCallback();
+            Document.EntryGlobalDocument = previousEntryDocument;
         }
     }
 

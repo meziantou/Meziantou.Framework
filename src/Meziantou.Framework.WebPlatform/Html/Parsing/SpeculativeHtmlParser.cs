@@ -173,8 +173,14 @@ internal sealed class SpeculativeHtmlParser
                 break;
             }
 
-            // The style sheets and the preloads (the module preloads and the prefetches are fetched when the parser inserts them)
-            case HtmlLinkElement link when link.GetLinkResource(_document, out var mediaMatches) is { Kind: LinkResourceKind.StyleSheet or LinkResourceKind.Preload } resource && mediaMatches:
+            // The style sheets whose media match are preloaded, as by the preload scanners of the browsers: the style sheets
+            // whose media do not match are only fetched when the parser reaches their element
+            case HtmlLinkElement link when link.GetLinkResource(_document, out var mediaMatches) is { Kind: LinkResourceKind.StyleSheet, Alternate: false } resource && mediaMatches:
+                PreloadStyleSheet(link, resource);
+                break;
+
+            // The preloads (the module preloads and the prefetches are fetched when the parser inserts them)
+            case HtmlLinkElement link when link.GetLinkResource(_document, out var mediaMatches) is { Kind: LinkResourceKind.Preload } resource && mediaMatches:
                 Fetch(link, resource.Url, resource.Destination, resource.Cors, link.ReferrerPolicy);
                 break;
 
@@ -228,6 +234,23 @@ internal sealed class SpeculativeHtmlParser
             request.Nonce = "";
             LinkPreload.Preload(_document, request, processResponse: null, initiatorType: "css");
         }
+    }
+
+    /// <summary>
+    /// The style sheet of a <c>link</c> element parsed speculatively: as the <c>@import</c> rules (see
+    /// <see cref="PreloadPendingStyleImports"/>), it is preloaded (the request is sent and reported to the performance
+    /// timeline at once), and the element consumes the response when the parser reaches it.
+    /// </summary>
+    private void PreloadStyleSheet(HtmlLinkElement link, LinkResource resource)
+    {
+        var url = resource.Url;
+        if (url.Scheme is "data" or "blob" || _document.SpeculativeFetchUrls.Contains(url.Serialize()) || ContentSecurityPolicy.ShouldBlockRequest(_contentSecurityPolicies, _document.ContentSecurityPolicySelfOrigin, url, resource.Destination, link, parserInserted: true))
+            return;
+
+        _document.SpeculativeFetchUrls.Add(url.Serialize());
+        var request = SubresourceFetching.CreateRequest(_document, url, resource.Destination, resource.Cors, link.ReferrerPolicy, initiator: null, _speculativeDocument, useCredentials: SubresourceFetching.UsesCredentials(link), integrity: link.GetAttributeValue("integrity") ?? "");
+        request.Nonce = ContentSecurityPolicy.GetNonceMetadata(link);
+        LinkPreload.Preload(_document, request, processResponse: null);
     }
 
     /// <summary>The script that the element would fetch (https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element).</summary>

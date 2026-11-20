@@ -393,8 +393,19 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             var chunk = adapter.ToString(args[0]);
             return Invoke(() => writer.Write(chunk));
         }));
-        SetMember(sink, "close", adapter.CreateFunction("close", 0, (_, _) => Invoke(writer.Close)));
+        SetMember(sink, "close", adapter.CreateFunction("close", 0, (_, _) =>
+        {
+            Task? closed = null;
+            Invoke(() => closed = writer.CloseAsync());
+            return ToPromise(closed!);
+        }));
         SetMember(sink, "abort", adapter.CreateFunction("abort", 0, (_, _) => Invoke(writer.Abort)));
+        SetMember(sink, "setErrorStream", adapter.CreateFunction("setErrorStream", 1, (_, args) =>
+        {
+            var errorStream = args[0];
+            writer.ErrorStream = error => adapter.RunInRealm(EngineRealm, () => adapter.Call(errorStream, adapter.Undefined, [ToJsError(error)]));
+            return adapter.Undefined;
+        }));
         return adapter.Call(adapter.Get(GetStreams(), Key("createHtmlWritableStream")), adapter.Undefined, [sink]);
 
         // The scripts and the custom element reactions run by the parser may throw: the errors of the parser are DOMExceptions

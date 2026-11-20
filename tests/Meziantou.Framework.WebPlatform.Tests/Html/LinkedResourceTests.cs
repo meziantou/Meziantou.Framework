@@ -210,12 +210,20 @@ public sealed class LinkedResourceTests : IDisposable
     [InlineData("rel=stylesheet disabled")]
     [InlineData("rel=stylesheet type=text/plain")]
     [InlineData("rel=preload as=style media=\"not all\"")]
-    [InlineData("rel=icon")]
     [InlineData("rel=preload as=video")]
     public void NotFetched(string attributes)
     {
         Load($"<!doctype html><link {attributes} href=a.css>");
         Assert.Empty(_requests);
+    }
+
+    [Fact]
+    public void Icon_IsFetchedAsAnImage_WithoutLoadEvent()
+    {
+        var document = Load("<!doctype html><link rel=icon href=icon.png onload=\"document.title = 'load'\" onerror=\"document.title = 'error'\"><link rel=icon href=cors.png crossorigin>");
+        Assert.Equal(["Image https://example.com/icon.png", "Image https://example.com/cors.png"], Requests);
+        Assert.Equal([RequestMode.NoCors, RequestMode.Cors], _requests.Select(request => request.Mode));
+        Assert.Equal("", document.Title);
     }
 
     [Fact]

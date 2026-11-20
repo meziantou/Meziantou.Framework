@@ -242,6 +242,7 @@ public partial class HtmlLinkElement
         var isModulePreload = false;
         var isPrefetch = false;
         var isIcon = false;
+        var isIconKeyword = false;
         var isPreconnect = false;
         var isDnsPrefetch = false;
         var isCompressionDictionary = false;
@@ -255,6 +256,7 @@ public partial class HtmlLinkElement
             // The browsers process the prerender links (removed from the HTML Standard) as prefetches: Chromium's NoState
             // Prefetch fetches the resource without rendering it
             isPrefetch |= InfraAscii.EqualsIgnoreAsciiCase(token, "prefetch") || InfraAscii.EqualsIgnoreAsciiCase(token, "prerender");
+            isIconKeyword |= InfraAscii.EqualsIgnoreAsciiCase(token, "icon");
             isIcon |= InfraAscii.EqualsIgnoreAsciiCase(token, "icon") || InfraAscii.EqualsIgnoreAsciiCase(token, "apple-touch-icon") || InfraAscii.EqualsIgnoreAsciiCase(token, "apple-touch-icon-precomposed");
 
             // https://html.spec.whatwg.org/multipage/links.html#link-type-next: "user agents should process such links as if
@@ -316,10 +318,12 @@ public partial class HtmlLinkElement
             // https://www.rfc-editor.org/rfc/rfc9842#section-2.1.5: the destination is the empty string
             kind = LinkResourceKind.CompressionDictionary;
         }
-        else if (isIcon && environmentDocument.ContentSecurityPoliciesOrNull is { Count: > 0 })
+        else if ((isIconKeyword && IsTopLevelDocument(environmentDocument)) || (isIcon && environmentDocument.ContentSecurityPoliciesOrNull is { Count: > 0 }))
         {
-            // The icon of a document with content security policies: its fetch is blocked by img-src (nothing is rendered, so
-            // the icon is not fetched when it is allowed)
+            // https://html.spec.whatwg.org/multipage/links.html#rel-icon: the icon of a top-level document is fetched (as the
+            // desktop browsers fetch the favicons of the tabs, but not the Apple touch icons), and the icon of another document
+            // with content security policies is checked by img-src (nothing is rendered, so it is not fetched when it is
+            // allowed). The destination is "image".
             kind = LinkResourceKind.Icon;
             destination = RequestDestination.Image;
         }
@@ -528,6 +532,10 @@ public partial class HtmlLinkElement
         }
     }
 
+    private static bool IsTopLevelDocument(Document document) => document.BrowsingContext is { } context && ReferenceEquals(context.Top, context);
+
+    private bool HasIconKeyword() => (GetAttributeValue("rel") ?? "").Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries).Any(token => InfraAscii.EqualsIgnoreAsciiCase(token, "icon"));
+
     /// <summary>
     /// Fetches the resource of a preload, of a module preload or of a prefetch: the element fires a <c>load</c> event, or an
     /// <c>error</c> event for a network error (a response whose status is not an ok status is not a network error).
@@ -542,9 +550,19 @@ public partial class HtmlLinkElement
             }
         }
 
+        // The icon is fetched (a potential-CORS request whose mode is "cors" with a crossorigin attribute), and its response is
+        // not used: the library has no user interface that shows it. As in the browsers, the element fires no load or error
+        // event, and the fetch has no resource timing entry (the browsers fetch the favicons outside of the document).
         if (linkResource.Kind == LinkResourceKind.Icon)
         {
-            ContentSecurityPolicy.ShouldBlockRequest(document, linkResource.Url, RequestDestination.Image);
+            if (!IsTopLevelDocument(document) || !HasIconKeyword())
+            {
+                ContentSecurityPolicy.ShouldBlockRequest(document, linkResource.Url, RequestDestination.Image);
+                return;
+            }
+
+            var iconRequest = SubresourceFetching.CreateRequest(document, linkResource.Url, RequestDestination.Image, linkResource.Cors, ReferrerPolicy, this, useCredentials: SubresourceFetching.UsesCredentials(this));
+            SubresourceFetching.FetchResponse(document, iconRequest, onComplete: null, reportBlockedRequest: false, reportTiming: false);
             return;
         }
 

@@ -195,6 +195,9 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 - The responses are stored in an HTTP cache shared by the browsing contexts of the loader, as in a browser: a fresh
   response is used without a request, a stale one is revalidated with `If-None-Match` and `If-Modified-Since`, and a stale
   response within its `stale-while-revalidate` window is used while a request revalidates it in the background.
+- The icon of a top-level document (`<link rel=icon>`) is requested (destination `image`, a CORS request with a
+  `crossorigin` attribute), as the browsers request the icon of a tab, but it is not rendered. The element fires no
+  `load` or `error` event, and the request has no resource timing entry.
 - [Compression dictionaries](https://www.rfc-editor.org/rfc/rfc9842) are supported. A response of a secure URL with a
   `Use-As-Dictionary` header (fetched with CORS or from the same origin) registers its body as a dictionary for the URLs
   of its `match` pattern, while it would be fresh in the HTTP cache. A header whose pattern is not valid, has regular

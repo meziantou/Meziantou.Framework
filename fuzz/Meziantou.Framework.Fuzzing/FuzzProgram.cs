@@ -35,6 +35,7 @@ public static class FuzzProgram
 
         if (args is [var name] && !name.StartsWith('-', StringComparison.Ordinal) && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(LibFuzzerSharedMemoryVariable)))
         {
+            KillWhenParentExits();
             FuzzTarget? fuzzedTarget = null;
             Fuzzer.LibFuzzer.Run(data =>
             {
@@ -83,6 +84,35 @@ public static class FuzzProgram
             default:
                 return Replay(target, args.AsSpan(1));
         }
+    }
+
+    /// <summary>
+    /// libfuzzer-dotnet forks this process and does not kill it when it exits. After a timeout, libFuzzer exits while this
+    /// process still runs the input that hangs: it would run forever and keep the output of libFuzzer open, so the script
+    /// that reads that output would never complete. A background thread kills this process once libFuzzer exits (the
+    /// process is then reparented, so its parent process id changes).
+    /// </summary>
+    private static void KillWhenParentExits()
+    {
+        if (!OperatingSystem.IsLinux())
+            return;
+
+        var parentProcessId = GetParentProcessId();
+        var thread = new Thread(() =>
+        {
+            while (GetParentProcessId() == parentProcessId)
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+            }
+
+            using var process = Process.GetCurrentProcess();
+            process.Kill();
+        })
+        {
+            IsBackground = true,
+            Name = "libFuzzer watchdog",
+        };
+        thread.Start();
     }
 
     /// <summary>Gets the libFuzzer dictionary of a target: one quoted token per line, with the non-printable bytes escaped.</summary>
@@ -181,5 +211,13 @@ public static class FuzzProgram
             """);
         Console.Error.WriteLine("Targets: " + string.Join(", ", targets.Select(target => target.Name)));
         return 2;
+    }
+
+    // /proc/self/stat is "pid (comm) state ppid ...", where comm may contain spaces and parentheses
+    private static int GetParentProcessId()
+    {
+        var stat = File.ReadAllText("/proc/self/stat");
+        var fields = stat[(stat.LastIndexOf(')', StringComparison.Ordinal) + 2)..].Split(' ');
+        return int.Parse(fields[1], NumberStyles.None, CultureInfo.InvariantCulture);
     }
 }

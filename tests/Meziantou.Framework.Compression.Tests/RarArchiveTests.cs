@@ -325,6 +325,22 @@ public sealed class RarArchiveTests
         Assert.Throws<InvalidDataException>(() => ComputeSha256(archive.Entries[0]));
     }
 
+    [Fact]
+    public void Corrupted_RepeatedDistanceNotSet()
+    {
+        // A RAR5 entry whose compressed data repeat an old distance before any match set one (found by fuzzing): the
+        // distance is 0, which used to loop forever
+        var bytes = Convert.FromBase64String(
+            "UmFyIRoHAQDz4YLrCwEFBwAGAQGAgIAAicZf2iYCAwvpAgSwCaSDAs1wynyABQEIdGVzdC5iaW4KAxOLV6xb+BitHsr0ZQEnZWBU" +
+            "H1V2Xb+UknHJz2WWWQxw2WWTGMWSE4ZCSSThkJCSSSQk45JJIQhJJCEJJJCSSEISEs21b3t9Mw6AfR0Drj+eup/3Qf732vfdea86" +
+            "X+gAQAEAyCCfn49vX08vHv7uzr6uno5+Xk4+Lh4N/d3NrZ19bV1NPS0M/NzMrJyMfGxcTDwb+9vLu5uLe2tbSzsrGvrq2rqqmnpa" +
+            "SjoqGgn52cm5mXlpSTSyUjIR6FAfjoyKiYc6cNmoaEgoB+fHt6eHZ0c3Jxb21rSWdlY2FfXVtZV1VTITf1/I/QJT6JTn+ESXRYow" +
+            "Z5YXajgppimUF+ZC0XadRjLDOMCoR/+glMZpCl9lUKxWVguLAZFoNy4HdeEGwA8xBIyCeZhWNAumoZbYN5uHg4Bgcg+uYROgpnYY" +
+            "DwNt6Hu9h1fQjfxYQI0YMecKHk0Jg2L44OY6HCIEqeGFFjtjQ/nxUIBsIQ0IhNIxnJAvJQAdd1ZRAwUEAA==");
+        using var archive = new RarArchive(new MemoryStream(bytes));
+        Assert.Throws<InvalidDataException>(() => ComputeSha256(archive.Entries[0]));
+    }
+
     [Theory]
     [InlineData("libarchive-rar.rar")]
     [InlineData("rarfile-rar5-times.rar")]

@@ -151,6 +151,20 @@ public sealed class LinkedResourceTests : IDisposable
     }
 
     [Fact]
+    public void MetaDefaultStyle_SelectsThePreferredStyleSheetSet()
+    {
+        var document = Load("<!doctype html><style title=a>p { color: red }</style><style title=b>p { color: green }</style><p>text</p>");
+        var paragraph = document.QuerySelector("p")!;
+        Assert.Equal("rgb(255, 0, 0)", document.DefaultView!.GetComputedStyle(paragraph).Color);
+
+        var meta = document.CreateElement("meta");
+        meta.SetAttribute("http-equiv", "default-style");
+        meta.SetAttribute("content", "b");
+        document.Head!.AppendChild(meta);
+        Assert.Equal("rgb(0, 128, 0)", document.DefaultView!.GetComputedStyle(paragraph).Color);
+    }
+
+    [Fact]
     public void StyleSheet_InQuirksMode_SameOriginResponsesAreStyleSheets()
     {
         var document = Load("<link rel=stylesheet href=a.txt onload=\"document.title = 'load'\">");

@@ -49,16 +49,25 @@ writer.Close();
   parsed. An element that the parser has not closed yet is already in the tree, and the text of a chunk is inserted when
   the chunk is written.
 - `Write()` throws a `HierarchyRequestError` (and the stream rejects) when the reference child is no longer a child of
-  the target; the parser is aborted. `Abort()` stops the parser: the rest of the input is not parsed, and the `script`
-  elements that are still open never run.
+  the target; the parser is aborted. The parser also detects it while it parses a chunk (e.g. a script or a custom element
+  reaction moved the reference child): the stream is errored, the rest of the input is dropped, and the element created
+  for the next token is created in an inert document (no custom element constructor runs, no image is fetched).
+  `Abort()` stops the parser: the rest of the input is not parsed, the `script` elements that have not run yet never
+  run, and an abort requested by a script or a reaction that the parser runs takes effect after the current token (the
+  DOM is not changed any more).
 - The elements are created in the node document of the target, and the custom element constructors run synchronously,
   as for the document parser. The sanitizer is applied while parsing, with a copy of the
   configuration taken when the method is called; the elements that it removes are created in an inert document, so
   neither they nor their descendants have side effects (e.g. an image fetch).
-- The scripts run only with `RunScripts` in a connected target: a streamed script (HTML or SVG) runs when its end tag is
-  parsed, as a script inserted by a script. The parser does not pause for an external script, and the `defer` attribute
-  is ignored. A script runs only in the node document of the target when the method was called: a script moved to
-  another document before its end tag, or created after the target was adopted into another document, does not run.
+- The scripts run only with `RunScripts`: the streamed scripts (HTML or SVG) are parser-inserted scripts, as the scripts
+  of the document parser. An inline script runs when its end tag is parsed; an external classic script without `async`
+  or `defer` pauses the parser until it is fetched, then runs from a task (`Write()` does not wait for it: the chunks
+  written meanwhile are parsed after it, and the JavaScript `close()` promise resolves once the parser has parsed the rest
+  of the input); an `async` script runs as soon as it is fetched; the `defer` and module scripts run from a task after the
+  stream is closed, in order. A script streamed into a disconnected target is not parser-inserted: it runs once it is
+  connected, as an async script. A script runs only in the node document of the target when the method was called: a
+  script moved to another document before its end tag, or created after the target was adopted into another document,
+  does not run.
 - A streamed `style` element gets its style sheet when the parser pops it off its stack of open elements (its end tag, or
   `Close()`), as for the document parser (https://html.spec.whatwg.org/multipage/semantics.html#update-a-style-block),
   and the text streamed into a `style` element updates its style sheet.

@@ -148,6 +148,7 @@ public sealed class HtmlStreamWriter
             return;
 
         _builder.InvalidReferenceChildSteps = null;
+        IsCompleted = true;
         var error = new DomException("The node before which the HTML is inserted is no longer a child of the target", "HierarchyRequestError");
         _writeError = error;
         ErrorStream?.Invoke(error);

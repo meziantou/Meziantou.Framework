@@ -109,7 +109,8 @@ browsing context (with a color depth of 24), and `window.devicePixelRatio` is `V
   [xml-stylesheet processing instructions](#xml-stylesheet-processing-instructions)), the constructed and adopted style
   sheets (the adopted style sheets of a shadow root are removed when it is adopted by another document, except between a
   document and the document of its template contents, as in browsers), and the `style` attributes. The disabled style sheets, the alternative style sheets (whose title is not the
-  preferred style sheet set, or whose `alternate` pseudo-attribute is `yes`) and the style sheets whose media do not
+  preferred style sheet set, or whose `alternate` pseudo-attribute is `yes`, unless their title is the style sheet set
+  selected by a `<meta http-equiv=default-style>` element) and the style sheets whose media do not
   match are ignored (a change of the `media` attribute of a `style` element changes the media of its style sheet, as in the
   browsers). The style sheets of the `<link rel=stylesheet>` elements and of the `@import` rules are fetched with
   the `DocumentLoader` of the browsing context (see [Linked style sheets](#linked-style-sheets) and

@@ -132,6 +132,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-fedcm", FedCm) { Seeds = GetFedCmSeeds, Dictionary = FedCmTokens },
         new("webplatform-nel-header", data => NetworkErrorLoggingHeader(FuzzText.Decode(data))) { Seeds = GetNetworkErrorLoggingSeeds, Dictionary = NetworkErrorLoggingTokens },
         new("webplatform-media-content-type", data => MediaContentTypeTarget(FuzzText.Decode(data))) { Seeds = GetMediaContentTypeSeeds, Dictionary = MediaContentTypeTokens },
+        new("webplatform-pi-attributes", data => ProcessingInstructionAttributes(FuzzText.Decode(data))) { Seeds = GetProcessingInstructionAttributesSeeds, Dictionary = ProcessingInstructionAttributesTokens },
     ];
 
     /// <summary>

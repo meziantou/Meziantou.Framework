@@ -49,12 +49,12 @@ public sealed class SpeculativeParsingTests : IDisposable
             <picture><source srcset=h.png><img></picture>
             """);
 
-        Assert.Equal(["Script https://example.com/dir/block.js"], Requests);
+        // The style sheets are preloaded, as by the preload scanners of the browsers (the request is not speculative)
+        Assert.Equal(["Script https://example.com/dir/block.js", "Style https://example.com/dir/c.css"], Requests);
         Assert.Equal(
             [
                 "Image https://example.com/dir/a.png",
                 "Script https://example.com/dir/b.js",
-                "Style https://example.com/dir/c.css",
                 "Font https://example.com/dir/d.woff2",
                 "Image https://example.com/dir/e.png",
                 "Image https://example.com/dir/f.png",
@@ -247,6 +247,14 @@ public sealed class SpeculativeParsingTests : IDisposable
     }
 
     [Fact]
+    public void StyleSheetsWhoseMediaDoNotMatch_AreNotPreloaded()
+    {
+        Navigate("<script src=block.js></script><link rel=stylesheet media=print href=print.css><link rel=stylesheet href=screen.css>");
+        Assert.Equal(["Script https://example.com/dir/block.js", "Style https://example.com/dir/screen.css"], Requests);
+        Assert.Empty(SpeculativeRequests);
+    }
+
+    [Fact]
     public void EachUrlIsFetchedSpeculativelyOnce()
     {
         Navigate("<script src=block.js></script><img src=a.png><img src=a.png><link rel=stylesheet href=a.png>");
@@ -271,14 +279,14 @@ public sealed class SpeculativeParsingTests : IDisposable
     [Fact]
     public void MetaCharsetInTheHeadAfterTheFirstKilobyte_ChangesTheEncodingWhenTheParserInsertsIt()
     {
-        var document = Navigate("<head><!--" + new string(' ', 1024) + "--><script src=block.js></script><meta charset=windows-1254><link rel=stylesheet href=\"a.css?&#x11E;\">");
-        Assert.Equal(["Style https://example.com/dir/a.css?%26%23286%3B"], SpeculativeRequests);
+        var document = Navigate("<head><!--" + new string(' ', 1024) + "--><script src=block.js></script><meta charset=windows-1254><img src=\"a.png?&#x11E;\">");
+        Assert.Equal(["Image https://example.com/dir/a.png?%26%23286%3B"], SpeculativeRequests);
         Assert.Equal("windows-1252", document.CharacterSet);
 
         _loader.CompleteBlockingScript("");
         _contexts.EventLoop.RunUntilIdle();
         Assert.Equal("windows-1254", document.CharacterSet);
-        Assert.Contains("Style https://example.com/dir/a.css?%D0", Requests);
+        Assert.Contains("Image https://example.com/dir/a.png?%D0", Requests);
     }
 
     /// <summary>Records the requests. The blocking script is pending; the other resources are empty responses.</summary>

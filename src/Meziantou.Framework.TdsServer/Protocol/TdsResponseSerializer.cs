@@ -46,14 +46,14 @@ internal static class TdsResponseSerializer
     private static readonly DateTime SqlEpoch = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
     private static readonly byte[] DefaultCollation = [0x09, 0x04, 0xD0, 0x00, 0x34];
 
-    public static byte[] CreateLoginSuccess(TdsAuthenticationResult authenticationResult)
+    public static byte[] CreateLoginSuccess(TdsAuthenticationResult authenticationResult, string programName, Version serverVersion)
     {
         ArgumentNullException.ThrowIfNull(authenticationResult);
 
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.Unicode, leaveOpen: true);
 
-        WriteLoginAckToken(writer, "Meziantou.TdsServer");
+        WriteLoginAckToken(writer, programName, serverVersion);
         if (!string.IsNullOrEmpty(authenticationResult.Database))
         {
             WriteEnvironmentChangeToken(writer, environmentType: 1, authenticationResult.Database, oldValue: string.Empty);
@@ -343,17 +343,18 @@ internal static class TdsResponseSerializer
         return Encoding.Unicode.GetByteCount(ConvertToSqlText(value, column.ColumnType)) > MaxVariableColumnLength;
     }
 
-    private static void WriteLoginAckToken(BinaryWriter writer, string programName)
+    private static void WriteLoginAckToken(BinaryWriter writer, string programName, Version serverVersion)
     {
         using var bodyStream = new MemoryStream();
         using var bodyWriter = new BinaryWriter(bodyStream, Encoding.Unicode, leaveOpen: true);
         bodyWriter.Write((byte)0x01); // SQL_DFLT
         WriteUInt32BigEndian(bodyWriter, 0x74000004u);
         WriteBVarChar(bodyWriter, programName);
-        bodyWriter.Write((byte)1);
-        bodyWriter.Write((byte)0);
-        bodyWriter.Write((byte)0);
-        bodyWriter.Write((byte)0);
+
+        // ProgVersion (MS-TDS 2.2.7.14): MajorVer, MinorVer, BuildNumHi, BuildNumLow
+        bodyWriter.Write(checked((byte)serverVersion.Major));
+        bodyWriter.Write(checked((byte)serverVersion.Minor));
+        WriteUInt16BigEndian(bodyWriter, checked((ushort)Math.Max(serverVersion.Build, 0)));
         bodyWriter.Flush();
 
         WriteToken(writer, token: 0xAD, bodyStream);
@@ -971,6 +972,13 @@ internal static class TdsResponseSerializer
     {
         Span<byte> bytes = stackalloc byte[4];
         BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
+        writer.Write(bytes);
+    }
+
+    private static void WriteUInt16BigEndian(BinaryWriter writer, ushort value)
+    {
+        Span<byte> bytes = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16BigEndian(bytes, value);
         writer.Write(bytes);
     }
 

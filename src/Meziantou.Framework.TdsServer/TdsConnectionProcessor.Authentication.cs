@@ -57,9 +57,9 @@ internal sealed partial class TdsConnectionProcessor
         }
     }
 
-    private static byte[] CreateLoginSuccessResponse(TdsAuthenticationResult authenticationResult)
+    private byte[] CreateLoginSuccessResponse(TdsAuthenticationResult authenticationResult)
     {
-        var loginSuccess = TdsResponseSerializer.CreateLoginSuccess(authenticationResult);
+        var loginSuccess = TdsResponseSerializer.CreateLoginSuccess(authenticationResult, _options.ProgramName, _options.ServerVersion);
         if (authenticationResult.SspiToken.IsEmpty)
         {
             return loginSuccess;

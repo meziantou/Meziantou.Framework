@@ -20,12 +20,16 @@ namespace Meziantou.Framework.Tds
     public sealed class TdsServerOptions
     {
         public const int DefaultMaxMessageSize = 16777216;
+        public const string DefaultProgramName = "Microsoft SQL Server";
         public const int MaximumPacketSize = 65535;
         public const int MinimumPacketSize = 512;
         public Meziantou.Framework.Tds.Handler.TdsBulkLoadHandler? BulkLoadHandler { get => throw null; set { } }
+        public static System.Version DefaultServerVersion { get => throw null; }
         public int MaxMessageSize { get => throw null; set { } }
         public int PacketSize { get => throw null; set { } }
+        public string ProgramName { get => throw null; set { } }
         public bool RequireEncryption { get => throw null; set { } }
+        public System.Version ServerVersion { get => throw null; set { } }
         public Meziantou.Framework.Tds.TdsSqlServerBrowserOptions? SqlServerBrowser { get => throw null; set { } }
         public string? TlsPemCertificatePath { get => throw null; set { } }
         public string? TlsPemPrivateKeyPath { get => throw null; set { } }

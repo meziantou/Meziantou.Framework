@@ -135,11 +135,17 @@ public static partial class TdsServerFuzzTargets
     /// <summary>
     /// The harness logs in, then the input is a sequence of messages the harness frames correctly: a byte for the type
     /// and the packet split, two bytes for the length, then the payload. So mutations reach the request parsers instead
-    /// of breaking the framing. The first byte selects the packet size of the server.
+    /// of breaking the framing. The first byte selects the packet size and the version of the server.
     /// </summary>
     private static void Messages(ReadOnlySpan<byte> data)
     {
-        var options = new TdsServerOptions { PacketSize = FuzzInput.Pick(PacketSizes, FuzzInput.ReadByte(ref data)) };
+        var optionsByte = FuzzInput.ReadByte(ref data);
+        var options = new TdsServerOptions
+        {
+            PacketSize = FuzzInput.Pick(PacketSizes, optionsByte),
+            ServerVersion = new Version(optionsByte, optionsByte ^ 0x5A, optionsByte * 257),
+            ProgramName = new string('p', (optionsByte % 255) + 1),
+        };
         var input = new List<byte>();
         TdsWire.WriteMessage(input, TdsWire.PreLogin, TdsWire.PreLoginPayload(TdsWire.EncryptionNotSupported));
         TdsWire.WriteMessage(input, TdsWire.Login7, TdsWire.Login7Payload("sa", "password", "fuzz", "master"));
@@ -181,6 +187,10 @@ public static partial class TdsServerFuzzTargets
         FuzzAssert.Equal(expectedResponses.Count + 2, responses.Count, "Each message must get exactly one response");
         FuzzAssert.Equal(TdsWire.PreLogin, responses[0].Type, "The first response must answer PRELOGIN");
         FuzzAssert.False(IsError(responses[1].Payload), "The login must succeed");
+        var loginAck = TdsWire.ReadTabularResult(responses[1].Payload).LoginAck;
+        FuzzAssert.True(loginAck is not null, "The login response must contain a LOGINACK token");
+        FuzzAssert.Equal(options.ProgramName, loginAck.Value.ProgramName, "The LOGINACK token must contain the program name");
+        FuzzAssert.Equal(options.ServerVersion, loginAck.Value.Version, "The LOGINACK token must contain the server version");
         for (var i = 0; i < expectedResponses.Count; i++)
         {
             var response = responses[i + 2].Payload;

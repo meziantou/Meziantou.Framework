@@ -186,6 +186,80 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task SqlClient_ServerVersion_DefaultsToSqlServer2022()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        Assert.Equal("16.00.1000", connection.ServerVersion);
+        Assert.Equal(new Version(16, 0, 1000, 6), TdsServerOptions.DefaultServerVersion);
+        Assert.Equal("Microsoft SQL Server", options.ProgramName);
+    }
+
+    [Theory]
+    [InlineData(15, 0, 2000, "15.00.2000")]
+    [InlineData(255, 255, 65535, "255.255.65535")]
+    [InlineData(9, 0, -1, "09.00.0000")]
+    public async Task SqlClient_ServerVersion_UsesConfiguredVersion(int major, int minor, int build, string expectedVersion)
+    {
+        var options = new TdsServerOptions
+        {
+            ServerVersion = build < 0 ? new Version(major, minor) : new Version(major, minor, build),
+            ProgramName = "Custom server",
+        };
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        Assert.Equal(expectedVersion, connection.ServerVersion);
+    }
+
+    [Fact]
+    public void TdsServerOptions_ServerVersion_RejectsVersionsThatDoNotFitLoginAck()
+    {
+        var options = new TdsServerOptions();
+
+        Assert.Throws<ArgumentNullException>(() => options.ServerVersion = null!);
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.ServerVersion = new Version(256, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.ServerVersion = new Version(16, 256));
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.ServerVersion = new Version(16, 0, 65536));
+        Assert.Equal(TdsServerOptions.DefaultServerVersion, options.ServerVersion);
+    }
+
+    [Fact]
+    public void TdsServerOptions_ProgramName_RejectsInvalidNames()
+    {
+        var options = new TdsServerOptions();
+
+        Assert.Throws<ArgumentNullException>(() => options.ProgramName = null!);
+        Assert.Throws<ArgumentException>(() => options.ProgramName = "");
+        Assert.Throws<ArgumentOutOfRangeException>(() => options.ProgramName = new string('a', 256));
+        var longestName = new string('a', 255);
+        options.ProgramName = longestName;
+        Assert.Equal(longestName, options.ProgramName);
+    }
+
+    [Fact]
     public async Task SqlClient_AuthenticationCallback_WithWrongPassword_Fails()
     {
         const string UserName = "sa";
@@ -594,7 +668,24 @@ public sealed class TdsServerProtocolTests
 
         var response = await SendSqlServerBrowserRequestAsync(browserPort, [0x04, .. "test"u8, 0x00]);
 
-        Assert.Equal($"ServerName;MYSERVER;InstanceName;TEST;IsClustered;No;Version;1.0.0.0;tcp;{tcpPort};;", response);
+        Assert.Equal($"ServerName;MYSERVER;InstanceName;TEST;IsClustered;No;Version;16.0.1000.6;tcp;{tcpPort};;", response);
+    }
+
+    [Theory]
+    [InlineData("15.0.2000.5", "15.0.2000.5")]
+    [InlineData("15.0", "15.0.0.0")]
+    public async Task SqlServerBrowser_AdvertisesServerVersion(string serverVersion, string expectedVersion)
+    {
+        var options = new TdsServerOptions { ServerVersion = Version.Parse(serverVersion) };
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.EnableSqlServerBrowser("TEST", port: 0);
+
+        using var server = CreateBrowserTestServer(options);
+        await server.StartAsync();
+
+        var response = await SendSqlServerBrowserRequestAsync(server.SqlServerBrowserPort!.Value, [0x04, .. "TEST"u8, 0x00]);
+
+        Assert.Contains($";Version;{expectedVersion};", response);
     }
 
     [Theory]
@@ -643,6 +734,7 @@ public sealed class TdsServerProtocolTests
         {
             options.AddTcpListener(0, IPAddress.Loopback);
             options.EnableSqlServerBrowser("HOSTED", browserPort);
+            options.ServerVersion = new Version(15, 0, 2000, 5);
         });
 
         await using var app = builder.Build();
@@ -655,9 +747,11 @@ public sealed class TdsServerProtocolTests
             var response = await SendSqlServerBrowserRequestAsync(browserPort, [0x04, .. "HOSTED"u8, 0x00]);
             var tcpPort = int.Parse(response.Split(';')[9], CultureInfo.InvariantCulture);
             Assert.NotEqual(0, tcpPort);
+            Assert.Contains(";Version;15.0.2000.5;", response);
 
             await using var connection = new SqlConnection(CreateConnectionString(tcpPort));
             await connection.OpenAsync();
+            Assert.Equal("15.00.2000", connection.ServerVersion);
         }
         finally
         {

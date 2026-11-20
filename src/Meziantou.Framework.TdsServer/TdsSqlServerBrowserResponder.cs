@@ -25,15 +25,17 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
     private readonly UdpClient _udpClient;
     private readonly string _instanceName;
     private readonly string _serverName;
+    private readonly string _serverVersion;
     private readonly Func<int?> _getTcpPort;
     private readonly ILogger _logger;
     private readonly CancellationTokenSource _cts = new();
 
-    private TdsSqlServerBrowserResponder(UdpClient udpClient, TdsSqlServerBrowserOptions options, Func<int?> getTcpPort, ILogger logger)
+    private TdsSqlServerBrowserResponder(UdpClient udpClient, TdsSqlServerBrowserOptions options, Version serverVersion, Func<int?> getTcpPort, ILogger logger)
     {
         _udpClient = udpClient;
         _instanceName = options.InstanceName;
         _serverName = options.ServerName ?? Environment.MachineName;
+        _serverVersion = FormatVersion(serverVersion);
         _getTcpPort = getTcpPort;
         _logger = logger;
     }
@@ -42,9 +44,10 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
 
     /// <summary>Binds the UDP socket and starts answering requests.</summary>
     /// <param name="options">The responder options.</param>
+    /// <param name="serverVersion">The version of the server to advertise.</param>
     /// <param name="getTcpPort">Returns the TCP port to advertise, or <see langword="null"/> when the server is not listening yet.</param>
     /// <param name="logger">The logger.</param>
-    public static TdsSqlServerBrowserResponder Start(TdsSqlServerBrowserOptions options, Func<int?> getTcpPort, ILogger logger)
+    public static TdsSqlServerBrowserResponder Start(TdsSqlServerBrowserOptions options, Version serverVersion, Func<int?> getTcpPort, ILogger logger)
     {
         Validate(options);
 
@@ -59,7 +62,7 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
             throw;
         }
 
-        var responder = new TdsSqlServerBrowserResponder(udpClient, options, getTcpPort, logger);
+        var responder = new TdsSqlServerBrowserResponder(udpClient, options, serverVersion, getTcpPort, logger);
         _ = responder.ReceiveLoopAsync(responder._cts.Token);
         return responder;
     }
@@ -84,7 +87,7 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
     }
 
     /// <summary>Builds the SVR_RESP message answering a request, or returns <see langword="null"/> when the request gets no answer.</summary>
-    internal static byte[]? CreateResponse(ReadOnlySpan<byte> request, string serverName, string instanceName, int tcpPort)
+    internal static byte[]? CreateResponse(ReadOnlySpan<byte> request, string serverName, string instanceName, string serverVersion, int tcpPort)
     {
         if (request.IsEmpty)
             return null;
@@ -92,7 +95,7 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
         switch (request[0])
         {
             case ClientBroadcastEx or ClientUnicastEx:
-                return CreateServerResponse(serverName, instanceName, tcpPort);
+                return CreateServerResponse(serverName, instanceName, serverVersion, tcpPort);
 
             case ClientUnicastInstance:
                 // The instance name is a null-terminated string in the client's code page
@@ -109,7 +112,7 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
                 if (!string.Equals(Encoding.ASCII.GetString(name), instanceName, StringComparison.OrdinalIgnoreCase))
                     return null;
 
-                var response = CreateServerResponse(serverName, instanceName, tcpPort);
+                var response = CreateServerResponse(serverName, instanceName, serverVersion, tcpPort);
                 return response.Length - 3 <= MaxInstanceResponseDataLength ? response : null;
 
             default:
@@ -118,10 +121,16 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
         }
     }
 
-    private static byte[] CreateServerResponse(string serverName, string instanceName, int tcpPort)
+    /// <summary>Formats a version as the four parts SQL Server advertises, such as <c>16.0.1000.6</c>.</summary>
+    internal static string FormatVersion(Version version)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"{version.Major}.{version.Minor}.{Math.Max(version.Build, 0)}.{Math.Max(version.Revision, 0)}");
+    }
+
+    private static byte[] CreateServerResponse(string serverName, string instanceName, string serverVersion, int tcpPort)
     {
         // MC-SQLR 2.2.5: SVR_RESP = 0x05, RESP_SIZE (little-endian ushort), RESP_DATA (MBCS string)
-        var data = string.Create(CultureInfo.InvariantCulture, $"ServerName;{serverName};InstanceName;{instanceName};IsClustered;No;Version;1.0.0.0;tcp;{tcpPort};;");
+        var data = string.Create(CultureInfo.InvariantCulture, $"ServerName;{serverName};InstanceName;{instanceName};IsClustered;No;Version;{serverVersion};tcp;{tcpPort};;");
         var dataLength = Encoding.ASCII.GetByteCount(data);
         var response = new byte[3 + dataLength];
         response[0] = ServerResponse;
@@ -162,7 +171,7 @@ internal sealed class TdsSqlServerBrowserResponder : IDisposable
             if (tcpPort is null)
                 continue;
 
-            var response = CreateResponse(request.Buffer, _serverName, _instanceName, tcpPort.Value);
+            var response = CreateResponse(request.Buffer, _serverName, _instanceName, _serverVersion, tcpPort.Value);
             if (response is null)
                 continue;
 

@@ -4370,6 +4370,22 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void MediaRecorder_StartAfterStop_CompletesTheStoppedRecording()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=4 height=2></canvas><script>" + RecorderScript + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+        Run(document, "window.stream = document.querySelector('canvas').captureStream(); stream.getVideoTracks()[0].requestFrame(); record(stream);");
+        Advance(clock, document, 50);
+
+        // The stopped recording delivers its data and fires its stop event, although another recording started before its task runs
+        Run(document, "recorder.stop(); recorder.start(); log.push(recorder.state);");
+        Advance(clock, document, 50);
+        Run(document, "recorder.stop();");
+
+        Assert.Equal("recording|start video/webm;codecs=vp8|recording|data video/webm;codecs=vp8 true 0|stop recording|start video/webm;codecs=vp8|data video/webm;codecs=vp8 true 0|stop inactive", Run(document, "done()"));
+    }
+
+    [Fact]
     public void MediaRecorder_StateTransitions()
     {
         var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);

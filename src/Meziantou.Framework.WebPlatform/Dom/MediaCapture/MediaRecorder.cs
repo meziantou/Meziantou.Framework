@@ -307,23 +307,30 @@ public sealed class MediaRecorder : EventTarget
         State = RecordingState.Recording;
         var recording = new Recording(this, container, videoTrack, audioTrack, videoCodec, audioCodec, timeslice);
         _recording = recording;
-        Stream.AddTracksChangedCallback(_tracksChanged);
         foreach (var track in tracks)
         {
             track.AddStateChangedCallback(recording.OnTrackStateChanged);
         }
 
+        // A recording stopped just before is still completed by its own task: the callback is registered once
+        Stream.RemoveTracksChangedCallback(_tracksChanged);
+        Stream.AddTracksChangedCallback(_tracksChanged);
+
         _global.QueueGlobalTask(() =>
         {
-            if (_recording != recording)
+            if (recording.IsCompleted)
                 return;
 
             // A codec that the recorder does not know, or that the codecs cannot encode, fails the recording
             if (unknownCodec || !recording.TryCreateEncoders())
             {
                 recording.Close();
-                _recording = null;
-                State = RecordingState.Inactive;
+                if (_recording == recording)
+                {
+                    _recording = null;
+                    State = RecordingState.Inactive;
+                }
+
                 FireError(new DomException("The type cannot be recorded", "NotSupportedError"));
                 return;
             }
@@ -514,7 +521,9 @@ public sealed class MediaRecorder : EventTarget
         recording.StopGathering();
         _global.QueueGlobalTask(() =>
         {
-            State = RecordingState.Inactive;
+            if (_recording == recording)
+                State = RecordingState.Inactive;
+
             StopRecording(recording, error: null);
         });
     }
@@ -530,13 +539,22 @@ public sealed class MediaRecorder : EventTarget
         _global.QueueGlobalTask(() => StopRecording(recording, new DomException(exception.Message, "UnknownError")));
     }
 
+    /// <summary>
+    /// Completes a recording that stopped: its data is delivered, then a <c>stop</c> event is fired. A recording completes
+    /// once, even when another recording started after it was stopped.
+    /// </summary>
     private void StopRecording(Recording recording, DomException? error)
     {
-        if (_recording != recording)
+        if (recording.IsCompleted)
             return;
 
-        _recording = null;
-        Stream.RemoveTracksChangedCallback(_tracksChanged);
+        recording.IsCompleted = true;
+        if (_recording == recording)
+        {
+            _recording = null;
+            Stream.RemoveTracksChangedCallback(_tracksChanged);
+        }
+
         recording.Flush();
         if (error is not null)
             FireError(error);
@@ -596,6 +614,7 @@ public sealed class MediaRecorder : EventTarget
 
         public Recording(MediaRecorder recorder, string container, MediaStreamTrack? videoTrack, MediaStreamTrack? audioTrack, bool recordVideo, bool recordAudio, uint? timeslice)
         {
+
             _recorder = recorder;
             _container = container;
             _videoTrack = videoTrack;
@@ -607,6 +626,9 @@ public sealed class MediaRecorder : EventTarget
         }
 
         public bool IsStopping { get; private set; }
+
+        /// <summary>Whether the recording is closed: its data was delivered, or it failed to start.</summary>
+        public bool IsCompleted { get; set; }
 
         /// <summary>Whether the recording started (its <c>start</c> event was fired).</summary>
         public bool HasBegun { get; private set; }
@@ -898,6 +920,8 @@ public sealed class MediaRecorder : EventTarget
 
         public void Close()
         {
+            IsCompleted = true;
+
             StopGathering();
             _videoEncoder?.Dispose();
             _audioEncoder?.Dispose();

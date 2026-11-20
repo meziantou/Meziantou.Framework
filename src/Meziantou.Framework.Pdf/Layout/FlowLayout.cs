@@ -570,7 +570,7 @@ internal sealed class FlowLayout
 
         for (var i = 0; i < pages.Count; i++)
         {
-            WritePage(document, pages, i);
+            WritePage(pages, i);
         }
 
         if (_options.CreateOutline)
@@ -603,7 +603,7 @@ internal sealed class FlowLayout
         }
     }
 
-    private void WritePage(PdfDocument document, List<PdfPage> pages, int index)
+    private void WritePage(List<PdfPage> pages, int index)
     {
         var page = pages[index];
         var builder = page.CreateContentBuilder();

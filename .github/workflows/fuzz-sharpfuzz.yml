@@ -47,6 +47,7 @@ on:
           - javascript-engine
           - jsonpath
           - language
+          - mail
           - markdown
           - media-tags
           - ntp
@@ -139,6 +140,7 @@ env:
       { "project": "Meziantou.Framework.JavaScriptEngine.Fuzz",     "component": "javascript-engine",     "day": 6 },
       { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },
       { "project": "Meziantou.Framework.Language.Fuzz",            "component": "language",              "day": 2 },
+      { "project": "Meziantou.Framework.Mail.Fuzz",                "component": "mail",                  "day": 2 },
       { "project": "Meziantou.Framework.Markdown.Fuzz",            "component": "markdown",              "day": 2 },
       { "project": "Meziantou.Framework.MediaTags.Fuzz",           "component": "media-tags",            "day": 3 },
       { "project": "Meziantou.Framework.Ntp.Fuzz",                 "component": "ntp",                   "day": 0 },

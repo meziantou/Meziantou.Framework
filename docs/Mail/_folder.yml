@@ -1,0 +1,4 @@
+title: Mail
+description: Read and write email, contact and calendar files, starting with Outlook data files (PST and OST): folders, emails, attachments, contacts, appointments, tasks and MAPI properties.
+packageIds:
+- Meziantou.Framework.Mail

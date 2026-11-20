@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Mail</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Reads and writes email, contact and calendar files. Outlook data files (PST and OST, ANSI, Unicode and 4K-page formats, with or without encryption): folders, messages, recipients, attachments, embedded messages, bodies (text, HTML, compressed RTF), MAPI and named properties, contacts, appointments with their recurrences, tasks and distribution lists.</Description>
+    <PackageTags>mail;email;pst;ost;outlook;mapi;contacts;calendar</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The fuzz targets call the internal layers directly -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Mail.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Mail.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Mail. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <RootNamespace>Meziantou.Framework.Mail.Fuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The files of the unit tests are the seeds, except the OST of 16 MB: a smaller one is generated -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Pst\*.pst" LogicalName="TestData/%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Mail\Meziantou.Framework.Mail.csproj" />
+  </ItemGroup>
+</Project>

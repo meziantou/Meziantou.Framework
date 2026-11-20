@@ -329,6 +329,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Shell\Meziantou.Framework.Language.Shell.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Toml\Meziantou.Framework.Language.Toml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Xml\Meziantou.Framework.Language.Xml.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Mail\Meziantou.Framework.Mail.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Markdown\Meziantou.Framework.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Mermaid\Meziantou.Framework.Mermaid.csproj" />
@@ -695,6 +696,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Shell" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Toml" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Xml" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Mail" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Markdown" />
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Mermaid" />

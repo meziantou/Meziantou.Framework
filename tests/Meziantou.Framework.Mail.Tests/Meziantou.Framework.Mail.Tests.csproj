@@ -1,0 +1,16 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- See TestData/Pst/README.md for the origin and license of each file -->
+    <None Update="TestData/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Mail/Meziantou.Framework.Mail.csproj" />
+  </ItemGroup>
+
+</Project>

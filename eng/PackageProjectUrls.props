@@ -90,6 +90,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Language.Toml'">https://framework.meziantou.net/language/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Language.Tool'">https://framework.meziantou.net/language/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Language.Xml'">https://framework.meziantou.net/language/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Mail'">https://framework.meziantou.net/mail/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Markdown'">https://framework.meziantou.net/markdown/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.MediaTags'">https://framework.meziantou.net/mediatags/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Mermaid'">https://framework.meziantou.net/mermaid/</PackageProjectUrl>

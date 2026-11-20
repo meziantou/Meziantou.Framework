@@ -38,6 +38,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.JavaScriptEngine.Fuzz", JavaScriptEngine.Fuzz.JavaScriptEngineFuzzTargets.All),
         ("Meziantou.Framework.JsonPath.Fuzz", JsonPath.Fuzz.JsonPathFuzzTargets.All),
         ("Meziantou.Framework.Language.Fuzz", Language.Fuzz.LanguageFuzzTargets.All),
+        ("Meziantou.Framework.Mail.Fuzz", Mail.Fuzz.MailFuzzTargets.All),
         ("Meziantou.Framework.Markdown.Fuzz", Markdown.Fuzz.MarkdownFuzzTargets.All),
         ("Meziantou.Framework.MediaTags.Fuzz", MediaTags.Fuzz.MediaTagsFuzzTargets.All),
         ("Meziantou.Framework.Ntp.Fuzz", Ntp.Fuzz.NtpFuzzTargets.All),

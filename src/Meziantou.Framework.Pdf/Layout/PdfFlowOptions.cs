@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.Layout;
+
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>The options of a flow document (<see cref="PdfFlowDocument"/>): its pages, its default text style, and the metadata of the document it builds.</summary>

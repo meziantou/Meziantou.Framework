@@ -1,6 +1,6 @@
 using Meziantou.Framework.Pdf.Objects;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 /// <summary>A table of a flow document: its columns, and its cells placed in a grid (the cells that span rows take the columns of the rows below them).</summary>
 internal sealed record TableBlock(double[] Weights, int RowCount, int HeaderRowCount, List<TableCell> Cells, double BorderWidth, PdfColor BorderColor, double CellPadding, PdfColor? HeaderBackground) : FlowBlock
@@ -34,6 +34,12 @@ internal sealed record TableBlock(double[] Weights, int RowCount, int HeaderRowC
                     throw new ArgumentException($"The cells of row {row + 1} do not fit the {columnCount} columns of the table", nameof(builder));
 
                 var rowSpan = Math.Min(cell.RowSpan, builder.Rows.Count - row);
+                for (var c = column; c < column + cell.ColumnSpan; c++)
+                {
+                    if (occupied.Contains((row, c)))
+                        throw new ArgumentException($"A cell of row {row + 1} overlaps a cell that spans rows above it", nameof(builder));
+                }
+
                 for (var r = row; r < row + rowSpan; r++)
                 {
                     for (var c = column; c < column + cell.ColumnSpan; c++)

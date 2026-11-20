@@ -1,6 +1,6 @@
 using Meziantou.Framework.Pdf.Objects;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 internal sealed record LineCommand(StructNode? Node, double X1, double Y1, double X2, double Y2, double Width, PdfColor Color) : DrawCommand(Node)
 {

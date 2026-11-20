@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 /// <summary>The pages of a flow document: their content area, in one or several columns.</summary>
 internal sealed class PageArea : FlowArea

@@ -1,6 +1,6 @@
 using Meziantou.Framework.Pdf.Objects;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 /// <summary>A node of the structure tree of a flow document, created by the layout and written as a structure element.</summary>
 internal sealed class StructNode(string type, StructNode? parent)

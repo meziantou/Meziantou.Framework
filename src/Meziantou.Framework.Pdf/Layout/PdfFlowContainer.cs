@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.Layout;
+
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>

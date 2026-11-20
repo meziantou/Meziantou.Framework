@@ -1,6 +1,6 @@
 using Meziantou.Framework.Pdf.Objects;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 internal sealed record ImageCommand(StructNode? Node, PdfImage Image, PdfRectangle Rectangle) : DrawCommand(Node)
 {

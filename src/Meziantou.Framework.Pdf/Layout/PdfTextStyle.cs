@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.Layout;
+
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>The style of a run of text of a flow document (<see cref="PdfInlineBuilder"/>): the properties that are <see langword="null"/> are those of the paragraph.</summary>

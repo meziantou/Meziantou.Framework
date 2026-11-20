@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 /// <summary>
 /// Where the blocks of a flow document are laid out: the columns of the pages, which break to the next column or page,

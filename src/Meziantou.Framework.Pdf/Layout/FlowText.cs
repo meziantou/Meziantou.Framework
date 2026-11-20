@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 /// <summary>
 /// Breaks the runs of a paragraph into lines (Unicode line breaking, UAX #14): a line ends at the last break opportunity

@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.Layout;
+
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>The style of a paragraph of a flow document.</summary>

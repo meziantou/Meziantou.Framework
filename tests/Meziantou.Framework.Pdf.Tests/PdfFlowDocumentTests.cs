@@ -133,6 +133,88 @@ public sealed class PdfFlowDocumentTests
     }
 
     [Fact]
+    public void CellsThatOverlapAreRefused()
+    {
+        var flow = new PdfFlowDocument();
+
+        Assert.Throws<ArgumentException>(() => flow.Table(table => table
+            .Columns(1, 1)
+            .Row(row => row.Cell("a").Cell("b", rowSpan: 2))
+            .Row(row => row.Cell("c", columnSpan: 2))));
+    }
+
+    [Fact]
+    public void TheHeaderRowsAreNotRepeatedAboveARowThatFillsThePage()
+    {
+        var flow = new PdfFlowDocument(SmallPages).Table(table => table
+            .Columns(1)
+            .HeaderRow("Name")
+            .Row(row => row.Cell(cell => cell.Paragraph("Top").Spacer(200).Paragraph("Bottom"))));
+
+        var read = PdfDocument.Open(flow.Build().ToByteArray());
+
+        Assert.Equal(2, read.Pages.Count);
+        Assert.Equal("Name", read.Pages[0].ExtractText().Trim());
+        Assert.Equal("Top\nBottom", read.Pages[1].ExtractText().Trim());
+    }
+
+    [Fact]
+    public void TheHeadingsOfTheCellsAreInTheOutline()
+    {
+        var flow = new PdfFlowDocument(SmallPages)
+            .Paragraph("First page")
+            .PageBreak()
+            .Paragraph("Second page")
+            .Spacer(100)
+            .Table(table => table.Columns(1).Row(row => row.Cell(cell => cell.Heading(1, "In a cell").Paragraph("Text"))));
+
+        var read = PdfDocument.Open(flow.Build().ToByteArray());
+
+        var item = Assert.Single(read.Outlines);
+        Assert.Equal("In a cell", item.Title);
+        Assert.Same(read.Pages[1], item.Destination!.Page);
+        Assert.InRange(item.Destination.Top!.Value, 130, 160);
+    }
+
+    [Fact]
+    public void ColumnsThatWouldNotHoldALineStartOnTheNextPage()
+    {
+        var flow = new PdfFlowDocument(SmallPages)
+            .Paragraph("Before")
+            .Spacer(220)
+            .Columns(2, 10, columns => columns.Paragraph("In a column"));
+
+        var read = PdfDocument.Open(flow.Build().ToByteArray());
+
+        Assert.Equal(2, read.Pages.Count);
+        Assert.Equal("Before", read.Pages[0].ExtractText().Trim());
+        Assert.Equal("In a column", read.Pages[1].ExtractText().Trim());
+    }
+
+    [Fact]
+    public void TheLinksAreInTheReadingOrderOfTheirParagraph()
+    {
+        var flow = new PdfFlowDocument(SmallPages).Paragraph(text => text
+            .Text("Before ")
+            .Link("first", new Uri("https://example.com/1"))
+            .Text(" between ")
+            .Link("second", new Uri("https://example.com/2")));
+
+        var read = PdfDocument.Open(flow.Build().ToByteArray());
+
+        var paragraph = Assert.Single(Assert.Single(read.StructureTree.Elements).Children);
+        var kids = Assert.IsType<PdfArray>(paragraph.Dictionary[PdfName.Create("K")]);
+        var types = kids.Select(kid => (kid is PdfReference reference ? reference.Resolve() : kid) switch
+        {
+            PdfInteger => "MCID",
+            PdfDictionary dictionary => dictionary.GetName(PdfName.Create("S"))?.Value ?? "MCR",
+            _ => "?",
+        });
+        Assert.Equal(["MCID", "Link", "MCID", "Link"], types.Select(type => type == "MCR" ? "MCID" : type));
+        Assert.Equal(["Link", "Link"], paragraph.Children.Select(element => element.Type));
+    }
+
+    [Fact]
     public void CellsHoldBlocks()
     {
         using var image = new Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32>(20, 10);

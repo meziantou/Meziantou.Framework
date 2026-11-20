@@ -1,7 +1,7 @@
 using System.Globalization;
 using Meziantou.Framework.Pdf.Objects;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.Layout;
 
 /// <summary>
 /// Lays out the blocks of a flow document in pages, then writes them: the commands of each page, in marked content of
@@ -104,6 +104,12 @@ internal sealed class FlowLayout
 
                     break;
                 case ColumnsBlock columns when area is PageArea pages:
+                    // Columns that would not hold a line start on the next page
+                    if (!pages.AtTop && pages.Available < _options.FontSize * _options.LineHeight * 2)
+                    {
+                        pages.NewPage();
+                    }
+
                     pages.BeginColumns(columns.Count, columns.Gap);
                     LayoutBlocks(pages, columns.Blocks, parent, depth + 1);
                     pages.EndColumns();
@@ -153,9 +159,9 @@ internal sealed class FlowLayout
         foreach (var line in lines)
         {
             area.EnsureSpace(line.Height);
-            if (first && level > 0 && area.PageIndex >= 0)
+            if (first && level > 0)
             {
-                Headings.Add(new PlacedHeading(level, text, area.PageIndex, area.Y));
+                AddHeading(area, level, text, area.Y);
             }
 
             first = false;
@@ -465,6 +471,13 @@ internal sealed class FlowLayout
             }
         }
 
+        // The cells by row, so that each row is read once
+        var cellsByRow = new List<(TableCell Cell, StructNode Node, CellArea Content)>[table.RowCount];
+        foreach (var item in contents)
+        {
+            (cellsByRow[item.Cell.Row] ??= []).Add(item);
+        }
+
         // The groups of rows that stay on one page: a row and the rows its cells span
         var groups = new List<(int Start, int End)>();
         for (var r = 0; r < table.RowCount;)
@@ -472,12 +485,9 @@ internal sealed class FlowLayout
             var end = r + 1;
             for (var i = r; i < end; i++)
             {
-                foreach (var cell in table.Cells)
+                foreach (var (cell, _, _) in cellsByRow[i] ?? [])
                 {
-                    if (cell.Row == i)
-                    {
-                        end = Math.Max(end, cell.Row + cell.RowSpan);
-                    }
+                    end = Math.Max(end, cell.Row + cell.RowSpan);
                 }
             }
 
@@ -485,62 +495,102 @@ internal sealed class FlowLayout
             r = end;
         }
 
+        var headerHeight = Sum(heights, 0, table.HeaderRowCount);
         var page = -1;
         foreach (var (start, end) in groups)
         {
-            var groupHeight = heights.AsSpan(start, end - start).ToArray().Sum();
+            var groupHeight = Sum(heights, start, end);
             area.EnsureSpace(groupHeight);
-            if (page >= 0 && area.PageIndex != page && table.HeaderRowCount > 0 && start >= table.HeaderRowCount)
+
+            // The header rows again, at the top of the next page, as an artifact, when the group fits below them: a group
+            // that fits a page but not below the header is drawn alone, rather than beyond the margin
+            if (page >= 0 && area.PageIndex != page && table.HeaderRowCount > 0 && start >= table.HeaderRowCount && headerHeight + groupHeight <= area.Available)
             {
-                // The header rows again, at the top of the next page, as an artifact
-                var headerHeight = heights.AsSpan(0, table.HeaderRowCount).ToArray().Sum();
-                DrawRows(area, table, contents, heights, columnLeft, 0, table.HeaderRowCount, asArtifact: true);
+                DrawRows(area, table, cellsByRow, heights, columnLeft, 0, table.HeaderRowCount, asArtifact: true);
                 area.Advance(headerHeight);
             }
 
             page = area.PageIndex;
-            DrawRows(area, table, contents, heights, columnLeft, start, end, asArtifact: false);
+            DrawRows(area, table, cellsByRow, heights, columnLeft, start, end, asArtifact: false);
             area.Advance(groupHeight);
         }
 
         area.Y -= Math.Min(_options.ParagraphSpacing, Math.Max(0, area.Available));
     }
 
-    /// <summary>Draws rows of a table at the top of the area: the backgrounds and borders as artifacts, and the content of the cells.</summary>
-    private static void DrawRows(FlowArea area, TableBlock table, List<(TableCell Cell, StructNode Node, CellArea Content)> contents, double[] heights, double[] columnLeft, int start, int end, bool asArtifact)
+    private static double Sum(double[] values, int start, int end)
     {
-        var top = area.Y;
-        var rowTop = new double[table.RowCount + 1];
-        rowTop[start] = top;
-        for (var r = start; r < end; r++)
+        var sum = 0d;
+        for (var i = start; i < end; i++)
         {
-            rowTop[r + 1] = rowTop[r] - heights[r];
+            sum += values[i];
         }
 
-        foreach (var (cell, _, content) in contents)
+        return sum;
+    }
+
+    /// <summary>Records a heading: its page and place, or, in a cell, its place in the cell until the cell is placed.</summary>
+    private void AddHeading(FlowArea area, int level, string text, double top)
+    {
+        switch (area)
         {
-            if (cell.Row < start || cell.Row >= end)
-                continue;
+            case CellArea cell:
+                cell.Headings.Add((level, text, top));
+                break;
+            case { PageIndex: >= 0 }:
+                Headings.Add(new PlacedHeading(level, text, area.PageIndex, top));
+                break;
+        }
+    }
 
-            var rectangle = new PdfRectangle(area.Left + columnLeft[cell.Column], rowTop[Math.Min(end, cell.Row + cell.RowSpan)], area.Left + columnLeft[cell.Column + cell.ColumnSpan], rowTop[cell.Row]);
-            if (cell.IsHeader && table.HeaderBackground is { } background)
-            {
-                area.Add(new FillCommand(null, rectangle, background));
-            }
+    /// <summary>Draws rows of a table at the top of the area: the backgrounds and borders as artifacts, and the content of the cells.</summary>
+    private void DrawRows(FlowArea area, TableBlock table, List<(TableCell Cell, StructNode Node, CellArea Content)>?[] cellsByRow, double[] heights, double[] columnLeft, int start, int end, bool asArtifact)
+    {
+        // The tops of the rows of the group
+        var rowTop = new double[end - start + 1];
+        rowTop[0] = area.Y;
+        for (var r = start; r < end; r++)
+        {
+            rowTop[r - start + 1] = rowTop[r - start] - heights[r];
+        }
 
-            foreach (var command in content.Commands)
+        for (var row = start; row < end; row++)
+        {
+            foreach (var (cell, _, content) in cellsByRow[row] ?? [])
             {
-                var placed = command.Translate(rectangle.Left + table.CellPadding, rectangle.Top - table.CellPadding);
-                area.Add(asArtifact ? placed with { Node = null } : placed);
+                DrawCell(area, table, cell, content, new PdfRectangle(area.Left + columnLeft[cell.Column], rowTop[Math.Min(end, cell.Row + cell.RowSpan) - start], area.Left + columnLeft[cell.Column + cell.ColumnSpan], rowTop[cell.Row - start]), asArtifact);
             }
+        }
+    }
 
-            if (table.BorderWidth > 0)
+    private void DrawCell(FlowArea area, TableBlock table, TableCell cell, CellArea content, PdfRectangle rectangle, bool asArtifact)
+    {
+        if (cell.IsHeader && table.HeaderBackground is { } background)
+        {
+            area.Add(new FillCommand(null, rectangle, background));
+        }
+
+        foreach (var command in content.Commands)
+        {
+            var placed = command.Translate(rectangle.Left + table.CellPadding, rectangle.Top - table.CellPadding);
+            area.Add(asArtifact ? placed with { Node = null } : placed);
+        }
+
+        // The headings of the cell are where the cell is: the outline and the table of contents link to them
+        if (!asArtifact)
+        {
+            foreach (var (level, text, top) in content.Headings)
             {
-                area.Add(new LineCommand(null, rectangle.Left, rectangle.Top, rectangle.Right, rectangle.Top, table.BorderWidth, table.BorderColor));
-                area.Add(new LineCommand(null, rectangle.Left, rectangle.Bottom, rectangle.Right, rectangle.Bottom, table.BorderWidth, table.BorderColor));
-                area.Add(new LineCommand(null, rectangle.Left, rectangle.Bottom, rectangle.Left, rectangle.Top, table.BorderWidth, table.BorderColor));
-                area.Add(new LineCommand(null, rectangle.Right, rectangle.Bottom, rectangle.Right, rectangle.Top, table.BorderWidth, table.BorderColor));
+                AddHeading(area, level, text, top + rectangle.Top - table.CellPadding);
             }
+        }
+
+        if (table.BorderWidth > 0)
+        {
+            area.Add(new LineCommand(null, rectangle.Left, rectangle.Top, rectangle.Right, rectangle.Top, table.BorderWidth, table.BorderColor));
+            area.Add(new LineCommand(null, rectangle.Left, rectangle.Bottom, rectangle.Right, rectangle.Bottom, table.BorderWidth, table.BorderColor));
+            area.Add(new LineCommand(null, rectangle.Left, rectangle.Bottom, rectangle.Left, rectangle.Top, table.BorderWidth, table.BorderColor));
+            area.Add(new LineCommand(null, rectangle.Right, rectangle.Bottom, rectangle.Right, rectangle.Top, table.BorderWidth, table.BorderColor));
         }
     }
 
@@ -599,8 +649,27 @@ internal sealed class FlowLayout
 
         foreach (var child in node.Children)
         {
-            CreateElements(element.AddElement(child.Type), child, depth + 1);
+            // A link is in the text of its paragraph: it is added to the paragraph when its text is written, so that the
+            // kids of the paragraph are in reading order (14.7.2)
+            if (child.Type != "Link")
+            {
+                CreateElements(element.AddElement(child.Type), child, depth + 1);
+            }
         }
+    }
+
+    /// <summary>Gets the element of a node: a link gets its element the first time its content is written.</summary>
+    private static PdfStructureElement? GetElement(StructNode? node)
+    {
+        if (node is null)
+            return null;
+
+        if (node.Element is null && node.Type == "Link" && node.Parent?.Element is { } parent)
+        {
+            node.Element = parent.AddElement(node.Type);
+        }
+
+        return node.Element;
     }
 
     private void WritePage(List<PdfPage> pages, int index)
@@ -620,7 +689,7 @@ internal sealed class FlowLayout
                 if (annotation is not null)
                 {
                     annotation.Contents = link.Text;
-                    if (tagged && link.Node?.Element is { } element)
+                    if (tagged && GetElement(link.Node) is { } element)
                     {
                         element.AddAnnotation(annotation);
                     }
@@ -631,7 +700,7 @@ internal sealed class FlowLayout
 
             if (tagged)
             {
-                if (command.Node?.Element is { } element)
+                if (GetElement(command.Node) is { } element)
                 {
                     builder.BeginStructureElement(element);
                 }

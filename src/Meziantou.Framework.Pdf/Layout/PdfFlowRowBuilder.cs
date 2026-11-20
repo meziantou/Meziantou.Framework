@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.Layout;
+
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>Builds the cells of a row of a table of a flow document.</summary>

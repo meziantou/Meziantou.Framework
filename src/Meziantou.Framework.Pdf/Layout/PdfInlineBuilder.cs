@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.Layout;
+
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>Builds the runs of text of a paragraph of a flow document, each with its style.</summary>

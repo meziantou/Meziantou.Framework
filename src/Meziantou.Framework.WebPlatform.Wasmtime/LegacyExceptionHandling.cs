@@ -20,13 +20,18 @@ namespace Meziantou.Framework.WebPlatform.Wasmtime;
 ///   handler1                              end
 /// end                                     br $outer
 ///                                       end
-///                                       local.set $exn handler0 br $outer
+///                                       local.set $exn
+///                                       block (param tag-params) (result T) handler0 end
+///                                       br $outer
 ///                                     end
-///                                     local.set $exn handler1
+///                                     local.set $exn
+///                                     block (result T) handler1 end
 ///                                   end
 /// </code>
 /// <para>
 /// The exception of a clause is stored in a local, which a <c>rethrow</c> of the clause throws again (<c>throw_ref</c>).
+/// Each handler is in a block typed as the <c>try</c>, whose end checks the results of the handler as the original
+/// module does: the branch that follows it would drop the extra values of an invalid handler.
 /// A <c>try</c> ... <c>delegate $l</c> becomes a <c>try_table</c> whose <c>catch_all_ref</c> branches to a block at the
 /// start of the code of the label <c>$l</c> (the body of a block, a branch of an <c>if</c>, the body or a handler of a
 /// <c>try</c>), which throws the exception again there: the handlers that enclose this code receive it, as if it was
@@ -749,6 +754,13 @@ internal static class LegacyExceptionHandling
                         {
                             var frame = _frames[^1];
                             CloseRegion(frame);
+                            if (frame.IsInHandler)
+                            {
+                                // The block of the last handler
+                                WriteByte(Opcodes.End);
+                                _outputDepth--;
+                            }
+
                             WriteByte(Opcodes.End);
                             if (frame.Kind is FrameKind.Function)
                             {
@@ -898,12 +910,10 @@ internal static class LegacyExceptionHandling
         {
             var frame = _frames[^1];
             CloseRegion(frame);
-            if (frame.Region is 0)
-            {
-                // The end of the try_table
-                WriteByte(Opcodes.End);
-                _outputDepth--;
-            }
+
+            // The end of the try_table, or of the block of the previous handler
+            WriteByte(Opcodes.End);
+            _outputDepth--;
 
             // The end of the body or of the previous handler, and of the block of the catch clause
             WriteByte(Opcodes.Br);
@@ -925,7 +935,14 @@ internal static class LegacyExceptionHandling
             _exceptionLocalCount = Math.Max(_exceptionLocalCount, handlers + 1);
             WriteByte(Opcodes.LocalSet);
             WriteU32(_code, frame.ExceptionLocal);
-            OpenRegion(frame, instruction.Opcode is Opcodes.Catch ? GetTagType((uint)ReadTagIndex(instruction)).Parameters : []);
+
+            // The handler is in a block of its own: its end checks the results of the handler, which the branch to the end
+            // of the try would not (a branch drops the extra values)
+            var parameters = instruction.Opcode is Opcodes.Catch ? GetTagType((uint)ReadTagIndex(instruction)).Parameters : [];
+            WriteByte(Opcodes.Block);
+            WriteBlockType(parameters, frame.Signature.Results);
+            _outputDepth++;
+            OpenRegion(frame, parameters);
         }
 
         private Frame PushFrame(FrameKind kind, int instructionIndex, FunctionType signature, TryInfo? info = null)
@@ -950,17 +967,23 @@ internal static class LegacyExceptionHandling
 
             // block $after (param P) (result T)
             //   block $delegate (param P) (result exnref)
-            //     code of the region
+            //     block (param P) (result T)
+            //       code of the region
+            //     end
             //     br $after
             //   end
             //   throw_ref
             // end
+            // The innermost block checks the results of the region, which the branch would not (a branch drops the extra values)
             WriteByte(Opcodes.Block);
             WriteBlockType(parameters, frame.Signature.Results);
             _outputDepth++;
             WriteByte(Opcodes.Block);
             WriteBlockType(parameters, [ExnRefType]);
             frame.DelegateBlock = _outputDepth;
+            _outputDepth++;
+            WriteByte(Opcodes.Block);
+            WriteBlockType(parameters, frame.Signature.Results);
             _outputDepth++;
         }
 
@@ -969,12 +992,13 @@ internal static class LegacyExceptionHandling
             if (frame.DelegateBlock < 0)
                 return;
 
+            WriteByte(Opcodes.End);
             WriteByte(Opcodes.Br);
             WriteU32(_code, 1);
             WriteByte(Opcodes.End);
             WriteByte(Opcodes.ThrowRef);
             WriteByte(Opcodes.End);
-            _outputDepth -= 2;
+            _outputDepth -= 3;
             frame.DelegateBlock = -1;
         }
 

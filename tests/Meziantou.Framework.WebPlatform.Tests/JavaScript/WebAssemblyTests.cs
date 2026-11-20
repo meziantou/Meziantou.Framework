@@ -1213,6 +1213,22 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task LegacyExceptionHandling_InvalidModulesAreRejected()
+    {
+        // The handlers and the code of a delegate target leave a value in a try or a block without result
+        var invalidHandler = Wasm("(module (tag $e) (func try catch $e i32.const 1 catch_all end))");
+        var invalidLastHandler = Wasm("(module (tag $e) (func try catch $e catch_all i32.const 1 end))");
+        var invalidDelegateTarget = Wasm("(module (tag $e) (func block i32.const 1 try delegate 0 end))");
+        var valid = Wasm("(module (tag $e) (func try catch $e catch_all end block try delegate 0 end))");
+        var result = await RunAsync($$"""
+            async () => [WebAssembly.validate({{invalidHandler}}), WebAssembly.validate({{invalidLastHandler}}),
+              WebAssembly.validate({{invalidDelegateTarget}}), WebAssembly.validate({{valid}})].join()
+            """);
+
+        Assert.Equal("false,false,false,true", result);
+    }
+
+    [Fact]
     public void LegacyExceptionHandling_ModulesWithoutLegacyInstructionsAreNotTranslated()
     {
         Assert.Null(LegacyExceptionHandling.Translate(WasmtimeRuntime.WatToWasm("""(module (tag $e) (func (try_table (catch_all 0) (throw $e))))""")));

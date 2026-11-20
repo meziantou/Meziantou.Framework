@@ -4,7 +4,8 @@ description: Create a document, add pages of any size, write their content with 
 ---
 
 A document is created empty, pages are added to it, and the content of each page is written by a content builder: paths
-and colors, text, images, gradients and transparency. Then the document is saved.
+and colors, text, images, gradients and transparency. Then the document is saved. To build a document from headings,
+paragraphs and tables that the library lays out in pages, see [Flow documents](10-FlowDocuments.md).
 
 ## Create a document
 
@@ -143,3 +144,5 @@ version (`Information.Producer` is empty unless you set it), so a test can compa
 - [Reusable content](07-ReusableContent.md): forms, painted as many times as needed.
 - [Transparency](08-Transparency.md): opacity, blend modes, soft masks and transparency groups.
 - [Tables](09-Tables.md): columns, borders, cells broken into lines, and tables that continue on the next pages.
+- [Flow documents](10-FlowDocuments.md): build a tagged document from headings, paragraphs, lists, images and tables,
+  broken into pages by the library.

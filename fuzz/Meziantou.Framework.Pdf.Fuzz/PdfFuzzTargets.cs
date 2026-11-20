@@ -47,6 +47,8 @@ public static class PdfFuzzTargets
 
     private static readonly string[] LineEndings = ["None", "Square", "Circle", "Diamond", "OpenArrow", "ClosedArrow", "Butt", "ROpenArrow", "RClosedArrow", "Slash"];
 
+    private static readonly string[] FlowLayoutTokens = ["\n", "# ", "## ", "- ", "|", "---", " ", "W"];
+
     private static readonly Rendering.PdfRenderOptions RenderOptions = new() { Dpi = 18, MaxOperations = 200_000, UseSystemFonts = false };
 
     private static readonly string[] HeaderFooterTokens = ["{page}", "{pages}", "{label}", "{date}", "{bates}", "{{", "}}", "{", "}", "Page ", " of "];
@@ -75,6 +77,7 @@ public static class PdfFuzzTargets
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
+        new("pdf-flow-layout", FlowLayout) { Seeds = GetFlowLayoutSeeds, Dictionary = FlowLayoutTokens },
         new("pdf-accessibility", Accessibility) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-imposition", Imposition) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-script-extraction", ScriptExtraction) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -847,6 +850,137 @@ public static class PdfFuzzTargets
         }
 
         FuzzAssert.Equal(3, PdfDocument.Open(document.ToByteArray()).Pages.Count, "The stamped document lost pages");
+    }
+
+    /// <summary>
+    /// The input is an option byte (the page size, the alignment, the columns), then a text whose lines are blocks: a
+    /// heading (<c>#</c>), a list item (<c>-</c>), a table row (<c>|</c>), a rule (<c>---</c>), or a paragraph. The text is
+    /// laid out without an exception, every line of every page is inside the margins, and the document reads back with
+    /// its tags.
+    /// </summary>
+    private static void FlowLayout(ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
+            return;
+
+        var options = data[0];
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+
+        // The characters of the standard font: the others are an argument error of the caller
+        var text = new string([.. FuzzText.Decode(data[1..]).Take(4000).Where(c => c is '\n' || (c >= ' ' && font.CanEncode(c.ToString())))]);
+        var size = (options & 1) == 0 ? new PdfSize(200, 220) : PdfSize.A5;
+        var alignment = (PdfTextAlignment)((options >> 1) & 3);
+        var flow = new PdfFlowDocument(new PdfFlowOptions { PageSize = size, MarginLeft = 20, MarginRight = 20, MarginTop = 20, MarginBottom = 20, Footer = (page, count) => $"{page}/{count}" });
+        var style = new PdfParagraphStyle { Alignment = alignment };
+        void AddBlocks(PdfFlowContainer container, IEnumerable<string> lines)
+        {
+            var items = new List<string>();
+            var rows = new List<string[]>();
+            void Flush()
+            {
+                if (items.Count > 0)
+                {
+                    container.List([.. items], ordered: (options & 8) != 0);
+                    items.Clear();
+                }
+
+                if (rows.Count > 0)
+                {
+                    container.Table(table =>
+                    {
+                        // The first row gives the columns; the cells of a longer row do not fit
+                        table.HeaderRow(rows[0]);
+                        foreach (var row in rows.Skip(1))
+                        {
+                            table.Row(cells =>
+                            {
+                                for (var i = 0; i < row.Length; i++)
+                                {
+                                    cells.Cell(row[i], rowSpan: i == 0 && row.Length < rows[0].Length ? 2 : 1);
+                                }
+                            });
+                        }
+                    });
+                    rows.Clear();
+                }
+            }
+
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("- ", StringComparison.Ordinal))
+                {
+                    items.Add(line[2..]);
+                    continue;
+                }
+
+                if (line.StartsWith('|', StringComparison.Ordinal))
+                {
+                    rows.Add(line.Split('|', StringSplitOptions.RemoveEmptyEntries).Take(8).DefaultIfEmpty("").ToArray());
+                    continue;
+                }
+
+                Flush();
+                if (line == "---")
+                {
+                    container.Rule();
+                }
+                else if (line.StartsWith('#', StringComparison.Ordinal))
+                {
+                    container.Heading(Math.Clamp(line.TakeWhile(c => c == '#').Count(), 1, 6), line.TrimStart('#'));
+                }
+                else
+                {
+                    container.Paragraph(line, style);
+                }
+            }
+
+            Flush();
+        }
+
+        var lines = text.Split('\n');
+        if ((options & 16) != 0)
+        {
+            flow.TableOfContents();
+        }
+
+        if ((options & 32) != 0)
+        {
+            flow.Columns(2, 10, columns => AddBlocks(columns, lines));
+        }
+        else
+        {
+            AddBlocks(flow, lines);
+        }
+
+        PdfDocument document;
+        try
+        {
+            document = flow.Build();
+        }
+        catch (ArgumentException ex) when (ex.Message.Contains("do not fit", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        FuzzAssert.Equal(document.Pages.Count, read.Pages.Count, "The pages of the flow document did not read back");
+        FuzzAssert.True(read.StructureTree.Exists, "The flow document is not tagged");
+        foreach (var page in read.Pages.Take(16))
+        {
+            foreach (var line in page.ExtractTextLayout().Lines)
+            {
+                // The glyphs of a line can go a little beyond its box (accents, the footer in the margin)
+                FuzzAssert.True(line.Bounds.Left >= 19 && line.Bounds.Right <= size.Width - 19, $"A line is outside of the margins: {line.Text} {line.Bounds}");
+                FuzzAssert.True(line.Bounds.Bottom >= 0 && line.Bounds.Top <= size.Height, $"A line is outside of the page: {line.Text} {line.Bounds}");
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetFlowLayoutSeeds()
+    {
+        yield return FuzzSeed.FromText("document", [0x11], "# Title\nA paragraph of text that is long enough to be broken into several lines of the page.\n- One\n- Two\n|a|b\n|c|d\n|e\n---\n## Section\nEnd.");
+        yield return FuzzSeed.FromText("columns", [0x26], "# Columns\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\n- item");
+        yield return FuzzSeed.FromText("long-word", [0x00], new string('W', 200));
     }
 
     private static IEnumerable<FuzzSeed> GetHeaderFooterSeeds()

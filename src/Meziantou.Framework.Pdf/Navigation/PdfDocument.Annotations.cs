@@ -43,9 +43,9 @@ public sealed partial class PdfDocument
 
             var overlays = annotations.Select(annotation => (Regions: annotation.Regions, Fill: annotation.InteriorColor ?? options.FillColor, Text: annotation.OverlayText, Repeat: annotation.RepeatOverlayText)).ToList();
 
-            // The redaction annotations are removed first, so that the redaction does not count them
-            AnnotationRemover.Remove(page, annotations.Select(annotation => ((PdfObject?)annotation.Reference ?? annotation.Dictionary, annotation.Dictionary)));
+            // The page is not changed when the redaction throws: the redaction annotations stay, so that it can be applied again
             page.Redact(overlays.SelectMany(overlay => overlay.Regions), new PdfRedactionOptions { FillColor = null, RemoveAnnotations = options.RemoveAnnotations });
+            AnnotationRemover.Remove(page, annotations.Select(annotation => ((PdfObject?)annotation.Reference ?? annotation.Dictionary, annotation.Dictionary)));
 
             var builder = page.CreateContentBuilder();
             foreach (var (regions, fill, text, repeat) in overlays)

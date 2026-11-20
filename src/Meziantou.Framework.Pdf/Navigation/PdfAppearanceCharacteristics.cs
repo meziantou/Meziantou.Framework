@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Pdf;
 /// The appearance characteristics of a widget annotation (<c>/MK</c>, ISO 32000-2, 12.5.6.19, table 192): what the
 /// library and the viewers use to draw the appearances of its field. The dictionary is created when a value is set.
 /// </summary>
-/// <remarks>Changing a value does not change the appearances the widget already has: set the value of its field again, or call <see cref="PdfAnnotation.UpdateAppearance"/>.</remarks>
+/// <remarks>Changing a value does not change the appearances the widget already has: set the value of its field again, or call <see cref="PdfAnnotation.UpdateAppearance"/> for the widget of a text or a choice field.</remarks>
 public sealed class PdfAppearanceCharacteristics
 {
     private static readonly PdfName CAName = PdfName.Create("CA");

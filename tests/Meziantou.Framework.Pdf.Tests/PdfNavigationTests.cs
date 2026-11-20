@@ -788,6 +788,132 @@ public sealed class PdfNavigationTests
         Assert.NotNull(redact);
     }
 
+    [Fact]
+    public void ApplyingRedactionsKeepsTheMarkersWhenTheRedactionFails()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>")
+            .Add(4, "<< /Length 4 /Filter /Unknown >>\nstream\nxxxx\nendstream")
+            .Add(5, "<< /Type /Annot /Subtype /Redact /Rect [0 0 50 50] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Throws<UnsupportedPdfFeatureException>(() => document.ApplyRedactions());
+
+        Assert.IsType<PdfRedactAnnotation>(Assert.Single(document.Pages[0].Annotations));
+    }
+
+    [Fact]
+    public void AllTheRegionsOfARedactionAreRead()
+    {
+        var page = new PdfDocument().Pages.Add(new PdfSize(100, 100));
+        var regions = Enumerable.Range(0, 20_000).Select(i => PdfRectangle.FromSize(i % 100, i / 1000, 1, 1)).ToList();
+
+        var redaction = page.Annotations.AddRedaction(regions);
+
+        Assert.HasCount(20_000, redaction.Regions);
+    }
+
+    [Fact]
+    public void UpdateAppearanceOfAWidgetUsesItsField()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var text = document.Form.AddTextField(page, "name", new PdfRectangle(10, 10, 100, 30));
+        text.Value = "Value";
+        var checkBox = document.Form.AddCheckBox(page, "agree", new PdfRectangle(10, 50, 30, 70));
+        var checkBoxWidget = (PdfWidgetAnnotation)checkBox.Widgets[0];
+        var states = checkBoxWidget.Dictionary.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfDictionary>(PdfNames.N)!.Count;
+
+        Assert.True(text.Widgets[0].UpdateAppearance());
+        Assert.False(checkBoxWidget.UpdateAppearance());
+
+        Assert.Equal(states, checkBoxWidget.Dictionary.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfDictionary>(PdfNames.N)!.Count);
+        Assert.True(states >= 2);
+    }
+
+    [Fact]
+    public void UpdateAppearanceComputesTheRectangleOfTheGeometry()
+    {
+        var page = new PdfDocument().Pages.Add(new PdfSize(200, 200));
+        var line = page.Annotations.AddLine(new PdfPoint(10, 10), new PdfPoint(20, 20));
+        var ink = page.Annotations.AddInk([[new PdfPoint(10, 10)]]);
+
+        line.End = new PdfPoint(150, 160);
+        ink.Strokes = [[new PdfPoint(10, 10), new PdfPoint(120, 130)]];
+        line.UpdateAppearance();
+        ink.UpdateAppearance();
+
+        Assert.True(line.Rectangle.Right > 150 && line.Rectangle.Top > 160, line.Rectangle.ToString());
+        Assert.True(ink.Rectangle.Right > 120 && ink.Rectangle.Top > 130, ink.Rectangle.ToString());
+    }
+
+    [Fact]
+    public void FlatteningKeepsTheWidgetsOfSignaturesThatInheritTheirType()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [6 0 R] >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>")
+            .Add(4, "<< /Type /Annot /Subtype /Widget /Parent 6 0 R /T (child) /V << /Type /Sig >> /Rect [0 0 10 10] /P 3 0 R >>")
+            .Add(6, "<< /FT /Sig /T (parent) /Kids [4 0 R] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Equal(0, document.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = _ => true }));
+        Assert.IsType<PdfWidgetAnnotation>(Assert.Single(document.Pages[0].Annotations));
+    }
+
+    [Fact]
+    public void FlatteningAppliesTheOpacityToTheWholeAppearance()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        var square = page.Annotations.AddSquare(new PdfRectangle(10, 10, 90, 90), PdfColor.FromRgb(0, 0, 1), PdfColor.FromRgb(1, 0, 0), width: 8);
+        square.Opacity = 0.5;
+
+        page.FlattenAnnotations();
+
+        // The inner half of the border is over the fill: in a group, the border hides it before the opacity applies
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        AssertPixel(image, 16, 50, 128, 128, 255, tolerance: 6);
+        AssertPixel(image, 50, 50, 255, 128, 128, tolerance: 6);
+    }
+
+    [Fact]
+    public void TheAppearanceOfALongFreeTextIsBounded()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>")
+            .Add(4, "<< /Subtype /FreeText /Rect [0 0 20 20] /DA (/Helvetica 12 Tf 0 g) /Contents (" + new string('W', 1_000_000) + ") >>");
+        var annotation = PdfDocument.Open(file.ToArray()).Pages[0].Annotations[0];
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        Assert.True(annotation.UpdateAppearance());
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), stopwatch.Elapsed.ToString());
+    }
+
+    [Theory]
+    [InlineData("NotApproved", "NOT APPROVED")]
+    [InlineData("ForPublicRelease", "FOR PUBLIC RELEASE")]
+    [InlineData("Draft", "DRAFT")]
+    public void TheNameOfAStampIsSplitIntoWords(string name, string expected)
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>")
+            .Add(4, "<< /Subtype /Stamp /Rect [10 10 290 90] /Name /" + name + " >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.FlattenAnnotations();
+
+        Assert.Equal(expected, PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText().Trim());
+    }
+
     private static void AssertPixel(Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> image, int x, int y, int r, int g, int b, int tolerance = 3)
     {
         var pixel = image.Frames[0][x, image.Height - 1 - y];

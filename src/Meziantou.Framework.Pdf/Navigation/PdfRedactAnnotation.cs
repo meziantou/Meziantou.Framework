@@ -15,13 +15,14 @@ public sealed class PdfRedactAnnotation : PdfMarkupAnnotation
 
     /// <summary>
     /// Gets or sets the regions to remove (<c>/QuadPoints</c>), in default user space; when the annotation has none, the
-    /// region is its rectangle. The getter returns the bounds of each quadrilateral.
+    /// region is its rectangle. The getter returns the bounds of each quadrilateral, all of them: a region left out would
+    /// stay readable once the redaction is applied.
     /// </summary>
     public IReadOnlyList<PdfRectangle> Regions
     {
         get
         {
-            var regions = ReadQuadrilaterals(Dictionary.Get<PdfArray>(AnnotationNames.QuadPoints));
+            var regions = ReadQuadrilaterals(Dictionary.Get<PdfArray>(AnnotationNames.QuadPoints), int.MaxValue);
             return regions.Count > 0 ? regions : [Rectangle];
         }
 

@@ -434,7 +434,7 @@ internal static class AppearanceGenerator
 
         var padding = borderWidth + 2;
         var font = StandardFont(resources);
-        var lines = WrapText(text, font, fontSize, width - (2 * padding));
+        var lines = WrapText(text, font, fontSize, width - (2 * padding), height - (2 * padding));
         var alignment = annotation.GetInteger(PdfName.Create("Q"), 0);
         Append(content, rectangle.Left + borderWidth, rectangle.Bottom + borderWidth, Math.Max(width - (2 * borderWidth), 0), Math.Max(height - (2 * borderWidth), 0)).Append("re W n BT ");
         var y = rectangle.Top - padding - (fontSize * 0.8);
@@ -465,14 +465,15 @@ internal static class AppearanceGenerator
     {
         var name = annotation.GetName(PdfNames.Name)?.Value ?? "Draft";
         var text = new StringBuilder();
-        foreach (var c in name)
+        for (var i = 0; i < name.Length; i++)
         {
-            if (char.IsUpper(c) && text.Length > 0 && !char.IsUpper(text[^1]))
+            // A word starts at an uppercase letter after a lowercase one, in the name: NotApproved is NOT APPROVED
+            if (i > 0 && char.IsUpper(name[i]) && char.IsLower(name[i - 1]))
             {
                 text.Append(' ');
             }
 
-            text.Append(char.ToUpperInvariant(c));
+            text.Append(char.ToUpperInvariant(name[i]));
         }
 
         var colors = new StringBuilder();
@@ -593,9 +594,14 @@ internal static class AppearanceGenerator
     };
 
     /// <summary>Breaks a text into lines that fit a width with the metrics of a standard font; the characters the font cannot show are measured as question marks.</summary>
-    private static List<string> WrapText(string text, PdfFont font, double fontSize, double width)
+    private static List<string> WrapText(string text, PdfFont font, double fontSize, double width, double height)
     {
-        var printable = ToLatin1(text);
+        // Only the text that can show in the box is wrapped: the lines that fit its height, of at most the characters of
+        // the narrowest glyphs (a fifth of the font size) that fit its width. The text of a file is not bounded, and
+        // wrapping a long word measures its rest for each line
+        var maxLines = (int)Math.Clamp(Math.Ceiling(height / (fontSize * 1.2)) + 1, 1, 1024);
+        var maxCharacters = (int)Math.Clamp(Math.Ceiling(Math.Max(width, fontSize) / (fontSize * 0.2)) + 1, 1, 4096);
+        var printable = ToLatin1(text.Length > (long)maxLines * maxCharacters ? text[..(maxLines * maxCharacters)] : text);
         try
         {
             return [.. PdfTextWrapper.Wrap(printable, font, fontSize, Math.Max(width, fontSize)).Select(line => line.Text)];

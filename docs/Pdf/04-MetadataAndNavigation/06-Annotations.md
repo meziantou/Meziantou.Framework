@@ -93,7 +93,9 @@ inset, underline), its dashes and its cloudy effect.
 Viewers draw the appearance of an annotation, not its properties: after changing the geometry, the colors or the border
 of an annotation, call [UpdateAppearance](cref:Meziantou.Framework.Pdf.PdfAnnotation.UpdateAppearance) to draw it again. It draws the shapes, the lines, the ink, the
 text markups, the notes, the free texts, the stamps, the carets and the redactions, and returns `false` for the other
-types (links, file attachments, sounds...), whose appearance is left as it is.
+types (links, file attachments, sounds...), whose appearance is left as it is. The rectangle of a line, a polygon, a
+polyline or an ink annotation is computed again from its points. The widget of a text or a choice field gets the
+appearance of the value of its field; the widgets of buttons keep theirs, whose states are the values of their fields.
 
 ## Replies and pop-ups
 
@@ -122,8 +124,8 @@ var flattened = document.FlattenAnnotations();
   links or the widgets. The widgets of signed signature fields are never flattened.
 - The annotations hidden for the [Intent](cref:Meziantou.Framework.Pdf.PdfAnnotationFlattenOptions.Intent) are removed without being drawn: those with the `NoView` flag for the
   screen, those without the `Print` flag for printing.
-- The appearance is drawn with the opacity and in the optional content (the layer) of the annotation. An annotation
-  without an appearance gets the one [UpdateAppearance](cref:Meziantou.Framework.Pdf.PdfAnnotation.UpdateAppearance) draws.
+- The appearance is drawn with the opacity of the annotation, as a whole (a transparency group), and in its optional
+  content (its layer). An annotation without an appearance gets the one [UpdateAppearance](cref:Meziantou.Framework.Pdf.PdfAnnotation.UpdateAppearance) draws.
 - The pop-up of a flattened annotation is removed, and its replies no longer point to it.
 
 To flatten the form fields with their values, use [PdfInteractiveForm.Flatten](cref:Meziantou.Framework.Pdf.PdfInteractiveForm.Flatten): see [Forms](../05-ReadingAndModifying/09-Forms.md).

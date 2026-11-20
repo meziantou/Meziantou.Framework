@@ -60,15 +60,29 @@ internal static class AppearanceDrawer
 
         builder.SaveGraphicsState();
 
-        // The constant opacity of the annotation (12.5.2): the appearance is painted with it
-        var strokeAlpha = ReadAlpha(annotation, AnnotationNames.CA);
+        // The constant opacity of the annotation (12.5.2) applies to the appearance as a whole, as viewers draw it: the
+        // appearance is painted in a transparency group (11.6.6) painted with the opacity, so that its overlapping parts
+        // do not darken. The opacity of the non-stroking operations of PDF 2.0 (ca), when it differs, is the alpha of
+        // what they paint, as the renderer does.
+        var strokeAlpha = ReadAlpha(annotation, AnnotationNames.CA) ?? 1;
         var fillAlpha = ReadAlpha(annotation, AnnotationNames.CALower) ?? strokeAlpha;
-        if (strokeAlpha is not (null or 1d) || fillAlpha is not (null or 1d))
+        if (strokeAlpha == fillAlpha && strokeAlpha < 1)
         {
-            builder.SetGraphicsState(new PdfExtGState { StrokeAlpha = strokeAlpha ?? 1, FillAlpha = fillAlpha ?? 1 });
+            var group = document.CreateForm(rectangle, group: new PdfTransparencyGroup());
+            var groupBuilder = group.CreateContentBuilder();
+            var groupName = groupBuilder.AddResource(PdfNames.XObject, "Fm", reference);
+            groupBuilder.Transform(transform).PaintXObject(groupName).Complete();
+            builder.SetGraphicsState(new PdfExtGState { StrokeAlpha = strokeAlpha, FillAlpha = fillAlpha }).DrawForm(group).RestoreGraphicsState();
         }
+        else
+        {
+            if (strokeAlpha < 1 || fillAlpha < 1)
+            {
+                builder.SetGraphicsState(new PdfExtGState { StrokeAlpha = strokeAlpha, FillAlpha = fillAlpha });
+            }
 
-        builder.Transform(transform).PaintXObject(name).RestoreGraphicsState();
+            builder.Transform(transform).PaintXObject(name).RestoreGraphicsState();
+        }
         if (hasOptionalContent)
         {
             builder.EndMarkedContent();

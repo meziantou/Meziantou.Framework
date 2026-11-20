@@ -102,8 +102,27 @@ public class PdfAnnotation
     /// the annotations of this type (links, file attachments, sounds, ...), or the annotation has nothing to draw (no
     /// color, an empty rectangle): its appearance is left as it is.
     /// </returns>
+    /// <remarks>
+    /// <para>
+    /// The rectangle of a line, a polygon, a polyline or an ink annotation is computed again from its points, with room for
+    /// its width, its endings and its leader lines, so that a moved point is not clipped.
+    /// </para>
+    /// <para>
+    /// The widget of a text or a choice field gets the appearance of the value of its field, as setting the value does.
+    /// The widgets of buttons keep their appearances, whose states (<c>/AS</c>) are the values of their fields: the method
+    /// returns <see langword="false"/> for them.
+    /// </para>
+    /// </remarks>
     public bool UpdateAppearance()
     {
+        if (Dictionary.GetName(PdfNames.Subtype) == PdfFormField.WidgetName)
+            return UpdateWidgetAppearance();
+
+        if (GetGeometryBounds() is { } bounds)
+        {
+            Rectangle = bounds;
+        }
+
         var stream = AppearanceGenerator.Generate(Page, Dictionary, Rectangle, includeIcons: true);
         if (stream is null)
             return false;
@@ -111,6 +130,71 @@ public class PdfAnnotation
         var reference = Page.Document.Objects.Add(stream);
         Dictionary[AnnotationNames.AP] = new PdfDictionary { [PdfNames.N] = reference };
         return true;
+    }
+
+    /// <summary>Updates the appearance of the widget of a text or a choice field from the value of its field (12.7.4.3).</summary>
+    private bool UpdateWidgetAppearance()
+    {
+        foreach (var field in Page.Document.Form.GetFields())
+        {
+            if (!field.GetWidgetDictionaries().Any(widget => ReferenceEquals(widget.Dictionary, Dictionary)))
+                continue;
+
+            if (field is not (PdfTextField or PdfChoiceField))
+                return false;
+
+            PdfFieldAppearance.Update(field);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Gets the rectangle a geometry needs: the bounds of the points of a line, a polygon, a polyline or an ink annotation, with room for the width of the line, its endings and its leader lines.</summary>
+    private PdfRectangle? GetGeometryBounds()
+    {
+        var width = Border.Width;
+        var (points, margin) = Dictionary.GetName(PdfNames.Subtype)?.Value switch
+        {
+            "Line" => (ReadPoints(Dictionary.Get<PdfArray>(PdfNames.L)), (width * 4) + 5 + Math.Abs(Dictionary.GetNumber(AnnotationNames.LL, 0)) + Math.Abs(Dictionary.GetNumber(AnnotationNames.LLE, 0))),
+            "PolyLine" => (ReadPoints(Dictionary.Get<PdfArray>(AnnotationNames.Vertices)), (width * 4) + 5),
+            "Polygon" => (ReadPoints(Dictionary.Get<PdfArray>(AnnotationNames.Vertices)), (width / 2) + 1),
+            "Ink" => (ReadInkPoints(), (width / 2) + 1),
+            _ => ([], 0d),
+        };
+        if (points.Count == 0 || !double.IsFinite(margin))
+            return null;
+
+        var (left, bottom, right, top) = (double.PositiveInfinity, double.PositiveInfinity, double.NegativeInfinity, double.NegativeInfinity);
+        foreach (var point in points)
+        {
+            if (double.IsFinite(point.X) && double.IsFinite(point.Y))
+            {
+                (left, bottom, right, top) = (Math.Min(left, point.X), Math.Min(bottom, point.Y), Math.Max(right, point.X), Math.Max(top, point.Y));
+            }
+        }
+
+        return double.IsFinite(left) ? new PdfRectangle(left - margin, bottom - margin, right + margin, top + margin) : null;
+    }
+
+    private List<PdfPoint> ReadInkPoints()
+    {
+        var result = new List<PdfPoint>();
+        if (Dictionary.Get<PdfArray>(AnnotationNames.InkList) is { } strokes)
+        {
+            foreach (var item in strokes)
+            {
+                if ((item is null ? null : PdfReference.ResolveIfReference(item)) is PdfArray stroke)
+                {
+                    result.AddRange(ReadPoints(stroke, MaxPoints - result.Count));
+                }
+
+                if (result.Count >= MaxPoints)
+                    break;
+            }
+        }
+
+        return result;
     }
 
     internal static PdfAnnotation Create(PdfPage page, PdfDictionary dictionary, PdfReference? reference)
@@ -186,13 +270,13 @@ public class PdfAnnotation
     internal void WriteColor(PdfName key, PdfColor? value) => Dictionary[key] = value is { } color ? PdfArray.FromNumbers(color.GetComponents()) : null;
 
     /// <summary>Reads an array of numbers as points (x, y): an odd number is ignored, as are the points beyond <see cref="MaxPoints"/>.</summary>
-    internal static List<PdfPoint> ReadPoints(PdfArray? array)
+    internal static List<PdfPoint> ReadPoints(PdfArray? array, int maxPoints = MaxPoints)
     {
         var result = new List<PdfPoint>();
         if (array is null)
             return result;
 
-        for (var i = 0; i + 1 < array.Count && result.Count < MaxPoints; i += 2)
+        for (var i = 0; i + 1 < array.Count && result.Count < maxPoints; i += 2)
         {
             result.Add(new PdfPoint(array.GetNumber(i), array.GetNumber(i + 1)));
         }
@@ -213,10 +297,10 @@ public class PdfAnnotation
     }
 
     /// <summary>Reads the bounds of the quadrilaterals of <c>/QuadPoints</c> (12.5.6.10): one rectangle per group of four points.</summary>
-    internal static List<PdfRectangle> ReadQuadrilaterals(PdfArray? array)
+    internal static List<PdfRectangle> ReadQuadrilaterals(PdfArray? array, int maxPoints = MaxPoints)
     {
         var result = new List<PdfRectangle>();
-        var points = ReadPoints(array);
+        var points = ReadPoints(array, maxPoints);
         for (var i = 0; i + 3 < points.Count; i += 4)
         {
             var quadrilateral = points.GetRange(i, 4);

@@ -67,15 +67,17 @@ public sealed partial class PdfPage
         if (annotation.GetName(PdfNames.Subtype) != PdfFormField.WidgetName)
             return false;
 
+        // The type and the value are inherited separately (12.7.4.1): a terminal field can have its value and inherit its type
+        PdfName? type = null;
+        PdfObject? value = null;
         var current = annotation;
-        for (var depth = 0; current is not null && depth < 32; depth++)
+        for (var depth = 0; current is not null && depth < 32 && (type is null || value is null); depth++)
         {
-            if (current.GetName(PdfFormField.FTName) is { } type)
-                return type.Value == "Sig" && current.GetResolved(PdfFormField.VName) is PdfDictionary;
-
+            type ??= current.GetName(PdfFormField.FTName);
+            value ??= current.GetResolved(PdfFormField.VName);
             current = current.Get<PdfDictionary>(PdfNames.Parent);
         }
 
-        return false;
+        return type?.Value == "Sig" && value is PdfDictionary;
     }
 }

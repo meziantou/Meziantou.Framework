@@ -250,7 +250,7 @@ public sealed class PerformanceTimelineTests : IDisposable
     [Fact]
     public void NavigationTiming_DocumentOfTheHttpCache_HasTheCacheDeliveryType()
     {
-        _loader.Resources["https://example.com/cached"] = Html("cached", new("Cache-Control", "max-age=3600"));
+        _loader.Resources["https://example.com/cached"] = Html("cached", new KeyValuePair<string, string>("Cache-Control", "max-age=3600"));
         _loader.Resources["https://example.com/other"] = Html("other");
         var context = CreateContext();
         PerformanceNavigationTiming NavigateAndGetEntry(string url)
